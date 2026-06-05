@@ -1,0 +1,36 @@
+# Frontend
+frontend/node_modules
+frontend/.next
+frontend/.swc
+frontend/.env*.local
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/.DS_Store
+
+# Backend
+backend/__pycache__
+backend/*.pyc
+backend/*.pyo
+backend/*.pyd
+backend/.Python
+backend/env
+backend/venv
+backend/.env
+backend/.venv
+backend/pip-log.txt
+backend/pip-delete-this-directory.txt
+backend/.pytest_cache
+backend/.coverage
+backend/htmlcov
+backend/*.egg-info
+
+# General
+.git
+.gitignore
+.dockerignore
+docker-compose*.yml
+README.md
+*.md
+.vscode
+.idea

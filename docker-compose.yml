@@ -1,0 +1,85 @@
+# docker-compose.yml - Hot Reload Optimized
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: art_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: art_user
+      POSTGRES_PASSWORD: art_password_dev
+      POSTGRES_DB: art_workspace
+    ports:
+      - "5432:5432"
+    mem_limit: 256m
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U art_user -d art_workspace"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # FastAPI Backend
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: art_backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://art_user:art_password_dev@postgres:5432/art_workspace
+      SECRET_KEY: your-secret-key-change-in-production
+      ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 30
+      CORS_ORIGINS: http://localhost:8080,http://localhost:80
+      PYTHONUNBUFFERED: 1
+    ports:
+      - "8000:8000"
+    mem_limit: 256m
+    volumes:
+      - ./backend:/app
+      - /app/__pycache__
+    depends_on:
+      postgres:
+        condition: service_healthy
+    stdin_open: true
+    tty: true
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --reload-delay 0.5
+
+  # Next.js Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: development
+    container_name: art_frontend
+    restart: unless-stopped
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+      API_INTERNAL_URL: http://backend:8000
+      NODE_OPTIONS: "--max-old-space-size=512"
+      # Hot Reload Configuration (Windows optimized)
+      WATCHPACK_POLLING: "true"
+      CHOKIDAR_USEPOLLING: "true"
+      CHOKIDAR_INTERVAL: 1000
+      NEXT_TELEMETRY_DISABLED: 1
+    ports:
+      - "8080:3000"
+    mem_limit: 768m
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+      - /app/.swc
+    depends_on:
+      - backend
+    stdin_open: true
+    tty: true
+    command: npm run dev
+
+volumes:
+  postgres_data:
+    driver: local

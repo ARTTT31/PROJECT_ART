@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ทดสอบ Token</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .info {
+            background: #f0f0f0;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        pre {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 ทดสอบ Token และ Profile API</h1>
+    
+    <div id="token-info" class="info">
+        <h3>ข้อมูล Token</h3>
+        <p id="token-status">กำลังตรวจสอบ...</p>
+    </div>
+
+    <div>
+        <button onclick="checkToken()">🔄 ตรวจสอบ Token</button>
+        <button onclick="testGetProfile()">📋 ทดสอบ GET Profile</button>
+        <button onclick="testUpdateProfile()">✏️ ทดสอบ UPDATE Profile</button>
+        <button onclick="clearToken()">🗑️ ลบ Token</button>
+        <button onclick="goToLogin()">🔑 ไปหน้า Login</button>
+    </div>
+
+    <div id="result" class="info" style="margin-top: 20px;">
+        <h3>ผลลัพธ์</h3>
+        <pre id="result-text">รอการทดสอบ...</pre>
+    </div>
+
+    <script>
+        function checkToken() {
+            const token = localStorage.getItem('access_token');
+            const user = localStorage.getItem('user');
+            
+            if (!token) {
+                document.getElementById('token-status').innerHTML = '❌ ไม่พบ Token (กรุณา Login)';
+                document.getElementById('result-text').textContent = 'ไม่มี Token ใน localStorage';
+                return;
+            }
+
+            const userData = user ? JSON.parse(user) : null;
+            
+            document.getElementById('token-status').innerHTML = `
+                ✅ พบ Token ใน localStorage<br>
+                <small>Token (30 ตัวอักษรแรก): ${token.substring(0, 30)}...</small><br>
+                <small>User: ${userData ? userData.name + ' (' + userData.email + ')' : 'ไม่มีข้อมูล'}</small>
+            `;
+            
+            document.getElementById('result-text').textContent = JSON.stringify({
+                token: token.substring(0, 50) + '...',
+                user: userData
+            }, null, 2);
+        }
+
+        async function testGetProfile() {
+            const token = localStorage.getItem('access_token');
+            
+            if (!token) {
+                alert('❌ ไม่พบ Token กรุณา Login ก่อน');
+                return;
+            }
+
+            try {
+                const response = await fetch('http://localhost:8000/api/v1/profile/me', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    document.getElementById('result-text').textContent = '✅ GET Profile สำเร็จ!\n\n' + JSON.stringify(data, null, 2);
+                } else {
+                    document.getElementById('result-text').textContent = '❌ GET Profile ล้มเหลว!\n\n' + JSON.stringify(data, null, 2);
+                }
+            } catch (error) {
+                document.getElementById('result-text').textContent = '❌ Error: ' + error.message;
+            }
+        }
+
+        async function testUpdateProfile() {
+            const token = localStorage.getItem('access_token');
+            
+            if (!token) {
+                alert('❌ ไม่พบ Token กรุณา Login ก่อน');
+                return;
+            }
+
+            const newName = prompt('กรอกชื่อใหม่:', 'ทดสอบเปลี่ยนชื่อ ' + new Date().getTime());
+            
+            if (!newName) return;
+
+            try {
+                const response = await fetch('http://localhost:8000/api/v1/profile/me', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ name: newName })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    document.getElementById('result-text').textContent = '✅ UPDATE Profile สำเร็จ!\n\n' + JSON.stringify(data, null, 2);
+                    
+                    // Update localStorage
+                    const user = JSON.parse(localStorage.getItem('user'));
+                    user.name = newName;
+                    localStorage.setItem('user', JSON.stringify(user));
+                    
+                    alert('✅ อัพเดทชื่อเป็น "' + newName + '" สำเร็จ!');
+                } else {
+                    document.getElementById('result-text').textContent = '❌ UPDATE Profile ล้มเหลว!\n\nStatus: ' + response.status + '\n\n' + JSON.stringify(data, null, 2);
+                    
+                    if (response.status === 401) {
+                        alert('❌ Token หมดอายุหรือไม่ถูกต้อง กรุณา Login ใหม่');
+                    }
+                }
+            } catch (error) {
+                document.getElementById('result-text').textContent = '❌ Error: ' + error.message;
+            }
+        }
+
+        function clearToken() {
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('user');
+            alert('✅ ลบ Token แล้ว');
+            checkToken();
+        }
+
+        function goToLogin() {
+            window.location.href = '/login';
+        }
+
+        // Auto check on load
+        window.onload = checkToken;
+    </script>
+</body>
+</html>

@@ -1,0 +1,61 @@
+/* ═══════════════════════════════════════════════════════
+   LOGIN PAGE - LIQUID GLASS iOS STYLE
+   ═══════════════════════════════════════════════════════ */
+
+.loginPage {
+  height: 100dvh;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(12px, 2.4vh, 24px);
+  font-family: inherit;
+  background:
+    radial-gradient(ellipse at top right, rgba(14, 165, 233, 0.12), transparent 50%),
+    radial-gradient(ellipse at bottom left, rgba(99, 102, 241, 0.08), transparent 50%),
+    radial-gradient(ellipse at center, rgba(236, 72, 153, 0.05), transparent 60%),
+    linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+.loginShell {
+  width: min(1000px, 100%);
+  max-height: calc(100dvh - clamp(24px, 4.8vh, 48px));
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  overflow: hidden;
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  border: 1.5px solid rgba(255, 255, 255, 0.35);
+  box-shadow: 
+    0 24px 64px rgba(15, 23, 42, 0.12),
+    0 8px 24px rgba(15, 23, 42, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  transition: all 400ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.loginShell:hover {
+  box-shadow: 
+    0 32px 80px rgba(15, 23, 42, 0.14),
+    0 12px 32px rgba(15, 23, 42, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.loginVisual {
+  position: relative;
+  min-height: min(580px, calc(100dvh - 48px));
+  overflow: hidden;
+  color: white;
+  background:
+    radial-gradient(circle at 82% 10%, rgba(255, 255, 255, 0.38), transparent 28%),
+    radial-gradient(circle at 18% 12%, rgba(125, 211, 252, 0.52), transparent 34%),
+    linear-gradient(145deg, #0f4c81 0%, #1675b9 35%, #4f8edb 65%, #6aa7e8 100%);
+  background-size: 200% 200%;
+  animation: gradientShift 12s ease-in-out infinite alternate;
+}
+
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 100% 50%; }
+}
