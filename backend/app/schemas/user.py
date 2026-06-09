@@ -45,6 +45,27 @@ class UserUpdate(BaseModel):
     quick_links: Optional[str] = None
 
 
+class UserAdminUpdate(BaseModel):
+    """Schema for admin updating user"""
+    
+    name: Optional[str] = Field(None, min_length=1, max_length=255)
+    email: Optional[EmailStr] = None
+    role: Optional[str] = None
+    is_active: Optional[bool] = None
+    is_locked: Optional[bool] = None
+    password: Optional[str] = None
+
+
+class UserAvatarUpdate(BaseModel):
+    """Schema for updating user avatar"""
+    avatar_base64: str = Field(..., min_length=1)
+
+
+class UserQuickLinksUpdate(BaseModel):
+    """Schema for updating user quick links"""
+    quick_links: str = Field(..., min_length=0)
+
+
 class UserPasswordChange(BaseModel):
     """Schema for changing password"""
     

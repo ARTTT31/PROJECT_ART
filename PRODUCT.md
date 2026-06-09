@@ -22,7 +22,8 @@ ART Workspace is a modern full-stack dashboard application that consolidates ess
 
 ## Anti-references
 
-To be determined as the project evolves. Currently no specific anti-patterns identified, but general principles apply:
+To be determined as the project evolves. Currently, the following specific anti-patterns and restrictions are identified:
+- **No Dark Mode**: The system MUST NOT implement dark mode. The design system is strictly light mode (with a clean, premium "Liquid Glass" theme) to maintain high contrast and consistency for users. Any dark mode styles or media queries must be explicitly avoided or removed.
 - Avoid cluttered dashboards where widgets compete for attention
 - Avoid flat, lifeless interfaces that feel like spreadsheets
 - Avoid excessive decoration that doesn't serve the user's workflow

@@ -13,6 +13,7 @@ interface DashboardLayoutProps {
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [modalOverlayOpen, setModalOverlayOpen] = useState(false)
   const [user, setUser] = useState<any>(null)
 
   useEffect(() => {
@@ -36,8 +37,18 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       }
     }
 
+    const handleModalState = (event: Event) => {
+      const customEvent = event as CustomEvent<{ open: boolean }>
+      setModalOverlayOpen(Boolean(customEvent.detail?.open))
+    }
+
     window.addEventListener('user-profile-updated', handleProfileUpdate)
-    return () => window.removeEventListener('user-profile-updated', handleProfileUpdate)
+    window.addEventListener('art-modal-state', handleModalState)
+
+    return () => {
+      window.removeEventListener('user-profile-updated', handleProfileUpdate)
+      window.removeEventListener('art-modal-state', handleModalState)
+    }
   }, [])
 
   const handleLogout = () => {
@@ -60,7 +71,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     <div className="art-app-shell relative overflow-hidden">
 
       {/* Sidebar wrapper */}
-      <div className="relative z-20">
+      <div className={`relative z-20 ${modalOverlayOpen ? 'hidden' : ''}`}>
         <Sidebar 
           isOpen={sidebarOpen} 
           onClose={() => setSidebarOpen(false)}
@@ -70,7 +81,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       </div>
 
       {/* Main Content wrapper */}
-      <div className="lg:pl-64 relative z-10 min-h-screen flex flex-col">
+      <div className={`${modalOverlayOpen ? 'lg:pl-0' : 'lg:pl-64'} relative z-10 min-h-screen flex flex-col`}>
         {/* Header */}
         <Header 
           user={user}

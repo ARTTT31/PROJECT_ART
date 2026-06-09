@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { ChevronDown, Clock, LogOut, Menu, User } from 'lucide-react'
+import { ChevronDown, Clock, LogOut, Menu, User, Settings } from 'lucide-react'
 
 interface HeaderProps {
   user: any
@@ -82,6 +82,13 @@ export default function Header({ user, onMenuClick, onLogout }: HeaderProps) {
                     <div className="text-sm font-semibold text-slate-950">{user.name || 'ผู้ใช้งาน'}</div>
                     <div className="mt-1 truncate text-xs text-slate-500">{user.email}</div>
                   </div>
+
+                  {user.role === 'admin' && (
+                    <a href="/admin" className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 border-b border-slate-100">
+                      <Settings size={18} className="text-slate-400" aria-hidden="true" />
+                      ระบบหลังบ้าน (Admin)
+                    </a>
+                  )}
 
                   <a href="/profile" className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50">
                     <User size={18} className="text-slate-400" aria-hidden="true" />

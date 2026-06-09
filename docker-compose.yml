@@ -6,10 +6,12 @@ services:
     image: postgres:15-alpine
     container_name: art_postgres
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
-      POSTGRES_USER: art_user
-      POSTGRES_PASSWORD: art_password_dev
-      POSTGRES_DB: art_workspace
+      POSTGRES_USER: ${POSTGRES_USER:-art_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-art_password_dev}
+      POSTGRES_DB: ${POSTGRES_DB:-art_workspace}
     ports:
       - "5432:5432"
     mem_limit: 256m
@@ -29,12 +31,14 @@ services:
       dockerfile: Dockerfile
     container_name: art_backend
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
-      DATABASE_URL: postgresql://art_user:art_password_dev@postgres:5432/art_workspace
-      SECRET_KEY: your-secret-key-change-in-production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-art_user}:${POSTGRES_PASSWORD:-art_password_dev}@postgres:5432/${POSTGRES_DB:-art_workspace}
+      SECRET_KEY: ${SECRET_KEY}
       ALGORITHM: HS256
       ACCESS_TOKEN_EXPIRE_MINUTES: 30
-      CORS_ORIGINS: http://localhost:8080,http://localhost:80
+      CORS_ORIGINS: http://localhost:8000,http://localhost:8080,http://localhost:3001,http://frontend:3000
       PYTHONUNBUFFERED: 1
     ports:
       - "8000:8000"
@@ -48,6 +52,12 @@ services:
     stdin_open: true
     tty: true
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --reload-delay 0.5
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
   # Next.js Frontend
   frontend:
@@ -58,7 +68,7 @@ services:
     container_name: art_frontend
     restart: unless-stopped
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost:8000
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
       API_INTERNAL_URL: http://backend:8000
       NODE_OPTIONS: "--max-old-space-size=512"
       # Hot Reload Configuration (Windows optimized)
@@ -67,7 +77,7 @@ services:
       CHOKIDAR_INTERVAL: 1000
       NEXT_TELEMETRY_DISABLED: 1
     ports:
-      - "8080:3000"
+      - "3001:3000"
     mem_limit: 768m
     volumes:
       - ./frontend:/app
@@ -75,10 +85,17 @@ services:
       - /app/.next
       - /app/.swc
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     stdin_open: true
     tty: true
     command: npm run dev
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
 
 volumes:
   postgres_data:

@@ -6,6 +6,7 @@ import DashboardLayout from '@/components/Layout/DashboardLayout'
 import WeatherWidget from '@/components/Widgets/WeatherWidget'
 import CalendarWidget from '@/components/Widgets/CalendarWidget'
 import TaskListWidget from '@/components/Widgets/TaskListWidget'
+import AnalyticsWidget from '@/components/Widgets/AnalyticsWidget'
 import { GripVertical, LayoutGrid, Check, RotateCcw, Eye, EyeOff, Sliders, X } from 'lucide-react'
 
 interface WidgetConfig {
@@ -14,15 +15,17 @@ interface WidgetConfig {
 }
 
 const defaultWidgets: WidgetConfig[] = [
-  { id: 'weather', w: 1 },
-  { id: 'calendar', w: 1 },
-  { id: 'tasklist', w: 1 },
+  { id: 'weather', w: 3 },
+  { id: 'calendar', w: 3 },
+  { id: 'tasklist', w: 3 },
+  { id: 'analytics', w: 3 },
 ]
 
 const widgetNames: Record<string, string> = {
   weather: 'สภาพอากาศ',
   calendar: 'ปฏิทินกิจกรรม',
   tasklist: 'รายการงาน IMACD / ธัญพงศ์',
+  analytics: 'ประสิทธิภาพและการใช้งาน',
 }
 
 export default function DashboardPage() {
@@ -113,8 +116,10 @@ export default function DashboardPage() {
     const draggedItem = updated[draggedIdx]
     updated.splice(draggedIdx, 1)
     updated.splice(idx, 0, draggedItem)
+    // Reset drag state
     setDraggedIdx(null)
     setDragOverIdx(null)
+    // Save new layout
     saveLayout(updated)
   }
 
@@ -137,14 +142,15 @@ export default function DashboardPage() {
       case 'weather': return <WeatherWidget />
       case 'tasklist': return <TaskListWidget />
       case 'calendar': return <CalendarWidget />
+      case 'analytics': return <AnalyticsWidget />
       default: return null
     }
   }
 
   const getColSpanClass = (w: number) => {
-    if (w === 3) return 'lg:col-span-3 md:col-span-3 col-span-1'
-    if (w === 2) return 'lg:col-span-2 md:col-span-2 col-span-1'
-    return 'lg:col-span-1 md:col-span-1 col-span-1'
+    if (w === 3) return 'w-full'
+    if (w === 2) return 'w-full md:w-2/3'
+    return 'w-full md:w-1/2'
   }
 
   if (!user || !isClient) {
@@ -157,10 +163,10 @@ export default function DashboardPage() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-7xl mx-auto px-1">
+      <div className="w-full">
 
         {/* Dashboard Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="flex flex-col gap-6 px-4">
           {widgets
             .filter(widget => visibleWidgetIds.includes(widget.id))
             .map((widget, idx) => {
@@ -176,21 +182,28 @@ export default function DashboardPage() {
                   onDragOver={(e) => handleDragOver(e, idx)}
                   onDrop={() => handleDrop(idx)}
                   onDragLeave={() => setDragOverIdx(null)}
+                  onDragEnd={() => {
+                    setDraggedIdx(null);
+                    setDragOverIdx(null);
+                  }}
                   className={`group relative transition-all duration-300 ${colSpan} ${
                     isDragged ? 'opacity-30 scale-95' : 'opacity-100'
                   } ${isOver ? 'border-2 border-dashed border-sky-400 bg-sky-50/20 rounded-3xl p-1' : ''}`}
                 >
                   {/* Widget Card Container */}
                   <div className="h-full rounded-3xl shadow-sm hover:shadow-md transition-all duration-300">
-                    {widget.id === 'weather' && (
-                      <WeatherWidget width={widget.w} onResize={(newSize) => handleResize(widget.id, newSize)} />
-                    )}
-                    {widget.id === 'calendar' && (
-                      <CalendarWidget width={widget.w} onResize={(newSize) => handleResize(widget.id, newSize)} />
-                    )}
-                    {widget.id === 'tasklist' && (
-                      <TaskListWidget width={widget.w} onResize={(newSize) => handleResize(widget.id, newSize)} />
-                    )}
+                  {widget.id === 'weather' && (
+                    <WeatherWidget width={widget.w} onResize={(newSize) => handleResize(widget.id, newSize)} />
+                  )}
+                  {widget.id === 'calendar' && (
+                    <CalendarWidget width={widget.w} onResize={(newSize) => handleResize(widget.id, newSize)} />
+                  )}
+                  {widget.id === 'tasklist' && (
+                    <TaskListWidget width={widget.w} onResize={(newSize) => handleResize(widget.id, newSize)} />
+                  )}
+                  {widget.id === 'analytics' && (
+                    <AnalyticsWidget width={widget.w} onResize={(newSize) => handleResize(widget.id, newSize)} />
+                  )}
                   </div>
                 </div>
               )

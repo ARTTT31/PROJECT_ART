@@ -352,16 +352,34 @@ export default function WeatherWidget({
             </div>
 
             {onResize && (
-              <div className="flex items-center h-8 rounded-full bg-white/20 border border-white/20 p-0.5 gap-0.5">
+              <div className="flex items-center h-10 rounded-full bg-white/10 border border-white/30 p-1 gap-1" style={{
+                position: 'relative',
+                width: 'fit-content',
+                minHeight: '44px',
+                alignItems: 'center',
+                gap: '11px',
+                borderRadius: '999px',
+                border: '1.5px solid rgba(203, 213, 225, 0.5)',
+                background: 'rgba(248, 250, 252, 0.85)',
+                backdropFilter: 'blur(8px) saturate(180%)',
+                padding: '7px 16px 7px 8px',
+                boxShadow: '0 2px 8px rgba(15, 23, 42, 0.03)',
+                transition: 'all 250ms cubic-bezier(0.4, 0, 0.2, 1)',
+              }}>
                 {[2, 3].map((size) => (
                   <button
                     key={size}
                     onClick={() => onResize(size)}
-                    className={`flex items-center justify-center w-6 h-6 rounded-full text-[9px] font-extrabold transition-all duration-200 min-w-0 min-h-0 ${
+                    className={`relative flex items-center justify-center rounded-full text-xs font-extrabold transition-all duration-250 min-w-0 min-h-0 flex-1 ${
                       width === size
-                        ? 'bg-white text-sky-600 shadow-sm'
-                        : 'text-white/80'
+                        ? 'bg-gradient-to-r from-cyan-400 to-blue-500 text-white shadow-lg'
+                        : 'text-slate-600 hover:text-slate-800'
                     }`}
+                    style={{
+                      padding: '6px 14px',
+                      minWidth: '32px',
+                      height: '28px',
+                    }}
                     title={`${size === 2 ? 'กลาง (2/3)' : 'ใหญ่ (เต็ม)'}`}
                     aria-label={`ปรับขนาดเป็น ${size === 2 ? 'กลาง' : 'ใหญ่'}`}
                   >

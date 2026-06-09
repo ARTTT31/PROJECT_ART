@@ -1,4 +1,34 @@
-# ART Workspace - Modern Stack Edition
+# ART Workspace
+
+## Google OAuth (Sign in with Google)
+
+Quick setup to enable Sign in with Google:
+
+1. In Google Cloud Console, create OAuth Client ID and add:
+   - Authorized JavaScript origin: `http://localhost:3001`
+   - Authorized redirect URI: `http://localhost:8000/api/v1/auth/google/callback`
+2. Add to backend `.env` (do NOT commit secrets):
+   - BACKEND_GOOGLE_CLIENT_ID=YOUR_CLIENT_ID.apps.googleusercontent.com
+   - BACKEND_GOOGLE_CLIENT_SECRET=YOUR_CLIENT_SECRET
+   - BACKEND_GOOGLE_REDIRECT=http://localhost:8000/api/v1/auth/google/callback
+   - FRONTEND_URL=http://localhost:3001
+3. Rebuild and start docker-compose:
+
+```bash
+docker-compose up -d --build
+```
+
+4. Open frontend login page: `http://localhost:3001/login` and click "Sign in with Google".
+
+Behavior:
+- Clicking the button redirects to Google consent screen.
+- After consenting, the backend creates or finds a user, issues JWT access and refresh tokens, and redirects to `http://localhost:3001/login-success?access_token=...&refresh_token=...&name=...`.
+- Frontend saves tokens to localStorage and redirects to `/dashboard`.
+
+Security notes:
+- Keep `BACKEND_GOOGLE_CLIENT_SECRET` private and do not commit to repo.
+
+ - Modern Stack Edition
 
 โปรเจกต์นี้เป็นเวอร์ชันใหม่ของ ART Workspace ที่ใช้ **Next.js 14** (Frontend) + **FastAPI** (Backend) + **PostgreSQL** (Database) แทน Google Apps Script เพื่อความยืดหยุ่นและประสิทธิภาพที่ดีกว่า
 
@@ -246,6 +276,18 @@ curl -X POST http://localhost:8000/api/v1/auth/login \
 # Get profile (ต้องมี token)
 curl -X GET http://localhost:8000/api/v1/profile/me \
   -H "Authorization: Bearer YOUR_TOKEN_HERE"
+```
+
+### Running tests (backend)
+
+Run backend unit tests with pytest:
+
+```bash
+# from repository root
+pytest -q
+
+# or to run only backend tests
+pytest backend -q
 ```
 
 ## 🐛 Troubleshooting

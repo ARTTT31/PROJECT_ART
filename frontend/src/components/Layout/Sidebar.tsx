@@ -2,7 +2,7 @@
 
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { CalendarDays, Cloud, Database, Home, LogOut, User } from 'lucide-react'
+import { Database, Home, LogOut, User } from 'lucide-react'
 
 interface SidebarProps {
   isOpen: boolean
@@ -34,14 +34,12 @@ export default function Sidebar({ isOpen, onClose, user, onLogout }: SidebarProp
         { name: 'โปรไฟล์', href: '/profile', icon: <User size={20} aria-hidden="true" /> },
       ],
     },
-    {
-      title: 'เครื่องมือ',
+    ...(user?.role === 'admin' ? [{
+      title: 'ผู้ดูแลระบบ',
       items: [
-        { name: 'Google Drive', href: 'https://drive.google.com', icon: <Cloud size={20} aria-hidden="true" />, external: true },
-        { name: 'Google Calendar', href: 'https://calendar.google.com', icon: <CalendarDays size={20} aria-hidden="true" />, external: true },
-        { name: 'จัดการ Database', href: 'https://docs.google.com/spreadsheets', icon: <Database size={20} aria-hidden="true" />, external: true },
-      ],
-    },
+        { name: 'จัดการระบบหลังบ้าน', href: '/admin', icon: <Database size={20} aria-hidden="true" /> },
+      ]
+    }] : []),
   ]
 
   return (

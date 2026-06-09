@@ -60,6 +60,12 @@ async def health_check():
 # Include API router
 app.include_router(api_router, prefix="/api/v1")
 
+# Mount uploads static folder
+from fastapi.staticfiles import StaticFiles
+import os
+os.makedirs("uploads", exist_ok=True)
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+
 
 if __name__ == "__main__":
     import uvicorn
@@ -67,6 +73,6 @@ if __name__ == "__main__":
     uvicorn.run(
         "app.main:app",
         host="0.0.0.0",
-        port=8888,
+        port=8080,
         reload=settings.DEBUG,
     )

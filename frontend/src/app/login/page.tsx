@@ -20,12 +20,7 @@ const formatTime = (date: Date) =>
     hour12: false,
   }).format(date);
 
-const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8888';
-const loginEndpoints = [
-  `${apiBaseUrl.replace(/\/$/, '')}/api/v1/auth/login`,
-  '/api/v1/auth/login',
-  'http://localhost:8888/api/v1/auth/login',
-];
+const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -252,7 +247,21 @@ export default function LoginPage() {
               <span>{isSubmitting ? 'กำลังเข้าสู่ระบบ...' : 'เข้าสู่ระบบ'}</span>
               {!isSubmitting && <ArrowRight size={18} aria-hidden="true" />}
             </button>
+
+            <div className="login-divider">หรือ</div>
+
+            <a href="http://localhost:8000/api/v1/auth/google" className="google-btn" role="button" aria-label="Sign in with Google">
+              <svg className="google-btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
+                <path fill="#4285F4" d="M12 7.2c1.8 0 3.2.7 4.2 1.6l3-3C17.7 4 15 3 12 3 7 3 3 6.2 1.9 10.6l3.5 2.7C6 8.9 8.7 7.2 12 7.2z"/>
+                <path fill="#34A853" d="M21.6 12.6c0-.8-.1-1.4-.2-2.1H12v4.1h5.6c-.5 1.9-2 4.5-5.6 5.9l-1.6-1.2c2.6-1 4-2.9 4.6-4.8H21.6z"/>
+                <path fill="#FBBC05" d="M6.4 16.8c-.4-1.1-.6-2.2-.6-3.4s.2-2.3.6-3.4L3 7.1C2 9.3 1.5 11.8 1.5 14.4s.5 5.1 1.5 7.3l3-3z"/>
+                <path fill="#EA4335" d="M12 20.5c2.8 0 5.2-.9 6.9-2.4l-3.3-2.5c-1 .7-2.4 1.2-3.6 1.2-2.1 0-3.9-1.4-4.6-3.4l-3 2.3C6.1 18.8 8.8 20.5 12 20.5z"/>
+              </svg>
+              <span className="google-text">Sign in with Google</span>
+            </a>
           </form>
+
+
         </div>
       </section>
 
@@ -350,6 +359,59 @@ export default function LoginPage() {
           .liquid-glass-toast.toast-show {
             transform: translateX(0) translateY(0);
           }
+        }
+
+        /* Google divider and button section */
+        .login-divider {
+          text-align: center;
+          font-size: 14px;
+          color: #6b7280;
+          margin: 12px 0 10px;
+          letter-spacing: 0.02em;
+          font-weight: 500;
+        }
+
+        .google-icon {
+          width: 18px;
+          height: 18px;
+          display: inline-block;
+          flex-shrink: 0;
+        }
+
+        .google-btn {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 10px;
+          width: 100%;
+          padding: 11px 16px;
+          border-radius: 24px;
+          border: 1.5px solid #d1d5db;
+          background: #fff;
+          color: #111827;
+          text-decoration: none;
+          font-weight: 500;
+          font-size: 15px;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+          transition: all 120ms ease;
+          cursor: pointer;
+        }
+
+        .google-btn:hover {
+          border-color: #9ca3af;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+          transform: translateY(-2px);
+        }
+
+        .google-btn-icon {
+          width: 20px;
+          height: 20px;
+          flex-shrink: 0;
+        }
+
+        .google-text {
+          font-size: 15px;
+          color: #111827;
         }
       `}</style>
     </main>

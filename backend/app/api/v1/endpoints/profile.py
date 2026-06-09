@@ -1,11 +1,17 @@
 """
 User Profile Endpoints
 """
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request, UploadFile, File
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.schemas.user import UserResponse, UserUpdate, UserPasswordChange
+from app.schemas.user import (
+    UserResponse,
+    UserUpdate,
+    UserPasswordChange,
+    UserAvatarUpdate,
+    UserQuickLinksUpdate,
+)
 from app.schemas.response import ResponseModel
 from app.services.user_service import UserService
 from app.api.dependencies import get_current_user
@@ -27,6 +33,7 @@ async def get_my_profile(
 @router.put("/me", response_model=ResponseModel)
 async def update_my_profile(
     user_update: UserUpdate,
+    request: Request,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -34,9 +41,21 @@ async def update_my_profile(
     Update current user profile
     """
     user_service = UserService(db)
+    from app.services.audit_service import AuditService
+    audit_service = AuditService(db)
+    client_ip = request.client.host if request.client else None
+    user_agent = request.headers.get("user-agent")
     
     try:
         updated_user = user_service.update_user(current_user.id, user_update)
+        
+        audit_service.log_action(
+            action="PROFILE_UPDATE",
+            user_id=current_user.id,
+            details=f"Updated profile fields: {', '.join([k for k, v in user_update.dict(exclude_unset=True).items() if v is not None])}",
+            ip_address=client_ip,
+            user_agent=user_agent
+        )
         
         return ResponseModel(
             result="success",
@@ -58,6 +77,7 @@ async def update_my_profile(
 @router.post("/change-password", response_model=ResponseModel)
 async def change_password(
     password_change: UserPasswordChange,
+    request: Request,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -65,6 +85,10 @@ async def change_password(
     Change current user password
     """
     user_service = UserService(db)
+    from app.services.audit_service import AuditService
+    audit_service = AuditService(db)
+    client_ip = request.client.host if request.client else None
+    user_agent = request.headers.get("user-agent")
     
     try:
         success = user_service.change_password(
@@ -78,6 +102,14 @@ async def change_password(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="รหัสผ่านเดิมไม่ถูกต้อง",
             )
+            
+        audit_service.log_action(
+            action="PASSWORD_CHANGE",
+            user_id=current_user.id,
+            details="User successfully changed password",
+            ip_address=client_ip,
+            user_agent=user_agent
+        )
         
         return ResponseModel(
             result="success",
@@ -93,7 +125,8 @@ async def change_password(
 
 @router.post("/avatar", response_model=ResponseModel)
 async def update_avatar(
-    avatar_base64: str,
+    avatar_update: UserAvatarUpdate,
+    request: Request,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -101,9 +134,21 @@ async def update_avatar(
     Update user avatar (base64 encoded image)
     """
     user_service = UserService(db)
+    from app.services.audit_service import AuditService
+    audit_service = AuditService(db)
+    client_ip = request.client.host if request.client else None
+    user_agent = request.headers.get("user-agent")
     
     try:
-        user_service.update_avatar(current_user.id, avatar_base64)
+        user_service.update_avatar(current_user.id, avatar_update.avatar_base64)
+        
+        audit_service.log_action(
+            action="AVATAR_UPDATE",
+            user_id=current_user.id,
+            details="User successfully updated avatar image",
+            ip_address=client_ip,
+            user_agent=user_agent
+        )
         
         return ResponseModel(
             result="success",
@@ -117,9 +162,63 @@ async def update_avatar(
         )
 
 
+@router.post("/upload-avatar", response_model=ResponseModel)
+async def upload_avatar_file(
+    request: Request,
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Upload user avatar as file
+    """
+    import os
+    import shutil
+    from datetime import datetime
+    from app.services.audit_service import AuditService
+    
+    # Check file extension
+    ext = os.path.splitext(file.filename)[1].lower()
+    if ext not in [".jpg", ".jpeg", ".png", ".gif"]:
+        raise HTTPException(status_code=400, detail="รองรับเฉพาะไฟล์รูปภาพ (jpg, jpeg, png, gif)")
+        
+    os.makedirs("uploads/avatars", exist_ok=True)
+    filename = f"user_{current_user.id}_{int(datetime.utcnow().timestamp())}{ext}"
+    filepath = os.path.join("uploads/avatars", filename)
+    
+    try:
+        with open(filepath, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+            
+        avatar_url = f"/uploads/avatars/{filename}"
+        user_service = UserService(db)
+        user_service.update_avatar(current_user.id, avatar_url)
+        
+        # Log audit log
+        audit_service = AuditService(db)
+        audit_service.log_action(
+            action="AVATAR_UPLOAD",
+            user_id=current_user.id,
+            details=f"Uploaded new avatar file: {filename}",
+            ip_address=request.client.host if request.client else None,
+            user_agent=request.headers.get("user-agent")
+        )
+        
+        return ResponseModel(
+            result="success",
+            message="อัปโหลดรูปโปรไฟล์สำเร็จ",
+            data={"avatar_url": avatar_url}
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"ไม่สามารถอัปโหลดไฟล์ได้: {str(e)}"
+        )
+
+
 @router.post("/quick-links", response_model=ResponseModel)
 async def update_quick_links(
-    quick_links: str,
+    quick_links_update: UserQuickLinksUpdate,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -129,7 +228,7 @@ async def update_quick_links(
     user_service = UserService(db)
     
     try:
-        user_service.update_quick_links(current_user.id, quick_links)
+        user_service.update_quick_links(current_user.id, quick_links_update.quick_links)
         
         return ResponseModel(
             result="success",

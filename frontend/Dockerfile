@@ -3,6 +3,8 @@
 # Development stage
 FROM node:18-alpine AS development
 
+RUN apk add --no-cache wget
+
 WORKDIR /app
 
 COPY package*.json ./

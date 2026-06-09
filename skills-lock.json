@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "skills": {
+    "agent-platform-inference": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "skillPath": "skills/cloud/agent-platform-inference/SKILL.md",
+      "computedHash": "f7c33e879c9c7df5a9274b48a213b3f97e96447890a8a856db1b5e6c38488287"
+    },
+    "agent-platform-prompt-management": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "skillPath": "skills/cloud/agent-platform-prompt-management/SKILL.md",
+      "computedHash": "28a3e4af09ce9b16d45e7b513c7d222a23cd65434fdbe77c8e41f8afe197082d"
+    },
+    "agent-platform-rag-engine-management": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "skillPath": "skills/cloud/agent-platform-rag-engine-management/SKILL.md",
+      "computedHash": "3183cf20fe0ad48ac2d3047611902cfe7260f9df6769f917ffbe5ae141442219"
+    },
+    "cloud-run-basics": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "skillPath": "skills/cloud/cloud-run-basics/SKILL.md",
+      "computedHash": "43f4128475fdc112ae0e79ccb39a829c37e886746e39b6f0b43cf155e1c1a7fe"
+    },
+    "gcloud": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "skillPath": "skills/cloud/gcloud/SKILL.md",
+      "computedHash": "f6f4673a666630569c1f4be66a4211613203dd23a7b3fcae849a6e23968ff874"
+    },
+    "gemini-agents-api": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "skillPath": "skills/cloud/gemini-agents-api/SKILL.md",
+      "computedHash": "e16a1b629246dddbabff5b16beb02acda7f79e3e92cb7ebd7bec051ae4a562cb"
+    },
+    "gemini-api": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "skillPath": "skills/cloud/gemini-api/SKILL.md",
+      "computedHash": "6ec6fdff105385453cae0c45e184aeb8b9ef8d2d79d18daaedd25bd1c031501d"
+    },
+    "gemini-interactions-api": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "skillPath": "skills/cloud/gemini-interactions-api/SKILL.md",
+      "computedHash": "fae6510ecf12f1079d83ba0d061ab926ee2de83f8023d10fd5a881b32b244a9a"
+    },
+    "google-cloud-recipe-auth": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "skillPath": "skills/cloud/google-cloud-recipe-auth/SKILL.md",
+      "computedHash": "90d9d648f587f2ca9b8b5f817df5844298b998c3ef03793cb3dc8807f104f084"
+    }
+  }
+}

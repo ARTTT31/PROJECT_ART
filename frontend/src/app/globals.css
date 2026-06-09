@@ -57,29 +57,123 @@
   --shadow-glass-xl: 0 24px 64px rgba(15, 23, 42, 0.10), 0 8px 24px rgba(15, 23, 42, 0.05);
 }
 
+
+
+/* Smooth theme transitions */
+html, body {
+  transition: background-color 0.3s, color 0.3s;
+}
+
+/* ── Typography Scale (Fixed, Product-UI optimized) ────────────────────── */
+:root {
+  --type-xs: 0.75rem;       /* 12px */
+  --type-sm: 0.875rem;      /* 14px */
+  --type-base: 1rem;        /* 16px */
+  --type-lg: 1.125rem;      /* 18px */
+  --type-xl: 1.25rem;       /* 20px */
+  --type-2xl: 1.5rem;       /* 24px */
+  --type-3xl: 1.75rem;      /* 28px */
+  --type-4xl: 2rem;         /* 32px */
+  
+  --line-tight: 1.25;
+  --line-snug: 1.35;
+  --line-normal: 1.5;
+  --line-relaxed: 1.65;
+}
+
 /* ── Global Typography Polish ────────────── */
 html {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+  font-size: 16px;
 }
 
 body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
   font-feature-settings: 'kern' 1, 'liga' 1, 'calt' 1;
   letter-spacing: 0;
-  line-height: 1.6;
+  line-height: var(--line-normal);
   color: var(--art-ink);
   background: var(--art-page-bg);
+  font-size: var(--type-base);
+  font-weight: 400;
 }
 
-h1, h2, h3, h4, h5, h6 {
+h1 {
+  font-size: var(--type-4xl);
+  font-weight: 700;
   letter-spacing: -0.02em;
-  line-height: 1.3;
+  line-height: var(--line-tight);
+  text-wrap: balance;
+}
+
+h2 {
+  font-size: var(--type-3xl);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: var(--line-tight);
+  text-wrap: balance;
+}
+
+h3 {
+  font-size: var(--type-2xl);
   font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: var(--line-snug);
+  text-wrap: balance;
+}
+
+h4 {
+  font-size: var(--type-xl);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: var(--line-snug);
+}
+
+h5 {
+  font-size: var(--type-lg);
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: var(--line-normal);
+}
+
+h6 {
+  font-size: var(--type-base);
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: var(--line-normal);
 }
 
 p {
-  line-height: 1.65;
+  line-height: var(--line-relaxed);
+  max-width: 75ch;
+  text-wrap: pretty;
+  font-size: var(--type-base);
+}
+
+small {
+  font-size: var(--type-sm);
+  line-height: var(--line-normal);
+}
+
+label {
+  display: block;
+  font-size: var(--type-sm);
+  font-weight: 600;
+  color: #334155;
+  margin-bottom: 0.5rem;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -92,7 +186,6 @@ p {
   background: var(--glass-white-90);
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border: 1px solid var(--art-border);
   box-shadow: var(--shadow-glass);
   transition: all 320ms cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
@@ -133,11 +226,29 @@ p {
   pointer-events: none;
 }
 
+
+
 .premium-card:hover {
   background: var(--glass-white-100);
-  border-color: var(--art-border-strong);
   box-shadow: var(--shadow-glass-lg);
   transform: translateY(-2px);
+}
+
+/* Override hover for weather widget */
+/* Override hover for weather widget – keep static appearance */
+.premium-card.weather-widget-no-hover:hover {
+  background: var(--glass-white-90);
+  box-shadow: var(--shadow-glass);
+  transform: none;
+}
+.premium-card.weather-widget-no-hover:hover::before,
+.premium-card.weather-widget-no-hover:hover::after {
+  opacity: 0;
+}
+
+/* Ensure consistent size */
+.premium-card.weather-widget-no-hover {
+  min-height: 200px;
 }
 
 .premium-card:hover::before {
@@ -203,9 +314,75 @@ p {
    iOS-STYLE INPUTS - Liquid Glass
    ═══════════════════════════════════════════════════════ */
 
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="search"],
+input[type="number"],
+textarea,
+select {
+  min-height: 48px;
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  border: 1.5px solid #cbd5e1;
+  background: white;
+  color: var(--art-ink);
+  font-weight: 500;
+  font-size: var(--type-base);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+input[type="text"]::placeholder,
+input[type="email"]::placeholder,
+input[type="password"]::placeholder,
+input[type="search"]::placeholder,
+textarea::placeholder {
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+input[type="text"]:hover,
+input[type="email"]:hover,
+input[type="password"]:hover,
+input[type="search"]:hover,
+input[type="number"]:hover,
+textarea:hover,
+select:hover {
+  border-color: #a1aec8;
+  background: #fafbfc;
+}
+
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="search"]:focus,
+input[type="number"]:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: var(--art-primary);
+  background: white;
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1), 0 0 0 1px var(--art-primary);
+  border-radius: 12px; /* Preserve rounded corners */
+}
+
+input[type="text"]:disabled,
+input[type="email"]:disabled,
+input[type="password"]:disabled,
+input[type="search"]:disabled,
+input[type="number"]:disabled,
+textarea:disabled,
+select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+}
+
 .art-input {
   min-height: 52px;
-  padding: 0 1.25rem;
+  padding: 0.875rem 1.25rem;
   border-radius: var(--art-radius-sm);
   border: 1.5px solid rgba(203, 213, 225, 0.4);
   background: var(--glass-white-80);
@@ -237,26 +414,45 @@ p {
   outline: none;
 }
 
+.art-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+
 /* ═══════════════════════════════════════════════════════
    iOS-STYLE BUTTONS - Liquid Glass
    ═══════════════════════════════════════════════════════ */
 
+button {
+  border-radius: var(--art-radius-sm);
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .art-primary-button {
   position: relative;
   min-height: 48px;
-  padding: 0 1.75rem;
-  border-radius: var(--art-radius-md);
+  padding: 0.75rem 1.75rem;
+  border-radius: 12px;
   background: linear-gradient(135deg, var(--art-primary) 0%, var(--art-blue) 100%);
   color: white;
   font-weight: 650;
-  font-size: 0.9375rem;
+  font-size: var(--type-base);
   letter-spacing: -0.01em;
   border: none;
   box-shadow: 
     0 4px 16px rgba(14, 165, 233, 0.25),
     0 2px 8px rgba(14, 165, 233, 0.15),
     inset 0 1px 0 rgba(255, 255, 255, 0.2);
-  transition: all 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
 }
 
@@ -266,11 +462,11 @@ p {
   inset: 0;
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, transparent 100%);
   opacity: 0;
-  transition: opacity 250ms ease;
+  transition: opacity 200ms ease;
 }
 
 .art-primary-button:hover:not(:disabled) {
-  transform: translateY(-2px) scale(1.01);
+  transform: translateY(-2px);
   box-shadow: 
     0 8px 24px rgba(14, 165, 233, 0.35),
     0 4px 12px rgba(14, 165, 233, 0.2),
@@ -282,32 +478,34 @@ p {
 }
 
 .art-primary-button:active:not(:disabled) {
-  transform: translateY(0px) scale(0.98);
+  transform: translateY(0);
   box-shadow: 
     0 2px 8px rgba(14, 165, 233, 0.2),
     inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .art-primary-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.art-primary-button:focus-visible {
+  outline: 2px solid var(--art-primary);
+  outline-offset: 2px;
 }
 
 .art-soft-button {
   position: relative;
   min-height: 48px;
-  padding: 0 1.5rem;
-  border-radius: var(--art-radius-sm);
-  border: 1.5px solid rgba(148, 163, 184, 0.2);
-  background: var(--glass-white-80);
-  backdrop-filter: blur(12px) saturate(180%);
-  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  padding: 0.75rem 1.5rem;
+  border-radius: 12px;
+  border: 1.5px solid #e2e8f0;
+  background: white;
   color: #475569;
   font-weight: 600;
-  font-size: 0.9375rem;
+  font-size: var(--type-base);
   letter-spacing: -0.01em;
-  box-shadow: var(--shadow-glass-sm);
-  transition: all 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
 }
 
@@ -317,25 +515,99 @@ p {
   inset: 0;
   background: linear-gradient(135deg, rgba(14, 165, 233, 0.08) 0%, rgba(37, 99, 235, 0.05) 100%);
   opacity: 0;
-  transition: opacity 250ms ease;
+  transition: opacity 200ms ease;
 }
 
-.art-soft-button:hover {
-  border-color: rgba(14, 165, 233, 0.4);
-  background: var(--glass-white-90);
+.art-soft-button:hover:not(:disabled) {
+  border-color: var(--art-primary);
+  background: #f8fafc;
   color: var(--art-primary-dark);
-  box-shadow: var(--shadow-glass);
+  box-shadow: 0 2px 8px rgba(14, 165, 233, 0.12);
   transform: translateY(-1px);
 }
 
-.art-soft-button:hover::before {
+.art-soft-button:hover:not(:disabled)::before {
   opacity: 1;
 }
 
-.art-soft-button:active {
-  transform: translateY(0px) scale(0.98);
-  box-shadow: var(--shadow-glass-sm);
+.art-soft-button:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
 }
+
+.art-soft-button:disabled {
+  opacity: 0.6;
+}
+
+.art-soft-button:focus-visible {
+  outline: 2px solid var(--art-primary);
+  outline-offset: 2px;
+}
+
+/* ═══════════════════════════════════════════════════════
+   ALERT & STATE MESSAGES
+   ═══════════════════════════════════════════════════════ */
+
+[role="alert"],
+.alert {
+  padding: 1rem 1.25rem;
+  border-radius: 12px;
+  font-size: var(--type-sm);
+  font-weight: 500;
+  line-height: var(--line-snug);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  animation: slideInUp 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [role="alert"],
+  .alert {
+    animation: none;
+  }
+}
+
+/* Error state: 5:1+ contrast (dark red on light background) */
+.alert-error,
+[role="alert"]:not(.alert-success, .alert-warning, .alert-info) {
+  background: #fee2e2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+}
+
+/* Success state: 4.5:1 contrast */
+.alert-success {
+  background: #dcfce7;
+  border: 1px solid #bbf7d0;
+  color: #15803d;
+}
+
+/* Warning state: 4.5:1 contrast */
+.alert-warning {
+  background: #fef3c7;
+  border: 1px solid #fde68a;
+  color: #92400e;
+}
+
+/* Info state: 4.5:1 contrast */
+.alert-info {
+  background: #dbeafe;
+  border: 1px solid #bfdbfe;
+  color: #0c4a6e;
+}
+
 
 .ios-weather-sheen {
   position: absolute;
@@ -407,7 +679,6 @@ p {
   align-items: center;
   justify-content: space-between;
   padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid rgba(226, 232, 240, 0.3);
   background: linear-gradient(180deg, var(--glass-white-10) 0%, transparent 100%);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
@@ -459,7 +730,7 @@ p {
 }
 
 .widget-body {
-  padding: 1.75rem;
+  padding: 0 1.75rem 1.75rem 1.75rem;
 }
 
 .premium-card {
@@ -1118,10 +1389,8 @@ input[type="radio"],
   }
 }
 
-/* Dark Mode Preference (for future use) */
-@media (prefers-color-scheme: dark) {
-  /* Reserve for dark mode implementation */
-}
+/* Dark Mode Preference: EXPLICITLY REJECTED per user requirements. 
+   The application operates strictly in light mode using the iOS-style Liquid Glass design system. */
 
 /* Skip to Main Content Link */
 .skip-link {

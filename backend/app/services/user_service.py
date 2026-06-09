@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from datetime import datetime
 
 from app.models.user import User
-from app.schemas.user import UserCreate, UserUpdate
+from app.schemas.user import UserCreate, UserUpdate, UserAdminUpdate
 from app.core.security import get_password_hash, verify_password
 
 
@@ -185,3 +185,38 @@ class UserService:
             if device:
                 user.last_login_device = device
             self.db.commit()
+
+    def admin_update_user(self, user_id: int, user_update: UserAdminUpdate) -> User:
+        """
+        Update user information as admin
+        """
+        user = self.get_user_by_id(user_id)
+        if not user:
+            raise ValueError("ไม่พบผู้ใช้")
+
+        # Check if new email already exists
+        if user_update.email and user_update.email != user.email:
+            existing_user = self.get_user_by_email(user_update.email)
+            if existing_user:
+                raise ValueError("อีเมลนี้ถูกใช้งานแล้ว")
+            user.email = user_update.email.lower()
+
+        # Update fields
+        if user_update.name is not None:
+            user.name = user_update.name
+        if user_update.role is not None:
+            user.role = user_update.role
+        if user_update.is_active is not None:
+            user.is_active = user_update.is_active
+        if user_update.is_locked is not None:
+            user.is_locked = user_update.is_locked
+            if not user_update.is_locked:
+                user.locked_until = None
+                user.failed_login_attempts = 0
+        if user_update.password is not None and user_update.password != "":
+            user.hashed_password = get_password_hash(user_update.password)
+
+        user.updated_at = datetime.utcnow()
+        self.db.commit()
+        self.db.refresh(user)
+        return user
