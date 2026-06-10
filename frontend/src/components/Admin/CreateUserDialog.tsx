@@ -1,9 +1,10 @@
 'use client'
 
 import { useState } from 'react'
-import { X, User, Mail, Lock, Shield, Eye, EyeOff, Loader2 } from 'lucide-react'
+import { User, Mail, Lock, Shield, Eye, EyeOff, Loader2 } from 'lucide-react'
 import { apiClient } from '@/lib/api/client'
 import { showSuccess, showError } from '@/utils/sweetalert'
+import { Dialog, DialogContent } from '@/components/ui/Dialog'
 
 interface CreateUserDialogProps {
   isOpen: boolean
@@ -78,36 +79,10 @@ export default function CreateUserDialog({ isOpen, onClose, onUserCreated }: Cre
     }
   }
 
-  if (!isOpen) return null
-
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-3 sm:p-4 overflow-y-auto">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm sm:max-w-md lg:max-w-lg overflow-hidden transform transition-all duration-300 hover:shadow-3xl my-auto">
-        {/* Header with Gradient */}
-        <div className="bg-gradient-to-r from-blue-600 via-cyan-500 to-teal-500 p-4 sm:p-6 relative overflow-hidden">
-          <div className="absolute inset-0 bg-white/5 backdrop-blur-sm"></div>
-          <div className="relative flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-              <div className="p-2 sm:p-3 bg-white/20 rounded-xl backdrop-blur-md border border-white/30 hover:scale-110 transition-transform flex-shrink-0">
-                <User className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
-              </div>
-              <div className="min-w-0">
-                <h2 className="text-lg sm:text-2xl font-bold text-white truncate">สร้างผู้ใช้งาน</h2>
-                <p className="text-blue-100 text-xs sm:text-sm mt-0.5 sm:mt-1 truncate">เพิ่มผู้ใช้ใหม่เข้าสู่ระบบ</p>
-              </div>
-            </div>
-            <button
-              onClick={onClose}
-              disabled={loading}
-              className="p-2 hover:bg-white/20 rounded-lg transition-all disabled:opacity-50 backdrop-blur-md border border-white/20 hover:border-white/40 flex-shrink-0"
-            >
-              <X className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
-            </button>
-          </div>
-        </div>
-
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 sm:space-y-5 max-h-[calc(100vh-200px)] sm:max-h-none overflow-y-auto">
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent title="สร้างผู้ใช้งาน" description="เพิ่มผู้ใช้ใหม่เข้าสู่ระบบ">
+        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
           {/* Email */}
           <div className="space-y-2">
             <label className="block text-xs sm:text-sm font-semibold text-slate-700">
@@ -129,7 +104,11 @@ export default function CreateUserDialog({ isOpen, onClose, onUserCreated }: Cre
               }`}
               placeholder="user@example.com"
             />
-            {errors.email && <p className="text-red-500 text-xs font-medium flex items-center gap-1"><span>⚠️</span> {errors.email}</p>}
+            {errors.email && (
+              <p className="text-red-500 text-xs font-medium flex items-center gap-1">
+                <span aria-hidden="true">⚠️</span> {errors.email}
+              </p>
+            )}
           </div>
 
           {/* Name */}
@@ -153,7 +132,11 @@ export default function CreateUserDialog({ isOpen, onClose, onUserCreated }: Cre
               }`}
               placeholder="ชื่อผู้ใช้"
             />
-            {errors.name && <p className="text-red-500 text-xs font-medium flex items-center gap-1"><span>⚠️</span> {errors.name}</p>}
+            {errors.name && (
+              <p className="text-red-500 text-xs font-medium flex items-center gap-1">
+                <span aria-hidden="true">⚠️</span> {errors.name}
+              </p>
+            )}
           </div>
 
           {/* Password */}
@@ -187,7 +170,11 @@ export default function CreateUserDialog({ isOpen, onClose, onUserCreated }: Cre
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
-            {errors.password && <p className="text-red-500 text-xs font-medium flex items-center gap-1"><span>⚠️</span> {errors.password}</p>}
+            {errors.password && (
+              <p className="text-red-500 text-xs font-medium flex items-center gap-1">
+                <span aria-hidden="true">⚠️</span> {errors.password}
+              </p>
+            )}
           </div>
 
           {/* Confirm Password */}
@@ -221,7 +208,11 @@ export default function CreateUserDialog({ isOpen, onClose, onUserCreated }: Cre
                 {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
-            {errors.confirmPassword && <p className="text-red-500 text-xs font-medium flex items-center gap-1"><span>⚠️</span> {errors.confirmPassword}</p>}
+            {errors.confirmPassword && (
+              <p className="text-red-500 text-xs font-medium flex items-center gap-1">
+                <span aria-hidden="true">⚠️</span> {errors.confirmPassword}
+              </p>
+            )}
           </div>
 
           {/* Role */}
@@ -263,7 +254,7 @@ export default function CreateUserDialog({ isOpen, onClose, onUserCreated }: Cre
             </button>
           </div>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   )
 }

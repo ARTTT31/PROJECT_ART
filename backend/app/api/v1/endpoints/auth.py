@@ -3,6 +3,8 @@ Authentication Endpoints
 """
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from app.core.database import get_db
 from app.schemas.user import UserLogin, UserCreate, UserResponse
@@ -12,11 +14,15 @@ from app.services.auth_service import AuthService
 
 router = APIRouter()
 
+# Rate limit: 5 login attempts per minute per IP
+limiter = Limiter(key_func=get_remote_address)
+
 
 @router.post("/login", response_model=ResponseModel)
+@limiter.limit("5/minute")
 async def login(
-    user_login: UserLogin,
     request: Request,
+    user_login: UserLogin,
     db: Session = Depends(get_db),
 ):
     """
@@ -44,7 +50,7 @@ async def login(
             ip_address=client_ip,
         )
         
-        # Log success
+        # Log success (committed by auth_service.login)
         audit_service.log_action(
             action="LOGIN_SUCCESS",
             user_id=result["user"]["id"],
@@ -52,33 +58,34 @@ async def login(
             ip_address=client_ip,
             user_agent=user_agent
         )
-        
+        db.commit()
+
         return ResponseModel(
             result="success",
             message="เข้าสู่ระบบสำเร็จ",
             data=result,
         )
-    
+
     except HTTPException as e:
         print(f"[LOGIN] HTTPException: {e.status_code} - {e.detail}")
-        # Log failure
         audit_service.log_action(
             action="LOGIN_FAILED",
             details=f"Failed login attempt for {user_login.email}: {e.detail}",
             ip_address=client_ip,
             user_agent=user_agent
         )
+        db.commit()
         raise e
     except Exception as e:
         print(f"[LOGIN] Exception: {str(e)}")
         print(traceback.format_exc())
-        # Log failure error
         audit_service.log_action(
             action="LOGIN_FAILED",
             details=f"System error during login for {user_login.email}: {str(e)}",
             ip_address=client_ip,
             user_agent=user_agent
         )
+        db.commit()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e),
@@ -106,7 +113,6 @@ async def register(
     try:
         user = auth_service.register(user_create)
         
-        # Log register success
         audit_service.log_action(
             action="USER_REGISTER",
             user_id=user.id,
@@ -114,7 +120,8 @@ async def register(
             ip_address=client_ip,
             user_agent=user_agent
         )
-        
+        db.commit()
+
         return ResponseModel(
             result="success",
             message="ลงทะเบียนสำเร็จ",
@@ -244,29 +251,25 @@ async def google_callback(code: str = None, request: Request = None, db: Session
     access_jwt = create_access_token(data={"sub": user.email, "user_id": user.id})
     refresh_jwt = create_refresh_token(data={"sub": user.email, "user_id": user.id})
 
-    # Create response with tokens in query string for now (will migrate to cookies)
+    # Create response - tokens are ONLY in HTTP-only cookies (not in URL)
     from fastapi.responses import RedirectResponse
-    from urllib.parse import urlencode
     import json
-    
+
     user_data = {
         "id": user.id,
         "email": user.email,
         "name": name or user.name or "User",
-        "role": user.role
+        "role": user.role,
+        "avatar": user.avatar,
+        "quick_links": user.quick_links,
     }
-    
-    params = {
-        'access_token': access_jwt,
-        'refresh_token': refresh_jwt,
-        'user': json.dumps(user_data),
-    }
-    redirect_url = f"{frontend_redirect}/login-success?{urlencode(params)}"
+
+    redirect_url = f"{frontend_redirect}/login-success"
     response = RedirectResponse(url=redirect_url)
-    
-    # Also set cookies as backup
+
     is_secure = frontend_redirect.startswith('https://')
-    
+
+    # HTTP-only cookies for tokens (not accessible via JavaScript)
     response.set_cookie(
         key="access_token",
         value=access_jwt,
@@ -285,6 +288,7 @@ async def google_callback(code: str = None, request: Request = None, db: Session
         samesite="Lax",
         path="/"
     )
+    # Non-httpOnly user data cookie (read by frontend for quick display)
     response.set_cookie(
         key="user",
         value=json.dumps(user_data),
@@ -295,6 +299,50 @@ async def google_callback(code: str = None, request: Request = None, db: Session
         path="/"
     )
     return response
+
+
+@router.get("/session")
+async def get_session(request: Request, db: Session = Depends(get_db)):
+    """
+    Get current user session from HTTP-only cookies.
+    Used by frontend after OAuth redirect to read tokens securely.
+    """
+    import json
+    from app.core.security import decode_token
+
+    access_token = request.cookies.get("access_token")
+    user_cookie = request.cookies.get("user")
+
+    if not access_token or not user_cookie:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="ไม่พบ session กรุณาเข้าสู่ระบบใหม่",
+        )
+
+    payload = decode_token(access_token)
+    if not payload:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token หมดอายุหรือไม่ถูกต้อง",
+        )
+
+    try:
+        user_data = json.loads(user_cookie)
+    except (json.JSONDecodeError, TypeError):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="ข้อมูลผู้ใช้ไม่ถูกต้อง",
+        )
+
+    return ResponseModel(
+        result="success",
+        message="พบ session ปัจจุบัน",
+        data={
+            "access_token": access_token,
+            "refresh_token": request.cookies.get("refresh_token", ""),
+            "user": user_data,
+        },
+    )
 
 
 @router.post("/logout", response_model=ResponseModel)
@@ -328,7 +376,8 @@ async def logout(
                 ip_address=client_ip,
                 user_agent=user_agent
             )
-        
+            db.commit()
+
         return ResponseModel(
             result="success",
             message="ออกจากระบบสำเร็จ",

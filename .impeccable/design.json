@@ -1,0 +1,130 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-06-09T13:55:00Z",
+  "title": "Design System: ART Workspace",
+  "extensions": {
+    "colorMeta": {
+      "primary": { "role": "primary", "displayName": "Sky Signal", "canonical": "oklch(72% 0.15 230)", "tonalRamp": ["#082f49", "#0c4a6e", "#075985", "#0369a1", "#0284c7", "#0ea5e9", "#38bdf8", "#e0f2fe"] },
+      "primary-dark": { "role": "primary", "displayName": "Deep Sky", "canonical": "oklch(55% 0.12 230)", "tonalRamp": ["#082f49", "#0c4a6e", "#075985", "#0369a1", "#0284c7", "#0ea5e9", "#38bdf8", "#e0f2fe"] },
+      "ink": { "role": "neutral", "displayName": "Ink", "canonical": "oklch(20% 0.02 260)", "tonalRamp": ["#020617", "#0f172a", "#1e293b", "#334155", "#475569", "#64748b", "#94a3b8", "#f8fafc"] },
+      "muted": { "role": "neutral", "displayName": "Muted", "canonical": "oklch(45% 0.02 260)", "tonalRamp": ["#020617", "#0f172a", "#1e293b", "#334155", "#475569", "#64748b", "#94a3b8", "#f8fafc"] },
+      "shell": { "role": "neutral", "displayName": "Shell", "canonical": "oklch(97% 0.005 240)", "tonalRamp": ["#020617", "#0f172a", "#1e293b", "#334155", "#475569", "#64748b", "#94a3b8", "#f8fafc"] },
+      "success": { "role": "semantic", "displayName": "Success", "canonical": "oklch(72% 0.17 145)" },
+      "error": { "role": "semantic", "displayName": "Error", "canonical": "oklch(63% 0.21 27)" },
+      "warning": { "role": "semantic", "displayName": "Warning", "canonical": "oklch(75% 0.15 80)" },
+      "info": { "role": "semantic", "displayName": "Info", "canonical": "oklch(63% 0.17 260)" }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Page titles only. 404 page, admin header." },
+      "headline": { "displayName": "Headline", "purpose": "Section headings within pages." },
+      "title": { "displayName": "Title", "purpose": "Card titles, widget headers, dialog titles." },
+      "body": { "displayName": "Body", "purpose": "Primary content text. Max 75ch line length." },
+      "label": { "displayName": "Label", "purpose": "Form labels, sidebar section titles, metadata." }
+    },
+    "shadows": [
+      { "name": "glass-sm", "value": "0 2px 8px rgba(15,23,42,0.04), 0 1px 3px rgba(15,23,42,0.02)", "purpose": "Inputs and small interactive elements at rest." },
+      { "name": "glass", "value": "0 8px 32px rgba(15,23,42,0.06), 0 2px 8px rgba(15,23,42,0.03)", "purpose": "Cards and content containers at rest." },
+      { "name": "glass-lg", "value": "0 16px 48px rgba(15,23,42,0.08), 0 4px 16px rgba(15,23,42,0.04)", "purpose": "Hover state for interactive cards, dropdown menus." },
+      { "name": "glass-xl", "value": "0 24px 64px rgba(15,23,42,0.10), 0 8px 24px rgba(15,23,42,0.05)", "purpose": "Modals and overlay panels." }
+    ],
+    "motion": [
+      { "name": "ease-standard", "value": "cubic-bezier(0.4, 0, 0.2, 1)", "purpose": "Default easing for all state transitions. 150-250ms duration." },
+      { "name": "ease-out-card", "value": "cubic-bezier(0.4, 0, 0.2, 1)", "purpose": "Card hover lift transitions. 320ms duration." },
+      { "name": "ease-in-out", "value": "cubic-bezier(0.4, 0, 0.2, 1)", "purpose": "Slide-in animations for alerts and toasts. 200ms duration." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" },
+      { "name": "xl", "value": "1280px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Main call-to-action. Used for submit, save, confirm.",
+      "html": "<button class=\"ds-btn-primary\">บันทึกข้อมูล</button>",
+      "css": ".ds-btn-primary { background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%); color: #ffffff; padding: 12px 28px; font-weight: 650; font-size: 1rem; letter-spacing: -0.01em; border: none; border-radius: 12px; box-shadow: 0 4px 16px rgba(14,165,233,0.25), 0 2px 8px rgba(14,165,233,0.15), inset 0 1px 0 rgba(255,255,255,0.2); transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; } .ds-btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(14,165,233,0.35), 0 4px 12px rgba(14,165,233,0.2), inset 0 1px 0 rgba(255,255,255,0.3); } .ds-btn-primary:active { transform: translateY(0); box-shadow: 0 2px 8px rgba(14,165,233,0.2), inset 0 1px 0 rgba(255,255,255,0.2); } .ds-btn-primary:focus-visible { outline: 2px solid #0ea5e9; outline-offset: 2px; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Secondary actions: cancel, back, alternate paths.",
+      "html": "<button class=\"ds-btn-secondary\">ยกเลิก</button>",
+      "css": ".ds-btn-secondary { background: #ffffff; color: #475569; padding: 12px 24px; font-weight: 600; font-size: 1rem; letter-spacing: -0.01em; border: 1.5px solid #e2e8f0; border-radius: 12px; box-shadow: 0 1px 3px rgba(15,23,42,0.05); transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; } .ds-btn-secondary:hover { border-color: #0ea5e9; background: #f8fafc; color: #0369a1; box-shadow: 0 2px 8px rgba(14,165,233,0.12); transform: translateY(-1px); } .ds-btn-secondary:active { transform: translateY(0); } .ds-btn-secondary:focus-visible { outline: 2px solid #0ea5e9; outline-offset: 2px; }"
+    },
+    {
+      "name": "Content Card",
+      "kind": "card",
+      "description": "Standard container for dashboard widgets, form sections, and content panels.",
+      "html": "<div class=\"ds-card\"><div class=\"ds-card-body\">Card content</div></div>",
+      "css": ".ds-card { background: #ffffff; border-radius: 12px; box-shadow: 0 8px 32px rgba(15,23,42,0.06), 0 2px 8px rgba(15,23,42,0.03); transition: all 320ms cubic-bezier(0.4, 0, 0.2, 1); overflow: hidden; } .ds-card:hover { box-shadow: 0 16px 48px rgba(15,23,42,0.08), 0 4px 16px rgba(15,23,42,0.04); transform: translateY(-2px); } .ds-card-body { padding: 20px 24px; }"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "description": "Standard text input for forms and search fields.",
+      "html": "<input class=\"ds-input\" type=\"text\" placeholder=\"กรอกข้อมูล...\" />",
+      "css": ".ds-input { min-height: 52px; padding: 14px 20px; border-radius: 12px; border: 1.5px solid rgba(203,213,225,0.4); background: #ffffff; color: #0f172a; font-weight: 500; font-size: 0.9375rem; box-shadow: 0 2px 8px rgba(15,23,42,0.04), 0 1px 3px rgba(15,23,42,0.02); transition: all 250ms cubic-bezier(0.4, 0, 0.2, 1); outline: none; } .ds-input::placeholder { color: #94a3b8; font-weight: 500; } .ds-input:hover { border-color: rgba(148,163,184,0.5); } .ds-input:focus { border-color: #0ea5e9; background: #ffffff; box-shadow: 0 0 0 4px rgba(14,165,233,0.12), 0 8px 32px rgba(15,23,42,0.06); }"
+    },
+    {
+      "name": "Nav Item",
+      "kind": "nav",
+      "description": "Sidebar navigation item with icon and label.",
+      "html": "<a class=\"ds-nav-item ds-nav-item--active\" href=\"#\"><svg class=\"ds-nav-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z\"/><polyline points=\"9 22 9 12 15 12 15 22\"/></svg><span>หน้าหลัก</span></a>",
+      "css": ".ds-nav-item { display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 10px 14px; border-radius: 12px; font-size: 0.875rem; font-weight: 600; color: #475569; text-decoration: none; transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-nav-item:hover { background: rgba(255,255,255,0.7); color: #0f172a; } .ds-nav-item--active { background: rgba(14,165,233,0.1); color: #0f172a; } .ds-nav-icon { width: 20px; height: 20px; flex-shrink: 0; } .ds-nav-item--active .ds-nav-icon { color: #0369a1; }"
+    },
+    {
+      "name": "Badge",
+      "kind": "chip",
+      "description": "Status indicator and category label.",
+      "html": "<span class=\"ds-badge ds-badge--sky\">ภายนอก</span> <span class=\"ds-badge ds-badge--violet\">ภายใน</span>",
+      "css": ".ds-badge { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 9999px; font-size: 0.6875rem; font-weight: 600; } .ds-badge--sky { background: #f0f9ff; color: #0369a1; } .ds-badge--violet { background: #f5f3ff; color: #6d28d9; } .ds-badge--success { background: #f0fdf4; color: #15803d; } .ds-badge--error { background: #fef2f2; color: #b91c1c; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Clarity Cockpit",
+    "overview": "ART Workspace is a personal productivity dashboard that consolidates tools, real-time information, and quick utilities into a single calm interface. The design system prioritizes clarity over decoration: every element earns its place, information is instantly readable, and the interface stays out of the way. The aesthetic is clean, focused, and professional. Glass effects are used sparingly as accent depth, never as the default surface treatment.",
+    "keyCharacteristics": [
+      "Light mode only, with a cool blue-tinted neutral palette (slate family)",
+      "Soft tonal layering through ambient shadows, not glassmorphism",
+      "Fixed rem typography scale (1.2 ratio) with Anuphan/Inter",
+      "Refined components with standard radii (12px), not over-rounded",
+      "Thai language throughout, with Buddhist calendar year support",
+      "Purposeful motion: 150-250ms transitions, no bounce or elastic"
+    ],
+    "rules": [
+      { "name": "The One Accent Rule", "body": "Sky blue (#0ea5e9) is the only accent color. It appears on primary actions, active states, and focus indicators. No other hue competes for the interactive role.", "section": "colors" },
+      { "name": "The Slate-Only Rule", "body": "All neutral text and surfaces use the slate family. The gray palette is prohibited.", "section": "colors" },
+      { "name": "The Fixed Scale Rule", "body": "Typography uses a fixed rem scale (1.2 ratio between steps), not fluid clamp.", "section": "typography" },
+      { "name": "The No-Uppercase Rule", "body": "Labels and section titles use sentence case with font-weight 600. Never text-transform uppercase on body copy.", "section": "typography" },
+      { "name": "The Flat-at-Rest Rule", "body": "Content cards are flat white with Glass Medium shadow. No backdrop-blur, no gradient border masks, no shimmer pseudo-elements on standard content cards.", "section": "elevation" },
+      { "name": "The Lift-on-Hover Rule", "body": "Interactive cards lift 2px on hover with shadow transition to Glass Large. 200ms with standard easing.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do use 12px border-radius for cards, inputs, and buttons.",
+      "Do use the slate color family exclusively for all neutral text and surfaces.",
+      "Do use Lucide icons consistently across all components.",
+      "Do keep card surfaces flat white with ambient shadows.",
+      "Do reserve glass treatment for header, sidebar, and modal overlays only.",
+      "Do maintain 48px minimum height on all interactive elements.",
+      "Do use Thai language for all user-facing copy.",
+      "Do provide prefers-reduced-motion alternatives for every animation.",
+      "Do use the semantic z-index scale: dropdown (50), sticky (100), modal (1000), toast (1100)."
+    ],
+    "donts": [
+      "Don't apply glassmorphism to content cards, form panels, or widget containers.",
+      "Don't use border-radius larger than 16px on any rectangular element.",
+      "Don't use the gray-* Tailwind palette. Always use slate-*.",
+      "Don't use border-left or border-right greater than 1px as a colored accent stripe.",
+      "Don't use bounce, elastic, or wobble easing on any animation.",
+      "Don't implement dark mode. The system is strictly light mode.",
+      "Don't mix icon libraries. Use Lucide React exclusively.",
+      "Don't pair border: 1px solid with box-shadow blur >= 16px on the same element.",
+      "Don't use the hero-metric template for statistics displays."
+    ]
+  }
+}

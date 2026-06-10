@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Bell, Calendar, Clock, RotateCw, Search, Tag, AlertCircle, MapPin } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react'
+import { Bell, Calendar, Clock, MapPin, RotateCw, Search, Tag, AlertCircle } from 'lucide-react'
+import { pushNotifications } from '@/components/Layout/NotificationBell'
 
 interface CalendarEvent {
   id: string
@@ -14,50 +15,75 @@ interface CalendarEvent {
 
 export default function TaskListWidget({
   width = 3,
-  onResize
+  onResize,
+  selectedMonth,
 }: {
   width?: number
   onResize?: (size: number) => void
+  selectedMonth?: Date
 }) {
   const [events, setEvents] = useState<CalendarEvent[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [filter, setFilter] = useState<'all' | 'imacd' | 'thanapong'>('all')
+  const [categoryFilter, setCategoryFilter] = useState<string>('all')
   const [searchQuery, setSearchQuery] = useState('')
-  const [currentMonth] = useState(new Date())
+  const currentMonth = selectedMonth || new Date()
+  const monthKey = `${currentMonth.getFullYear()}-${currentMonth.getMonth()}`
 
   // Google Calendar ID from environment variables or fallback
   const CALENDAR_ID = process.env.NEXT_PUBLIC_GOOGLE_CALENDAR_ID || '935e8829bdbff55e909d6f3e533ded8a03acfbc24ac08b5d8ac781ed5e07f626@group.calendar.google.com'
 
-  const fetchCalendarEvents = async () => {
+  const fetchCalendarEvents = useCallback(async () => {
     setLoading(true)
     setError(null)
 
     try {
       const startOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1)
-      const endOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0, 23, 59, 59)
+      const endOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0, 23, 59, 59, 999)
 
       const timeMin = startOfMonth.toISOString()
       const timeMax = endOfMonth.toISOString()
 
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
-      const url = `${apiUrl}/api/v1/calendar/events?calendar_id=${encodeURIComponent(CALENDAR_ID)}&time_min=${encodeURIComponent(timeMin)}&time_max=${encodeURIComponent(timeMax)}`
+      // Use Next.js rewrite proxy (more reliable in Docker)
+      const url = `/api/v1/calendar/events?calendar_id=${encodeURIComponent(CALENDAR_ID)}&time_min=${encodeURIComponent(timeMin)}&time_max=${encodeURIComponent(timeMax)}`
       
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-        },
-        cache: 'no-cache',
-        signal: AbortSignal.timeout(10000),
-      })
+      const controller = new AbortController()
+      const timer = setTimeout(() => controller.abort(), 60000)
+      let response: Response
+      try {
+        response = await fetch(url, {
+          method: 'GET',
+          headers: { 'Accept': 'application/json' },
+          signal: controller.signal,
+        })
+      } finally {
+        clearTimeout(timer)
+      }
 
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+        const detail = await response.json().catch(() => ({}))
+        const msg = detail?.detail || response.statusText
+        throw new Error(`HTTP ${response.status}: ${msg}`)
       }
 
       const data = await response.json()
       setEvents(data)
+
+      // Push today's tasks as calendar alerts
+      const today = new Date()
+      const todayStr = today.toDateString()
+      const todayEvents = (data as any[]).filter(e => new Date(e.start).toDateString() === todayStr)
+      if (todayEvents.length > 0) {
+        pushNotifications([{
+          id: 'calendar-today',
+          type: 'calendar',
+          level: 'info',
+          title: `งานวันนี้ ${todayEvents.length} รายการ`,
+          body: todayEvents.slice(0, 3).map((e: any) => e.title).join(', ') + (todayEvents.length > 3 ? ` และอีก ${todayEvents.length - 3} รายการ` : ''),
+          at: new Date(),
+        }])
+      }
     } catch (err: any) {
       console.error('❌ Calendar API Error:', err)
       setError('ไม่สามารถโหลดข้อมูลปฏิทินได้')
@@ -65,31 +91,25 @@ export default function TaskListWidget({
     } finally {
       setLoading(false)
     }
-  }
+  }, [monthKey])
 
   useEffect(() => {
     fetchCalendarEvents()
-  }, [currentMonth])
+  }, [fetchCalendarEvents])
+
+  const hasIMACD = (e: CalendarEvent) => 
+    e.title.toLowerCase().includes('imacd') || 
+    (e.description?.toLowerCase().includes('imacd') ?? false)
+  const hasThanapongTag = (e: CalendarEvent) => {
+    const norm = (s: string) => s.normalize('NFC')
+    const needle = norm('ธัญพงศ์')
+    return norm(e.title).includes(needle) || norm(e.description ?? '').includes(needle)
+  }
+  const isTagged = (e: CalendarEvent) => hasIMACD(e) || hasThanapongTag(e)
 
   // Count tags in total events for the month
-  const imacdTotalCount = events.filter(e => e.title.toLowerCase().includes('imacd')).length
-  const thanapongTotalCount = events.filter(e => e.title.includes('ธัญพงศ์')).length
-
-  // Filter events based on filter state and search query
-  const filteredEvents = events.filter(event => {
-    if (filter === 'imacd' && !event.title.toLowerCase().includes('imacd')) return false
-    if (filter === 'thanapong' && !event.title.includes('ธัญพงศ์')) return false
-
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase()
-      const titleMatch = event.title.toLowerCase().includes(q)
-      const descMatch = event.description?.toLowerCase().includes(q) || false
-      const locMatch = event.location?.toLowerCase().includes(q) || false
-      if (!titleMatch && !descMatch && !locMatch) return false
-    }
-
-    return true
-  }).sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime())
+  const imacdTotalCount = events.filter(e => hasIMACD(e)).length
+  const thanapongTotalCount = events.filter(e => hasThanapongTag(e)).length
 
   // Parse title into Category and Details
   const parseEventTitle = (title: string) => {
@@ -104,6 +124,36 @@ export default function TaskListWidget({
     if (title.toLowerCase().includes('training')) return { category: 'Training', details: title }
     return { category: 'Task', details: title }
   }
+
+  // Count categories
+  const categoryCounts = events.reduce((acc, e) => {
+    const { category } = parseEventTitle(e.title)
+    acc[category] = (acc[category] || 0) + 1
+    return acc
+  }, {} as Record<string, number>)
+
+  // Filter events based on filter state, category, and search query
+  const filteredEvents = events.filter(event => {
+    const tagged = isTagged(event)
+
+    if (filter === 'imacd' && !hasIMACD(event)) return false
+    if (filter === 'thanapong' && !hasThanapongTag(event)) return false
+
+    if (categoryFilter !== 'all' && !tagged) {
+      const { category } = parseEventTitle(event.title)
+      if (category !== categoryFilter) return false
+    }
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase()
+      const titleMatch = event.title.toLowerCase().includes(q)
+      const descMatch = event.description?.toLowerCase().includes(q) || false
+      const locMatch = event.location?.toLowerCase().includes(q) || false
+      if (!titleMatch && !descMatch && !locMatch) return false
+    }
+
+    return true
+  }).sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime())
 
   const formatDateDDMMYYYY = (dateString: string) => {
     const date = new Date(dateString)
@@ -261,9 +311,7 @@ export default function TaskListWidget({
       </div>
 
       {/* Filter Badges Layout */}
-      <div className={`flex flex-wrap items-center gap-1.5 sm:gap-2.5 py-3 sm:py-5 border-b border-slate-100 ${
-        width === 2 ? 'mb-2' : 'mb-4'
-      }`} role="group" aria-label="ตัวกรองงาน">
+      <div className="flex flex-wrap items-center gap-1.5 sm:gap-2.5 py-3 sm:py-4 border-b border-slate-100" role="group" aria-label="ตัวกรองงาน">
         <button
           onClick={() => setFilter('all')}
           className={`flex items-center gap-1 px-2 sm:px-4 py-1 sm:py-1.5 rounded-full text-xs font-bold transition-all ${
@@ -300,125 +348,122 @@ export default function TaskListWidget({
         </button>
       </div>
 
-      {/* Task Grid Box Layout */}
+      {/* Category Filter Row */}
+      <div className="flex flex-wrap items-center gap-1.5 px-4 py-2 border-b border-slate-100" role="group" aria-label="กรองตามประเภท">
+        <button
+          onClick={() => setCategoryFilter('all')}
+          className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-colors ${
+            categoryFilter === 'all' ? 'bg-slate-800 text-white' : 'text-slate-500 hover:bg-slate-100'
+          }`}
+        >ทุกประเภท</button>
+        {Object.entries(categoryCounts).sort((a, b) => b[1] - a[1]).map(([cat, count]) => {
+          const catColors: Record<string, { active: string; inactive: string }> = {
+            'DEMO': { active: 'bg-emerald-500 text-white', inactive: 'text-emerald-600 hover:bg-emerald-50' },
+            'Installation': { active: 'bg-blue-500 text-white', inactive: 'text-blue-600 hover:bg-blue-50' },
+            'Task': { active: 'bg-orange-500 text-white', inactive: 'text-orange-600 hover:bg-orange-50' },
+            'Onsite Services': { active: 'bg-amber-500 text-white', inactive: 'text-amber-600 hover:bg-amber-50' },
+            'Training': { active: 'bg-purple-500 text-white', inactive: 'text-purple-600 hover:bg-purple-50' },
+          }
+          const colors = catColors[cat] || { active: 'bg-slate-600 text-white', inactive: 'text-slate-500 hover:bg-slate-100' }
+          return (
+            <button
+              key={cat}
+              onClick={() => setCategoryFilter(cat)}
+              className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-colors ${
+                categoryFilter === cat ? colors.active : colors.inactive
+              }`}
+            >{cat}: {count}</button>
+          )
+        })}
+      </div>
+
+      {/* Task Grid Layout */}
       {filteredEvents.length === 0 ? (
-        <div className={`text-center py-10 sm:py-20 border-2 border-dashed border-slate-100 rounded-2xl bg-slate-50/50 ${
-          width === 2 ? 'mt-4' : 'mt-6'
-        }`}>
-          <Calendar className={`text-slate-300 mx-auto mb-2 sm:mb-3 ${
-            width === 2 ? 'h-8 w-8' : 'h-12 w-12'
-          }`} />
-          <p className={`font-semibold text-slate-500 ${
-            width === 2 ? 'text-xs' : 'text-sm'
-          }`}>ไม่พบรายการงานที่ค้นหา</p>
-          <p className={`text-slate-400 mt-1 ${
-            width === 2 ? 'text-[10px]' : 'text-xs'
-          }`}>ลองเปลี่ยนคำค้นหาหรือตัวกรองอื่น</p>
+        <div className="text-center py-16">
+          <Calendar className="h-10 w-10 text-slate-200 mx-auto mb-2" />
+          <p className="text-sm text-slate-400">ไม่พบรายการงาน</p>
         </div>
       ) : (
-        <div className={`flex-1 overflow-y-auto pr-2 space-y-2 sm:space-y-4 ${
-          width === 2 ? 'max-h-[300px]' : 'max-h-[380px] sm:max-h-[450px]'
-        }`}>
-          {filteredEvents.map((event) => {
-            const { category } = parseEventTitle(event.title)
-            const hasIMACD = event.title.toLowerCase().includes('imacd')
-            const hasThanapong = event.title.includes('ธัญพงศ์')
+        <div className="flex-1 overflow-y-auto pr-1" style={{ maxHeight: '600px' }}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+            {filteredEvents.map((event) => {
+              const { category, details } = parseEventTitle(event.title)
+              const hasIMACD_event = hasIMACD(event)
+              const hasThanapong = hasThanapongTag(event)
+              const startDate = new Date(event.start)
+              const day = startDate.getDate()
+              const monthShort = startDate.toLocaleDateString('th-TH', { month: 'short' })
+              const timeStr = `${String(startDate.getHours()).padStart(2, '0')}:${String(startDate.getMinutes()).padStart(2, '0')}`
+              const endDate = new Date(event.end)
+              const endTimeStr = `${String(endDate.getHours()).padStart(2, '0')}:${String(endDate.getMinutes()).padStart(2, '0')}`
 
-            let indicatorClass = 'absolute left-0 top-0 bottom-0 w-1.5 rounded-l-2xl'
-            let indicatorStyle = {}
+              let borderColor = 'border-l-slate-200'
+              if (hasIMACD_event && hasThanapong) borderColor = 'border-l-purple-400'
+              else if (hasIMACD_event) borderColor = 'border-l-red-500'
+              else if (hasThanapong) borderColor = 'border-l-blue-500'
 
-            if (hasIMACD && hasThanapong) {
-              indicatorStyle = {
-                background: 'linear-gradient(to bottom, #ef4444 0%, #ef4444 50%, #3b82f6 50%, #3b82f6 100%)'
+              // Category color map
+              const categoryColors: Record<string, string> = {
+                'DEMO': 'bg-emerald-100 text-emerald-700 border-emerald-200',
+                'Installation': 'bg-blue-100 text-blue-700 border-blue-200',
+                'Task': 'bg-orange-100 text-orange-700 border-orange-200',
+                'Onsite Services': 'bg-amber-100 text-amber-700 border-amber-200',
+                'Training': 'bg-purple-100 text-purple-700 border-purple-200',
               }
-            } else if (hasIMACD) {
-              indicatorClass += ' bg-red-500'
-            } else if (hasThanapong) {
-              indicatorClass += ' bg-blue-500'
-            } else {
-              indicatorClass += ' bg-slate-200'
-            }
+              const catColor = categoryColors[category] || 'bg-slate-100 text-slate-600 border-slate-200'
 
-            return (
-              <div
-                key={event.id}
-                className={`relative glass-panel hover:shadow-glass hover:-translate-y-1 rounded-2xl p-4 sm:p-6 pl-6 sm:pl-7 transition-all duration-300 group flex flex-col justify-between ${
-                  width === 2 ? 'p-3 pl-5' : ''
-                }`}
-              >
-                {/* Left vertical border indicator */}
-                <div className={indicatorClass} style={indicatorStyle} aria-hidden="true" />
-
-                <div>
-                  {/* Top card metadata: Category & Badges */}
-                  <div className="flex items-center justify-between gap-2 sm:gap-4 mb-2 sm:mb-3.5">
-                    <span className={`font-extrabold text-slate-800 tracking-tight group-hover:text-blue-600 transition-colors line-clamp-1 ${
-                      width === 2 ? 'text-sm' : 'text-base'
-                    }`}>
-                      {category}
-                    </span>
-                    <div className="flex items-center gap-1 flex-shrink-0">
-                      {hasIMACD && (
-                        <span className={`px-2 text-white rounded-md font-extrabold uppercase tracking-wide bg-red-500 ${
-                          width === 2 ? 'py-0.5 text-[8px]' : 'py-0.5 text-[9px]'
-                        }`}>
-                          IMACD
-                        </span>
-                      )}
-                      {hasThanapong && (
-                        <span className={`px-2 text-white rounded-md font-extrabold uppercase tracking-wide bg-blue-500 ${
-                          width === 2 ? 'py-0.5 text-[8px]' : 'py-0.5 text-[9px]'
-                        }`}>
-                          ธัญพงศ์
-                        </span>
-                      )}
-                    </div>
+              return (
+                <div
+                  key={event.id}
+                  className={`rounded-xl border border-slate-100 bg-white hover:bg-slate-50 hover:shadow-sm transition-all border-l-[3px] ${borderColor} p-3 flex flex-col gap-1.5`}
+                >
+                  {/* Date + Time */}
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[11px] font-bold text-sky-600">{day} {monthShort}</span>
+                    <span className="text-[11px] text-slate-400">{timeStr}-{endTimeStr}</span>
                   </div>
 
-                  {/* Date & Time Row */}
-                  <div className={`flex flex-wrap items-center gap-x-1.5 sm:gap-x-2 gap-y-1 font-bold text-slate-500 mb-2 sm:mb-4 bg-slate-50 border border-slate-100 py-1 sm:py-1.5 px-2 sm:px-3 rounded-xl w-fit ${
-                    width === 2 ? 'text-[10px]' : 'text-xs'
-                  }`}>
-                    <Calendar size={width === 2 ? 11 : 13} className="text-blue-500 flex-shrink-0" />
-                    <span>{formatDateDDMMYYYY(event.start)}</span>
-                    <span className="text-slate-300">|</span>
-                    <Clock size={width === 2 ? 11 : 13} className="text-blue-500 flex-shrink-0" />
-                    <span>{formatTimeRange(event.start, event.end)}</span>
-                  </div>
+                  {/* Category Badge */}
+                  <span className={`inline-block self-start px-2 py-0.5 text-[11px] font-bold rounded-md border ${catColor}`}>
+                    {category}
+                  </span>
 
-                  {/* Details box inside card */}
+                  {/* Details */}
+                  <p className="text-[12px] font-semibold text-slate-800 leading-snug line-clamp-1">{details}</p>
+
+                  {/* Full Description */}
                   {event.description && (
-                    <div className={`bg-[#f8fafc]/60 border border-slate-100/80 rounded-xl p-3 sm:p-4 text-slate-600 font-medium leading-relaxed mb-1 whitespace-pre-line break-words border-l-2 border-l-slate-200 ${
-                      width === 2 ? 'text-[11px]' : 'text-[13px]'
-                    }`}>
-                      <div 
-                        className="prose prose-sm max-w-none text-slate-600"
-                        dangerouslySetInnerHTML={{ 
+                    <div className="bg-slate-50 border border-slate-100 rounded-lg p-2 text-[11px] text-slate-600 leading-relaxed overflow-hidden">
+                      <div
+                        className="prose prose-xs max-w-none text-slate-600 [&_strong]:text-slate-800 [&_a]:text-blue-600 [&_a]:font-bold"
+                        dangerouslySetInnerHTML={{
                           __html: event.description
-                            .replace(/รายละเอียดของงาน:/g, '<strong class="text-slate-800">รายละเอียดของงาน:</strong>')
-                            .replace(/วิธีการดำเนินงาน:/g, '<strong class="text-slate-800">วิธีการดำเนินงาน:</strong>')
-                            .replace(/ผู้ให้บริการ\s*:/g, '<strong class="text-slate-800">ผู้ให้บริการ :</strong>')
-                            .replace(/หมายเลขงาน\s*:/g, '<strong class="text-slate-800">หมายเลขงาน :</strong>')
-                            .replace(/ผู้ดำเนินการ\s*:/g, '<strong class="text-slate-800">ผู้ดำเนินการ :</strong>')
+                            .replace(/รายละเอียดของงาน:/g, '<strong>รายละเอียดของงาน:</strong>')
+                            .replace(/วิธีการดำเนินงาน:/g, '<strong>วิธีการดำเนินงาน:</strong>')
+                            .replace(/ผู้ให้บริการ\s*:/g, '<strong>ผู้ให้บริการ :</strong>')
+                            .replace(/หมายเลขงาน\s*:/g, '<strong>หมายเลขงาน :</strong>')
+                            .replace(/ผู้ดำเนินการ\s*:/g, '<strong>ผู้ดำเนินการ :</strong>')
                             .replace(/<a /gi, '<a class="text-blue-600 font-bold hover:underline" target="_blank" rel="noopener noreferrer" ')
-                        }} 
+                        }}
                       />
                     </div>
                   )}
-                </div>
 
-                {/* Location metadata (if available) */}
-                {event.location && (
-                  <div className={`flex items-center gap-1 sm:gap-1.5 text-slate-400 mt-2 sm:mt-4 border-t border-slate-100 pt-2 sm:pt-3 font-semibold ${
-                    width === 2 ? 'text-[10px]' : 'text-xs'
-                  }`}>
-                    <MapPin size={width === 2 ? 10 : 12} className="text-slate-400 flex-shrink-0" />
-                    <span className="truncate">{event.location}</span>
+                  {/* Tags */}
+                  <div className="flex items-center gap-1 mt-auto pt-1">
+                    {hasIMACD_event && <span className="px-1.5 py-0.5 text-[9px] font-bold text-white bg-red-500 rounded">IMACD</span>}
+                    {hasThanapong && <span className="px-1.5 py-0.5 text-[9px] font-bold text-white bg-blue-500 rounded">ธัญพงศ์</span>}
+                    {event.location && (
+                      <span className="flex items-center gap-0.5 text-[10px] text-slate-400 ml-auto truncate max-w-[80px]">
+                        <MapPin size={9} />
+                        {event.location}
+                      </span>
+                    )}
                   </div>
-                )}
-              </div>
-            )
-          })}
+                </div>
+              )
+            })}
+          </div>
         </div>
       )}
     </div>

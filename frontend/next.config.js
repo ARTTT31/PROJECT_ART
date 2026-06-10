@@ -15,8 +15,9 @@ const nextConfig = {
   },
 
   experimental: {
-    optimizePackageImports: ['@/components'],
+    optimizePackageImports: ['lucide-react', '@tanstack/react-query', 'date-fns'],
   },
+
   async rewrites() {
     return [
       {
@@ -25,6 +26,10 @@ const nextConfig = {
       },
     ];
   },
+
+  // Enable compression and static optimization
+  compress: true,
+  poweredByHeader: false,
 };
 
 module.exports = nextConfig;

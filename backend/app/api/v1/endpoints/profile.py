@@ -265,6 +265,7 @@ async def get_my_sessions(
                 "id": s.id,
                 "session_id": s.session_id,
                 "device_label": s.device_label or "Unknown Device",
+                "user_agent": s.user_agent or None,
                 "ip_address": s.ip_address or "Unknown IP",
                 "is_active": s.is_active,
                 "last_activity": s.last_activity.isoformat() if s.last_activity else None,

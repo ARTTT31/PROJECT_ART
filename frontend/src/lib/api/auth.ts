@@ -21,6 +21,8 @@ export interface LoginResponse {
       email: string;
       name: string;
       role: string;
+      avatar?: string | null;
+      quick_links?: string | null;
     };
   };
 }

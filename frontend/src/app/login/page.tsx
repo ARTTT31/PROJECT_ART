@@ -1,8 +1,11 @@
 'use client';
 
-import { FormEvent, KeyboardEvent, useCallback, useEffect, useState } from 'react';
-import { ArrowRight, Check, Eye, EyeOff, Lock, Mail } from 'lucide-react';
+import '../../styles/pages/login.css';
+import { FormEvent, KeyboardEvent, useCallback, useEffect, useRef, useState } from 'react';
+import { ArrowRight, AlertCircle, Check, Eye, EyeOff, Loader2, Lock, Mail } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/components/Toast/ToastProvider';
 
 const formatDate = (date: Date) =>
   new Intl.DateTimeFormat('th-TH', {
@@ -21,9 +24,12 @@ const formatTime = (date: Date) =>
   }).format(date);
 
 const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const LOGIN_ENDPOINT = `${apiBaseUrl}/api/v1/auth/login`;
 
 export default function LoginPage() {
   const { login } = useAuth();
+  const toast = useToast();
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
@@ -33,19 +39,40 @@ export default function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const [now, setNow] = useState(() => new Date());
+  const [rateLimitSeconds, setRateLimitSeconds] = useState(0);
+  const rateLimitTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [errorKey, setErrorKey] = useState(0);
+  const emailRef = useRef<HTMLInputElement>(null);
+  const passwordRef = useRef<HTMLInputElement>(null);
+  const errorId = 'login-error-message';
 
   useEffect(() => {
     setIsClient(true);
     const rememberedEmail = localStorage.getItem('remembered_email');
-
     if (rememberedEmail) {
       setEmail(rememberedEmail);
       setRememberMe(true);
+      setTimeout(() => passwordRef.current?.focus(), 100);
+    } else {
+      setTimeout(() => emailRef.current?.focus(), 100);
     }
-
     const timer = window.setInterval(() => setNow(new Date()), 1000);
     return () => window.clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    if (rateLimitSeconds <= 0) return;
+    rateLimitTimer.current = setInterval(() => {
+      setRateLimitSeconds(s => {
+        if (s <= 1) {
+          clearInterval(rateLimitTimer.current!)
+          return 0
+        }
+        return s - 1
+      })
+    }, 1000)
+    return () => clearInterval(rateLimitTimer.current!)
+  }, [rateLimitSeconds])
 
   const handleCapsLock = useCallback((event: KeyboardEvent<HTMLInputElement>) => {
     if (event.getModifierState) {
@@ -56,6 +83,13 @@ export default function LoginPage() {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError('');
+
+    if (password.length < 6) {
+      setErrorKey(k => k + 1);
+      setError('รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -66,33 +100,21 @@ export default function LoginPage() {
 
       const userAgent = navigator.userAgent;
       const deviceLabel = /Mobile|Android|iPhone|iPad/.test(userAgent) ? 'Mobile' : 'Desktop';
-      const payload = {
-        email,
-        password,
-        session_id: sessionId,
-        user_agent: userAgent,
-        device_label: deviceLabel,
-      };
+      const payload = { email, password, session_id: sessionId, user_agent: userAgent, device_label: deviceLabel };
 
-      let response: Response | null = null;
-      for (const endpoint of loginEndpoints) {
-        try {
-          response = await fetch(endpoint, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
-          });
+      const response = await fetch(LOGIN_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
 
-          if (response.status < 500) {
-            break;
-          }
-        } catch {
-          response = null;
-        }
-      }
-
-      if (!response) {
-        throw new Error('Login API is unavailable');
+      if (response.status === 429) {
+        const retryAfter = parseInt(response.headers.get('Retry-After') || '30', 10);
+        setRateLimitSeconds(retryAfter);
+        setErrorKey(k => k + 1);
+        setError(`ลองเข้าสู่ระบบบ่อยเกินไป กรุณารอ ${retryAfter} วินาที`);
+        setIsSubmitting(false);
+        return;
       }
 
       const result = await response.json();
@@ -100,7 +122,6 @@ export default function LoginPage() {
       if (response.ok && result.result === 'success' && result.data?.access_token) {
         localStorage.setItem('access_token', result.data.access_token);
         localStorage.setItem('user', JSON.stringify(result.data.user));
-
         if (result.data.refresh_token) localStorage.setItem('refresh_token', result.data.refresh_token);
         if (result.data.session_id) localStorage.setItem('session_id', result.data.session_id);
 
@@ -111,40 +132,16 @@ export default function LoginPage() {
         }
 
         login(result.data.access_token, result.data.user);
-        
-        // Custom iOS-style success toast
-        const toast = document.createElement('div');
-        toast.className = 'liquid-glass-toast';
-        toast.innerHTML = `
-          <div class="toast-icon-wrapper">
-            <svg class="toast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M20 6L9 17l-5-5"/>
-            </svg>
-          </div>
-          <div class="toast-content">
-            <h4 class="toast-title">เข้าสู่ระบบสำเร็จ</h4>
-            <p class="toast-message">ยินดีต้อนรับกลับมา ${result.data.user.name || ''}!</p>
-          </div>
-        `;
-        document.body.appendChild(toast);
-        
-        // Trigger animation
-        setTimeout(() => toast.classList.add('toast-show'), 10);
-        
-        // Remove and redirect
-        setTimeout(() => {
-          toast.classList.remove('toast-show');
-          setTimeout(() => {
-            document.body.removeChild(toast);
-            window.location.href = '/dashboard';
-          }, 300);
-        }, 2500);
+        toast.success('เข้าสู่ระบบสำเร็จ', `ยินดีต้อนรับกลับมา ${result.data.user.name || ''}!`);
+        setTimeout(() => router.push('/dashboard'), 1500);
       } else {
         setError(result.detail || result.message || 'เข้าสู่ระบบไม่สำเร็จ กรุณาตรวจสอบอีเมลและรหัสผ่าน');
+        setErrorKey(k => k + 1);
         setIsSubmitting(false);
       }
     } catch {
       setError('เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง');
+      setErrorKey(k => k + 1);
       setIsSubmitting(false);
     }
   };
@@ -179,19 +176,22 @@ export default function LoginPage() {
             <p>ยินดีต้อนรับกลับมา เข้าสู่ระบบเพื่อใช้งานแดชบอร์ดของคุณ</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="login-form">
+          <form onSubmit={handleSubmit} className="login-form" aria-busy={isSubmitting}>
             <label htmlFor="login-email" className="login-field">
               <span>อีเมล</span>
               <div className="login-input-wrap">
                 <Mail size={18} aria-hidden="true" />
                 <input
                   id="login-email"
+                  ref={emailRef}
                   type="email"
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
                   placeholder="your.email@example.com"
                   required
                   autoComplete="username"
+                  disabled={isSubmitting}
+                  aria-describedby={error ? errorId : undefined}
                 />
               </div>
             </label>
@@ -202,6 +202,7 @@ export default function LoginPage() {
                 <Lock size={18} aria-hidden="true" />
                 <input
                   id="login-password"
+                  ref={passwordRef}
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
@@ -209,7 +210,10 @@ export default function LoginPage() {
                   onKeyUp={handleCapsLock}
                   placeholder="••••••••"
                   required
+                  minLength={6}
                   autoComplete="current-password"
+                  disabled={isSubmitting}
+                  aria-describedby={error ? errorId : undefined}
                 />
                 {capsLock && <span className="login-caps">Caps Lock</span>}
                 <button
@@ -217,6 +221,7 @@ export default function LoginPage() {
                   onClick={() => setShowPassword(!showPassword)}
                   aria-label={showPassword ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'}
                   className="login-eye"
+                  disabled={isSubmitting}
                 >
                   {showPassword ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
                 </button>
@@ -232,6 +237,7 @@ export default function LoginPage() {
                 type="checkbox"
                 checked={rememberMe}
                 onChange={(event) => setRememberMe(event.target.checked)}
+                disabled={isSubmitting}
               />
               <span aria-hidden="true" className="login-remember-switch">
                 <span className="login-remember-knob">
@@ -241,16 +247,43 @@ export default function LoginPage() {
               <span className="login-remember-text">จดจำฉันไว้</span>
             </label>
 
-            {error && <div role="alert" className="login-error">{error}</div>}
+            {error && (
+              <div key={errorKey} id={errorId} role="alert" aria-live="polite" className="login-error">
+                <AlertCircle size={16} aria-hidden="true" className="login-error-icon" />
+                {error}
+              </div>
+            )}
 
-            <button type="submit" disabled={isSubmitting} className="login-submit">
-              <span>{isSubmitting ? 'กำลังเข้าสู่ระบบ...' : 'เข้าสู่ระบบ'}</span>
-              {!isSubmitting && <ArrowRight size={18} aria-hidden="true" />}
+            <button type="submit" disabled={isSubmitting || rateLimitSeconds > 0} className="login-submit">
+              {rateLimitSeconds > 0 ? (
+                <>
+                  <Loader2 size={18} className="login-submit-spinner" aria-hidden="true" />
+                  <span>รอ {rateLimitSeconds} วินาที...</span>
+                </>
+              ) : isSubmitting ? (
+                <>
+                  <Loader2 size={18} className="login-submit-spinner" aria-hidden="true" />
+                  <span>กำลังเข้าสู่ระบบ...</span>
+                </>
+              ) : (
+                <>
+                  <span>เข้าสู่ระบบ</span>
+                  <ArrowRight size={18} aria-hidden="true" />
+                </>
+              )}
             </button>
 
             <div className="login-divider">หรือ</div>
 
-            <a href="http://localhost:8000/api/v1/auth/google" className="google-btn" role="button" aria-label="Sign in with Google">
+            <a
+              href={`${apiBaseUrl}/api/v1/auth/google`}
+              className={`google-btn${isSubmitting || rateLimitSeconds > 0 ? ' google-btn--disabled' : ''}`}
+              role="button"
+              aria-label="Sign in with Google"
+              aria-disabled={isSubmitting || rateLimitSeconds > 0}
+              tabIndex={isSubmitting || rateLimitSeconds > 0 ? -1 : 0}
+              onClick={e => { if (isSubmitting || rateLimitSeconds > 0) e.preventDefault() }}
+            >
               <svg className="google-btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
                 <path fill="#4285F4" d="M12 7.2c1.8 0 3.2.7 4.2 1.6l3-3C17.7 4 15 3 12 3 7 3 3 6.2 1.9 10.6l3.5 2.7C6 8.9 8.7 7.2 12 7.2z"/>
                 <path fill="#34A853" d="M21.6 12.6c0-.8-.1-1.4-.2-2.1H12v4.1h5.6c-.5 1.9-2 4.5-5.6 5.9l-1.6-1.2c2.6-1 4-2.9 4.6-4.8H21.6z"/>
@@ -265,155 +298,6 @@ export default function LoginPage() {
         </div>
       </section>
 
-      <style jsx global>{`
-        /* Liquid Glass Toast Notification */
-        .liquid-glass-toast {
-          position: fixed;
-          top: 24px;
-          left: 50%;
-          transform: translateX(-50%) translateY(-120px);
-          z-index: 9999;
-          display: flex;
-          align-items: center;
-          gap: 14px;
-          min-width: 360px;
-          max-width: 480px;
-          padding: 16px 20px;
-          border-radius: 20px;
-          background: rgba(255, 255, 255, 0.92);
-          backdrop-filter: blur(28px) saturate(180%);
-          -webkit-backdrop-filter: blur(28px) saturate(180%);
-          border: 1.5px solid rgba(255, 255, 255, 0.4);
-          box-shadow: 
-            0 16px 48px rgba(15, 23, 42, 0.15),
-            0 8px 24px rgba(15, 23, 42, 0.08),
-            inset 0 1px 0 rgba(255, 255, 255, 0.7);
-          opacity: 0;
-          transition: all 400ms cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        
-        .liquid-glass-toast.toast-show {
-          transform: translateX(-50%) translateY(0);
-          opacity: 1;
-        }
-        
-        .toast-icon-wrapper {
-          flex-shrink: 0;
-          width: 48px;
-          height: 48px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border-radius: 14px;
-          background: linear-gradient(135deg, #22c55e, #16a34a);
-          color: white;
-          box-shadow: 
-            0 4px 16px rgba(34, 197, 94, 0.30),
-            inset 0 1px 0 rgba(255, 255, 255, 0.25);
-          animation: icon-pop 500ms cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        
-        @keyframes icon-pop {
-          0% { transform: scale(0.8); opacity: 0; }
-          50% { transform: scale(1.1); }
-          100% { transform: scale(1); opacity: 1; }
-        }
-        
-        .toast-icon {
-          width: 26px;
-          height: 26px;
-          filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
-        }
-        
-        .toast-content {
-          flex: 1;
-          min-width: 0;
-        }
-        
-        .toast-title {
-          margin: 0;
-          font-size: 16px;
-          font-weight: 700;
-          letter-spacing: -0.01em;
-          color: #0f172a;
-          line-height: 1.3;
-        }
-        
-        .toast-message {
-          margin: 4px 0 0;
-          font-size: 14px;
-          font-weight: 500;
-          letter-spacing: -0.01em;
-          color: #64748b;
-          line-height: 1.5;
-        }
-        
-        @media (max-width: 860px) {
-          .liquid-glass-toast {
-            min-width: calc(100vw - 48px);
-            max-width: calc(100vw - 48px);
-            left: 24px;
-            transform: translateX(0) translateY(-120px);
-          }
-          
-          .liquid-glass-toast.toast-show {
-            transform: translateX(0) translateY(0);
-          }
-        }
-
-        /* Google divider and button section */
-        .login-divider {
-          text-align: center;
-          font-size: 14px;
-          color: #6b7280;
-          margin: 12px 0 10px;
-          letter-spacing: 0.02em;
-          font-weight: 500;
-        }
-
-        .google-icon {
-          width: 18px;
-          height: 18px;
-          display: inline-block;
-          flex-shrink: 0;
-        }
-
-        .google-btn {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          gap: 10px;
-          width: 100%;
-          padding: 11px 16px;
-          border-radius: 24px;
-          border: 1.5px solid #d1d5db;
-          background: #fff;
-          color: #111827;
-          text-decoration: none;
-          font-weight: 500;
-          font-size: 15px;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-          transition: all 120ms ease;
-          cursor: pointer;
-        }
-
-        .google-btn:hover {
-          border-color: #9ca3af;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-          transform: translateY(-2px);
-        }
-
-        .google-btn-icon {
-          width: 20px;
-          height: 20px;
-          flex-shrink: 0;
-        }
-
-        .google-text {
-          font-size: 15px;
-          color: #111827;
-        }
-      `}</style>
     </main>
   );
 }

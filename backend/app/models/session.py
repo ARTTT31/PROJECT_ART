@@ -3,9 +3,8 @@ Session Model for tracking user sessions
 """
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
-from datetime import datetime
 
-from app.models.base import Base, TimestampMixin
+from app.models.base import Base, TimestampMixin, _utcnow
 
 
 class UserSession(Base, TimestampMixin):
@@ -24,7 +23,7 @@ class UserSession(Base, TimestampMixin):
     
     # Session status
     is_active = Column(Boolean, default=True, nullable=False)
-    last_activity = Column(DateTime, default=datetime.utcnow, nullable=False)
+    last_activity = Column(DateTime, default=_utcnow, nullable=False)
     expires_at = Column(DateTime, nullable=True)
     
     # Relationships

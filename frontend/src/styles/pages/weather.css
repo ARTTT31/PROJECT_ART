@@ -1,0 +1,280 @@
+/* =============================================
+   WEATHER STYLES (ย้ายมาจาก globals.css)
+   ============================================= */
+
+/* =============================================
+   WEATHER CARD HERO ANIMATED SYSTEM (FROM GIT REPO)
+   ============================================= */
+.weather-card {
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+  transition: none !important;
+  background-size: 200% 200%;
+  animation: weather-bg-flow 24s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+  border: none !important;
+}
+.weather-card.weather-sunny {
+  background-image: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 48%, #f59e0b 100%) !important;
+}
+.weather-card.weather-clear-night {
+  background-image: linear-gradient(135deg, #111827 0%, #1e1b4b 54%, #312e81 100%) !important;
+}
+.weather-card.weather-cloudy {
+  background-image: linear-gradient(135deg, #64748b 0%, #475569 54%, #0ea5e9 100%) !important;
+}
+.weather-card.weather-cloudy-night {
+  background-image: linear-gradient(135deg, #0f172a 0%, #1e293b 58%, #334155 100%) !important;
+}
+.weather-card.weather-rainy {
+  background-image: linear-gradient(135deg, #0f766e 0%, #0369a1 48%, #1e3a8a 100%) !important;
+}
+.weather-card.weather-rainy-night {
+  background-image: linear-gradient(135deg, #082f49 0%, #0f172a 55%, #020617 100%) !important;
+}
+.weather-card.weather-stormy {
+  background-image: linear-gradient(135deg, #334155 0%, #111827 52%, #020617 100%) !important;
+}
+.weather-card.weather-stormy-night {
+  background-image: linear-gradient(135deg, #020617 0%, #0b0f19 60%, #000000 100%) !important;
+}
+@keyframes weather-bg-flow {
+  0%, 100% { background-position: 0% 45%; }
+  33% { background-position: 55% 52%; }
+  66% { background-position: 100% 58%; }
+}
+.weather-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 90% 55% at 15% 0%, rgba(255, 255, 255, 0.10), transparent 58%),
+    radial-gradient(ellipse 70% 45% at 95% 15%, rgba(255, 255, 255, 0.05), transparent 50%),
+    radial-gradient(ellipse 80% 40% at 50% 100%, rgba(0, 0, 0, 0.10), transparent 55%);
+  animation: ws-sky-glow 14s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite alternate;
+}
+@keyframes ws-sky-glow {
+  from { opacity: 0.78; transform: scale(1) translateY(0); }
+  to { opacity: 1; transform: scale(1.02) translateY(-0.5%); }
+}
+
+.weather-card > * {
+  position: relative;
+  z-index: 3;
+}
+
+/* Animated weather scene */
+.weather-scene {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  opacity: 0.95;
+  transition: none !important;
+}
+.weather-scene .ws-gradient-mesh,
+.weather-scene .ws-bokeh,
+.weather-scene .ws-sun,
+.weather-scene .ws-clouds,
+.weather-scene .ws-mist,
+.weather-scene .ws-rain,
+.weather-scene .ws-lightning,
+.weather-scene .ws-shimmer {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: none !important;
+}
+.weather-scene .ws-gradient-mesh,
+.weather-scene .ws-bokeh,
+.weather-scene .ws-shimmer {
+  opacity: 1;
+}
+.weather-scene[data-scene='sunny'] .ws-sun,
+.weather-scene[data-scene='sunny'] .ws-clouds,
+.weather-scene[data-scene='sunny'] .ws-mist,
+.weather-scene[data-scene='clear-night'] .ws-clouds,
+.weather-scene[data-scene='clear-night'] .ws-mist,
+.weather-scene[data-scene='cloudy'] .ws-clouds,
+.weather-scene[data-scene='cloudy'] .ws-mist,
+.weather-scene[data-scene='cloudy-night'] .ws-clouds,
+.weather-scene[data-scene='cloudy-night'] .ws-mist,
+.weather-scene[data-scene='rainy'] .ws-clouds,
+.weather-scene[data-scene='rainy'] .ws-mist,
+.weather-scene[data-scene='rainy'] .ws-rain,
+.weather-scene[data-scene='rainy-night'] .ws-clouds,
+.weather-scene[data-scene='rainy-night'] .ws-mist,
+.weather-scene[data-scene='rainy-night'] .ws-rain,
+.weather-scene[data-scene='stormy'] .ws-clouds,
+.weather-scene[data-scene='stormy'] .ws-mist,
+.weather-scene[data-scene='stormy'] .ws-rain,
+.weather-scene[data-scene='stormy'] .ws-lightning,
+.weather-scene[data-scene='stormy-night'] .ws-clouds,
+.weather-scene[data-scene='stormy-night'] .ws-mist,
+.weather-scene[data-scene='stormy-night'] .ws-rain,
+.weather-scene[data-scene='stormy-night'] .ws-lightning {
+  opacity: 1;
+}
+.weather-scene[data-scene='clear-night'] .ws-bokeh-dot,
+.weather-scene[data-scene='cloudy-night'] .ws-bokeh-dot,
+.weather-scene[data-scene='rainy-night'] .ws-bokeh-dot,
+.weather-scene[data-scene='stormy-night'] .ws-bokeh-dot {
+  background: rgba(191, 219, 254, 0.45);
+  box-shadow: 0 0 12px rgba(191, 219, 254, 0.28);
+}
+.weather-scene[data-scene='rainy'] .ws-rain--front,
+.weather-scene[data-scene='rainy-night'] .ws-rain--front,
+.weather-scene[data-scene='stormy'] .ws-rain--front,
+.weather-scene[data-scene='stormy-night'] .ws-rain--front {
+  opacity: 0.65;
+}
+
+/* Mesh + bokeh */
+.ws-gradient-mesh::before,
+.ws-gradient-mesh::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(40px);
+  animation: ws-mesh-float 14s ease-in-out infinite alternate;
+}
+.ws-gradient-mesh::before {
+  width: 55%;
+  height: 70%;
+  top: -20%;
+  left: -10%;
+  background: rgba(255, 255, 255, 0.22);
+}
+.ws-gradient-mesh::after {
+  width: 45%;
+  height: 55%;
+  bottom: -25%;
+  right: -5%;
+  background: rgba(255, 255, 255, 0.12);
+  animation-delay: -5s;
+}
+@keyframes ws-mesh-float {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(3%, 2%) scale(1.05); }
+}
+.ws-bokeh-dot {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.35);
+  filter: blur(1px);
+  animation: ws-bokeh-float 8s ease-in-out infinite;
+}
+.ws-bokeh-dot:nth-child(1) { width: 8px; height: 8px; top: 18%; left: 12%; animation-delay: 0s; }
+.ws-bokeh-dot:nth-child(2) { width: 5px; height: 5px; top: 35%; left: 28%; animation-delay: -2s; }
+.ws-bokeh-dot:nth-child(3) { width: 10px; height: 10px; top: 55%; left: 8%; animation-delay: -4s; }
+.ws-bokeh-dot:nth-child(4) { width: 6px; height: 6px; top: 22%; left: 55%; animation-delay: -1s; }
+.ws-bokeh-dot:nth-child(5) { width: 7px; height: 7px; top: 48%; left: 72%; animation-delay: -3s; }
+.ws-bokeh-dot:nth-child(6) { width: 4px; height: 4px; top: 68%; left: 42%; animation-delay: -5s; }
+@keyframes ws-bokeh-float {
+  0%, 100% { transform: translate(0, 0); opacity: 0.35; }
+  50% { transform: translate(4px, -10px); opacity: 0.65; }
+}
+
+/* Mist layer */
+.ws-mist::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0%, transparent 35%, transparent 65%, rgba(0, 0, 0, 0.08) 100%);
+}
+.ws-mist::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 45%;
+  background: linear-gradient(to top, rgba(255, 255, 255, 0.08), transparent);
+  animation: ws-mist-roll 12s ease-in-out infinite alternate;
+}
+@keyframes ws-mist-roll {
+  from { opacity: 0.5; transform: translateX(-2%); }
+  to { opacity: 0.85; transform: translateX(2%); }
+}
+
+/* Sun */
+.ws-sun::before {
+  content: '';
+  position: absolute;
+  top: -14%;
+  right: 7%;
+  width: 8rem;
+  height: 8rem;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fffdf0 0%, #fde68a 30%, #fbbf24 55%, rgba(251,191,36,0) 75%);
+  box-shadow: 0 0 40px rgba(251,191,36,0.55), 0 0 90px rgba(251,191,36,0.22);
+}
+
+/* Rain animation */
+.ws-rain::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(transparent, rgba(255,255,255,0.05));
+}
+
+/* Lightning */
+@keyframes ws-lightning-flash {
+  0%, 95%, 98%, 100% { opacity: 0; }
+  96%, 99% { opacity: 1; }
+}
+.ws-lightning {
+  background: #fff;
+  animation: ws-lightning-flash 6s infinite;
+}
+
+/* ═══════════════════════════════════════════════════════
+   WEATHER LOCATION DROPDOWN - iOS Style
+   ═══════════════════════════════════════════════════════ */
+
+.weather-card .location-dropdown-menu {
+  animation: dropdownSlideIn 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  transform-origin: top left;
+}
+
+@keyframes dropdownSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Location menu items with liquid glass effect */
+.weather-card [role="menu"] button {
+  position: relative;
+  overflow: hidden;
+}
+
+.weather-card [role="menu"] button::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.05), transparent);
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+
+.weather-card [role="menu"] button:hover::before {
+  opacity: 1;
+}
+
+/* Active location item with premium gradient */
+.weather-card [role="menu"] button.bg-sky-500 {
+  background: linear-gradient(135deg, #0ea5e9, #2563eb);
+  box-shadow:
+    0 2px 8px rgba(14, 165, 233, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+

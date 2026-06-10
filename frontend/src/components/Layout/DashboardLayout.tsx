@@ -1,10 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Header from './Header'
 import Sidebar from './Sidebar'
 import { showConfirm } from '@/utils/sweetalert'
+import AuthGuard from '@/components/Auth/AuthGuard'
+import { useAuth } from '@/hooks/useAuth'
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -13,95 +15,51 @@ interface DashboardLayoutProps {
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter()
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [modalOverlayOpen, setModalOverlayOpen] = useState(false)
-  const [user, setUser] = useState<any>(null)
-
-  useEffect(() => {
-    // Check authentication
-    const token = localStorage.getItem('access_token')
-    const userData = localStorage.getItem('user')
-    
-    if (!token || !userData) {
-      router.push('/login')
-      return
-    }
-
-    setUser(JSON.parse(userData))
-  }, [router])
-
-  useEffect(() => {
-    const handleProfileUpdate = () => {
-      const userData = localStorage.getItem('user')
-      if (userData) {
-        setUser(JSON.parse(userData))
-      }
-    }
-
-    const handleModalState = (event: Event) => {
-      const customEvent = event as CustomEvent<{ open: boolean }>
-      setModalOverlayOpen(Boolean(customEvent.detail?.open))
-    }
-
-    window.addEventListener('user-profile-updated', handleProfileUpdate)
-    window.addEventListener('art-modal-state', handleModalState)
-
-    return () => {
-      window.removeEventListener('user-profile-updated', handleProfileUpdate)
-      window.removeEventListener('art-modal-state', handleModalState)
-    }
-  }, [])
+  const { user, logout } = useAuth()
 
   const handleLogout = () => {
     showConfirm('ต้องการออกจากระบบหรือไม่?', 'กดยืนยันเพื่อออกจากระบบ').then((result) => {
       if (result.isConfirmed) {
-        localStorage.removeItem('access_token')
-        localStorage.removeItem('refresh_token')
-        localStorage.removeItem('session_id')
-        localStorage.removeItem('user')
-        router.push('/login')
+        logout()
+        router.replace('/login')
       }
     })
   }
 
-  if (!user) {
-    return null
-  }
-
   return (
-    <div className="art-app-shell relative overflow-hidden">
+    <AuthGuard>
+      <div className="art-app-shell relative overflow-hidden">
+        {/* Sidebar wrapper */}
+        <div className="relative z-20">
+          <Sidebar
+            isOpen={sidebarOpen}
+            onClose={() => setSidebarOpen(false)}
+            user={user}
+            onLogout={handleLogout}
+          />
+        </div>
 
-      {/* Sidebar wrapper */}
-      <div className={`relative z-20 ${modalOverlayOpen ? 'hidden' : ''}`}>
-        <Sidebar 
-          isOpen={sidebarOpen} 
-          onClose={() => setSidebarOpen(false)}
-          user={user}
-          onLogout={handleLogout}
-        />
+        {/* Main Content wrapper */}
+        <div className="relative z-10 min-h-[100dvh] flex flex-col lg:pl-64">
+          {/* Header */}
+          <Header
+            user={user}
+            onMenuClick={() => setSidebarOpen(true)}
+            onLogout={handleLogout}
+          />
+
+          {/* Page Content */}
+          <main className="flex-1 p-4 lg:p-6">{children}</main>
+        </div>
+
+        {/* Mobile Sidebar Overlay */}
+        {sidebarOpen && (
+          <div
+            className="fixed inset-0 bg-black/40 z-30 lg:hidden backdrop-blur-sm transition-all duration-300"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
       </div>
-
-      {/* Main Content wrapper */}
-      <div className={`${modalOverlayOpen ? 'lg:pl-0' : 'lg:pl-64'} relative z-10 min-h-screen flex flex-col`}>
-        {/* Header */}
-        <Header 
-          user={user}
-          onMenuClick={() => setSidebarOpen(true)}
-          onLogout={handleLogout}
-        />
-
-        {/* Page Content */}
-        <main className="flex-1 p-4 lg:p-6">
-          {children}
-        </main>
-      </div>
-
-      {/* Mobile Sidebar Overlay */}
-      {sidebarOpen && (
-        <div 
-          className="fixed inset-0 bg-black/40 z-30 lg:hidden backdrop-blur-sm transition-all duration-300"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-    </div>
+    </AuthGuard>
   )
 }

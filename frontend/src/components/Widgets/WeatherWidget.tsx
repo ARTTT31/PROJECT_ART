@@ -2,7 +2,10 @@
 
 import { useEffect, useMemo, useState, useRef } from 'react'
 import type React from 'react'
-import { CalendarDays, Droplets, Gauge, MapPin, RefreshCw, Sun, ThermometerSun, Wind, GripVertical, Search } from 'lucide-react'
+import { CalendarDays, Droplets, Gauge, MapPin, RefreshCw, Sun, ThermometerSun, Wind, Search } from 'lucide-react'
+import WidgetSizeToggle from './WidgetSizeToggle'
+import { showError, showToast } from '@/utils/sweetalert'
+import { pushNotifications } from '@/components/Layout/NotificationBell'
 
 interface WeatherData {
   temp: number
@@ -86,6 +89,8 @@ export default function WeatherWidget({
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [isSearchingLocation, setIsSearchingLocation] = useState(false)
   const searchTimeoutRef = useRef<any>(null)
+  const lastErrorToastAtRef = useRef<number>(0)
+  const initialLoadDoneRef = useRef(false)
 
   const tempRange = useMemo(() => {
     if (!weather) return 0
@@ -93,8 +98,8 @@ export default function WeatherWidget({
     return Math.min(100, Math.max(0, ((weather.temp - weather.lowTemp) / span) * 100))
   }, [weather])
 
-  const fetchWeather = async (location: Location) => {
-    setLoading(true)
+  const fetchWeather = async (location: Location, isRefresh = false) => {
+    if (!isRefresh) setLoading(true)
     try {
       const params = new URLSearchParams({
         latitude: location.lat.toString(),
@@ -109,6 +114,10 @@ export default function WeatherWidget({
         fetch(`https://api.open-meteo.com/v1/forecast?${params}`),
         fetch(`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${location.lat}&longitude=${location.lon}&current=pm2_5`),
       ])
+
+      if (!weatherRes.ok) {
+        throw new Error(`Weather API returned ${weatherRes.status}`)
+      }
 
       const weatherData = await weatherRes.json()
       const airQualityData = airQualityRes.ok ? await airQualityRes.json() : null
@@ -144,16 +153,71 @@ export default function WeatherWidget({
         forecast,
       })
       setLastUpdate(new Date())
+      initialLoadDoneRef.current = true
+
+      // Push weather alerts
+      const alerts = []
+      const uv = Math.round(weatherData.current.uv_index || 0)
+      const pm = Math.round(pm25)
+      if (uv >= 8) alerts.push({ id: 'uv-alert', type: 'weather' as const, level: uv >= 11 ? 'danger' as const : 'warning' as const, title: 'UV สูง', body: `ค่า UV Index อยู่ที่ ${uv} — ควรทาครีมกันแดดและหลีกเลี่ยงแสงแดดตรง`, at: new Date() })
+      if (pm >= 37) alerts.push({ id: 'pm25-alert', type: 'weather' as const, level: pm >= 50 ? 'danger' as const : 'warning' as const, title: 'PM2.5 สูง', body: `ค่าฝุ่น PM2.5 อยู่ที่ ${pm} µg/m³ (${getAQILevel(pm)}) — ควรสวมหน้ากากเมื่อออกนอกอาคาร`, at: new Date() })
+      if (alerts.length > 0) pushNotifications(alerts)
     } catch (err) {
       console.error('Weather error:', err)
+      const now = Date.now()
+      if (now - lastErrorToastAtRef.current > 60_000) {
+        if (!initialLoadDoneRef.current) showToast('ดึงข้อมูลสภาพอากาศไม่สำเร็จ กรุณาลองใหม่อีกครั้ง', 'error')
+        lastErrorToastAtRef.current = now
+      }
     } finally {
       setLoading(false)
     }
   }
 
   useEffect(() => {
-    fetchWeather(selectedLocation)
-    const interval = setInterval(() => fetchWeather(selectedLocation), 120000)
+    const getGpsAndFetch = async () => {
+      if (!navigator.geolocation) {
+        fetchWeather(selectedLocation)
+        return
+      }
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const { latitude, longitude } = position.coords
+              let gpsName = 'ตำแหน่งของคุณ'
+              try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&accept-language=th&zoom=14`, {
+                  headers: { 'User-Agent': 'ART-Workspace/1.0' }
+                })
+                if (res.ok) {
+                  const data = await res.json()
+                  const addr = data.address || {}
+                  const district = addr.suburb || addr.neighbourhood || addr.quarter || ''
+                  const city = addr.city || addr.town || addr.village || addr.county || ''
+                  const province = addr.state || ''
+                  const country = addr.country || ''
+                  const parts = [district, city || province, country].filter(Boolean)
+                  gpsName = parts.length > 0 ? parts.join(', ') : data.display_name || 'ตำแหน่งของคุณ'
+                }
+          } catch (e) {
+            console.error('Reverse geocode error:', e)
+          }
+          const gpsLoc = { name: gpsName, lat: latitude, lon: longitude }
+          setSelectedLocation(gpsLoc)
+          fetchWeather(gpsLoc)
+        },
+        () => fetchWeather(selectedLocation)
+      )
+    }
+    getGpsAndFetch()
+    const interval = setInterval(() => {
+      // re-fetch with latest location via ref
+    }, 120000)
+    return () => clearInterval(interval)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  useEffect(() => {
+    const interval = setInterval(() => fetchWeather(selectedLocation, true), 120000)
     return () => clearInterval(interval)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedLocation])
@@ -189,7 +253,11 @@ export default function WeatherWidget({
   }
 
   const handleSelectSuggestion = (loc: any) => {
-    setSelectedLocation({ name: loc.name, lat: loc.latitude, lon: loc.longitude })
+    const name = loc.name || ''
+    const admin1 = loc.admin1 || ''
+    const country = loc.country || ''
+    const displayName = [name, admin1, country].filter(Boolean).join(', ')
+    setSelectedLocation({ name: displayName || name, lat: loc.latitude, lon: loc.longitude })
     setSearchQuery('')
     setShowSuggestions(false)
   }
@@ -200,12 +268,20 @@ export default function WeatherWidget({
     }
   }
 
-  if (loading && !weather) {
+  if (loading && !initialLoadDoneRef.current) {
     return (
-      <div className="weather-card weather-sunny p-6 rounded-[24px] min-h-[200px] flex items-center justify-center" role="status" aria-live="polite">
-        <div className="space-y-5 w-full">
-          <div className="h-6 w-40 rounded-full bg-white/35" />
-          <div className="h-24 w-56 rounded-2xl bg-white/30" />
+      <div className="premium-card weather-widget-no-hover p-6 min-h-[200px] flex items-center justify-center" role="status" aria-live="polite">
+        <div className="space-y-4 w-full animate-pulse">
+          <div className="flex items-center gap-3">
+            <div className="h-8 w-8 rounded-lg bg-slate-200" />
+            <div className="h-5 w-32 rounded-full bg-slate-200" />
+          </div>
+          <div className="h-16 w-40 rounded-xl bg-slate-100" />
+          <div className="flex gap-3">
+            <div className="h-8 flex-1 rounded-lg bg-slate-100" />
+            <div className="h-8 flex-1 rounded-lg bg-slate-100" />
+            <div className="h-8 flex-1 rounded-lg bg-slate-100" />
+          </div>
         </div>
       </div>
     )
@@ -214,17 +290,7 @@ export default function WeatherWidget({
   if (!weather) return null
 
   return (
-    <section className={`premium-card weather-card weather-widget-no-hover ${weather.cardClass} h-full flex flex-col`} aria-labelledby="weather-title">
-      <style>{`
-        .weather-widget-no-hover:hover {
-          transform: none !important;
-          box-shadow: var(--shadow-glass) !important;
-          border-color: var(--art-border) !important;
-        }
-        .weather-widget-no-hover:hover::after, .weather-widget-no-hover:hover::before {
-          display: none !important;
-        }
-      `}</style>
+    <section className={`premium-card weather-card weather-widget-no-hover ${weather.cardClass} h-full flex flex-col`} style={{ transform: 'none', transition: 'none' }} aria-labelledby="weather-title">
       {/* Animated Weather Scene Backdrop */}
       <div className="weather-scene" id="weatherScene" data-scene={weather.scene} aria-hidden="true">
         <div className="ws-gradient-mesh"></div>
@@ -252,11 +318,12 @@ export default function WeatherWidget({
         <div className="ws-shimmer"></div>
       </div>
 
-<div className="relative z-[3] flex flex-col gap-5 p-5 sm:p-6 flex-1">
-  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-    <div>
-      <div className="mb-2 relative z-50">
-        <div className="inline-flex items-center gap-2">
+<div className="relative z-[3] flex flex-col gap-3 p-4 sm:p-5">
+      {/* Header row: search + title + controls */}
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <div className="mb-1.5 relative z-50">
+            <div className="inline-flex items-center gap-2">
           <input
             type="text"
             value={searchQuery}
@@ -265,30 +332,43 @@ export default function WeatherWidget({
             onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
             onKeyDown={(e) => { if (e.key === 'Enter') handleSearchSubmit() }}
             placeholder="ค้นหาตำแหน่ง"
-            className="bg-white/10 text-white placeholder:text-white/50 rounded-md px-2 py-1 focus:outline-none w-[160px] sm:w-[200px]"
+            role="combobox"
+            aria-controls="weather-location-suggestions"
+            aria-autocomplete="list"
+            aria-expanded={showSuggestions}
+            className="bg-white/15 text-white placeholder:text-white/75 rounded-md px-2 py-1 w-[160px] sm:w-[200px]"
           />
           <button
+            type="button"
             onClick={handleSearchSubmit}
-            className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-white/10 text-white flex-shrink-0"
+            className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-white/15 text-white flex-shrink-0 hover:bg-white/20 active:scale-95 transition"
             title="ค้นหา"
+            aria-label="ค้นหา"
           >
             <Search size={16} />
           </button>
         {/* GPS Location Toggle Button */}
               <button
+                type="button"
                 onClick={() => {
                   if (navigator.geolocation) {
-                    setLoading(true)
                     navigator.geolocation.getCurrentPosition(
                       async (position) => {
                         const { latitude, longitude } = position.coords
-                        // Try reverse geocoding to find city name
                         let gpsName = 'ตำแหน่งของคุณ'
                         try {
-                          const res = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=th`)
+                          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&accept-language=th&zoom=14`, {
+                            headers: { 'User-Agent': 'ART-Workspace/1.0' }
+                          })
                           if (res.ok) {
                             const data = await res.json()
-                            gpsName = data.city || data.locality || data.principalSubdivision || 'ตำแหน่งของคุณ'
+                            const addr = data.address || {}
+                            const district = addr.suburb || addr.neighbourhood || addr.quarter || ''
+                            const city = addr.city || addr.town || addr.village || addr.county || ''
+                            const province = addr.state || ''
+                            const country = addr.country || ''
+                            const parts = [district, city || province, country].filter(Boolean)
+                            gpsName = parts.length > 0 ? parts.join(', ') : data.display_name || 'ตำแหน่งของคุณ'
                           }
                         } catch (e) {
                           console.error('Reverse geocode error:', e)
@@ -301,12 +381,12 @@ export default function WeatherWidget({
                       },
                       (error) => {
                         console.error('GPS error:', error)
-                        alert('ไม่สามารถดึงตำแหน่งปัจจุบันของคุณได้ กรุณาตรวจสอบสิทธิ์การเข้าถึงตำแหน่ง')
+                        showError('ไม่สามารถดึงตำแหน่งปัจจุบันของคุณได้', 'กรุณาตรวจสอบสิทธิ์การเข้าถึงตำแหน่ง')
                         setLoading(false)
                       }
                     )
                   } else {
-                    alert('เบราว์เซอร์ของคุณไม่รองรับการดึงข้อมูล GPS')
+                    showToast('เบราว์เซอร์ของคุณไม่รองรับการดึงข้อมูล GPS', 'warning')
                   }
                 }}
                  className="inline-flex items-center justify-center w-8 h-8 rounded-full border border-white/20 bg-white/10 text-white cursor-pointer"
@@ -317,14 +397,21 @@ export default function WeatherWidget({
             </div>
             {/* Auto-suggest Dropdown */}
             {showSuggestions && (
-              <div className="absolute top-full left-0 mt-1 w-[260px] bg-white/95 backdrop-blur-md rounded-md shadow-lg overflow-hidden z-[100] text-gray-800">
+              <div
+                id="weather-location-suggestions"
+                role="listbox"
+                className="absolute top-full left-0 mt-1 w-[260px] bg-white/95 backdrop-blur-md rounded-md shadow-lg overflow-hidden z-[100] text-gray-800"
+              >
                 {isSearchingLocation ? (
                   <div className="px-3 py-2 text-xs text-gray-500 text-center">กำลังค้นหา...</div>
                 ) : suggestions.length > 0 ? (
                   suggestions.map((loc, idx) => (
                     <button
                       key={idx}
-                      className="w-full text-left px-3 py-2 text-sm border-b border-gray-100 last:border-0"
+                      type="button"
+                      role="option"
+                      aria-selected={false}
+                      className="w-full text-left px-3 py-2 text-sm border-b border-gray-100 last:border-0 hover:bg-slate-50 focus:bg-slate-50"
                       onClick={() => handleSelectSuggestion(loc)}
                     >
                       <div className="font-medium text-gray-900">{loc.name}</div>
@@ -341,120 +428,111 @@ export default function WeatherWidget({
               </div>
             )}
           </div>
-          <h3 id="weather-title" className="text-lg font-bold text-white tracking-tight">สภาพอากาศ ณ {selectedLocation.name}</h3>
-            <p className="mt-1 text-xs text-white/75">อัปเดต {lastUpdate.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })} น.</p>
-          </div>
-
-          <div className="flex items-center gap-2">
-            {/* Drag Handle */}
-            <div className="widget-drag-handle flex items-center justify-center w-8 h-8 rounded-full bg-white/20 border border-white/20 text-white/90 hover:text-white hover:bg-white/30 cursor-grab active:cursor-grabbing transition-all select-none" title="ลากเพื่อเปลี่ยนตำแหน่งการจัดวาง">
-              <GripVertical size={14} />
-            </div>
-
-            {onResize && (
-              <div className="flex items-center h-10 rounded-full bg-white/10 border border-white/30 p-1 gap-1" style={{
-                position: 'relative',
-                width: 'fit-content',
-                minHeight: '44px',
-                alignItems: 'center',
-                gap: '11px',
-                borderRadius: '999px',
-                border: '1.5px solid rgba(203, 213, 225, 0.5)',
-                background: 'rgba(248, 250, 252, 0.85)',
-                backdropFilter: 'blur(8px) saturate(180%)',
-                padding: '7px 16px 7px 8px',
-                boxShadow: '0 2px 8px rgba(15, 23, 42, 0.03)',
-                transition: 'all 250ms cubic-bezier(0.4, 0, 0.2, 1)',
-              }}>
-                {[2, 3].map((size) => (
-                  <button
-                    key={size}
-                    onClick={() => onResize(size)}
-                    className={`relative flex items-center justify-center rounded-full text-xs font-extrabold transition-all duration-250 min-w-0 min-h-0 flex-1 ${
-                      width === size
-                        ? 'bg-gradient-to-r from-cyan-400 to-blue-500 text-white shadow-lg'
-                        : 'text-slate-600 hover:text-slate-800'
-                    }`}
-                    style={{
-                      padding: '6px 14px',
-                      minWidth: '32px',
-                      height: '28px',
-                    }}
-                    title={`${size === 2 ? 'กลาง (2/3)' : 'ใหญ่ (เต็ม)'}`}
-                    aria-label={`ปรับขนาดเป็น ${size === 2 ? 'กลาง' : 'ใหญ่'}`}
-                  >
-                    {size === 2 ? 'M' : 'L'}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            <button
-              onClick={() => fetchWeather(selectedLocation)}
-              className="weather-refresh-btn"
-              aria-label="รีเฟรชข้อมูลสภาพอากาศ"
-              title="รีเฟรชข้อมูลสภาพอากาศ"
-            >
-              <RefreshCw size={15} className={loading ? 'animate-spin' : ''} aria-hidden="true" />
-            </button>
-          </div>
+          <h3 id="weather-title" className="text-base font-bold text-white tracking-tight">สภาพอากาศ ณ {selectedLocation.name}</h3>
+          <p className="text-[11px] text-white/75">อัปเดต {lastUpdate.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })} น.</p>
         </div>
 
-        <div className="grid gap-2 md:grid-cols-1 lg:grid-cols-2 flex-1 items-center">
-          <div className="flex items-end justify-between gap-4 p-2">
-            <div>
-              <div className="text-5xl sm:text-6xl md:text-7xl leading-none drop-shadow-sm" role="img" aria-label={weather.description}>{weather.icon}</div>
-              <p className="mt-3 text-sm sm:text-base font-bold text-white">{weather.description}</p>
-              <p className="text-xs sm:text-sm text-white/75">รู้สึกเหมือน {weather.feelsLike}°</p>
-            </div>
-            <div className="text-right">
-              <div className="text-[3.5rem] sm:text-[4.5rem] md:text-[5rem] font-bold leading-none tracking-normal text-white drop-shadow-sm">{weather.temp}°</div>
-              <p className="mt-1 text-[10px] sm:text-xs font-semibold text-white/75">สูง {weather.highTemp}°  ต่ำ {weather.lowTemp}°</p>
-            </div>
-          </div>
-
-          <div className="p-2 flex flex-col justify-between gap-3">
-            <div>
-              <div className="mb-2 flex items-center justify-between text-xs sm:text-sm text-white/80">
-                <span>ช่วงอุณหภูมิ</span>
-                <ThermometerSun size={15} aria-hidden="true" />
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] sm:text-xs font-bold text-white/80">{weather.lowTemp}°</span>
-                <div className="h-1.5 flex-1 rounded-full bg-white/20">
-                  <div className="relative h-1.5 rounded-full bg-gradient-to-r from-cyan-200 via-amber-200 to-orange-300" style={{ width: `${tempRange}%` }}>
-                    <span className="absolute right-0 top-1/2 h-3 w-3 -translate-y-1/2 translate-x-1/2 rounded-full bg-white shadow-sm" />
-                  </div>
-                </div>
-                <span className="text-[10px] sm:text-xs font-bold text-white/80">{weather.highTemp}°</span>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2">
-              <WeatherMetric icon={<Wind size={15} />} label="ลม" value={`${weather.windSpeed} km/h`} />
-              <WeatherMetric icon={<Droplets size={15} />} label="ความชื้น" value={`${weather.humidity}%`} />
-              <WeatherMetric icon={<Sun size={15} />} label="UV" value={weather.uvIndex.toString()} />
-              <WeatherMetric icon={<Gauge size={15} />} label="PM2.5" value={`${weather.pm25}`} helper={weather.aqiLevel} />
-            </div>
-          </div>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {onResize && <WidgetSizeToggle value={width} onChange={onResize} />}
+          <button
+            onClick={() => fetchWeather(selectedLocation, true)}
+            className="weather-refresh-btn"
+            aria-label="รีเฟรชข้อมูลสภาพอากาศ"
+            title="รีเฟรชข้อมูลสภาพอากาศ"
+          >
+            <RefreshCw size={15} className={loading ? 'animate-spin' : ''} aria-hidden="true" />
+          </button>
         </div>
       </div>
+
+      {/* Main content: temp left, metrics right */}
+      <div className="grid grid-cols-2 gap-3 items-start">
+        {/* Left: icon + temp */}
+        <div className="flex items-center gap-3 pl-20">
+          <div className="text-7xl leading-none drop-shadow-sm" role="img" aria-label={weather.description}>{weather.icon}</div>
+          <div>
+            <div className="text-[4rem] font-bold leading-none text-white drop-shadow-sm">{weather.temp}°</div>
+            <p className="text-sm font-bold text-white mt-1">{weather.description}</p>
+            <p className="text-xs text-white/70">รู้สึกเหมือน {weather.feelsLike}°</p>
+            <p className="text-xs text-white/70">สูง {weather.highTemp}° ต่ำ {weather.lowTemp}°</p>
+          </div>
+        </div>
+
+        {/* Right: metrics + temp bar + PM2.5 */}
+        <div className="flex flex-col gap-2">
+          <div className="grid grid-cols-3 gap-1">
+            <WeatherMetric icon={<Wind size={15} />} label="ลม" value={`${weather.windSpeed}`} unit="km/h" />
+            <WeatherMetric icon={<Droplets size={15} />} label="ชื้น" value={`${weather.humidity}`} unit="%" />
+            <WeatherMetric icon={<Sun size={15} />} label="UV" value={weather.uvIndex.toString()} />
+          </div>
+          {/* Temp range bar */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-[10px] text-white/70">{weather.lowTemp}°</span>
+            <div className="h-1.5 flex-1 rounded-full bg-white/20">
+              <div className="relative h-1.5 rounded-full bg-gradient-to-r from-cyan-200 via-amber-200 to-orange-300" style={{ width: `${tempRange}%` }}>
+                <span className="absolute right-0 top-1/2 h-2.5 w-2.5 -translate-y-1/2 translate-x-1/2 rounded-full bg-white shadow-sm" />
+              </div>
+            </div>
+            <span className="text-[10px] text-white/70">{weather.highTemp}°</span>
+          </div>
+          <PM25Bar pm25={weather.pm25} level={weather.aqiLevel} />
+        </div>
+      </div>
+    </div>
     </section>
   )
 }
 
-function WeatherMetric({ icon, label, value, helper }: { icon: React.ReactNode; label: string; value: string; helper?: string }) {
+function PM25Bar({ pm25, level }: { pm25: number; level: string }) {
+  const pct = Math.min(100, (pm25 / 150) * 100)
+  const { color, bg } = pm25 <= 15
+    ? { color: 'text-emerald-300', bg: 'from-emerald-400 to-emerald-300' }
+    : pm25 <= 25
+    ? { color: 'text-lime-300', bg: 'from-lime-400 to-lime-300' }
+    : pm25 <= 37
+    ? { color: 'text-yellow-300', bg: 'from-yellow-400 to-yellow-300' }
+    : pm25 <= 50
+    ? { color: 'text-orange-300', bg: 'from-orange-400 to-orange-300' }
+    : { color: 'text-red-300', bg: 'from-red-500 to-red-400' }
+
   return (
-    <div className="flex flex-col p-1">
-      <div className="mb-1 flex items-center gap-1.5 text-[10px] font-bold text-white/80">
-        {icon}
-        <span>{label}</span>
+    <div className="flex flex-col gap-1 mt-1">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-1.5 text-[10px] font-bold text-white/80">
+          <Gauge size={13} aria-hidden="true" />
+          <span>PM2.5</span>
+        </div>
+        <div className="flex items-baseline gap-1.5">
+          <span className={`text-sm font-bold ${color} drop-shadow-sm`}>{pm25} <span className="text-[9px] font-semibold text-white/60">µg/m³</span></span>
+          <span className={`text-[10px] font-bold ${color}`}>{level}</span>
+        </div>
       </div>
-      <div className="flex items-baseline gap-2">
-        <p className="text-sm font-bold text-white drop-shadow-sm">{value}</p>
-        {helper && <p className="text-[10px] text-white/75 font-semibold">{helper}</p>}
+      <div className="relative h-2 w-full rounded-full bg-white/20 overflow-hidden">
+        <div
+          className={`h-full rounded-full bg-gradient-to-r ${bg} transition-all duration-700`}
+          style={{ width: `${pct}%` }}
+        />
+        {[10, 16.7, 24.7, 33.3].map((tick) => (
+          <span key={tick} className="absolute top-0 h-full w-px bg-white/30" style={{ left: `${tick * (100/15)}%` }} />
+        ))}
+      </div>
+      <div className="flex justify-between text-[9px] text-white/40 font-medium">
+        <span>0</span><span>15</span><span>25</span><span>37</span><span>50</span><span>150</span>
       </div>
     </div>
   )
 }
 
+function WeatherMetric({ icon, label, value, unit }: { icon: React.ReactNode; label: string; value: string; unit?: string }) {
+  return (
+    <div className="flex flex-col">
+      <div className="flex items-center gap-1 text-xs font-bold text-white/70 mb-0.5">
+        {icon}<span>{label}</span>
+      </div>
+      <div className="flex items-baseline gap-0.5">
+        <span className="text-base font-bold text-white">{value}</span>
+        {unit && <span className="text-[11px] text-white/60">{unit}</span>}
+      </div>
+    </div>
+  )
+}

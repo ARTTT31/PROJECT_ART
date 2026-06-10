@@ -46,27 +46,39 @@ async def get_calendar_events(
         # Construct iCal feed URL
         ical_url = f"https://calendar.google.com/calendar/ical/{calendar_id}/public/basic.ics"
         
-        # Fetch iCal data
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.get(ical_url)
-            response.raise_for_status()
+        # Fetch iCal data with retry
+        last_error = None
+        response = None
+        async with httpx.AsyncClient(timeout=httpx.Timeout(45.0, connect=10.0)) as client:
+            for attempt in range(3):
+                try:
+                    response = await client.get(ical_url)
+                    response.raise_for_status()
+                    break
+                except (httpx.TimeoutException, httpx.ConnectError) as e:
+                    last_error = e
+                    if attempt == 2:
+                        raise
+        if response is None:
+            raise last_error
         
         # Parse iCal data
         calendar = Calendar.from_ical(response.content)
         
-        # Parse time filters
+        # Parse time filters — keep as UTC-aware for comparison
+        tz_thai = pytz.timezone('Asia/Bangkok')
         time_min_dt = None
         time_max_dt = None
         
         if time_min:
             time_min_dt = datetime.fromisoformat(time_min.replace('Z', '+00:00'))
             if time_min_dt.tzinfo is None:
-                time_min_dt = time_min_dt.replace(tzinfo=timezone.utc)
+                time_min_dt = pytz.utc.localize(time_min_dt)
         
         if time_max:
             time_max_dt = datetime.fromisoformat(time_max.replace('Z', '+00:00'))
             if time_max_dt.tzinfo is None:
-                time_max_dt = time_max_dt.replace(tzinfo=timezone.utc)
+                time_max_dt = pytz.utc.localize(time_max_dt)
         
         # Extract events
         events = []
@@ -101,16 +113,20 @@ async def get_calendar_events(
                 if isinstance(start, datetime):
                     start_dt = start
                     if start_dt.tzinfo is None:
-                        start_dt = start_dt.replace(tzinfo=timezone.utc)
-                else:  # date object
-                    start_dt = datetime.combine(start, datetime.min.time()).replace(tzinfo=timezone.utc)
+                        start_dt = tz_thai.localize(start_dt)
+                    else:
+                        start_dt = start_dt.astimezone(tz_thai)
+                else:  # all-day date object
+                    start_dt = tz_thai.localize(datetime.combine(start, datetime.min.time()))
                 
                 if isinstance(end, datetime):
                     end_dt = end
                     if end_dt.tzinfo is None:
-                        end_dt = end_dt.replace(tzinfo=timezone.utc)
-                else:  # date object
-                    end_dt = datetime.combine(end, datetime.min.time()).replace(tzinfo=timezone.utc)
+                        end_dt = tz_thai.localize(end_dt)
+                    else:
+                        end_dt = end_dt.astimezone(tz_thai)
+                else:  # all-day date object
+                    end_dt = tz_thai.localize(datetime.combine(end, datetime.min.time()))
                 
                 # Apply time range filter
                 if time_min_dt and start_dt < time_min_dt:
@@ -136,13 +152,11 @@ async def get_calendar_events(
         
         return events
         
+    except httpx.TimeoutException as e:
+        raise HTTPException(status_code=504, detail=f"Calendar fetch timed out: {str(e)}")
+    except httpx.HTTPStatusError as e:
+        raise HTTPException(status_code=502, detail=f"Calendar returned {e.response.status_code}")
     except httpx.HTTPError as e:
-        raise HTTPException(
-            status_code=502,
-            detail=f"Failed to fetch calendar data: {str(e)}"
-        )
+        raise HTTPException(status_code=502, detail=f"Failed to fetch calendar: {str(e)}")
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error parsing calendar data: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Error parsing calendar: {str(e)}")

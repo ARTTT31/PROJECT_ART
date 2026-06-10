@@ -110,11 +110,11 @@ export default function AdminPage() {
         setError('Failed to load audit logs');
       })
       .finally(() => setLoading(false));
-  }, [page, user]);
+  }, [page, user, hasMore]);
 
   if (!user) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100">
+      <div className="flex min-h-[100dvh] items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100">
         <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-sky-500" />
       </div>
     );
@@ -132,13 +132,15 @@ export default function AdminPage() {
           <div className="flex items-center gap-3">
             <button
               onClick={() => setShowCreateDialog(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-semibold rounded-lg hover:shadow-lg hover:shadow-blue-500/25 transition-all active:scale-95"
+              className="art-primary-button !min-h-[40px] !px-4 !py-2 !text-sm"
             >
-              <Plus className="h-4 w-4" />
-              สร้างผู้ใช้
+              <span className="flex items-center gap-2">
+                <Plus className="h-4 w-4" />
+                สร้างผู้ใช้
+              </span>
             </button>
             {error && (
-              <div className="flex items-center gap-3 bg-red-50/80 border border-red-200 text-red-700 px-4 py-3 rounded-2xl backdrop-blur-sm">
+              <div className="flex items-center gap-3 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl">
                 <AlertCircle size={18} className="flex-shrink-0" />
                 <span className="text-sm font-medium">{error}</span>
               </div>
@@ -146,50 +148,45 @@ export default function AdminPage() {
           </div>
         </div>
 
-        {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="premium-card !p-5 flex flex-col rounded-2xl hover:shadow-md transition-all">
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-slate-600 font-medium text-sm">ผู้ใช้ทั้งหมด</p>
-              <div className="p-2.5 bg-blue-100/50 rounded-xl text-blue-600">
-                <Users size={18} />
+        {/* Statistics Bar */}
+        <div className="premium-card !rounded-[14px] !p-0 overflow-hidden">
+          <div className="grid grid-cols-2 lg:grid-cols-4 divide-x divide-slate-100">
+            <div className="flex items-center gap-3 p-4">
+              <div className="p-2 bg-blue-50 rounded-lg text-blue-600">
+                <Users size={16} />
+              </div>
+              <div>
+                <p className="text-xs text-slate-500 font-medium">ผู้ใช้ทั้งหมด</p>
+                <p className="text-xl font-bold text-slate-900">{stats.totalUsers}</p>
               </div>
             </div>
-            <div className="text-3xl font-bold text-slate-900">{stats.totalUsers}</div>
-            <p className="text-xs text-slate-400 mt-2">จำนวนผู้ใช้ทั้งหมดในระบบ</p>
-          </div>
-
-          <div className="premium-card !p-5 flex flex-col rounded-2xl hover:shadow-md transition-all">
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-slate-600 font-medium text-sm">ผู้ใช้ทีใช้งาน</p>
-              <div className="p-2.5 bg-green-100/50 rounded-xl text-green-600">
-                <CheckCircle2 size={18} />
+            <div className="flex items-center gap-3 p-4">
+              <div className="p-2 bg-green-50 rounded-lg text-green-600">
+                <CheckCircle2 size={16} />
+              </div>
+              <div>
+                <p className="text-xs text-slate-500 font-medium">ใช้งาน</p>
+                <p className="text-xl font-bold text-slate-900">{stats.activeUsers}</p>
               </div>
             </div>
-            <div className="text-3xl font-bold text-slate-900">{stats.activeUsers}</div>
-            <p className="text-xs text-slate-400 mt-2">ผู้ใช้งานปกติ</p>
-          </div>
-
-          <div className="premium-card !p-5 flex flex-col rounded-2xl hover:shadow-md transition-all">
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-slate-600 font-medium text-sm">ผู้ใช้ถูกล็อค</p>
-              <div className="p-2.5 bg-red-100/50 rounded-xl text-red-600">
-                <AlertCircle size={18} />
+            <div className="flex items-center gap-3 p-4">
+              <div className="p-2 bg-red-50 rounded-lg text-red-600">
+                <AlertCircle size={16} />
+              </div>
+              <div>
+                <p className="text-xs text-slate-500 font-medium">ถูกล็อค</p>
+                <p className="text-xl font-bold text-slate-900">{stats.lockedUsers}</p>
               </div>
             </div>
-            <div className="text-3xl font-bold text-slate-900">{stats.lockedUsers}</div>
-            <p className="text-xs text-slate-400 mt-2">ผู้ใช้ถูกล็อคการเข้าถึง</p>
-          </div>
-
-          <div className="premium-card !p-5 flex flex-col rounded-2xl hover:shadow-md transition-all">
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-slate-600 font-medium text-sm">ผู้ดูแลระบบ</p>
-              <div className="p-2.5 bg-amber-100/50 rounded-xl text-amber-600">
-                <Activity size={18} />
+            <div className="flex items-center gap-3 p-4">
+              <div className="p-2 bg-amber-50 rounded-lg text-amber-600">
+                <Activity size={16} />
+              </div>
+              <div>
+                <p className="text-xs text-slate-500 font-medium">ผู้ดูแล</p>
+                <p className="text-xl font-bold text-slate-900">{stats.adminUsers}</p>
               </div>
             </div>
-            <div className="text-3xl font-bold text-slate-900">{stats.adminUsers}</div>
-            <p className="text-xs text-slate-400 mt-2">ผู้ดูแลระบบ</p>
           </div>
         </div>
 
@@ -241,7 +238,7 @@ export default function AdminPage() {
                 <button
                   onClick={() => setPage((p) => p + 1)}
                   disabled={loading}
-                  className="w-full py-3 px-4 bg-gradient-to-r from-sky-500 to-blue-500 text-white font-semibold rounded-2xl hover:shadow-lg hover:shadow-sky-500/25 transition-all active:scale-95 disabled:opacity-50"
+                  className="art-primary-button w-full !min-h-[44px] !text-sm disabled:opacity-50"
                 >
                   {loading ? 'กำลังโหลด...' : 'โหลดเพิ่มเติม'}
                 </button>

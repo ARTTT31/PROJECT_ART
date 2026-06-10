@@ -4,7 +4,7 @@ import './globals.css';
 import { Providers } from './providers';
 
 const anuphan = Anuphan({
-  weight: ['200', '300', '400', '500', '600', '700'],
+  weight: ['400', '600', '700'],
   subsets: ['thai', 'latin'],
   display: 'swap',
 });
@@ -29,10 +29,6 @@ export default function RootLayout({
         <meta property="og:description" content="Check weather, AQI, and manage your dashboard" />
         <meta property="og:type" content="website" />
         <meta property="og:image" content="/og-image.png" />
-        <link
-          rel="stylesheet"
-          href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
-        />
       </head>
       <body className={anuphan.className}>
           {/* Theme toggle removed */}

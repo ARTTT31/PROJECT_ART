@@ -16,6 +16,7 @@ pydantic[email]==2.5.3
 
 # HTTP Requests
 requests==2.31.0
+httpx==0.26.0
 
 # Utilities
 python-dotenv==1.0.0
@@ -32,6 +33,12 @@ httpx==0.26.0
 # Calendar Integration
 icalendar==5.0.11
 pytz==2024.1
+
+# Rate Limiting
+slowapi==0.1.9
+
+# System Monitoring
+psutil==5.9.8
 
 # Development / Linting
 flake8==6.1.0

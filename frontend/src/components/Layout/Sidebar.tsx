@@ -3,11 +3,13 @@
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { Database, Home, LogOut, User } from 'lucide-react'
+import { isExternalUrl, parseQuickLinks, QUICK_LINK_ICON_MAP } from '@/utils/quickLinks'
+import { DashboardUser } from '@/types'
 
 interface SidebarProps {
   isOpen: boolean
   onClose: () => void
-  user: any
+  user: DashboardUser | null
   onLogout: () => void
 }
 
@@ -26,6 +28,25 @@ interface MenuSection {
 export default function Sidebar({ isOpen, onClose, user, onLogout }: SidebarProps) {
   const pathname = usePathname()
 
+  const quickLinks = parseQuickLinks(user?.quick_links)
+
+  const quickLinkSection: MenuSection | null =
+    quickLinks.length > 0
+      ? {
+          title: 'ควิกลิ้งค์',
+          items: quickLinks.map((ql) => {
+            const Icon = QUICK_LINK_ICON_MAP[ql.icon]
+            const external = isExternalUrl(ql.url)
+            return {
+              name: ql.label,
+              href: ql.url,
+              external,
+              icon: <Icon size={20} aria-hidden="true" style={{ color: ql.color || undefined }} />,
+            }
+          }),
+        }
+      : null
+
   const menuItems: MenuSection[] = [
     {
       title: 'เมนูหลัก',
@@ -34,27 +55,31 @@ export default function Sidebar({ isOpen, onClose, user, onLogout }: SidebarProp
         { name: 'โปรไฟล์', href: '/profile', icon: <User size={20} aria-hidden="true" /> },
       ],
     },
+    ...(quickLinkSection ? [quickLinkSection] : []),
     ...(user?.role === 'admin' ? [{
-      title: 'ผู้ดูแลระบบ',
+      title: 'จัดการระบบ',
       items: [
-        { name: 'จัดการระบบหลังบ้าน', href: '/admin', icon: <Database size={20} aria-hidden="true" /> },
+        { name: 'จัดการระบบ', href: '/admin', icon: <Database size={20} aria-hidden="true" /> },
       ]
     }] : []),
   ]
 
   return (
     <aside
-      className={`fixed left-0 top-0 z-40 h-screen w-64 border-r border-white/20 bg-slate-900/70 backdrop-blur-[32px] shadow-glass-xl text-white transition-transform duration-300 ${
+      className={`fixed left-0 top-0 z-40 h-screen w-64 border-r border-slate-200/60 bg-white/90 shadow-glass-lg text-slate-900 transition-transform duration-300 ${
         isOpen ? 'translate-x-0' : '-translate-x-full'
       } lg:translate-x-0`}
     >
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(255,255,255,0.05),transparent_45%),radial-gradient(circle_at_20%_80%,rgba(30,58,138,0.2),transparent_50%),linear-gradient(to_bottom,#0f172a,#1e293b)]" aria-hidden="true" />
+      <div
+        className="absolute inset-0 bg-[radial-gradient(circle_at_80%_10%,rgba(14,165,233,0.12),transparent_42%),radial-gradient(circle_at_10%_90%,rgba(99,102,241,0.10),transparent_46%),linear-gradient(to_bottom,rgba(248,250,252,0.96),rgba(241,245,249,0.92))]"
+        aria-hidden="true"
+      />
       <div className="relative flex h-full flex-col">
-        <div className="flex items-center justify-between border-b border-white/5 p-5">
+        <div className="flex items-center justify-between border-b border-slate-200/60 p-5">
           <Link href="/dashboard" className="flex items-center gap-3" onClick={onClose}>
             <div>
-              <div className="text-base font-bold tracking-wider text-white">ART WORKSPACE</div>
-              <div className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">Personal Dashboard</div>
+              <div className="text-base font-bold tracking-wide text-slate-950">ART Workspace</div>
+              <div className="text-[11px] font-semibold tracking-wide text-slate-500">Personal Dashboard</div>
             </div>
           </Link>
         </div>
@@ -63,10 +88,10 @@ export default function Sidebar({ isOpen, onClose, user, onLogout }: SidebarProp
           <div className="space-y-6">
             {menuItems.map((section) => (
               <div key={section.title}>
-                <div className="mb-2 px-3 text-[11px] font-bold uppercase tracking-wider text-slate-400">{section.title}</div>
+                <div className="mb-2 px-3 text-[11px] font-bold uppercase tracking-wider text-slate-500">{section.title}</div>
                 <ul className="space-y-1">
                   {section.items.map((item) => {
-                    const isActive = pathname === item.href
+                    const isActive = !item.external && pathname === item.href
                     const ItemComponent = item.external ? 'a' : Link
 
                     return (
@@ -75,16 +100,16 @@ export default function Sidebar({ isOpen, onClose, user, onLogout }: SidebarProp
                           href={item.href}
                           target={item.external ? '_blank' : undefined}
                           rel={item.external ? 'noopener noreferrer' : undefined}
-                          className={`group flex min-h-11 items-center gap-3 rounded-2xl px-3.5 py-2.5 text-sm font-semibold transition-all duration-300 ${
+                          className={`group flex min-h-11 items-center gap-3 rounded-2xl px-3.5 py-2.5 text-sm font-semibold transition-all duration-200 ${
                             isActive
-                              ? 'bg-white/20 shadow-[inset_0_1px_0_rgba(255,255,255,0.2)] text-white'
-                              : 'text-slate-300 hover:bg-white/10 hover:text-white'
+                              ? 'bg-sky-500/10 text-slate-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.45)]'
+                              : 'text-slate-700 hover:bg-white/70 hover:text-slate-950'
                           }`}
                           onClick={() => !item.external && onClose()}
                         >
-                          <span className={isActive ? 'text-white' : 'text-slate-400 group-hover:text-white'}>{item.icon}</span>
+                          <span className={isActive ? 'text-sky-700' : 'text-slate-500 group-hover:text-slate-700'}>{item.icon}</span>
                           <span className="flex-1">{item.name}</span>
-                          {item.external && <span className="text-xs text-slate-500/80">↗</span>}
+                          {item.external && <span className="text-xs text-slate-400/90">↗</span>}
                         </ItemComponent>
                       </li>
                     )
@@ -95,10 +120,10 @@ export default function Sidebar({ isOpen, onClose, user, onLogout }: SidebarProp
           </div>
         </nav>
 
-        <div className="border-t border-white/5 p-4">
+        <div className="border-t border-slate-200/60 p-4">
           <button
             onClick={onLogout}
-            className="flex min-h-11 w-full items-center gap-3 rounded-2xl px-3.5 py-2.5 text-sm font-semibold text-red-400/90 transition-all duration-300 hover:bg-red-500/15 hover:text-red-300"
+            className="flex min-h-11 w-full items-center gap-3 rounded-2xl px-3.5 py-2.5 text-sm font-semibold text-red-600 transition-all duration-200 hover:bg-red-50 hover:text-red-700"
           >
             <LogOut size={20} aria-hidden="true" />
             ออกจากระบบ

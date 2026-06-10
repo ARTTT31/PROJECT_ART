@@ -2,7 +2,16 @@ from sqlalchemy.orm import Session
 from app.models.audit_log import AuditLog
 from typing import Optional
 
+
 class AuditService:
+    """
+    Service for audit log operations.
+
+    NOTE: This service does NOT call db.commit().
+    The caller is responsible for committing the transaction.
+    This keeps transactional boundaries under the endpoint's control.
+    """
+
     def __init__(self, db: Session):
         self.db = db
 
@@ -22,8 +31,7 @@ class AuditService:
             user_agent=user_agent
         )
         self.db.add(db_log)
-        self.db.commit()
-        self.db.refresh(db_log)
+        # Note: No commit() here — caller handles the transaction
         return db_log
 
     def get_logs(self, skip: int = 0, limit: int = 100):

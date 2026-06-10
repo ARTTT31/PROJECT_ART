@@ -1,15 +1,26 @@
 'use client'
 
 import { useState } from 'react'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
+import WidgetSizeToggle from './WidgetSizeToggle'
 
 export default function CalendarWidget({
   width = 3,
-  onResize
+  onResize,
+  selectedMonth,
+  onMonthChange,
 }: {
   width?: number
   onResize?: (size: number) => void
+  selectedMonth?: Date
+  onMonthChange?: (date: Date) => void
 }) {
-  const [currentDate, setCurrentDate] = useState(new Date())
+  const [internalDate, setInternalDate] = useState(new Date())
+  const currentDate = selectedMonth || internalDate
+  const setCurrentDate = (d: Date) => {
+    setInternalDate(d)
+    onMonthChange?.(d)
+  }
 
   // Thai month names
   const thaiMonths = [
@@ -38,7 +49,8 @@ export default function CalendarWidget({
 
   // Go to today
   const goToToday = () => {
-    setCurrentDate(new Date())
+    const now = new Date()
+    setCurrentDate(now)
   }
 
   const currentYear = currentDate.getFullYear()
@@ -53,12 +65,10 @@ export default function CalendarWidget({
         }`}>
           <div className="flex items-center justify-between w-full flex-wrap gap-2 sm:gap-3">
             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-              <div className={`widget-header-icon primary animate-pulse-slow flex-shrink-0 ${
+              <div className={`widget-header-icon primary flex-shrink-0 ${
                 width === 2 ? 'p-1.5' : 'p-2'
               }`}>
-                <i className={`bi bi-calendar-event ${
-                  width === 2 ? 'text-lg' : 'text-xl'
-                }`} aria-hidden="true"></i>
+                <svg className={`${width === 2 ? 'w-5 h-5' : 'w-6 h-6'}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="m9 16 2 2 4-4"/></svg>
               </div>
               <div className="min-w-0">
                 <h3 id="calendar-title" className={`font-semibold text-primary-700 ${
@@ -82,9 +92,7 @@ export default function CalendarWidget({
                 title="เดือนก่อนหน้า"
                 className="refresh-btn"
               >
-                <i className={`bi bi-chevron-left ${
-                  width === 2 ? 'text-base' : 'text-lg'
-                }`} aria-hidden="true"></i>
+                <ChevronLeft className={`${width === 2 ? 'w-4 h-4' : 'w-5 h-5'}`} aria-hidden="true" />
               </button>
               <button
                 onClick={goToToday}
@@ -100,59 +108,22 @@ export default function CalendarWidget({
                 title="เดือนถัดไป"
                 className="refresh-btn"
               >
-                <i className={`bi bi-chevron-right ${
-                  width === 2 ? 'text-base' : 'text-lg'
-                }`} aria-hidden="true"></i>
+                <ChevronRight className={`${width === 2 ? 'w-4 h-4' : 'w-5 h-5'}`} aria-hidden="true" />
               </button>
 
               {onResize && (
-                <div style={{
-                  position: 'relative',
-                  display: 'inline-flex',
-                  width: 'fit-content',
-                  minHeight: '44px',
-                  alignItems: 'center',
-                  gap: '11px',
-                  borderRadius: '999px',
-                  border: '1.5px solid rgba(203, 213, 225, 0.5)',
-                  background: 'rgba(248, 250, 252, 0.85)',
-                  backdropFilter: 'blur(8px) saturate(180%)',
-                  padding: '7px 16px 7px 8px',
-                  boxShadow: '0 2px 8px rgba(15, 23, 42, 0.03)',
-                  transition: 'all 250ms cubic-bezier(0.4, 0, 0.2, 1)',
-                }}>
-                  {[2, 3].map((size) => (
-                    <button
-                      key={size}
-                      onClick={() => onResize(size)}
-                      className={`relative flex items-center justify-center rounded-full text-xs font-extrabold transition-all duration-250 min-w-0 min-h-0 ${
-                        width === size
-                          ? 'bg-gradient-to-r from-cyan-400 to-blue-500 text-white shadow-lg'
-                          : 'text-slate-600 hover:text-slate-800'
-                      }`}
-                      style={{
-                        padding: '6px 14px',
-                        minWidth: '32px',
-                        height: '28px',
-                      }}
-                      title={`${size === 2 ? 'กลาง (M)' : 'ใหญ่ (L)'}`}
-                      aria-label={`ปรับขนาดเป็น ${size === 2 ? 'กลาง' : 'ใหญ่'}`}
-                    >
-                      {size === 2 ? 'M' : 'L'}
-                    </button>
-                  ))}
-                </div>
+                <WidgetSizeToggle value={width} onChange={onResize} />
               )}
             </div>
           </div>
         </div>
 
-        <div className="widget-body flex-1 flex flex-col p-0 overflow-hidden" style={{ minHeight: width === 2 ? '300px' : '400px' }}>
+        <div className="widget-body flex-1 flex flex-col p-0 overflow-hidden">
           {/* Google Calendar Embed */}
           <iframe
             key={getCalendarUrl()}
             src={getCalendarUrl()}
-            style={{ border: 0, flex: 1, width: '100%' }}
+            style={{ border: 0, flex: 1, width: '100%', minHeight: '450px' }}
             frameBorder="0"
             scrolling="no"
             title="Google Calendar"

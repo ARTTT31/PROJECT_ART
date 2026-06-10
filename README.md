@@ -394,38 +394,33 @@ docker-compose exec -T backend python create_admin_simple.py
 - Modern gradient background พร้อม animated blobs
 - Glassmorphism card design
 - Email/Password inputs พร้อม icons
+- Password validation (อย่างน้อย 6 ตัวอักษร)
 - Show/Hide password toggle
 - Caps Lock warning
 - Remember me checkbox
 - Loading state พร้อม spinner
+- Rate limit feedback (นับถอยหลัง countdown เมื่อถูก 429)
 - Error messages แบบ inline
+- Client-side navigation ด้วย Next.js router
 
 ### หน้า Dashboard
 - Welcome bar พร้อม greeting ตามเวลา
 - **Weather Widget** - Real-time weather data (Open-Meteo API)
-  - Current weather, UV Index, Sunrise/Sunset, Visibility
-  - PM2.5 & AQI (Air Quality Index)
-  - 7-day forecast
+  - Auto-detect GPS location เมื่อเปิดหน้า (ขอ permission อัตโนมัติ)
+  - แสดงชื่อเขต + จังหวัด จาก reverse geocoding (BigDataCloud API)
+  - Current weather, UV Index, ความชื้น, ลม
+  - **PM2.5 Bar Indicator** - แสดงค่าฝุ่น µg/m³ พร้อม color-coded bar และระดับคุณภาพอากาศ
+  - Temperature range bar
   - Auto-refresh every 2 minutes
-- **Oil Price Widget** - Thai oil prices (Thai Oil API)
-  - All fuel types with price change indicators
-  - Percentage change comparison
-  - Fallback proxies for reliability
-- **Todo Widget** - Task management
-  - CRUD operations (Add/Edit/Delete)
-  - Filter (All/Active/Completed)
-  - localStorage persistence
-  - Stats display
-- **Calculator Widget** - Functional calculator
-  - Basic operations (+, -, ×, ÷)
-  - Keyboard support
-  - Decimal, Percentage, Toggle sign
-- **Barcode/QR Widget** - Code generator
-  - Generate Barcode & QR Code
-  - Download, Copy, Share, Print
-  - Color picker
-- Quick stats cards (dynamic from widgets)
-- Responsive grid layout
+  - ค้นหาตำแหน่งด้วย geocoding search
+- **รายการงาน Widget** - ดึงข้อมูลจาก Google Calendar (iCal feed)
+  - กรองหลัก: ทั้งหมด / IMACD / ธัญพงศ์ (ค้นหาจากทั้ง title และ description)
+  - กรองรอง: ประเภทงาน (DEMO, Installation, Training, Onsite Services ฯลฯ)
+  - งานที่มี tag IMACD หรือ ธัญพงศ์ จะแสดงเสมอ ไม่ถูกกรองทิ้งโดย category filter
+  - รองรับ all-day events ด้วย timezone Asia/Bangkok
+  - ค้นหาข้อความใน title, description, location
+- **ปฏิทิน Widget** - Google Calendar Embed พร้อม navigation เดือน
+  - Shared selectedMonth state กับ รายการงาน Widget
 
 ### หน้า Profile
 - Profile card พร้อม avatar
@@ -468,11 +463,18 @@ docker-compose exec -T backend python create_admin_simple.py
 - [x] Hot Reload Development
 
 ### ✅ Phase 2 - Dashboard Widgets (Complete)
-- [x] Weather Widget (Open-Meteo API, UV Index, PM2.5, AQI, 7-day forecast)
-- [x] Oil Price Widget (Thai Oil API, Price Change, Percentage)
-- [x] Todo Widget (CRUD, Filter, localStorage, Stats)
-- [x] Calculator Widget (Basic operations, Keyboard support)
-- [x] Barcode/QR Widget (Generate, Download, Copy, Share, Print)
+- [x] Weather Widget
+  - [x] Open-Meteo API, UV Index, ความชื้น, ลม
+  - [x] PM2.5 Bar Indicator พร้อม color scale และ threshold ticks
+  - [x] Auto GPS location detection เมื่อโหลดหน้า
+  - [x] แสดงชื่อเขต + จังหวัด (reverse geocoding)
+  - [x] Search location ด้วย geocoding API
+- [x] Calendar Widget (Google Calendar Embed + month navigation)
+- [x] TaskList Widget (Google Calendar iCal feed)
+  - [x] Filter IMACD / ธัญพงศ์ จาก title และ description
+  - [x] Category filter รอง (DEMO, Installation ฯลฯ)
+  - [x] Tagged events ผ่าน category filter เสมอ
+  - [x] รองรับ all-day events ด้วย Asia/Bangkok timezone
 
 ### 📝 Phase 3 - Advanced Features (Next)
 - [ ] User Management (Admin Panel)
@@ -502,8 +504,8 @@ This project is private and proprietary.
 
 - **Developer**: ART Workspace Team
 - **Project**: ART Workspace Modern Stack
-- **Version**: 2.0.0
-- **Last Updated**: June 2, 2026
+- **Version**: 2.1.0
+- **Last Updated**: June 2026
 
 ---
 

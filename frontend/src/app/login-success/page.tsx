@@ -12,55 +12,73 @@ export default function LoginSuccessPage() {
   useEffect(() => {
     if (hasRedirected.current) return;
 
-    try {
-      // Try reading from URL first (query params)
-      const params = new URLSearchParams(window.location.search);
-      const access_token = params.get('access_token');
-      const refresh_token = params.get('refresh_token');
-      const user_str = params.get('user');
-      
-      let user = null;
-      if (user_str) {
-        user = JSON.parse(decodeURIComponent(user_str));
-      }
+    const processLogin = async () => {
+      try {
+        // Step 1: Try reading user data from non-httpOnly cookie (fast)
+        const userCookie = document.cookie
+          .split('; ')
+          .find((c) => c.startsWith('user='));
+        
+        let user = null;
+        if (userCookie) {
+          try {
+            user = JSON.parse(decodeURIComponent(userCookie.split('=').slice(1).join('=')));
+          } catch {
+            // cookie parse failed, fall through to session endpoint
+          }
+        }
 
-      console.log('Login success:', { 
-        hasAccessToken: !!access_token, 
-        hasRefreshToken: !!refresh_token,
-        user: user?.name 
-      });
+        // Step 2: Call session endpoint to get access_token from HTTP-only cookies
+        const res = await fetch('/api/v1/auth/session', {
+          credentials: 'include', // Send cookies
+        });
 
-      if (access_token && user) {
-        hasRedirected.current = true;
-        
-        // Store tokens
-        localStorage.setItem('access_token', access_token);
-        if (refresh_token) localStorage.setItem('refresh_token', refresh_token);
-        localStorage.setItem('user', JSON.stringify(user));
-        
-        // Trigger auth context login
-        login(access_token, user);
-        
-        console.log('Stored tokens, redirecting to dashboard');
-        setTimeout(() => router.push('/dashboard'), 300);
-      } else {
-        console.log('Missing tokens or user, redirecting to login');
+        if (!res.ok) {
+          console.log('No valid session found, redirecting to login');
+          hasRedirected.current = true;
+          router.push('/login');
+          return;
+        }
+
+        const json = await res.json();
+        const { access_token, refresh_token, user: sessionUser } = json.data || {};
+
+        if (access_token && (sessionUser || user)) {
+          hasRedirected.current = true;
+          const userData = sessionUser || user;
+
+          // Store tokens in localStorage for the auth context
+          localStorage.setItem('access_token', access_token);
+          if (refresh_token) localStorage.setItem('refresh_token', refresh_token);
+          localStorage.setItem('user', JSON.stringify(userData));
+
+          // Trigger auth context login
+          login(access_token, userData);
+
+          // Clean up URL (remove any residual params)
+          window.history.replaceState({}, '', '/login-success');
+
+          setTimeout(() => router.push('/dashboard'), 300);
+        } else {
+          hasRedirected.current = true;
+          router.push('/login');
+        }
+      } catch (err) {
+        console.error('Error processing login:', err);
         hasRedirected.current = true;
         router.push('/login');
       }
-    } catch (err) {
-      console.error('Error processing login:', err);
-      hasRedirected.current = true;
-      router.push('/login');
-    }
-  }, []);
+    };
+
+    processLogin();
+  }, [login, router]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100">
+    <div className="min-h-[100dvh] flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100">
       <div className="text-center">
         <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
-        <h2 className="text-2xl font-bold text-gray-900">เข้าสู่ระบบสำเร็จ</h2>
-        <p className="mt-2 text-gray-700">กำลังพาคุณเข้าสู่ Dashboard...</p>
+        <h2 className="text-2xl font-bold text-slate-900">เข้าสู่ระบบสำเร็จ</h2>
+        <p className="mt-2 text-slate-600">กำลังพาคุณเข้าสู่ Dashboard...</p>
       </div>
     </div>
   );

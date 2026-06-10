@@ -4,7 +4,7 @@ Authentication Service - Business logic for authentication
 from typing import Optional, Dict
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import uuid
 
 from app.models.user import User
@@ -65,7 +65,7 @@ class AuthService:
         
         # Check if account is locked
         if user.is_locked:
-            if user.locked_until and user.locked_until > datetime.utcnow():
+            if user.locked_until and user.locked_until > datetime.now(timezone.utc).replace(tzinfo=None):
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail="บัญชีถูกล็อก กรุณาลองใหม่ภายหลัง",
@@ -91,7 +91,7 @@ class AuthService:
             # Lock account after 5 failed attempts
             if user.failed_login_attempts >= 5:
                 user.is_locked = True
-                user.locked_until = datetime.utcnow() + timedelta(minutes=30)
+                user.locked_until = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(minutes=30)
                 self.db.commit()
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
@@ -124,7 +124,7 @@ class AuthService:
         
         if existing_session:
             existing_session.is_active = True
-            existing_session.last_activity = datetime.utcnow()
+            existing_session.last_activity = datetime.now(timezone.utc).replace(tzinfo=None)
             existing_session.user_agent = user_agent
             existing_session.device_label = device_label
             existing_session.ip_address = ip_address
@@ -135,7 +135,7 @@ class AuthService:
                 user_agent=user_agent,
                 device_label=device_label,
                 ip_address=ip_address,
-                expires_at=datetime.utcnow() + timedelta(days=7),
+                expires_at=datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(days=7),
             )
             self.db.add(new_session)
         
@@ -155,6 +155,8 @@ class AuthService:
                 "email": user.email,
                 "name": user.name,
                 "role": user.role,
+                "avatar": user.avatar,
+                "quick_links": user.quick_links,
             },
         }
 
