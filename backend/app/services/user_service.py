@@ -2,7 +2,8 @@
 User Service - Business logic for user management
 """
 from typing import List, Optional
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
 from datetime import datetime, timezone
 
 from app.models.user import User
@@ -18,22 +19,25 @@ def _utcnow() -> datetime:
 class UserService:
     """Service for user-related operations"""
 
-    def __init__(self, db: Session):
+    def __init__(self, db: AsyncSession):
         self.db = db
 
-    def get_user_by_id(self, user_id: int) -> Optional[User]:
+    async def get_user_by_id(self, user_id: int) -> Optional[User]:
         """Get user by ID"""
-        return self.db.query(User).filter(User.id == user_id).first()
+        result = await self.db.execute(select(User).where(User.id == user_id))
+        return result.scalar_one_or_none()
 
-    def get_user_by_email(self, email: str) -> Optional[User]:
+    async def get_user_by_email(self, email: str) -> Optional[User]:
         """Get user by email"""
-        return self.db.query(User).filter(User.email == email.lower()).first()
+        result = await self.db.execute(select(User).where(User.email == email.lower()))
+        return result.scalar_one_or_none()
 
-    def get_users(self, skip: int = 0, limit: int = 100) -> List[User]:
+    async def get_users(self, skip: int = 0, limit: int = 100) -> List[User]:
         """Get list of users with pagination"""
-        return self.db.query(User).offset(skip).limit(limit).all()
+        result = await self.db.execute(select(User).offset(skip).limit(limit))
+        return result.scalars().all()
 
-    def create_user(self, user_create: UserCreate) -> User:
+    async def create_user(self, user_create: UserCreate) -> User:
         """
         Create new user
         
@@ -47,7 +51,7 @@ class UserService:
             ValueError: If email already exists
         """
         # Check if email already exists
-        existing_user = self.get_user_by_email(user_create.email)
+        existing_user = await self.get_user_by_email(user_create.email)
         if existing_user:
             raise ValueError("อีเมลนี้ถูกใช้งานแล้ว")
 
@@ -62,12 +66,12 @@ class UserService:
         )
         
         self.db.add(db_user)
-        self.db.commit()
-        self.db.refresh(db_user)
+        await self.db.commit()
+        await self.db.refresh(db_user)
         
         return db_user
 
-    def update_user(self, user_id: int, user_update: UserUpdate) -> User:
+    async def update_user(self, user_id: int, user_update: UserUpdate) -> User:
         """
         Update user profile
         
@@ -81,13 +85,13 @@ class UserService:
         Raises:
             ValueError: If user not found or email already exists
         """
-        user = self.get_user_by_id(user_id)
+        user = await self.get_user_by_id(user_id)
         if not user:
             raise ValueError("ไม่พบผู้ใช้")
 
         # Check if new email already exists
         if user_update.email and user_update.email != user.email:
-            existing_user = self.get_user_by_email(user_update.email)
+            existing_user = await self.get_user_by_email(user_update.email)
             if existing_user:
                 raise ValueError("อีเมลนี้ถูกใช้งานแล้ว")
             user.email = user_update.email.lower()
@@ -102,12 +106,12 @@ class UserService:
 
         user.updated_at = _utcnow()
         
-        self.db.commit()
-        self.db.refresh(user)
+        await self.db.commit()
+        await self.db.refresh(user)
         
         return user
 
-    def change_password(
+    async def change_password(
         self, user_id: int, old_password: str, new_password: str
     ) -> bool:
         """
@@ -121,7 +125,7 @@ class UserService:
         Returns:
             True if successful, False if old password is incorrect
         """
-        user = self.get_user_by_id(user_id)
+        user = await self.get_user_by_id(user_id)
         if not user:
             raise ValueError("ไม่พบผู้ใช้")
 
@@ -133,33 +137,33 @@ class UserService:
         user.hashed_password = get_password_hash(new_password)
         user.updated_at = _utcnow()
         
-        self.db.commit()
+        await self.db.commit()
         
         return True
 
-    def update_avatar(self, user_id: int, avatar_base64: str) -> None:
+    async def update_avatar(self, user_id: int, avatar_base64: str) -> None:
         """Update user avatar"""
-        user = self.get_user_by_id(user_id)
+        user = await self.get_user_by_id(user_id)
         if not user:
             raise ValueError("ไม่พบผู้ใช้")
 
         user.avatar = avatar_base64
         user.updated_at = _utcnow()
         
-        self.db.commit()
+        await self.db.commit()
 
-    def update_quick_links(self, user_id: int, quick_links: str) -> None:
+    async def update_quick_links(self, user_id: int, quick_links: str) -> None:
         """Update user quick links"""
-        user = self.get_user_by_id(user_id)
+        user = await self.get_user_by_id(user_id)
         if not user:
             raise ValueError("ไม่พบผู้ใช้")
 
         user.quick_links = quick_links
         user.updated_at = _utcnow()
         
-        self.db.commit()
+        await self.db.commit()
 
-    def delete_user(self, user_id: int) -> bool:
+    async def delete_user(self, user_id: int) -> bool:
         """
         Delete user
         
@@ -169,39 +173,39 @@ class UserService:
         Returns:
             True if deleted, False if not found
         """
-        user = self.get_user_by_id(user_id)
+        user = await self.get_user_by_id(user_id)
         if not user:
             return False
 
-        self.db.delete(user)
-        self.db.commit()
+        await self.db.delete(user)
+        await self.db.commit()
         
         return True
 
-    def update_last_login(
+    async def update_last_login(
         self, user_id: int, ip_address: Optional[str] = None, device: Optional[str] = None
     ) -> None:
         """Update user's last login timestamp and metadata"""
-        user = self.get_user_by_id(user_id)
+        user = await self.get_user_by_id(user_id)
         if user:
             user.last_login = _utcnow()
             if ip_address:
                 user.last_login_ip = ip_address
             if device:
                 user.last_login_device = device
-            self.db.commit()
+            await self.db.commit()
 
-    def admin_update_user(self, user_id: int, user_update: UserAdminUpdate) -> User:
+    async def admin_update_user(self, user_id: int, user_update: UserAdminUpdate) -> User:
         """
         Update user information as admin
         """
-        user = self.get_user_by_id(user_id)
+        user = await self.get_user_by_id(user_id)
         if not user:
             raise ValueError("ไม่พบผู้ใช้")
 
         # Check if new email already exists
         if user_update.email and user_update.email != user.email:
-            existing_user = self.get_user_by_email(user_update.email)
+            existing_user = await self.get_user_by_email(user_update.email)
             if existing_user:
                 raise ValueError("อีเมลนี้ถูกใช้งานแล้ว")
             user.email = user_update.email.lower()
@@ -222,6 +226,6 @@ class UserService:
             user.hashed_password = get_password_hash(user_update.password)
 
         user.updated_at = _utcnow()
-        self.db.commit()
-        self.db.refresh(user)
+        await self.db.commit()
+        await self.db.refresh(user)
         return user
