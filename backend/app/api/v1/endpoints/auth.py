@@ -11,7 +11,8 @@ from urllib.parse import urlencode
 import requests
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import RedirectResponse
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
 
 # Lazy imports for google-auth (optional dependency — may not be installed yet)
 try:
@@ -40,7 +41,7 @@ router = APIRouter()
 async def login(
     request: Request,
     user_login: UserLogin,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Login endpoint
@@ -55,7 +56,7 @@ async def login(
     user_agent = request.headers.get("user-agent")
 
     try:
-        result = auth_service.login(
+        result = await auth_service.login(
             email=user_login.email,
             password=user_login.password,
             session_id=user_login.session_id,
@@ -65,14 +66,14 @@ async def login(
         )
 
         # Log success (committed by auth_service.login)
-        audit_service.log_action(
+        await audit_service.log_action(
             action="LOGIN_SUCCESS",
             user_id=result["user"]["id"],
             details=f"User logged in using {user_login.device_label or 'unknown device'}",
             ip_address=client_ip,
             user_agent=user_agent
         )
-        db.commit()
+        await db.commit()
 
         # 🛡️ SECURITY: Set tokens as HTTP-only cookies (defense-in-depth)
         # These cookies cannot be read by JavaScript, mitigating XSS token theft.
@@ -109,24 +110,24 @@ async def login(
 
     except HTTPException as e:
         print(f"[LOGIN] HTTPException: {e.status_code} - {e.detail}")
-        audit_service.log_action(
+        await audit_service.log_action(
             action="LOGIN_FAILED",
             details=f"Failed login attempt for {user_login.email}: {e.detail}",
             ip_address=client_ip,
             user_agent=user_agent
         )
-        db.commit()
+        await db.commit()
         raise e
     except Exception as e:
         print(f"[LOGIN] Exception: {str(e)}")
         print(traceback.format_exc())
-        audit_service.log_action(
+        await audit_service.log_action(
             action="LOGIN_FAILED",
             details=f"System error during login for {user_login.email}: {str(e)}",
             ip_address=client_ip,
             user_agent=user_agent
         )
-        db.commit()
+        await db.commit()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e),
@@ -137,7 +138,7 @@ async def login(
 async def register(
     user_create: UserCreate,
     request: Request,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Register new user
@@ -151,16 +152,16 @@ async def register(
     user_agent = request.headers.get("user-agent")
 
     try:
-        user = auth_service.register(user_create)
+        user = await auth_service.register(user_create)
 
-        audit_service.log_action(
+        await audit_service.log_action(
             action="USER_REGISTER",
             user_id=user.id,
             details=f"User self-registered with email: {user.email}",
             ip_address=client_ip,
             user_agent=user_agent
         )
-        db.commit()
+        await db.commit()
 
         return ResponseModel(
             result="success",
@@ -183,7 +184,7 @@ async def register(
 @router.post("/refresh", response_model=Token)
 async def refresh_token(
     refresh_token: str,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Refresh access token using refresh token
@@ -191,7 +192,7 @@ async def refresh_token(
     auth_service = AuthService(db)
 
     try:
-        new_tokens = auth_service.refresh_access_token(refresh_token)
+        new_tokens = await auth_service.refresh_access_token(refresh_token)
         return new_tokens
 
     except HTTPException as e:
@@ -226,7 +227,7 @@ async def google_login(request: Request):
 
 
 @router.get("/google/callback")
-async def google_callback(code: str = None, request: Request = None, db: Session = Depends(get_db)):
+async def google_callback(code: str = None, request: Request = None, db: AsyncSession = Depends(get_db)):
     """Handle callback from Google with id_token verification, then issue JWT via HTTP-only cookies"""
     if not _GOOGLE_AUTH_AVAILABLE:
         raise HTTPException(
@@ -305,16 +306,16 @@ async def google_callback(code: str = None, request: Request = None, db: Session
 
     # Find or create user
     user_service = UserService(db)
-    user = user_service.get_user_by_email(email)
+    user = await user_service.get_user_by_email(email)
     if not user:
         # Create with a random password (not used)
         random_pwd = secrets.token_urlsafe(16)
         user_create = UserCreate(email=email, password=random_pwd, name=name, role='user')
         try:
-            user = user_service.create_user(user_create)
+            user = await user_service.create_user(user_create)
         except Exception:
             # If creation failed, try fetching again
-            user = user_service.get_user_by_email(email)
+            user = await user_service.get_user_by_email(email)
 
     # Issue tokens
     access_jwt = create_access_token(data={"sub": user.email, "user_id": user.id})
@@ -368,7 +369,7 @@ async def google_callback(code: str = None, request: Request = None, db: Session
 
 
 @router.get("/session")
-async def get_session(request: Request, db: Session = Depends(get_db)):
+async def get_session(request: Request, db: AsyncSession = Depends(get_db)):
     """
     Get current user session from HTTP-only cookies.
     Used by frontend after OAuth redirect to read tokens securely.
@@ -412,7 +413,7 @@ async def get_session(request: Request, db: Session = Depends(get_db)):
 async def logout(
     session_id: str,
     request: Request,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Logout and invalidate session
@@ -424,20 +425,22 @@ async def logout(
 
     try:
         # Get user ID from session if possible before revoking
-        session_obj = db.query(UserSession).filter(UserSession.session_id == session_id).first()
+        stmt = select(UserSession).where(UserSession.session_id == session_id)
+        result = await db.execute(stmt)
+        session_obj = result.scalar_one_or_none()
         user_id = session_obj.user_id if session_obj else None
 
-        auth_service.logout(session_id)
+        await auth_service.logout(session_id)
 
         if user_id:
-            audit_service.log_action(
+            await audit_service.log_action(
                 action="LOGOUT",
                 user_id=user_id,
                 details=f"Logged out session: {session_id}",
                 ip_address=client_ip,
                 user_agent=user_agent
             )
-            db.commit()
+            await db.commit()
 
         return ResponseModel(
             result="success",
