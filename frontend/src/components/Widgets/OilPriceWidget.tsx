@@ -15,7 +15,8 @@ interface OilPrice {
 
 interface OilPriceData {
   success: boolean
-  prices: OilPrice[]
+  prices?: OilPrice[]
+  oil_prices?: OilPrice[]
   update_date: string
   source: string
 }
@@ -97,7 +98,7 @@ export default function OilPriceWidget({
     try {
       const res = await apiClient.get('/oil-prices/oil-prices', { signal: controller.signal })
       const result = res.data
-      if (result.success && result.prices) {
+      if (result.success && (result.prices || result.oil_prices)) {
         setData(result)
         setCacheNote(null)
         saveOilCache({ savedAt: Date.now(), data: result, lastUpdate: Date.now() })
@@ -200,9 +201,9 @@ export default function OilPriceWidget({
         )}
 
         {/* ── Card Grid ── */}
-        {data && data.prices.length > 0 ? (
+        {data && (data.oil_prices || data.prices || []).length > 0 ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 flex-1">
-            {[...data.prices].sort((a, b) => {
+            {[...(data.oil_prices || data.prices || [])].sort((a, b) => {
               const order = ['benzene_95', 'gasohol_95', 'gasohol_91', 'gasohol_e20', 'gasohol_e85', 'diesel']
               return order.indexOf(a.key) - order.indexOf(b.key)
             }).map((item, idx) => {
