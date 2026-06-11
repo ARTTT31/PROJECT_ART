@@ -1,6 +1,7 @@
 """
 User Profile Endpoints
 """
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status, Request, UploadFile, File
 from sqlalchemy.orm import Session
 
@@ -183,7 +184,7 @@ async def upload_avatar_file(
         raise HTTPException(status_code=400, detail="รองรับเฉพาะไฟล์รูปภาพ (jpg, jpeg, png, gif)")
         
     os.makedirs("uploads/avatars", exist_ok=True)
-    filename = f"user_{current_user.id}_{int(datetime.utcnow().timestamp())}{ext}"
+    filename = f"user_{current_user.id}_{int(datetime.now(timezone.utc).timestamp())}{ext}"
     filepath = os.path.join("uploads/avatars", filename)
     
     try:

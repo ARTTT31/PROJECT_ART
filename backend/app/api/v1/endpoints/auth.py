@@ -1,25 +1,42 @@
 """
 Authentication Endpoints
 """
-from fastapi import APIRouter, Depends, HTTPException, status, Request
+import json
+import os
+import secrets
+import traceback
+from typing import Optional
+from urllib.parse import urlencode
+
+import requests
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
-from slowapi import Limiter
-from slowapi.util import get_remote_address
+
+# Lazy imports for google-auth (optional dependency — may not be installed yet)
+try:
+    from google.oauth2 import id_token as google_id_token
+    from google.auth.transport import requests as google_requests
+    _GOOGLE_AUTH_AVAILABLE = True
+except ImportError:
+    google_id_token = None  # type: ignore[assignment]
+    google_requests = None  # type: ignore[assignment]
+    _GOOGLE_AUTH_AVAILABLE = False
 
 from app.core.database import get_db
-from app.schemas.user import UserLogin, UserCreate, UserResponse
-from app.schemas.token import Token
+from app.core.security import create_access_token, create_refresh_token, decode_token
+from app.models.session import UserSession
 from app.schemas.response import ResponseModel
+from app.schemas.token import Token
+from app.schemas.user import UserCreate, UserLogin, UserResponse
 from app.services.auth_service import AuthService
+from app.services.audit_service import AuditService
+from app.services.user_service import UserService
 
 router = APIRouter()
 
-# Rate limit: 5 login attempts per minute per IP
-limiter = Limiter(key_func=get_remote_address)
-
 
 @router.post("/login", response_model=ResponseModel)
-@limiter.limit("5/minute")
 async def login(
     request: Request,
     user_login: UserLogin,
@@ -27,19 +44,16 @@ async def login(
 ):
     """
     Login endpoint
-    
+
     Returns JWT access token and refresh token
     """
-    import traceback
-    
     auth_service = AuthService(db)
-    from app.services.audit_service import AuditService
     audit_service = AuditService(db)
-    
+
     # Get client IP & User Agent
     client_ip = request.client.host if request.client else None
     user_agent = request.headers.get("user-agent")
-    
+
     try:
         result = auth_service.login(
             email=user_login.email,
@@ -49,7 +63,7 @@ async def login(
             device_label=user_login.device_label,
             ip_address=client_ip,
         )
-        
+
         # Log success (committed by auth_service.login)
         audit_service.log_action(
             action="LOGIN_SUCCESS",
@@ -60,11 +74,38 @@ async def login(
         )
         db.commit()
 
-        return ResponseModel(
+        # 🛡️ SECURITY: Set tokens as HTTP-only cookies (defense-in-depth)
+        # These cookies cannot be read by JavaScript, mitigating XSS token theft.
+        # JSON response still includes tokens for backward compatibility with
+        # the frontend state management pattern.
+        resp = ResponseModel(
             result="success",
             message="เข้าสู่ระบบสำเร็จ",
             data=result,
         )
+        from fastapi.responses import JSONResponse
+        response = JSONResponse(content=resp.model_dump())
+
+        is_secure = bool(request.url.scheme == "https")
+        response.set_cookie(
+            key="access_token",
+            value=result["access_token"],
+            max_age=30 * 60,
+            httponly=True,
+            secure=is_secure,
+            samesite="strict",
+            path="/"
+        )
+        response.set_cookie(
+            key="refresh_token",
+            value=result["refresh_token"],
+            max_age=7 * 24 * 60 * 60,
+            httponly=True,
+            secure=is_secure,
+            samesite="strict",
+            path="/"
+        )
+        return response
 
     except HTTPException as e:
         print(f"[LOGIN] HTTPException: {e.status_code} - {e.detail}")
@@ -100,19 +141,18 @@ async def register(
 ):
     """
     Register new user
-    
+
     Note: In production, you may want to restrict this endpoint
     or add email verification
     """
     auth_service = AuthService(db)
-    from app.services.audit_service import AuditService
     audit_service = AuditService(db)
     client_ip = request.client.host if request.client else None
     user_agent = request.headers.get("user-agent")
-    
+
     try:
         user = auth_service.register(user_create)
-        
+
         audit_service.log_action(
             action="USER_REGISTER",
             user_id=user.id,
@@ -127,7 +167,7 @@ async def register(
             message="ลงทะเบียนสำเร็จ",
             data={"user_id": user.id, "email": user.email},
         )
-    
+
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -149,11 +189,11 @@ async def refresh_token(
     Refresh access token using refresh token
     """
     auth_service = AuthService(db)
-    
+
     try:
         new_tokens = auth_service.refresh_access_token(refresh_token)
         return new_tokens
-    
+
     except HTTPException as e:
         raise e
     except Exception as e:
@@ -166,9 +206,6 @@ async def refresh_token(
 @router.get("/google")
 async def google_login(request: Request):
     """Redirect to Google's OAuth 2.0 consent screen"""
-    import os
-    from urllib.parse import urlencode
-
     client_id = os.getenv('BACKEND_GOOGLE_CLIENT_ID')
     redirect_uri = os.getenv('BACKEND_GOOGLE_REDIRECT', 'http://localhost:8000/api/v1/auth/google/callback')
 
@@ -185,24 +222,24 @@ async def google_login(request: Request):
     }
 
     url = f'https://accounts.google.com/o/oauth2/v2/auth?{urlencode(params)}'
-    from fastapi.responses import RedirectResponse
     return RedirectResponse(url)
 
 
 @router.get("/google/callback")
 async def google_callback(code: str = None, request: Request = None, db: Session = Depends(get_db)):
-    """Handle callback from Google, create/find user, issue JWT via secure HTTP-only cookies"""
-    import os
-    import requests
-    import json
-    from app.services.user_service import UserService
-    from app.core.security import create_access_token, create_refresh_token
-
+    """Handle callback from Google with id_token verification, then issue JWT via HTTP-only cookies"""
+    if not _GOOGLE_AUTH_AVAILABLE:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="google-auth library not installed. Run: pip install google-auth"
+        )
     client_id = os.getenv('BACKEND_GOOGLE_CLIENT_ID')
     client_secret = os.getenv('BACKEND_GOOGLE_CLIENT_SECRET')
     redirect_uri = os.getenv('BACKEND_GOOGLE_REDIRECT', 'http://localhost:8000/api/v1/auth/google/callback')
-    frontend_redirect = os.getenv('FRONTEND_URL', 'http://localhost:3001')
+    frontend_redirect = os.getenv('FRONTEND_URL', 'http://localhost:3000')
 
+    if not client_id:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Google client ID not configured")
     if not code:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Missing code from Google')
 
@@ -221,24 +258,56 @@ async def google_callback(code: str = None, request: Request = None, db: Session
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail='Failed to exchange code for token')
 
     token_json = token_resp.json()
-    access_token = token_json.get('access_token')
+    id_token_jwt = token_json.get('id_token')
 
-    # Get user info
-    userinfo_resp = requests.get('https://www.googleapis.com/oauth2/v3/userinfo', headers={'Authorization': f'Bearer {access_token}'}, timeout=10)
-    if userinfo_resp.status_code != 200:
-        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail='Failed to fetch user info from Google')
+    if not id_token_jwt:
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail='No id_token received from Google')
 
-    profile = userinfo_resp.json()
-    email = profile.get('email')
-    name = profile.get('name') or profile.get('given_name') or ''
+    # ✅ SECURE: Verify id_token signature and audience using google-auth library
+    try:
+        request_adapter = google_requests.Request()
+        verified_info = google_id_token.verify_oauth2_token(
+            id_token_jwt,
+            request_adapter,
+            client_id,
+            clock_skew_in_seconds=30  # Allow up to 30s clock skew
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Google token verification failed: {str(e)}"
+        )
+
+    # Also verify that the token's audience matches our client ID
+    if verified_info.get('aud') != client_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token audience mismatch - possible token substitution attack"
+        )
+
+    # Extract verified user info
+    email = verified_info.get('email')
+    name = verified_info.get('name') or verified_info.get('given_name') or ''
+    picture = verified_info.get('picture', '')
+
+    if not email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Google account must have a verified email address"
+        )
+
+    # Ensure email is verified per Google
+    if not verified_info.get('email_verified', False):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Google email not verified"
+        )
 
     # Find or create user
     user_service = UserService(db)
     user = user_service.get_user_by_email(email)
     if not user:
-        from app.schemas.user import UserCreate
         # Create with a random password (not used)
-        import secrets
         random_pwd = secrets.token_urlsafe(16)
         user_create = UserCreate(email=email, password=random_pwd, name=name, role='user')
         try:
@@ -252,9 +321,6 @@ async def google_callback(code: str = None, request: Request = None, db: Session
     refresh_jwt = create_refresh_token(data={"sub": user.email, "user_id": user.id})
 
     # Create response - tokens are ONLY in HTTP-only cookies (not in URL)
-    from fastapi.responses import RedirectResponse
-    import json
-
     user_data = {
         "id": user.id,
         "email": user.email,
@@ -307,9 +373,6 @@ async def get_session(request: Request, db: Session = Depends(get_db)):
     Get current user session from HTTP-only cookies.
     Used by frontend after OAuth redirect to read tokens securely.
     """
-    import json
-    from app.core.security import decode_token
-
     access_token = request.cookies.get("access_token")
     user_cookie = request.cookies.get("user")
 
@@ -355,19 +418,17 @@ async def logout(
     Logout and invalidate session
     """
     auth_service = AuthService(db)
-    from app.services.audit_service import AuditService
     audit_service = AuditService(db)
     client_ip = request.client.host if request.client else None
     user_agent = request.headers.get("user-agent")
-    
+
     try:
         # Get user ID from session if possible before revoking
-        from app.models.session import UserSession
         session_obj = db.query(UserSession).filter(UserSession.session_id == session_id).first()
         user_id = session_obj.user_id if session_obj else None
-        
+
         auth_service.logout(session_id)
-        
+
         if user_id:
             audit_service.log_action(
                 action="LOGOUT",
@@ -382,7 +443,7 @@ async def logout(
             result="success",
             message="ออกจากระบบสำเร็จ",
         )
-    
+
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

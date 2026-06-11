@@ -3,11 +3,16 @@ User Service - Business logic for user management
 """
 from typing import List, Optional
 from sqlalchemy.orm import Session
-from datetime import datetime
+from datetime import datetime, timezone
 
 from app.models.user import User
 from app.schemas.user import UserCreate, UserUpdate, UserAdminUpdate
 from app.core.security import get_password_hash, verify_password
+
+
+def _utcnow() -> datetime:
+    """Return current UTC time without tzinfo (for SQLAlchemy DateTime fields)."""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
 class UserService:
@@ -95,7 +100,7 @@ class UserService:
         if user_update.quick_links is not None:
             user.quick_links = user_update.quick_links
 
-        user.updated_at = datetime.utcnow()
+        user.updated_at = _utcnow()
         
         self.db.commit()
         self.db.refresh(user)
@@ -126,7 +131,7 @@ class UserService:
 
         # Update password
         user.hashed_password = get_password_hash(new_password)
-        user.updated_at = datetime.utcnow()
+        user.updated_at = _utcnow()
         
         self.db.commit()
         
@@ -139,7 +144,7 @@ class UserService:
             raise ValueError("ไม่พบผู้ใช้")
 
         user.avatar = avatar_base64
-        user.updated_at = datetime.utcnow()
+        user.updated_at = _utcnow()
         
         self.db.commit()
 
@@ -150,7 +155,7 @@ class UserService:
             raise ValueError("ไม่พบผู้ใช้")
 
         user.quick_links = quick_links
-        user.updated_at = datetime.utcnow()
+        user.updated_at = _utcnow()
         
         self.db.commit()
 
@@ -179,7 +184,7 @@ class UserService:
         """Update user's last login timestamp and metadata"""
         user = self.get_user_by_id(user_id)
         if user:
-            user.last_login = datetime.utcnow()
+            user.last_login = _utcnow()
             if ip_address:
                 user.last_login_ip = ip_address
             if device:
@@ -216,7 +221,7 @@ class UserService:
         if user_update.password is not None and user_update.password != "":
             user.hashed_password = get_password_hash(user_update.password)
 
-        user.updated_at = datetime.utcnow()
+        user.updated_at = _utcnow()
         self.db.commit()
         self.db.refresh(user)
         return user

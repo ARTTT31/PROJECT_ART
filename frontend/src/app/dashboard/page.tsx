@@ -1,7 +1,7 @@
 'use client'
 
 import '../../styles/pages/weather.css'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import DashboardLayout from '@/components/Layout/DashboardLayout'
 import WeatherWidget from '@/components/Widgets/WeatherWidget'
@@ -66,6 +66,20 @@ export default function DashboardPage() {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   )
 
+  // ── Hoisted before useEffect (const arrows are NOT hoisted in JS) ──
+  const saveLayout = (newLayout: WidgetConfig[]) => {
+    setWidgets(newLayout)
+    localStorage.setItem('artWorkspaceLayoutV3', JSON.stringify(newLayout))
+  }
+
+  const saveVisibleWidgets = (visibleIds: string[]) => {
+    setVisibleWidgetIds(visibleIds)
+    localStorage.setItem('artWorkspaceVisibleWidgets', JSON.stringify(visibleIds))
+  }
+
+  // Single shared debounce ref for all localStorage writes
+  const saveLayoutDebouncedRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
   useEffect(() => {
     setIsClient(true)
     const token = localStorage.getItem('access_token')
@@ -117,19 +131,22 @@ export default function DashboardPage() {
     }
   }, [router])
 
-  const saveLayout = (newLayout: WidgetConfig[]) => {
-    setWidgets(newLayout)
-    localStorage.setItem('artWorkspaceLayoutV3', JSON.stringify(newLayout))
-  }
-
-  const saveVisibleWidgets = (visibleIds: string[]) => {
-    setVisibleWidgetIds(visibleIds)
-    localStorage.setItem('artWorkspaceVisibleWidgets', JSON.stringify(visibleIds))
-  }
-
   const handleResize = (id: string, newWidth: number) => {
-    saveLayout(widgets.map((widget) => (widget.id === id ? { ...widget, w: newWidth } : widget)))
+    // Immediate state update for responsive feel (functional updater = no stale closure)
+    const debounceMs = 300
+    setWidgets(prev => prev.map((widget) => (widget.id === id ? { ...widget, w: newWidth } : widget)))
+    // Debounce localStorage write outside the state setter (avoid side-effects inside updater)
+    if (saveLayoutDebouncedRef.current) clearTimeout(saveLayoutDebouncedRef.current)
+    saveLayoutDebouncedRef.current = setTimeout(() => {
+      // Read latest widgets directly (not from closure)
+      setWidgets(prev => {
+        localStorage.setItem('artWorkspaceLayoutV3', JSON.stringify(prev))
+        return prev // no change, just persist
+      })
+    }, debounceMs)
   }
+
+  // 🛡️ Debounced save to prevent layout thrashing during rapid drag operations
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event
@@ -138,7 +155,13 @@ export default function DashboardPage() {
     const newIndex = widgets.findIndex((w) => w.id === over.id)
     if (oldIndex === -1 || newIndex === -1) return
     const newLayout = arrayMove(widgets, oldIndex, newIndex)
-    saveLayout(newLayout)
+    setWidgets(newLayout) // Optimistic update: render immediately
+
+    // Debounce localStorage write to prevent stuttering
+    if (saveLayoutDebouncedRef.current) clearTimeout(saveLayoutDebouncedRef.current)
+    saveLayoutDebouncedRef.current = setTimeout(() => {
+      localStorage.setItem('artWorkspaceLayoutV3', JSON.stringify(newLayout))
+    }, 150) // 150ms debounce — smooth UX, no I/O jank
   }
 
   const toggleWidgetVisibility = (id: string) => {

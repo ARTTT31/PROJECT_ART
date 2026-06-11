@@ -278,3 +278,26 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
+/* ─────────────────────────────────────────────────────
+   ลดการเคลื่อนไหว (Accessibility)
+   ───────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .weather-card {
+    animation: none !important;
+  }
+
+  .weather-card::after {
+    animation: none !important;
+  }
+
+  .weather-scene *,
+  .weather-scene::before,
+  .weather-scene::after,
+  .ws-gradient-mesh::before,
+  .ws-gradient-mesh::after,
+  .ws-bokeh-dot,
+  .ws-mist::after,
+  .ws-lightning {
+    animation: none !important;
+  }
+}

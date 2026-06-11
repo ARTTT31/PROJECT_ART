@@ -20,6 +20,33 @@ interface SystemHealth {
   disk_percent: number
 }
 
+type HealthCache = { savedAt: number; data: SystemHealth; lastUpdate: number }
+const HEALTH_CACHE_KEY = 'artSystemHealthCacheV1'
+const HEALTH_CACHE_TTL_MS = 2 * 60_000 // 2 นาที
+
+function safeJsonParse<T>(raw: string | null): T | null {
+  if (!raw) return null
+  try {
+    return JSON.parse(raw) as T
+  } catch {
+    return null
+  }
+}
+
+function loadHealthCache(): HealthCache | null {
+  const cached = safeJsonParse<HealthCache>(typeof window !== 'undefined' ? localStorage.getItem(HEALTH_CACHE_KEY) : null)
+  if (!cached || !cached.savedAt || !cached.data) return null
+  return cached
+}
+
+function saveHealthCache(cache: HealthCache) {
+  try {
+    localStorage.setItem(HEALTH_CACHE_KEY, JSON.stringify(cache))
+  } catch {
+    // ignore
+  }
+}
+
 function formatUptime(seconds: number) {
   const d = Math.floor(seconds / 86400)
   const h = Math.floor((seconds % 86400) / 3600)
@@ -58,6 +85,7 @@ export default function SystemHealthWidget() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date())
+  const [cacheNote, setCacheNote] = useState<string | null>(null)
 
   const fetchHealth = useCallback(async () => {
     setLoading(true)
@@ -66,6 +94,8 @@ export default function SystemHealthWidget() {
       const res = await apiClient.get('/system/health')
       setHealth(res.data)
       setLastUpdate(new Date())
+      setCacheNote(null)
+      saveHealthCache({ savedAt: Date.now(), data: res.data, lastUpdate: Date.now() })
     } catch (err: any) {
       setError(err?.response?.data?.detail || 'ไม่สามารถดึงข้อมูลระบบได้')
     } finally {
@@ -74,6 +104,13 @@ export default function SystemHealthWidget() {
   }, [])
 
   useEffect(() => {
+    const cached = loadHealthCache()
+    if (cached && Date.now() - cached.savedAt <= HEALTH_CACHE_TTL_MS) {
+      setHealth(cached.data)
+      setLastUpdate(new Date(cached.lastUpdate || cached.savedAt))
+      setCacheNote('แสดงข้อมูลจากแคช')
+      setLoading(false)
+    }
     fetchHealth()
     const id = setInterval(fetchHealth, 30_000)
     return () => clearInterval(id)
@@ -95,6 +132,7 @@ export default function SystemHealthWidget() {
               <p className="text-[11px] text-slate-500">
                 อัปเดต {lastUpdate.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })} น.
               </p>
+              {cacheNote && <p className="text-[11px] text-slate-500">{cacheNote}</p>}
             </div>
           </div>
           <button
@@ -118,13 +156,13 @@ export default function SystemHealthWidget() {
             {/* Uptime + DB row */}
             <div className="grid grid-cols-2 gap-2">
               <div className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5 flex flex-col gap-0.5">
-                <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Uptime</span>
+                <span className="text-[10px] font-semibold text-slate-500 tracking-wide">เวลาทำงาน</span>
                 <span className="text-sm font-bold text-slate-800">{formatUptime(health.uptime_seconds)}</span>
               </div>
               <div className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5 flex flex-col gap-0.5">
                 <div className="flex items-center gap-1">
                   <Database size={11} className="text-slate-400" />
-                  <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Database</span>
+                  <span className="text-[10px] font-semibold text-slate-500 tracking-wide">ฐานข้อมูล</span>
                   <StatusIcon status={health.database.status} />
                 </div>
                 <span className="text-sm font-bold text-slate-800">

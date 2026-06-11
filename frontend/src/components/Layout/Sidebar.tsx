@@ -88,7 +88,7 @@ export default function Sidebar({ isOpen, onClose, user, onLogout }: SidebarProp
           <div className="space-y-6">
             {menuItems.map((section) => (
               <div key={section.title}>
-                <div className="mb-2 px-3 text-[11px] font-bold uppercase tracking-wider text-slate-500">{section.title}</div>
+                <div className="mb-2 px-3 text-[11px] font-bold tracking-wider text-slate-500">{section.title}</div>
                 <ul className="space-y-1">
                   {section.items.map((item) => {
                     const isActive = !item.external && pathname === item.href
@@ -100,7 +100,7 @@ export default function Sidebar({ isOpen, onClose, user, onLogout }: SidebarProp
                           href={item.href}
                           target={item.external ? '_blank' : undefined}
                           rel={item.external ? 'noopener noreferrer' : undefined}
-                          className={`group flex min-h-11 items-center gap-3 rounded-2xl px-3.5 py-2.5 text-sm font-semibold transition-all duration-200 ${
+                           className={`group flex min-h-11 items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-all duration-200 ${
                             isActive
                               ? 'bg-sky-500/10 text-slate-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.45)]'
                               : 'text-slate-700 hover:bg-white/70 hover:text-slate-950'
@@ -123,7 +123,7 @@ export default function Sidebar({ isOpen, onClose, user, onLogout }: SidebarProp
         <div className="border-t border-slate-200/60 p-4">
           <button
             onClick={onLogout}
-            className="flex min-h-11 w-full items-center gap-3 rounded-2xl px-3.5 py-2.5 text-sm font-semibold text-red-600 transition-all duration-200 hover:bg-red-50 hover:text-red-700"
+            className="flex min-h-11 w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-red-600 transition-all duration-200 hover:bg-red-50 hover:text-red-700"
           >
             <LogOut size={20} aria-hidden="true" />
             ออกจากระบบ

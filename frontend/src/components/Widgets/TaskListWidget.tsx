@@ -1,8 +1,10 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { Bell, Calendar, Clock, MapPin, RotateCw, Search, Tag, AlertCircle } from 'lucide-react'
 import { pushNotifications } from '@/components/Layout/NotificationBell'
+import WidgetSizeToggle from './WidgetSizeToggle'
+import DOMPurify from 'dompurify'
 
 interface CalendarEvent {
   id: string
@@ -30,17 +32,30 @@ export default function TaskListWidget({
   const [searchQuery, setSearchQuery] = useState('')
   const currentMonth = selectedMonth || new Date()
   const monthKey = `${currentMonth.getFullYear()}-${currentMonth.getMonth()}`
+  const abortRef = useRef<AbortController | null>(null)
+  const [cacheNote, setCacheNote] = useState<string | null>(null)
 
   // Google Calendar ID from environment variables or fallback
   const CALENDAR_ID = process.env.NEXT_PUBLIC_GOOGLE_CALENDAR_ID || '935e8829bdbff55e909d6f3e533ded8a03acfbc24ac08b5d8ac781ed5e07f626@group.calendar.google.com'
 
+  const CACHE_KEY = useMemo(() => `artTaskListCacheV1:${CALENDAR_ID}:${monthKey}`, [CALENDAR_ID, monthKey])
+  const CACHE_TTL_MS = 15 * 60_000 // 15 นาที
+
   const fetchCalendarEvents = useCallback(async () => {
+    // cancel previous request
+    abortRef.current?.abort()
+    const controller = new AbortController()
+    abortRef.current = controller
+
     setLoading(true)
     setError(null)
 
     try {
-      const startOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1)
-      const endOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0, 23, 59, 59, 999)
+      const [yearStr, monthStr] = monthKey.split('-')
+      const year = Number(yearStr)
+      const month = Number(monthStr) // 0-based
+      const startOfMonth = new Date(year, month, 1)
+      const endOfMonth = new Date(year, month + 1, 0, 23, 59, 59, 999)
 
       const timeMin = startOfMonth.toISOString()
       const timeMax = endOfMonth.toISOString()
@@ -48,8 +63,7 @@ export default function TaskListWidget({
       // Use Next.js rewrite proxy (more reliable in Docker)
       const url = `/api/v1/calendar/events?calendar_id=${encodeURIComponent(CALENDAR_ID)}&time_min=${encodeURIComponent(timeMin)}&time_max=${encodeURIComponent(timeMax)}`
       
-      const controller = new AbortController()
-      const timer = setTimeout(() => controller.abort(), 60000)
+      const timer = setTimeout(() => controller.abort(), 60_000)
       let response: Response
       try {
         response = await fetch(url, {
@@ -69,6 +83,12 @@ export default function TaskListWidget({
 
       const data = await response.json()
       setEvents(data)
+      setCacheNote(null)
+      try {
+        localStorage.setItem(CACHE_KEY, JSON.stringify({ savedAt: Date.now(), events: data }))
+      } catch {
+        // ignore
+      }
 
       // Push today's tasks as calendar alerts
       const today = new Date()
@@ -85,17 +105,39 @@ export default function TaskListWidget({
         }])
       }
     } catch (err: any) {
+      if (err?.name === 'AbortError') return
       console.error('❌ Calendar API Error:', err)
       setError('ไม่สามารถโหลดข้อมูลปฏิทินได้')
       setEvents([])
     } finally {
       setLoading(false)
     }
-  }, [monthKey])
+  }, [CACHE_KEY, CALENDAR_ID, monthKey])
 
   useEffect(() => {
     fetchCalendarEvents()
   }, [fetchCalendarEvents])
+
+  useEffect(() => {
+    // hydrate from cache when month changes (ลดจอว่าง)
+    try {
+      const raw = localStorage.getItem(CACHE_KEY)
+      if (!raw) return
+      const cached = JSON.parse(raw) as { savedAt: number; events: CalendarEvent[] }
+      if (!cached?.savedAt || !Array.isArray(cached.events)) return
+      if (Date.now() - cached.savedAt > CACHE_TTL_MS) return
+      setEvents(cached.events)
+      setCacheNote('แสดงข้อมูลจากแคช')
+      setLoading(false)
+    } catch {
+      // ignore
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [CACHE_KEY])
+
+  useEffect(() => {
+    return () => abortRef.current?.abort()
+  }, [])
 
   const hasIMACD = (e: CalendarEvent) => 
     e.title.toLowerCase().includes('imacd') || 
@@ -173,6 +215,19 @@ export default function TaskListWidget({
     return `${startH}:${startM} - ${endH}:${endM}`
   }
 
+  const sanitizeDescription = useCallback((html: string) => {
+    const withHighlights = html
+      .replace(/รายละเอียดของงาน:/g, '<strong>รายละเอียดของงาน:</strong>')
+      .replace(/วิธีการดำเนินงาน:/g, '<strong>วิธีการดำเนินงาน:</strong>')
+      .replace(/ผู้ให้บริการ\s*:/g, '<strong>ผู้ให้บริการ :</strong>')
+      .replace(/หมายเลขงาน\s*:/g, '<strong>หมายเลขงาน :</strong>')
+      .replace(/ผู้ดำเนินการ\s*:/g, '<strong>ผู้ดำเนินการ :</strong>')
+      // force links to open safely
+      .replace(/<a /gi, '<a class="text-blue-600 font-bold hover:underline" target="_blank" rel="noopener noreferrer" ')
+
+    return DOMPurify.sanitize(withHighlights, { USE_PROFILES: { html: true } })
+  }, [])
+
   if (loading) {
     return (
       <div className="bg-white rounded-3xl border border-slate-100 p-8 shadow-sm">
@@ -231,6 +286,11 @@ export default function TaskListWidget({
                 กรองจาก {events.length} รายการใน {currentMonth.toLocaleDateString('th-TH', { month: 'long', year: 'numeric' })}
               </p>
             )}
+            {cacheNote && width > 1 && (
+              <p className={`font-semibold text-slate-400 mt-0.5 ${width === 2 ? 'text-[10px]' : 'text-xs'}`}>
+                {cacheNote}
+              </p>
+            )}
           </div>
         </div>
 
@@ -268,45 +328,7 @@ export default function TaskListWidget({
             {width > 1 && <span>รีเฟรช</span>}
           </button>
 
-          {/* Size Buttons */}
-          {onResize && (
-            <div style={{
-              position: 'relative',
-              display: 'inline-flex',
-              width: 'fit-content',
-              minHeight: '44px',
-              alignItems: 'center',
-              gap: '11px',
-              borderRadius: '999px',
-              border: '1.5px solid rgba(203, 213, 225, 0.5)',
-              background: 'rgba(248, 250, 252, 0.85)',
-              backdropFilter: 'blur(8px) saturate(180%)',
-              padding: '7px 16px 7px 8px',
-              boxShadow: '0 2px 8px rgba(15, 23, 42, 0.03)',
-              transition: 'all 250ms cubic-bezier(0.4, 0, 0.2, 1)',
-            }}>
-              {[2, 3].map((size) => (
-                <button
-                  key={size}
-                  onClick={() => onResize(size)}
-                  className={`relative flex items-center justify-center rounded-full text-xs font-extrabold transition-all duration-250 min-w-0 min-h-0 ${
-                    width === size
-                      ? 'bg-gradient-to-r from-cyan-400 to-blue-500 text-white shadow-lg'
-                      : 'text-slate-600 hover:text-slate-800'
-                  }`}
-                  style={{
-                    padding: '6px 14px',
-                    minWidth: '32px',
-                    height: '28px',
-                  }}
-                  title={`${size === 2 ? 'กลาง (M)' : 'ใหญ่ (L)'}`}
-                  aria-label={`ปรับขนาดเป็น ${size === 2 ? 'กลาง' : 'ใหญ่'}`}
-                >
-                  {size === 2 ? 'M' : 'L'}
-                </button>
-              ))}
-            </div>
-          )}
+          {onResize && <WidgetSizeToggle value={width} onChange={onResize} sizes={[2, 3]} />}
         </div>
       </div>
 
@@ -437,13 +459,7 @@ export default function TaskListWidget({
                       <div
                         className="prose prose-xs max-w-none text-slate-600 [&_strong]:text-slate-800 [&_a]:text-blue-600 [&_a]:font-bold"
                         dangerouslySetInnerHTML={{
-                          __html: event.description
-                            .replace(/รายละเอียดของงาน:/g, '<strong>รายละเอียดของงาน:</strong>')
-                            .replace(/วิธีการดำเนินงาน:/g, '<strong>วิธีการดำเนินงาน:</strong>')
-                            .replace(/ผู้ให้บริการ\s*:/g, '<strong>ผู้ให้บริการ :</strong>')
-                            .replace(/หมายเลขงาน\s*:/g, '<strong>หมายเลขงาน :</strong>')
-                            .replace(/ผู้ดำเนินการ\s*:/g, '<strong>ผู้ดำเนินการ :</strong>')
-                            .replace(/<a /gi, '<a class="text-blue-600 font-bold hover:underline" target="_blank" rel="noopener noreferrer" ')
+                          __html: sanitizeDescription(event.description),
                         }}
                       />
                     </div>

@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { Fuel, AlertCircle } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { Fuel, AlertCircle, RefreshCw } from 'lucide-react'
 import WidgetSizeToggle from './WidgetSizeToggle'
 import { apiClient } from '@/lib/api/client'
 
@@ -18,6 +18,34 @@ interface OilPriceData {
   prices: OilPrice[]
   update_date: string
   source: string
+}
+
+type OilCache = { savedAt: number; data: OilPriceData; lastUpdate: number }
+
+const OIL_CACHE_KEY = 'artOilPriceCacheV1'
+const OIL_CACHE_TTL_MS = 30 * 60_000 // 30 นาที
+
+function safeJsonParse<T>(raw: string | null): T | null {
+  if (!raw) return null
+  try {
+    return JSON.parse(raw) as T
+  } catch {
+    return null
+  }
+}
+
+function loadOilCache(): OilCache | null {
+  const cached = safeJsonParse<OilCache>(typeof window !== 'undefined' ? localStorage.getItem(OIL_CACHE_KEY) : null)
+  if (!cached || !cached.savedAt || !cached.data) return null
+  return cached
+}
+
+function saveOilCache(cache: OilCache) {
+  try {
+    localStorage.setItem(OIL_CACHE_KEY, JSON.stringify(cache))
+  } catch {
+    // ignore
+  }
 }
 
 /* ── Fuel color map (dot indicator per type) ────────────────── */
@@ -51,34 +79,60 @@ export default function OilPriceWidget({
 }) {
   const [data, setData] = useState<OilPriceData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date())
+  const [cacheNote, setCacheNote] = useState<string | null>(null)
+  const abortRef = useRef<AbortController | null>(null)
 
-  const fetchPrices = async () => {
-    setLoading(true)
+  const fetchPrices = async (opts?: { refresh?: boolean }) => {
+    const isRefresh = Boolean(opts?.refresh)
+    if (abortRef.current) abortRef.current.abort()
+    const controller = new AbortController()
+    abortRef.current = controller
+
+    if (isRefresh) setRefreshing(true)
+    else setLoading(true)
     setError(null)
     try {
-      const res = await apiClient.get('/oil-prices/oil-prices')
+      const res = await apiClient.get('/oil-prices/oil-prices', { signal: controller.signal })
       const result = res.data
       if (result.success && result.prices) {
         setData(result)
+        setCacheNote(null)
+        saveOilCache({ savedAt: Date.now(), data: result, lastUpdate: Date.now() })
       } else {
         setError('ไม่สามารถดึงข้อมูลราคาน้ำมันได้')
       }
       setLastUpdate(new Date())
     } catch (err: any) {
+      if (err?.name === 'CanceledError' || err?.code === 'ERR_CANCELED') return
       console.error('Oil price fetch error:', err)
       setError('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์')
     } finally {
       setLoading(false)
+      setRefreshing(false)
     }
   }
 
   useEffect(() => {
+    // hydrate from cache first (ลดหน้ากระพริบเมื่อเน็ตช้า)
+    const cached = loadOilCache()
+    if (cached && Date.now() - cached.savedAt <= OIL_CACHE_TTL_MS) {
+      setData(cached.data)
+      setLastUpdate(new Date(cached.lastUpdate || cached.savedAt))
+      setCacheNote('แสดงข้อมูลจากแคช')
+      setLoading(false)
+    }
+
     fetchPrices()
-    const interval = setInterval(fetchPrices, 300000) // every 5 minutes
+    const interval = setInterval(() => fetchPrices({ refresh: true }), 300000) // every 5 minutes
     return () => clearInterval(interval)
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  useEffect(() => {
+    return () => abortRef.current?.abort()
   }, [])
 
   /* ── Loading skeleton ─────────────────────────────────────── */
@@ -119,11 +173,21 @@ export default function OilPriceWidget({
                   {data.source !== 'EPPO' && ` • ${data.source}`}
                 </p>
               )}
+              {(loading || refreshing) && <p className="text-[11px] text-slate-500">กำลังอัปเดต...</p>}
+              {cacheNote && <p className="text-[11px] text-slate-500">{cacheNote}</p>}
             </div>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
             {onResize && <WidgetSizeToggle value={width} onChange={onResize} sizes={[1, 2, 3]} />}
-
+            <button
+              type="button"
+              onClick={() => fetchPrices({ refresh: true })}
+              className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 active:scale-95 transition"
+              aria-label="รีเฟรชราคาน้ำมัน"
+              title="รีเฟรชราคาน้ำมัน"
+            >
+              <RefreshCw size={14} className={loading || refreshing ? 'animate-spin' : ''} aria-hidden="true" />
+            </button>
           </div>
         </div>
 
@@ -174,7 +238,7 @@ export default function OilPriceWidget({
 
         {/* ── Footer source ── */}
         <div className="pt-1 border-t border-slate-100">
-          <span className="text-[10px] text-slate-400">แหล่งข้อมูล: กรมธุรกิจพลังงาน (EPPO)</span>
+          <span className="text-[10px] text-slate-400">แหล่งข้อมูล: {data?.source || 'EPPO'}</span>
         </div>
       </div>
     </section>

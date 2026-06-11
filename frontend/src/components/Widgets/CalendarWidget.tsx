@@ -33,8 +33,11 @@ export default function CalendarWidget({
     const year = currentDate.getFullYear()
     const month = currentDate.getMonth() + 1
     const dateStr = `${year}${month.toString().padStart(2, '0')}01`
-    
-    return `https://calendar.google.com/calendar/embed?src=935e8829bdbff55e909d6f3e533ded8a03acfbc24ac08b5d8ac781ed5e07f626%40group.calendar.google.com&ctz=Asia%2FBangkok&mode=MONTH&dates=${dateStr}%2F${dateStr}`
+
+    const calendarId = process.env.NEXT_PUBLIC_GOOGLE_CALENDAR_ID || '935e8829bdbff55e909d6f3e533ded8a03acfbc24ac08b5d8ac781ed5e07f626@group.calendar.google.com'
+    const src = encodeURIComponent(calendarId)
+    // ใช้ "dates" เพื่อเปิดไปยังเดือนที่ต้องการ (ให้ start/end เหมือนกันก็ยังทำให้เปิดเดือนนั้นได้)
+    return `https://calendar.google.com/calendar/embed?src=${src}&ctz=Asia%2FBangkok&mode=MONTH&dates=${dateStr}%2F${dateStr}`
   }
 
   // Navigate to previous month
@@ -96,11 +99,11 @@ export default function CalendarWidget({
               </button>
               <button
                 onClick={goToToday}
-                aria-label={`กลับไปยัง ${thaiMonths[currentMonth]}`}
+                aria-label="กลับไปเดือนปัจจุบัน"
                 title="กลับไปเดือนปัจจุบัน"
                 className={`art-primary-button !min-h-[40px] sm:!min-h-[44px] !px-3 sm:!px-4 text-xs sm:text-sm`}
               >
-                {thaiMonths[currentMonth]}
+                วันนี้
               </button>
               <button
                 onClick={nextMonth}
@@ -128,6 +131,7 @@ export default function CalendarWidget({
             scrolling="no"
             title="Google Calendar"
             className="rounded-b-xl"
+            loading="lazy"
           ></iframe>
         </div>
       </div>

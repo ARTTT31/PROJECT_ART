@@ -1,4 +1,4 @@
-# docker-compose.yml - Hot Reload Optimized
+# docker-compose.yml - Performance & Resource Optimized for Local Dev
 
 services:
   # PostgreSQL Database
@@ -15,6 +15,7 @@ services:
     ports:
       - "5432:5432"
     mem_limit: 256m
+    cpus: 0.5
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./backend/init.sql:/docker-entrypoint-initdb.d/init.sql
@@ -38,13 +39,15 @@ services:
       SECRET_KEY: ${SECRET_KEY}
       ALGORITHM: HS256
       ACCESS_TOKEN_EXPIRE_MINUTES: 30
-      CORS_ORIGINS: http://localhost:8000,http://localhost:8080,http://localhost:3001,http://frontend:3000
+      CORS_ORIGINS: http://localhost:8000,http://localhost:8080,http://localhost:3000,http://frontend:3000
       PYTHONUNBUFFERED: 1
     ports:
       - "8000:8000"
-    mem_limit: 256m
+    mem_limit: 384m
+    cpus: 0.5
     volumes:
-      - ./backend:/app
+      # :cached flag improves Docker Desktop bind mount perf on Windows/macOS
+      - ./backend:/app:cached
       - /app/__pycache__
     depends_on:
       postgres:
@@ -54,10 +57,10 @@ services:
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --reload-delay 0.5
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 10s
+      interval: 30s  # Less frequent healthchecks = less CPU
       timeout: 5s
       retries: 3
-      start_period: 10s
+      start_period: 15s
 
   # Next.js Frontend
   frontend:
@@ -70,17 +73,18 @@ services:
     environment:
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
       API_INTERNAL_URL: http://backend:8000
-      NODE_OPTIONS: "--max-old-space-size=512"
+      NODE_OPTIONS: "--max-old-space-size=384"  # Reduced from 512 for lower RAM
       # Hot Reload Configuration (Windows optimized)
       WATCHPACK_POLLING: "true"
       CHOKIDAR_USEPOLLING: "true"
-      CHOKIDAR_INTERVAL: 1000
+      CHOKIDAR_INTERVAL: 2000  # Increased from 1000ms — less CPU polling
       NEXT_TELEMETRY_DISABLED: 1
     ports:
-      - "3001:3000"
+      - "3000:3000"
     mem_limit: 768m
+    cpus: 0.75
     volumes:
-      - ./frontend:/app
+      - ./frontend:/app:cached
       - /app/node_modules
       - /app/.next
       - /app/.swc
@@ -92,7 +96,7 @@ services:
     command: npm run dev
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000"]
-      interval: 10s
+      interval: 30s  # Less frequent than 10s
       timeout: 5s
       retries: 3
       start_period: 30s

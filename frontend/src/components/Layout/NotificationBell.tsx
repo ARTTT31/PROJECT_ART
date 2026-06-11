@@ -178,7 +178,7 @@ export default function NotificationBell() {
                   <div className="text-sm font-bold leading-snug text-slate-950">{n.title}</div>
                   <p className="mt-1 text-sm leading-relaxed text-slate-700">{n.body}</p>
                   <span className="mt-2 block text-xs font-medium text-slate-500">
-                    {formatTime(n)} น.
+                    {formatTime(n.at)} น.
                   </span>
                 </div>
                 <button

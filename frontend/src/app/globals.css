@@ -40,7 +40,7 @@
   
   /* Refined Radii - The Clarity Cockpit */
   --art-radius-xl: 16px;
-  --art-radius-lg: 14px;
+  --art-radius-lg: 12px;
   --art-radius-md: 12px;
   --art-radius-sm: 10px;
 
@@ -1036,7 +1036,7 @@ button:disabled {
 .code-canvas-wrapper {
   background: white;
   border: 2px dashed rgba(226, 232, 240, 0.8);
-  border-radius: 20px;
+  border-radius: 12px;
   padding: 2rem;
   display: flex;
   align-items: center;
@@ -1513,3 +1513,47 @@ input[type="radio"],
 /* Page styles live in:
    - src/styles/pages/login.css
    - src/styles/pages/weather.css */
+
+/* ═══════════════════════════════════════════════════════
+   SweetAlert2 Toast Custom Styling (Liquid Glass)
+   ═══════════════════════════════════════════════════════ */
+.swal2-container.swal2-top-end {
+  top: var(--space-4) !important;
+  right: var(--space-4) !important;
+  height: auto !important;
+  bottom: auto !important;
+}
+
+.swal2-toast {
+  background: var(--glass-white-90) !important;
+  backdrop-filter: blur(12px) !important;
+  border: 1px solid var(--art-border-strong) !important;
+  box-shadow: var(--shadow-glass-lg) !important;
+  border-radius: var(--art-radius-lg) !important;
+  padding: 0.75rem 1.25rem !important;
+  color: var(--art-ink) !important;
+  font-family: inherit !important;
+  display: flex !important;
+  align-items: center !important;
+  min-height: auto !important;
+  height: auto !important;
+  width: auto !important;
+  margin-top: 1rem !important;
+}
+
+.swal2-toast .swal2-title {
+  font-size: var(--type-sm) !important;
+  font-weight: 600 !important;
+  margin: 0 0 0 0.5rem !important;
+}
+
+.swal2-toast .swal2-icon {
+  margin: 0 !important;
+  width: 2em !important;
+  height: 2em !important;
+}
+
+.swal2-toast .swal2-timer-progress-bar {
+  background: var(--art-primary) !important;
+  height: 3px !important;
+}

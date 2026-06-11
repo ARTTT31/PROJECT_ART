@@ -5,7 +5,7 @@
 Quick setup to enable Sign in with Google:
 
 1. In Google Cloud Console, create OAuth Client ID and add:
-   - Authorized JavaScript origin: `http://localhost:3001`
+   - Authorized JavaScript origin: `http://localhost:3000`
    - Authorized redirect URI: `http://localhost:8000/api/v1/auth/google/callback`
 2. Add to backend `.env` (do NOT commit secrets):
    - BACKEND_GOOGLE_CLIENT_ID=YOUR_CLIENT_ID.apps.googleusercontent.com
