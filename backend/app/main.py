@@ -2,6 +2,7 @@
 FastAPI Main Application
 ART Workspace Backend
 """
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -14,8 +15,12 @@ from app.api.v1.router import api_router
 from app.core.database import engine
 from app.models import base  # Import all models
 
-# Create database tables
-# base.Base.metadata.create_all(bind=engine)
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Create database tables asynchronously on startup
+    async with engine.begin() as conn:
+        await conn.run_sync(base.Base.metadata.create_all)
+    yield
 
 # Rate Limiter - uses client IP as key
 limiter = Limiter(key_func=get_remote_address)
@@ -26,6 +31,7 @@ app = FastAPI(
     description="ART Workspace API - Modern Stack Migration",
     docs_url="/docs",
     redoc_url="/redoc",
+    lifespan=lifespan,
 )
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
