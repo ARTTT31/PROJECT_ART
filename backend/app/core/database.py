@@ -1,8 +1,8 @@
 """
 Database Configuration and Session Management
 """
-from sqlalchemy import create_engine
-from sqlalchemy.orm import DeclarativeBase, sessionmaker
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
+from sqlalchemy.orm import DeclarativeBase
 
 from app.core.config import settings
 
@@ -13,7 +13,7 @@ class Base(DeclarativeBase):
 
 
 # Create database engine
-engine = create_engine(
+engine = create_async_engine(
     settings.DATABASE_URL,
     connect_args={"check_same_thread": False} if "sqlite" in settings.DATABASE_URL else {},
     pool_pre_ping=True,
@@ -22,16 +22,13 @@ engine = create_engine(
 )
 
 # Create session factory
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+SessionLocal = async_sessionmaker(autocommit=False, autoflush=False, bind=engine, class_=AsyncSession)
 
 
-def get_db():
+async def get_db():
     """
     Dependency for getting database session
-    Usage: db: Session = Depends(get_db)
+    Usage: db: AsyncSession = Depends(get_db)
     """
-    db = SessionLocal()
-    try:
+    async with SessionLocal() as db:
         yield db
-    finally:
-        db.close()
