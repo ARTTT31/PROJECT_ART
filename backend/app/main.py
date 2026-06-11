@@ -15,7 +15,7 @@ from app.core.database import engine
 from app.models import base  # Import all models
 
 # Create database tables
-base.Base.metadata.create_all(bind=engine)
+# base.Base.metadata.create_all(bind=engine)
 
 # Rate Limiter - uses client IP as key
 limiter = Limiter(key_func=get_remote_address)
