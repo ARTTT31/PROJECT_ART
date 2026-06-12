@@ -331,19 +331,22 @@ async def google_callback(code: str = None, request: Request = None, db: AsyncSe
         "quick_links": user.quick_links,
     }
 
-    redirect_url = f"{frontend_redirect}/login-success"
+    import urllib.parse
+    user_json_str = urllib.parse.quote(json.dumps(user_data))
+    redirect_url = f"{frontend_redirect}/login-success?token={access_jwt}&refresh_token={refresh_jwt}&user={user_json_str}"
+    
     response = RedirectResponse(url=redirect_url)
 
     is_secure = frontend_redirect.startswith('https://')
 
-    # HTTP-only cookies for tokens (not accessible via JavaScript)
+    # Keep setting cookies as a fallback, but primary mechanism for cross-domain is URL params
     response.set_cookie(
         key="access_token",
         value=access_jwt,
         max_age=30 * 60,
         httponly=True,
         secure=is_secure,
-        samesite="Lax",
+        samesite="None", # Change to None for cross-domain if secure=True
         path="/"
     )
     response.set_cookie(
@@ -352,7 +355,7 @@ async def google_callback(code: str = None, request: Request = None, db: AsyncSe
         max_age=7 * 24 * 60 * 60,
         httponly=True,
         secure=is_secure,
-        samesite="Lax",
+        samesite="None", # Change to None for cross-domain
         path="/"
     )
     # Non-httpOnly user data cookie (read by frontend for quick display)
@@ -362,7 +365,7 @@ async def google_callback(code: str = None, request: Request = None, db: AsyncSe
         max_age=7 * 24 * 60 * 60,
         httponly=False,
         secure=is_secure,
-        samesite="Lax",
+        samesite="None", # Change to None for cross-domain
         path="/"
     )
     return response
