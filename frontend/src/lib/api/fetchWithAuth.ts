@@ -5,7 +5,7 @@
  * so they benefit from the auto-refresh logic (access tokens expire in 30 min).
  */
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://art-workspace-api.onrender.com';
 
 // ── Shared refresh state ─────────────────────────────────────
 let isRefreshing = false;

@@ -14,13 +14,41 @@ export default function LoginSuccessPage() {
 
     const processLogin = async () => {
       try {
-        // Step 1: Try reading user data from non-httpOnly cookie (fast)
+        // Step 1: Check URL Parameters first (Google Login callback)
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlAccessToken = urlParams.get('token') || urlParams.get('access_token');
+        const urlRefreshToken = urlParams.get('refresh_token');
+        const urlUserStr = urlParams.get('user');
+        
+        let user = null;
+        if (urlUserStr) {
+          try {
+            user = JSON.parse(decodeURIComponent(urlUserStr));
+          } catch {
+            // failed to parse user from url
+          }
+        }
+
+        if (urlAccessToken && user) {
+          hasRedirected.current = true;
+          
+          localStorage.setItem('access_token', urlAccessToken);
+          if (urlRefreshToken) localStorage.setItem('refresh_token', urlRefreshToken);
+          localStorage.setItem('user', JSON.stringify(user));
+
+          login(urlAccessToken, user);
+
+          window.history.replaceState({}, '', '/login-success');
+          router.push('/dashboard');
+          return;
+        }
+
+        // Step 2: Try reading user data from non-httpOnly cookie (fast)
         const userCookie = document.cookie
           .split('; ')
           .find((c) => c.startsWith('user='));
         
-        let user = null;
-        if (userCookie) {
+        if (!user && userCookie) {
           try {
             user = JSON.parse(decodeURIComponent(userCookie.split('=').slice(1).join('=')));
           } catch {
@@ -28,7 +56,7 @@ export default function LoginSuccessPage() {
           }
         }
 
-        // Step 2: Call session endpoint to get access_token from HTTP-only cookies
+        // Step 3: Call session endpoint to get access_token from HTTP-only cookies
         const res = await fetch('/api/v1/auth/session', {
           credentials: 'include', // Send cookies
         });
@@ -58,7 +86,7 @@ export default function LoginSuccessPage() {
           // Clean up URL (remove any residual params)
           window.history.replaceState({}, '', '/login-success');
 
-          setTimeout(() => router.push('/dashboard'), 300);
+          router.push('/dashboard');
         } else {
           hasRedirected.current = true;
           router.push('/login');
