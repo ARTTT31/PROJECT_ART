@@ -42,11 +42,12 @@ app = FastAPI(
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-# CORS Middleware with Vercel Preview URL support
+# CORS Middleware — explicit origins + regex for Vercel preview URLs
+# allow_credentials=True requires explicit origins (no wildcard "*")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.get_cors_origins(),
-    allow_origin_regex=r"https://art-workspace-.*\.vercel\.app",
+    allow_origin_regex=r"https://(project-art|art-workspace)-.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
