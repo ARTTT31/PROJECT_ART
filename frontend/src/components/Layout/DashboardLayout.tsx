@@ -28,7 +28,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   return (
     <AuthGuard>
-      <div className="art-app-shell relative overflow-hidden">
+      <div className="art-app-shell relative overflow-x-hidden">
         {/* Sidebar wrapper */}
         <div className="relative z-20">
           <Sidebar
@@ -49,7 +49,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           />
 
           {/* Page Content */}
-          <main className="flex-1 p-4 lg:p-6">{children}</main>
+          <main className="flex-1 p-3 sm:p-4 lg:p-6">{children}</main>
         </div>
 
         {/* Mobile Sidebar Overlay */}

@@ -363,10 +363,10 @@ export default function ProfilePage() {
               <div className="h-32 bg-gradient-to-br from-sky-400/30 to-blue-600/30 backdrop-blur-xl"></div>
               
               {/* Profile Content */}
-              <div className="px-6 pb-6 -mt-16 text-center">
+              <div className="px-4 sm:px-6 pb-6 -mt-12 sm:-mt-16 text-center">
                 {/* Avatar */}
                 <div className="relative inline-block mb-4">
-                  <div className="w-32 h-32 bg-gradient-to-br from-sky-500 to-blue-600 rounded-full flex items-center justify-center text-white text-4xl font-bold border-4 border-white shadow-[0_14px_30px_rgba(15,23,42,0.16)]">
+                  <div className="w-24 h-24 sm:w-32 sm:h-32 bg-gradient-to-br from-sky-500 to-blue-600 rounded-full flex items-center justify-center text-white text-3xl sm:text-4xl font-bold border-4 border-white shadow-[0_14px_30px_rgba(15,23,42,0.16)]">
                     {user.name?.charAt(0).toUpperCase() || 'U'}
                   </div>
                   <button className="absolute bottom-2 right-2 w-10 h-10 bg-white rounded-full shadow-lg flex items-center justify-center hover:bg-slate-50 transition-colors border-2 border-slate-100" aria-label="เปลี่ยนรูปโปรไฟล์">
@@ -394,7 +394,7 @@ export default function ProfilePage() {
           {/* Forms */}
           <div className="lg:col-span-2 space-y-6">
             {/* Update Profile Form */}
-            <div className="premium-card p-6 !rounded-[14px]">
+            <div className="premium-card p-4 sm:p-6 !rounded-[14px]">
               <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-100">
                 <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center">
                   <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -461,7 +461,7 @@ export default function ProfilePage() {
             </div>
 
             {/* Change Password Form */}
-            <div className="premium-card p-6 !rounded-[14px]">
+            <div className="premium-card p-4 sm:p-6 !rounded-[14px]">
               <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-100">
                 <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center">
                   <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -687,7 +687,7 @@ export default function ProfilePage() {
                             </div>
                           </div>
 
-                          <div className="flex flex-nowrap items-center gap-1.5 lg:justify-end">
+                          <div className="flex flex-wrap items-center gap-1.5 lg:justify-end">
                             <button
                               type="button"
                               onClick={() => handleMoveQuickLink(link.id, 'up')}

@@ -124,7 +124,7 @@ export default function AdminPage() {
     <DashboardLayout>
       <div className="max-w-7xl mx-auto space-y-8">
         {/* Header Section */}
-        <div className="flex items-start justify-between">
+        <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <h1 className="text-4xl font-bold text-slate-900 tracking-tight">ระบบจัดการ</h1>
             <p className="text-slate-500 mt-2 font-medium">จัดการผู้ใช้และติดตามกิจกรรม</p>
@@ -149,43 +149,41 @@ export default function AdminPage() {
         </div>
 
         {/* Statistics Bar */}
-        <div className="premium-card !rounded-[14px] !p-0 overflow-hidden">
-          <div className="grid grid-cols-2 lg:grid-cols-4 divide-x divide-slate-100">
-            <div className="flex items-center gap-3 p-4">
-              <div className="p-2 bg-blue-50 rounded-lg text-blue-600">
-                <Users size={16} />
-              </div>
-              <div>
-                <p className="text-xs text-slate-500 font-medium">ผู้ใช้ทั้งหมด</p>
-                <p className="text-xl font-bold text-slate-900">{stats.totalUsers}</p>
-              </div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="flex items-center gap-3 p-4 bg-white border border-slate-200/80 rounded-[12px] shadow-[0_4px_12px_rgba(15,23,42,0.02)]">
+            <div className="p-2 bg-blue-50 rounded-lg text-blue-600">
+              <Users size={16} />
             </div>
-            <div className="flex items-center gap-3 p-4">
-              <div className="p-2 bg-green-50 rounded-lg text-green-600">
-                <CheckCircle2 size={16} />
-              </div>
-              <div>
-                <p className="text-xs text-slate-500 font-medium">ใช้งาน</p>
-                <p className="text-xl font-bold text-slate-900">{stats.activeUsers}</p>
-              </div>
+            <div>
+              <p className="text-xs text-slate-500 font-medium">ผู้ใช้ทั้งหมด</p>
+              <p className="text-xl font-bold text-slate-900">{stats.totalUsers}</p>
             </div>
-            <div className="flex items-center gap-3 p-4">
-              <div className="p-2 bg-red-50 rounded-lg text-red-600">
-                <AlertCircle size={16} />
-              </div>
-              <div>
-                <p className="text-xs text-slate-500 font-medium">ถูกล็อค</p>
-                <p className="text-xl font-bold text-slate-900">{stats.lockedUsers}</p>
-              </div>
+          </div>
+          <div className="flex items-center gap-3 p-4 bg-white border border-slate-200/80 rounded-[12px] shadow-[0_4px_12px_rgba(15,23,42,0.02)]">
+            <div className="p-2 bg-green-50 rounded-lg text-green-600">
+              <CheckCircle2 size={16} />
             </div>
-            <div className="flex items-center gap-3 p-4">
-              <div className="p-2 bg-amber-50 rounded-lg text-amber-600">
-                <Activity size={16} />
-              </div>
-              <div>
-                <p className="text-xs text-slate-500 font-medium">ผู้ดูแล</p>
-                <p className="text-xl font-bold text-slate-900">{stats.adminUsers}</p>
-              </div>
+            <div>
+              <p className="text-xs text-slate-500 font-medium">ใช้งาน</p>
+              <p className="text-xl font-bold text-slate-900">{stats.activeUsers}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 p-4 bg-white border border-slate-200/80 rounded-[12px] shadow-[0_4px_12px_rgba(15,23,42,0.02)]">
+            <div className="p-2 bg-red-50 rounded-lg text-red-600">
+              <AlertCircle size={16} />
+            </div>
+            <div>
+              <p className="text-xs text-slate-500 font-medium">ถูกล็อค</p>
+              <p className="text-xl font-bold text-slate-900">{stats.lockedUsers}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 p-4 bg-white border border-slate-200/80 rounded-[12px] shadow-[0_4px_12px_rgba(15,23,42,0.02)]">
+            <div className="p-2 bg-amber-50 rounded-lg text-amber-600">
+              <Activity size={16} />
+            </div>
+            <div>
+              <p className="text-xs text-slate-500 font-medium">ผู้ดูแล</p>
+              <p className="text-xl font-bold text-slate-900">{stats.adminUsers}</p>
             </div>
           </div>
         </div>

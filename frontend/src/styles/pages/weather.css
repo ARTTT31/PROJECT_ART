@@ -301,3 +301,27 @@
     animation: none !important;
   }
 }
+
+/* ─────────────────────────────────────────────────────
+   ปรับปรุงการแสดงผลสำหรับมือถือหน้าจอเล็ก (เช่น iPhone SE)
+   ───────────────────────────────────────────────────── */
+@media (max-width: 480px) {
+  /* ลบ padding ที่ดันเนื้อหาเกินจำเป็นบนมือถือ */
+  .weather-card .pl-20 {
+    padding-left: 0 !important;
+  }
+  
+  /* ปรับกริดสถิติสภาพอากาศให้แสดงผลแถวเดียว (Stack) */
+  .weather-card .grid-cols-2 {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+  }
+
+  /* ปรับขนาดตัวเลขและไอคอนไม่ให้ล้น */
+  .weather-card .text-7xl {
+    font-size: 3.5rem !important;
+  }
+  .weather-card .text-\[4rem\] {
+    font-size: 2.75rem !important;
+  }
+}
