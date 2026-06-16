@@ -2,7 +2,7 @@
 API Dependencies
 """
 from typing import Optional
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 
@@ -11,28 +11,34 @@ from app.core.security import decode_token
 from app.models.user import User
 from app.services.user_service import UserService
 
-# Security scheme
-security = HTTPBearer()
+# Security scheme (auto_error=False to allow checking cookies manually)
+security = HTTPBearer(auto_error=False)
 
 
 async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+    request: Request,
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
     db: Session = Depends(get_db),
 ) -> User:
     """
-    Dependency to get current authenticated user from JWT token
-    
-    Args:
-        credentials: Bearer token from Authorization header
-        db: Database session
-    
-    Returns:
-        Current user object
-    
-    Raises:
-        HTTPException: If token is invalid or user not found
+    Dependency to get current authenticated user from JWT token (cookie or header)
     """
-    token = credentials.credentials
+    token = None
+    
+    # 1. Try to get token from cookies
+    if "access_token" in request.cookies:
+        token = request.cookies.get("access_token")
+    
+    # 2. Fall back to Authorization header
+    if not token and credentials:
+        token = credentials.credentials
+        
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     
     # Decode token
     payload = decode_token(token)

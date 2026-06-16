@@ -21,7 +21,7 @@ interface AuthContextValue {
   isAuthenticated: boolean
   user: AuthUser | null
   accessToken: string | null
-  login: (accessToken: string, user: AuthUser, refreshToken?: string, sessionId?: string) => void
+  login: (accessToken: string | null, user: AuthUser, refreshToken?: string, sessionId?: string) => void
   logout: () => void
   updateUser: (next: Partial<AuthUser>) => void
 }
@@ -37,64 +37,97 @@ function safeParseUser(raw: string | null): AuthUser | null {
   }
 }
 
-function readAuthFromStorage() {
-  if (typeof window === 'undefined') {
-    return { accessToken: null as string | null, user: null as AuthUser | null }
-  }
-
-  const accessToken = localStorage.getItem('access_token')
-  const user = safeParseUser(localStorage.getItem('user'))
-  return { accessToken, user }
-}
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [status, setStatus] = useState<AuthStatus>('loading')
-  const [accessToken, setAccessToken] = useState<string | null>(null)
   const [user, setUser] = useState<AuthUser | null>(null)
 
-  const syncFromStorage = useCallback(() => {
-    const { accessToken: token, user: u } = readAuthFromStorage()
-    setAccessToken(token)
-    setUser(u)
-    setStatus(token && u ? 'authenticated' : 'anonymous')
-  }, [])
-
+  // 1. Session check on mount
   useEffect(() => {
-    syncFromStorage()
+    const checkSession = async () => {
+      try {
+        // Fast display using user cookie (non-httpOnly hydration helper)
+        const userCookie = document.cookie
+          .split('; ')
+          .find((row) => row.startsWith('user='));
+          
+        let localUser = safeParseUser(localStorage.getItem('user'));
+        
+        if (userCookie) {
+          try {
+            const parsedCookie = JSON.parse(decodeURIComponent(userCookie.split('=')[1]));
+            localUser = parsedCookie;
+          } catch (e) {}
+        }
+        
+        if (localUser) {
+          setUser(localUser);
+          setStatus('authenticated');
+        }
+        
+        // Verify token & session status with the backend
+        const res = await fetchWithAuth('/api/v1/auth/session');
+        if (res.ok) {
+          const json = await res.json();
+          if (json.data && json.data.user) {
+            setUser(json.data.user);
+            localStorage.setItem('user', JSON.stringify(json.data.user));
+            setStatus('authenticated');
+            return;
+          }
+        }
+        
+        // If API fails or says unauthorized, clear state
+        setUser(null);
+        localStorage.removeItem('user');
+        localStorage.removeItem('session_id');
+        setStatus('anonymous');
+      } catch (e) {
+        setUser(null);
+        setStatus('anonymous');
+      }
+    };
+
+    checkSession();
 
     const onStorage = (e: StorageEvent) => {
       if (!e.key) return
-      if (['access_token', 'user', 'refresh_token', 'session_id'].includes(e.key)) {
-        syncFromStorage()
+      if (['user', 'session_id'].includes(e.key)) {
+        const u = safeParseUser(localStorage.getItem('user'));
+        setUser(u);
+        setStatus(u ? 'authenticated' : 'anonymous');
       }
     }
 
-    const onLogout = () => syncFromStorage()
-    const onUserProfileUpdated = () => syncFromStorage()
+    const onLogout = () => {
+      setUser(null);
+      setStatus('anonymous');
+    }
+
+    const onLogin = () => {
+      const u = safeParseUser(localStorage.getItem('user'));
+      setUser(u);
+      setStatus(u ? 'authenticated' : 'anonymous');
+    }
 
     window.addEventListener('storage', onStorage)
     window.addEventListener('auth-logout', onLogout)
-    window.addEventListener('auth-login', syncFromStorage)
-    window.addEventListener('user-profile-updated', onUserProfileUpdated)
+    window.addEventListener('auth-login', onLogin)
 
     return () => {
       window.removeEventListener('storage', onStorage)
       window.removeEventListener('auth-logout', onLogout)
-      window.removeEventListener('auth-login', syncFromStorage)
-      window.removeEventListener('user-profile-updated', onUserProfileUpdated)
+      window.removeEventListener('auth-login', onLogin)
     }
-  }, [syncFromStorage])
+  }, [])
 
-  // Sync ข้อมูลโปรไฟล์เพิ่มเติม (เช่น quick_links) จาก backend เมื่อเข้าสู่ระบบ
+  // Sync profile details if authenticated
   useEffect(() => {
-    if (status !== 'authenticated' || !accessToken) return
+    if (status !== 'authenticated') return
 
     let cancelled = false
-
     ;(async () => {
       try {
         const res = await fetchWithAuth('/api/v1/profile/me')
-
         if (!res.ok) return
 
         const profile = (await res.json()) as Partial<AuthUser> & { quick_links?: string | null }
@@ -107,23 +140,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return merged
         })
       } catch {
-        // ไม่บังคับสำเร็จ (fallback ใช้ข้อมูลเดิมจาก localStorage)
+        // Fallback silently
       }
     })()
 
     return () => {
       cancelled = true
     }
-  }, [status, accessToken])
+  }, [status])
 
   const login = useCallback(
-    (token: string, nextUser: AuthUser, refreshToken?: string, sessionId?: string) => {
-      localStorage.setItem('access_token', token)
+    (token: string | null, nextUser: AuthUser, refreshToken?: string, sessionId?: string) => {
       localStorage.setItem('user', JSON.stringify(nextUser))
-      if (refreshToken) localStorage.setItem('refresh_token', refreshToken)
       if (sessionId) localStorage.setItem('session_id', sessionId)
 
-      setAccessToken(token)
       setUser(nextUser)
       setStatus('authenticated')
       window.dispatchEvent(new Event('auth-login'))
@@ -131,13 +161,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     []
   )
 
-  const logout = useCallback(() => {
-    localStorage.removeItem('access_token')
-    localStorage.removeItem('refresh_token')
+  const logout = useCallback(async () => {
+    try {
+      const sessionId = localStorage.getItem('session_id')
+      await fetchWithAuth('/api/v1/auth/logout', {
+        method: 'POST',
+        body: JSON.stringify({ session_id: sessionId })
+      })
+    } catch (e) {
+      console.error('Logout failed:', e)
+    }
+
     localStorage.removeItem('session_id')
     localStorage.removeItem('user')
 
-    setAccessToken(null)
     setUser(null)
     setStatus('anonymous')
     window.dispatchEvent(new Event('auth-logout'))
@@ -157,12 +194,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       status,
       isAuthenticated: status === 'authenticated',
       user,
-      accessToken,
+      accessToken: null, // Tokens are managed securely in HTTP-only cookies
       login,
       logout,
       updateUser,
     }),
-    [status, user, accessToken, login, logout, updateUser]
+    [status, user, login, logout, updateUser]
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
@@ -175,3 +212,4 @@ export function useAuth() {
   }
   return ctx
 }
+

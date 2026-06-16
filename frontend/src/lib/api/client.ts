@@ -5,60 +5,36 @@ const baseURL = `${API_URL}/api/v1`;
 
 export const apiClient = axios.create({
   baseURL,
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Request interceptor to add auth token
-apiClient.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('access_token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
-
-// ── Auto-refresh logic ──────────────────────────────────────
+// ── Auto-refresh logic (Cookie-based) ─────────────────────────
 let isRefreshing = false;
-let pendingRequests: Array<(token: string) => void> = [];
+let pendingRequests: Array<() => void> = [];
 
-function onTokenRefreshed(newToken: string) {
-  pendingRequests.forEach((cb) => cb(newToken));
+function onTokenRefreshed() {
+  pendingRequests.forEach((cb) => cb());
   pendingRequests = [];
 }
 
-async function refreshAccessToken(): Promise<string | null> {
-  const refreshToken = localStorage.getItem('refresh_token');
-  if (!refreshToken) return null;
-
+async function refreshAccessToken(): Promise<boolean> {
   try {
-    const response = await axios.post(`${baseURL}/auth/refresh`, {
-      refresh_token: refreshToken,
+    // Send request with credentials so the refresh_token cookie is attached
+    const response = await axios.post(`${baseURL}/auth/refresh`, {}, {
+      withCredentials: true,
     });
 
-    if (response.data?.result === 'success' && response.data?.data?.access_token) {
-      const newToken = response.data.data.access_token;
-      localStorage.setItem('access_token', newToken);
-
-      // Update user in localStorage if returned
-      if (response.data.data.user) {
-        localStorage.setItem('user', JSON.stringify(response.data.data.user));
-      }
-
-      // Notify other parts of the app
+    if (response.data?.result === 'success') {
+      // Notify other parts of the app to sync user state if needed
       window.dispatchEvent(new Event('auth-login'));
-
-      return newToken;
+      return true;
     }
-    return null;
+    return false;
   } catch {
-    return null;
+    return false;
   }
 }
 
@@ -76,18 +52,16 @@ apiClient.interceptors.response.use(
         isRefreshing = true;
 
         try {
-          const newToken = await refreshAccessToken();
+          const success = await refreshAccessToken();
 
-          if (newToken) {
-            onTokenRefreshed(newToken);
-            originalRequest.headers.Authorization = `Bearer ${newToken}`;
+          if (success) {
+            onTokenRefreshed();
+            // Retry the original request (which will now automatically send the new cookie)
             return apiClient(originalRequest);
           } else {
-            // Refresh failed — force logout
-            localStorage.removeItem('access_token');
-            localStorage.removeItem('refresh_token');
-            localStorage.removeItem('session_id');
+            // Refresh failed — force logout on the frontend
             localStorage.removeItem('user');
+            localStorage.removeItem('session_id');
             if (typeof window !== 'undefined') {
               window.dispatchEvent(new Event('auth-logout'));
             }
@@ -100,8 +74,7 @@ apiClient.interceptors.response.use(
 
       // If another request is already refreshing, queue this one
       return new Promise((resolve) => {
-        pendingRequests.push((newToken: string) => {
-          originalRequest.headers.Authorization = `Bearer ${newToken}`;
+        pendingRequests.push(() => {
           resolve(apiClient(originalRequest));
         });
       });
@@ -110,3 +83,4 @@ apiClient.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+

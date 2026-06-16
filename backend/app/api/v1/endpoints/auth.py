@@ -75,26 +75,29 @@ async def login(
         )
         await db.commit()
 
-        # 🛡️ SECURITY: Set tokens as HTTP-only cookies (defense-in-depth)
-        # These cookies cannot be read by JavaScript, mitigating XSS token theft.
-        # JSON response still includes tokens for backward compatibility with
-        # the frontend state management pattern.
+        # 🛡️ SECURITY: Set tokens as HTTP-only cookies (mitigating XSS token theft)
+        # We exclude tokens from the JSON response body.
+        response_data = {
+            "session_id": result["session_id"],
+            "user": result["user"]
+        }
+        
         resp = ResponseModel(
             result="success",
             message="เข้าสู่ระบบสำเร็จ",
-            data=result,
+            data=response_data,
         )
         from fastapi.responses import JSONResponse
         response = JSONResponse(content=resp.model_dump())
 
-        is_secure = bool(request.url.scheme == "https")
+        # Set cookies as requested: httponly=True, secure=True, samesite="lax"
         response.set_cookie(
             key="access_token",
             value=result["access_token"],
             max_age=30 * 60,
             httponly=True,
-            secure=is_secure,
-            samesite="strict",
+            secure=True,
+            samesite="lax",
             path="/"
         )
         response.set_cookie(
@@ -102,8 +105,8 @@ async def login(
             value=result["refresh_token"],
             max_age=7 * 24 * 60 * 60,
             httponly=True,
-            secure=is_secure,
-            samesite="strict",
+            secure=True,
+            samesite="lax",
             path="/"
         )
         return response
@@ -181,19 +184,66 @@ async def register(
         )
 
 
-@router.post("/refresh", response_model=Token)
+@router.post("/refresh", response_model=ResponseModel)
 async def refresh_token(
-    refresh_token: str,
+    request: Request,
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Refresh access token using refresh token
+    Refresh access token using refresh token from cookies (or body fallback)
     """
     auth_service = AuthService(db)
+    
+    # 1. Try to get refresh token from cookies
+    refresh_token_val = request.cookies.get("refresh_token")
+    
+    # 2. Try to get it from request body if not in cookies
+    if not refresh_token_val:
+        try:
+            body = await request.json()
+            refresh_token_val = body.get("refresh_token")
+        except Exception:
+            pass
+            
+    if not refresh_token_val:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="ไม่พบ Refresh Token",
+        )
 
     try:
-        new_tokens = await auth_service.refresh_access_token(refresh_token)
-        return new_tokens
+        new_tokens = await auth_service.refresh_access_token(refresh_token_val)
+        
+        resp = ResponseModel(
+            result="success",
+            message="รีเฟรชโทเค็นสำเร็จ",
+            data={"token_type": "bearer"},
+        )
+        from fastapi.responses import JSONResponse
+        response = JSONResponse(content=resp.model_dump())
+        
+        # Set updated secure HTTP-only cookies
+        response.set_cookie(
+            key="access_token",
+            value=new_tokens.access_token,
+            max_age=30 * 60,
+            httponly=True,
+            secure=True,
+            samesite="lax",
+            path="/"
+        )
+        if new_tokens.refresh_token:
+            response.set_cookie(
+                key="refresh_token",
+                value=new_tokens.refresh_token,
+                max_age=7 * 24 * 60 * 60,
+                httponly=True,
+                secure=True,
+                samesite="lax",
+                path="/"
+            )
+            
+        return response
 
     except HTTPException as e:
         raise e
@@ -331,22 +381,18 @@ async def google_callback(code: str = None, request: Request = None, db: AsyncSe
         "quick_links": user.quick_links,
     }
 
-    import urllib.parse
-    user_json_str = urllib.parse.quote(json.dumps(user_data))
-    redirect_url = f"{frontend_redirect}/login-success?token={access_jwt}&refresh_token={refresh_jwt}&user={user_json_str}"
-    
+    # Redirect to frontend without leaking tokens in URL query params
+    redirect_url = f"{frontend_redirect}/login-success"
     response = RedirectResponse(url=redirect_url)
 
-    is_secure = frontend_redirect.startswith('https://')
-
-    # Keep setting cookies as a fallback, but primary mechanism for cross-domain is URL params
+    # Set cookies: httponly=True, secure=True, samesite="lax"
     response.set_cookie(
         key="access_token",
         value=access_jwt,
         max_age=30 * 60,
         httponly=True,
-        secure=is_secure,
-        samesite="None", # Change to None for cross-domain if secure=True
+        secure=True,
+        samesite="lax",
         path="/"
     )
     response.set_cookie(
@@ -354,18 +400,18 @@ async def google_callback(code: str = None, request: Request = None, db: AsyncSe
         value=refresh_jwt,
         max_age=7 * 24 * 60 * 60,
         httponly=True,
-        secure=is_secure,
-        samesite="None", # Change to None for cross-domain
+        secure=True,
+        samesite="lax",
         path="/"
     )
-    # Non-httpOnly user data cookie (read by frontend for quick display)
+    # Non-httpOnly user data cookie (read by frontend for quick display/hydration)
     response.set_cookie(
         key="user",
         value=json.dumps(user_data),
         max_age=7 * 24 * 60 * 60,
         httponly=False,
-        secure=is_secure,
-        samesite="None", # Change to None for cross-domain
+        secure=True,
+        samesite="lax",
         path="/"
     )
     return response
@@ -414,44 +460,51 @@ async def get_session(request: Request, db: AsyncSession = Depends(get_db)):
 
 @router.post("/logout", response_model=ResponseModel)
 async def logout(
-    session_id: str,
     request: Request,
+    session_id: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Logout and invalidate session
+    Logout and invalidate session, clearing HTTP-only cookies.
     """
     auth_service = AuthService(db)
     audit_service = AuditService(db)
     client_ip = request.client.host if request.client else None
     user_agent = request.headers.get("user-agent")
 
+    from fastapi.responses import JSONResponse
+    response = JSONResponse(content={
+        "result": "success",
+        "message": "ออกจากระบบสำเร็จ"
+    })
+    
+    # Clear cookies
+    response.delete_cookie("access_token", path="/")
+    response.delete_cookie("refresh_token", path="/")
+    response.delete_cookie("user", path="/")
+
+    # Invalidate session in DB if session_id is provided
     try:
-        # Get user ID from session if possible before revoking
-        stmt = select(UserSession).where(UserSession.session_id == session_id)
-        result = await db.execute(stmt)
-        session_obj = result.scalar_one_or_none()
-        user_id = session_obj.user_id if session_obj else None
+        if session_id:
+            stmt = select(UserSession).where(UserSession.session_id == session_id)
+            result = await db.execute(stmt)
+            session_obj = result.scalar_one_or_none()
+            user_id = session_obj.user_id if session_obj else None
 
-        await auth_service.logout(session_id)
+            await auth_service.logout(session_id)
 
-        if user_id:
-            await audit_service.log_action(
-                action="LOGOUT",
-                user_id=user_id,
-                details=f"Logged out session: {session_id}",
-                ip_address=client_ip,
-                user_agent=user_agent
-            )
-            await db.commit()
-
-        return ResponseModel(
-            result="success",
-            message="ออกจากระบบสำเร็จ",
-        )
+            if user_id:
+                await audit_service.log_action(
+                    action="LOGOUT",
+                    user_id=user_id,
+                    details=f"Logged out session: {session_id}",
+                    ip_address=client_ip,
+                    user_agent=user_agent
+                )
+                await db.commit()
+                
+        return response
 
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e),
-        )
+        print(f"[LOGOUT] Error: {str(e)}")
+        return response
