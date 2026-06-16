@@ -190,7 +190,7 @@ export default function DashboardPage() {
         {/* Dashboard Grid */}
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={visibleWidgets.map(w => w.id)} strategy={verticalListSortingStrategy}>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 px-3 sm:px-4 lg:px-6">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 px-3 sm:px-4 lg:px-6">
               {visibleWidgets.map((widget) => (
                 <SortableWidget
                   key={widget.id}
@@ -262,9 +262,9 @@ function WidgetErrorFallback({ name, error, reset }: { name: string; error: Erro
 }
 
 const getColSpanClass = (w: number) => {
-  if (w === 3) return 'col-span-1 sm:col-span-2 lg:col-span-3 xl:col-span-3'
-  if (w === 2) return 'col-span-1 sm:col-span-2 lg:col-span-2 xl:col-span-2'
-  return 'col-span-1'
+  if (w === 3) return 'col-span-1 md:col-span-12'
+  if (w === 2) return 'col-span-1 md:col-span-8'
+  return 'col-span-1 md:col-span-6'
 }
 
 /** Sortable wrapper for each widget - supports mouse, touch, and keyboard drag */
