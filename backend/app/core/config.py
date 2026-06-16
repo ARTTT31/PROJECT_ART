@@ -23,8 +23,8 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
-    # CORS
-    CORS_ORIGINS: str = "http://localhost:3000,http://localhost:3001,http://localhost:80,http://localhost:8000"
+    # CORS — explicit origins required (no wildcards) because allow_credentials=True
+    CORS_ORIGINS: str = "http://localhost:3000,http://localhost:3001,http://localhost:80,http://localhost:8000,https://project-art-sigma.vercel.app,https://art-workspace-api.onrender.com"
 
     def get_cors_origins(self) -> List[str]:
         """Parse CORS origins from string"""

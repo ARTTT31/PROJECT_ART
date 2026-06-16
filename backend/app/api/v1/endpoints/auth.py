@@ -90,14 +90,15 @@ async def login(
         from fastapi.responses import JSONResponse
         response = JSONResponse(content=resp.model_dump())
 
-        # Set cookies as requested: httponly=True, secure=True, samesite="lax"
+        # 🔧 Cross-site cookies: samesite="none" + secure=True required
+        # because frontend (*.vercel.app) and backend (*.onrender.com) are on different sites.
         response.set_cookie(
             key="access_token",
             value=result["access_token"],
             max_age=30 * 60,
             httponly=True,
             secure=True,
-            samesite="lax",
+            samesite="none",
             path="/"
         )
         response.set_cookie(
@@ -106,7 +107,7 @@ async def login(
             max_age=7 * 24 * 60 * 60,
             httponly=True,
             secure=True,
-            samesite="lax",
+            samesite="none",
             path="/"
         )
         return response
@@ -222,14 +223,14 @@ async def refresh_token(
         from fastapi.responses import JSONResponse
         response = JSONResponse(content=resp.model_dump())
         
-        # Set updated secure HTTP-only cookies
+        # 🔧 Cross-site cookies: samesite="none" + secure=True required
         response.set_cookie(
             key="access_token",
             value=new_tokens.access_token,
             max_age=30 * 60,
             httponly=True,
             secure=True,
-            samesite="lax",
+            samesite="none",
             path="/"
         )
         if new_tokens.refresh_token:
@@ -239,7 +240,7 @@ async def refresh_token(
                 max_age=7 * 24 * 60 * 60,
                 httponly=True,
                 secure=True,
-                samesite="lax",
+                samesite="none",
                 path="/"
             )
             
@@ -385,14 +386,14 @@ async def google_callback(code: str = None, request: Request = None, db: AsyncSe
     redirect_url = f"{frontend_redirect}/login-success"
     response = RedirectResponse(url=redirect_url)
 
-    # Set cookies: httponly=True, secure=True, samesite="lax"
+    # 🔧 Cross-site cookies: samesite="none" + secure=True required
     response.set_cookie(
         key="access_token",
         value=access_jwt,
         max_age=30 * 60,
         httponly=True,
         secure=True,
-        samesite="lax",
+        samesite="none",
         path="/"
     )
     response.set_cookie(
@@ -401,7 +402,7 @@ async def google_callback(code: str = None, request: Request = None, db: AsyncSe
         max_age=7 * 24 * 60 * 60,
         httponly=True,
         secure=True,
-        samesite="lax",
+        samesite="none",
         path="/"
     )
     # Non-httpOnly user data cookie (read by frontend for quick display/hydration)
@@ -411,7 +412,7 @@ async def google_callback(code: str = None, request: Request = None, db: AsyncSe
         max_age=7 * 24 * 60 * 60,
         httponly=False,
         secure=True,
-        samesite="lax",
+        samesite="none",
         path="/"
     )
     return response
@@ -478,10 +479,10 @@ async def logout(
         "message": "ออกจากระบบสำเร็จ"
     })
     
-    # Clear cookies
-    response.delete_cookie("access_token", path="/")
-    response.delete_cookie("refresh_token", path="/")
-    response.delete_cookie("user", path="/")
+    # Clear cookies (must match the same samesite/secure attributes used when setting them)
+    response.delete_cookie("access_token", path="/", samesite="none", secure=True)
+    response.delete_cookie("refresh_token", path="/", samesite="none", secure=True)
+    response.delete_cookie("user", path="/", samesite="none", secure=True)
 
     # Invalidate session in DB if session_id is provided
     try:
