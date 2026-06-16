@@ -22,8 +22,14 @@ async def lifespan(app: FastAPI):
         await conn.run_sync(base.Base.metadata.create_all)
     yield
 
-# Rate Limiter - uses client IP as key
-limiter = Limiter(key_func=get_remote_address)
+# Rate Limiter - Uses X-Forwarded-For to get real client IP behind proxy (Render/Vercel)
+def get_real_client_ip(request: Request) -> str:
+    forwarded_for = request.headers.get("X-Forwarded-For")
+    if forwarded_for:
+        return forwarded_for.split(",")[0].strip()
+    return request.client.host if request.client else "127.0.0.1"
+
+limiter = Limiter(key_func=get_real_client_ip)
 
 app = FastAPI(
     title=settings.APP_NAME,
@@ -36,10 +42,11 @@ app = FastAPI(
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-# CORS Middleware
+# CORS Middleware with Vercel Preview URL support
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.get_cors_origins(),
+    allow_origin_regex=r"https://art-workspace-.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

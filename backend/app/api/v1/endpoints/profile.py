@@ -171,45 +171,50 @@ async def upload_avatar_file(
     db: Session = Depends(get_db),
 ):
     """
-    Upload user avatar as file
+    Upload user avatar and store as Base64 in Database (Serverless Friendly)
     """
+    import base64
     import os
-    import shutil
-    from datetime import datetime
     from app.services.audit_service import AuditService
     
-    # Check file extension
+    # 1. Check file extension
     ext = os.path.splitext(file.filename)[1].lower()
     if ext not in [".jpg", ".jpeg", ".png", ".gif"]:
         raise HTTPException(status_code=400, detail="รองรับเฉพาะไฟล์รูปภาพ (jpg, jpeg, png, gif)")
         
-    os.makedirs("uploads/avatars", exist_ok=True)
-    filename = f"user_{current_user.id}_{int(datetime.now(timezone.utc).timestamp())}{ext}"
-    filepath = os.path.join("uploads/avatars", filename)
-    
     try:
-        with open(filepath, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
+        # 2. Read contents and limit size to 1MB
+        contents = await file.read()
+        if len(contents) > 1 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail="ขนาดไฟล์รูปภาพห้ามเกิน 1MB")
             
-        avatar_url = f"/uploads/avatars/{filename}"
-        user_service = UserService(db)
-        user_service.update_avatar(current_user.id, avatar_url)
+        # 3. Convert image to Base64 Data URL string
+        base64_data = base64.b64encode(contents).decode("utf-8")
+        avatar_base64 = f"data:{file.content_type};base64,{base64_data}"
         
-        # Log audit log
+        # 4. Save to Database (Async Service Call)
+        user_service = UserService(db)
+        await user_service.update_avatar(current_user.id, avatar_base64)
+        
+        # 5. Log audit trail (Sync Service Call)
+        client_ip = request.headers.get("X-Forwarded-For", "").split(",")[0].strip() or (request.client.host if request.client else None)
+        user_agent = request.headers.get("user-agent")
+        
         audit_service = AuditService(db)
         audit_service.log_action(
             action="AVATAR_UPLOAD",
             user_id=current_user.id,
-            details=f"Uploaded new avatar file: {filename}",
-            ip_address=request.client.host if request.client else None,
-            user_agent=request.headers.get("user-agent")
+            details="User successfully uploaded and stored avatar image in database",
+            ip_address=client_ip,
+            user_agent=user_agent
         )
         
         return ResponseModel(
             result="success",
-            message="อัปโหลดรูปโปรไฟล์สำเร็จ",
-            data={"avatar_url": avatar_url}
+            message="อัปเดตรูปโปรไฟล์สำเร็จ (เก็บข้อมูลบนระบบคลาวด์แล้ว)",
         )
+    except HTTPException as he:
+        raise he
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

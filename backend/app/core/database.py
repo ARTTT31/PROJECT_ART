@@ -17,8 +17,9 @@ engine = create_async_engine(
     settings.DATABASE_URL,
     connect_args={"check_same_thread": False} if "sqlite" in settings.DATABASE_URL else {"ssl": True},
     pool_pre_ping=True,
-    pool_size=10,
-    max_overflow=20,
+    pool_size=5,
+    max_overflow=5,
+    pool_recycle=1800,
 )
 
 # Create session factory

@@ -71,3 +71,58 @@
 * ระบบ API ทำงานในสถานะพร้อมรับโหลด (Green Status) 
 * ระบบไหลเวียนของการล็อกอิน (OAuth Callback Sequence) สามารถพูดคุยกันระหว่าง Vercel, Render และ Google ได้อย่างสมบูรณ์
 * มีการเชื่อมต่อฐานข้อมูลสร้าง/บันทึกข้อมูลผู้ใช้งาน และออกตั๋วความปลอดภัย JWT Token สำหรับอนุญาตสิทธิ์เข้าสู่หน้าแดชบอร์ดได้อย่างมั่นคงและปลอดภัย
+
+---
+
+## 5. แผนการในอนาคต: การเปลี่ยนผ่านสู่ระบบไร้ตู้คอนเทนเนอร์ (Docker-less & Fully Cloud-Managed Roadmap)
+
+เพื่อลดภาระการทำงานของเครื่องผู้พัฒนา (Localhost) และย้ายกระบวนการประมวลผลและการรันระบบทั้งหมดขึ้นสู่ระบบคลาวด์ 100% (Fully Cloud-Managed) โปรเจกต์นี้มีแผนงานในการ**ยกเลิกการใช้ Docker ในการพัฒนาและติดตั้ง** โดยมีแนวทางและขั้นตอนดังนี้:
+
+### 5.1 สถาปัตยกรรมเป้าหมาย (Target Architecture)
+* **ไม่ต้องติดตั้ง Docker/Docker Desktop** บนเครื่องของผู้พัฒนา
+* **ไม่มีการรันฐานข้อมูลโลคอล** (ย้ายไปต่อกับ Neon.tech โดยตรงผ่านช่องทางเข้ารหัส)
+* **GitHub-Driven Deployment (CI/CD):** 
+  * การแก้ไขโค้ดทั้งหมดจะกระทำผ่านเครื่องโลคอล (แก้ไขไฟล์เปล่า ๆ)
+  * เมื่อทำการ `git push` โค้ดเข้าสู่ GitHub:
+    * **Vercel** จะรับหน้าที่ดึงโค้ดฝั่งหน้าบ้าน (`frontend`) ไปบิวด์และให้บริการบนเว็บโดยอัตโนมัติ (ฟรี)
+    * **Render** จะรับหน้าที่ดึงโค้ดฝั่งหลังบ้าน (`backend`) ไปรันเป็น Web Service โดยอัตโนมัติ (ฟรี)
+    * ทั้งหมดเชื่อมต่อแบบไร้สายไปยังฐานข้อมูล **Neon.tech** (Serverless Postgres ฟรี)
+
+### 5.2 วิธีการพัฒนาในเครื่องโลคอลแบบไม่ใช้ Docker (Docker-less Development Workflow)
+ผู้พัฒนาสามารถเขียนโค้ดและทดสอบระบบในเครื่องได้ทันทีด้วยเครื่องมือแบบ Native:
+
+#### A. สำหรับ Backend (FastAPI):
+1. เปิด Command Line เข้าไปที่โฟลเดอร์ `/backend`
+2. สร้าง virtual environment ของ Python:
+   ```bash
+   python -m venv venv
+   ```
+3. เปิดใช้งาน (Activate) สภาพแวดล้อม:
+   * Windows PowerShell: `.\venv\Scripts\Activate.ps1`
+   * Windows Command Prompt: `.\venv\Scripts\activate.bat`
+   * macOS/Linux: `source venv/bin/activate`
+4. ติดตั้ง dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+5. รันเซิร์ฟเวอร์หลังบ้าน:
+   ```bash
+   uvicorn app.main:app --reload --port 8000
+   ```
+
+#### B. สำหรับ Frontend (Next.js):
+1. เปิด Command Line อีกหน้าต่างและเข้าไปที่โฟลเดอร์ `/frontend`
+2. ติดตั้ง dependencies:
+   ```bash
+   npm install
+   ```
+3. รันเซิร์ฟเวอร์หน้าบ้าน:
+   ```bash
+   npm run dev
+   ```
+
+### 5.3 ประโยชน์ที่ได้รับ
+1. **ลดการใช้ทรัพยากรเครื่อง:** ไม่กินแรมและ CPU ในการจำลองคอมพิวเตอร์ผ่าน Docker Desktop
+2. **ความรวดเร็วในการพัฒนา:** ระบบ Hot-Reload ทำงานได้อย่างมีประสิทธิภาพสูงสุดโดยตรงผ่าน OS File System
+3. **ลดความซับซ้อน:** ไม่จำเป็นต้องดูแลไฟล์ `Dockerfile` และ `docker-compose.yml` อีกต่อไปหลังการเปลี่ยนผ่านสมบูรณ์
+
