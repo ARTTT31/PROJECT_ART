@@ -6,6 +6,7 @@ import DashboardLayout from '@/components/Layout/DashboardLayout';
 import UserTable from '@/components/Admin/UserTable';
 import AuditLogTable from '@/components/Admin/AuditLogTable';
 import CreateUserDialog from '@/components/Admin/CreateUserDialog';
+import EditUserDialog from '@/components/Admin/EditUserDialog';
 import { Users, History, AlertCircle, CheckCircle2, Activity, Plus } from 'lucide-react'
 import { apiClient } from '@/lib/api/client';
 
@@ -25,6 +26,8 @@ export default function AdminPage() {
   const [error, setError] = useState<string | null>(null);
   const [user, setUser] = useState<any>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [editingUser, setEditingUser] = useState<any>(null);
 
   // Check authentication and authorization
   useEffect(() => {
@@ -206,7 +209,7 @@ export default function AdminPage() {
             </div>
           ) : (
             <div className="premium-card rounded-2xl overflow-hidden">
-              <UserTable users={users} />
+              <UserTable users={users} onEditUser={(u) => { setEditingUser(u); setShowEditDialog(true); }} />
             </div>
           )}
         </section>
@@ -251,6 +254,14 @@ export default function AdminPage() {
         isOpen={showCreateDialog}
         onClose={() => setShowCreateDialog(false)}
         onUserCreated={reloadUsers}
+      />
+
+      {/* Edit User Dialog */}
+      <EditUserDialog
+        isOpen={showEditDialog}
+        onClose={() => { setShowEditDialog(false); setEditingUser(null); }}
+        onUserUpdated={reloadUsers}
+        user={editingUser}
       />
     </DashboardLayout>
   );

@@ -260,6 +260,7 @@ class UserService:
         # Update fields
         if user_update.name is not None:
             user.name = user_update.name
+            user.display_name = user_update.name  # Sync display_name with name
         if user_update.role is not None:
             user.role = user_update.role
         if user_update.is_active is not None:

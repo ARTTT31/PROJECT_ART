@@ -108,7 +108,7 @@ export default function CreateUserDialog({ isOpen, onClose, onUserCreated }: Cre
             <label className="block text-xs sm:text-sm font-semibold text-slate-700">
               <div className="flex items-center gap-2">
                 <User className="h-3 w-3 sm:h-4 sm:w-4 text-blue-500" />
-                ชื่อผู้ใช้ (Username)
+                ชื่อผู้ใช้สำหรับเข้าสู่ระบบ (Username)
               </div>
             </label>
             <input
@@ -124,6 +124,7 @@ export default function CreateUserDialog({ isOpen, onClose, onUserCreated }: Cre
               }`}
               placeholder="เช่น username123"
             />
+            <p className="text-[11px] text-slate-400 font-medium">🔑 ใช้สำหรับเข้าสู่ระบบ — ต้องเป็นภาษาอังกฤษ ตัวเลข หรือ _ เท่านั้น</p>
             {errors.username && (
               <p className="text-red-500 text-xs font-medium flex items-center gap-1">
                 <span aria-hidden="true">⚠️</span> {errors.username}
@@ -136,7 +137,7 @@ export default function CreateUserDialog({ isOpen, onClose, onUserCreated }: Cre
             <label className="block text-xs sm:text-sm font-semibold text-slate-700">
               <div className="flex items-center gap-2">
                 <UserCheck className="h-3 w-3 sm:h-4 sm:w-4 text-blue-500" />
-                ชื่อแสดงผล (Display Name)
+                ชื่อที่แสดงในระบบ (Display Name)
               </div>
             </label>
             <input
@@ -152,6 +153,7 @@ export default function CreateUserDialog({ isOpen, onClose, onUserCreated }: Cre
               }`}
               placeholder="เช่น สมชาย ใจดี"
             />
+            <p className="text-[11px] text-slate-400 font-medium">👤 ชื่อที่แสดงบนหน้าจอ — ใช้ภาษาไทยหรืออังกฤษก็ได้</p>
             {errors.displayName && (
               <p className="text-red-500 text-xs font-medium flex items-center gap-1">
                 <span aria-hidden="true">⚠️</span> {errors.displayName}

@@ -1,12 +1,14 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Trash2, Lock, Unlock, CheckCircle2, AlertCircle, Mail, User } from 'lucide-react'
+import { Trash2, Lock, Unlock, CheckCircle2, AlertCircle, Mail, User, Pencil, Globe } from 'lucide-react'
 import { showConfirm, showSuccess, showError } from '@/utils/sweetalert'
 
-interface User {
+interface UserData {
   id: number
-  email: string
+  email: string | null
+  username: string | null
+  display_name: string | null
   name: string
   role: string
   is_active: boolean
@@ -16,10 +18,11 @@ interface User {
 }
 
 interface UserTableProps {
-  users: User[]
+  users: UserData[]
+  onEditUser?: (user: UserData) => void
 }
 
-export default function UserTable({ users }: UserTableProps) {
+export default function UserTable({ users, onEditUser }: UserTableProps) {
   const [loading, setLoading] = useState(false)
   const [localUsers, setLocalUsers] = useState(users)
 
@@ -79,6 +82,12 @@ export default function UserTable({ users }: UserTableProps) {
     }
   }
 
+  // Detect if user is Google OAuth (no username)
+  const isGoogleUser = (user: UserData) => !user.username || user.username === ''
+
+  // Get display identifier for the user
+  const getDisplayName = (user: UserData) => user.display_name || user.name
+
   if (!localUsers || localUsers.length === 0) {
     return (
       <div className="p-12 text-center">
@@ -93,7 +102,7 @@ export default function UserTable({ users }: UserTableProps) {
       <table className="w-full">
         <thead>
           <tr className="border-b border-slate-200 bg-slate-50/50">
-            <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">ชื่อ</th>
+            <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">ผู้ใช้</th>
             <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">อีเมล</th>
             <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">บทบาท</th>
             <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">สถานะ</th>
@@ -106,13 +115,28 @@ export default function UserTable({ users }: UserTableProps) {
             <tr key={user.id} className="hover:bg-slate-50/50 transition-colors">
               <td className="px-6 py-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-100 to-blue-100 flex items-center justify-center flex-shrink-0">
-                    <User size={18} className="text-blue-600" />
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                    isGoogleUser(user) 
+                      ? 'bg-gradient-to-br from-red-50 to-orange-50' 
+                      : 'bg-gradient-to-br from-sky-100 to-blue-100'
+                  }`}>
+                    {isGoogleUser(user) 
+                      ? <Globe size={18} className="text-red-500" />
+                      : <User size={18} className="text-blue-600" />
+                    }
                   </div>
-                  <span className="font-medium text-slate-900">{user.name}</span>
+                  <div className="min-w-0">
+                    <div className="font-medium text-slate-900 truncate">{getDisplayName(user)}</div>
+                    {user.username && (
+                      <div className="text-xs text-slate-400 truncate">@{user.username}</div>
+                    )}
+                    {isGoogleUser(user) && (
+                      <div className="text-[10px] text-orange-500 font-semibold">Google OAuth</div>
+                    )}
+                  </div>
                 </div>
               </td>
-              <td className="px-6 py-4 text-slate-600 text-sm">{user.email}</td>
+              <td className="px-6 py-4 text-slate-600 text-sm">{user.email || '—'}</td>
               <td className="px-6 py-4">
                 <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold ${
                   user.role === 'admin' 
@@ -157,17 +181,30 @@ export default function UserTable({ users }: UserTableProps) {
                 }
               </td>
               <td className="px-6 py-4">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
+                  {/* Edit button */}
+                  {onEditUser && (
+                    <button
+                      onClick={() => onEditUser(user)}
+                      disabled={loading}
+                      className="p-2.5 hover:bg-emerald-100 rounded-lg text-emerald-600 transition-colors disabled:opacity-50"
+                      title="แก้ไขผู้ใช้"
+                    >
+                      <Pencil size={18} />
+                    </button>
+                  )}
+                  {/* Lock/Unlock button */}
                   <button
-                    onClick={() => handleToggleLock(user.id, user.is_locked, user.name)}
+                    onClick={() => handleToggleLock(user.id, user.is_locked, getDisplayName(user))}
                     disabled={loading}
                     className="p-2.5 hover:bg-blue-100 rounded-lg text-blue-600 transition-colors disabled:opacity-50"
                     title={user.is_locked ? 'ปลดล็อค' : 'ล็อค'}
                   >
                     {user.is_locked ? <Unlock size={18} /> : <Lock size={18} />}
                   </button>
+                  {/* Delete button */}
                   <button
-                    onClick={() => handleDelete(user.id, user.name)}
+                    onClick={() => handleDelete(user.id, getDisplayName(user))}
                     disabled={loading}
                     className="p-2.5 hover:bg-red-100 rounded-lg text-red-600 transition-colors disabled:opacity-50"
                     title="ลบผู้ใช้"
