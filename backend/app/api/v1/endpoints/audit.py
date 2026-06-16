@@ -1,6 +1,7 @@
-from typing import List, Optional
+from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status, Query
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, func
 from pydantic import BaseModel
 
 from app.core.database import get_db
@@ -24,13 +25,13 @@ async def list_audit_logs(
     skip: int = 0,
     limit: int = 100,
     current_user: User = Depends(get_current_admin_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
     """
     List all audit logs (Admin only)
     """
     audit_service = AuditService(db)
-    logs = audit_service.get_logs(skip=skip, limit=limit)
+    logs = await audit_service.get_logs(skip=skip, limit=limit)
     return logs
 
 @router.get("/paginated", response_model=PaginatedAuditLogsResponse)
@@ -38,7 +39,7 @@ async def list_audit_logs_paginated(
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=100),
     current_user: User = Depends(get_current_admin_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
     """
     List audit logs with pagination (Admin only)
@@ -47,13 +48,14 @@ async def list_audit_logs_paginated(
     
     audit_service = AuditService(db)
     skip = (page - 1) * size
-    logs = audit_service.get_logs(skip=skip, limit=size + 1)  # Get one extra to check hasNext
+    logs = await audit_service.get_logs(skip=skip, limit=size + 1)  # Get one extra to check hasNext
     
     has_next = len(logs) > size
     if has_next:
         logs = logs[:size]
     
-    total = db.query(AuditLog).count()
+    total_result = await db.execute(select(func.count()).select_from(AuditLog))
+    total = total_result.scalar_one()
     
     return PaginatedAuditLogsResponse(
         items=logs,

@@ -13,13 +13,20 @@ class Base(DeclarativeBase):
 
 
 # Create database engine
+engine_kwargs = {
+    "pool_pre_ping": True,
+    "pool_recycle": 1800,
+}
+if "sqlite" in settings.DATABASE_URL:
+    engine_kwargs["connect_args"] = {"check_same_thread": False}
+else:
+    engine_kwargs["connect_args"] = {"ssl": True}
+    engine_kwargs["pool_size"] = 5
+    engine_kwargs["max_overflow"] = 5
+
 engine = create_async_engine(
     settings.DATABASE_URL,
-    connect_args={"check_same_thread": False} if "sqlite" in settings.DATABASE_URL else {"ssl": True},
-    pool_pre_ping=True,
-    pool_size=5,
-    max_overflow=5,
-    pool_recycle=1800,
+    **engine_kwargs
 )
 
 # Create session factory

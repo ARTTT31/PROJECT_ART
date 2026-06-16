@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { User, Mail, Lock, Shield, Eye, EyeOff, Loader2 } from 'lucide-react'
+import { User, Mail, Lock, Shield, Eye, EyeOff, Loader2, UserCheck } from 'lucide-react'
 import { apiClient } from '@/lib/api/client'
 import { showSuccess, showError } from '@/utils/sweetalert'
 import { Dialog, DialogContent } from '@/components/ui/Dialog'
@@ -14,8 +14,9 @@ interface CreateUserDialogProps {
 
 export default function CreateUserDialog({ isOpen, onClose, onUserCreated }: CreateUserDialogProps) {
   const [formData, setFormData] = useState({
+    username: '',
+    displayName: '',
     email: '',
-    name: '',
     password: '',
     confirmPassword: '',
     role: 'user'
@@ -28,22 +29,33 @@ export default function CreateUserDialog({ isOpen, onClose, onUserCreated }: Cre
   const validateForm = () => {
     const newErrors: Record<string, string> = {}
 
-    if (!formData.email.trim()) {
-      newErrors.email = 'อีเมลไม่ว่างเปล่า'
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+    // Username validation
+    if (!formData.username.trim()) {
+      newErrors.username = 'ชื่อผู้ใช้ห้ามว่างเปล่า'
+    } else if (formData.username.trim().length < 3) {
+      newErrors.username = 'ชื่อผู้ใช้ต้องมีความยาวอย่างน้อย 3 ตัวอักษร'
+    } else if (!/^[a-zA-Z0-9_]+$/.test(formData.username.trim())) {
+      newErrors.username = 'ชื่อผู้ใช้ต้องประกอบด้วยตัวอักษร ภาษาอังกฤษ ตัวเลข หรือเครื่องหมาย _ เท่านั้น'
+    }
+
+    // Display Name validation
+    if (!formData.displayName.trim()) {
+      newErrors.displayName = 'ชื่อแสดงผลห้ามว่างเปล่า'
+    }
+
+    // Email validation (optional)
+    if (formData.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = 'รูปแบบอีเมลไม่ถูกต้อง'
     }
 
-    if (!formData.name.trim()) {
-      newErrors.name = 'ชื่อไม่ว่างเปล่า'
-    }
-
+    // Password validation
     if (!formData.password) {
-      newErrors.password = 'รหัสผ่านไม่ว่างเปล่า'
+      newErrors.password = 'รหัสผ่านห้ามว่างเปล่า'
     } else if (formData.password.length < 8) {
-      newErrors.password = 'รหัสผ่านต้องยาวอย่างน้อย 8 ตัวอักษร'
+      newErrors.password = 'รหัสผ่านต้องมีความยาวอย่างน้อย 8 ตัวอักษร'
     }
 
+    // Confirm Password validation
     if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = 'รหัสผ่านไม่ตรงกัน'
     }
@@ -59,15 +71,23 @@ export default function CreateUserDialog({ isOpen, onClose, onUserCreated }: Cre
 
     setLoading(true)
     try {
-      const response = await apiClient.post('/users', {
-        email: formData.email.trim(),
-        name: formData.name.trim(),
+      const response = await apiClient.post('/users/admin-create', {
+        username: formData.username.trim(),
+        display_name: formData.displayName.trim(),
+        email: formData.email.trim() || null,
         password: formData.password,
         role: formData.role
       })
 
-      showSuccess('สร้างผู้ใช้สำเร็จ', `ผู้ใช้ ${formData.email} ถูกสร้างเรียบร้อยแล้ว`)
-      setFormData({ email: '', name: '', password: '', confirmPassword: '', role: 'user' })
+      showSuccess('สร้างผู้ใช้สำเร็จ', `ผู้ใช้ ${formData.username} ถูกสร้างเรียบร้อยแล้ว`)
+      setFormData({
+        username: '',
+        displayName: '',
+        email: '',
+        password: '',
+        confirmPassword: '',
+        role: 'user'
+      })
       onUserCreated()
       onClose()
     } catch (error: any) {
@@ -83,16 +103,72 @@ export default function CreateUserDialog({ isOpen, onClose, onUserCreated }: Cre
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent title="สร้างผู้ใช้งาน" description="เพิ่มผู้ใช้ใหม่เข้าสู่ระบบ">
         <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
-          {/* Email */}
+          {/* Username */}
+          <div className="space-y-2">
+            <label className="block text-xs sm:text-sm font-semibold text-slate-700">
+              <div className="flex items-center gap-2">
+                <User className="h-3 w-3 sm:h-4 sm:w-4 text-blue-500" />
+                ชื่อผู้ใช้ (Username)
+              </div>
+            </label>
+            <input
+              type="text"
+              value={formData.username}
+              onChange={(e) => {
+                setFormData({ ...formData, username: e.target.value })
+                if (errors.username) setErrors({ ...errors, username: '' })
+              }}
+              disabled={loading}
+              className={`w-full px-3 sm:px-4 py-2 sm:py-3 border-2 rounded-xl text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:bg-slate-100 transition-all ${
+                errors.username ? 'border-red-500 focus:border-red-500' : 'border-slate-200 focus:border-blue-500'
+              }`}
+              placeholder="เช่น username123"
+            />
+            {errors.username && (
+              <p className="text-red-500 text-xs font-medium flex items-center gap-1">
+                <span aria-hidden="true">⚠️</span> {errors.username}
+              </p>
+            )}
+          </div>
+
+          {/* Display Name */}
+          <div className="space-y-2">
+            <label className="block text-xs sm:text-sm font-semibold text-slate-700">
+              <div className="flex items-center gap-2">
+                <UserCheck className="h-3 w-3 sm:h-4 sm:w-4 text-blue-500" />
+                ชื่อแสดงผล (Display Name)
+              </div>
+            </label>
+            <input
+              type="text"
+              value={formData.displayName}
+              onChange={(e) => {
+                setFormData({ ...formData, displayName: e.target.value })
+                if (errors.displayName) setErrors({ ...errors, displayName: '' })
+              }}
+              disabled={loading}
+              className={`w-full px-3 sm:px-4 py-2 sm:py-3 border-2 rounded-xl text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:bg-slate-100 transition-all ${
+                errors.displayName ? 'border-red-500 focus:border-red-500' : 'border-slate-200 focus:border-blue-500'
+              }`}
+              placeholder="เช่น สมชาย ใจดี"
+            />
+            {errors.displayName && (
+              <p className="text-red-500 text-xs font-medium flex items-center gap-1">
+                <span aria-hidden="true">⚠️</span> {errors.displayName}
+              </p>
+            )}
+          </div>
+
+          {/* Email (Optional) */}
           <div className="space-y-2">
             <label className="block text-xs sm:text-sm font-semibold text-slate-700">
               <div className="flex items-center gap-2">
                 <Mail className="h-3 w-3 sm:h-4 sm:w-4 text-blue-500" />
-                อีเมล
+                อีเมล (ตัวเลือกเสริม)
               </div>
             </label>
             <input
-              type="email"
+              type="text"
               value={formData.email}
               onChange={(e) => {
                 setFormData({ ...formData, email: e.target.value })
@@ -102,39 +178,11 @@ export default function CreateUserDialog({ isOpen, onClose, onUserCreated }: Cre
               className={`w-full px-3 sm:px-4 py-2 sm:py-3 border-2 rounded-xl text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:bg-slate-100 transition-all ${
                 errors.email ? 'border-red-500 focus:border-red-500' : 'border-slate-200 focus:border-blue-500'
               }`}
-              placeholder="user@example.com"
+              placeholder="เช่น user@example.com (ไม่ระบุก็ได้)"
             />
             {errors.email && (
               <p className="text-red-500 text-xs font-medium flex items-center gap-1">
                 <span aria-hidden="true">⚠️</span> {errors.email}
-              </p>
-            )}
-          </div>
-
-          {/* Name */}
-          <div className="space-y-2">
-            <label className="block text-xs sm:text-sm font-semibold text-slate-700">
-              <div className="flex items-center gap-2">
-                <User className="h-3 w-3 sm:h-4 sm:w-4 text-blue-500" />
-                ชื่อ
-              </div>
-            </label>
-            <input
-              type="text"
-              value={formData.name}
-              onChange={(e) => {
-                setFormData({ ...formData, name: e.target.value })
-                if (errors.name) setErrors({ ...errors, name: '' })
-              }}
-              disabled={loading}
-              className={`w-full px-3 sm:px-4 py-2 sm:py-3 border-2 rounded-xl text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:bg-slate-100 transition-all ${
-                errors.name ? 'border-red-500 focus:border-red-500' : 'border-slate-200 focus:border-blue-500'
-              }`}
-              placeholder="ชื่อผู้ใช้"
-            />
-            {errors.name && (
-              <p className="text-red-500 text-xs font-medium flex items-center gap-1">
-                <span aria-hidden="true">⚠️</span> {errors.name}
               </p>
             )}
           </div>

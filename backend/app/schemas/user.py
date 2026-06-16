@@ -29,7 +29,7 @@ class UserCreate(UserBase):
 class UserLogin(BaseModel):
     """Schema for user login"""
     
-    email: EmailStr
+    email: str  # Changed from EmailStr to str to support email/username hybrid login
     password: str
     session_id: Optional[str] = None
     user_agent: Optional[str] = None
@@ -79,10 +79,30 @@ class UserPasswordChange(BaseModel):
         return v
 
 
-class UserResponse(UserBase):
+class UserAdminCreate(BaseModel):
+    """Schema for admin creating a new user"""
+    
+    username: str = Field(..., min_length=3, max_length=255)
+    display_name: str = Field(..., min_length=1, max_length=255)
+    password: str = Field(..., min_length=8, max_length=100)
+    email: Optional[EmailStr] = None
+    role: Optional[str] = "user"
+    
+    @validator("password")
+    def validate_password(cls, v):
+        if len(v) < 8:
+            raise ValueError("Password must be at least 8 characters")
+        return v
+
+
+class UserResponse(BaseModel):
     """Schema for user response"""
     
     id: int
+    email: Optional[str] = None
+    username: Optional[str] = None
+    display_name: Optional[str] = None
+    name: str
     role: str
     avatar: Optional[str] = None
     quick_links: Optional[str] = None

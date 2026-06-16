@@ -1,4 +1,6 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from sqlalchemy.orm import joinedload
 from app.models.audit_log import AuditLog
 from typing import Optional
 
@@ -12,10 +14,10 @@ class AuditService:
     This keeps transactional boundaries under the endpoint's control.
     """
 
-    def __init__(self, db: Session):
+    def __init__(self, db: AsyncSession):
         self.db = db
 
-    def log_action(
+    async def log_action(
         self,
         action: str,
         user_id: Optional[int] = None,
@@ -34,13 +36,12 @@ class AuditService:
         # Note: No commit() here — caller handles the transaction
         return db_log
 
-    def get_logs(self, skip: int = 0, limit: int = 100):
-        from sqlalchemy.orm import joinedload
-        return (
-            self.db.query(AuditLog)
+    async def get_logs(self, skip: int = 0, limit: int = 100):
+        result = await self.db.execute(
+            select(AuditLog)
             .options(joinedload(AuditLog.user))
             .order_by(AuditLog.created_at.desc())
             .offset(skip)
             .limit(limit)
-            .all()
         )
+        return result.scalars().all()

@@ -178,16 +178,16 @@ export default function LoginPage() {
 
           <form onSubmit={handleSubmit} className="login-form" aria-busy={isSubmitting}>
             <label htmlFor="login-email" className="login-field">
-              <span>อีเมล</span>
+              <span>อีเมล หรือ ชื่อผู้ใช้</span>
               <div className="login-input-wrap">
                 <Mail size={18} aria-hidden="true" />
                 <input
                   id="login-email"
                   ref={emailRef}
-                  type="email"
+                  type="text"
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
-                  placeholder="your.email@example.com"
+                  placeholder="your.email@example.com หรือ ชื่อผู้ใช้"
                   required
                   autoComplete="username"
                   disabled={isSubmitting}

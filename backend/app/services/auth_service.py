@@ -2,7 +2,8 @@
 Authentication Service - Business logic for authentication
 """
 from typing import Optional, Dict
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 from fastapi import HTTPException, status
 from datetime import datetime, timedelta, timezone
 import uuid
@@ -24,11 +25,11 @@ from app.services.user_service import UserService
 class AuthService:
     """Service for authentication operations"""
 
-    def __init__(self, db: Session):
+    def __init__(self, db: AsyncSession):
         self.db = db
         self.user_service = UserService(db)
 
-    def login(
+    async def login(
         self,
         email: str,
         password: str,
@@ -41,7 +42,7 @@ class AuthService:
         Authenticate user and create session
         
         Args:
-            email: User email
+            email: User email or username
             password: User password
             session_id: Optional session ID from client
             user_agent: User agent string
@@ -54,13 +55,13 @@ class AuthService:
         Raises:
             HTTPException: If authentication fails
         """
-        # Get user
-        user = self.user_service.get_user_by_email(email)
+        # Get user (by email or username)
+        user = await self.user_service.get_user_by_email_or_username(email)
         
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="อีเมลหรือรหัสผ่านไม่ถูกต้อง",
+                detail="ชื่อผู้ใช้งานหรือรหัสผ่านไม่ถูกต้อง",
             )
         
         # Check if account is locked
@@ -92,23 +93,23 @@ class AuthService:
             if user.failed_login_attempts >= 5:
                 user.is_locked = True
                 user.locked_until = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(minutes=30)
-                self.db.commit()
+                await self.db.commit()
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail="บัญชีถูกล็อกเนื่องจากพยายามเข้าสู่ระบบผิดหลายครั้ง",
                 )
             
-            self.db.commit()
+            await self.db.commit()
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="อีเมลหรือรหัสผ่านไม่ถูกต้อง",
+                detail="ชื่อผู้ใช้งานหรือรหัสผ่านไม่ถูกต้อง",
             )
         
         # Reset failed login attempts
         user.failed_login_attempts = 0
         
         # Update last login
-        self.user_service.update_last_login(
+        await self.user_service.update_last_login(
             user.id, ip_address=ip_address, device=device_label
         )
         
@@ -117,10 +118,8 @@ class AuthService:
             session_id = str(uuid.uuid4())
         
         existing_session = (
-            self.db.query(UserSession)
-            .filter(UserSession.session_id == session_id)
-            .first()
-        )
+            await self.db.execute(select(UserSession).where(UserSession.session_id == session_id))
+        ).scalar_one_or_none()
         
         if existing_session:
             existing_session.is_active = True
@@ -139,11 +138,11 @@ class AuthService:
             )
             self.db.add(new_session)
         
-        self.db.commit()
+        await self.db.commit()
         
-        # Create tokens
-        access_token = create_access_token(data={"sub": user.email, "user_id": user.id})
-        refresh_token = create_refresh_token(data={"sub": user.email, "user_id": user.id})
+        # Create tokens (fallback to username if email is null)
+        access_token = create_access_token(data={"sub": user.email or user.username, "user_id": user.id})
+        refresh_token = create_refresh_token(data={"sub": user.email or user.username, "user_id": user.id})
         
         return {
             "access_token": access_token,
@@ -153,6 +152,8 @@ class AuthService:
             "user": {
                 "id": user.id,
                 "email": user.email,
+                "username": user.username,
+                "display_name": user.display_name,
                 "name": user.name,
                 "role": user.role,
                 "avatar": user.avatar,
@@ -160,7 +161,7 @@ class AuthService:
             },
         }
 
-    def register(self, user_create: UserCreate) -> User:
+    async def register(self, user_create: UserCreate) -> User:
         """
         Register new user
         
@@ -170,9 +171,9 @@ class AuthService:
         Returns:
             Created user
         """
-        return self.user_service.create_user(user_create)
+        return await self.user_service.create_user(user_create)
 
-    def refresh_access_token(self, refresh_token: str) -> Token:
+    async def refresh_access_token(self, refresh_token: str) -> Token:
         """
         Create new access token from refresh token
         
@@ -193,18 +194,18 @@ class AuthService:
                 detail="Invalid refresh token",
             )
         
-        email = payload.get("sub")
+        sub = payload.get("sub")
         user_id = payload.get("user_id")
         
-        if not email or not user_id:
+        if not sub or not user_id:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid refresh token",
             )
         
         # Create new tokens
-        access_token = create_access_token(data={"sub": email, "user_id": user_id})
-        new_refresh_token = create_refresh_token(data={"sub": email, "user_id": user_id})
+        access_token = create_access_token(data={"sub": sub, "user_id": user_id})
+        new_refresh_token = create_refresh_token(data={"sub": sub, "user_id": user_id})
         
         return Token(
             access_token=access_token,
@@ -212,7 +213,7 @@ class AuthService:
             token_type="bearer",
         )
 
-    def logout(self, session_id: str) -> None:
+    async def logout(self, session_id: str) -> None:
         """
         Logout user and invalidate session
         
@@ -220,11 +221,9 @@ class AuthService:
             session_id: Session ID to invalidate
         """
         session = (
-            self.db.query(UserSession)
-            .filter(UserSession.session_id == session_id)
-            .first()
-        )
+            await self.db.execute(select(UserSession).where(UserSession.session_id == session_id))
+        ).scalar_one_or_none()
         
         if session:
             session.is_active = False
-            self.db.commit()
+            await self.db.commit()

@@ -3,7 +3,8 @@ User Profile Endpoints
 """
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status, Request, UploadFile, File
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 
 from app.core.database import get_db
 from app.schemas.user import (
@@ -36,7 +37,7 @@ async def update_my_profile(
     user_update: UserUpdate,
     request: Request,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Update current user profile
@@ -48,9 +49,9 @@ async def update_my_profile(
     user_agent = request.headers.get("user-agent")
     
     try:
-        updated_user = user_service.update_user(current_user.id, user_update)
+        updated_user = await user_service.update_user(current_user.id, user_update)
         
-        audit_service.log_action(
+        await audit_service.log_action(
             action="PROFILE_UPDATE",
             user_id=current_user.id,
             details=f"Updated profile fields: {', '.join([k for k, v in user_update.dict(exclude_unset=True).items() if v is not None])}",
@@ -80,7 +81,7 @@ async def change_password(
     password_change: UserPasswordChange,
     request: Request,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Change current user password
@@ -92,7 +93,7 @@ async def change_password(
     user_agent = request.headers.get("user-agent")
     
     try:
-        success = user_service.change_password(
+        success = await user_service.change_password(
             user_id=current_user.id,
             old_password=password_change.old_password,
             new_password=password_change.new_password,
@@ -104,7 +105,7 @@ async def change_password(
                 detail="รหัสผ่านเดิมไม่ถูกต้อง",
             )
             
-        audit_service.log_action(
+        await audit_service.log_action(
             action="PASSWORD_CHANGE",
             user_id=current_user.id,
             details="User successfully changed password",
@@ -129,7 +130,7 @@ async def update_avatar(
     avatar_update: UserAvatarUpdate,
     request: Request,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Update user avatar (base64 encoded image)
@@ -141,9 +142,9 @@ async def update_avatar(
     user_agent = request.headers.get("user-agent")
     
     try:
-        user_service.update_avatar(current_user.id, avatar_update.avatar_base64)
+        await user_service.update_avatar(current_user.id, avatar_update.avatar_base64)
         
-        audit_service.log_action(
+        await audit_service.log_action(
             action="AVATAR_UPDATE",
             user_id=current_user.id,
             details="User successfully updated avatar image",
@@ -168,7 +169,7 @@ async def upload_avatar_file(
     request: Request,
     file: UploadFile = File(...),
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Upload user avatar and store as Base64 in Database (Serverless Friendly)
@@ -201,13 +202,14 @@ async def upload_avatar_file(
         user_agent = request.headers.get("user-agent")
         
         audit_service = AuditService(db)
-        audit_service.log_action(
+        await audit_service.log_action(
             action="AVATAR_UPLOAD",
             user_id=current_user.id,
             details="User successfully uploaded and stored avatar image in database",
             ip_address=client_ip,
             user_agent=user_agent
         )
+        await db.commit()
         
         return ResponseModel(
             result="success",
@@ -226,7 +228,7 @@ async def upload_avatar_file(
 async def update_quick_links(
     quick_links_update: UserQuickLinksUpdate,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Update user quick links (JSON string)
@@ -234,7 +236,7 @@ async def update_quick_links(
     user_service = UserService(db)
     
     try:
-        user_service.update_quick_links(current_user.id, quick_links_update.quick_links)
+        await user_service.update_quick_links(current_user.id, quick_links_update.quick_links)
         
         return ResponseModel(
             result="success",
@@ -251,20 +253,20 @@ async def update_quick_links(
 @router.get("/sessions", response_model=ResponseModel)
 async def get_my_sessions(
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Get user session log history
     """
     from app.models.session import UserSession
     try:
-        sessions = (
-            db.query(UserSession)
+        result = await db.execute(
+            select(UserSession)
             .filter(UserSession.user_id == current_user.id)
             .order_by(UserSession.created_at.desc())
             .limit(10)
-            .all()
         )
+        sessions = result.scalars().all()
         
         session_data = [
             {
@@ -296,21 +298,21 @@ async def get_my_sessions(
 async def revoke_session(
     session_id: str,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Revoke/delete a user session
     """
     from app.models.session import UserSession
     try:
-        session = (
-            db.query(UserSession)
+        result = await db.execute(
+            select(UserSession)
             .filter(
                 UserSession.session_id == session_id,
                 UserSession.user_id == current_user.id
             )
-            .first()
         )
+        session = result.scalar_one_or_none()
         
         if not session:
             raise HTTPException(
@@ -319,7 +321,7 @@ async def revoke_session(
             )
             
         session.is_active = False
-        db.commit()
+        await db.commit()
         
         return ResponseModel(
             result="success",

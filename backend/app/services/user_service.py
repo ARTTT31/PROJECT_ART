@@ -7,7 +7,7 @@ from sqlalchemy.future import select
 from datetime import datetime, timezone
 
 from app.models.user import User
-from app.schemas.user import UserCreate, UserUpdate, UserAdminUpdate
+from app.schemas.user import UserCreate, UserUpdate, UserAdminUpdate, UserAdminCreate
 from app.core.security import get_password_hash, verify_password
 
 
@@ -30,6 +30,21 @@ class UserService:
     async def get_user_by_email(self, email: str) -> Optional[User]:
         """Get user by email"""
         result = await self.db.execute(select(User).where(User.email == email.lower()))
+        return result.scalar_one_or_none()
+
+    async def get_user_by_username(self, username: str) -> Optional[User]:
+        """Get user by username"""
+        result = await self.db.execute(select(User).where(User.username == username))
+        return result.scalar_one_or_none()
+
+    async def get_user_by_email_or_username(self, username_or_email: str) -> Optional[User]:
+        """Get user by email or username"""
+        result = await self.db.execute(
+            select(User).where(
+                (User.email == username_or_email.lower()) |
+                (User.username == username_or_email)
+            )
+        )
         return result.scalar_one_or_none()
 
     async def get_users(self, skip: int = 0, limit: int = 100) -> List[User]:
@@ -62,6 +77,38 @@ class UserService:
             email=user_create.email.lower(),
             hashed_password=hashed_password,
             name=user_create.name,
+            role=user_create.role or "user",
+        )
+        
+        self.db.add(db_user)
+        await self.db.commit()
+        await self.db.refresh(db_user)
+        
+        return db_user
+
+    async def admin_create_user(self, user_create: UserAdminCreate) -> User:
+        """
+        Create new user by administrator
+        """
+        # Check if username already exists
+        existing_username = await self.get_user_by_username(user_create.username)
+        if existing_username:
+            raise ValueError("ชื่อผู้ใช้นี้ถูกใช้งานแล้ว")
+
+        # Check if email already exists
+        if user_create.email:
+            existing_email = await self.get_user_by_email(user_create.email)
+            if existing_email:
+                raise ValueError("อีเมลนี้ถูกใช้งานแล้ว")
+
+        hashed_password = get_password_hash(user_create.password)
+        
+        db_user = User(
+            username=user_create.username,
+            display_name=user_create.display_name,
+            name=user_create.display_name,  # Set name to display_name as well for backward compatibility
+            email=user_create.email.lower() if user_create.email else None,
+            hashed_password=hashed_password,
             role=user_create.role or "user",
         )
         
