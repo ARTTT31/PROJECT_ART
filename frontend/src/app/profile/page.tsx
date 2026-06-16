@@ -80,10 +80,9 @@ export default function ProfilePage() {
     QUICK_LINK_ICON_OPTIONS.find((option) => option.key === qlIcon)?.label ?? 'ลิงก์'
 
   useEffect(() => {
-    const token = localStorage.getItem('access_token')
     const userData = localStorage.getItem('user')
     
-    if (!token || !userData) {
+    if (!userData) {
       router.push('/login')
       return
     }
@@ -192,8 +191,8 @@ export default function ProfilePage() {
       return
     }
 
-    const token = localStorage.getItem('access_token')
-    if (!token) {
+    const userData = localStorage.getItem('user')
+    if (!userData) {
       showError('เซสชันหมดอายุ', 'กรุณาเข้าสู่ระบบใหม่')
       router.push('/login')
       return

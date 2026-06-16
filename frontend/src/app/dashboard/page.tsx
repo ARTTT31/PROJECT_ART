@@ -82,10 +82,9 @@ export default function DashboardPage() {
 
   useEffect(() => {
     setIsClient(true)
-    const token = localStorage.getItem('access_token')
     const userData = localStorage.getItem('user')
-
-    if (!token || !userData) {
+    
+    if (!userData) {
       router.push('/login')
       return
     }

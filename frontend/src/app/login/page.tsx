@@ -119,10 +119,8 @@ export default function LoginPage() {
 
       const result = await response.json();
 
-      if (response.ok && result.result === 'success' && result.data?.access_token) {
-        localStorage.setItem('access_token', result.data.access_token);
+      if (response.ok && result.result === 'success') {
         localStorage.setItem('user', JSON.stringify(result.data.user));
-        if (result.data.refresh_token) localStorage.setItem('refresh_token', result.data.refresh_token);
         if (result.data.session_id) localStorage.setItem('session_id', result.data.session_id);
 
         if (rememberMe) {
@@ -131,7 +129,7 @@ export default function LoginPage() {
           localStorage.removeItem('remembered_email');
         }
 
-        login(result.data.access_token, result.data.user);
+        login(null, result.data.user);
         toast.success('เข้าสู่ระบบสำเร็จ', `ยินดีต้อนรับกลับมา ${result.data.user.name || ''}!`);
         setTimeout(() => router.push('/dashboard'), 1500);
       } else {
