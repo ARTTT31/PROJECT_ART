@@ -124,21 +124,25 @@ export default function AdminPage() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-7xl mx-auto space-y-8">
+      <div className="max-w-7xl mx-auto space-y-8 p-4 sm:p-6 lg:p-8 bg-slate-50/50 rounded-3xl border border-slate-100">
         {/* Header Section */}
-        <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-slate-100">
           <div>
-            <h1 className="text-4xl font-bold text-slate-900 tracking-tight">ระบบจัดการ</h1>
-            <p className="text-slate-500 mt-2 font-medium">จัดการผู้ใช้และติดตามกิจกรรม</p>
+            <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight bg-gradient-to-r from-slate-900 via-slate-800 to-slate-700 bg-clip-text text-transparent">
+              ระบบจัดการสมาชิก
+            </h1>
+            <p className="text-slate-500 mt-1 sm:mt-2 text-sm sm:text-base font-medium">
+              ดูแลสิทธิ์เข้าถึง ติดตามกิจกรรม และจัดการผู้ใช้งานทั้งหมดในระบบ
+            </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 w-full sm:w-auto">
             <button
               onClick={() => setShowCreateDialog(true)}
-              className="art-primary-button !min-h-[40px] !px-4 !py-2 !text-sm"
+              className="art-primary-button w-full sm:w-auto !min-h-[44px] !px-5 !py-2.5 !text-sm shadow-md shadow-sky-500/20 hover:shadow-lg hover:shadow-sky-500/30 transition-all active:scale-[0.98]"
             >
-              <span className="flex items-center gap-2">
-                <Plus className="h-4 w-4" />
-                สร้างผู้ใช้
+              <span className="flex items-center justify-center gap-2 font-bold tracking-wide">
+                <Plus className="h-4 w-4 stroke-[3]" />
+                เพิ่มผู้ใช้งาน
               </span>
             </button>
             {error && (
@@ -193,21 +197,21 @@ export default function AdminPage() {
         {/* User Management Section */}
         <section className="space-y-4">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-sky-100/50 rounded-xl text-sky-600">
-              <Users size={20} />
+            <div className="p-2.5 bg-sky-50 border border-sky-100 rounded-xl text-sky-600 shadow-sm">
+              <Users size={20} className="stroke-[2.5]" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-slate-900">จัดการผู้ใช้</h2>
-              <p className="text-sm text-slate-500">แสดงรายการผู้ใช้ทั้งหมด</p>
+              <h2 className="text-xl sm:text-2xl font-extrabold text-slate-800 tracking-tight">รายชื่อผู้ใช้งานทั้งหมด</h2>
+              <p className="text-xs sm:text-sm text-slate-500 font-medium">จัดการบทบาท เปิด/ปิด การเข้าถึง หรือแก้ไขข้อมูลทั่วไป</p>
             </div>
           </div>
           {loading && users.length === 0 ? (
-            <div className="premium-card !p-12 text-center rounded-2xl">
+            <div className="premium-card !p-12 text-center rounded-2xl border border-slate-100/80 bg-white">
               <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-sky-500 mx-auto" />
-              <p className="text-slate-500 mt-4">กำลังโหลดข้อมูลผู้ใช้...</p>
+              <p className="text-slate-500 mt-4 font-medium">กำลังโหลดข้อมูลผู้ใช้...</p>
             </div>
           ) : (
-            <div className="premium-card rounded-2xl overflow-hidden">
+            <div className="premium-card rounded-2xl overflow-hidden border border-slate-150 bg-white shadow-sm">
               <UserTable users={users} onEditUser={(u) => { setEditingUser(u); setShowEditDialog(true); }} />
             </div>
           )}
@@ -216,31 +220,31 @@ export default function AdminPage() {
         {/* Audit Logs Section */}
         <section className="space-y-4">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-purple-100/50 rounded-xl text-purple-600">
-              <History size={20} />
+            <div className="p-2.5 bg-purple-50 border border-purple-100 rounded-xl text-purple-600 shadow-sm">
+              <History size={20} className="stroke-[2.5]" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-slate-900">ประวัติกิจกรรม</h2>
-              <p className="text-sm text-slate-500">บันทึกการกระทำของผู้ใช้ทั้งหมด</p>
+              <h2 className="text-xl sm:text-2xl font-extrabold text-slate-800 tracking-tight">ประวัติการทำงานในระบบ (Audit Logs)</h2>
+              <p className="text-xs sm:text-sm text-slate-500 font-medium">บันทึกทุกกิจกรรมและคำสั่งการแก้ไขเพื่อความโปร่งใส</p>
             </div>
           </div>
           {loading && auditLogs.length === 0 ? (
-            <div className="premium-card !p-12 text-center rounded-2xl">
+            <div className="premium-card !p-12 text-center rounded-2xl border border-slate-100/80 bg-white">
               <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-sky-500 mx-auto" />
-              <p className="text-slate-500 mt-4">กำลังโหลดประวัติกิจกรรม...</p>
+              <p className="text-slate-500 mt-4 font-medium">กำลังโหลดประวัติกิจกรรม...</p>
             </div>
           ) : (
             <div className="space-y-4">
-              <div className="premium-card rounded-2xl overflow-hidden">
+              <div className="premium-card rounded-2xl overflow-hidden border border-slate-150 bg-white shadow-sm">
                 <AuditLogTable logs={auditLogs} />
               </div>
               {hasMore && (
                 <button
                   onClick={() => setPage((p) => p + 1)}
                   disabled={loading}
-                  className="art-primary-button w-full !min-h-[44px] !text-sm disabled:opacity-50"
+                  className="w-full h-12 flex items-center justify-center bg-white border border-slate-200 hover:bg-slate-50 hover:border-slate-300 text-slate-600 font-bold text-sm rounded-xl shadow-sm transition-all active:scale-[0.99] disabled:opacity-50"
                 >
-                  {loading ? 'กำลังโหลด...' : 'โหลดเพิ่มเติม'}
+                  {loading ? 'กำลังโหลด...' : 'โหลดข้อมูลเพิ่มเติม'}
                 </button>
               )}
             </div>

@@ -233,66 +233,79 @@ export default function EditUserDialog({ isOpen, onClose, onUserUpdated, user }:
             </div>
           )}
 
-          {/* Role */}
-          <div className="space-y-2">
-            <label className="block text-xs sm:text-sm font-semibold text-slate-700">
-              <div className="flex items-center gap-2">
-                <Shield className="h-3 w-3 sm:h-4 sm:w-4 text-blue-500" />
-                สิทธิ์
-              </div>
-            </label>
-            <select
-              value={formData.role}
-              onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-              disabled={loading}
-              className="w-full px-3 sm:px-4 py-2 sm:py-3 border-2 border-slate-200 rounded-xl text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-slate-100 transition-all bg-white"
-            >
-              <option value="user">ผู้ใช้ทั่วไป</option>
-              <option value="admin">ผู้ดูแลระบบ</option>
-            </select>
-          </div>
+          {/* Role & Status Section */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500">
+                สิทธิ์การใช้งาน
+              </label>
+              <select
+                value={formData.role}
+                onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                disabled={loading}
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 disabled:bg-slate-100 transition-all font-medium text-slate-800 cursor-pointer"
+              >
+                <option value="user">ผู้ใช้ทั่วไป (User)</option>
+                <option value="admin">ผู้ดูแลระบบ (Admin)</option>
+              </select>
+            </div>
 
-          {/* Status Toggles */}
-          <div className="grid grid-cols-2 gap-3">
-            <label className="flex items-center gap-3 px-3 py-3 border-2 border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 transition-all">
-              <input
-                type="checkbox"
-                checked={formData.is_active}
-                onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500">
+                การเข้าถึงระบบ
+              </label>
+              <button
+                type="button"
+                onClick={() => setFormData({ ...formData, is_active: !formData.is_active })}
                 disabled={loading}
-                className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-              />
-              <span className="text-xs sm:text-sm font-semibold text-slate-700">เปิดใช้งาน</span>
-            </label>
-            <label className="flex items-center gap-3 px-3 py-3 border-2 border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 transition-all">
-              <input
-                type="checkbox"
-                checked={formData.is_locked}
-                onChange={(e) => setFormData({ ...formData, is_locked: e.target.checked })}
+                className={`w-full flex items-center justify-between px-3.5 py-2.5 border rounded-xl text-sm font-semibold transition-all ${
+                  formData.is_active 
+                    ? 'bg-emerald-50/60 border-emerald-200 text-emerald-700 hover:bg-emerald-50' 
+                    : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100/70'
+                }`}
+              >
+                <span>เปิดใช้งาน</span>
+                <span className={`w-2 h-2 rounded-full ${formData.is_active ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`} />
+              </button>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500">
+                สถานะความปลอดภัย
+              </label>
+              <button
+                type="button"
+                onClick={() => setFormData({ ...formData, is_locked: !formData.is_locked })}
                 disabled={loading}
-                className="w-4 h-4 text-red-600 rounded focus:ring-red-500"
-              />
-              <span className="text-xs sm:text-sm font-semibold text-slate-700">ล็อคบัญชี</span>
-            </label>
+                className={`w-full flex items-center justify-between px-3.5 py-2.5 border rounded-xl text-sm font-semibold transition-all ${
+                  formData.is_locked 
+                    ? 'bg-red-50/60 border-red-200 text-red-700 hover:bg-red-50' 
+                    : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100/70'
+                }`}
+              >
+                <span>ล็อกบัญชี</span>
+                <span className={`w-2 h-2 rounded-full ${formData.is_locked ? 'bg-red-500 animate-pulse' : 'bg-slate-300'}`} />
+              </button>
+            </div>
           </div>
 
           {/* Buttons */}
-          <div className="flex gap-2 sm:gap-3 pt-2 sm:pt-4 border-t border-slate-100">
+          <div className="flex gap-2 sm:gap-3 pt-4 border-t border-slate-100">
             <button
               type="button"
               onClick={onClose}
               disabled={loading}
-              className="flex-1 px-3 sm:px-4 py-2.5 sm:py-3 border-2 border-slate-200 rounded-xl text-xs sm:text-sm text-slate-700 font-semibold hover:bg-slate-50 hover:border-slate-300 transition-all disabled:opacity-50 active:scale-95"
+              className="flex-1 px-4 py-3 border border-slate-200 bg-white hover:bg-slate-50 rounded-xl text-xs sm:text-sm text-slate-600 font-bold tracking-wide transition-all hover:border-slate-300 disabled:opacity-50 active:scale-[0.98]"
             >
               ยกเลิก
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 px-3 sm:px-4 py-2.5 sm:py-3 bg-gradient-to-r from-emerald-600 to-teal-500 text-white text-xs sm:text-sm font-semibold rounded-xl hover:shadow-lg hover:shadow-emerald-500/30 transition-all disabled:opacity-50 active:scale-95 flex items-center justify-center gap-1.5 sm:gap-2"
+              className="flex-1 px-4 py-3 bg-gradient-to-r from-sky-600 to-blue-600 hover:from-sky-700 hover:to-blue-700 text-white text-xs sm:text-sm font-bold tracking-wide rounded-xl shadow-md shadow-blue-500/10 hover:shadow-lg hover:shadow-blue-500/20 transition-all disabled:opacity-50 active:scale-[0.98] flex items-center justify-center gap-2"
             >
-              {loading && <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin" />}
-              <span>บันทึก</span>
+              {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+              <span>บันทึกการเปลี่ยนแปลง</span>
             </button>
           </div>
         </form>
