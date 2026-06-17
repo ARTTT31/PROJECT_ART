@@ -195,7 +195,7 @@ export default function TaskListWidget({
     }
 
     return true
-  }).sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime())
+  }).sort((a, b) => new Date(b.start).getTime() - new Date(a.start).getTime())
 
   const formatDateDDMMYYYY = (dateString: string) => {
     const date = new Date(dateString)
