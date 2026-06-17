@@ -117,6 +117,7 @@ async def admin_create_user(
             ip_address=client_ip,
             user_agent=user_agent
         )
+        await db.commit()
         
         return ResponseModel(
             result="success",
@@ -171,6 +172,7 @@ async def update_user(
             ip_address=client_ip,
             user_agent=user_agent
         )
+        await db.commit()
         
         return ResponseModel(
             result="success",
@@ -227,6 +229,7 @@ async def delete_user(
         ip_address=client_ip,
         user_agent=user_agent
     )
+    await db.commit()
     
     return ResponseModel(
         result="success",
