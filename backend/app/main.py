@@ -44,9 +44,14 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # CORS Middleware — explicit origins + regex for Vercel preview URLs
 # allow_credentials=True requires explicit origins (no wildcard "*")
+allowed_origins = settings.get_cors_origins()
+vercel_prod_origin = "https://project-art-sigma.vercel.app"
+if vercel_prod_origin not in allowed_origins:
+    allowed_origins.append(vercel_prod_origin)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.get_cors_origins(),
+    allow_origins=allowed_origins,
     allow_origin_regex=r"https://(project-art|art-workspace)-.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
