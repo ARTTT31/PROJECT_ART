@@ -11,7 +11,7 @@ from sqlalchemy import text
 
 from app.core.database import get_db
 from app.api.dependencies import get_current_admin_user
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter()
 
@@ -37,13 +37,13 @@ class SystemHealth(BaseModel):
 @router.get("/health", response_model=SystemHealth)
 async def get_system_health(
     _current_user=Depends(get_current_admin_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
     # Database ping
     db_status = ServiceStatus(status="ok")
     try:
         t0 = time.perf_counter()
-        db.execute(text("SELECT 1"))
+        await db.execute(text("SELECT 1"))
         db_status.latency_ms = round((time.perf_counter() - t0) * 1000, 2)
     except Exception as e:
         db_status = ServiceStatus(status="down", detail=str(e))

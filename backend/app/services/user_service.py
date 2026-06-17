@@ -4,6 +4,7 @@ User Service - Business logic for user management
 from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from sqlalchemy.exc import IntegrityError
 from datetime import datetime, timezone
 
 from app.models.user import User
@@ -112,9 +113,13 @@ class UserService:
             role=user_create.role or "user",
         )
         
-        self.db.add(db_user)
-        await self.db.commit()
-        await self.db.refresh(db_user)
+        try:
+            self.db.add(db_user)
+            await self.db.commit()
+            await self.db.refresh(db_user)
+        except IntegrityError:
+            await self.db.rollback()
+            raise ValueError("ชื่อผู้ใช้หรืออีเมลนี้ถูกใช้งานแล้ว")
         
         return db_user
 

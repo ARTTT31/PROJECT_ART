@@ -44,8 +44,6 @@ async def list_audit_logs_paginated(
     """
     List audit logs with pagination (Admin only)
     """
-    from app.models.audit_log import AuditLog
-    
     audit_service = AuditService(db)
     skip = (page - 1) * size
     logs = await audit_service.get_logs(skip=skip, limit=size + 1)  # Get one extra to check hasNext
@@ -54,14 +52,11 @@ async def list_audit_logs_paginated(
     if has_next:
         logs = logs[:size]
     
-    total_result = await db.execute(select(func.count()).select_from(AuditLog))
-    total = total_result.scalar_one()
-    
     return PaginatedAuditLogsResponse(
         items=logs,
         page=page,
         size=size,
-        total=total,
+        total=0,  # Set to 0 to avoid PostgreSQL full-table COUNT(*) query bottlenecks
         hasNext=has_next,
         hasPrev=page > 1
     )
