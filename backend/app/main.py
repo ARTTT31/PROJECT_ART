@@ -2,18 +2,20 @@
 FastAPI Main Application
 ART Workspace Backend
 """
+import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.core.config import settings
 from app.api.v1.router import api_router
 from app.core.database import engine
 from app.models import base  # Import all models
+from fastapi.staticfiles import StaticFiles
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -84,12 +86,37 @@ async def health_check():
     )
 
 
+# ── Content Security Policy (CSP) Middleware ──
+CSP_HEADER_VALUE = (
+    "default-src 'self'; "
+    "script-src 'self' 'unsafe-inline' https://apis.google.com; "
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+    "img-src 'self' data: https:; "
+    "font-src 'self' https://fonts.gstatic.com; "
+    "connect-src 'self' https://www.eppo.go.th https://calendar.google.com; "
+    "frame-src 'self' https://accounts.google.com; "
+    "object-src 'none'; "
+    "base-uri 'self'; "
+    "form-action 'self'"
+)
+
+class CSPMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        response.headers["Content-Security-Policy"] = CSP_HEADER_VALUE
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+        return response
+
+app.add_middleware(CSPMiddleware)
+
 # Include API router
 app.include_router(api_router, prefix="/api/v1")
 
 # Mount uploads static folder
-from fastapi.staticfiles import StaticFiles
-import os
 os.makedirs("uploads", exist_ok=True)
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
