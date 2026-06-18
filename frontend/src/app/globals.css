@@ -1002,7 +1002,7 @@ button:disabled {
 }
 
 .calc-btn.equals {
-  background: linear-gradient(135deg, #10b981, #059669);
+  background: #10b981;
   color: white;
   border: none;
   box-shadow: 
@@ -1011,14 +1011,14 @@ button:disabled {
 }
 
 .calc-btn.equals:hover {
-  background: linear-gradient(135deg, #34d399, #10b981);
+  background: #059669;
   box-shadow: 
     0 8px 24px rgba(16, 185, 129, 0.35),
     inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
 .calc-btn.clear {
-  background: linear-gradient(135deg, #ef4444, #dc2626);
+  background: #ef4444;
   color: white;
   border: none;
   box-shadow: 
@@ -1027,7 +1027,7 @@ button:disabled {
 }
 
 .calc-btn.clear:hover {
-  background: linear-gradient(135deg, #f87171, #ef4444);
+  background: #dc2626;
   box-shadow: 
     0 8px 24px rgba(239, 68, 68, 0.35),
     inset 0 1px 0 rgba(255, 255, 255, 0.3);
