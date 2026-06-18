@@ -9,7 +9,6 @@ import CalendarWidget from '@/components/Widgets/CalendarWidget'
 import TaskListWidget from '@/components/Widgets/TaskListWidget'
 import OilPriceWidget from '@/components/Widgets/OilPriceWidget'
 import QRCodeWidget from '@/components/Widgets/QRCodeWidget'
-import SystemHealthWidget from '@/components/Widgets/SystemHealthWidget'
 import { Eye, EyeOff } from 'lucide-react'
 import { WidgetConfig, DashboardUser } from '@/types'
 import ErrorBoundary from '@/components/ErrorBoundary'
@@ -39,7 +38,6 @@ const defaultWidgets: WidgetConfig[] = [
   { id: 'tasklist', w: 3 },
   { id: 'oilprice', w: 1 },
   { id: 'qrcode', w: 1 },
-  { id: 'syshealth', w: 1 },
 ]
 
 const widgetNames: Record<string, string> = {
@@ -48,7 +46,6 @@ const widgetNames: Record<string, string> = {
   tasklist: 'รายการงาน IMACD / ธัญพงศ์',
   oilprice: 'ราคาน้ำมัน',
   qrcode: 'สร้าง QR Code',
-  syshealth: 'System Health (Admin)',
 }
 
 export default function DashboardPage() {
@@ -98,13 +95,12 @@ export default function DashboardPage() {
     if (savedVisible) {
       try {
         const parsed: string[] = JSON.parse(savedVisible)
-        // Remove syshealth if not admin
-        setVisibleWidgetIds(isAdmin ? parsed : parsed.filter(id => id !== 'syshealth'))
+        setVisibleWidgetIds(parsed)
       } catch {
-        setVisibleWidgetIds(defaultWidgets.filter(w => isAdmin || w.id !== 'syshealth').map(w => w.id))
+        setVisibleWidgetIds(defaultWidgets.map(w => w.id))
       }
     } else {
-      setVisibleWidgetIds(defaultWidgets.filter(w => isAdmin || w.id !== 'syshealth').map(w => w.id))
+      setVisibleWidgetIds(defaultWidgets.map(w => w.id))
     }
 
     // Load layout
@@ -335,11 +331,7 @@ function SortableWidget({
           <QRCodeWidget width={widget.w} onResize={(newSize) => onResize(widget.id, newSize)} />
         </ErrorBoundary>
       )}
-      {widget.id === 'syshealth' && (
-        <ErrorBoundary fallback={(err, reset) => <WidgetErrorFallback name="System Health" error={err} reset={reset} />}>
-          <SystemHealthWidget />
-        </ErrorBoundary>
-      )}
+
     </div>
   )
 }

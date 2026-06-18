@@ -651,9 +651,11 @@ export default function WeatherWidget({
             )}
           </div>
           <h3 id="weather-title" className="text-base font-bold text-white tracking-tight">สภาพอากาศ ณ {selectedLocation.name}</h3>
-          <p className="text-[11px] text-white/75">อัปเดต {lastUpdate.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })} น.</p>
-          {(loading || refreshing) && <p className="text-[11px] text-white/70">กำลังอัปเดต...</p>}
-          {cacheNote && <p className="text-[11px] text-white/65">{cacheNote}</p>}
+          <p className="text-[11px] text-white/75 flex items-center gap-1.5 flex-wrap">
+            <span>อัปเดต {lastUpdate.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })} น.</span>
+            {(loading || refreshing) && <span className="text-white/70 animate-pulse">(กำลังอัปเดต...)</span>}
+            {cacheNote && !loading && !refreshing && <span className="text-white/65">({cacheNote})</span>}
+          </p>
         </div>
 
         <div className="flex items-center gap-2 flex-shrink-0">
