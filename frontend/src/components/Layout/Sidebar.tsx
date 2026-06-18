@@ -56,12 +56,7 @@ export default function Sidebar({ isOpen, onClose, user, onLogout }: SidebarProp
       ],
     },
     ...(quickLinkSection ? [quickLinkSection] : []),
-    ...(user?.role === 'admin' ? [{
-      title: 'จัดการระบบ',
-      items: [
-        { name: 'จัดการระบบ', href: '/admin', icon: <Database size={20} aria-hidden="true" /> },
-      ]
-    }] : []),
+
   ]
 
   return (

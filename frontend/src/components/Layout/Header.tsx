@@ -35,16 +35,6 @@ export default function Header({ user, onMenuClick, onLogout }: HeaderProps) {
   }
 
   const headerMeta = (() => {
-    if (pathname.startsWith('/admin')) {
-      return {
-        title: 'จัดการระบบ',
-        subtitle: 'จัดการผู้ใช้และตรวจสอบบันทึกการทำงาน',
-        crumbs: [
-          { label: 'หน้าหลัก', href: '/dashboard' },
-          { label: 'จัดการระบบ' },
-        ],
-      }
-    }
 
     if (pathname.startsWith('/profile')) {
       return {
@@ -140,12 +130,7 @@ export default function Header({ user, onMenuClick, onLogout }: HeaderProps) {
                     <div className="mt-1 truncate text-xs text-slate-500">{userEmail}</div>
                   </div>
 
-                  {userRole === 'admin' && (
-                    <a href="/admin" className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-800 transition-colors hover:bg-slate-50 border-b border-slate-100">
-                      <Settings size={18} className="text-slate-600" aria-hidden="true" />
-                      จัดการระบบ
-                    </a>
-                  )}
+
 
                   <a href="/profile" className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-800 transition-colors hover:bg-slate-50">
                     <User size={18} className="text-slate-600" aria-hidden="true" />
