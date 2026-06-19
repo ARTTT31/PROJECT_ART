@@ -8,17 +8,17 @@ from pydantic import BaseModel, EmailStr, Field, validator
 
 class UserBase(BaseModel):
     """Base user schema"""
-    
+
     email: EmailStr
     name: str = Field(..., min_length=1, max_length=255)
 
 
 class UserCreate(UserBase):
     """Schema for creating a new user"""
-    
+
     password: str = Field(..., min_length=8, max_length=100)
     role: Optional[str] = "user"
-    
+
     @validator("password")
     def validate_password(cls, v):
         if len(v) < 8:
@@ -28,7 +28,7 @@ class UserCreate(UserBase):
 
 class UserLogin(BaseModel):
     """Schema for user login"""
-    
+
     email: str  # Changed from EmailStr to str to support email/username hybrid login
     password: str
     session_id: Optional[str] = None
@@ -38,7 +38,7 @@ class UserLogin(BaseModel):
 
 class UserUpdate(BaseModel):
     """Schema for updating user profile"""
-    
+
     name: Optional[str] = Field(None, min_length=1, max_length=255)
     email: Optional[EmailStr] = None
     avatar: Optional[str] = None
@@ -47,7 +47,7 @@ class UserUpdate(BaseModel):
 
 class UserAdminUpdate(BaseModel):
     """Schema for admin updating user"""
-    
+
     name: Optional[str] = Field(None, min_length=1, max_length=255)
     email: Optional[EmailStr] = None
     role: Optional[str] = None
@@ -68,10 +68,10 @@ class UserQuickLinksUpdate(BaseModel):
 
 class UserPasswordChange(BaseModel):
     """Schema for changing password"""
-    
+
     old_password: str
     new_password: str = Field(..., min_length=8, max_length=100)
-    
+
     @validator("new_password")
     def validate_new_password(cls, v):
         if len(v) < 8:
@@ -81,13 +81,13 @@ class UserPasswordChange(BaseModel):
 
 class UserAdminCreate(BaseModel):
     """Schema for admin creating a new user"""
-    
+
     username: str = Field(..., min_length=3, max_length=255)
     display_name: str = Field(..., min_length=1, max_length=255)
     password: str = Field(..., min_length=8, max_length=100)
     email: Optional[EmailStr] = None
     role: Optional[str] = "user"
-    
+
     @validator("password")
     def validate_password(cls, v):
         if len(v) < 8:
@@ -97,7 +97,7 @@ class UserAdminCreate(BaseModel):
 
 class UserResponse(BaseModel):
     """Schema for user response"""
-    
+
     id: int
     email: Optional[str] = None
     username: Optional[str] = None
@@ -110,6 +110,6 @@ class UserResponse(BaseModel):
     last_login: Optional[datetime] = None
     created_at: datetime
     updated_at: datetime
-    
+
     class Config:
         from_attributes = True

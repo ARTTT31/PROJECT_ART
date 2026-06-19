@@ -21,7 +21,6 @@ from app.models.session import UserSession
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 
-
 def _utcnow() -> datetime:
     """Return current UTC time without tzinfo (for SQLAlchemy DateTime fields)."""
     return datetime.now(timezone.utc).replace(tzinfo=None)
