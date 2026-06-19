@@ -1,6 +1,7 @@
 """
 User Schemas
 """
+
 from typing import Optional
 from datetime import datetime
 from pydantic import BaseModel, EmailStr, Field, validator
@@ -58,11 +59,13 @@ class UserAdminUpdate(BaseModel):
 
 class UserAvatarUpdate(BaseModel):
     """Schema for updating user avatar"""
+
     avatar_base64: str = Field(..., min_length=1)
 
 
 class UserQuickLinksUpdate(BaseModel):
     """Schema for updating user quick links"""
+
     quick_links: str = Field(..., min_length=0)
 
 

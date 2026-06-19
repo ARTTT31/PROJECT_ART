@@ -1,8 +1,8 @@
 """
 System Health API - Admin only
 """
+
 import time
-import os
 import psutil
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel

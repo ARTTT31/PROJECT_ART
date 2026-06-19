@@ -1,9 +1,18 @@
 """
 API v1 Router
 """
+
 from fastapi import APIRouter
 
-from app.api.v1.endpoints import auth, users, profile, calendar, audit, oil_prices, system
+from app.api.v1.endpoints import (
+    auth,
+    users,
+    profile,
+    calendar,
+    audit,
+    oil_prices,
+    system,
+)
 
 api_router = APIRouter()
 

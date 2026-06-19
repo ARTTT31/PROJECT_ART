@@ -1,6 +1,7 @@
 """
 Authentication Service - Business logic for authentication
 """
+
 from typing import Optional, Dict
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -65,7 +66,9 @@ class AuthService:
 
         # Check if account is locked
         if user.is_locked:
-            if user.locked_until and user.locked_until > datetime.now(timezone.utc).replace(tzinfo=None):
+            if user.locked_until and user.locked_until > datetime.now(
+                timezone.utc
+            ).replace(tzinfo=None):
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail="บัญชีถูกล็อก กรุณาลองใหม่ภายหลัง",
@@ -91,7 +94,9 @@ class AuthService:
             # Lock account after 5 failed attempts
             if user.failed_login_attempts >= 5:
                 user.is_locked = True
-                user.locked_until = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(minutes=30)
+                user.locked_until = datetime.now(timezone.utc).replace(
+                    tzinfo=None
+                ) + timedelta(minutes=30)
                 await self.db.commit()
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
@@ -117,12 +122,16 @@ class AuthService:
             session_id = str(uuid.uuid4())
 
         existing_session = (
-            await self.db.execute(select(UserSession).where(UserSession.session_id == session_id))
+            await self.db.execute(
+                select(UserSession).where(UserSession.session_id == session_id)
+            )
         ).scalar_one_or_none()
 
         if existing_session:
             existing_session.is_active = True
-            existing_session.last_activity = datetime.now(timezone.utc).replace(tzinfo=None)
+            existing_session.last_activity = datetime.now(timezone.utc).replace(
+                tzinfo=None
+            )
             existing_session.user_agent = user_agent
             existing_session.device_label = device_label
             existing_session.ip_address = ip_address
@@ -133,15 +142,20 @@ class AuthService:
                 user_agent=user_agent,
                 device_label=device_label,
                 ip_address=ip_address,
-                expires_at=datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(days=7),
+                expires_at=datetime.now(timezone.utc).replace(tzinfo=None)
+                + timedelta(days=7),
             )
             self.db.add(new_session)
 
         await self.db.commit()
 
         # Create tokens (fallback to username if email is null)
-        access_token = create_access_token(data={"sub": user.email or user.username, "user_id": user.id})
-        refresh_token = create_refresh_token(data={"sub": user.email or user.username, "user_id": user.id})
+        access_token = create_access_token(
+            data={"sub": user.email or user.username, "user_id": user.id}
+        )
+        refresh_token = create_refresh_token(
+            data={"sub": user.email or user.username, "user_id": user.id}
+        )
 
         return {
             "access_token": access_token,
@@ -220,7 +234,9 @@ class AuthService:
             session_id: Session ID to invalidate
         """
         session = (
-            await self.db.execute(select(UserSession).where(UserSession.session_id == session_id))
+            await self.db.execute(
+                select(UserSession).where(UserSession.session_id == session_id)
+            )
         ).scalar_one_or_none()
 
         if session:

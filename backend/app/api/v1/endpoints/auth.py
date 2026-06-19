@@ -1,6 +1,7 @@
 """
 Authentication Endpoints
 """
+
 import json
 import os
 import secrets
@@ -18,6 +19,7 @@ from sqlalchemy.future import select
 try:
     from google.oauth2 import id_token as google_id_token
     from google.auth.transport import requests as google_requests
+
     _GOOGLE_AUTH_AVAILABLE = True
 except ImportError:
     google_id_token = None  # type: ignore[assignment]
@@ -28,8 +30,7 @@ from app.core.database import get_db
 from app.core.security import create_access_token, create_refresh_token, decode_token
 from app.models.session import UserSession
 from app.schemas.response import ResponseModel
-from app.schemas.token import Token
-from app.schemas.user import UserCreate, UserLogin, UserResponse
+from app.schemas.user import UserCreate, UserLogin
 from app.services.auth_service import AuthService
 from app.services.audit_service import AuditService
 from app.services.user_service import UserService
@@ -71,23 +72,21 @@ async def login(
             user_id=result["user"]["id"],
             details=f"User logged in using {user_login.device_label or 'unknown device'}",
             ip_address=client_ip,
-            user_agent=user_agent
+            user_agent=user_agent,
         )
         await db.commit()
 
         # 🛡️ SECURITY: Set tokens as HTTP-only cookies (mitigating XSS token theft)
         # We exclude tokens from the JSON response body.
-        response_data = {
-            "session_id": result["session_id"],
-            "user": result["user"]
-        }
-        
+        response_data = {"session_id": result["session_id"], "user": result["user"]}
+
         resp = ResponseModel(
             result="success",
             message="เข้าสู่ระบบสำเร็จ",
             data=response_data,
         )
         from fastapi.responses import JSONResponse
+
         response = JSONResponse(content=resp.model_dump())
 
         # 🔧 Cross-site cookies: samesite="none" + secure=True required
@@ -99,7 +98,7 @@ async def login(
             httponly=True,
             secure=True,
             samesite="none",
-            path="/"
+            path="/",
         )
         response.set_cookie(
             key="refresh_token",
@@ -108,7 +107,7 @@ async def login(
             httponly=True,
             secure=True,
             samesite="none",
-            path="/"
+            path="/",
         )
         return response
 
@@ -118,7 +117,7 @@ async def login(
             action="LOGIN_FAILED",
             details=f"Failed login attempt for {user_login.email}: {e.detail}",
             ip_address=client_ip,
-            user_agent=user_agent
+            user_agent=user_agent,
         )
         await db.commit()
         raise e
@@ -129,7 +128,7 @@ async def login(
             action="LOGIN_FAILED",
             details=f"System error during login for {user_login.email}: {str(e)}",
             ip_address=client_ip,
-            user_agent=user_agent
+            user_agent=user_agent,
         )
         await db.commit()
         raise HTTPException(
@@ -138,7 +137,9 @@ async def login(
         )
 
 
-@router.post("/register", response_model=ResponseModel, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/register", response_model=ResponseModel, status_code=status.HTTP_201_CREATED
+)
 async def register(
     user_create: UserCreate,
     request: Request,
@@ -163,7 +164,7 @@ async def register(
             user_id=user.id,
             details=f"User self-registered with email: {user.email}",
             ip_address=client_ip,
-            user_agent=user_agent
+            user_agent=user_agent,
         )
         await db.commit()
 
@@ -194,10 +195,10 @@ async def refresh_token(
     Refresh access token using refresh token from cookies (or body fallback)
     """
     auth_service = AuthService(db)
-    
+
     # 1. Try to get refresh token from cookies
     refresh_token_val = request.cookies.get("refresh_token")
-    
+
     # 2. Try to get it from request body if not in cookies
     if not refresh_token_val:
         try:
@@ -205,7 +206,7 @@ async def refresh_token(
             refresh_token_val = body.get("refresh_token")
         except Exception:
             pass
-            
+
     if not refresh_token_val:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -214,15 +215,16 @@ async def refresh_token(
 
     try:
         new_tokens = await auth_service.refresh_access_token(refresh_token_val)
-        
+
         resp = ResponseModel(
             result="success",
             message="รีเฟรชโทเค็นสำเร็จ",
             data={"token_type": "bearer"},
         )
         from fastapi.responses import JSONResponse
+
         response = JSONResponse(content=resp.model_dump())
-        
+
         # 🔧 Cross-site cookies: samesite="none" + secure=True required
         response.set_cookie(
             key="access_token",
@@ -231,7 +233,7 @@ async def refresh_token(
             httponly=True,
             secure=True,
             samesite="none",
-            path="/"
+            path="/",
         )
         if new_tokens.refresh_token:
             response.set_cookie(
@@ -241,9 +243,9 @@ async def refresh_token(
                 httponly=True,
                 secure=True,
                 samesite="none",
-                path="/"
+                path="/",
             )
-            
+
         return response
 
     except HTTPException as e:
@@ -258,62 +260,82 @@ async def refresh_token(
 @router.get("/google")
 async def google_login(request: Request):
     """Redirect to Google's OAuth 2.0 consent screen"""
-    client_id = os.getenv('BACKEND_GOOGLE_CLIENT_ID')
-    redirect_uri = os.getenv('BACKEND_GOOGLE_REDIRECT', 'http://localhost:8000/api/v1/auth/google/callback')
+    client_id = os.getenv("BACKEND_GOOGLE_CLIENT_ID")
+    redirect_uri = os.getenv(
+        "BACKEND_GOOGLE_REDIRECT", "http://localhost:8000/api/v1/auth/google/callback"
+    )
 
     if not client_id:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Google client ID not configured")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Google client ID not configured",
+        )
 
     params = {
-        'client_id': client_id,
-        'redirect_uri': redirect_uri,
-        'response_type': 'code',
-        'scope': 'openid email profile',
-        'access_type': 'offline',
-        'prompt': 'select_account',
+        "client_id": client_id,
+        "redirect_uri": redirect_uri,
+        "response_type": "code",
+        "scope": "openid email profile",
+        "access_type": "offline",
+        "prompt": "select_account",
     }
 
-    url = f'https://accounts.google.com/o/oauth2/v2/auth?{urlencode(params)}'
+    url = f"https://accounts.google.com/o/oauth2/v2/auth?{urlencode(params)}"
     return RedirectResponse(url)
 
 
 @router.get("/google/callback")
-async def google_callback(code: str = None, request: Request = None, db: AsyncSession = Depends(get_db)):
+async def google_callback(
+    code: str = None, request: Request = None, db: AsyncSession = Depends(get_db)
+):
     """Handle callback from Google with id_token verification, then issue JWT via HTTP-only cookies"""
     if not _GOOGLE_AUTH_AVAILABLE:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="google-auth library not installed. Run: pip install google-auth"
+            detail="google-auth library not installed. Run: pip install google-auth",
         )
-    client_id = os.getenv('BACKEND_GOOGLE_CLIENT_ID')
-    client_secret = os.getenv('BACKEND_GOOGLE_CLIENT_SECRET')
-    redirect_uri = os.getenv('BACKEND_GOOGLE_REDIRECT', 'http://localhost:8000/api/v1/auth/google/callback')
-    frontend_redirect = os.getenv('FRONTEND_URL', 'http://localhost:3000')
+    client_id = os.getenv("BACKEND_GOOGLE_CLIENT_ID")
+    client_secret = os.getenv("BACKEND_GOOGLE_CLIENT_SECRET")
+    redirect_uri = os.getenv(
+        "BACKEND_GOOGLE_REDIRECT", "http://localhost:8000/api/v1/auth/google/callback"
+    )
+    frontend_redirect = os.getenv("FRONTEND_URL", "http://localhost:3000")
 
     if not client_id:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Google client ID not configured")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Google client ID not configured",
+        )
     if not code:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Missing code from Google')
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Missing code from Google"
+        )
 
     # Exchange code for tokens
-    token_url = 'https://oauth2.googleapis.com/token'
+    token_url = "https://oauth2.googleapis.com/token"
     data = {
-        'code': code,
-        'client_id': client_id,
-        'client_secret': client_secret,
-        'redirect_uri': redirect_uri,
-        'grant_type': 'authorization_code',
+        "code": code,
+        "client_id": client_id,
+        "client_secret": client_secret,
+        "redirect_uri": redirect_uri,
+        "grant_type": "authorization_code",
     }
 
     token_resp = requests.post(token_url, data=data, timeout=10)
     if token_resp.status_code != 200:
-        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail='Failed to exchange code for token')
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Failed to exchange code for token",
+        )
 
     token_json = token_resp.json()
-    id_token_jwt = token_json.get('id_token')
+    id_token_jwt = token_json.get("id_token")
 
     if not id_token_jwt:
-        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail='No id_token received from Google')
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="No id_token received from Google",
+        )
 
     # ✅ SECURE: Verify id_token signature and audience using google-auth library
     try:
@@ -322,37 +344,35 @@ async def google_callback(code: str = None, request: Request = None, db: AsyncSe
             id_token_jwt,
             request_adapter,
             client_id,
-            clock_skew_in_seconds=30  # Allow up to 30s clock skew
+            clock_skew_in_seconds=30,  # Allow up to 30s clock skew
         )
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Google token verification failed: {str(e)}"
+            detail=f"Google token verification failed: {str(e)}",
         )
 
     # Also verify that the token's audience matches our client ID
-    if verified_info.get('aud') != client_id:
+    if verified_info.get("aud") != client_id:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token audience mismatch - possible token substitution attack"
+            detail="Token audience mismatch - possible token substitution attack",
         )
 
     # Extract verified user info
-    email = verified_info.get('email')
-    name = verified_info.get('name') or verified_info.get('given_name') or ''
-    picture = verified_info.get('picture', '')
+    email = verified_info.get("email")
+    name = verified_info.get("name") or verified_info.get("given_name") or ""
 
     if not email:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Google account must have a verified email address"
+            detail="Google account must have a verified email address",
         )
 
     # Ensure email is verified per Google
-    if not verified_info.get('email_verified', False):
+    if not verified_info.get("email_verified", False):
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Google email not verified"
+            status_code=status.HTTP_403_FORBIDDEN, detail="Google email not verified"
         )
 
     # Find or create user
@@ -361,7 +381,9 @@ async def google_callback(code: str = None, request: Request = None, db: AsyncSe
     if not user:
         # Create with a random password (not used)
         random_pwd = secrets.token_urlsafe(16)
-        user_create = UserCreate(email=email, password=random_pwd, name=name, role='user')
+        user_create = UserCreate(
+            email=email, password=random_pwd, name=name, role="user"
+        )
         try:
             user = await user_service.create_user(user_create)
         except Exception:
@@ -394,7 +416,7 @@ async def google_callback(code: str = None, request: Request = None, db: AsyncSe
         httponly=True,
         secure=True,
         samesite="none",
-        path="/"
+        path="/",
     )
     response.set_cookie(
         key="refresh_token",
@@ -403,7 +425,7 @@ async def google_callback(code: str = None, request: Request = None, db: AsyncSe
         httponly=True,
         secure=True,
         samesite="none",
-        path="/"
+        path="/",
     )
     # Non-httpOnly user data cookie (read by frontend for quick display/hydration)
     response.set_cookie(
@@ -413,7 +435,7 @@ async def google_callback(code: str = None, request: Request = None, db: AsyncSe
         httponly=False,
         secure=True,
         samesite="none",
-        path="/"
+        path="/",
     )
     return response
 
@@ -474,11 +496,9 @@ async def logout(
     user_agent = request.headers.get("user-agent")
 
     from fastapi.responses import JSONResponse
-    response = JSONResponse(content={
-        "result": "success",
-        "message": "ออกจากระบบสำเร็จ"
-    })
-    
+
+    response = JSONResponse(content={"result": "success", "message": "ออกจากระบบสำเร็จ"})
+
     # Clear cookies (must match the same samesite/secure attributes used when setting them)
     response.delete_cookie("access_token", path="/", samesite="none", secure=True)
     response.delete_cookie("refresh_token", path="/", samesite="none", secure=True)
@@ -500,10 +520,10 @@ async def logout(
                     user_id=user_id,
                     details=f"Logged out session: {session_id}",
                     ip_address=client_ip,
-                    user_agent=user_agent
+                    user_agent=user_agent,
                 )
                 await db.commit()
-                
+
         return response
 
     except Exception as e:

@@ -8,6 +8,7 @@ Usage:
     python -m app.services.session_cleanup          (via docker exec)
     docker-compose exec backend python -m app.services.session_cleanup
 """
+
 import os
 import sys
 from datetime import datetime, timedelta, timezone
@@ -18,7 +19,9 @@ from sqlalchemy.orm import Session
 from app.models.session import UserSession
 
 # Add parent directory to path for standalone execution
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+sys.path.insert(
+    0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+)
 
 
 def _utcnow() -> datetime:
@@ -62,8 +65,10 @@ def cleanup_expired_sessions(db: Session, max_age_days: int = 7) -> int:
     total = expired + stale_inactive
 
     if total > 0:
-        print(f"[SessionCleanup] Removed {expired} expired + {stale_inactive} stale "
-              f"inactive sessions (total: {total})")
+        print(
+            f"[SessionCleanup] Removed {expired} expired + {stale_inactive} stale "
+            f"inactive sessions (total: {total})"
+        )
     else:
         print("[SessionCleanup] No expired sessions found")
 
@@ -89,4 +94,4 @@ def run_cleanup():
 
 
 if __name__ == "__main__":
-    run_cleanup()
+    run_cleanup()

@@ -2,6 +2,7 @@ from typing import Optional
 from datetime import datetime
 from pydantic import BaseModel
 
+
 class UserBrief(BaseModel):
     id: int
     name: str
@@ -9,6 +10,7 @@ class UserBrief(BaseModel):
 
     class Config:
         from_attributes = True
+
 
 class AuditLogResponse(BaseModel):
     id: int

@@ -2,6 +2,7 @@
 FastAPI Main Application
 ART Workspace Backend
 """
+
 import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
@@ -17,6 +18,7 @@ from app.core.database import engine
 from app.models import base  # Import all models
 from fastapi.staticfiles import StaticFiles
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Create database tables asynchronously on startup
@@ -24,12 +26,14 @@ async def lifespan(app: FastAPI):
         await conn.run_sync(base.Base.metadata.create_all)
     yield
 
+
 # Rate Limiter - Uses X-Forwarded-For to get real client IP behind proxy (Render/Vercel)
 def get_real_client_ip(request: Request) -> str:
     forwarded_for = request.headers.get("X-Forwarded-For")
     if forwarded_for:
         return forwarded_for.split(",")[0].strip()
     return request.client.host if request.client else "127.0.0.1"
+
 
 limiter = Limiter(key_func=get_real_client_ip)
 
@@ -100,6 +104,7 @@ CSP_HEADER_VALUE = (
     "form-action 'self'"
 )
 
+
 class CSPMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         response = await call_next(request)
@@ -108,8 +113,11 @@ class CSPMiddleware(BaseHTTPMiddleware):
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["X-XSS-Protection"] = "1; mode=block"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-        response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+        response.headers["Permissions-Policy"] = (
+            "camera=(), microphone=(), geolocation=()"
+        )
         return response
+
 
 app.add_middleware(CSPMiddleware)
 

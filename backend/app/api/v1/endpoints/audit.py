@@ -1,7 +1,6 @@
 from typing import List
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
 from pydantic import BaseModel
 
 from app.core.database import get_db
@@ -12,6 +11,7 @@ from app.models.user import User
 
 router = APIRouter()
 
+
 class PaginatedAuditLogsResponse(BaseModel):
     items: List[AuditLogResponse]
     page: int
@@ -19,6 +19,7 @@ class PaginatedAuditLogsResponse(BaseModel):
     total: int
     hasNext: bool
     hasPrev: bool
+
 
 @router.get("/", response_model=List[AuditLogResponse])
 async def list_audit_logs(
@@ -34,6 +35,7 @@ async def list_audit_logs(
     logs = await audit_service.get_logs(skip=skip, limit=limit)
     return logs
 
+
 @router.get("/paginated", response_model=PaginatedAuditLogsResponse)
 async def list_audit_logs_paginated(
     page: int = Query(1, ge=1),
@@ -46,17 +48,19 @@ async def list_audit_logs_paginated(
     """
     audit_service = AuditService(db)
     skip = (page - 1) * size
-    logs = await audit_service.get_logs(skip=skip, limit=size + 1)  # Get one extra to check hasNext
-    
+    logs = await audit_service.get_logs(
+        skip=skip, limit=size + 1
+    )  # Get one extra to check hasNext
+
     has_next = len(logs) > size
     if has_next:
         logs = logs[:size]
-    
+
     return PaginatedAuditLogsResponse(
         items=logs,
         page=page,
         size=size,
         total=0,  # Set to 0 to avoid PostgreSQL full-table COUNT(*) query bottlenecks
         hasNext=has_next,
-        hasPrev=page > 1
+        hasPrev=page > 1,
     )

@@ -1,6 +1,7 @@
 """
 User Management Endpoints (Admin Only)
 """
+
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -41,13 +42,13 @@ async def get_user(
     """
     user_service = UserService(db)
     user = await user_service.get_user_by_id(user_id)
-    
+
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found",
         )
-    
+
     return user
 
 
@@ -63,27 +64,28 @@ async def create_user(
     """
     user_service = UserService(db)
     from app.services.audit_service import AuditService
+
     audit_service = AuditService(db)
     client_ip = request.client.host if request.client else None
     user_agent = request.headers.get("user-agent")
-    
+
     try:
         user = await user_service.create_user(user_create)
-        
+
         await audit_service.log_action(
             action="ADMIN_USER_CREATE",
             user_id=current_user.id,
             details=f"Admin created user: {user.email} (ID: {user.id}) with role: {user.role}",
             ip_address=client_ip,
-            user_agent=user_agent
+            user_agent=user_agent,
         )
-        
+
         return ResponseModel(
             result="success",
             message="สร้างผู้ใช้สำเร็จ",
             data={"user_id": user.id, "email": user.email},
         )
-    
+
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -91,7 +93,9 @@ async def create_user(
         )
 
 
-@router.post("/admin-create", response_model=ResponseModel, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/admin-create", response_model=ResponseModel, status_code=status.HTTP_201_CREATED
+)
 async def admin_create_user(
     user_create: UserAdminCreate,
     request: Request,
@@ -103,28 +107,29 @@ async def admin_create_user(
     """
     user_service = UserService(db)
     from app.services.audit_service import AuditService
+
     audit_service = AuditService(db)
     client_ip = request.client.host if request.client else None
     user_agent = request.headers.get("user-agent")
-    
+
     try:
         user = await user_service.admin_create_user(user_create)
-        
+
         await audit_service.log_action(
             action="ADMIN_USER_CREATE_HYBRID",
             user_id=current_user.id,
             details=f"Admin created user with Username: {user.username} (ID: {user.id})",
             ip_address=client_ip,
-            user_agent=user_agent
+            user_agent=user_agent,
         )
         await db.commit()
-        
+
         return ResponseModel(
             result="success",
             message="สร้างผู้ใช้สำเร็จ",
             data={"user_id": user.id, "username": user.username, "email": user.email},
         )
-    
+
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -148,38 +153,39 @@ async def update_user(
         if user_update.is_locked is True:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="คุณไม่สามารถล็อคบัญชีของตัวเองได้เพื่อป้องกันระบบล็อคถาวร"
+                detail="คุณไม่สามารถล็อคบัญชีของตัวเองได้เพื่อป้องกันระบบล็อคถาวร",
             )
         if user_update.role is not None and user_update.role != "admin":
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="คุณไม่สามารถเปลี่ยนบทบาทของตัวเองออกจากสิทธิ์ผู้ดูแลระบบได้"
+                detail="คุณไม่สามารถเปลี่ยนบทบาทของตัวเองออกจากสิทธิ์ผู้ดูแลระบบได้",
             )
 
     user_service = UserService(db)
     from app.services.audit_service import AuditService
+
     audit_service = AuditService(db)
     client_ip = request.client.host if request.client else None
     user_agent = request.headers.get("user-agent")
-    
+
     try:
         updated_user = await user_service.admin_update_user(user_id, user_update)
-        
+
         await audit_service.log_action(
             action="ADMIN_USER_UPDATE",
             user_id=current_user.id,
             details=f"Admin updated user {updated_user.email or updated_user.username} (ID: {user_id}). Fields: {', '.join([k for k, v in user_update.dict(exclude_unset=True).items() if v is not None])}",
             ip_address=client_ip,
-            user_agent=user_agent
+            user_agent=user_agent,
         )
         await db.commit()
-        
+
         return ResponseModel(
             result="success",
             message="อัปเดตผู้ใช้สำเร็จ",
             data={"user_id": updated_user.id, "email": updated_user.email},
         )
-    
+
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -201,36 +207,41 @@ async def delete_user(
     if current_user.id == user_id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="คุณไม่สามารถลบบัญชีผู้ใช้ของตัวเองได้เพื่อป้องกันระบบล็อคถาวร"
+            detail="คุณไม่สามารถลบบัญชีผู้ใช้ของตัวเองได้เพื่อป้องกันระบบล็อคถาวร",
         )
 
     user_service = UserService(db)
     from app.services.audit_service import AuditService
+
     audit_service = AuditService(db)
     client_ip = request.client.host if request.client else None
     user_agent = request.headers.get("user-agent")
-    
+
     # Get user email/username before deletion for logging
     target_user = await user_service.get_user_by_id(user_id)
-    target_identifier = target_user.email if (target_user and target_user.email) else (target_user.username if target_user else f"ID {user_id}")
-    
+    target_identifier = (
+        target_user.email
+        if (target_user and target_user.email)
+        else (target_user.username if target_user else f"ID {user_id}")
+    )
+
     success = await user_service.delete_user(user_id)
-    
+
     if not success:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found",
         )
-        
+
     await audit_service.log_action(
         action="ADMIN_USER_DELETE",
         user_id=current_user.id,
         details=f"Admin deleted user: {target_identifier} (ID: {user_id})",
         ip_address=client_ip,
-        user_agent=user_agent
+        user_agent=user_agent,
     )
     await db.commit()
-    
+
     return ResponseModel(
         result="success",
         message="ลบผู้ใช้สำเร็จ",

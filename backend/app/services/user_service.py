@@ -1,6 +1,7 @@
 """
 User Service - Business logic for user management
 """
+
 from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -38,12 +39,14 @@ class UserService:
         result = await self.db.execute(select(User).where(User.username == username))
         return result.scalar_one_or_none()
 
-    async def get_user_by_email_or_username(self, username_or_email: str) -> Optional[User]:
+    async def get_user_by_email_or_username(
+        self, username_or_email: str
+    ) -> Optional[User]:
         """Get user by email or username"""
         result = await self.db.execute(
             select(User).where(
-                (User.email == username_or_email.lower()) |
-                (User.username == username_or_email)
+                (User.email == username_or_email.lower())
+                | (User.username == username_or_email)
             )
         )
         return result.scalar_one_or_none()
@@ -235,7 +238,10 @@ class UserService:
         return True
 
     async def update_last_login(
-        self, user_id: int, ip_address: Optional[str] = None, device: Optional[str] = None
+        self,
+        user_id: int,
+        ip_address: Optional[str] = None,
+        device: Optional[str] = None,
     ) -> None:
         """Update user's last login timestamp and metadata"""
         user = await self.get_user_by_id(user_id)
@@ -247,7 +253,9 @@ class UserService:
                 user.last_login_device = device
             await self.db.commit()
 
-    async def admin_update_user(self, user_id: int, user_update: UserAdminUpdate) -> User:
+    async def admin_update_user(
+        self, user_id: int, user_update: UserAdminUpdate
+    ) -> User:
         """
         Update user information as admin
         """

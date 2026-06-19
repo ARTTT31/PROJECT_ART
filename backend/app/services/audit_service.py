@@ -23,14 +23,14 @@ class AuditService:
         user_id: Optional[int] = None,
         details: Optional[str] = None,
         ip_address: Optional[str] = None,
-        user_agent: Optional[str] = None
+        user_agent: Optional[str] = None,
     ) -> AuditLog:
         db_log = AuditLog(
             user_id=user_id,
             action=action,
             details=details,
             ip_address=ip_address,
-            user_agent=user_agent
+            user_agent=user_agent,
         )
         self.db.add(db_log)
         # Note: No commit() here — caller handles the transaction

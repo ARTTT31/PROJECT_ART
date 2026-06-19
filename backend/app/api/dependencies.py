@@ -1,6 +1,7 @@
 """
 API Dependencies
 """
+
 from typing import Optional
 from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -116,4 +117,3 @@ async def get_current_admin_user(
             detail="Not enough permissions",
         )
     return current_user
-
