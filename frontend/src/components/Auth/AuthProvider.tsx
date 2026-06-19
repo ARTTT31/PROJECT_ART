@@ -2,17 +2,9 @@
 
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth'
+import type { AuthUser, AuthRole } from '@/types'
 
-export type AuthRole = 'admin' | 'user' | string
-
-export interface AuthUser {
-  id: number
-  email: string
-  name: string
-  role: AuthRole
-  avatar?: string | null
-  quick_links?: string | null
-}
+export type { AuthUser, AuthRole }
 
 type AuthStatus = 'loading' | 'authenticated' | 'anonymous'
 
@@ -20,8 +12,7 @@ interface AuthContextValue {
   status: AuthStatus
   isAuthenticated: boolean
   user: AuthUser | null
-  accessToken: string | null
-  login: (accessToken: string | null, user: AuthUser, refreshToken?: string, sessionId?: string) => void
+  login: (user: AuthUser, sessionId?: string) => void
   logout: () => void
   updateUser: (next: Partial<AuthUser>) => void
 }
@@ -150,7 +141,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [status])
 
   const login = useCallback(
-    (token: string | null, nextUser: AuthUser, refreshToken?: string, sessionId?: string) => {
+    (nextUser: AuthUser, sessionId?: string) => {
       localStorage.setItem('user', JSON.stringify(nextUser))
       if (sessionId) localStorage.setItem('session_id', sessionId)
 
@@ -194,7 +185,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       status,
       isAuthenticated: status === 'authenticated',
       user,
-      accessToken: null, // Tokens are managed securely in HTTP-only cookies
       login,
       logout,
       updateUser,

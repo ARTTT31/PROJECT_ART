@@ -9,7 +9,7 @@ import TaskListWidget from '@/components/Widgets/TaskListWidget'
 import OilPriceWidget from '@/components/Widgets/OilPriceWidget'
 import QRCodeWidget from '@/components/Widgets/QRCodeWidget'
 import { Eye, EyeOff } from 'lucide-react'
-import { WidgetConfig, DashboardUser } from '@/types'
+import { WidgetConfig, AuthUser } from '@/types'
 import ErrorBoundary from '@/components/ErrorBoundary'
 import { useToast } from '@/components/Toast/ToastProvider'
 import { Dialog, DialogContent } from '@/components/ui/Dialog'
@@ -48,7 +48,7 @@ const widgetNames: Record<string, string> = {
 export default function DashboardPage() {
   const router = useRouter()
   const toast = useToast()
-  const [user, setUser] = useState<DashboardUser | null>(null)
+  const [user, setUser] = useState<AuthUser | null>(null)
   const [widgets, setWidgets] = useState<WidgetConfig[]>([])
   const [visibleWidgetIds, setVisibleWidgetIds] = useState<string[]>([])
   const [showConfigModal, setShowConfigModal] = useState(false)

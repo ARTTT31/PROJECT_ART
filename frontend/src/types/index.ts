@@ -3,15 +3,21 @@
  * Centralized type definitions to replace `any` usage across the app
  */
 
-/** User data shape returned from the API and stored in localStorage */
-export interface DashboardUser {
+/** User role type */
+export type AuthRole = 'admin' | 'user' | string
+
+/** Canonical user data shape — used by Auth system, API, and all components */
+export interface AuthUser {
   id: number
   email: string
   name: string
-  role: 'admin' | 'user' | string
+  role: AuthRole
   avatar?: string | null
   quick_links?: string | null
 }
+
+/** @deprecated Use AuthUser instead */
+export type DashboardUser = AuthUser
 
 /** Widget configuration stored in localStorage */
 export interface WidgetConfig {

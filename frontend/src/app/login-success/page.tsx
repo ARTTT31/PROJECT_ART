@@ -49,7 +49,7 @@ export default function LoginSuccessPage() {
           const userData = sessionUser || user;
 
           // Trigger auth context login (token is null since it's cookie-managed)
-          login(null, userData);
+          login(userData);
 
           // Clean up URL parameters
           window.history.replaceState({}, '', '/login-success');

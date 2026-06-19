@@ -130,7 +130,7 @@ export default function LoginPage() {
           localStorage.removeItem('remembered_email');
         }
 
-        login(null, result.data.user);
+        login(result.data.user);
         toast.success('เข้าสู่ระบบสำเร็จ', `ยินดีต้อนรับกลับมา ${result.data.user.name || ''}!`);
         setTimeout(() => router.push('/dashboard'), 1500);
       } else {

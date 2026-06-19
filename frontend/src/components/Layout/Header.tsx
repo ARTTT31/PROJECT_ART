@@ -4,11 +4,11 @@ import { memo, useCallback, useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { ChevronDown, Clock, LogOut, Menu, User, Settings } from 'lucide-react'
-import { DashboardUser } from '@/types'
+import { AuthUser } from '@/types'
 import NotificationBell from './NotificationBell'
 
 interface HeaderProps {
-  user: DashboardUser | null
+  user: AuthUser | null
   onMenuClick: () => void
   onLogout: () => void
 }
@@ -23,16 +23,6 @@ export default function Header({ user, onMenuClick, onLogout }: HeaderProps) {
   const userInitial = userName.charAt(0).toUpperCase() || 'U'
   const onLogoutClick = useCallback(() => { setShowUserMenu(false); onLogout() }, [onLogout])
 
-  const formatTime = (date: Date) => {
-    return date.toLocaleString('th-TH', {
-      weekday: 'long',
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    })
-  }
 
   const headerMeta = (() => {
 

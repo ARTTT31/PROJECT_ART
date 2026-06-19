@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { useAuth, type AuthRole } from './AuthProvider'
+import { useAuth, type AuthRole } from '@/hooks/useAuth'
 
 export default function AuthGuard({
   children,

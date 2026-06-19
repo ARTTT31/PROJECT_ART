@@ -2,14 +2,14 @@
 
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { Database, Home, LogOut, User } from 'lucide-react'
+import { Home, LogOut, User } from 'lucide-react'
 import { isExternalUrl, parseQuickLinks, QUICK_LINK_ICON_MAP } from '@/utils/quickLinks'
-import { DashboardUser } from '@/types'
+import { AuthUser } from '@/types'
 
 interface SidebarProps {
   isOpen: boolean
   onClose: () => void
-  user: DashboardUser | null
+  user: AuthUser | null
   onLogout: () => void
 }
 
