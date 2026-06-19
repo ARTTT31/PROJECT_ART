@@ -56,13 +56,13 @@ class UserService:
     async def create_user(self, user_create: UserCreate) -> User:
         """
         Create new user
-        
+
         Args:
             user_create: User creation data
-        
+
         Returns:
             Created user
-        
+
         Raises:
             ValueError: If email already exists
         """
@@ -73,18 +73,18 @@ class UserService:
 
         # Create new user
         hashed_password = get_password_hash(user_create.password)
-        
+
         db_user = User(
             email=user_create.email.lower(),
             hashed_password=hashed_password,
             name=user_create.name,
             role=user_create.role or "user",
         )
-        
+
         self.db.add(db_user)
         await self.db.commit()
         await self.db.refresh(db_user)
-        
+
         return db_user
 
     async def admin_create_user(self, user_create: UserAdminCreate) -> User:
@@ -103,7 +103,7 @@ class UserService:
                 raise ValueError("อีเมลนี้ถูกใช้งานแล้ว")
 
         hashed_password = get_password_hash(user_create.password)
-        
+
         db_user = User(
             username=user_create.username,
             display_name=user_create.display_name,
@@ -112,7 +112,7 @@ class UserService:
             hashed_password=hashed_password,
             role=user_create.role or "user",
         )
-        
+
         try:
             self.db.add(db_user)
             await self.db.commit()
@@ -120,20 +120,20 @@ class UserService:
         except IntegrityError:
             await self.db.rollback()
             raise ValueError("ชื่อผู้ใช้หรืออีเมลนี้ถูกใช้งานแล้ว")
-        
+
         return db_user
 
     async def update_user(self, user_id: int, user_update: UserUpdate) -> User:
         """
         Update user profile
-        
+
         Args:
             user_id: User ID to update
             user_update: Update data
-        
+
         Returns:
             Updated user
-        
+
         Raises:
             ValueError: If user not found or email already exists
         """
@@ -157,10 +157,10 @@ class UserService:
             user.quick_links = user_update.quick_links
 
         user.updated_at = _utcnow()
-        
+
         await self.db.commit()
         await self.db.refresh(user)
-        
+
         return user
 
     async def change_password(
@@ -168,12 +168,12 @@ class UserService:
     ) -> bool:
         """
         Change user password
-        
+
         Args:
             user_id: User ID
             old_password: Current password
             new_password: New password
-        
+
         Returns:
             True if successful, False if old password is incorrect
         """
@@ -188,9 +188,9 @@ class UserService:
         # Update password
         user.hashed_password = get_password_hash(new_password)
         user.updated_at = _utcnow()
-        
+
         await self.db.commit()
-        
+
         return True
 
     async def update_avatar(self, user_id: int, avatar_base64: str) -> None:
@@ -201,7 +201,7 @@ class UserService:
 
         user.avatar = avatar_base64
         user.updated_at = _utcnow()
-        
+
         await self.db.commit()
 
     async def update_quick_links(self, user_id: int, quick_links: str) -> None:
@@ -212,16 +212,16 @@ class UserService:
 
         user.quick_links = quick_links
         user.updated_at = _utcnow()
-        
+
         await self.db.commit()
 
     async def delete_user(self, user_id: int) -> bool:
         """
         Delete user
-        
+
         Args:
             user_id: User ID to delete
-        
+
         Returns:
             True if deleted, False if not found
         """
@@ -231,7 +231,7 @@ class UserService:
 
         await self.db.delete(user)
         await self.db.commit()
-        
+
         return True
 
     async def update_last_login(
