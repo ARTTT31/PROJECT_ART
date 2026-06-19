@@ -14,7 +14,7 @@ export default function LoginSuccessPage() {
 
     const processLogin = async () => {
       try {
-        // Step 1: Read user data from non-httpOnly cookie for speed (optional)
+        // Step 1: Read user data from non-httpOnly cookie for speed (fast-path)
         let user = null;
         const userCookie = document.cookie
           .split('; ')
@@ -28,7 +28,16 @@ export default function LoginSuccessPage() {
           }
         }
 
-        // Step 2: Verify and fetch session details from backend via HTTP-only cookies
+        // If user already exists in cookie, redirect immediately to improve LCP/FCP
+        if (user) {
+          hasRedirected.current = true;
+          login(user);
+          window.history.replaceState({}, '', '/login-success');
+          router.replace('/dashboard');
+          return;
+        }
+
+        // Step 2: Fallback to verify and fetch session details from backend via HTTP-only cookies
         const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://art-workspace-api.onrender.com';
         const res = await fetch(`${API_URL}/api/v1/auth/session`, {
           credentials: 'include', // Ensure cookies are sent
@@ -37,31 +46,26 @@ export default function LoginSuccessPage() {
         if (!res.ok) {
           console.log('No valid session found, redirecting to login');
           hasRedirected.current = true;
-          router.push('/login');
+          router.replace('/login');
           return;
         }
 
         const json = await res.json();
         const { user: sessionUser } = json.data || {};
 
-        if (sessionUser || user) {
+        if (sessionUser) {
           hasRedirected.current = true;
-          const userData = sessionUser || user;
-
-          // Trigger auth context login (token is null since it's cookie-managed)
-          login(userData);
-
-          // Clean up URL parameters
+          login(sessionUser);
           window.history.replaceState({}, '', '/login-success');
-          router.push('/dashboard');
+          router.replace('/dashboard');
         } else {
           hasRedirected.current = true;
-          router.push('/login');
+          router.replace('/login');
         }
       } catch (err) {
         console.error('Error processing login:', err);
         hasRedirected.current = true;
-        router.push('/login');
+        router.replace('/login');
       }
     };
 
@@ -69,12 +73,13 @@ export default function LoginSuccessPage() {
   }, [login, router]);
 
   return (
-    <div className="min-h-[100dvh] flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100">
+    <div className="min-h-screen flex items-center justify-center bg-slate-50">
       <div className="text-center">
-        <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
-        <h2 className="text-2xl font-bold text-slate-900">เข้าสู่ระบบสำเร็จ</h2>
-        <p className="mt-2 text-slate-600">กำลังพาคุณเข้าสู่ Dashboard...</p>
+        <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+        <h2 className="text-xl font-bold text-slate-800">เข้าสู่ระบบสำเร็จ</h2>
+        <p className="mt-1 text-sm text-slate-500">กำลังพาคุณเข้าสู่ Dashboard...</p>
       </div>
     </div>
   );
-}
+}
+
