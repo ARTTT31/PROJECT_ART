@@ -1,8 +1,8 @@
 # Quick Reference - ART Workspace Modern Stack
 
-## ✅ ระบบพร้อมใช้งานแล้ว!
+## ✅ System Ready!
 
-### 🌐 URLs สำคัญ
+### 🌐 Important URLs
 
 - **Frontend (Login)**: http://localhost:3000/login
 - **Dashboard**: http://localhost:3000/dashboard
@@ -18,117 +18,117 @@ Email: admin@art.com
 Password: Admin@123
 ```
 
-**⚠️ สำคัญ**: 
-- เปลี่ยนรหัสผ่านหลังจาก login ครั้งแรก!
-- ใช้ email/password นี้สำหรับ development เท่านั้น
-- Production ต้องสร้าง admin user ใหม่และลบ default admin
+**⚠️ Important**: 
+- Change password after first login!
+- Use this email/password for development only.
+- Production requires creating a new admin user and deleting the default admin.
 
 ---
 
-## 📋 คำสั่งที่ใช้บ่อย
+## 📋 Frequently Used Commands
 
-### เริ่มต้นใช้งาน (ครั้งแรก)
+### Initial Setup (First Time)
 
 ```bash
-# 1. เข้าโฟลเดอร์โปรเจกต์
+# 1. Enter project folder
 cd PROJECT_ART
 
-# 2. เริ่ม services ทั้งหมด (ครั้งแรกจะ download images และ build)
+# 2. Start all services (downloads images and builds on first run)
 docker-compose up -d
 
-# 3. รอให้ services เริ่มต้น (ประมาณ 30-60 วินาที)
+# 3. Wait for services to start (approx 30-60 seconds)
 docker-compose logs -f
 
-# 4. สร้าง admin user (กด Ctrl+C เพื่อออกจาก logs ก่อน)
+# 4. Create admin user (Press Ctrl+C to exit logs first)
 docker-compose exec -T backend python create_admin_simple.py
 
-# 5. เปิด browser ไปที่ http://localhost:3000/login
-# Login ด้วย admin@art.com / Admin@123
+# 5. Open browser to http://localhost:3000/login
+# Login with admin@art.com / Admin@123
 ```
 
-### เริ่มต้นใช้งาน (วันถัดไป)
+### Daily Startup
 
 ```bash
-# เข้าโฟลเดอร์โปรเจกต์
+# Enter project folder
 cd PROJECT_ART
 
-# เริ่ม services (รวดเร็วกว่าครั้งแรก)
+# Start services (faster than first time)
 docker-compose up -d
 
-# ดู logs (optional)
+# View logs (optional)
 docker-compose logs -f
 
-# เปิด browser ไปที่ http://localhost:3000/login
+# Open browser to http://localhost:3000/login
 ```
 
-### ดู Logs และ Debug
+### View Logs and Debug
 
 ```bash
-# ดู logs ทั้งหมด (real-time)
+# View all logs (real-time)
 docker-compose logs -f
 
-# ดู logs เฉพาะ frontend
+# View frontend logs only
 docker-compose logs -f frontend
 
-# ดู logs เฉพาะ backend
+# View backend logs only
 docker-compose logs -f backend
 
-# ดู logs เฉพาะ database
+# View database logs only
 docker-compose logs -f postgres
 
-# ดู logs ย้อนหลัง 50 บรรทัด
+# View last 50 lines of logs
 docker logs art_frontend --tail 50
 docker logs art_backend --tail 50
 
-# ดูสถานะ containers
+# View container status
 docker-compose ps
 ```
 
-### หยุดและลบ
+### Stop and Remove
 
 ```bash
-# หยุด services (เก็บข้อมูล)
+# Stop services (keep data)
 docker-compose stop
 
-# หยุดและลบ containers (เก็บข้อมูล database)
+# Stop and remove containers (keep database data)
 docker-compose down
 
-# หยุดและลบทั้ง containers + volumes (⚠️ ลบข้อมูล database)
+# Stop and remove containers + volumes (⚠️ Deletes database data)
 docker-compose down -v
 
-# ลบ images ด้วย (เพื่อ rebuild ใหม่ทั้งหมด)
+# Remove images too (for complete rebuild)
 docker-compose down --rmi all -v
 ```
 
 ### Restart Services
 
 ```bash
-# Restart ทั้งหมด
+# Restart all
 docker-compose restart
 
-# Restart เฉพาะ frontend
+# Restart frontend only
 docker-compose restart frontend
 
-# Restart เฉพาะ backend
+# Restart backend only
 docker-compose restart backend
 
-# Restart เฉพาะ database
+# Restart database only
 docker-compose restart postgres
 ```
 
 ### Rebuild Services
 
 ```bash
-# Rebuild frontend (เมื่อแก้ Dockerfile หรือ dependencies)
+# Rebuild frontend (when Dockerfile or dependencies change)
 docker-compose up -d --build frontend
 
 # Rebuild backend
 docker-compose up -d --build backend
 
-# Rebuild ทั้งหมด
+# Rebuild all
 docker-compose up -d --build
 
-# Rebuild แบบไม่ใช้ cache (clean build)
+# Clean build without cache
 docker-compose build --no-cache frontend
 docker-compose up -d frontend
 ```
@@ -136,54 +136,54 @@ docker-compose up -d frontend
 ### Database Management
 
 ```bash
-# เข้า PostgreSQL shell
+# Enter PostgreSQL shell
 docker-compose exec postgres psql -U art_user -d art_workspace
 
-# คำสั่งใน psql:
-\dt                    # แสดง tables ทั้งหมด
-\d users               # แสดง schema ของ users table
-SELECT * FROM users;   # ดูข้อมูล users
-\q                     # ออกจาก psql
+# psql commands:
+\dt                    # Show all tables
+\d users               # Show schema of users table
+SELECT * FROM users;   # View users data
+\q                     # Exit psql
 
-# สร้าง migration ใหม่
+# Create new migration
 docker-compose exec backend alembic revision --autogenerate -m "add new field"
 
-# รัน migrations
+# Run migrations
 docker-compose exec backend alembic upgrade head
 
 # Rollback migration
 docker-compose exec backend alembic downgrade -1
 
-# ดู migration history
+# View migration history
 docker-compose exec backend alembic history
 
-# ดู current revision
+# View current revision
 docker-compose exec backend alembic current
 ```
 
-### สร้าง User เพิ่ม
+### Create Additional Users
 
 ```bash
-# สร้าง admin user (ใช้ script)
+# Create admin user (using script)
 docker-compose exec -T backend python create_admin_simple.py
 
-# หรือสร้างผ่าน API (ต้อง login ด้วย admin ก่อน)
-# ดูตัวอย่างใน API Documentation: http://localhost:8000/docs
+# Or create via API (requires admin login first)
+# See examples in API Documentation: http://localhost:8000/docs
 ```
 
-### เข้าไปใน Container
+### Accessing Containers
 
 ```bash
-# เข้า frontend container
+# Enter frontend container
 docker-compose exec frontend sh
 
-# เข้า backend container
+# Enter backend container
 docker-compose exec backend bash
 
-# เข้า postgres container
+# Enter postgres container
 docker-compose exec postgres bash
 
-# ออกจาก container
+# Exit container
 exit
 ```
 
@@ -191,108 +191,108 @@ exit
 
 ## 🔧 Troubleshooting
 
-### Port ถูกใช้งานอยู่
+### Port is already in use
 
-ถ้า port 3000, 8000 หรือ 5432 ถูกใช้งาน:
+If port 3000, 8000, or 5432 is in use:
 
 ```bash
-# Windows - ดู process ที่ใช้ port
+# Windows - View process using the port
 netstat -ano | findstr :3000
 netstat -ano | findstr :8000
 netstat -ano | findstr :5432
 
-# หยุด process (ใช้ PID จากคำสั่งด้านบน)
+# Kill process (use PID from above command)
 taskkill /PID <PID> /F
 
-# หรือเปลี่ยน port ใน docker-compose.yml
-# เช่น "3001:3000" แทน "3000:3000"
+# Or change port in docker-compose.yml
+# e.g. "3001:3000" instead of "3000:3000"
 ```
 
-### Frontend ไม่ทำงาน
+### Frontend is not working
 
 ```bash
-# 1. ดู logs
+# 1. View logs
 docker-compose logs frontend
 
-# 2. ตรวจสอบว่า container รันอยู่
+# 2. Check if container is running
 docker-compose ps
 
 # 3. Restart frontend
 docker-compose restart frontend
 
-# 4. ถ้ายังไม่ได้ ลบ .next cache และ rebuild
+# 4. If still not working, remove .next cache and rebuild
 docker-compose down
 docker volume prune -f
 docker-compose up -d --build frontend
 
-# 5. ตรวจสอบว่า http://localhost:3000 เปิดได้
+# 5. Check if http://localhost:3000 is accessible
 ```
 
-### Backend ไม่ทำงาน
+### Backend is not working
 
 ```bash
-# 1. ดู logs
+# 1. View logs
 docker-compose logs backend
 
-# 2. ตรวจสอบว่า database พร้อม
+# 2. Check if database is ready
 docker-compose ps postgres
 
 # 3. Restart backend
 docker-compose restart backend
 
-# 4. ถ้ายังไม่ได้ rebuild
+# 4. If still not working, rebuild
 docker-compose up -d --build backend
 
-# 5. ตรวจสอบว่า http://localhost:8000/docs เปิดได้
+# 5. Check if http://localhost:8000/docs is accessible
 ```
 
 ### Database connection error
 
 ```bash
-# 1. ตรวจสอบ PostgreSQL
+# 1. Check PostgreSQL
 docker-compose ps postgres
 
-# 2. ดู logs
+# 2. View logs
 docker-compose logs postgres
 
 # 3. Restart PostgreSQL
 docker-compose restart postgres
 
-# 4. เข้าไปตรวจสอบใน container
+# 4. Check inside container
 docker-compose exec postgres psql -U art_user -d art_workspace
 
-# 5. ถ้ายังไม่ได้ ลบและสร้างใหม่
+# 5. If still not working, remove and recreate
 docker-compose down -v
 docker-compose up -d
 docker-compose exec -T backend python create_admin_simple.py
 ```
 
-### Login ไม่ได้
+### Cannot Login
 
 ```bash
-# 1. ตรวจสอบว่า backend ทำงาน
+# 1. Check if backend is running
 curl http://localhost:8000/docs
 
-# 2. ตรวจสอบว่ามี admin user
+# 2. Check if admin user exists
 docker-compose exec postgres psql -U art_user -d art_workspace -c "SELECT email, name, role FROM users;"
 
-# 3. ถ้าไม่มี สร้างใหม่
+# 3. If missing, recreate
 docker-compose exec -T backend python create_admin_simple.py
 
-# 4. เปิด DevTools (F12) → Network tab ดู request/response
+# 4. Open DevTools (F12) → Network tab to view request/response
 
-# 5. ตรวจสอบ localStorage
-# เปิด DevTools → Application → Local Storage
-# ต้องมี keys: access_token, user, refresh_token, session_id
+# 5. Check localStorage
+# Open DevTools → Application → Local Storage
+# Should contain keys: access_token, user, refresh_token, session_id
 
-# 6. ลอง clear localStorage และ login ใหม่
+# 6. Try clearing localStorage and logging in again
 localStorage.clear()
 ```
 
 ### Hydration Error (Next.js)
 
 ```bash
-# 1. ลบ .next cache
+# 1. Remove .next cache
 docker-compose down
 docker volume prune -f
 
@@ -302,87 +302,87 @@ docker-compose up -d --build frontend
 # 3. Hard refresh browser (Ctrl+Shift+R)
 ```
 
-### ลบทุกอย่างและเริ่มใหม่
+### Delete Everything and Start Over
 
 ```bash
-# ⚠️ คำเตือน: จะลบข้อมูล database ทั้งหมด!
+# ⚠️ Warning: Will delete all database data!
 
-# 1. หยุดและลบทุกอย่าง
+# 1. Stop and remove everything
 docker-compose down -v
 
-# 2. ลบ images (optional)
+# 2. Remove images (optional)
 docker-compose down --rmi all -v
 
-# 3. ลบ dangling volumes
+# 3. Remove dangling volumes
 docker volume prune -f
 
-# 4. เริ่มใหม่
+# 4. Start over
 docker-compose up -d --build
 
-# 5. รอให้ services เริ่มต้น
+# 5. Wait for services to start
 docker-compose logs -f
 
-# 6. สร้าง admin user ใหม่
+# 6. Create new admin user
 docker-compose exec -T backend python create_admin_simple.py
 
-# 7. เปิด browser ไปที่ http://localhost:3000/login
+# 7. Open browser to http://localhost:3000/login
 ```
 
-### Widget ไม่แสดงข้อมูล
+### Widgets Not Showing Data
 
 ```bash
-# Weather Widget ไม่แสดงข้อมูล:
-# 1. เปิด DevTools → Network tab
-# 2. ดู request ไปที่ Open-Meteo API
-# 3. ถ้า CORS error → ตรวจสอบ API endpoint
-# 4. ถ้า timeout → ลอง refresh หรือรอสักครู่
-# 5. ตรวจสอบ localStorage → weather_cache
+# Weather Widget not showing data:
+# 1. Open DevTools → Network tab
+# 2. View request to Open-Meteo API
+# 3. If CORS error → Check API endpoint
+# 4. If timeout → Try refreshing or wait a moment
+# 5. Check localStorage → weather_cache
 
-# Oil Price Widget ไม่แสดงข้อมูล:
-# 1. เปิด DevTools → Network tab
-# 2. ดู request ไปที่ Thai Oil API
-# 3. ถ้า CORS error → Widget จะใช้ fallback proxy
-# 4. ถ้าทุก proxy ล้มเหลว → แสดง error message
-# 5. ตรวจสอบ localStorage → oil_price_cache
+# Oil Price Widget not showing data:
+# 1. Open DevTools → Network tab
+# 2. View request to Thai Oil API
+# 3. If CORS error → Widget will use fallback proxy
+# 4. If all proxies fail → Shows error message
+# 5. Check localStorage → oil_price_cache
 
-# Todo Widget ไม่บันทึกข้อมูล:
-# 1. เปิด DevTools → Application → Local Storage
-# 2. ตรวจสอบว่ามี key "todos"
-# 3. ถ้าไม่มี → localStorage อาจถูก block
-# 4. ลอง clear localStorage และเพิ่ม todo ใหม่
-# 5. ตรวจสอบ Console → ไม่ควรมี localStorage errors
+# Todo Widget not saving data:
+# 1. Open DevTools → Application → Local Storage
+# 2. Check for "todos" key
+# 3. If missing → localStorage might be blocked
+# 4. Try clearing localStorage and adding a new todo
+# 5. Check Console → Should have no localStorage errors
 
-# Calculator Widget ไม่ทำงาน:
-# 1. ตรวจสอบ Console → ไม่ควรมี JavaScript errors
-# 2. ลอง refresh page (Ctrl+R)
-# 3. ทดสอบด้วยเมาส์และ keyboard แยกกัน
+# Calculator Widget not working:
+# 1. Check Console → Should have no JavaScript errors
+# 2. Try refreshing page (Ctrl+R)
+# 3. Test with mouse and keyboard separately
 
-# Barcode/QR Widget ไม่ generate:
-# 1. ตรวจสอบ Console → ไม่ควรมี Canvas errors
-# 2. ลอง refresh page (Ctrl+R)
-# 3. ลองเปลี่ยนข้อความและ generate ใหม่
-# 4. Download/Copy/Share อาจไม่ทำงานใน HTTP (ต้อง HTTPS)
+# Barcode/QR Widget not generating:
+# 1. Check Console → Should have no Canvas errors
+# 2. Try refreshing page (Ctrl+R)
+# 3. Try changing text and generating again
+# 4. Download/Copy/Share might not work on HTTP (HTTPS required)
 ```
 
 ### Widget Performance Issues
 
 ```bash
-# Widget โหลดช้า:
-# 1. ตรวจสอบ Network tab → ดู API response time
-# 2. Weather Widget: Open-Meteo API ควรตอบกลับภายใน 1-2 วินาที
-# 3. Oil Price Widget: Thai Oil API อาจช้า ใช้ cache
-# 4. ลอง clear localStorage cache และ refresh
+# Widgets loading slowly:
+# 1. Check Network tab → View API response time
+# 2. Weather Widget: Open-Meteo API should respond within 1-2 seconds
+# 3. Oil Price Widget: Thai Oil API might be slow, uses cache
+# 4. Try clearing localStorage cache and refreshing
 
-# Widget ใช้ memory มาก:
-# 1. เปิด DevTools → Performance tab
-# 2. Record และดู memory usage
-# 3. Todo Widget: ถ้ามี todos เยอะมาก (>1000) อาจช้า
-# 4. ลอง clear completed todos
+# Widgets using high memory:
+# 1. Open DevTools → Performance tab
+# 2. Record and view memory usage
+# 3. Todo Widget: Might be slow with many todos (>1000)
+# 4. Try clearing completed todos
 
-# Auto-refresh ทำให้ช้า:
-# 1. Weather Widget refresh ทุก 2 นาที
-# 2. ถ้าต้องการปิด → แก้ไข WeatherWidget.tsx
-# 3. เปลี่ยน REFRESH_INTERVAL หรือลบ useEffect
+# Auto-refresh causing slowdown:
+# 1. Weather Widget refreshes every 2 minutes
+# 2. To disable → Edit WeatherWidget.tsx
+# 3. Change REFRESH_INTERVAL or remove useEffect
 ```
 
 ---
@@ -404,7 +404,7 @@ Content-Type: application/json
 # Response:
 {
   "result": "success",
-  "message": "เข้าสู่ระบบสำเร็จ",
+  "message": "Login successful",
   "data": {
     "access_token": "eyJ...",
     "refresh_token": "eyJ...",
@@ -438,7 +438,7 @@ Content-Type: application/json
 }
 ```
 
-### Profile (ต้อง login)
+### Profile (requires login)
 
 ```bash
 # Get profile
@@ -538,7 +538,7 @@ Authorization: Bearer <access_token>
 
 ## 📝 Development Workflow
 
-### 1. เริ่มต้นวัน
+### 1. Start of Day
 
 ```bash
 cd PROJECT_ART
@@ -546,31 +546,31 @@ docker-compose up -d
 docker-compose logs -f
 ```
 
-### 2. พัฒนา Frontend
+### 2. Frontend Development
 
 ```bash
-# แก้ไข code ใน frontend/src/
-# Hot reload จะทำงานอัตโนมัติ
-# ดู logs เพื่อ debug
+# Edit code in frontend/src/
+# Hot reload will work automatically
+# View logs to debug
 docker-compose logs -f frontend
 ```
 
-### 3. พัฒนา Backend
+### 3. Backend Development
 
 ```bash
-# แก้ไข code ใน backend/app/
-# Uvicorn จะ reload อัตโนมัติ
-# ดู logs เพื่อ debug
+# Edit code in backend/app/
+# Uvicorn will auto-reload
+# View logs to debug
 docker-compose logs -f backend
 ```
 
-### 4. ทดสอบ API
+### 4. Testing API
 
 ```bash
-# เปิด Swagger UI
+# Open Swagger UI
 open http://localhost:8000/docs
 
-# หรือใช้ curl
+# Or use curl
 curl -X POST http://localhost:8000/api/v1/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"admin@art.com","password":"Admin@123"}'
@@ -579,34 +579,34 @@ curl -X POST http://localhost:8000/api/v1/auth/login \
 ### 5. Database Changes
 
 ```bash
-# แก้ไข models ใน backend/app/models/
+# Edit models in backend/app/models/
 
-# สร้าง migration
+# Create migration
 docker-compose exec backend alembic revision --autogenerate -m "add new field"
 
-# รัน migration
+# Run migration
 docker-compose exec backend alembic upgrade head
 
-# ตรวจสอบใน database
+# Check in database
 docker-compose exec postgres psql -U art_user -d art_workspace
 ```
 
-### 6. จบวัน
+### 6. End of Day
 
 ```bash
-# หยุด services (เก็บข้อมูล)
+# Stop services (keep data)
 docker-compose stop
 
-# หรือปล่อยให้รันต่อ (ใช้ทรัพยากร)
+# Or leave running (uses resources)
 ```
 
 ---
 
 ## 🎯 Next Steps
 
-### ✅ เสร็จแล้ว
-1. ✅ ระบบ Login/Authentication
-2. ✅ Dashboard พื้นฐาน
+### ✅ Completed
+1. ✅ Login/Authentication System
+2. ✅ Basic Dashboard
 3. ✅ Profile Management
 4. ✅ Session Management
 5. ✅ JWT Token Authentication
@@ -619,7 +619,7 @@ docker-compose stop
    - ✅ Calculator Widget (Basic operations, Keyboard support)
    - ✅ Barcode/QR Widget (Generate, Download, Copy, Share, Print)
 
-### 📝 ต่อไป
+### 📝 Up Next
 1. 📝 User Management (Admin Panel)
 2. 📝 File Upload
 3. 📝 Email Notifications
@@ -636,27 +636,27 @@ docker-compose stop
 ## 🎨 Dashboard Widgets
 
 ### Weather Widget
-- **API**: Open-Meteo (ฟรี, ไม่ต้อง API key)
+- **API**: Open-Meteo (Free, no API key required)
 - **Features**:
-  - Current weather (อุณหภูมิ, ความชื้น, ลม, ความกดอากาศ)
-  - UV Index พร้อม emoji สี (🟢🟡🟠🔴🟣)
-  - Sunrise/Sunset time (เวลาไทย)
-  - Visibility (ทัศนวิสัย km)
-  - PM2.5 & AQI (คุณภาพอากาศ)
-  - พยากรณ์อากาศ 7 วัน
-  - Auto-refresh ทุก 2 นาที พร้อม countdown
+  - Current weather (Temperature, Humidity, Wind, Pressure)
+  - UV Index with color emoji (🟢🟡🟠🔴🟣)
+  - Sunrise/Sunset time (Local time)
+  - Visibility (km)
+  - PM2.5 & AQI (Air Quality)
+  - 7-day forecast
+  - Auto-refresh every 2 minutes with countdown
   - Cache system (localStorage)
 - **Location**: Bangkok (13.7563°N, 100.5018°E)
 
 ### Oil Price Widget
-- **API**: Thai Oil API (ฟรี)
+- **API**: Thai Oil API (Free)
 - **Features**:
-  - ราคาน้ำมันทุกชนิด (Gasohol, Diesel, NGV, LPG)
+  - All fuel prices (Gasohol, Diesel, NGV, LPG)
   - Price Change Indicator (↑↓)
   - Change Percentage (%)
-  - เปรียบเทียบกับราคาก่อนหน้า
-  - สีตามการเปลี่ยนแปลง (แดง=ขึ้น, เขียว=ลง)
-  - Fallback proxies (3 ระดับ)
+  - Comparison with previous price
+  - Colors based on change (Red=Up, Green=Down)
+  - Fallback proxies (3 levels)
   - Cache system (localStorage)
 
 ### Todo Widget
@@ -686,7 +686,7 @@ docker-compose stop
   - Number formatting (commas)
 
 ### Barcode/QR Widget
-- **Technology**: Canvas-based (ไม่ต้องติดตั้ง library)
+- **Technology**: Canvas-based (no library installation required)
 - **Features**:
   - Generate Barcode (Code 128)
   - Generate QR Code
@@ -717,28 +717,28 @@ frontend/src/components/Widgets/
 ### Testing Widgets
 
 ```bash
-# 1. เริ่ม services
+# 1. Start services
 cd PROJECT_ART
 docker-compose up -d
 
-# 2. เปิด browser ไปที่ Dashboard
+# 2. Open browser to Dashboard
 open http://localhost:3000/dashboard
 
-# 3. ทดสอบแต่ละ Widget:
+# 3. Test each Widget:
 
 # Weather Widget:
-# - ดูว่าแสดงข้อมูลอากาศปัจจุบัน
-# - ตรวจสอบ UV Index, Sunrise/Sunset, PM2.5
-# - ดู countdown auto-refresh
-# - ตรวจสอบ 7-day forecast
+# - Check if current weather displays
+# - Verify UV Index, Sunrise/Sunset, PM2.5
+# - Watch auto-refresh countdown
+# - Verify 7-day forecast
 
 # Oil Price Widget:
-# - ดูราคาน้ำมันทุกชนิด
-# - ตรวจสอบ Price Change Indicator (↑↓)
-# - ดู Change Percentage (%)
+# - View all fuel prices
+# - Verify Price Change Indicator (↑↓)
+# - View Change Percentage (%)
 
 # Todo Widget:
-# - เพิ่ม todo ใหม่
+# - Add new todo
 # - Mark as complete/incomplete
 # - Edit todo (double-click)
 # - Delete todo
@@ -746,43 +746,43 @@ open http://localhost:3000/dashboard
 # - Clear completed
 
 # Calculator Widget:
-# - คำนวณด้วยเมาส์
-# - ทดสอบ keyboard (0-9, +, -, *, /, Enter, Esc)
-# - ทดสอบ decimal, percentage, toggle sign
+# - Calculate using mouse
+# - Test keyboard (0-9, +, -, *, /, Enter, Esc)
+# - Test decimal, percentage, toggle sign
 
 # Barcode/QR Widget:
 # - Generate barcode/QR code
-# - เปลี่ยนสี
+# - Change color
 # - Download PNG
 # - Copy to clipboard
-# - Share (ถ้า browser รองรับ)
+# - Share (if supported by browser)
 # - Print
 
-# 4. ตรวจสอบ localStorage
-# เปิด DevTools (F12) → Application → Local Storage
-# ต้องมี keys:
+# 4. Check localStorage
+# Open DevTools (F12) → Application → Local Storage
+# Should contain keys:
 # - weather_cache
 # - oil_price_cache
 # - todos
 
-# 5. ตรวจสอบ Console
-# เปิด DevTools (F12) → Console
-# ไม่ควรมี errors (ยกเว้น API errors ที่ handle แล้ว)
+# 5. Check Console
+# Open DevTools (F12) → Console
+# Should have no errors (except handled API errors)
 ```
 
 ---
 
-## 📚 เอกสารเพิ่มเติม
+## 📚 Additional Documentation
 
-- `README.md` - ภาพรวมโปรเจกต์และ Tech Stack
-- `GETTING_STARTED.md` - คู่มือเริ่มต้นแบบละเอียด
-- `PROJECT_STRUCTURE.md` - โครงสร้างโปรเจกต์
-- `PHASE2_COMPLETE.md` - สรุป Phase 2 Dashboard Widgets
-- `WIDGET_IMPLEMENTATION_SUMMARY.md` - รายละเอียด Widgets
-- `CHANGELOG_WIDGETS.md` - ประวัติการเปลี่ยนแปลง Widgets
-- `docs/MIGRATION.md` - คู่มือ migrate จากโปรเจกต์หลัก
+- `README.md` - Project Overview and Tech Stack
+- `GETTING_STARTED.md` - Detailed Starter Guide
+- `PROJECT_STRUCTURE.md` - Project Structure
+- `PHASE2_COMPLETE.md` - Phase 2 Dashboard Widgets Summary
+- `WIDGET_IMPLEMENTATION_SUMMARY.md` - Widgets Details
+- `CHANGELOG_WIDGETS.md` - Widgets Changelog
+- `docs/MIGRATION.md` - Migration Guide from main project
 - `docs/API.md` - API Documentation
-- `docs/DEPLOYMENT.md` - คู่มือ Deploy
+- `docs/DEPLOYMENT.md` - Deployment Guide
 
 ---
 
@@ -790,62 +790,62 @@ open http://localhost:3000/dashboard
 
 ### Development
 
-1. **Hot Reload**: Code changes จะ auto-reload ไม่ต้อง restart
-2. **API Docs**: ใช้ Swagger UI ที่ `/docs` สำหรับทดสอบ API
-3. **Database**: ข้อมูลเก็บใน Docker volume ไม่หายเมื่อ restart
-4. **Logs**: ใช้ `docker-compose logs -f` เพื่อ debug
-5. **Clean Start**: ใช้ `docker-compose down -v` เพื่อเริ่มใหม่หมด
-6. **Widgets**: ทุก Widget มี error handling และ cache system
-7. **localStorage**: Widgets ใช้ localStorage สำหรับ cache และ persistence
-8. **TypeScript**: ตรวจสอบ types ด้วย `npm run type-check` (ใน frontend container)
+1. **Hot Reload**: Code changes will auto-reload without restarting
+2. **API Docs**: Use Swagger UI at `/docs` to test APIs
+3. **Database**: Data is stored in Docker volumes and persists across restarts
+4. **Logs**: Use `docker-compose logs -f` to debug
+5. **Clean Start**: Use `docker-compose down -v` to start completely fresh
+6. **Widgets**: Every Widget has error handling and caching
+7. **localStorage**: Widgets use localStorage for caching and persistence
+8. **TypeScript**: Check types using `npm run type-check` (in frontend container)
 
 ### Security
 
-1. **Passwords**: เปลี่ยนรหัสผ่าน default ทันที
-2. **Tokens**: เก็บ tokens ใน localStorage (development) หรือ httpOnly cookies (production)
-3. **CORS**: ตั้งค่า CORS ให้ถูกต้องใน production
-4. **Environment Variables**: ใช้ `.env` files และไม่ commit ลง git
-5. **Database**: Backup database เป็นประจำ
+1. **Passwords**: Change default passwords immediately
+2. **Tokens**: Store tokens in localStorage (development) or httpOnly cookies (production)
+3. **CORS**: Configure CORS correctly in production
+4. **Environment Variables**: Use `.env` files and never commit to git
+5. **Database**: Backup database regularly
 
 ### Performance
 
-1. **Docker**: ใช้ volume mounts สำหรับ development
-2. **Next.js**: ใช้ Image Optimization และ Code Splitting
-3. **FastAPI**: ใช้ async/await สำหรับ I/O operations
-4. **Database**: สร้าง indexes สำหรับ queries ที่ใช้บ่อย
-5. **Caching**: ใช้ Redis สำหรับ session และ cache (future)
-6. **Widgets**: ใช้ localStorage cache เพื่อลด API calls
-7. **Auto-refresh**: Weather Widget refresh ทุก 2 นาที (ปรับได้)
+1. **Docker**: Use volume mounts for development
+2. **Next.js**: Use Image Optimization and Code Splitting
+3. **FastAPI**: Use async/await for I/O operations
+4. **Database**: Create indexes for frequently used queries
+5. **Caching**: Use Redis for session and caching (future)
+6. **Widgets**: Use localStorage cache to reduce API calls
+7. **Auto-refresh**: Weather Widget refreshes every 2 minutes (customizable)
 
 ---
 
 ## 🎨 Widget Customization
 
-### เปลี่ยน Weather Location
+### Change Weather Location
 
-แก้ไขไฟล์ `frontend/src/components/Widgets/WeatherWidget.tsx`:
+Edit `frontend/src/components/Widgets/WeatherWidget.tsx`:
 
 ```typescript
-// เปลี่ยนพิกัด (latitude, longitude)
-const BANGKOK_LAT = 13.7563;  // เปลี่ยนเป็นพิกัดที่ต้องการ
-const BANGKOK_LON = 100.5018; // เปลี่ยนเป็นพิกัดที่ต้องการ
+// Change coordinates (latitude, longitude)
+const BANGKOK_LAT = 13.7563;  // Change to desired latitude
+const BANGKOK_LON = 100.5018; // Change to desired longitude
 
-// เปลี่ยนชื่อเมือง
-<h3 className="text-lg font-semibold mb-2">กรุงเทพฯ</h3>
-// เปลี่ยนเป็น
-<h3 className="text-lg font-semibold mb-2">เชียงใหม่</h3>
+// Change city name
+<h3 className="text-lg font-semibold mb-2">Bangkok</h3>
+// To
+<h3 className="text-lg font-semibold mb-2">Chiang Mai</h3>
 ```
 
-### เปลี่ยน Auto-refresh Interval
+### Change Auto-refresh Interval
 
-แก้ไขไฟล์ `frontend/src/components/Widgets/WeatherWidget.tsx`:
+Edit `frontend/src/components/Widgets/WeatherWidget.tsx`:
 
 ```typescript
-// เปลี่ยนจาก 2 นาที เป็น 5 นาที
+// Change from 2 minutes to 5 minutes
 const REFRESH_INTERVAL = 5 * 60 * 1000; // 5 minutes
 
-// หรือปิด auto-refresh (ลบ useEffect)
-// ลบหรือ comment out:
+// Or disable auto-refresh (remove useEffect)
+// Remove or comment out:
 useEffect(() => {
   const timer = setInterval(() => {
     setCountdown(REFRESH_INTERVAL / 1000);
@@ -854,25 +854,25 @@ useEffect(() => {
 }, []);
 ```
 
-### เปลี่ยนสี Widget
+### Change Widget Color
 
-แก้ไขไฟล์ Widget ที่ต้องการ:
+Edit desired Widget file:
 
 ```typescript
-// เปลี่ยนสีพื้นหลัง
+// Change background color
 <div className="bg-white rounded-lg shadow-md p-6">
-// เป็น
+// To
 <div className="bg-blue-50 rounded-lg shadow-md p-6">
 
-// เปลี่ยนสีข้อความ
+// Change text color
 <h3 className="text-lg font-semibold mb-2">
-// เป็น
+// To
 <h3 className="text-lg font-semibold mb-2 text-blue-600">
 ```
 
-### เพิ่ม Widget ใหม่
+### Add New Widget
 
-1. สร้างไฟล์ใหม่ใน `frontend/src/components/Widgets/`:
+1. Create new file in `frontend/src/components/Widgets/`:
 
 ```typescript
 // MyWidget.tsx
@@ -896,42 +896,42 @@ export default function MyWidget() {
 }
 ```
 
-2. เพิ่มใน Dashboard (`frontend/src/app/dashboard/page.tsx`):
+2. Add to Dashboard (`frontend/src/app/dashboard/page.tsx`):
 
 ```typescript
 import MyWidget from '@/components/Widgets/MyWidget';
 
-// เพิ่มใน JSX
+// Add to JSX
 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
   {/* Existing widgets */}
   <MyWidget />
 </div>
 ```
 
-### ปรับ Layout Dashboard
+### Adjust Dashboard Layout
 
-แก้ไขไฟล์ `frontend/src/app/dashboard/page.tsx`:
+Edit `frontend/src/app/dashboard/page.tsx`:
 
 ```typescript
-// เปลี่ยนจาก 3 columns เป็น 4 columns
+// Change from 3 columns to 4 columns
 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
 
-// หรือเปลี่ยน gap
+// Or change gap
 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
 
-// หรือใช้ different layout สำหรับ mobile/tablet/desktop
+// Or use different layout for mobile/tablet/desktop
 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
 ```
 
-### ปรับ Cache Duration
+### Adjust Cache Duration
 
-แก้ไขไฟล์ Widget ที่ต้องการ:
+Edit desired Widget file:
 
 ```typescript
-// Weather Widget - เปลี่ยนจาก 10 นาที เป็น 30 นาที
+// Weather Widget - Change from 10 minutes to 30 minutes
 const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
 
-// Oil Price Widget - เปลี่ยนจาก 1 ชั่วโมง เป็น 2 ชั่วโมง
+// Oil Price Widget - Change from 1 hour to 2 hours
 const CACHE_DURATION = 2 * 60 * 60 * 1000; // 2 hours
 ```
 
@@ -939,4 +939,4 @@ const CACHE_DURATION = 2 * 60 * 60 * 1000; // 2 hours
 
 **Happy Coding! 🚀**
 
-สำหรับคำถามหรือปัญหา ดูเอกสารเพิ่มเติมหรือติดต่อทีมพัฒนา
+For questions or issues, refer to additional documentation or contact the development team.

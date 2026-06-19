@@ -1,127 +1,127 @@
 # 🎨 ART Workspace - Serverless Edition
 
-ระบบจัดการงานและข้อมูลส่วนตัว (Personal Productivity Dashboard) ภาษาไทย ที่ถูกย้ายฐานรากสู่ระบบ **Serverless & Fully Cloud-Managed** แบบ 100% เพื่อความยืดหยุ่น ประสิทธิภาพสูง และประหยัดทรัพยากรเครื่องผู้พัฒนาอย่างสมบูรณ์แบบ
+A Personal Productivity Dashboard system in Thai that has been completely migrated to a **100% Serverless & Fully Cloud-Managed** architecture for ultimate flexibility, high performance, and perfect developer machine resource efficiency.
 
-🌐 **ลิงก์ระบบใช้งานจริง (Production):** [https://project-art-sigma.vercel.app](https://project-art-sigma.vercel.app)
+🌐 **Production System Link:** [https://project-art-sigma.vercel.app](https://project-art-sigma.vercel.app)
 
 ---
 
-## 📚 สารบัญเอกสารและคู่มือการใช้งาน (Documentation Index)
+## 📚 Documentation Index
 
-คู่มือการใช้งานและการพัฒนาของระบบถูกย้ายไปจัดหมวดหมู่ให้ค้นหาง่ายขึ้นในโฟลเดอร์ `docs/`:
+System usage and development documentation have been categorized for easier searching in the `docs/` folder:
 
-### 🔧 1. การติดตั้งและการตั้งค่าระบบ (Setup & Installation)
-* [Quick Reference (คำสั่ง Docker และคำสั่งที่ใช้บ่อย)](docs/setup/quick-reference.md)
-* [คู่มือการติดตั้งระบบการล็อกอิน (Login System)](docs/setup/login-system.md)
-* [คู่มือการตั้งค่า Google Calendar API](docs/setup/google-calendar.md)
-* [คู่มือการทำ Migration และแนวทางการ Cloud Deployment](docs/setup/migration-deployment.md)
+### 🔧 1. Setup & Installation
+* [Quick Reference (Docker commands and frequently used commands)](docs/setup/quick-reference.md)
+* [Login System Installation Guide](docs/setup/login-system.md)
+* [Google Calendar API Setup Guide](docs/setup/google-calendar.md)
+* [Migration Guide and Cloud Deployment Approaches](docs/setup/migration-deployment.md)
 
-### 🎨 2. โครงสร้างและการออกแบบ (Architecture & UI/UX Design)
-* [หลักการออกแบบภาพรวม (Design Principles)](docs/design/design-principles.md)
-* [แนวทางการดีไซน์ Liquid Glass UI](docs/design/liquid-glass-ui.md)
-* [รีวิวสถาปัตยกรรมโครงสร้างหน้าบ้าน (Frontend UX/UI Review)](docs/design/frontend-arch-review.md)
-* [คู่มือการพัฒนาและสถานะด้าน Accessibility (A11y)](docs/design/accessibility.md)
+### 🎨 2. Architecture & UI/UX Design
+* [Design Principles Overview](docs/design/design-principles.md)
+* [Liquid Glass UI Design Guidelines](docs/design/liquid-glass-ui.md)
+* [Frontend UX/UI Architecture Review](docs/design/frontend-arch-review.md)
+* [Accessibility (A11y) Development Guide and Status](docs/design/accessibility.md)
 
-### 🎯 3. ข้อมูลผลิตภัณฑ์และการวิเคราะห์ (Product & Strategy)
-* [Roadmap ฟีเจอร์และความต้องการทางธุรกิจ (Product Specifications)](docs/product/roadmap-features.md)
-* [ประวัติการอัปเดต Widget และ Widget Management](docs/product/widget-updates.md)
-* [รายงานผลการวิเคราะห์โปรเจกต์ระดับลึก (Internal Analysis)](docs/internal/project-analysis.md)
+### 🎯 3. Product & Strategy
+* [Features Roadmap and Business Requirements (Product Specifications)](docs/product/roadmap-features.md)
+* [Widget Updates and Widget Management History](docs/product/widget-updates.md)
+* [In-depth Project Analysis Report (Internal Analysis)](docs/internal/project-analysis.md)
 
 ---
 
 ## 🏗️ Tech Stack Overview
 
-* **หน้าบ้าน (Frontend):** [Next.js 14](https://nextjs.org/) (App Router, TS, Tailwind CSS) โฮสต์ฟรีบน **Vercel**
-* **หลังบ้าน (Backend):** [FastAPI](https://fastapi.tiangolo.com/) (Python 3.11+, SQLAlchemy Async, SlowAPI) รันฟรีบน **Render Web Service**
-* **ฐานข้อมูล (Database):** [PostgreSQL 15](https://neon.tech/) รันฟรีบน **Neon Serverless Postgres**
+* **Frontend:** [Next.js 14](https://nextjs.org/) (App Router, TS, Tailwind CSS) hosted for free on **Vercel**
+* **Backend:** [FastAPI](https://fastapi.tiangolo.com/) (Python 3.11+, SQLAlchemy Async, SlowAPI) running for free on **Render Web Service**
+* **Database:** [PostgreSQL 15](https://neon.tech/) running for free on **Neon Serverless Postgres**
 
 ---
 
-## 💻 Local Development Setup (รันระบบในเครื่องแบบ Native)
+## 💻 Local Development Setup (Running the system natively locally)
 
-คุณไม่จำเป็นต้องติดตั้งหรือรัน Docker ในเครื่องอีกต่อไป สามารถรัน Backend และ Frontend ผ่านเครื่องมือธรรมดาทั่วไปได้ทันที:
+You no longer need to install or run Docker on your machine. You can run the Backend and Frontend immediately via standard tools:
 
-### 1. วิธี Setup และรันฝั่ง Backend (FastAPI)
+### 1. Backend (FastAPI) Setup and Run Instructions
 
-1. เปิด Terminal และเข้าไปที่โฟลเดอร์ `backend`:
+1. Open Terminal and navigate to the `backend` folder:
    ```bash
    cd backend
    ```
-2. สร้างสภาพแวดล้อมเสมือน (Virtual Environment) ของ Python:
+2. Create a Python Virtual Environment:
    ```bash
    python -m venv venv
    ```
-3. เปิดใช้งานสภาพแวดล้อมเสมือน (Activate):
+3. Activate the virtual environment:
    * **Windows PowerShell:** `.\venv\Scripts\Activate.ps1`
    * **Windows CMD:** `.\venv\Scripts\activate.bat`
    * **macOS/Linux:** `source venv/bin/activate`
-4. ติดตั้ง Libraries ที่จำเป็น:
+4. Install necessary Libraries:
    ```bash
    pip install -r requirements.txt
    ```
-5. สั่งรันเซิร์ฟเวอร์หลังบ้าน:
+5. Run the backend server:
    ```bash
    uvicorn app.main:app --reload --port 8080
    ```
-   *ระบบ API จะเริ่มทำงานที่: [http://localhost:8080](http://localhost:8080) และหน้า API Docs ที่ [http://localhost:8080/docs](http://localhost:8080/docs)*
+   *The API system will start at: [http://localhost:8080](http://localhost:8080) and API Docs at [http://localhost:8080/docs](http://localhost:8080/docs)*
 
 ---
 
-### 2. วิธี Setup และรันฝั่ง Frontend (Next.js)
+### 2. Frontend (Next.js) Setup and Run Instructions
 
-1. เปิด Terminal อีกหน้าต่างและเข้าไปที่โฟลเดอร์ `frontend`:
+1. Open another Terminal window and navigate to the `frontend` folder:
    ```bash
    cd frontend
    ```
-2. ติดตั้ง Dependencies:
+2. Install Dependencies:
    ```bash
    npm install
    ```
-3. สั่งรันเว็บฝั่งนักพัฒนา (Dev Mode):
+3. Run the developer web server (Dev Mode):
    ```bash
    npm run dev
    ```
-   *หน้าเว็บหน้าบ้านจะเปิดใช้งานที่: [http://localhost:3000](http://localhost:3000)*
+   *The frontend website will open at: [http://localhost:3000](http://localhost:3000)*
 
 ---
 
-### 3. การจัดการฐานข้อมูลและการทำ Migration (Alembic)
+### 3. Database Management and Migration (Alembic)
 
-เมื่อคุณรัน Backend แบบ Local และใช้ Database ร่วมกับ Neon (คลาวด์) สามารถสั่งอัปเดต Schema ของฐานข้อมูลให้ตรงกับ Model ล่าสุดได้ง่ายๆ ดังนี้:
+When running the Backend locally and sharing a Database with Neon (Cloud), you can easily update the database Schema to match the latest Model:
 
-1. ตรวจสอบว่าเปิดใช้ Virtual Environment อยู่ (ในโฟลเดอร์ `/backend`)
-2. ตรวจสอบสถานะการตรวจสอบการเปลี่ยนแปลง (Autogenerate) หรือรันอัปเกรดฐานข้อมูลไปยังสถานะล่าสุด:
+1. Make sure the Virtual Environment is active (in the `/backend` folder)
+2. Check the autogenerate change status or run the database upgrade to the latest state:
    ```bash
    alembic upgrade head
    ```
-3. กรณีต้องการสร้าง Revision สำหรับการแก้ไข Table ในโค้ด:
+3. To create a Revision for modifying a Table in the code:
    ```bash
-   alembic revision --autogenerate -m "คำอธิบายการแก้ไข"
+   alembic revision --autogenerate -m "Modification description"
    ```
 
 ---
 
 ## 🔐 Environment Variables (.env Layout)
 
-สร้างไฟล์สำหรับบันทึกคีย์ค่าแปรสภาพแวดล้อมแยกสองฝั่งดังนี้ (ห้ามนำไฟล์ `.env` จริงอัปโหลดขึ้น GitHub เด็ดขาด):
+Create separate environment variable key files for both sides as follows (Never upload actual `.env` files to GitHub):
 
-### 1. ฝั่ง Backend (`backend/.env`)
+### 1. Backend Side (`backend/.env`)
 ```env
-# แอปพลิเคชัน
+# Application
 APP_NAME="ART Workspace API"
 APP_VERSION="1.0.0"
 DEBUG=True
 
-# ฐานข้อมูล (Neon Postgres - ใช้แบบ Async Connection)
+# Database (Neon Postgres - Use Async Connection)
 DATABASE_URL=postgresql+asyncpg://<username>:<password>@<neon-host>/art_workspace?sslmode=require
 
-# ความปลอดภัยและการออกรหัสตั๋ว JWT
-SECRET_KEY="รหัสลับสุ่มยาวๆสำหรับการลงนาม Token"
+# Security and JWT token generation
+SECRET_KEY="long_random_secret_string_for_token_signing"
 ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=30
 REFRESH_TOKEN_EXPIRE_DAYS=7
 
-# โดเมนที่อนุญาต (CORS) สำหรับ Local Dev
+# Allowed Domains (CORS) for Local Dev
 CORS_ORIGINS=http://localhost:3000,http://localhost:8080
 
 # Google OAuth 2.0 Credentials
@@ -131,9 +131,9 @@ BACKEND_GOOGLE_REDIRECT="http://localhost:8080/api/v1/auth/google/callback"
 FRONTEND_URL="http://localhost:3000"
 ```
 
-### 2. ฝั่ง Frontend (`frontend/.env.local`)
+### 2. Frontend Side (`frontend/.env.local`)
 ```env
-# ลิงก์เชื่อมต่อไปยัง Backend API
+# Link to connect to the Backend API
 NEXT_PUBLIC_API_URL=http://localhost:8080
 ```
 
@@ -141,28 +141,28 @@ NEXT_PUBLIC_API_URL=http://localhost:8080
 
 ## ☁️ Cloud Deployment Configuration
 
-เมื่อคุณ Push โค้ดทั้งหมดขึ้น GitHub ระบบ Vercel และ Render จะบิวด์ระบบจากกิ่งหลัก (main) ให้อัตโนมัติ โดยมีค่าตั้งค่าสำคัญที่ต้องกรอกบนหน้าแดชบอร์ดดังนี้:
+When you Push all code to GitHub, Vercel and Render will automatically build the system from the main branch. Important settings must be filled in on the dashboard as follows:
 
-### 1. การตั้งค่าบน Render (FastAPI Backend Web Service)
-* **Root Directory:** กรอก `backend` (เพื่อข้ามโฟลเดอร์หลักไปรันในโฟลเดอร์ backend โดยตรง)
+### 1. Render Settings (FastAPI Backend Web Service)
+* **Root Directory:** Enter `backend` (to skip the main folder and run directly in the backend folder)
 * **Build Command:** `pip install -r requirements.txt`
 * **Start Command:** `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
-* **Environment Variables (ที่ต้องเติมบนหน้าเว็บ):**
-  * คัดลอกค่า `.env` ฝั่ง backend ทั้งหมดไปกรอก
-  * เปลี่ยน `DATABASE_URL` ไปใช้ Neon connection string ตัวหลัก
-  * เปลี่ยน `FRONTEND_URL` เป็น `https://project-art-sigma.vercel.app`
-  * เปลี่ยน `BACKEND_GOOGLE_REDIRECT` เป็น `https://<your-render-subdomain>.onrender.com/api/v1/auth/google/callback`
+* **Environment Variables (To be filled on the web):**
+  * Copy all `.env` values from the backend side and enter them
+  * Change `DATABASE_URL` to use the primary Neon connection string
+  * Change `FRONTEND_URL` to `https://project-art-sigma.vercel.app`
+  * Change `BACKEND_GOOGLE_REDIRECT` to `https://<your-render-subdomain>.onrender.com/api/v1/auth/google/callback`
 
-### 2. การตั้งค่าบน Vercel (Next.js Frontend)
-* **Framework Preset:** เลือก `Next.js`
-* **Root Directory:** ทิ้งว่างไว้หรือระบุ `frontend` (ขึ้นกับวิธีการตั้งค่า Repository ของคุณ)
-* **Environment Variables (ที่ต้องเติมบนหน้าเว็บ):**
-  * `NEXT_PUBLIC_API_URL` ชี้ไปยังโดเมน Render ที่ได้บิวด์เสร็จสิ้นแล้ว (เช่น `https://<your-render-subdomain>.onrender.com`)
+### 2. Vercel Settings (Next.js Frontend)
+* **Framework Preset:** Select `Next.js`
+* **Root Directory:** Leave blank or specify `frontend` (depending on your Repository setup method)
+* **Environment Variables (To be filled on the web):**
+  * `NEXT_PUBLIC_API_URL` pointing to the fully built Render domain (e.g., `https://<your-render-subdomain>.onrender.com`)
 
-### 3. การตั้งค่า Google Cloud Console (Google OAuth)
-อย่าลืมนำ URL เหล่านี้ไปผูกใน OAuth Consent Screen ของแอปพลิเคชันคุณ:
+### 3. Google Cloud Console Settings (Google OAuth)
+Don't forget to bind these URLs in your application's OAuth Consent Screen:
 * **Authorized JavaScript origins:** `https://project-art-sigma.vercel.app`
-* **Authorized redirect URIs:** ลิงก์ Callback ของ Render (เช่น `https://<your-render-subdomain>.onrender.com/api/v1/auth/google/callback`)
+* **Authorized redirect URIs:** Render Callback link (e.g., `https://<your-render-subdomain>.onrender.com/api/v1/auth/google/callback`)
 
 ---
 # 🤖 AI OPERATIONAL AGENT STATUS
@@ -182,4 +182,3 @@ Every LLM, Agent, or Subagent parsing this codebase must maintain this strict be
 1. **Token Conservation:** Keep responses short, direct, and zero-fluff. No greetings, no repetitive summaries. "He says nothing. He writes one line. It works."
 2. **Code Minimalism:** Reduce code output volume by 80-94%. Reuse existing logic and prioritize standard native APIs over heavy third-party packages.
 3. **Recursive Inheritance:** Any new subagent or parallel thread spawned to handle tasks within this project directory must automatically read, inherit, and enforce this section.
-

@@ -1,53 +1,53 @@
-# คู่มือ Login System
+# Login System Guide
 
-## การตั้งค่า
+## Setup
 
 ### Backend (Port 8888)
-Backend ทำงานบน port 8888 เพื่อหลีกเลี่ยงการชนกับ Docker ที่ใช้ port 8000
+Backend runs on port 8888 to avoid conflicts with Docker which uses port 8000.
 
-**เริ่ม Backend Server:**
+**Start Backend Server:**
 ```bash
 cd backend
 python -m uvicorn app.main:app --host 0.0.0.0 --port 8888 --reload
 ```
 
 ### Frontend (Port 3000)
-Frontend ต้องตั้งค่าให้ชี้ไปที่ backend port 8888 ใน `.env.local`:
+Frontend must be configured to point to backend port 8888 in `.env.local`:
 ```
 NEXT_PUBLIC_API_URL=http://localhost:8888
 ```
 
-**เริ่ม Frontend Server:**
+**Start Frontend Server:**
 ```bash
 cd frontend
 npm run dev
-# หรือ
+# or
 yarn dev
 ```
 
-**หมายเหตุ:** หลังจากแก้ไข `.env.local` ต้อง restart frontend server เพื่อให้โหลดค่าใหม่
+**Note:** After modifying `.env.local`, you must restart the frontend server to load the new values.
 
-## ข้อมูล Login สำหรับทดสอบ
+## Test Login Information
 
 - **Email:** admin@art.com
 - **Password:** admin@123
 - **Role:** admin
 
-## Port ที่ใช้งาน
+## Ports Used
 
 - **Frontend:** http://localhost:3000
 - **Backend API:** http://localhost:8888
 - **API Docs:** http://localhost:8888/docs
-- **Docker:** port 8000 (ใช้โดย Docker Desktop)
+- **Docker:** port 8000 (used by Docker Desktop)
 
-## สร้าง Test User เพิ่ม
+## Create Additional Test User
 
 ```bash
 cd backend
 python create_test_user.py
 ```
 
-## ทดสอบ API โดยตรง
+## Test API Directly
 
 ### PowerShell
 ```powershell
@@ -78,25 +78,25 @@ curl -X POST http://localhost:8888/api/v1/auth/login \
   }'
 ```
 
-## การแก้ปัญหา
+## Troubleshooting
 
-### ปัญหา: ERR_EMPTY_RESPONSE
-**สาเหตุ:** Port 8000 ถูกใช้งานโดย Docker หรือ process อื่น
+### Problem: ERR_EMPTY_RESPONSE
+**Cause:** Port 8000 is used by Docker or another process
 
-**วิธีแก้:**
-1. ใช้ port 8888 สำหรับ backend แทน
-2. อัพเดท `NEXT_PUBLIC_API_URL` ใน frontend/.env.local
+**Solution:**
+1. Use port 8888 for backend instead
+2. Update `NEXT_PUBLIC_API_URL` in frontend/.env.local
 3. Restart frontend server
 
-### ปัญหา: Database ไม่มี User
-**วิธีแก้:**
+### Problem: No User in Database
+**Solution:**
 ```bash
 cd backend
 python create_test_user.py
 ```
 
-### ปัญหา: CORS Error
-**วิธีแก้:** ตรวจสอบว่า CORS_ORIGINS ใน backend/.env รวม frontend URL:
+### Problem: CORS Error
+**Solution:** Check that CORS_ORIGINS in backend/.env includes frontend URL:
 ```
 CORS_ORIGINS=http://localhost:3000,http://localhost:80
 ```

@@ -1,161 +1,160 @@
-## ART Workspace (Frontend) — รีวิว UX/UI + คุณภาพโค้ด/สถาปัตย์
+## ART Workspace (Frontend) — UX/UI Review + Code Quality / Architecture
 
-ขอบเขตที่ตรวจ: `frontend/src/app/*`, `frontend/src/components/*`, `frontend/src/styles/*`, `frontend/src/lib/*`
-
----
-
-# 1) สรุปผู้บริหาร (Executive summary)
-
-**ภาพรวม:** UI ไปในทิศทาง “Liquid Glass” ชัดเจน (มี tokens + patterns ที่ตั้งใจ) และมี a11y พื้นฐานหลายจุดที่ดี (focus-visible, reduced-motion ในหลายส่วน, touch target ≥44px ฯลฯ) แต่มี “ความไม่สม่ำเสมอ” ระหว่างหน้าต่าง ๆ และมีจุดเสี่ยงด้านสถาปัตย์/ความปลอดภัย/ความสามารถในการดูแลระยะยาว
-
-**Top ประเด็นที่กระทบมากที่สุด (เรียงตามความคุ้มค่า):**
-1. **Auth/Session logic กระจายหลายจุด** (DashboardLayout + page แต่ละหน้า + apiClient interceptor) → เกิดซ้ำซ้อน/พฤติกรรมไม่เหมือนกัน/แก้บั๊กยาก
-2. **Modal/Dropdown ยังไม่ครบ a11y แบบ product-grade** (ไม่มี focus trap, role=dialog/aria-modal, ESC close, restore focus)
-3. **Dashboard “จัดวาง/จัดการวิดเจ็ต” ยังไม่ครบ flow** (มี modal แต่ไม่มี entrypoint ให้เปิด, DnD ไม่รองรับ keyboard/touch)
-4. **API layer ไม่เป็นหนึ่งเดียว + มี endpoint bug ใน authService** (`baseURL=/api/v1` แต่เรียก `/api/v1/auth/*` ซ้ำ) และมีทั้ง `fetch` + `axios` ปนกัน
-5. **มีจุดเสี่ยง XSS จาก `dangerouslySetInnerHTML`** ใน TaskListWidget (ดึง description มาแปลงเป็น HTML) ควร sanitize/เปลี่ยนวิธีแสดงผล
+Scope reviewed: `frontend/src/app/*`, `frontend/src/components/*`, `frontend/src/styles/*`, `frontend/src/lib/*`
 
 ---
 
-# 2) UX/UI Review (ข้อเสนอปรับปรุง)
+# 1) Executive Summary
+
+**Overview:** The UI clearly follows the “Liquid Glass” direction (with deliberate tokens + patterns) and has several good foundational a11y elements (focus-visible, reduced-motion in many areas, touch target ≥44px, etc.). However, there is "inconsistency" across pages and some risks regarding architecture/security/long-term maintainability.
+
+**Top Issues with Highest Impact (Sorted by Value):**
+1. **Auth/Session logic is scattered** (DashboardLayout + each page + apiClient interceptor) → Causes duplication/inconsistent behavior/difficult to debug.
+2. **Modal/Dropdown lacking product-grade a11y** (No focus trap, role=dialog/aria-modal, ESC close, restore focus).
+3. **Dashboard "Widget layout/management" flow is incomplete** (Has a modal but no entrypoint to open it, DnD lacks keyboard/touch support).
+4. **API layer is not unified + endpoint bug in authService** (`baseURL=/api/v1` but calling `/api/v1/auth/*` redundantly) and mixes both `fetch` + `axios`.
+5. **XSS risk from `dangerouslySetInnerHTML`** in TaskListWidget (Fetching description and converting to HTML). Should sanitize or change rendering method.
+
+---
+
+# 2) UX/UI Review (Improvement Suggestions)
 
 ## 2.1 Navigation / App Shell
-- **Sidebar section title ใช้ uppercase + tracking สูง** (เช่น `text-[11px] uppercase tracking-wider`) ทำให้ “เสียง UI” แข็งและดูเป็น template ได้ง่าย  
-  → แนะนำใช้ **sentence case** + ลด tracking และเน้น hierarchy ผ่าน spacing/weight แทน
-- Header user menu ใช้ overlay แบบ `button className="fixed inset-0"` เพื่อปิดเมนู: ดีที่ปิดง่าย แต่ยังขาด:
-  - ปิดด้วย **Esc**
-  - **โฟกัสวนอยู่ในเมนู** (focus trap) และคืนโฟกัสกลับปุ่มเดิมเมื่อปิด
+- **Sidebar section titles use uppercase + high tracking** (e.g., `text-[11px] uppercase tracking-wider`), making the "UI voice" feel rigid and too template-like.  
+  → Recommendation: Use **sentence case** + reduce tracking and emphasize hierarchy through spacing/weight instead.
+- Header user menu uses an overlay like `button className="fixed inset-0"` to close the menu: Good for easy closing, but still lacks:
+  - Close with **Esc**
+  - **Focus trap within the menu** and restoring focus back to the original button when closed.
 
 ## 2.2 Dashboard: Widgets (Layout/Visibility/Sorting)
-สิ่งที่มีแล้ว: มี `localStorage` เก็บ layout + visibility, มี DnD, มี WidgetSizeToggle
+What's already there: Uses `localStorage` to save layout + visibility, has DnD, has WidgetSizeToggle.
 
-ช่องว่าง/ข้อเสนอ:
-- มี state `showConfigModal` และ UI modal “การแสดงผลวิดเจ็ต” แต่ **ไม่มีปุ่ม/จุดเข้า** เพื่อเปิด modal (entrypoint)
-  → เพิ่ม “แถบเครื่องมือ” บน Dashboard (เช่นมุมขวาบนของหน้า) มี:
-  - ปุ่ม **จัดการวิดเจ็ต** (เปิด modal show/hide)
-  - ปุ่ม **จัดวาง** (เข้าสู่ edit mode: แสดง drag handle, show drop indicator, มีปุ่ม reset layout)
-- DnD ปัจจุบันเป็น HTML drag events:
-  - ไม่รองรับ **touch** ดีพอ
-  - ไม่รองรับ **keyboard reorder**
-  → แนะนำย้ายไปใช้ `@dnd-kit` และทำ “Reorder actions” (ขึ้น/ลง) สำหรับ keyboard
+Gaps/Suggestions:
+- Has a `showConfigModal` state and a "Widget Display" UI modal but **no button/entrypoint** to open the modal.
+  → Add a "Toolbar" on the Dashboard (e.g., top right corner of the page) containing:
+  - **Manage Widgets** button (Opens show/hide modal).
+  - **Layout** button (Enters edit mode: shows drag handle, shows drop indicator, has reset layout button).
+- Current DnD uses HTML drag events:
+  - Lacks proper **touch** support.
+  - Lacks **keyboard reorder** support.
+  → Recommendation: Migrate to `@dnd-kit` and implement "Reorder actions" (Up/Down) for keyboards.
 
 ## 2.3 Modals / Dialogs
-ตัวอย่าง: Dashboard widget modal, CreateUserDialog
+Examples: Dashboard widget modal, CreateUserDialog
 
-ปัจจุบันยังขาดมาตรฐาน product UI:
+Currently missing product UI standards:
 - `role="dialog"` + `aria-modal="true"` + `aria-labelledby`
-- โฟกัสเริ่มต้นเข้าไปใน dialog และ **ล็อกโฟกัสไม่ให้ออกไปข้างหลัง**
-- ปิดด้วย Esc / คลิกด้านนอก (และควบคุมว่าควรปิดได้หรือไม่)
-- ปิดแล้ว **คืนโฟกัส** ไปยัง element ก่อนหน้า
+- Initial focus moves into the dialog and **locks focus preventing it from escaping behind**.
+- Close with Esc / clicking outside (and control whether it should be closable).
+- Upon closing, **restore focus** to the previous element.
 
-คำแนะนำ: ทำ component กลาง `Dialog` (เช่น Radix UI Dialog หรือ Headless UI) แล้วใช้ทุกที่
+Recommendation: Create a central `Dialog` component (like Radix UI Dialog or Headless UI) and use it everywhere.
 
 ## 2.4 Motion & Visual Density
-- แนวทาง “Liquid Glass” ทำได้สวย แต่บางจุด “motion-heavy” โดยเฉพาะ Weather widget + background animation หลายเลเยอร์
-  - ใน `weather.css` มี animation ต่อเนื่องหลายชุด และยังไม่ครอบคลุม `prefers-reduced-motion` เท่าที่ควร
-  → แนะนำ:
-  - ใส่ `@media (prefers-reduced-motion: reduce)` ใน `weather.css` เพื่อปิด animation สำคัญทั้งหมด
-  - ทำ “โหมดสงบ (Calm)” ให้ผู้ใช้ปิด background animation ของ widget ได้
+- The "Liquid Glass" approach is beautiful, but some parts are "motion-heavy", especially the Weather widget + multi-layer background animations.
+  - `weather.css` contains continuous sets of animations and does not fully cover `prefers-reduced-motion`.
+  → Recommendation:
+  - Add `@media (prefers-reduced-motion: reduce)` in `weather.css` to disable all critical animations.
+  - Create a "Calm Mode" letting users disable background animations for widgets.
 
-## 2.5 Accessibility (AAA target) — ช่องที่ควรปิด
-- Placeholder หลายจุดใช้โทนอ่อน (`#94a3b8`) บนพื้นขาว มีโอกาสไม่ถึง AAA  
-  → ปรับ placeholder ให้เข้มขึ้น (เช่น `#64748b`) หรือเพิ่ม bg tint เพื่อให้ contrast ผ่าน
-- “รายละเอียดงาน” ใน TaskListWidget ใช้ `dangerouslySetInnerHTML` และ inject `<a target="_blank">`  
-  → นอกจาก security ยังมีเรื่อง a11y เช่น link text/keyboard focus state ควรกำหนดให้สม่ำเสมอ
+## 2.5 Accessibility (AAA target) — Gaps to Close
+- Placeholders in multiple areas use a light tone (`#94a3b8`) on a white background, potentially failing AAA.  
+  → Darken the placeholder (e.g., `#64748b`) or add a bg tint to pass the contrast ratio.
+- "Task Details" in TaskListWidget uses `dangerouslySetInnerHTML` and injects `<a target="_blank">`.  
+  → Besides security, this impacts a11y (e.g., link text/keyboard focus state needs to be consistent).
 
 ---
 
-# 3) Code Quality / Architecture Review (ข้อเสนอรีแฟคเตอร์)
+# 3) Code Quality / Architecture Review (Refactoring Suggestions)
 
-## 3.1 Auth boundary (สำคัญสุด)
-ปัจจุบันมีการตรวจ token/user ซ้ำใน:
+## 3.1 Auth Boundary (Most Important)
+Currently, token/user checks are duplicated in:
 - `useAuth.ts`
 - `DashboardLayout.tsx`
-- `dashboard/page.tsx`, `profile/page.tsx`, `admin/page.tsx` ฯลฯ
-- `apiClient` interceptor 401 แล้ว `window.location.href = '/login'`
+- `dashboard/page.tsx`, `profile/page.tsx`, `admin/page.tsx`, etc.
+- `apiClient` interceptor 401 redirects via `window.location.href = '/login'`
 
-ข้อเสีย:
-- behavior ไม่เหมือนกัน (บางที่ `router.push`, บางที่ `window.location.href`)
-- หน้า render เป็น `null` ระหว่างรอ user → เกิด “หน้าขาว”
+Drawbacks:
+- Inconsistent behavior (some use `router.push`, others `window.location.href`).
+- The page renders as `null` while waiting for the user → Resulting in a "white screen".
 
-แนะนำโครง:
-1. ทำ `AuthProvider` (Context) + `useAuth()` แบบเดียวทั้งระบบ
-2. ทำ `AuthGuard` component สำหรับหน้าที่ต้องล็อกอิน:
-   - แสดง skeleton/loading state
-   - redirect ด้วย `router.replace('/login')`
-3. จัดการ 401 ในที่เดียว (fetch/axios wrapper) และส่ง event ให้ AuthProvider logout
+Recommended Structure:
+1. Create an `AuthProvider` (Context) + `useAuth()` uniformly across the system.
+2. Create an `AuthGuard` component for pages requiring login:
+   - Show skeleton/loading state.
+   - Redirect using `router.replace('/login')`.
+3. Handle 401s in one place (fetch/axios wrapper) and dispatch an event for the AuthProvider to logout.
 
-> หมายเหตุ: ระยะยาว “token ใน localStorage” เสี่ยง XSS; ถ้าทำได้แนะนำย้ายไป **HttpOnly cookie** (ต้องปรับ backend ด้วย)
+> Note: Long-term, storing "tokens in localStorage" presents XSS risks; if possible, migrate to **HttpOnly cookies** (requires backend changes).
 
-## 3.2 API layer ให้เป็นหนึ่งเดียว + แก้ endpoint bug
-พบว่า `src/lib/api/auth.ts` น่ามีบั๊ก:
-- `client.ts` ตั้ง `baseURL = ${API_URL}/api/v1`
-- แต่ `auth.ts` เรียก `apiClient.post('/api/v1/auth/login', ...)` ทำให้กลายเป็น `/api/v1/api/v1/auth/login`
+## 3.2 Unify API Layer + Fix Endpoint Bug
+Found a likely bug in `src/lib/api/auth.ts`:
+- `client.ts` sets `baseURL = ${API_URL}/api/v1`
+- However, `auth.ts` calls `apiClient.post('/api/v1/auth/login', ...)`, resulting in `/api/v1/api/v1/auth/login`.
 
-แนะนำ:
-- กำหนด convention เดียว: เรียก `apiClient.post('/auth/login', ...)` (ตัด `/api/v1` ออก)
-- เลือกให้ชัดว่าจะใช้ `axios` หรือ `fetch`:
-  - ถ้าใช้ `axios`: ให้หน้าต่าง ๆ หยุดใช้ `fetch` ตรง ๆ แล้วใช้ service layer
-  - ถ้าใช้ `fetch`: ทำ `fetcher.ts` ที่ใส่ token + จัดการ 401 + timeout ให้หมด
-- ใช้ `next.config.js` rewrite `/api/*` ให้จริง: ใน UI เรียก `/api/v1/...` (ไม่ต้อง hardcode host)
+Recommendations:
+- Establish a single convention: call `apiClient.post('/auth/login', ...)` (Remove `/api/v1`).
+- Decide clearly whether to use `axios` or `fetch`:
+  - If `axios`: Stop using `fetch` directly in pages and utilize the service layer.
+  - If `fetch`: Create `fetcher.ts` that attaches the token + handles 401s + timeouts consistently.
+- Use `next.config.js` to actually rewrite `/api/*`: The UI calls `/api/v1/...` (no hardcoded hosts).
 
-## 3.3 Security: ห้ามส่ง HTML ตรงเข้าหน้า
-ใน `TaskListWidget.tsx` มี `dangerouslySetInnerHTML` กับ description
+## 3.3 Security: Prevent Direct HTML Injection into Pages
+`TaskListWidget.tsx` contains `dangerouslySetInnerHTML` with a description.
 
-แนะนำทางเลือก (เลือก 1):
-1. **ดีที่สุด:** backend ส่งเป็น plain text/structured fields แล้ว render เอง
-2. ใช้ library sanitize (DOMPurify) ก่อน render
-3. แสดงเป็น plain text โดย escape HTML และทำ link parsing แบบ whitelist
+Suggested Alternatives (Choose 1):
+1. **Best Approach:** The backend sends plain text/structured fields, and you render it yourself.
+2. Use a sanitize library (DOMPurify) before rendering.
+3. Display as plain text by escaping HTML and do whitelist-based link parsing.
 
-## 3.4 CSS architecture / Design system
-พบว่า style มี 3 แนวผสมกัน:
-- Tailwind utility
-- global tokens + global element styles (`globals.css` จัดหนักกับ input/button)
-- page CSS (`login.css`, `weather.css`) และยังมี `login.module.css` ที่ดูเหมือน “ซ้ำ/ไม่ถูกใช้”
+## 3.4 CSS Architecture / Design System
+Found 3 mixed styling approaches:
+- Tailwind utilities.
+- Global tokens + global element styles (`globals.css` heavily styling inputs/buttons).
+- Page CSS (`login.css`, `weather.css`), plus a `login.module.css` that seems "duplicate/unused".
 
-แนะนำ:
-- ตัดสินใจเรื่อง “ระดับ global”:
-  - ควรเก็บไว้เป็น **tokens + utilities** มากกว่า override element ทั่วทั้งระบบ
-- ลด duplicate: ถ้าไม่ใช้ `login.module.css` ให้ลบทิ้ง (ลดความสับสน)
-- ทำ component primitives:
-  - `Button`, `Input`, `Card`, `Badge`, `Dialog`
-  - เพื่อให้หน้าต่าง ๆ ไม่ต้อง invent style ใหม่ทุกครั้ง
+Recommendations:
+- Decide on the "Global level":
+  - Keep them as **tokens + utilities** rather than overriding elements globally.
+- Reduce duplicates: If `login.module.css` is unused, delete it (reduces confusion).
+- Build component primitives:
+  - `Button`, `Input`, `Card`, `Badge`, `Dialog`.
+  - So pages don't have to reinvent styles every time.
 
-## 3.5 Data fetching strategy
-มี React Query provider แต่ยังไม่ใช้ `useQuery/useMutation`
+## 3.5 Data Fetching Strategy
+There is a React Query provider, but `useQuery/useMutation` is not yet utilized.
 
-ทางเลือก:
-- ถ้าจะใช้ React Query: ย้าย data-fetch ที่สำคัญ (users, audit logs, sessions, calendar events) ไปเป็น query/mutation เพื่อ cache + retries + loading/error state ที่สม่ำเสมอ
-- ถ้าไม่ใช้: เอา provider ออกเพื่อความเรียบง่าย
-
----
-
-# 4) แผนรีแฟคเตอร์ (แนะนำแบบจัดลำดับ)
-
-## Quick wins (0.5–2 วัน)
-1. เพิ่ม entrypoint “จัดการวิดเจ็ต” ให้เปิด `showConfigModal`
-2. แก้ authService endpoint bug หรือถ้าไม่ใช้ให้ลบ/ย้ายให้ถูกที่
-3. เปลี่ยน `window.location.href` → `router.replace` และรวม behavior redirect ให้เหมือนกัน
-4. ใส่ `prefers-reduced-motion` ให้ `weather.css` (ปิด animation หลัก)
-5. แก้ a11y modal ขั้นต้น: `role="dialog"`/`aria-modal`/`aria-labelledby` + Esc close
-
-## Medium (3–10 วัน)
-1. ทำ `AuthProvider + AuthGuard` และย้าย auth check ออกจากทุกหน้า
-2. ทำ `Dialog` component กลาง แล้ว migrate modals ทั้งหมด
-3. ทำ API wrapper/service layer เดียว (axios หรือ fetch อย่างใดอย่างหนึ่ง)
-4. เปลี่ยน DnD ไป `@dnd-kit` + keyboard reorder
-
-## Long (2–4 สัปดาห์)
-1. ย้าย token จาก localStorage → HttpOnly cookie (ปรับ backend)
-2. จัด design system ให้ “ชัดและเบา”: tokens + primitives + ลด global overrides
-3. ปรับ Calendar widget จาก iframe → render ในระบบ (ถ้าต้องการ UX ที่ควบคุมได้)
+Options:
+- If using React Query: Move critical data-fetching (users, audit logs, sessions, calendar events) to queries/mutations for caching + retries + consistent loading/error states.
+- If not using it: Remove the provider for simplicity.
 
 ---
 
-# 5) ข้อเสนอ “เริ่มทำจริง” (เลือก 1 ชุดเพื่อเริ่มลงมือ)
-A) ทำ **AuthProvider/AuthGuard** (ลดบั๊ก + ลดโค้ดซ้ำเร็วที่สุด)  
-B) ทำ **Dialog system** (แก้ a11y + UX consistency ของ modal ทั้งระบบ)  
-C) ทำ **Dashboard edit mode + widget manager** (เพิ่มคุณค่า UX โดยตรง)  
+# 4) Refactoring Plan (Prioritized Recommendations)
 
-บอกผมได้เลยว่าคุณอยากเริ่มจาก A/B/C — ผมจะลงมือปรับโค้ดให้เป็นชุด ๆ พร้อมทดสอบรันให้ครับ
+## Quick Wins (0.5–2 Days)
+1. Add a "Manage Widgets" entrypoint to open `showConfigModal`.
+2. Fix the authService endpoint bug, or delete/relocate if unused.
+3. Change `window.location.href` → `router.replace` and unify redirect behaviors.
+4. Add `prefers-reduced-motion` to `weather.css` (disable main animations).
+5. Apply basic modal a11y: `role="dialog"`/`aria-modal`/`aria-labelledby` + Esc close.
 
+## Medium (3–10 Days)
+1. Implement `AuthProvider + AuthGuard` and remove auth checks from all pages.
+2. Build a central `Dialog` component and migrate all modals.
+3. Establish a single API wrapper/service layer (either axios or fetch).
+4. Migrate DnD to `@dnd-kit` + keyboard reorder.
+
+## Long (2–4 Weeks)
+1. Move token from localStorage → HttpOnly cookie (update backend).
+2. Refine the design system to be "clear and lightweight": tokens + primitives + reduce global overrides.
+3. Adjust Calendar widget from iframe → internal rendering (if custom UX control is desired).
+
+---
+
+# 5) "Actionable" Proposals (Choose 1 set to begin)
+A) Implement **AuthProvider/AuthGuard** (Quickest way to reduce bugs + duplicate code).  
+B) Implement **Dialog system** (Fixes a11y + UX consistency for modals system-wide).  
+C) Implement **Dashboard edit mode + widget manager** (Directly adds UX value).  
+
+Let me know if you want to start with A/B/C — I will implement the code in sets and test it for you.

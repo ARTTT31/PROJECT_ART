@@ -1,128 +1,127 @@
 # 🚀 Technical Migration & Deployment Document
 **Project:** ART Workspace  
-**Document Purpose:** บันทึกประวัติการย้ายระบบจาก Localhost สู่ Cloud Production Environment รวมถึงปัญหาที่พบ (Troubleshooting) และแนวทางการแก้ไข 
+**Document Purpose:** Record the history of migrating the system from Localhost to Cloud Production Environment, including troubleshooting and solutions.
 
 ---
 
-## 1. สถาปัตยกรรมระบบคลาวด์ (Infrastructure Architecture)
-ระบบได้รับการออกแบบและแยกส่วนการทำงานเพื่อให้ง่ายต่อการสเกลและดูแลรักษา โดยเลือกใช้บริการคลาวด์ดังต่อไปนี้:
+## 1. Cloud Infrastructure Architecture
+The system is designed and separated into parts for easy scaling and maintenance, using the following cloud services:
 
-* **หน้าบ้าน (Frontend):** พัฒนาด้วย Next.js และนำไปรันบน **Vercel** เพื่อประสิทธิภาพสูงสุดในการให้บริการฝั่งไคลเอนต์ (Edge Network)
-* **หลังบ้าน (Backend):** พัฒนาด้วย FastAPI และนำไปรันเป็น Web Service บน **Render** ซึ่งเหมาะสมกับการรองรับการประมวลผลและการเชื่อมต่อแบบ Asynchronous
-* **ฐานข้อมูล (Database):** ใช้ PostgreSQL รันอยู่บน **Neon.tech** (Serverless Postgres) เพื่อความยืดหยุ่นในการจัดการ Connection Pool
-
----
-
-## 2. ลำดับขั้นตอนการเปลี่ยนแปลงโครงสร้างโค้ดและการตั้งค่า (Key Changes & Configurations)
-
-### 2.1 การปรับแต่งตัวแปรสภาพแวดล้อม (Environment Variables)
-เพื่อให้โค้ดบน Render สื่อสารกับบริการภายนอกได้ถูกต้อง ได้มีการตั้งค่า Environment Variables สำคัญดังนี้:
-* `BACKEND_GOOGLE_CLIENT_ID`: รหัส Client ID จาก Google Cloud Console
-* `BACKEND_GOOGLE_CLIENT_SECRET`: รหัส Secret จาก Google Cloud Console
-* `BACKEND_GOOGLE_REDIRECT`: URL สำหรับรับ Callback จาก Google ต้องชี้มาที่โดเมนของ Render (เช่น `https://<render-domain>/api/v1/auth/google/callback`)
-* `DATABASE_URL`: Connection String สำหรับต่อเข้าฐานข้อมูล Neon.tech
-* `FRONTEND_URL`: URL ของหน้าบ้านที่รันบน Vercel เพื่อใช้สำหรับการ Redirect กลับไปพร้อมข้อมูลหลังล็อกอินสำเร็จ
-
-### 2.2 การย้ายสถาปัตยกรรมตัวเชื่อมต่อฐานข้อมูลสู่ระบบ Asynchronous
-เพื่อป้องกันปัญหา Event Loop Blocked บน FastAPI เราได้เปลี่ยนสถาปัตยกรรมการเชื่อมต่อฐานข้อมูลจากแบบ Synchronous ไปเป็น Asynchronous เต็มรูปแบบ:
-* เปลี่ยนจากการใช้ `create_engine` เป็น `create_async_engine`
-* เปลี่ยนตัวจัดการเซสชันจาก `sessionmaker` เป็น `async_sessionmaker` ผูกกับ `AsyncSession`
-* อัปเกรด Driver ฐานข้อมูลใน `requirements.txt` จากเดิมมาใช้ `asyncpg`
-
-### 2.3 การเปิดใช้งานระบบรักษาความปลอดภัย SSL (Database Connection)
-การเชื่อมต่อเข้า Managed Database อย่าง Neon จำเป็นต้องมีการส่งข้อมูลผ่านช่องทางที่เข้ารหัส:
-* ทำการฝังพารามิเตอร์ `connect_args={"ssl": True}` เข้าไปในระดับ Engine ของ SQLAlchemy เพื่อบังคับให้ `asyncpg` ยืนยันการทำงานผ่าน SSL Mode เสมอ
+* **Frontend:** Developed with Next.js and deployed on **Vercel** for optimal client-side delivery performance (Edge Network).
+* **Backend:** Developed with FastAPI and deployed as a Web Service on **Render**, which is suitable for processing and handling asynchronous connections.
+* **Database:** Uses PostgreSQL running on **Neon.tech** (Serverless Postgres) for flexibility in connection pool management.
 
 ---
 
-## 3. สรุปบันทึกการแก้ไขปัญหาหน้างาน (Troubleshooting & Bug Fixes)
+## 2. Key Changes & Configurations
 
-ระหว่างการนำระบบขึ้นสู่คลาวด์ พบปัญหาหลักและได้ดำเนินการแก้ไขเรียบร้อยแล้ว ดังนี้:
+### 2.1 Environment Variables Configuration
+For the code on Render to communicate with external services correctly, important Environment Variables were configured as follows:
+* `BACKEND_GOOGLE_CLIENT_ID`: Client ID from Google Cloud Console
+* `BACKEND_GOOGLE_CLIENT_SECRET`: Secret from Google Cloud Console
+* `BACKEND_GOOGLE_REDIRECT`: URL to receive callbacks from Google, must point to Render's domain (e.g., `https://<render-domain>/api/v1/auth/google/callback`)
+* `DATABASE_URL`: Connection String to connect to Neon.tech database
+* `FRONTEND_URL`: URL of the frontend running on Vercel, used to redirect back with data after a successful login
 
-### 🔴 ปัญหา 1: `Error 400: redirect_uri_mismatch` (ฝั่ง Google OAuth)
-* **สาเหตุ:** URL ต้นทางและปลายทางในการทำ OAuth ไม่ตรงกับที่มีในระบบ
-* **วิธีแก้ไข:** เข้าไปตั้งค่าในหน้า Google Cloud Console (API & Services > Credentials) เพื่ออัปเดต **Authorized JavaScript origins** ให้ตรงกับโดเมน Vercel และ **Authorized redirect URIs** ให้ตรงกับเส้นทางของ Render (`/api/v1/auth/google/callback`)
+### 2.2 Migrating Database Connection Architecture to Asynchronous System
+To prevent Event Loop Blocked issues on FastAPI, we changed the database connection architecture from Synchronous to fully Asynchronous:
+* Changed from using `create_engine` to `create_async_engine`
+* Changed the session manager from `sessionmaker` to `async_sessionmaker` bound to `AsyncSession`
+* Upgraded the database driver in `requirements.txt` to use `asyncpg`
 
-### 🔴 ปัญหา 2: `connection is insecure (try using sslmode=require)`
-* **สาเหตุ:** Driver `asyncpg` ของ Python ไม่อนุญาตให้เชื่อมต่อฐานข้อมูล Neon โดยไม่มีการเข้ารหัส
-* **วิธีแก้ไข:** ลบ Query String `?sslmode=require` ออกจากท้าย `DATABASE_URL` เดิม และย้ายมาเปิดอ็อปชัน `{"ssl": True}` ตรง `connect_args` ตอนสร้าง `create_async_engine` แทน
-
-### 🔴 ปัญหา 3: `InvalidPasswordError` (การเชื่อมต่อฐานข้อมูล)
-* **สาเหตุ:** รหัสผ่านหรือสตริงการเชื่อมต่อ (Connection String) ผิดพลาด หรือไม่ได้ใช้รหัสผ่านสำหรับ Connection Pooling ของ Neon
-* **วิธีแก้ไข:** ทำความสะอาดสตริงเชื่อมต่อ และปรับไปใช้ Connection String แบบ Pooler ตัวล่าสุดที่คัดลอกจากหน้าแดชบอร์ดของ Neon โดยตรง
-
-### 🔴 ปัญหา 4: `AttributeError: 'AsyncSession' object has no attribute 'query'`
-* **สาเหตุ:** การเรียกใช้คำสั่ง `.query()` เป็น Syntax ของเซสชันแบบ Synchronous ซึ่งไม่รองรับบน `AsyncSession`
-* **วิธีแก้ไข:** รื้อแก้ Syntax การเขียนคิวรีในเซิร์ฟเวอร์ย่อย (เช่น `user_service.py`) เปลี่ยนมาใช้คำสั่ง `select(...)` ของ SQLAlchemy 2.0 แทน และสั่งรันข้อมูลผ่าน `await db.execute(...)` 
-
-### 🔴 ปัญหา 5: `AttributeError: 'coroutine' object has no attribute 'email'`
-* **สาเหตุ:** มีการเรียกใช้ฟังก์ชันเช็คผู้ใช้ที่เป็น Coroutine/Async (เช่น `get_user_by_email`) แต่ลืมใส่คำสั่ง `await` เพื่อรอรับผลลัพธ์ ทำให้ข้อมูลที่คืนค่ากลับมายังคงเป็นกล่อง Coroutine 
-* **วิธีแก้ไข:** ไล่เติมคีย์เวิร์ด `await` นำหน้าการเรียกฟังก์ชัน Async ในไฟล์ `auth.py` และ Service ต่างๆ ทั้งหมด เพื่อรอแกะข้อมูล Model ออกมาให้เรียบร้อยก่อนนำไปใช้สร้าง JWT Token
-
-### 🔴 ปัญหา 6: หน้าต่างเตือน "App not verified" ตอนล็อกอินผ่าน Google
-* **สาเหตุ:** โปรเจกต์ OAuth บน Google Cloud ยังถูกตั้งค่าจำกัดอยู่ในโหมดทดสอบ (Testing)
-* **วิธีแก้ไข:** ทำการเปลี่ยนสถานะแอปพลิเคชัน (Publishing Status) ภายในเมนู OAuth Consent Screen จาก **Testing** เป็น **In Production** เพื่อปลดล็อกให้บัญชี Google ทั่วไปสามารถล็อกอินใช้งานได้
+### 2.3 Enabling SSL Security (Database Connection)
+Connecting to a Managed Database like Neon requires data transmission through an encrypted channel:
+* Embedded the `connect_args={"ssl": True}` parameter at the SQLAlchemy Engine level to force `asyncpg` to always operate via SSL Mode.
 
 ---
 
-## 4. สถานะปัจจุบันของระบบ (Current System Status)
-✅ **สถานะ:** **LIVE (Production Ready)**
-* โปรเจกต์สามารถทำการบิวด์และ Deploy ผ่านสำเร็จ 100% ทั้งบริการหน้าบ้าน (Vercel) และหลังบ้าน (Render)
-* ระบบ API ทำงานในสถานะพร้อมรับโหลด (Green Status) 
-* ระบบไหลเวียนของการล็อกอิน (OAuth Callback Sequence) สามารถพูดคุยกันระหว่าง Vercel, Render และ Google ได้อย่างสมบูรณ์
-* มีการเชื่อมต่อฐานข้อมูลสร้าง/บันทึกข้อมูลผู้ใช้งาน และออกตั๋วความปลอดภัย JWT Token สำหรับอนุญาตสิทธิ์เข้าสู่หน้าแดชบอร์ดได้อย่างมั่นคงและปลอดภัย
+## 3. Troubleshooting & Bug Fixes
+
+During the cloud migration, the main issues encountered and successfully resolved are as follows:
+
+### 🔴 Issue 1: `Error 400: redirect_uri_mismatch` (Google OAuth side)
+* **Cause:** The source and destination URLs for OAuth did not match those in the system.
+* **Solution:** Configured in the Google Cloud Console (API & Services > Credentials) to update **Authorized JavaScript origins** to match the Vercel domain and **Authorized redirect URIs** to match the Render path (`/api/v1/auth/google/callback`).
+
+### 🔴 Issue 2: `connection is insecure (try using sslmode=require)`
+* **Cause:** Python's `asyncpg` driver does not allow connecting to Neon database without encryption.
+* **Solution:** Removed the `?sslmode=require` query string from the end of the original `DATABASE_URL` and enabled the `{"ssl": True}` option in `connect_args` when creating `create_async_engine` instead.
+
+### 🔴 Issue 3: `InvalidPasswordError` (Database connection)
+* **Cause:** Incorrect password or Connection String, or not using the password for Neon's Connection Pooling.
+* **Solution:** Cleaned up the connection string and switched to using the latest Pooler Connection String copied directly from the Neon dashboard.
+
+### 🔴 Issue 4: `AttributeError: 'AsyncSession' object has no attribute 'query'`
+* **Cause:** Calling the `.query()` method is a Syntax for Synchronous sessions, which is not supported on `AsyncSession`.
+* **Solution:** Refactored the query syntax in the sub-services (e.g., `user_service.py`), switched to using SQLAlchemy 2.0's `select(...)` statement instead, and executed data via `await db.execute(...)`.
+
+### 🔴 Issue 5: `AttributeError: 'coroutine' object has no attribute 'email'`
+* **Cause:** An asynchronous/coroutine user checking function (e.g., `get_user_by_email`) was called, but the `await` keyword was forgotten to wait for the result, causing the returned data to remain a Coroutine object.
+* **Solution:** Added the `await` keyword before asynchronous function calls in `auth.py` and all Service files to properly unpack the Model data before using it to generate a JWT Token.
+
+### 🔴 Issue 6: "App not verified" warning screen during Google login
+* **Cause:** The OAuth project on Google Cloud was still restricted to Testing mode.
+* **Solution:** Changed the Publishing Status within the OAuth Consent Screen menu from **Testing** to **In Production** to unlock access for general Google accounts.
 
 ---
 
-## 5. แผนการในอนาคต: การเปลี่ยนผ่านสู่ระบบไร้ตู้คอนเทนเนอร์ (Docker-less & Fully Cloud-Managed Roadmap)
+## 4. Current System Status
+✅ **Status:** **LIVE (Production Ready)**
+* The project can be successfully built and deployed 100% on both frontend (Vercel) and backend (Render) services.
+* The API system is operating and ready to handle loads (Green Status).
+* The login workflow (OAuth Callback Sequence) can communicate seamlessly between Vercel, Render, and Google.
+* The database connection creates/saves user data and issues JWT Token security tickets to authorize secure dashboard access.
 
-เพื่อลดภาระการทำงานของเครื่องผู้พัฒนา (Localhost) และย้ายกระบวนการประมวลผลและการรันระบบทั้งหมดขึ้นสู่ระบบคลาวด์ 100% (Fully Cloud-Managed) โปรเจกต์นี้มีแผนงานในการ**ยกเลิกการใช้ Docker ในการพัฒนาและติดตั้ง** โดยมีแนวทางและขั้นตอนดังนี้:
+---
 
-### 5.1 สถาปัตยกรรมเป้าหมาย (Target Architecture)
-* **ไม่ต้องติดตั้ง Docker/Docker Desktop** บนเครื่องของผู้พัฒนา
-* **ไม่มีการรันฐานข้อมูลโลคอล** (ย้ายไปต่อกับ Neon.tech โดยตรงผ่านช่องทางเข้ารหัส)
+## 5. Future Roadmap: Transitioning to Docker-less & Fully Cloud-Managed
+
+To reduce the workload on developers' local machines and migrate all processing and execution fully to the cloud (Fully Cloud-Managed), this project plans to **eliminate the use of Docker for development and setup**, with the following approach and steps:
+
+### 5.1 Target Architecture
+* **No need to install Docker/Docker Desktop** on the developer's machine.
+* **No local database running** (moved to connect directly with Neon.tech via encrypted channel).
 * **GitHub-Driven Deployment (CI/CD):** 
-  * การแก้ไขโค้ดทั้งหมดจะกระทำผ่านเครื่องโลคอล (แก้ไขไฟล์เปล่า ๆ)
-  * เมื่อทำการ `git push` โค้ดเข้าสู่ GitHub:
-    * **Vercel** จะรับหน้าที่ดึงโค้ดฝั่งหน้าบ้าน (`frontend`) ไปบิวด์และให้บริการบนเว็บโดยอัตโนมัติ (ฟรี)
-    * **Render** จะรับหน้าที่ดึงโค้ดฝั่งหลังบ้าน (`backend`) ไปรันเป็น Web Service โดยอัตโนมัติ (ฟรี)
-    * ทั้งหมดเชื่อมต่อแบบไร้สายไปยังฐานข้อมูล **Neon.tech** (Serverless Postgres ฟรี)
+  * All code edits will be done on the local machine (editing plain files).
+  * When executing `git push` to push code to GitHub:
+    * **Vercel** will be responsible for pulling frontend code to build and serve on the web automatically (Free).
+    * **Render** will be responsible for pulling backend code to run as a Web Service automatically (Free).
+    * Everything connects wirelessly to the **Neon.tech** database (Serverless Postgres Free).
 
-### 5.2 วิธีการพัฒนาในเครื่องโลคอลแบบไม่ใช้ Docker (Docker-less Development Workflow)
-ผู้พัฒนาสามารถเขียนโค้ดและทดสอบระบบในเครื่องได้ทันทีด้วยเครื่องมือแบบ Native:
+### 5.2 Docker-less Local Development Workflow
+Developers can write code and test the system locally right away with native tools:
 
-#### A. สำหรับ Backend (FastAPI):
-1. เปิด Command Line เข้าไปที่โฟลเดอร์ `/backend`
-2. สร้าง virtual environment ของ Python:
+#### A. For Backend (FastAPI):
+1. Open Command Line and navigate to the `/backend` folder
+2. Create a Python virtual environment:
    ```bash
    python -m venv venv
    ```
-3. เปิดใช้งาน (Activate) สภาพแวดล้อม:
+3. Activate the environment:
    * Windows PowerShell: `.\venv\Scripts\Activate.ps1`
    * Windows Command Prompt: `.\venv\Scripts\activate.bat`
    * macOS/Linux: `source venv/bin/activate`
-4. ติดตั้ง dependencies:
+4. Install dependencies:
    ```bash
    pip install -r requirements.txt
    ```
-5. รันเซิร์ฟเวอร์หลังบ้าน:
+5. Run the backend server:
    ```bash
    uvicorn app.main:app --reload --port 8000
    ```
 
-#### B. สำหรับ Frontend (Next.js):
-1. เปิด Command Line อีกหน้าต่างและเข้าไปที่โฟลเดอร์ `/frontend`
-2. ติดตั้ง dependencies:
+#### B. For Frontend (Next.js):
+1. Open another Command Line window and navigate to the `/frontend` folder
+2. Install dependencies:
    ```bash
    npm install
    ```
-3. รันเซิร์ฟเวอร์หน้าบ้าน:
+3. Run the frontend server:
    ```bash
    npm run dev
    ```
 
-### 5.3 ประโยชน์ที่ได้รับ
-1. **ลดการใช้ทรัพยากรเครื่อง:** ไม่กินแรมและ CPU ในการจำลองคอมพิวเตอร์ผ่าน Docker Desktop
-2. **ความรวดเร็วในการพัฒนา:** ระบบ Hot-Reload ทำงานได้อย่างมีประสิทธิภาพสูงสุดโดยตรงผ่าน OS File System
-3. **ลดความซับซ้อน:** ไม่จำเป็นต้องดูแลไฟล์ `Dockerfile` และ `docker-compose.yml` อีกต่อไปหลังการเปลี่ยนผ่านสมบูรณ์
-
+### 5.3 Benefits
+1. **Reduce machine resource usage:** No RAM and CPU consumption from running computer simulations via Docker Desktop.
+2. **Development Speed:** The Hot-Reload system works at maximum efficiency directly via the OS File System.
+3. **Reduce Complexity:** No longer need to maintain `Dockerfile` and `docker-compose.yml` files after the complete transition.

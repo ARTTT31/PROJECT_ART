@@ -1,20 +1,20 @@
 # 🎨 Liquid Glass Design System - iOS Style
 
 ## Overview
-โปรเจค ART Workspace ได้รับการปรับปรุงให้มีสไตล์ **Liquid Glass แบบ iOS** ที่สวยงาม ทันสมัย และใช้งานง่าย
+The ART Workspace project has been updated to feature a beautiful, modern, and user-friendly **iOS-style Liquid Glass** design.
 
 ## 🌟 Core Design Principles
 
 ### 1. **Liquid Glass Effect**
-- ใช้ `backdrop-filter: blur()` และ `saturate(180%)` เพื่อสร้างเอฟเฟกต์กระจกที่โปร่งแสง
+- Use `backdrop-filter: blur()` and `saturate(180%)` to create a translucent glass effect
 - Background opacity levels: 10%, 20%, 40%, 60%, 80%, 90%, 100%
 - Border opacity: 25% (normal), 45% (strong)
 
 ### 2. **iOS-Style Interactions**
-- Smooth animations ด้วย `cubic-bezier(0.4, 0, 0.2, 1)`
-- Transform: `translateY()` และ `scale()` เมื่อ hover/active
-- Duration: 250-350ms สำหรับ interactions
-- Shadow elevation ที่เปลี่ยนไปตาม state
+- Smooth animations with `cubic-bezier(0.4, 0, 0.2, 1)`
+- Transform: `translateY()` and `scale()` on hover/active
+- Duration: 250-350ms for interactions
+- Shadow elevation that changes based on state
 
 ### 3. **Premium Shadows**
 ```css

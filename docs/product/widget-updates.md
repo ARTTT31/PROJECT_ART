@@ -2,36 +2,36 @@
 
 ## 📅 Calendar Widget
 ### Changes:
-- ✅ **ลบปุ่ม Fullscreen ออก** - ไม่มีปุ่มขยายเต็มหน้าจอแล้ว
-- ✅ **เก็บปุ่ม M/L ไว้** - ยังสามารถปรับขนาด widget ได้ (กลาง 2/3 หรือใหญ่ เต็ม)
-- ✅ **ลบ Fullscreen Modal** - ลบโค้ดทั้งหมดที่เกี่ยวกับ fullscreen mode
+- ✅ **Removed Fullscreen button** - No longer has a full screen expansion button
+- ✅ **Kept M/L buttons** - Widget can still be resized (medium 2/3 or large full)
+- ✅ **Removed Fullscreen Modal** - Removed all code related to fullscreen mode
 
 ### Features Retained:
-- ✅ Navigation (เดือนก่อน/ถัดไป)
-- ✅ ปุ่มกลับวันนี้
-- ✅ ปุ่ม M/L สำหรับปรับขนาด
+- ✅ Navigation (Previous/Next month)
+- ✅ Return to today button
+- ✅ M/L buttons for resizing
 - ✅ Google Calendar embed
 
 ---
 
 ## 🌤️ Weather Widget  
 ### Changes:
-- ✅ **ลดขนาดปุ่ม M/L** - จาก `w-7 h-7` เป็น `w-6 h-6`
-- ✅ **ลดขนาดตัวอักษร** - จาก `text-[10px]` เป็น `text-[9px]`
-- ✅ **ปิด Hover Color Effect** - เอา `hover:text-white hover:bg-white/10` ออก
-- ✅ **เพิ่ม CSS Override** - บังคับให้ปุ่มไม่เปลี่ยนสีตอน hover
+- ✅ **Reduced M/L buttons size** - From `w-7 h-7` to `w-6 h-6`
+- ✅ **Reduced font size** - From `text-[10px]` to `text-[9px]`
+- ✅ **Disabled Hover Color Effect** - Removed `hover:text-white hover:bg-white/10`
+- ✅ **Added CSS Override** - Force button not to change color on hover
 
 ### Button States:
 - **Active (selected)**: `bg-white text-sky-600 shadow-sm`
-- **Inactive**: `text-white/80` (ไม่เปลี่ยนตอน hover)
-- **Hover**: ไม่มีการเปลี่ยนแปลงสี
+- **Inactive**: `text-white/80` (Doesn't change on hover)
+- **Hover**: No color change
 
 ### Features Retained:
 - ✅ Location selector
 - ✅ GPS button
-- ✅ Refresh button (มี hover effect)
+- ✅ Refresh button (Has hover effect)
 - ✅ Drag handle
-- ✅ ปุ่ม M/L สำหรับปรับขนาด (ไม่เปลี่ยนสีตอน hover)
+- ✅ M/L buttons for resizing (does not change color on hover)
 - ✅ Weather animations
 - ✅ Forecast display
 
@@ -39,13 +39,13 @@
 
 ## 📋 TaskList Widget
 ### Changes:
-- ✅ **เก็บปุ่ม Refresh ไว้**
-- ✅ **เก็บ Filter badges ไว้**
-- ⚠️ **ไม่มีปุ่ม S/M/L** - ถูกลบออกแล้วในการอัพเดทก่อนหน้า
+- ✅ **Kept Refresh button**
+- ✅ **Kept Filter badges**
+- ⚠️ **No S/M/L buttons** - Removed in a previous update
 
 ### Features Retained:
 - ✅ Refresh button
-- ✅ Filter (All, IMACD, ธัญพงศ์)
+- ✅ Filter (All, IMACD, Thanyapong)
 - ✅ Search functionality
 - ✅ Calendar events display
 
@@ -56,20 +56,20 @@
 ### Added to globals.css:
 ```css
 /* Weather Widget - Disable hover color change on resize buttons */
-.weather-card button[aria-label*="ปรับขนาด"]:not(:disabled) {
+.weather-card button[aria-label*="Resize"]:not(:disabled) {
   background-color: transparent !important;
 }
 
-.weather-card button[aria-label*="ปรับขนาด"]:not(:disabled):hover {
+.weather-card button[aria-label*="Resize"]:not(:disabled):hover {
   background-color: transparent !important;
   transform: none !important;
 }
 
-.weather-card button[aria-label*="ปรับขนาด"].bg-white:not(:disabled) {
+.weather-card button[aria-label*="Resize"].bg-white:not(:disabled) {
   background-color: white !important;
 }
 
-.weather-card button[aria-label*="ปรับขนาด"].bg-white:not(:disabled):hover {
+.weather-card button[aria-label*="Resize"].bg-white:not(:disabled):hover {
   background-color: white !important;
 }
 ```
@@ -88,12 +88,12 @@
 
 ## ✅ Testing Checklist
 
-- [ ] Calendar widget: ปุ่ม fullscreen หายไป
-- [ ] Calendar widget: ปุ่ม M/L ยังใช้งานได้
-- [ ] Weather widget: ปุ่ม M/L เล็กลง
-- [ ] Weather widget: ชี้เมาส์ที่ปุ่ม M/L ไม่เปลี่ยนสี
-- [ ] Weather widget: ปุ่มที่เลือกอยู่แสดงสีขาวปกติ
-- [ ] ทุก widget แสดงผลถูกต้องบน desktop และ mobile
+- [ ] Calendar widget: Fullscreen button is gone
+- [ ] Calendar widget: M/L buttons are still usable
+- [ ] Weather widget: M/L buttons are smaller
+- [ ] Weather widget: Hovering on M/L buttons does not change color
+- [ ] Weather widget: Selected button displays normally in white
+- [ ] All widgets display correctly on desktop and mobile
 
 ---
 

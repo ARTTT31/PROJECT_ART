@@ -1,7 +1,7 @@
 # Google Calendar Integration Setup
 
 ## Overview
-TaskListWidget ได้รับการพัฒนาให้ดึงข้อมูลจาก Google Calendar จริงผ่าน Backend API แทนการใช้ข้อมูล mock
+TaskListWidget has been developed to fetch actual data from Google Calendar via Backend API instead of using mock data.
 
 ## Architecture
 ```
@@ -16,32 +16,32 @@ Return Events to Frontend
 
 ## Setup Instructions
 
-### 1. ติดตั้ง Python Dependencies
+### 1. Install Python Dependencies
 ```bash
 cd backend
 pip install -r requirements.txt
 ```
 
-Dependencies ที่เพิ่มเข้ามา:
+Added dependencies:
 - `icalendar==5.0.11` - Parse iCal format
 - `pytz==2024.1` - Timezone handling
 
-### 2. ตรวจสอบ Environment Variables
-ไฟล์ `frontend/.env.local` ควรมี:
+### 2. Check Environment Variables
+The `frontend/.env.local` file should contain:
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:8000
 NEXT_PUBLIC_GOOGLE_CALENDAR_ID=935e8829bdbff55e909d6f3e533ded8a03acfbc24ac08b5d8ac781ed5e07f626@group.calendar.google.com
 ```
 
-**หมายเหตุ:** API Key ไม่จำเป็นอีกต่อไป เพราะใช้ Public iCal Feed
+**Note:** API Key is no longer needed because we use the Public iCal Feed.
 
-### 3. เริ่มต้น Backend Server
+### 3. Start Backend Server
 ```bash
 cd backend
 uvicorn app.main:app --reload --port 8000
 ```
 
-### 4. เริ่มต้น Frontend Server
+### 4. Start Frontend Server
 ```bash
 cd frontend
 npm run dev
@@ -63,21 +63,21 @@ npm run dev
 [
   {
     "id": "event-uid",
-    "title": "ประชุม IMACD",
+    "title": "IMACD Meeting",
     "start": "2026-06-15T09:00:00+00:00",
     "end": "2026-06-15T11:00:00+00:00",
-    "description": "รายละเอียดงาน",
-    "location": "ห้องประชุม A"
+    "description": "Event details",
+    "location": "Meeting Room A"
   }
 ]
 ```
 
 ### Frontend Widget
-- ดึงข้อมูลจาก Backend API endpoint
-- แสดงงานทั้งหมดในเดือนปัจจุบัน
-- Filter buttons: ทั้งหมด / IMACD / ธัญพงศ์
-- Auto-refresh เมื่อเปลี่ยนเดือน
-- Loading state และ Error handling
+- Fetches data from Backend API endpoint
+- Displays all events in the current month
+- Filter buttons: All / IMACD / Thanyapong
+- Auto-refresh when changing months
+- Loading state and Error handling
 
 ## Google Calendar Public Feed
 
@@ -87,17 +87,17 @@ https://calendar.google.com/calendar/ical/{CALENDAR_ID}/public/basic.ics
 ```
 
 ### Requirements
-- Calendar ต้องเป็น **Public** หรือ **Shared with specific people**
-- ไม่ต้องใช้ API Key
-- ไม่ต้อง OAuth authentication
-- ไม่มี Rate limit (แต่ควรใช้ caching ใน production)
+- Calendar must be **Public** or **Shared with specific people**
+- No API Key required
+- No OAuth authentication required
+- No Rate limit (but caching should be used in production)
 
 ### Making Calendar Public
-1. เปิด Google Calendar
+1. Open Google Calendar
 2. Settings → Calendar settings
-3. เลือก Calendar ที่ต้องการ
-4. "Access permissions" → เปิด "Make available to public"
-5. คัดลอก Calendar ID จาก "Integrate calendar" section
+3. Select the desired Calendar
+4. "Access permissions" → Enable "Make available to public"
+5. Copy Calendar ID from the "Integrate calendar" section
 
 ## Testing
 
@@ -107,57 +107,57 @@ curl "http://localhost:8000/api/v1/calendar/events?calendar_id=935e8829bdbff55e9
 ```
 
 ### 2. Test Frontend Widget
-1. เปิด http://localhost:3000/dashboard
-2. ตรวจสอบ TaskListWidget
-3. ทดสอบ filter buttons
-4. ทดสอบ refresh button
-5. ตรวจสอบ Network tab ใน DevTools
+1. Open http://localhost:3000/dashboard
+2. Check TaskListWidget
+3. Test filter buttons
+4. Test refresh button
+5. Check Network tab in DevTools
 
 ## Troubleshooting
 
 ### Error: "Failed to fetch calendar data"
-**สาเหตุ:**
-- Backend server ไม่ทำงาน
-- Calendar ไม่เป็น Public
-- Calendar ID ไม่ถูกต้อง
+**Cause:**
+- Backend server is not running
+- Calendar is not Public
+- Incorrect Calendar ID
 - Network/Firewall blocking
 
-**แก้ไข:**
-1. ตรวจสอบ Backend server running at http://localhost:8000
-2. ทดสอบ API endpoint ด้วย curl/Postman
-3. ตรวจสอบ Calendar settings ว่าเป็น Public
-4. ตรวจสอบ NEXT_PUBLIC_GOOGLE_CALENDAR_ID ใน .env.local
+**Solution:**
+1. Check if Backend server is running at http://localhost:8000
+2. Test API endpoint with curl/Postman
+3. Check Calendar settings to ensure it is Public
+4. Check NEXT_PUBLIC_GOOGLE_CALENDAR_ID in .env.local
 
 ### Error: "HTTP 404"
-**สาเหตุ:** Calendar ID ผิด หรือ Calendar ไม่มี public feed
+**Cause:** Incorrect Calendar ID or Calendar has no public feed
 
-**แก้ไข:**
-- ตรวจสอบ Calendar ID
-- ตรวจสอบว่า Calendar เป็น Public
+**Solution:**
+- Check Calendar ID
+- Check if Calendar is Public
 
 ### Error: "Error parsing calendar data"
-**สาเหตุ:** iCal format ผิดปกติ หรือ dependencies ไม่ครบ
+**Cause:** Invalid iCal format or missing dependencies
 
-**แก้ไข:**
+**Solution:**
 ```bash
 cd backend
 pip install icalendar pytz --upgrade
 ```
 
 ### Empty Events List
-**สาเหตุ:**
-- ไม่มี events ในช่วงเวลาที่กำหนด
-- Filter text ไม่ตรงกับ event title
+**Cause:**
+- No events in the specified time range
+- Filter text does not match event title
 
-**แก้ไข:**
-- ตรวจสอบ events ใน Google Calendar
-- ลองเปลี่ยนเดือนในปฏิทิน
-- ปิด filter (เลือก "ทั้งหมด")
+**Solution:**
+- Check events in Google Calendar
+- Try changing the month in the calendar
+- Turn off filter (select "All")
 
 ## Production Considerations
 
 ### 1. Add Caching
-เพิ่ม Redis caching เพื่อลด API calls:
+Add Redis caching to reduce API calls:
 ```python
 from fastapi_cache import FastAPICache
 from fastapi_cache.decorator import cache
@@ -169,7 +169,7 @@ async def get_calendar_events(...):
 ```
 
 ### 2. Add Rate Limiting
-ป้องกัน API abuse:
+Prevent API abuse:
 ```python
 from slowapi import Limiter
 from slowapi.util import get_remote_address
@@ -183,14 +183,14 @@ async def get_calendar_events(...):
 ```
 
 ### 3. Environment Variables
-ใช้ environment variables แทน hardcoded values:
+Use environment variables instead of hardcoded values:
 ```env
 # backend/.env
 GOOGLE_CALENDAR_ID=your-calendar-id@group.calendar.google.com
 ```
 
 ### 4. Error Monitoring
-เพิ่ม logging และ monitoring:
+Add logging and monitoring:
 ```python
 import logging
 logger = logging.getLogger(__name__)
@@ -223,8 +223,8 @@ except Exception as e:
 
 ## Support
 
-หากมีปัญหาหรือคำถาม:
-1. ตรวจสอบ Backend logs
-2. ตรวจสอบ Browser Console
-3. ทดสอบ API endpoint โดยตรงด้วย curl
-4. ตรวจสอบ Google Calendar settings
+If you have issues or questions:
+1. Check Backend logs
+2. Check Browser Console
+3. Test API endpoint directly with curl
+4. Check Google Calendar settings
