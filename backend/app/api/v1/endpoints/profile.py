@@ -19,6 +19,11 @@ from app.services.user_service import UserService
 from app.api.dependencies import get_current_user
 from app.models.user import User
 
+import base64
+import os
+from app.services.audit_service import AuditService
+from app.models.session import UserSession
+
 router = APIRouter()
 
 
@@ -43,7 +48,6 @@ async def update_my_profile(
     Update current user profile
     """
     user_service = UserService(db)
-    from app.services.audit_service import AuditService
 
     audit_service = AuditService(db)
     client_ip = request.client.host if request.client else None
@@ -91,7 +95,6 @@ async def change_password(
     Change current user password
     """
     user_service = UserService(db)
-    from app.services.audit_service import AuditService
 
     audit_service = AuditService(db)
     client_ip = request.client.host if request.client else None
@@ -141,7 +144,6 @@ async def update_avatar(
     Update user avatar (base64 encoded image)
     """
     user_service = UserService(db)
-    from app.services.audit_service import AuditService
 
     audit_service = AuditService(db)
     client_ip = request.client.host if request.client else None
@@ -180,10 +182,6 @@ async def upload_avatar_file(
     """
     Upload user avatar and store as Base64 in Database (Serverless Friendly)
     """
-    import base64
-    import os
-    from app.services.audit_service import AuditService
-
     # 1. Check file extension
     ext = os.path.splitext(file.filename)[1].lower()
     if ext not in [".jpg", ".jpeg", ".png", ".gif"]:
@@ -270,7 +268,6 @@ async def get_my_sessions(
     """
     Get user session log history
     """
-    from app.models.session import UserSession
 
     try:
         result = await db.execute(
@@ -318,7 +315,6 @@ async def revoke_session(
     """
     Revoke/delete a user session
     """
-    from app.models.session import UserSession
 
     try:
         result = await db.execute(

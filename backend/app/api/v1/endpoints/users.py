@@ -13,6 +13,8 @@ from app.services.user_service import UserService
 from app.api.dependencies import get_current_admin_user
 from app.models.user import User
 
+from app.services.audit_service import AuditService
+
 router = APIRouter()
 
 
@@ -63,7 +65,6 @@ async def create_user(
     Create new user with email and password (Admin only)
     """
     user_service = UserService(db)
-    from app.services.audit_service import AuditService
 
     audit_service = AuditService(db)
     client_ip = request.client.host if request.client else None
@@ -106,7 +107,6 @@ async def admin_create_user(
     Create general user with Username, Display Name, Password, and optional Email (Admin only)
     """
     user_service = UserService(db)
-    from app.services.audit_service import AuditService
 
     audit_service = AuditService(db)
     client_ip = request.client.host if request.client else None
@@ -162,7 +162,6 @@ async def update_user(
             )
 
     user_service = UserService(db)
-    from app.services.audit_service import AuditService
 
     audit_service = AuditService(db)
     client_ip = request.client.host if request.client else None
@@ -214,7 +213,6 @@ async def delete_user(
         )
 
     user_service = UserService(db)
-    from app.services.audit_service import AuditService
 
     audit_service = AuditService(db)
     client_ip = request.client.host if request.client else None

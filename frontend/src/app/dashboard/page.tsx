@@ -13,6 +13,7 @@ import { WidgetConfig, AuthUser } from '@/types'
 import ErrorBoundary from '@/components/ErrorBoundary'
 import { useToast } from '@/components/Toast/ToastProvider'
 import { Dialog, DialogContent } from '@/components/ui/Dialog'
+import { useAuth } from '@/hooks/useAuth'
 import {
   DndContext,
   closestCenter,
@@ -48,7 +49,7 @@ const widgetNames: Record<string, string> = {
 export default function DashboardPage() {
   const router = useRouter()
   const toast = useToast()
-  const [user, setUser] = useState<AuthUser | null>(null)
+  const { user } = useAuth()
   const [widgets, setWidgets] = useState<WidgetConfig[]>([])
   const [visibleWidgetIds, setVisibleWidgetIds] = useState<string[]>([])
   const [showConfigModal, setShowConfigModal] = useState(false)
@@ -76,16 +77,6 @@ export default function DashboardPage() {
 
   useEffect(() => {
     setIsClient(true)
-    const userData = localStorage.getItem('user')
-    
-    if (!userData) {
-      router.push('/login')
-      return
-    }
-
-    const parsedUser = JSON.parse(userData)
-    setUser(parsedUser)
-    const isAdmin = parsedUser?.role === 'admin'
 
     // Load visible widgets
     const savedVisible = localStorage.getItem('artWorkspaceVisibleWidgets')
@@ -121,7 +112,7 @@ export default function DashboardPage() {
     } else {
       setWidgets(defaultWidgets)
     }
-  }, [router])
+  }, [])
 
   const handleResize = (id: string, newWidth: number) => {
     // Immediate state update for responsive feel (functional updater = no stale closure)

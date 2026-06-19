@@ -54,7 +54,7 @@ function describeQuickLink(url: string) {
 
 export default function ProfilePage() {
   const router = useRouter()
-  const { updateUser } = useAuth()
+  const { user: authUser, updateUser } = useAuth()
   const [user, setUser] = useState<any>(null)
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -80,19 +80,13 @@ export default function ProfilePage() {
     QUICK_LINK_ICON_OPTIONS.find((option) => option.key === qlIcon)?.label ?? 'ลิงก์'
 
   useEffect(() => {
-    const userData = localStorage.getItem('user')
-    
-    if (!userData) {
-      router.push('/login')
-      return
+    if (authUser) {
+      setUser(authUser)
+      setName(authUser.name || '')
+      setEmail(authUser.email || '')
+      setQuickLinks(parseQuickLinks(authUser.quick_links))
     }
-
-    const parsedUser = JSON.parse(userData)
-    setUser(parsedUser)
-    setName(parsedUser.name || '')
-    setEmail(parsedUser.email || '')
-    setQuickLinks(parseQuickLinks(parsedUser.quick_links))
-  }, [router])
+  }, [authUser])
 
   useEffect(() => {
     // Calculate password strength

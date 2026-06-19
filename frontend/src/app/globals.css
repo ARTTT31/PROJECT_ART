@@ -79,31 +79,27 @@
   --shadow-glass: 0 8px 32px rgba(15, 23, 42, 0.06), 0 2px 8px rgba(15, 23, 42, 0.03);
   --shadow-glass-lg: 0 16px 48px rgba(15, 23, 42, 0.08), 0 4px 16px rgba(15, 23, 42, 0.04);
   --shadow-glass-xl: 0 24px 64px rgba(15, 23, 42, 0.10), 0 8px 24px rgba(15, 23, 42, 0.05);
-}
 
-
-
-/* Theme transition (applied via class, not globally) */
-.theme-transitioning html,
-.theme-transitioning body {
-  transition: background-color 0.3s, color 0.3s;
-}
-
-/* ── Typography Scale (Responsive with clamp) ────────────────────── */
-:root {
-  --type-xs: 0.75rem;                                    /* 12px — fixed */
-  --type-sm: 0.875rem;                                   /* 14px — fixed */
-  --type-base: clamp(0.9375rem, 0.15vw + 0.9rem, 1rem);   /* 15px → 16px */
-  --type-lg: clamp(1rem, 0.5vw + 0.9rem, 1.125rem);       /* 16px → 18px */
-  --type-xl: clamp(1.125rem, 0.6vw + 1rem, 1.25rem);      /* 18px → 20px */
-  --type-2xl: clamp(1.25rem, 0.8vw + 1rem, 1.5rem);       /* 20px → 24px */
-  --type-3xl: clamp(1.375rem, 1.5vw + 1rem, 1.875rem);    /* 22px → 30px */
-  --type-4xl: clamp(1.625rem, 2.5vw + 1rem, 2.5rem);      /* 26px → 40px */
+  /* Typography Scale (Responsive with clamp) */
+  --type-xs: 0.75rem;
+  --type-sm: 0.875rem;
+  --type-base: clamp(0.9375rem, 0.15vw + 0.9rem, 1rem);
+  --type-lg: clamp(1rem, 0.5vw + 0.9rem, 1.125rem);
+  --type-xl: clamp(1.125rem, 0.6vw + 1rem, 1.25rem);
+  --type-2xl: clamp(1.25rem, 0.8vw + 1rem, 1.5rem);
+  --type-3xl: clamp(1.375rem, 1.5vw + 1rem, 1.875rem);
+  --type-4xl: clamp(1.625rem, 2.5vw + 1rem, 2.5rem);
   
   --line-tight: 1.25;
   --line-snug: 1.35;
   --line-normal: 1.5;
   --line-relaxed: 1.65;
+}
+
+/* Theme transition (applied via class, not globally) */
+.theme-transitioning html,
+.theme-transitioning body {
+  transition: background-color 0.3s, color 0.3s;
 }
 
 /* ── Global Typography Polish ────────────── */
@@ -951,88 +947,6 @@ button:disabled {
 
 
 
-/* ═══════════════════════════════════════════════════════
-   CALCULATOR BUTTONS - iOS Style
-   ═══════════════════════════════════════════════════════ */
-
-.calc-btn {
-  aspect-ratio: 1;
-  min-height: 64px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--art-radius-md);
-  font-size: 1.375rem;
-  font-weight: 600;
-  border: 1.5px solid rgba(226, 232, 240, 0.4);
-  background: var(--glass-white-90);
-  color: #1e293b;
-  cursor: pointer;
-  box-shadow: var(--shadow-glass-sm);
-  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
-  user-select: none;
-}
-
-.calc-btn:hover {
-  background: white;
-  border-color: rgba(14, 165, 233, 0.4);
-  transform: translateY(-2px) scale(1.02);
-  box-shadow: var(--shadow-glass);
-}
-
-.calc-btn:active {
-  transform: translateY(0px) scale(0.96);
-  box-shadow: var(--shadow-glass-sm);
-}
-
-.calc-btn.operator {
-  background: linear-gradient(135deg, var(--art-primary), var(--art-primary-dark));
-  color: white;
-  border: none;
-  box-shadow: 
-    0 4px 16px rgba(14, 165, 233, 0.25),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
-}
-
-.calc-btn.operator:hover {
-  background: linear-gradient(135deg, var(--art-primary-light), var(--art-primary));
-  box-shadow: 
-    0 8px 24px rgba(14, 165, 233, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.3);
-}
-
-.calc-btn.equals {
-  background: #10b981;
-  color: white;
-  border: none;
-  box-shadow: 
-    0 4px 16px rgba(16, 185, 129, 0.25),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
-}
-
-.calc-btn.equals:hover {
-  background: #059669;
-  box-shadow: 
-    0 8px 24px rgba(16, 185, 129, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.3);
-}
-
-.calc-btn.clear {
-  background: #ef4444;
-  color: white;
-  border: none;
-  box-shadow: 
-    0 4px 16px rgba(239, 68, 68, 0.25),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
-}
-
-.calc-btn.clear:hover {
-  background: #dc2626;
-  box-shadow: 
-    0 8px 24px rgba(239, 68, 68, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.3);
-}
-
 /* Barcode/QR Canvas */
 .code-canvas-wrapper {
   background: white;
@@ -1491,13 +1405,6 @@ input[type="radio"],
     --art-radius-lg: 20px;
     --art-radius-md: 16px;
     --art-radius-sm: 14px;
-  }
-  
-  .calc-btn {
-    min-height: 56px;
-    font-size: 1.25rem;
-  }
-  
   .art-primary-button,
   .art-soft-button {
     min-height: 44px;
