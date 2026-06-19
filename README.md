@@ -6,6 +6,29 @@
 
 ---
 
+## 📚 สารบัญเอกสารและคู่มือการใช้งาน (Documentation Index)
+
+คู่มือการใช้งานและการพัฒนาของระบบถูกย้ายไปจัดหมวดหมู่ให้ค้นหาง่ายขึ้นในโฟลเดอร์ `docs/`:
+
+### 🔧 1. การติดตั้งและการตั้งค่าระบบ (Setup & Installation)
+* [Quick Reference (คำสั่ง Docker และคำสั่งที่ใช้บ่อย)](docs/setup/quick-reference.md)
+* [คู่มือการติดตั้งระบบการล็อกอิน (Login System)](docs/setup/login-system.md)
+* [คู่มือการตั้งค่า Google Calendar API](docs/setup/google-calendar.md)
+* [คู่มือการทำ Migration และแนวทางการ Cloud Deployment](docs/setup/migration-deployment.md)
+
+### 🎨 2. โครงสร้างและการออกแบบ (Architecture & UI/UX Design)
+* [หลักการออกแบบภาพรวม (Design Principles)](docs/design/design-principles.md)
+* [แนวทางการดีไซน์ Liquid Glass UI](docs/design/liquid-glass-ui.md)
+* [รีวิวสถาปัตยกรรมโครงสร้างหน้าบ้าน (Frontend UX/UI Review)](docs/design/frontend-arch-review.md)
+* [คู่มือการพัฒนาและสถานะด้าน Accessibility (A11y)](docs/design/accessibility.md)
+
+### 🎯 3. ข้อมูลผลิตภัณฑ์และการวิเคราะห์ (Product & Strategy)
+* [Roadmap ฟีเจอร์และความต้องการทางธุรกิจ (Product Specifications)](docs/product/roadmap-features.md)
+* [ประวัติการอัปเดต Widget และ Widget Management](docs/product/widget-updates.md)
+* [รายงานผลการวิเคราะห์โปรเจกต์ระดับลึก (Internal Analysis)](docs/internal/project-analysis.md)
+
+---
+
 ## 🏗️ Tech Stack Overview
 
 * **หน้าบ้าน (Frontend):** [Next.js 14](https://nextjs.org/) (App Router, TS, Tailwind CSS) โฮสต์ฟรีบน **Vercel**

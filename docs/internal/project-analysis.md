@@ -1,6 +1,6 @@
 # 📋 Project Analysis Report: ART Workspace
 
-**Generated:** June 11, 2026  
+**Last Updated:** June 19, 2026  
 **Analyst:** Software Architect & Principal Cybersecurity Engineer  
 **Scope:** Full-stack Deep-Dive Module-Level Inspection  
 **Repository:** [ARTTT31/PROJECT_ART](https://github.com/ARTTT31/PROJECT_ART)
@@ -9,7 +9,7 @@
 
 ## 1. Executive Summary & Tech Stack Overview
 
-ART Workspace is a Thai-language personal productivity dashboard built on a modern full-stack architecture. The system consolidates real-time widgets (weather, calendar, tasks, oil prices), authentication, and admin tools into a single calm workspace interface.
+ART Workspace is a Thai-language personal productivity dashboard built on a modern full-stack architecture. The system consolidates real-time widgets, authentication, and admin tools into a single calm workspace interface.
 
 ### Tech Stack (Actual)
 
@@ -37,7 +37,7 @@ ART Workspace is a Thai-language personal productivity dashboard built on a mode
 
 - **Frontend Pages:** 5 (Login, Dashboard, Profile, Admin, Login-Success)
 - **Backend Endpoints:** 20+ (Auth, Users, Profile, Calendar, Oil Prices, Audit, System)
-- **Widgets:** 6 (Weather, Calendar, TaskList, OilPrice, QRCode, SystemHealth)
+- **Widgets:** 5 (Calendar, TaskList, OilPrice, QRCode, SystemHealth) *[Weather Widget Removed]*
 - **Database Tables:** 3 (users, sessions, audit_logs)
 - **Docker Services:** 3 (postgres, backend, frontend)
 - **Test Coverage:** Backend only (~2 test files)
@@ -56,7 +56,6 @@ graph TB
             DP[Dashboard Page]
             PP[Profile Page]
             AP[Admin Page]
-            W1[Weather Widget]
             W2[Calendar Widget]
             W3[TaskList Widget]
             W4[OilPrice Widget]
@@ -90,7 +89,6 @@ graph TB
     subgraph "🌐 External APIs"
         GM[Google OAuth 2.0]
         GC[Google Calendar iCal]
-        OM[Open-Meteo Weather]
         BDC[BigDataCloud Geo]
     end
 
@@ -100,8 +98,6 @@ graph TB
     LP -->|POST /auth/login| AUTH
     LP -->|GET /auth/google| AUTH --> GM
     DP -->|Widget Data| API
-    W1 -->|Weather Data| OM
-    W1 -->|Geolocation| BDC
     W2 -->|Calendar Events| CAL --> GC
     W3 -->|Task Events| CAL --> GC
     API --> SRV
@@ -141,7 +137,7 @@ sequenceDiagram
         B->>G: Fetch userinfo
         B->>DB: Find or create user
         B->>F: Set HTTP-only cookies + redirect
-        F->>F: Read cookies via /auth/session
+        F->>F: Read cookies via /auth/session (Optimized Fast-Path Check)
         F->>U: Redirect to /dashboard
     end
 ```
@@ -159,7 +155,7 @@ sequenceDiagram
 #### CRIT-02: JWT Tokens Stored in localStorage (XSS Surface) & Login Page Mismatch (NEW REGRESSION)
 - **Status:** ⚠️ **PARTIALLY RESOLVED / ACTIVE REGRESSION**
 - **Detail:** The backend was successfully updated to set JWT access tokens and refresh tokens in HTTP-only cookies (`samesite="none"`, `secure=True`, `httponly=True`). However, the frontend has not been fully aligned:
-  1. `frontend/src/app/login/page.tsx` (line 122) checks for `result.data?.access_token` to consider a login successful. Since the backend now excludes tokens from the response body for security, this condition fails, rendering standard login completely broken on the UI.
+  1. `frontend/src/app/login/page.tsx` checks for `result.data?.access_token` to consider a login successful. Since the backend now excludes tokens from the response body for security, this condition fails, rendering standard login completely broken on the UI.
   2. The frontend pages (`dashboard/page.tsx`, `profile/page.tsx`, and `admin/page.tsx`) still try to read `access_token` from `localStorage` in their auth guards, redirecting users back to the login page when the token is missing.
 - **Impact:** **Login is currently broken on the frontend.**
 - **Fix:** Update the login page to verify the response status without expecting `access_token` in the body. Remove the local `localStorage.getItem('access_token')` checks from the dashboard, profile, and admin pages, relying instead on the global `useAuth()` hook and cookie propagation.
@@ -175,6 +171,10 @@ sequenceDiagram
 #### CRIT-05: Frontend API URL Misconfigured in Docker Compose
 - **Status:** ✅ **RESOLVED**
 - **Detail:** In local development without Docker, environments use `http://localhost:8080` or `http://localhost:8000` consistently in `.env` and `.env.local`.
+
+#### CRIT-06: Poor Performance on /login-success Page (NEW)
+- **Status:** ✅ **RESOLVED**
+- **Detail:** Client-side API fetch calls previously blocked redirections causing low performance scores (FCP: 2.7s, LCP: 4.8s). The logic has been optimized with a client-side Cookie fast-path checking system, resolving bottleneck delays.
 
 ---
 
