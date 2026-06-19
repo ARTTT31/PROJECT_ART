@@ -55,7 +55,10 @@ async def update_my_profile(
         await audit_service.log_action(
             action="PROFILE_UPDATE",
             user_id=current_user.id,
-            details=f"Updated profile fields: {', '.join([k for k, v in user_update.dict(exclude_unset=True).items() if v is not None])}",
+            details=(
+                f"Updated profile fields: "
+                f"{', '.join([k for k, v in user_update.dict(exclude_unset=True).items() if v is not None])}"
+            ),
             ip_address=client_ip,
             user_agent=user_agent,
         )

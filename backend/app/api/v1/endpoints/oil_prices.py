@@ -32,7 +32,8 @@ IMAGE_MAP: list[tuple[str, str, str]] = [
 def _parse_eppo_html(html: str) -> list[dict]:
     """Parse EPPO oil price HTML, return PTT (first) price for each oil type."""
     rows = re.findall(
-        r"oil_price_colum_name'>\s*<img[^>]+src='[^']*/([^'/]+)'[^<]*</div>(.*?)(?=<div class='oil_price_colum_name_|<div style='clear:both)",
+        r"oil_price_colum_name'>\s*<img[^>]+src='[^']*/([^'/]+)'[^<]*</div>(.*?)"
+        r"(?=<div class='oil_price_colum_name_|<div style='clear:both)",
         html,
         re.DOTALL,
     )

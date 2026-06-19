@@ -174,7 +174,10 @@ async def update_user(
         await audit_service.log_action(
             action="ADMIN_USER_UPDATE",
             user_id=current_user.id,
-            details=f"Admin updated user {updated_user.email or updated_user.username} (ID: {user_id}). Fields: {', '.join([k for k, v in user_update.dict(exclude_unset=True).items() if v is not None])}",
+            details=(
+                f"Admin updated user {updated_user.email or updated_user.username} (ID: {user_id}). "
+                f"Fields: {', '.join([k for k, v in user_update.dict(exclude_unset=True).items() if v is not None])}"
+            ),
             ip_address=client_ip,
             user_agent=user_agent,
         )
