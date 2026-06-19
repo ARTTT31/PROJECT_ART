@@ -5,7 +5,7 @@ import { Bell, X, AlertTriangle, Cloud, Fuel, Calendar, Info, CheckCheck } from 
 
 export interface Notification {
   id: string
-  type: 'weather' | 'oilprice' | 'calendar' | 'system'
+  type: 'oilprice' | 'calendar' | 'system'
   level: 'info' | 'warning' | 'danger'
   title: string
   body: string
@@ -31,7 +31,6 @@ const levelIcon = {
   danger: <AlertTriangle size={14} className="text-red-500 flex-shrink-0 mt-0.5" />,
 }
 const typeIcon = {
-  weather: <Cloud size={13} />,
   oilprice: <Fuel size={13} />,
   calendar: <Calendar size={13} />,
   system: <Info size={13} />,
@@ -59,7 +58,6 @@ const levelMeta = {
 }
 
 const typeLabel = {
-  weather: 'สภาพอากาศ',
   oilprice: 'ราคาน้ำมัน',
   calendar: 'ปฏิทิน',
   system: 'ระบบ',
@@ -152,7 +150,7 @@ export default function NotificationBell() {
                   <Bell size={22} aria-hidden="true" />
                 </span>
                 <span className="text-sm font-semibold text-slate-700">ไม่มีการแจ้งเตือน</span>
-                <p className="mt-1 text-xs font-medium leading-relaxed text-slate-500">เมื่อมีรายการจากสภาพอากาศ ปฏิทิน หรือระบบ จะแสดงที่นี่</p>
+                <p className="mt-1 text-xs font-medium leading-relaxed text-slate-500">เมื่อมีรายการจากปฏิทิน หรือระบบ จะแสดงที่นี่</p>
               </div>
             ) : notifications.map(n => (
               <div

@@ -25,9 +25,9 @@ export default function RootLayout({
       <head>
         {/* Basic SEO */}
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <meta name="description" content="Modern workspace management system with live weather & air quality monitoring" />
+        <meta name="description" content="Modern workspace management system" />
         <meta property="og:title" content="ART Workspace" />
-        <meta property="og:description" content="Check weather, AQI, and manage your dashboard" />
+        <meta property="og:description" content="Manage your dashboard efficiently" />
         <meta property="og:type" content="website" />
         <meta property="og:image" content="/og-image.png" />
       </head>

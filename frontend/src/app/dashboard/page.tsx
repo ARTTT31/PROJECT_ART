@@ -1,10 +1,9 @@
 'use client'
 
-import '../../styles/pages/weather.css'
+
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import DashboardLayout from '@/components/Layout/DashboardLayout'
-import WeatherWidget from '@/components/Widgets/WeatherWidget'
 import CalendarWidget from '@/components/Widgets/CalendarWidget'
 import TaskListWidget from '@/components/Widgets/TaskListWidget'
 import OilPriceWidget from '@/components/Widgets/OilPriceWidget'
@@ -33,7 +32,6 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 
 const defaultWidgets: WidgetConfig[] = [
-  { id: 'weather', w: 3 },
   { id: 'calendar', w: 3 },
   { id: 'tasklist', w: 3 },
   { id: 'oilprice', w: 1 },
@@ -41,7 +39,6 @@ const defaultWidgets: WidgetConfig[] = [
 ]
 
 const widgetNames: Record<string, string> = {
-  weather: 'สภาพอากาศ',
   calendar: 'ปฏิทินกิจกรรม',
   tasklist: 'รายการงาน IMACD / ธัญพงศ์',
   oilprice: 'ราคาน้ำมัน',
@@ -306,11 +303,7 @@ function SortableWidget({
         aria-label={`ย้ายวิดเจ็ต ${widgetNames[widget.id]}`}
       />
 
-      {widget.id === 'weather' && (
-        <ErrorBoundary fallback={(err, reset) => <WidgetErrorFallback name="สภาพอากาศ" error={err} reset={reset} />}>
-          <WeatherWidget width={widget.w} onResize={(newSize) => onResize(widget.id, newSize)} />
-        </ErrorBoundary>
-      )}
+
       {widget.id === 'calendar' && (
         <ErrorBoundary fallback={(err, reset) => <WidgetErrorFallback name="ปฏิทิน" error={err} reset={reset} />}>
           <CalendarWidget width={widget.w} onResize={(newSize) => onResize(widget.id, newSize)} selectedMonth={selectedMonth} onMonthChange={onMonthChange} />
