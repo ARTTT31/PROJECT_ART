@@ -12,14 +12,14 @@ import os
 import sys
 from datetime import datetime, timedelta, timezone
 
-# Add parent directory to path for standalone execution
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
-from app.models.base import Base
 from app.models.session import UserSession
+
+# Add parent directory to path for standalone execution
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+
 
 
 def _utcnow() -> datetime:
@@ -53,7 +53,7 @@ def cleanup_expired_sessions(db: Session, max_age_days: int = 7) -> int:
     stale_inactive = (
         db.query(UserSession)
         .filter(
-            UserSession.is_active == False,
+            UserSession.is_active.is_(False),
             UserSession.updated_at < cutoff_date,
         )
         .delete(synchronize_session="fetch")
@@ -90,4 +90,4 @@ def run_cleanup():
 
 
 if __name__ == "__main__":
-    run_cleanup()
+    run_cleanup()
