@@ -117,12 +117,6 @@ export default function CalendarWidget({
               {onResize && (
                 <WidgetSizeToggle value={width} onChange={onResize} />
               )}
-                <ChevronRight className={`${width === 2 ? 'w-4 h-4' : 'w-5 h-5'}`} aria-hidden="true" />
-              </button>
-
-              {onResize && (
-                <WidgetSizeToggle value={width} onChange={onResize} />
-              )}
             </div>
           </div>
         </div>
