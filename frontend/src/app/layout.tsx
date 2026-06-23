@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Anuphan } from 'next/font/google';
 import './globals.css';
 import { Providers } from './providers';
@@ -10,9 +10,23 @@ const anuphan = Anuphan({
   display: 'swap',
 });
 
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+};
+
 export const metadata: Metadata = {
   title: 'ART Workspace',
   description: 'Modern workspace management system',
+  openGraph: {
+    title: 'ART Workspace',
+    description: 'Manage your dashboard efficiently',
+    type: 'website',
+    images: ['/og-image.png'],
+  },
+  alternates: {
+    canonical: '/',
+  },
 };
 
 export default function RootLayout({
@@ -22,15 +36,6 @@ export default function RootLayout({
 }) {
   return (
     <html lang="th">
-      <head>
-        {/* Basic SEO */}
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <meta name="description" content="Modern workspace management system" />
-        <meta property="og:title" content="ART Workspace" />
-        <meta property="og:description" content="Manage your dashboard efficiently" />
-        <meta property="og:type" content="website" />
-        <meta property="og:image" content="/og-image.png" />
-      </head>
       <body className={anuphan.className}>
           {/* Theme toggle removed */}
           <Providers>
