@@ -573,33 +573,50 @@
 }
 
 .google-btn {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 12px;
   width: 100%;
-  min-height: 48px;
-  padding: 0.75rem 1.5rem;
+  min-height: 56px;
+  padding: 8px 18px;
   border-radius: 12px;
-  border: 1px solid rgba(203, 213, 225, 0.85);
-  background: #ffffff;
-  color: #334155;
+  border: 1px solid rgba(148, 163, 184, 0.34);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.96));
+  color: #0f172a;
   text-decoration: none;
   font-weight: 650;
-  font-size: 15px;
-  box-shadow: var(--shadow-glass-sm);
+  font-size: 15.5px;
+  letter-spacing: 0;
+  box-shadow: 0 3px 8px rgba(15, 23, 42, 0.06);
   transition: transform 180ms cubic-bezier(0.4, 0, 0.2, 1),
               box-shadow 180ms cubic-bezier(0.4, 0, 0.2, 1),
               border-color 180ms cubic-bezier(0.4, 0, 0.2, 1),
               background-color 180ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+.google-btn:focus-visible {
+  outline: none;
+  border-color: rgba(14, 165, 233, 0.6);
+  box-shadow:
+    0 0 0 4px rgba(14, 165, 233, 0.12),
+    0 4px 12px rgba(15, 23, 42, 0.08);
+}
+
 .google-btn:hover {
-  border-color: rgba(14, 165, 233, 0.45);
-  background: #ffffff;
-  color: #0369a1;
-  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.08);
+  border-color: rgba(14, 165, 233, 0.42);
+  background:
+    linear-gradient(180deg, #ffffff, rgba(240, 249, 255, 0.92));
+  color: #075985;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.10);
   transform: translateY(-1px);
+}
+
+.google-btn:active {
+  box-shadow: 0 3px 8px rgba(15, 23, 42, 0.06);
+  transform: translateY(0);
 }
 
 .google-btn[aria-disabled='true'],
@@ -610,6 +627,19 @@
   transform: none;
 }
 
+.google-btn-mark {
+  display: inline-flex;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  background: #ffffff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85);
+}
+
 .google-btn-icon {
   width: 20px;
   height: 20px;
@@ -617,8 +647,11 @@
 }
 
 .google-text {
-  font-size: 15px;
-  color: #111827;
+  min-width: 0;
+  color: currentColor;
+  font-size: 15.5px;
+  line-height: 1.35;
+  text-align: center;
 }
 
 /* Liquid Glass Toast Notification (moved from inline styles) */
