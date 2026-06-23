@@ -163,116 +163,6 @@ export default function DashboardPage() {
 
   if (!user || !isClient) {
     return (
-  const [widgets, setWidgets] = useState<WidgetConfig[]>([])
-  const [visibleWidgetIds, setVisibleWidgetIds] = useState<string[]>([])
-  const [showConfigModal, setShowConfigModal] = useState(false)
-  const [isClient, setIsClient] = useState(false)
-  const [selectedMonth, setSelectedMonth] = useState(new Date())
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
-  )
-
-  // ── Hoisted before useEffect (const arrows are NOT hoisted in JS) ──
-  const saveLayout = (newLayout: WidgetConfig[]) => {
-    setWidgets(newLayout)
-    localStorage.setItem('artWorkspaceLayoutV3', JSON.stringify(newLayout))
-  }
-
-  const saveVisibleWidgets = (visibleIds: string[]) => {
-    setVisibleWidgetIds(visibleIds)
-    localStorage.setItem('artWorkspaceVisibleWidgets', JSON.stringify(visibleIds))
-  }
-
-  // Single shared debounce ref for all localStorage writes
-  const saveLayoutDebouncedRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  useEffect(() => {
-    setIsClient(true)
-
-    // Load visible widgets
-    const savedVisible = localStorage.getItem('artWorkspaceVisibleWidgets')
-    if (savedVisible) {
-      try {
-        const parsed: string[] = JSON.parse(savedVisible)
-        setVisibleWidgetIds(parsed)
-      } catch {
-        setVisibleWidgetIds(defaultWidgets.map(w => w.id))
-      }
-    } else {
-      setVisibleWidgetIds(defaultWidgets.map(w => w.id))
-    }
-
-    // Load layout
-    const savedLayout = localStorage.getItem('artWorkspaceLayoutV3')
-    if (savedLayout) {
-      try {
-        const parsed = JSON.parse(savedLayout)
-        const needsReset = parsed.length !== defaultWidgets.length || parsed.some((widget: any) => {
-          const def = defaultWidgets.find(d => d.id === widget.id)
-          return !def
-        })
-
-        if (needsReset) {
-          saveLayout(defaultWidgets)
-        } else {
-          setWidgets(parsed)
-        }
-      } catch {
-        setWidgets(defaultWidgets)
-      }
-    } else {
-      setWidgets(defaultWidgets)
-    }
-  }, [])
-
-  const handleResize = (id: string, newWidth: number) => {
-    // Immediate state update for responsive feel (functional updater = no stale closure)
-    const debounceMs = 300
-    setWidgets(prev => prev.map((widget) => (widget.id === id ? { ...widget, w: newWidth } : widget)))
-    // Debounce localStorage write outside the state setter (avoid side-effects inside updater)
-    if (saveLayoutDebouncedRef.current) clearTimeout(saveLayoutDebouncedRef.current)
-    saveLayoutDebouncedRef.current = setTimeout(() => {
-      // Read latest widgets directly (not from closure)
-      setWidgets(prev => {
-        localStorage.setItem('artWorkspaceLayoutV3', JSON.stringify(prev))
-        return prev // no change, just persist
-      })
-    }, debounceMs)
-  }
-
-  // 🛡️ Debounced save to prevent layout thrashing during rapid drag operations
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event
-    if (!over || active.id === over.id) return
-    const oldIndex = widgets.findIndex((w) => w.id === active.id)
-    const newIndex = widgets.findIndex((w) => w.id === over.id)
-    if (oldIndex === -1 || newIndex === -1) return
-    const newLayout = arrayMove(widgets, oldIndex, newIndex)
-    setWidgets(newLayout) // Optimistic update: render immediately
-
-    // Debounce localStorage write to prevent stuttering
-    if (saveLayoutDebouncedRef.current) clearTimeout(saveLayoutDebouncedRef.current)
-    saveLayoutDebouncedRef.current = setTimeout(() => {
-      localStorage.setItem('artWorkspaceLayoutV3', JSON.stringify(newLayout))
-    }, 150) // 150ms debounce — smooth UX, no I/O jank
-  }
-
-  const toggleWidgetVisibility = (id: string) => {
-    if (visibleWidgetIds.includes(id)) {
-      if (visibleWidgetIds.length <= 1) return
-      saveVisibleWidgets(visibleWidgetIds.filter(vId => vId !== id))
-    } else {
-      saveVisibleWidgets([...visibleWidgetIds, id])
-    }
-  }
-
-  const visibleWidgets = widgets.filter(w => visibleWidgetIds.includes(w.id))
-
-  if (!user || !isClient) {
-    return (
       <div className="flex min-h-[100dvh] items-center justify-center bg-slate-50">
         <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-sky-500" />
       </div>
@@ -281,7 +171,6 @@ export default function DashboardPage() {
 
   return (
     <DashboardLayout>
-      <h1 className="sr-only">แดชบอร์ด - ART Workspace</h1>
       <div className="w-full">
         <div className="mb-4 flex justify-end px-3 sm:px-4 lg:px-6">
           <button
