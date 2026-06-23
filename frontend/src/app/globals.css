@@ -570,7 +570,8 @@ button:disabled {
 }
 
 .art-icon-button:hover:not(:disabled),
-.refresh-btn:hover:not(:disabled) {
+.refresh-btn:hover:not(:disabled),
+.weather-refresh-btn:hover:not(:disabled) {
   border-color: rgba(14, 165, 233, 0.45);
   background: white;
   color: var(--art-primary-dark);
@@ -579,8 +580,17 @@ button:disabled {
 }
 
 .art-icon-button:active:not(:disabled),
-.refresh-btn:active:not(:disabled) {
+.refresh-btn:active:not(:disabled),
+.weather-refresh-btn:active:not(:disabled) {
   transform: translateY(0);
+}
+
+.art-icon-button:focus-visible,
+.refresh-btn:focus-visible,
+.weather-refresh-btn:focus-visible,
+.art-chip-button:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
 }
 
 .art-chip-button {
@@ -612,6 +622,25 @@ button:disabled {
   background: #0f172a;
   color: white;
   box-shadow: 0 6px 14px rgba(15, 23, 42, 0.16);
+}
+
+.art-toast-item {
+  width: min(20rem, calc(100vw - 2rem));
+  border-radius: var(--art-radius-lg);
+  box-shadow: var(--shadow-glass);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.art-toast-item .art-icon-button {
+  color: currentColor;
+  opacity: 0.72;
+}
+
+.art-toast-item .art-icon-button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.7) !important;
+  color: currentColor;
+  opacity: 1;
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -1415,10 +1444,10 @@ input[type="radio"],
 
 @media (max-width: 768px) {
   :root {
-    --art-radius-xl: 24px;
-    --art-radius-lg: 20px;
-    --art-radius-md: 16px;
-    --art-radius-sm: 14px;
+    --art-radius-xl: 16px;
+    --art-radius-lg: 12px;
+    --art-radius-md: 12px;
+    --art-radius-sm: 10px;
   }
 
   .art-primary-button,
@@ -1441,9 +1470,7 @@ input[type="radio"],
    - src/styles/pages/login.css
    - src/styles/pages/weather.css */
 
-/* ═══════════════════════════════════════════════════════
-   SweetAlert2 Toast Custom Styling (Liquid Glass)
-   ═══════════════════════════════════════════════════════ */
+/* SweetAlert2 follows the shared alert, modal, and button system. */
 .swal2-container.swal2-top-end {
   top: var(--space-4) !important;
   right: var(--space-4) !important;
@@ -1451,27 +1478,136 @@ input[type="radio"],
   bottom: auto !important;
 }
 
-.swal2-toast {
-  background: var(--glass-white-90) !important;
-  backdrop-filter: blur(12px) !important;
-  border: 1px solid var(--art-border-strong) !important;
+.swal2-container {
+  z-index: var(--z-toast) !important;
+}
+
+.swal2-container.swal2-backdrop-show {
+  background: rgba(15, 23, 42, 0.4) !important;
+}
+
+.art-swal-popup {
+  width: min(32rem, calc(100vw - 2rem)) !important;
+  border-radius: var(--art-radius-xl) !important;
+  border: 1px solid rgba(255, 255, 255, 0.5) !important;
+  background: rgba(255, 255, 255, 0.96) !important;
+  color: var(--art-ink) !important;
   box-shadow: var(--shadow-glass-lg) !important;
+  padding: 1.5rem !important;
+  font-family: inherit !important;
+}
+
+.art-swal-title {
+  color: var(--art-ink) !important;
+  font-size: var(--type-xl) !important;
+  font-weight: 750 !important;
+  letter-spacing: 0 !important;
+  line-height: var(--line-snug) !important;
+  padding: 0 !important;
+}
+
+.art-swal-html {
+  margin: 0.75rem 0 0 !important;
+  color: var(--art-muted) !important;
+  font-size: var(--type-sm) !important;
+  font-weight: 500 !important;
+  line-height: var(--line-relaxed) !important;
+}
+
+.art-swal-actions {
+  gap: 0.75rem !important;
+  margin: 1.5rem 0 0 !important;
+}
+
+.art-swal-confirm,
+.art-swal-cancel,
+.art-swal-deny {
+  min-width: 44px !important;
+  min-height: 44px !important;
   border-radius: var(--art-radius-lg) !important;
   padding: 0.75rem 1.25rem !important;
+  font: inherit !important;
+  font-size: var(--type-sm) !important;
+  font-weight: 650 !important;
+  letter-spacing: 0 !important;
+  line-height: 1 !important;
+  transition: background-color 180ms cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 180ms cubic-bezier(0.4, 0, 0.2, 1),
+    color 180ms cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 180ms cubic-bezier(0.4, 0, 0.2, 1),
+    transform 180ms cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.art-swal-confirm {
+  border: 1px solid rgba(14, 165, 233, 0.55) !important;
+  background: linear-gradient(135deg, var(--art-primary) 0%, var(--art-blue) 100%) !important;
+  color: white !important;
+  box-shadow: 0 6px 14px rgba(14, 165, 233, 0.22) !important;
+}
+
+.art-swal-confirm:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 10px 22px rgba(14, 165, 233, 0.28) !important;
+}
+
+.art-swal-confirm.art-swal-danger {
+  border-color: rgba(220, 38, 38, 0.42) !important;
+  background: #dc2626 !important;
+  box-shadow: 0 6px 14px rgba(220, 38, 38, 0.18) !important;
+}
+
+.art-swal-cancel,
+.art-swal-deny {
+  border: 1px solid rgba(203, 213, 225, 0.85) !important;
+  background: white !important;
+  color: #334155 !important;
+  box-shadow: var(--shadow-glass-sm) !important;
+}
+
+.art-swal-cancel:hover,
+.art-swal-deny:hover {
+  border-color: rgba(14, 165, 233, 0.45) !important;
+  color: var(--art-primary-dark) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.08) !important;
+}
+
+.art-swal-confirm:focus-visible,
+.art-swal-cancel:focus-visible,
+.art-swal-deny:focus-visible,
+.art-swal-input:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color) !important;
+  outline-offset: var(--focus-ring-offset) !important;
+}
+
+.art-swal-input {
+  border-radius: var(--art-radius-lg) !important;
+  border: 1.5px solid rgba(203, 213, 225, 0.7) !important;
+  box-shadow: var(--shadow-glass-sm) !important;
+  color: var(--art-ink) !important;
+}
+
+.swal2-toast {
+  background: rgba(255, 255, 255, 0.96) !important;
+  border: 1px solid rgba(203, 213, 225, 0.75) !important;
+  box-shadow: var(--shadow-glass) !important;
+  border-radius: var(--art-radius-lg) !important;
+  padding: 0.875rem 1rem !important;
   color: var(--art-ink) !important;
   font-family: inherit !important;
   display: flex !important;
   align-items: center !important;
   min-height: auto !important;
   height: auto !important;
-  width: auto !important;
-  margin-top: 1rem !important;
+  width: min(22rem, calc(100vw - 2rem)) !important;
+  margin-top: 0.75rem !important;
 }
 
 .swal2-toast .swal2-title {
   font-size: var(--type-sm) !important;
-  font-weight: 600 !important;
+  font-weight: 650 !important;
   margin: 0 0 0 0.5rem !important;
+  color: var(--art-ink) !important;
 }
 
 .swal2-toast .swal2-icon {
@@ -1483,4 +1619,12 @@ input[type="radio"],
 .swal2-toast .swal2-timer-progress-bar {
   background: var(--art-primary) !important;
   height: 3px !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .swal2-show,
+  .swal2-hide,
+  .swal2-toast {
+    animation: none !important;
+  }
 }

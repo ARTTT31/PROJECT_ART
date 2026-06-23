@@ -83,28 +83,28 @@ export function useToast(): ToastContextValue {
 
 /* ── Toast Container & Item ───────────────────────────── */
 
-const typeConfig: Record<ToastType, { icon: React.ReactNode; bgClass: string; iconBg: string; iconColor: string }> = {
+const typeConfig: Record<ToastType, { icon: React.ReactNode; alertClass: string; iconBg: string; iconColor: string }> = {
   success: {
     icon: <CheckCircle size={20} aria-hidden="true" />,
-    bgClass: 'border-emerald-200/60 bg-emerald-50/90',
+    alertClass: 'alert-success',
     iconBg: 'bg-emerald-100',
     iconColor: 'text-emerald-600',
   },
   error: {
     icon: <AlertCircle size={20} aria-hidden="true" />,
-    bgClass: 'border-red-200/60 bg-red-50/90',
+    alertClass: 'alert-error',
     iconBg: 'bg-red-100',
     iconColor: 'text-red-600',
   },
   warning: {
     icon: <AlertTriangle size={20} aria-hidden="true" />,
-    bgClass: 'border-amber-200/60 bg-amber-50/90',
+    alertClass: 'alert-warning',
     iconBg: 'bg-amber-100',
     iconColor: 'text-amber-600',
   },
   info: {
     icon: <Info size={20} aria-hidden="true" />,
-    bgClass: 'border-sky-200/60 bg-sky-50/90',
+    alertClass: 'alert-info',
     iconBg: 'bg-sky-100',
     iconColor: 'text-sky-600',
   },
@@ -131,7 +131,7 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: string) =
 
   return (
     <div
-      className={`flex w-80 items-start gap-3 rounded-2xl border px-4 py-3 shadow-glass backdrop-blur-xl animate-slide-in-right ${config.bgClass}`}
+      className={`alert art-toast-item w-80 items-start animate-slide-in-right ${config.alertClass}`}
       role="alert"
       aria-live="polite"
     >
@@ -146,7 +146,7 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: string) =
       </div>
       <button
         onClick={() => onRemove(toast.id)}
-        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-slate-200/60 hover:text-slate-600"
+        className="art-icon-button small-control !h-8 !w-8 !rounded-lg !border-transparent !bg-transparent !shadow-none"
         aria-label="ปิดการแจ้งเตือน"
       >
         <X size={14} aria-hidden="true" />

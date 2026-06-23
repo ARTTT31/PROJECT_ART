@@ -35,6 +35,29 @@ Button rules:
 - Active state returns to the base plane.
 - Primary buttons use the blue gradient sparingly.
 - Do not create new one-off button shapes unless a control has a distinct native affordance.
+- Login-specific classes such as `login-submit` and `google-btn` must visually match `art-primary-button` and `art-soft-button`.
+- Icon-only controls must use `art-icon-button` or an intentional size variant, include an `aria-label`, and keep a visible focus ring.
+- Toggle, filter, segmented, and compact state controls must use `art-chip-button` with `aria-pressed` for selected state.
+
+## Notifications, Alerts, Toasts, And Modals
+
+Notification surfaces use the same calm product system as buttons: white or lightly tinted state surfaces, 10-16px radius, restrained shadows, clear iconography, and readable contrast.
+
+- In-app toasts use `.alert`, the semantic alert classes, and an `art-icon-button` close control.
+- NotificationBell uses `art-icon-button` for the trigger and dismiss actions, `art-soft-button` for secondary actions, and compact semantic badges for state.
+- Error banners and alert states use `.alert-error`, `.alert-success`, `.alert-warning`, or `.alert-info`; avoid local one-off alert colors unless introducing a new semantic token.
+- Dialog modals use the shared surface, radius, shadow, focus trap, close button, and scroll behavior from `components/ui/Dialog.tsx`.
+- Empty and error states should feel quiet and useful: a clear icon, direct heading, concise body text, and shared retry/navigation buttons.
+- Avoid excessive blur, oversized radius, decorative gradients, and animated alert effects that do not communicate state.
+
+## SweetAlert2
+
+SweetAlert2 is styled through the wrapper in `frontend/src/utils/sweetalert.ts` and global classes in `frontend/src/app/globals.css`.
+
+- Do not set per-call `confirmButtonColor` or `cancelButtonColor`; use `buttonsStyling: false` and the shared custom classes.
+- Confirm buttons match `art-primary-button`; cancel and deny buttons match `art-soft-button`; destructive confirms add `art-swal-danger`.
+- SweetAlert2 toast surfaces match the in-app toast scale, shadow, typography, and focus behavior.
+- Loading and input alerts inherit the same popup, input, radius, typography, and focus tokens.
 
 ## Components
 
