@@ -23,9 +23,15 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
-    COOKIE_SECURE: bool = True
-    COOKIE_SAMESITE: str = "none"
     AUTO_CREATE_TABLES: bool = False
+
+    @property
+    def COOKIE_SECURE(self) -> bool:
+        return not self.DEBUG
+
+    @property
+    def COOKIE_SAMESITE(self) -> str:
+        return "none" if not self.DEBUG else "lax"
 
     # CORS — explicit origins required (no wildcards) because allow_credentials=True
     CORS_ORIGINS: str = (

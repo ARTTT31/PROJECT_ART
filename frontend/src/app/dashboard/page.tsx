@@ -171,6 +171,7 @@ export default function DashboardPage() {
 
   return (
     <DashboardLayout>
+      <h1 className="sr-only">แดชบอร์ด - ART Workspace</h1>
       <div className="w-full">
         <div className="mb-4 flex justify-end px-3 sm:px-4 lg:px-6">
           <button

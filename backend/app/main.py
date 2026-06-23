@@ -93,8 +93,8 @@ async def health_check():
 # ── Content Security Policy (CSP) Middleware ──
 CSP_HEADER_VALUE = (
     "default-src 'self'; "
-    "script-src 'self' 'unsafe-inline' https://apis.google.com; "
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://cdn.jsdelivr.net; "
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; "
     "img-src 'self' data: https:; "
     "font-src 'self' https://fonts.gstatic.com; "
     "connect-src 'self' https://www.eppo.go.th https://calendar.google.com; "

@@ -31,13 +31,14 @@ const nextConfig = {
   },
 
   async headers() {
+    const isDev = process.env.NODE_ENV !== 'production';
     return [
       {
         source: '/:path*',
         headers: [
           {
             key: 'Content-Security-Policy',
-            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' http://localhost:8000 https://art-workspace-api.onrender.com https://project-art-c7eh.onrender.com https://www.eppo.go.th https://calendar.google.com; frame-src 'self' https://accounts.google.com https://calendar.google.com; object-src 'none'; base-uri 'self'; form-action 'self'",
+            value: `default-src 'self'; script-src 'self' 'unsafe-inline' ${isDev ? "'unsafe-eval'" : ""} https://apis.google.com https://va.vercel-scripts.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' http://localhost:8000 https://art-workspace-api.onrender.com https://project-art-c7eh.onrender.com https://www.eppo.go.th https://calendar.google.com https://vitals.vercel-insights.com; frame-src 'self' https://accounts.google.com https://calendar.google.com; object-src 'none'; base-uri 'self'; form-action 'self'`,
           },
           {
             key: 'X-Content-Type-Options',
@@ -63,6 +64,7 @@ const nextConfig = {
   // Enable compression and static optimization
   compress: true,
   poweredByHeader: false,
+  productionBrowserSourceMaps: false,
 };
 
 module.exports = nextConfig;
