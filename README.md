@@ -91,6 +91,9 @@ SECRET_KEY="replace_with_a_long_random_secret"
 ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=30
 REFRESH_TOKEN_EXPIRE_DAYS=7
+COOKIE_SECURE=True
+COOKIE_SAMESITE=none
+AUTO_CREATE_TABLES=False
 
 CORS_ORIGINS=http://localhost:3000,http://localhost:8080
 
@@ -169,3 +172,5 @@ Configure these in Google Cloud Console:
 ## Local Auth Cookie Note
 
 Production auth uses cross-site HTTP-only cookies with `SameSite=None` and `Secure`. This is correct for Vercel and Render, but browser behavior can differ on plain local HTTP. If local login cookies do not persist, test with HTTPS locally or add an explicit development cookie configuration.
+
+For plain local HTTP development, use `COOKIE_SECURE=False` and `COOKIE_SAMESITE=lax`. Keep production deployments on `COOKIE_SECURE=True` and `COOKIE_SAMESITE=none`. Use Alembic migrations in production; `AUTO_CREATE_TABLES=True` is only for local development convenience.

@@ -1,6 +1,6 @@
 from typing import Optional
 from datetime import datetime
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class UserBrief(BaseModel):
@@ -8,8 +8,7 @@ class UserBrief(BaseModel):
     name: str
     email: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class AuditLogResponse(BaseModel):
@@ -22,5 +21,4 @@ class AuditLogResponse(BaseModel):
     created_at: datetime
     user: Optional[UserBrief] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

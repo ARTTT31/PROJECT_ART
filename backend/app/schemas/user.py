@@ -4,7 +4,7 @@ User Schemas
 
 from typing import Optional
 from datetime import datetime
-from pydantic import BaseModel, EmailStr, Field, validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 
 class UserBase(BaseModel):
@@ -20,7 +20,8 @@ class UserCreate(UserBase):
     password: str = Field(..., min_length=8, max_length=100)
     role: Optional[str] = "user"
 
-    @validator("password")
+    @field_validator("password")
+    @classmethod
     def validate_password(cls, v):
         if len(v) < 8:
             raise ValueError("Password must be at least 8 characters")
@@ -75,7 +76,8 @@ class UserPasswordChange(BaseModel):
     old_password: str
     new_password: str = Field(..., min_length=8, max_length=100)
 
-    @validator("new_password")
+    @field_validator("new_password")
+    @classmethod
     def validate_new_password(cls, v):
         if len(v) < 8:
             raise ValueError("New password must be at least 8 characters")
@@ -91,7 +93,8 @@ class UserAdminCreate(BaseModel):
     email: Optional[EmailStr] = None
     role: Optional[str] = "user"
 
-    @validator("password")
+    @field_validator("password")
+    @classmethod
     def validate_password(cls, v):
         if len(v) < 8:
             raise ValueError("Password must be at least 8 characters")
@@ -114,5 +117,4 @@ class UserResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

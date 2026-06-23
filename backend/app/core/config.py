@@ -3,6 +3,7 @@ Application Configuration
 """
 
 from typing import List
+from pydantic import ConfigDict
 from pydantic_settings import BaseSettings
 
 
@@ -22,6 +23,9 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+    COOKIE_SECURE: bool = True
+    COOKIE_SAMESITE: str = "none"
+    AUTO_CREATE_TABLES: bool = False
 
     # CORS — explicit origins required (no wildcards) because allow_credentials=True
     CORS_ORIGINS: str = (
@@ -36,10 +40,11 @@ class Settings(BaseSettings):
             return [origin.strip() for origin in self.CORS_ORIGINS.split(",")]
         return self.CORS_ORIGINS
 
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
-        extra = "ignore"
+    model_config = ConfigDict(
+        env_file=".env",
+        case_sensitive=True,
+        extra="ignore",
+    )
 
 
 settings = Settings()

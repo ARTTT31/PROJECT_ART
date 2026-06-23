@@ -11,9 +11,6 @@ from app.services.user_service import UserService
 from app.services.auth_service import AuthService
 from app.schemas.user import UserCreate, UserUpdate, UserPasswordChange
 
-# Mark all tests in this file as asyncio tests
-pytestmark = pytest.mark.asyncio
-
 # ── Fixtures ──────────────────────────────────────────────
 
 @pytest.fixture
@@ -64,6 +61,8 @@ def admin_user_data():
 # ── UserService Tests ─────────────────────────────────────
 
 class TestUserServiceCreate:
+    pytestmark = pytest.mark.asyncio
+
     async def test_create_user_success(self, user_service, sample_user_data):
         user = await user_service.create_user(sample_user_data)
         assert user.id is not None
@@ -88,6 +87,8 @@ class TestUserServiceCreate:
 
 
 class TestUserServiceRead:
+    pytestmark = pytest.mark.asyncio
+
     async def test_get_user_by_id(self, user_service, sample_user_data):
         created = await user_service.create_user(sample_user_data)
         found = await user_service.get_user_by_id(created.id)
@@ -122,6 +123,8 @@ class TestUserServiceRead:
 
 
 class TestUserServiceUpdate:
+    pytestmark = pytest.mark.asyncio
+
     async def test_update_user_name(self, user_service, sample_user_data):
         created = await user_service.create_user(sample_user_data)
         updated = await user_service.update_user(created.id, UserUpdate(name="New Name"))
@@ -144,6 +147,8 @@ class TestUserServiceUpdate:
 
 
 class TestUserServicePassword:
+    pytestmark = pytest.mark.asyncio
+
     async def test_change_password_success(self, user_service, sample_user_data):
         created = await user_service.create_user(sample_user_data)
         result = await user_service.change_password(
@@ -162,6 +167,8 @@ class TestUserServicePassword:
 
 
 class TestUserServiceDelete:
+    pytestmark = pytest.mark.asyncio
+
     async def test_delete_user_success(self, user_service, sample_user_data):
         created = await user_service.create_user(sample_user_data)
         result = await user_service.delete_user(created.id)
@@ -176,6 +183,8 @@ class TestUserServiceDelete:
 # ── AuthService Tests ─────────────────────────────────────
 
 class TestAuthServiceLogin:
+    pytestmark = pytest.mark.asyncio
+
     async def test_login_success(self, auth_service, user_service, sample_user_data):
         await user_service.create_user(sample_user_data)
         result = await auth_service.login(
@@ -211,6 +220,8 @@ class TestAuthServiceLogin:
 
 
 class TestAuthServiceRegister:
+    pytestmark = pytest.mark.asyncio
+
     async def test_register_success(self, auth_service, user_service):
         user = await auth_service.register(UserCreate(
             email="new@example.com", password="NewPass123", name="New User"
@@ -225,6 +236,8 @@ class TestAuthServiceRegister:
 
 
 class TestAuthServiceTokenRefresh:
+    pytestmark = pytest.mark.asyncio
+
     async def test_refresh_token_success(self, auth_service, user_service, sample_user_data):
         await user_service.create_user(sample_user_data)
         result = await auth_service.login(email="test@example.com", password="SecretPass123")
@@ -239,6 +252,8 @@ class TestAuthServiceTokenRefresh:
 
 
 class TestAuthServiceLogout:
+    pytestmark = pytest.mark.asyncio
+
     async def test_logout_invalidates_session(self, auth_service, user_service, sample_user_data):
         await user_service.create_user(sample_user_data)
         result = await auth_service.login(

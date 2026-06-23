@@ -1405,6 +1405,8 @@ input[type="radio"],
     --art-radius-lg: 20px;
     --art-radius-md: 16px;
     --art-radius-sm: 14px;
+  }
+
   .art-primary-button,
   .art-soft-button {
     min-height: 44px;

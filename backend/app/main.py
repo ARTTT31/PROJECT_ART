@@ -21,9 +21,9 @@ from fastapi.staticfiles import StaticFiles
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Create database tables asynchronously on startup
-    async with engine.begin() as conn:
-        await conn.run_sync(base.Base.metadata.create_all)
+    if settings.AUTO_CREATE_TABLES:
+        async with engine.begin() as conn:
+            await conn.run_sync(base.Base.metadata.create_all)
     yield
 
 

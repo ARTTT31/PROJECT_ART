@@ -1,8 +1,4 @@
-"""
-API endpoint tests for ART Workspace backend.
-Uses httpx.AsyncClient with in-memory SQLite (aiosqlite) for async testing.
-"""
-import asyncio
+"""API endpoint tests for ART Workspace backend."""
 import pytest
 from httpx import AsyncClient, ASGITransport
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
@@ -15,13 +11,6 @@ from app.schemas.user import UserCreate
 pytestmark = pytest.mark.asyncio
 
 # ── Fixtures ──────────────────────────────────────────────
-
-@pytest.fixture(scope="session")
-def event_loop():
-    loop = asyncio.get_event_loop_policy().new_event_loop()
-    yield loop
-    loop.close()
-
 
 @pytest.fixture
 async def db_session():

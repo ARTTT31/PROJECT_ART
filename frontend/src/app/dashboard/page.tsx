@@ -2,16 +2,14 @@
 
 
 import { useEffect, useRef, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import DashboardLayout from '@/components/Layout/DashboardLayout'
 import CalendarWidget from '@/components/Widgets/CalendarWidget'
 import TaskListWidget from '@/components/Widgets/TaskListWidget'
 import OilPriceWidget from '@/components/Widgets/OilPriceWidget'
 import QRCodeWidget from '@/components/Widgets/QRCodeWidget'
-import { Eye, EyeOff } from 'lucide-react'
-import { WidgetConfig, AuthUser } from '@/types'
+import { Eye, EyeOff, SlidersHorizontal } from 'lucide-react'
+import { WidgetConfig } from '@/types'
 import ErrorBoundary from '@/components/ErrorBoundary'
-import { useToast } from '@/components/Toast/ToastProvider'
 import { Dialog, DialogContent } from '@/components/ui/Dialog'
 import { useAuth } from '@/hooks/useAuth'
 import {
@@ -47,8 +45,6 @@ const widgetNames: Record<string, string> = {
 }
 
 export default function DashboardPage() {
-  const router = useRouter()
-  const toast = useToast()
   const { user } = useAuth()
   const [widgets, setWidgets] = useState<WidgetConfig[]>([])
   const [visibleWidgetIds, setVisibleWidgetIds] = useState<string[]>([])
@@ -169,6 +165,17 @@ export default function DashboardPage() {
   return (
     <DashboardLayout>
       <div className="w-full">
+        <div className="mb-4 flex justify-end px-3 sm:px-4 lg:px-6">
+          <button
+            type="button"
+            onClick={() => setShowConfigModal(true)}
+            className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-white/60 bg-white/80 px-4 py-2 text-sm font-semibold text-slate-700 shadow-glass-sm transition-colors hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
+            aria-label="Manage widgets"
+          >
+            <SlidersHorizontal className="h-4 w-4 text-sky-600" aria-hidden="true" />
+            <span>Manage widgets</span>
+          </button>
+        </div>
 
         {/* Dashboard Grid */}
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>

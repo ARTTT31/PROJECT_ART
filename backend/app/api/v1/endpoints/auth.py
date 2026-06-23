@@ -26,6 +26,7 @@ except ImportError:
     google_requests = None  # type: ignore[assignment]
     _GOOGLE_AUTH_AVAILABLE = False
 
+from app.core.config import settings
 from app.core.database import get_db
 from app.core.security import create_access_token, create_refresh_token, decode_token
 from app.models.session import UserSession
@@ -36,6 +37,12 @@ from app.services.audit_service import AuditService
 from app.services.user_service import UserService
 
 router = APIRouter()
+
+COOKIE_OPTIONS = {
+    "secure": settings.COOKIE_SECURE,
+    "samesite": settings.COOKIE_SAMESITE,
+    "path": "/",
+}
 
 
 @router.post("/login", response_model=ResponseModel)
@@ -89,25 +96,20 @@ async def login(
 
         response = JSONResponse(content=resp.model_dump())
 
-        # 🔧 Cross-site cookies: samesite="none" + secure=True required
-        # because frontend (*.vercel.app) and backend (*.onrender.com) are on different sites.
+        # Cookie attributes are environment-configurable for production HTTPS and local HTTP.
         response.set_cookie(
             key="access_token",
             value=result["access_token"],
             max_age=30 * 60,
             httponly=True,
-            secure=True,
-            samesite="none",
-            path="/",
+            **COOKIE_OPTIONS,
         )
         response.set_cookie(
             key="refresh_token",
             value=result["refresh_token"],
             max_age=7 * 24 * 60 * 60,
             httponly=True,
-            secure=True,
-            samesite="none",
-            path="/",
+            **COOKIE_OPTIONS,
         )
         return response
 
@@ -225,15 +227,13 @@ async def refresh_token(
 
         response = JSONResponse(content=resp.model_dump())
 
-        # 🔧 Cross-site cookies: samesite="none" + secure=True required
+        # Cookie attributes are environment-configurable for production HTTPS and local HTTP.
         response.set_cookie(
             key="access_token",
             value=new_tokens.access_token,
             max_age=30 * 60,
             httponly=True,
-            secure=True,
-            samesite="none",
-            path="/",
+            **COOKIE_OPTIONS,
         )
         if new_tokens.refresh_token:
             response.set_cookie(
@@ -241,9 +241,7 @@ async def refresh_token(
                 value=new_tokens.refresh_token,
                 max_age=7 * 24 * 60 * 60,
                 httponly=True,
-                secure=True,
-                samesite="none",
-                path="/",
+                **COOKIE_OPTIONS,
             )
 
         return response
@@ -408,24 +406,20 @@ async def google_callback(
     redirect_url = f"{frontend_redirect}/login-success"
     response = RedirectResponse(url=redirect_url)
 
-    # 🔧 Cross-site cookies: samesite="none" + secure=True required
+    # Cookie attributes are environment-configurable for production HTTPS and local HTTP.
     response.set_cookie(
         key="access_token",
         value=access_jwt,
         max_age=30 * 60,
         httponly=True,
-        secure=True,
-        samesite="none",
-        path="/",
+        **COOKIE_OPTIONS,
     )
     response.set_cookie(
         key="refresh_token",
         value=refresh_jwt,
         max_age=7 * 24 * 60 * 60,
         httponly=True,
-        secure=True,
-        samesite="none",
-        path="/",
+        **COOKIE_OPTIONS,
     )
     # Non-httpOnly user data cookie (read by frontend for quick display/hydration)
     response.set_cookie(
@@ -433,9 +427,7 @@ async def google_callback(
         value=json.dumps(user_data),
         max_age=7 * 24 * 60 * 60,
         httponly=False,
-        secure=True,
-        samesite="none",
-        path="/",
+        **COOKIE_OPTIONS,
     )
     return response
 
@@ -500,9 +492,9 @@ async def logout(
     response = JSONResponse(content={"result": "success", "message": "ออกจากระบบสำเร็จ"})
 
     # Clear cookies (must match the same samesite/secure attributes used when setting them)
-    response.delete_cookie("access_token", path="/", samesite="none", secure=True)
-    response.delete_cookie("refresh_token", path="/", samesite="none", secure=True)
-    response.delete_cookie("user", path="/", samesite="none", secure=True)
+    response.delete_cookie("access_token", **COOKIE_OPTIONS)
+    response.delete_cookie("refresh_token", **COOKIE_OPTIONS)
+    response.delete_cookie("user", **COOKIE_OPTIONS)
 
     # Invalidate session in DB if session_id is provided
     try:

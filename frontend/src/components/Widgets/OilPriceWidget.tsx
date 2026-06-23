@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Fuel, AlertCircle, RefreshCw } from 'lucide-react'
 import WidgetSizeToggle from './WidgetSizeToggle'
-import { apiClient } from '@/lib/api/client'
+import { fetchWithAuth } from '@/lib/api/fetchWithAuth'
 
 interface OilPrice {
   key: string
@@ -96,8 +96,8 @@ export default function OilPriceWidget({
     else setLoading(true)
     setError(null)
     try {
-      const res = await apiClient.get('/oil-prices/oil-prices', { signal: controller.signal })
-      const result = res.data
+      const res = await fetchWithAuth('/api/v1/oil-prices/oil-prices', { signal: controller.signal })
+      const result = await res.json()
       if (result.success && (result.prices || result.oil_prices)) {
         setData(result)
         setCacheNote(null)
@@ -107,7 +107,7 @@ export default function OilPriceWidget({
       }
       setLastUpdate(new Date())
     } catch (err: any) {
-      if (err?.name === 'CanceledError' || err?.code === 'ERR_CANCELED') return
+      if (err?.name === 'AbortError') return
       console.error('Oil price fetch error:', err)
       setError('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์')
     } finally {
@@ -129,7 +129,6 @@ export default function OilPriceWidget({
     fetchPrices()
     const interval = setInterval(() => fetchPrices({ refresh: true }), 300000) // every 5 minutes
     return () => clearInterval(interval)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
