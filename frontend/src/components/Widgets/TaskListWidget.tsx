@@ -249,7 +249,7 @@ export default function TaskListWidget({
           <p className="text-red-600 font-medium mb-2">{error}</p>
           <button
             onClick={fetchCalendarEvents}
-            className="px-4 py-2 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors text-sm font-semibold"
+            className="art-primary-button !min-h-10 !px-4 !py-2 !text-sm"
           >
             ลองอีกครั้ง
           </button>
@@ -319,7 +319,7 @@ export default function TaskListWidget({
           {/* Refresh Button */}
           <button
             onClick={fetchCalendarEvents}
-            className={`art-soft-button !min-h-9 !rounded-full !py-1.5 sm:!py-2 !px-2 sm:!px-4 flex-shrink-0 ${
+            className={`art-soft-button !min-h-10 !py-2 !px-3 sm:!px-4 flex-shrink-0 ${
               width === 2 ? '!text-xs' : '!text-xs sm:!text-sm'
             }`}
             aria-label="รีเฟรชข้อมูลงาน"

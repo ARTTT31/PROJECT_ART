@@ -354,7 +354,7 @@ export default function QRCodeWidget({
         </div>
 
         {/* Format toggle */}
-        <div className="relative bg-slate-100 rounded-xl p-1 flex">
+        <div className="flex gap-2" role="group" aria-label="เลือกรูปแบบโค้ด">
           {formatOptions.map((opt) => {
             const Icon = opt.icon
             const isActive = format === opt.value
@@ -365,15 +365,11 @@ export default function QRCodeWidget({
                   setFormat(opt.value)
                   setError(null)
                 }}
-                className={`relative z-10 flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-[10px] text-sm font-semibold transition-all duration-200 ${
-                  isActive ? 'text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'
-                }`}
+                aria-pressed={isActive}
+                className="art-chip-button min-h-10 flex-1 px-3 py-2 text-sm"
               >
-                {isActive && <span className="absolute inset-0 rounded-[10px] bg-slate-900 shadow-sm" />}
-                <span className="relative z-10 flex items-center gap-1.5">
-                  <Icon size={16} />
-                  {opt.label}
-                </span>
+                <Icon size={16} aria-hidden="true" />
+                {opt.label}
               </button>
             )
           })}
@@ -461,7 +457,7 @@ export default function QRCodeWidget({
           )}
 
           {error && (
-            <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-600 px-3.5 py-2.5 rounded-xl text-xs font-medium">
+            <div className="alert alert-error !px-3.5 !py-2.5 !text-xs">
               {error}
             </div>
           )}

@@ -8,6 +8,7 @@ import { AuthUser } from '@/types'
 
 interface SidebarProps {
   isOpen: boolean
+  isCollapsed?: boolean
   onClose: () => void
   user: AuthUser | null
   onLogout: () => void
@@ -25,7 +26,7 @@ interface MenuSection {
   items: MenuItem[]
 }
 
-export default function Sidebar({ isOpen, onClose, user, onLogout }: SidebarProps) {
+export default function Sidebar({ isOpen, isCollapsed = false, onClose, user, onLogout }: SidebarProps) {
   const pathname = usePathname()
 
   const quickLinks = parseQuickLinks(user?.quick_links)
@@ -63,7 +64,7 @@ export default function Sidebar({ isOpen, onClose, user, onLogout }: SidebarProp
     <aside
       className={`fixed left-0 top-0 z-40 h-screen w-64 border-r border-slate-200/60 bg-white/90 shadow-glass-lg text-slate-900 transition-transform duration-300 ${
         isOpen ? 'translate-x-0' : '-translate-x-full'
-      } lg:translate-x-0`}
+      } ${isCollapsed ? 'lg:-translate-x-full' : 'lg:translate-x-0'}`}
     >
       <div
         className="absolute inset-0 bg-[radial-gradient(circle_at_80%_10%,rgba(14,165,233,0.12),transparent_42%),radial-gradient(circle_at_10%_90%,rgba(99,102,241,0.10),transparent_46%),linear-gradient(to_bottom,rgba(248,250,252,0.96),rgba(241,245,249,0.92))]"

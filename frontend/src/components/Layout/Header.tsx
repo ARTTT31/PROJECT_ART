@@ -11,9 +11,10 @@ interface HeaderProps {
   user: AuthUser | null
   onMenuClick: () => void
   onLogout: () => void
+  sidebarCollapsed?: boolean
 }
 
-export default function Header({ user, onMenuClick, onLogout }: HeaderProps) {
+export default function Header({ user, onMenuClick, onLogout, sidebarCollapsed = false }: HeaderProps) {
   const [showUserMenu, setShowUserMenu] = useState(false)
   const pathname = usePathname()
 
@@ -51,8 +52,9 @@ export default function Header({ user, onMenuClick, onLogout }: HeaderProps) {
         <div className="flex items-center gap-4">
           <button
             onClick={onMenuClick}
-            className="art-icon-button lg:hidden"
-            aria-label="เปิดเมนู"
+            className="art-icon-button"
+            aria-label={sidebarCollapsed ? 'เปิดแถบเมนูด้านข้าง' : 'พับแถบเมนูด้านข้าง'}
+            aria-pressed={!sidebarCollapsed}
           >
             <Menu size={22} aria-hidden="true" />
           </button>

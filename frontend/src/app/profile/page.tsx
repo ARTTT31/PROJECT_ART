@@ -584,7 +584,7 @@ export default function ProfilePage() {
                 <div className="flex justify-end">
                   <button
                     type="submit"
-                    className="px-6 py-3 bg-red-600 text-white rounded-xl font-semibold hover:bg-red-700 transition-colors"
+                    className="art-primary-button px-6 py-3"
                   >
                     <span className="flex items-center gap-2">
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -686,7 +686,7 @@ export default function ProfilePage() {
                               onClick={() => handleMoveQuickLink(link.id, 'up')}
                               disabled={quickLinks.indexOf(link) === 0}
                               aria-label="ย้ายขึ้น"
-                              className="inline-flex min-h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-2 py-1.5 text-slate-500 transition-colors hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed"
+                              className="art-icon-button small-control !h-9 !w-9 !rounded-lg"
                             >
                               <ChevronUp className="h-3.5 w-3.5" aria-hidden="true" />
                             </button>
@@ -695,7 +695,7 @@ export default function ProfilePage() {
                               onClick={() => handleMoveQuickLink(link.id, 'down')}
                               disabled={quickLinks.indexOf(link) === quickLinks.length - 1}
                               aria-label="ย้ายลง"
-                              className="inline-flex min-h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-2 py-1.5 text-slate-500 transition-colors hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed"
+                              className="art-icon-button small-control !h-9 !w-9 !rounded-lg"
                             >
                               <ChevronDown className="h-3.5 w-3.5" aria-hidden="true" />
                             </button>
@@ -703,7 +703,7 @@ export default function ProfilePage() {
                               href={link.url}
                               target={external ? '_blank' : undefined}
                               rel={external ? 'noopener noreferrer' : undefined}
-                              className="inline-flex min-h-9 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition-colors hover:border-sky-200 hover:bg-sky-50 hover:text-slate-900"
+                              className="art-soft-button !min-h-9 !gap-1.5 !px-3 !py-1.5 !text-xs"
                             >
                               <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
                               เปิด
@@ -711,7 +711,7 @@ export default function ProfilePage() {
                             <button
                               type="button"
                               onClick={() => openEditQuickLink(link)}
-                              className="inline-flex min-h-9 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900"
+                              className="art-soft-button !min-h-9 !gap-1.5 !px-3 !py-1.5 !text-xs"
                             >
                               <PencilLine className="h-3.5 w-3.5" aria-hidden="true" />
                               แก้ไข
@@ -719,7 +719,7 @@ export default function ProfilePage() {
                             <button
                               type="button"
                               onClick={() => handleDeleteQuickLink(link.id)}
-                              className="inline-flex min-h-9 items-center gap-1.5 rounded-xl border border-red-200 bg-red-50/70 px-3 py-1.5 text-xs font-semibold text-red-700 transition-colors hover:bg-red-50"
+                              className="art-soft-button !min-h-9 !gap-1.5 !border-red-200 !bg-red-50/80 !px-3 !py-1.5 !text-xs !text-red-700 hover:!bg-red-50"
                             >
                               <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                               ลบ
@@ -814,10 +814,10 @@ export default function ProfilePage() {
                                 aria-pressed={isSelected}
                                 aria-label={`เลือกไอคอน ${opt.label}`}
                                 title={opt.label}
-                                className={`flex h-[52px] w-full items-center justify-center rounded-2xl border p-2 transition-all ${
+                                className={`art-chip-button h-[52px] w-full !rounded-[var(--art-radius-lg)] !p-2 ${
                                   isSelected
-                                    ? 'border-sky-300 bg-sky-50 text-sky-900 shadow-[0_8px_20px_rgba(14,165,233,0.12)]'
-                                    : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'
+                                    ? 'is-active'
+                                    : ''
                                 }`}
                               >
                                 <span
@@ -876,7 +876,7 @@ export default function ProfilePage() {
                         <button
                           type="button"
                           onClick={() => setQuickLinkDialogOpen(false)}
-                          className="inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+                          className="art-soft-button px-4 py-2.5 text-sm"
                         >
                           ยกเลิก
                         </button>

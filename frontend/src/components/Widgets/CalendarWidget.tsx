@@ -93,7 +93,7 @@ export default function CalendarWidget({
                 onClick={previousMonth}
                 aria-label="เดือนก่อนหน้า"
                 title="เดือนก่อนหน้า"
-                className="refresh-btn"
+                className="art-icon-button"
               >
                 <ChevronLeft className={`${width === 2 ? 'w-4 h-4' : 'w-5 h-5'}`} aria-hidden="true" />
               </button>
@@ -101,7 +101,7 @@ export default function CalendarWidget({
                 onClick={goToToday}
                 aria-label="กลับไปเดือนปัจจุบัน"
                 title="กลับไปเดือนปัจจุบัน"
-                className={`art-primary-button !min-h-[40px] sm:!min-h-[44px] !px-3 sm:!px-4 text-xs sm:text-sm`}
+                className="art-primary-button !min-h-11 !px-4 !py-2 text-sm"
               >
                 วันนี้
               </button>
@@ -109,7 +109,7 @@ export default function CalendarWidget({
                 onClick={nextMonth}
                 aria-label="เดือนถัดไป"
                 title="เดือนถัดไป"
-                className="refresh-btn"
+                className="art-icon-button"
               >
                 <ChevronRight className={`${width === 2 ? 'w-4 h-4' : 'w-5 h-5'}`} aria-hidden="true" />
               </button>

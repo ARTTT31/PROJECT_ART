@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Fuel, AlertCircle, RefreshCw } from 'lucide-react'
+import { Fuel, AlertCircle } from 'lucide-react'
 import WidgetSizeToggle from './WidgetSizeToggle'
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth'
 
@@ -179,21 +179,12 @@ export default function OilPriceWidget({
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
             {onResize && <WidgetSizeToggle value={width} onChange={onResize} sizes={[1, 2, 3]} />}
-            <button
-              type="button"
-              onClick={() => fetchPrices({ refresh: true })}
-              className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 active:scale-95 transition"
-              aria-label="รีเฟรชราคาน้ำมัน"
-              title="รีเฟรชราคาน้ำมัน"
-            >
-              <RefreshCw size={14} className={loading || refreshing ? 'animate-spin' : ''} aria-hidden="true" />
-            </button>
           </div>
         </div>
 
         {/* ── Error banner ── */}
         {error && (
-          <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-600 px-3 py-2 rounded-xl text-xs font-medium">
+          <div className="alert alert-error !px-3 !py-2 !text-xs">
             <AlertCircle size={14} className="flex-shrink-0" />
             {error}
           </div>

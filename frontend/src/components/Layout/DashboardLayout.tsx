@@ -15,6 +15,7 @@ interface DashboardLayoutProps {
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const { user, logout } = useAuth()
 
   const handleLogout = () => {
@@ -33,6 +34,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         <div className="relative z-20">
           <Sidebar
             isOpen={sidebarOpen}
+            isCollapsed={sidebarCollapsed}
             onClose={() => setSidebarOpen(false)}
             user={user}
             onLogout={handleLogout}
@@ -40,11 +42,22 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         </div>
 
         {/* Main Content wrapper */}
-        <div className="relative z-10 min-h-[100dvh] flex flex-col lg:pl-64">
+        <div
+          className={`relative z-10 min-h-[100dvh] flex flex-col transition-[padding] duration-300 ${
+            sidebarCollapsed ? 'lg:pl-0' : 'lg:pl-64'
+          }`}
+        >
           {/* Header */}
           <Header
             user={user}
-            onMenuClick={() => setSidebarOpen(true)}
+            onMenuClick={() => {
+              if (window.matchMedia('(min-width: 1024px)').matches) {
+                setSidebarCollapsed((value) => !value)
+                return
+              }
+              setSidebarOpen(true)
+            }}
+            sidebarCollapsed={sidebarCollapsed}
             onLogout={handleLogout}
           />
 
