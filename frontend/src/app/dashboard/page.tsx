@@ -2,12 +2,46 @@
 
 
 import { useEffect, useRef, useState } from 'react'
+import dynamic from 'next/dynamic'
 import DashboardLayout from '@/components/Layout/DashboardLayout'
-import CalendarWidget from '@/components/Widgets/CalendarWidget'
-import TaskListWidget from '@/components/Widgets/TaskListWidget'
-import OilPriceWidget from '@/components/Widgets/OilPriceWidget'
-import QRCodeWidget from '@/components/Widgets/QRCodeWidget'
-import { Check, Eye, EyeOff, SlidersHorizontal } from 'lucide-react'
+import { Check, Eye, EyeOff, SlidersHorizontal, Loader2 } from 'lucide-react'
+
+// Lazy load heavy widgets to improve initial render performance (FCP/LCP)
+const CalendarWidget = dynamic(() => import('@/components/Widgets/CalendarWidget'), {
+  ssr: false,
+  loading: () => (
+    <div className="flex min-h-[400px] items-center justify-center rounded-[var(--art-radius-lg)] border border-slate-200 bg-white shadow-sm">
+      <Loader2 className="h-8 w-8 animate-spin text-slate-300" />
+    </div>
+  ),
+})
+
+const TaskListWidget = dynamic(() => import('@/components/Widgets/TaskListWidget'), {
+  ssr: false,
+  loading: () => (
+    <div className="flex min-h-[400px] items-center justify-center rounded-[var(--art-radius-lg)] border border-slate-200 bg-white shadow-sm">
+      <Loader2 className="h-8 w-8 animate-spin text-slate-300" />
+    </div>
+  ),
+})
+
+const OilPriceWidget = dynamic(() => import('@/components/Widgets/OilPriceWidget'), {
+  ssr: false,
+  loading: () => (
+    <div className="flex min-h-[200px] items-center justify-center rounded-[var(--art-radius-lg)] border border-slate-200 bg-white shadow-sm">
+      <Loader2 className="h-8 w-8 animate-spin text-slate-300" />
+    </div>
+  ),
+})
+
+const QRCodeWidget = dynamic(() => import('@/components/Widgets/QRCodeWidget'), {
+  ssr: false,
+  loading: () => (
+    <div className="flex min-h-[200px] items-center justify-center rounded-[var(--art-radius-lg)] border border-slate-200 bg-white shadow-sm">
+      <Loader2 className="h-8 w-8 animate-spin text-slate-300" />
+    </div>
+  ),
+})
 import { WidgetConfig } from '@/types'
 import ErrorBoundary from '@/components/ErrorBoundary'
 import { Dialog, DialogContent } from '@/components/ui/Dialog'
