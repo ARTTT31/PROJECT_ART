@@ -23,7 +23,7 @@ const formatTime = (date: Date) =>
     hour12: false,
   }).format(date);
 
-const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://art-workspace-api.onrender.com';
+const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || '';
 const LOGIN_ENDPOINT = `${apiBaseUrl}/api/v1/auth/login`;
 
 export default function LoginPage() {

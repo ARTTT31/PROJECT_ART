@@ -25,7 +25,7 @@ const nextConfig = {
     return [
       {
         source: '/api/:path*',
-        destination: `${process.env.API_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL}/api/:path*`,
+        destination: `${process.env.API_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL || 'https://project-art-c7eh.onrender.com'}/api/:path*`,
       },
     ];
   },

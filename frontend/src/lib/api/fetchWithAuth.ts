@@ -2,7 +2,7 @@
  * Authenticated fetch helper with automatic cookie-based session/token refresh.
  */
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://art-workspace-api.onrender.com';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
 // ── Shared refresh state ─────────────────────────────────────
 let isRefreshing = false;
