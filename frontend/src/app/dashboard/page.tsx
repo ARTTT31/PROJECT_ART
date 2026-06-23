@@ -176,7 +176,7 @@ export default function DashboardPage() {
           <button
             type="button"
             onClick={() => setShowConfigModal(true)}
-            className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-white/60 bg-white/80 px-4 py-2 text-sm font-semibold text-slate-700 shadow-glass-sm transition-colors hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
+            className="art-soft-button !min-h-11 !px-4 !py-2 !text-sm"
             aria-label="Manage widgets"
           >
             <SlidersHorizontal className="h-4 w-4 text-sky-600" aria-hidden="true" />
@@ -260,7 +260,7 @@ export default function DashboardPage() {
             })}
           </div>
           <div className="mt-6 flex justify-end">
-            <button onClick={() => setShowConfigModal(false)} className="art-primary-button !min-h-[40px] !px-5 !py-2 !text-sm">
+            <button onClick={() => setShowConfigModal(false)} className="art-primary-button !min-h-10 !px-5 !py-2 !text-sm">
               ตกลง
             </button>
           </div>

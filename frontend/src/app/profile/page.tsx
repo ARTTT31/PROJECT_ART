@@ -362,7 +362,7 @@ export default function ProfilePage() {
                   <div className="w-24 h-24 sm:w-32 sm:h-32 bg-gradient-to-br from-sky-500 to-blue-600 rounded-full flex items-center justify-center text-white text-3xl sm:text-4xl font-bold border-4 border-white shadow-[0_14px_30px_rgba(15,23,42,0.16)]">
                     {user.name?.charAt(0).toUpperCase() || 'U'}
                   </div>
-                  <button className="absolute bottom-2 right-2 w-10 h-10 bg-white rounded-full shadow-lg flex items-center justify-center hover:bg-slate-50 transition-colors border-2 border-slate-100" aria-label="เปลี่ยนรูปโปรไฟล์">
+                  <button className="art-icon-button absolute bottom-2 right-2 !h-10 !w-10 !rounded-full" aria-label="เปลี่ยนรูปโปรไฟล์">
                     <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -484,7 +484,7 @@ export default function ProfilePage() {
                     <button
                       type="button"
                       onClick={() => setShowOldPassword(!showOldPassword)}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                      className="art-icon-button absolute right-3 top-1/2 !h-10 !w-10 -translate-y-1/2 !border-transparent !bg-transparent !shadow-none"
                     >
                       {showOldPassword ? (
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -517,7 +517,7 @@ export default function ProfilePage() {
                       <button
                         type="button"
                         onClick={() => setShowNewPassword(!showNewPassword)}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                        className="art-icon-button absolute right-3 top-1/2 !h-10 !w-10 -translate-y-1/2 !border-transparent !bg-transparent !shadow-none"
                       >
                         {showNewPassword ? (
                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -564,7 +564,7 @@ export default function ProfilePage() {
                       <button
                         type="button"
                         onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                        className="art-icon-button absolute right-3 top-1/2 !h-10 !w-10 -translate-y-1/2 !border-transparent !bg-transparent !shadow-none"
                       >
                         {showConfirmPassword ? (
                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

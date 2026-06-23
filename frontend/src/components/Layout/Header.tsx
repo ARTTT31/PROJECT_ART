@@ -51,7 +51,7 @@ export default function Header({ user, onMenuClick, onLogout }: HeaderProps) {
         <div className="flex items-center gap-4">
           <button
             onClick={onMenuClick}
-            className="inline-flex h-11 w-11 items-center justify-center rounded-xl text-slate-600 transition-colors hover:bg-slate-100 lg:hidden"
+            className="art-icon-button lg:hidden"
             aria-label="เปิดเมนู"
           >
             <Menu size={22} aria-hidden="true" />
@@ -93,7 +93,7 @@ export default function Header({ user, onMenuClick, onLogout }: HeaderProps) {
           <div className="relative">
             <button
               onClick={() => setShowUserMenu(!showUserMenu)}
-              className="flex min-h-11 items-center gap-3 rounded-2xl border border-white/40 bg-white/60 px-2 py-1.5 shadow-glass-sm transition-colors hover:bg-white/80"
+              className="art-soft-button !min-h-11 !gap-3 !rounded-xl !px-2 !py-1.5"
               aria-expanded={showUserMenu}
               aria-label="เปิดเมนูผู้ใช้"
             >
@@ -129,7 +129,7 @@ export default function Header({ user, onMenuClick, onLogout }: HeaderProps) {
 
                   <button
                     onClick={onLogoutClick}
-                    className="flex w-full items-center gap-3 border-t border-slate-100 px-4 py-3 text-sm font-medium text-red-600 transition-colors hover:bg-red-50"
+                    className="flex w-full items-center gap-3 border-t border-slate-100 px-4 py-3 text-sm font-semibold text-red-600 transition-colors hover:bg-red-50"
                   >
                     <LogOut size={18} aria-hidden="true" />
                     ออกจากระบบ

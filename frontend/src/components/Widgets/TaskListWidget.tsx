@@ -319,7 +319,7 @@ export default function TaskListWidget({
           {/* Refresh Button */}
           <button
             onClick={fetchCalendarEvents}
-            className={`art-soft-button !rounded-full !py-1.5 sm:!py-2 !px-2 sm:!px-4 flex items-center gap-1 flex-shrink-0 ${
+            className={`art-soft-button !min-h-9 !rounded-full !py-1.5 sm:!py-2 !px-2 sm:!px-4 flex-shrink-0 ${
               width === 2 ? '!text-xs' : '!text-xs sm:!text-sm'
             }`}
             aria-label="รีเฟรชข้อมูลงาน"
@@ -336,20 +336,22 @@ export default function TaskListWidget({
       <div className="flex flex-wrap items-center gap-1.5 sm:gap-2.5 py-3 sm:py-4 border-b border-slate-100" role="group" aria-label="ตัวกรองงาน">
         <button
           onClick={() => setFilter('all')}
-          className={`flex items-center gap-1 px-2 sm:px-4 py-1 sm:py-1.5 rounded-full text-xs font-bold transition-all ${
+          aria-pressed={filter === 'all'}
+          className={`art-chip-button px-2 sm:px-4 ${
             filter === 'all'
-              ? 'bg-slate-800 text-white shadow-glass-sm'
-              : 'bg-white/50 border border-white/40 backdrop-blur-md text-slate-600 hover:bg-white/80 hover:text-slate-700'
+              ? 'is-active'
+              : ''
           }`}
         >
           ทั้งหมด
         </button>
         <button
           onClick={() => setFilter('imacd')}
-          className={`flex items-center gap-1 px-2 sm:px-4 py-1 sm:py-1.5 rounded-full text-xs font-bold transition-all border ${
+          aria-pressed={filter === 'imacd'}
+          className={`art-chip-button px-2 sm:px-4 ${
             filter === 'imacd'
-              ? 'bg-red-500 border-red-400 text-white shadow-glass-sm'
-              : 'bg-red-50/60 backdrop-blur-md border-red-200 text-red-600 hover:bg-red-100/80'
+              ? 'is-active !border-red-500 !bg-red-500'
+              : '!border-red-200 !bg-red-50/70 !text-red-700 hover:!bg-red-100'
           }`}
         >
           <Tag size={width === 2 ? 10 : 12} className="fill-current flex-shrink-0" />
@@ -358,10 +360,11 @@ export default function TaskListWidget({
         </button>
         <button
           onClick={() => setFilter('thanapong')}
-          className={`flex items-center gap-1 px-2 sm:px-4 py-1 sm:py-1.5 rounded-full text-xs font-bold transition-all border ${
+          aria-pressed={filter === 'thanapong'}
+          className={`art-chip-button px-2 sm:px-4 ${
             filter === 'thanapong'
-              ? 'bg-blue-500 border-blue-400 text-white shadow-glass-sm'
-              : 'bg-blue-50/60 backdrop-blur-md border-blue-200 text-blue-600 hover:bg-blue-100/80'
+              ? 'is-active !border-blue-500 !bg-blue-500'
+              : '!border-blue-200 !bg-blue-50/70 !text-blue-700 hover:!bg-blue-100'
           }`}
         >
           <Tag size={width === 2 ? 10 : 12} className="fill-current flex-shrink-0" />
@@ -374,8 +377,9 @@ export default function TaskListWidget({
       <div className="flex flex-wrap items-center gap-1.5 px-4 py-2 border-b border-slate-100" role="group" aria-label="กรองตามประเภท">
         <button
           onClick={() => setCategoryFilter('all')}
-          className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-colors ${
-            categoryFilter === 'all' ? 'bg-slate-800 text-white' : 'text-slate-500 hover:bg-slate-100'
+          aria-pressed={categoryFilter === 'all'}
+          className={`art-chip-button !min-h-7 !rounded-lg !px-2.5 !py-1 !text-[11px] ${
+            categoryFilter === 'all' ? 'is-active' : 'border-transparent bg-transparent shadow-none'
           }`}
         >ทุกประเภท</button>
         {Object.entries(categoryCounts).sort((a, b) => b[1] - a[1]).map(([cat, count]) => {
@@ -391,8 +395,9 @@ export default function TaskListWidget({
             <button
               key={cat}
               onClick={() => setCategoryFilter(cat)}
-              className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-colors ${
-                categoryFilter === cat ? colors.active : colors.inactive
+              aria-pressed={categoryFilter === cat}
+              className={`art-chip-button !min-h-7 !rounded-lg !px-2.5 !py-1 !text-[11px] ${
+                categoryFilter === cat ? colors.active : `border-transparent bg-transparent shadow-none ${colors.inactive}`
               }`}
             >{cat}: {count}</button>
           )

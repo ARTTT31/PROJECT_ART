@@ -416,7 +416,7 @@ export default function QRCodeWidget({
                 <button
                   onClick={copyImageToClipboard}
                   disabled={copyingImage}
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 transition-all active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="art-soft-button !min-h-10 !px-4 !py-2 !text-xs"
                   aria-label="คัดลอกรูปภาพ"
                 >
                   <Copy size={14} />
@@ -424,7 +424,7 @@ export default function QRCodeWidget({
                 </button>
                 <button
                   onClick={downloadImage}
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 hover:bg-slate-700 px-4 py-2 text-xs font-semibold text-white transition-all active:scale-95"
+                  className="art-primary-button !min-h-10 !px-4 !py-2 !text-xs"
                   aria-label="ดาวน์โหลด"
                 >
                   <Download size={14} />
@@ -433,7 +433,7 @@ export default function QRCodeWidget({
                 <button
                   onClick={printCode}
                   disabled={printing}
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 transition-all active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="art-soft-button !min-h-10 !px-4 !py-2 !text-xs"
                   aria-label="พิมพ์"
                 >
                   <Printer size={14} />

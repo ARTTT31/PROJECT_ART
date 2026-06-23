@@ -38,10 +38,10 @@ export default function WidgetSizeToggle({
           onClick={() => onChange(size)}
           aria-pressed={isActive}
           className={clsx(
-            'inline-flex h-9 min-w-10 items-center justify-center rounded-full px-3 text-xs font-extrabold transition-colors',
+            'art-chip-button min-h-9 min-w-10 px-3 text-xs',
             isActive
-              ? 'bg-gradient-to-r from-cyan-400 to-blue-500 text-white shadow-[0_10px_24px_rgba(14,165,233,0.25)]'
-              : 'text-slate-600 hover:bg-white hover:text-slate-900',
+              ? 'is-active'
+              : 'border-transparent bg-transparent shadow-none',
           )}
           title={size === 1 ? 'เล็ก (S)' : size === 2 ? 'กลาง (M)' : size === 3 ? 'ใหญ่ (L)' : `ขนาด ${size}`}
           >

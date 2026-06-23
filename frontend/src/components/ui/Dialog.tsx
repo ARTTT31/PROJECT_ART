@@ -159,7 +159,7 @@ export function DialogContent({
           <button
             type="button"
             onClick={() => ctx.onOpenChange(false)}
-            className="inline-flex h-11 w-11 items-center justify-center rounded-2xl text-slate-500 transition-colors hover:bg-white/70 hover:text-slate-700"
+            className="art-icon-button"
             aria-label="ปิดหน้าต่าง"
           >
             <X size={18} aria-hidden="true" />
