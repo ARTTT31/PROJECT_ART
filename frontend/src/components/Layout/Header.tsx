@@ -86,7 +86,7 @@ export default function Header({ user, onMenuClick, onLogout, sidebarCollapsed =
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="hidden sm:flex min-h-11 items-center gap-2 rounded-full border border-white/40 bg-white/50 px-
+          <div className="hidden sm:flex min-h-11 items-center gap-2 rounded-full border border-white/40 bg-white/50 px-3 py-2 text-sm font-semibold text-slate-700 shadow-glass-sm">
             <ClockTime />
           </div>
 
