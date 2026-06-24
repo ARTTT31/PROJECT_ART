@@ -325,8 +325,8 @@ function WidgetErrorFallback({ name, error, reset }: { name: string; error: Erro
 
 const getColSpanClass = (w: number) => {
   if (w === 3) return 'col-span-full'
-  if (w === 2) return 'col-span-full md:col-span-8 lg:col-span-10'
-  return 'col-span-full md:col-span-6 lg:col-span-8'
+  if (w === 2) return 'col-span-full md:col-span-8'
+  return 'col-span-full md:col-span-6'
 }
 
 /** Sortable wrapper for each widget - supports mouse, touch, and keyboard drag */

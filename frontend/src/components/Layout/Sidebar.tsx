@@ -67,7 +67,7 @@ export default function Sidebar({ isOpen, isCollapsed = false, onClose, user, on
       } ${isCollapsed ? 'lg:-translate-x-full' : 'lg:translate-x-0'}`}
     >
       <div
-        className="absolute inset-0 bg-[radial-gradient(circle_at_80%_10%,rgba(14,165,233,0.12),transparent_42%),radial-gradient(circle_at_10%_90%,rgba(99,102,241,0.10),transparent_46%),linear-gradient(to_bottom,rgba(248,250,252,0.96),rgba(241,245,249,0.92))]"
+        className="absolute inset-0 bg-[radial-gradient(circle_at_80%_10%,rgba(14,165,233,0.12),transparent_42%),radial-gradient(circle_at_10%_90%,rgba(99,102,241,0.10),transparent_46%),linear-gradient(to_bottom,rgba(248,250,252,0.96),rgba(241,245,249,0.92))] pointer-events-none"
         aria-hidden="true"
       />
       <div className="relative flex h-full flex-col">
