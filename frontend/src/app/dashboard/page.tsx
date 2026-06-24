@@ -324,9 +324,9 @@ function WidgetErrorFallback({ name, error, reset }: { name: string; error: Erro
 }
 
 const getColSpanClass = (w: number) => {
-  if (w === 3) return 'col-span-1 md:col-span-12'
-  if (w === 2) return 'col-span-1 md:col-span-8'
-  return 'col-span-1 md:col-span-6'
+  if (w === 3) return 'col-span-full'
+  if (w === 2) return 'col-span-full md:col-span-8 lg:col-span-10'
+  return 'col-span-full md:col-span-6 lg:col-span-8'
 }
 
 /** Sortable wrapper for each widget - supports mouse, touch, and keyboard drag */
@@ -369,9 +369,11 @@ function SortableWidget({
       <div
         {...attributes}
         {...listeners}
-        className="absolute inset-x-0 top-0 z-10 h-6 cursor-grab active:cursor-grabbing touch-none"
+        className="absolute inset-x-0 top-0 z-10 h-11 cursor-grab active:cursor-grabbing touch-none flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
         aria-label={`ย้ายวิดเจ็ต ${widgetNames[widget.id]}`}
-      />
+      >
+        <span className="w-8 h-1 rounded-full bg-slate-300" aria-hidden="true" />
+      </div>
 
 
       {widget.id === 'calendar' && (

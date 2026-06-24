@@ -126,7 +126,7 @@ export default function CalendarWidget({
           <iframe
             key={getCalendarUrl()}
             src={getCalendarUrl()}
-            style={{ border: 0, flex: 1, width: '100%', minHeight: '450px' }}
+            style={{ border: 0, flex: 1, width: '100%', minHeight: 'min(450px, 60dvh)' }}
             frameBorder="0"
             scrolling="no"
             title="Google Calendar"

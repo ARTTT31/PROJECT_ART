@@ -23,10 +23,10 @@
 
 .login-shell {
   width: min(1000px, 100%);
-  max-height: calc(100dvh - clamp(24px, 4.8vh, 48px));
+  max-height: none;
+  overflow: visible;
   display: grid;
   grid-template-columns: 1.05fr 0.95fr;
-  overflow: hidden;
   border-radius: 28px;
   background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(28px) saturate(180%);

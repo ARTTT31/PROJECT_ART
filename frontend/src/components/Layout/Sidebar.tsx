@@ -2,7 +2,7 @@
 
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { Home, LogOut, User } from 'lucide-react'
+import { Home, LogOut, User, Cctv } from 'lucide-react'
 import { isExternalUrl, parseQuickLinks, QUICK_LINK_ICON_MAP } from '@/utils/quickLinks'
 import { AuthUser } from '@/types'
 
@@ -53,16 +53,16 @@ export default function Sidebar({ isOpen, isCollapsed = false, onClose, user, on
       title: 'เมนูหลัก',
       items: [
         { name: 'หน้าหลัก', href: '/dashboard', icon: <Home size={20} aria-hidden="true" /> },
+        { name: 'กล้องวงจรปิด', href: '/camera', icon: <Cctv size={20} aria-hidden="true" /> },
         { name: 'โปรไฟล์', href: '/profile', icon: <User size={20} aria-hidden="true" /> },
       ],
     },
     ...(quickLinkSection ? [quickLinkSection] : []),
-
   ]
 
   return (
     <aside
-      className={`fixed left-0 top-0 z-40 h-screen w-64 border-r border-slate-200/60 bg-white/90 shadow-glass-lg text-slate-900 transition-transform duration-300 ${
+      className={`fixed left-0 top-0 z-40 h-screen w-[80vw] max-w-64 border-r border-slate-200/60 bg-white/90 shadow-glass-lg text-slate-900 transition-transform duration-300 ${
         isOpen ? 'translate-x-0' : '-translate-x-full'
       } ${isCollapsed ? 'lg:-translate-x-full' : 'lg:translate-x-0'}`}
     >
@@ -96,7 +96,7 @@ export default function Sidebar({ isOpen, isCollapsed = false, onClose, user, on
                           href={item.href}
                           target={item.external ? '_blank' : undefined}
                           rel={item.external ? 'noopener noreferrer' : undefined}
-                           className={`group flex min-h-11 items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-all duration-200 ${
+                          className={`group flex min-h-11 items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-all duration-200 ${
                             isActive
                               ? 'bg-sky-500/10 text-slate-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.45)]'
                               : 'text-slate-700 hover:bg-white/70 hover:text-slate-950'

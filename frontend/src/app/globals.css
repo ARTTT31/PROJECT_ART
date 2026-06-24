@@ -1466,6 +1466,43 @@ input[type="radio"],
   }
 }
 
+/* ═══════════════════════════════════════════════════════
+   TOUCH DEVICE HOVER OVERRIDES
+   ═══════════════════════════════════════════════════════ */
+@media (pointer: coarse) {
+  .premium-card:hover,
+  .glass-panel:hover,
+  .art-surface:hover,
+  .oil-price-item:hover,
+  .todo-item:hover,
+  .widget-header-icon:hover {
+    transform: none !important;
+  }
+
+  .premium-card:hover {
+    box-shadow: var(--shadow-glass) !important;
+  }
+
+  .art-primary-button:hover:not(:disabled),
+  .action-btn.primary:hover:not(:disabled) {
+    transform: none !important;
+  }
+
+  .art-soft-button:hover:not(:disabled),
+  .action-btn:hover:not(:disabled) {
+    transform: none !important;
+  }
+
+  .art-icon-button:hover:not(:disabled),
+  .refresh-btn:hover:not(:disabled) {
+    transform: none !important;
+  }
+
+  .art-chip-button:hover:not(:disabled) {
+    transform: none !important;
+  }
+}
+
 /* Page styles live in:
    - src/styles/pages/login.css
    - src/styles/pages/weather.css */

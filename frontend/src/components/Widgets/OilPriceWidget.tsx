@@ -192,7 +192,7 @@ export default function OilPriceWidget({
 
         {/* ── Card Grid ── */}
         {data && (data.oil_prices || data.prices || []).length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 flex-1">
+          <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 gap-3 flex-1">
             {[...(data.oil_prices || data.prices || [])].sort((a, b) => {
               const order = ['benzene_95', 'gasohol_95', 'gasohol_91', 'gasohol_e20', 'gasohol_e85', 'diesel']
               return order.indexOf(a.key) - order.indexOf(b.key)

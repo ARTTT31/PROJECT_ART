@@ -61,32 +61,32 @@ export default function Header({ user, onMenuClick, onLogout, sidebarCollapsed =
 
           <div>
             <h1 className="text-xl font-bold text-slate-950">{headerMeta.title}</h1>
-            <div className="hidden sm:flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <nav aria-label="breadcrumb" className="flex items-center gap-2 text-sm font-semibold text-slate-500">
                 {headerMeta.crumbs.map((c, idx) => {
                   const isLast = idx === headerMeta.crumbs.length - 1
                   return (
                     <span key={`${c.label}-${idx}`} className="flex items-center gap-2">
                       {c.href ? (
-                        <Link href={c.href} className="hover:text-slate-700 transition-colors">
+                        <Link href={c.href} className="hover:text-slate-700 transition-colors text-xs sm:text-sm">
                           {c.label}
                         </Link>
                       ) : (
-                        <span className={isLast ? 'text-slate-700' : ''}>{c.label}</span>
+                        <span className={`${isLast ? 'text-slate-700' : ''} text-xs sm:text-sm`}>{c.label}</span>
                       )}
-                      {!isLast && <span aria-hidden="true" className="text-slate-300">/</span>}
+                      {!isLast && <span aria-hidden="true" className="text-slate-300 text-xs">/</span>}
                     </span>
                   )
                 })}
               </nav>
-              <span aria-hidden="true" className="text-slate-300">•</span>
-              <p className="text-sm font-medium text-slate-500">{headerMeta.subtitle}</p>
+              <span aria-hidden="true" className="text-slate-300 hidden sm:inline">•</span>
+              <p className="text-sm font-medium text-slate-500 hidden sm:block truncate max-w-[200px]">{headerMeta.subtitle}</p>
             </div>
           </div>
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="hidden min-h-11 items-center gap-2 rounded-full border border-white/40 bg-white/50 px-3 py-2 text-sm font-semibold text-slate-700 md:flex shadow-glass-sm">
+          <div className="hidden sm:flex min-h-11 items-center gap-2 rounded-full border border-white/40 bg-white/50 px-
             <ClockTime />
           </div>
 
