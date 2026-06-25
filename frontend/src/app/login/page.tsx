@@ -89,6 +89,7 @@ export default function LoginPage() {
 
     try {
       // Sign in with Google using Capacitor plugin
+      // clientId is configured in capacitor.config.ts
       const result = await GoogleSignIn.signIn();
 
       if (result && result.idToken) {
