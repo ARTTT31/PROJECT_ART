@@ -3,12 +3,15 @@
 .env.local
 .env.*.local
 
-# Docker volumes
-postgres_data/
-
 # IDE
 .vscode/
 .idea/
+.cursor/
+.cursorrules
+.agents/
+.gemini/
+.impeccable/
+.kiro/
 *.swp
 *.swo
 
@@ -18,3 +21,42 @@ Thumbs.db
 
 # Logs
 *.log
+logs/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.egg-info/
+.eggs/
+dist/
+build/
+art_workspace.db
+
+# Node
+node_modules/
+.next/
+out/
+.swc/
+package-lock.json
+tsconfig.tsbuildinfo
+
+# Capacitor
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/captacitor/
+
+# Uploads
+uploads/
+.uploads/
+
+# Archives
+*.zip
+*.tar.gz
