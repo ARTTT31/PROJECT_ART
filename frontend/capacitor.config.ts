@@ -6,7 +6,7 @@ const config: CapacitorConfig = {
   webDir: 'out',
   plugins: {
     GoogleSignIn: {
-      clientId: '146007682845-2vom8oclhq6fu2vhqtikv2tqpfsbhk4m.apps.googleusercontent.com',
+      clientId: '888211169337-6u8trsph6578m9e0799rj0vnh5gu59m2.apps.googleusercontent.com',
       scopes: ['email', 'profile'],
       forceCodeForRefreshToken: true
     }
