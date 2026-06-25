@@ -60,19 +60,31 @@ export default function LoginPage() {
     // Initialize Google Sign-In with explicit clientId and redirectUrl for Web
     const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
     if (clientId) {
+      console.log("Initializing GoogleSignIn with clientId:", clientId);
       GoogleSignIn.initialize({ 
         clientId,
         redirectUrl: window.location.origin + '/login'
       }).then(() => {
-        // Handle web redirect callback if returning from Google OAuth
+        console.log("GoogleSignIn initialized. Checking for redirect callback...");
         return GoogleSignIn.handleRedirectCallback();
       }).then((result) => {
+        console.log("handleRedirectCallback result:", result);
         if (result && result.idToken) {
+          toast.info("ได้รับข้อมูลจาก Google กำลังยืนยันตัวตน...");
           setIsSubmitting(true);
           verifyGoogleToken(result.idToken);
+        } else if (result && result.serverAuthCode) {
+           // In case forceCodeForRefreshToken causes only serverAuthCode to be returned
+           toast.info("ได้รับ Auth Code จาก Google กำลังยืนยันตัวตน...");
+           setIsSubmitting(true);
+           verifyGoogleToken(result.serverAuthCode);
         }
       }).catch((e) => {
-        // Safe to ignore: means the page wasn't loaded from a Google redirect
+        console.error("handleRedirectCallback error (can be ignored if not returning from auth):", e);
+        // Only toast if it looks like an actual error from a redirect attempt
+        if (e && e.message && !e.message.includes('No result')) {
+           // toast.error(`Google Auth Callback Error: ${e.message}`);
+        }
       });
     }
 
