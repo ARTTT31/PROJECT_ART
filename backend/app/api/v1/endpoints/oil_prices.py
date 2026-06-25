@@ -60,8 +60,18 @@ def _parse_eppo_html(html: str) -> list[dict]:
     return result
 
 
+_cache = {
+    "timestamp": None,
+    "data": None,
+}
+CACHE_TTL = 3600  # 1 hour in seconds
+
 @router.get("/oil-prices", response_model=dict)
 async def get_oil_prices():
+    now = datetime.datetime.now()
+    if _cache["data"] and _cache["timestamp"] and (now - _cache["timestamp"]).total_seconds() < CACHE_TTL:
+        return _cache["data"]
+
     try:
         async with httpx.AsyncClient(timeout=10, follow_redirects=True) as client:
             response = await client.get(
@@ -72,16 +82,23 @@ async def get_oil_prices():
             prices = _parse_eppo_html(response.text)
             if prices:
                 today = datetime.date.today().strftime("%d/%m/%Y")
-                return {
+                data = {
                     "success": True,
                     "prices": prices,
                     "update_date": today,
                     "source": "EPPO",
                 }
+                _cache["data"] = data
+                _cache["timestamp"] = now
+                return data
 
         logger.error(f"EPPO scrape failed: HTTP {response.status_code}")
     except Exception as e:
         logger.error(f"EPPO scrape error: {e}")
+
+    # Fallback to cache if available, even if expired, when live fetch fails
+    if _cache["data"]:
+        return _cache["data"]
 
     return _fallback_prices()
 

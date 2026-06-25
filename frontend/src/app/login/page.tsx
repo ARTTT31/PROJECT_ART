@@ -57,6 +57,13 @@ export default function LoginPage() {
     } else {
       setTimeout(() => emailRef.current?.focus(), 100);
     }
+    
+    // Initialize Google Sign-In with explicit clientId
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+    if (clientId) {
+      GoogleSignIn.initialize({ clientId }).catch(e => console.error('Failed to initialize GoogleSignIn:', e));
+    }
+
     const timer = window.setInterval(() => setNow(new Date()), 1000);
     return () => window.clearInterval(timer);
   }, []);
