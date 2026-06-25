@@ -282,6 +282,129 @@ async def google_login(request: Request):
     return RedirectResponse(url)
 
 
+@router.post("/google/verify-token")
+async def google_verify_token(
+    token_request: dict, request: Request = None, db: AsyncSession = Depends(get_db)
+):
+    """Verify Google ID token from Capacitor plugin and issue JWT via HTTP-only cookies"""
+    if not _GOOGLE_AUTH_AVAILABLE:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="google-auth library not installed. Run: pip install google-auth",
+        )
+    
+    # Accept both Web and Android Client IDs
+    valid_client_ids = [
+        os.getenv("BACKEND_GOOGLE_CLIENT_ID", ""),  # Web Client ID
+        "888211169337-8ilrpqid0ijhofcd1t8ijjm17tqa0e6v.apps.googleusercontent.com"  # Android Client ID
+    ]
+    
+    # Filter out empty values
+    valid_client_ids = [cid for cid in valid_client_ids if cid]
+    
+    if not valid_client_ids:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Google client ID not configured",
+        )
+    
+    id_token_jwt = token_request.get("id_token")
+
+    if not id_token_jwt:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Missing id_token from request"
+        )
+
+    # ✅ SECURE: Verify id_token signature and audience using google-auth library
+    # We verify with the first valid client ID, then check if audience matches any valid ID
+    try:
+        request_adapter = google_requests.Request()
+        verified_info = google_id_token.verify_oauth2_token(
+            id_token_jwt,
+            request_adapter,
+            valid_client_ids[0],  # Use first client ID for signature verification
+            clock_skew_in_seconds=30,  # Allow up to 30s clock skew
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Google token verification failed: {str(e)}",
+        )
+
+    # Verify that the token's audience matches one of our valid client IDs
+    token_aud = verified_info.get("aud")
+    if token_aud not in valid_client_ids:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Token audience mismatch. Expected one of: {valid_client_ids}, got: {token_aud}",
+        )
+
+    # Extract verified user info
+    email = verified_info.get("email")
+    name = verified_info.get("name") or verified_info.get("given_name") or ""
+
+    if not email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Google account must have a verified email address",
+        )
+
+    # Ensure email is verified per Google
+    if not verified_info.get("email_verified", False):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Google email not verified"
+        )
+
+    # Find or create user
+    user_service = UserService(db)
+    user = await user_service.get_user_by_email(email)
+    if not user:
+        # Create with a random password (not used)
+        random_pwd = secrets.token_urlsafe(16)
+        user_create = UserCreate(
+            email=email, password=random_pwd, name=name, role="user"
+        )
+        try:
+            user = await user_service.create_user(user_create)
+        except Exception:
+            # If creation failed, try fetching again
+            user = await user_service.get_user_by_email(email)
+
+    # Issue tokens
+    access_jwt = create_access_token(data={"sub": user.email, "user_id": user.id})
+    refresh_jwt = create_refresh_token(data={"sub": user.email, "user_id": user.id})
+
+    # Create response - tokens are ONLY in HTTP-only cookies (not in URL)
+    user_data = {
+        "id": user.id,
+        "email": user.email,
+        "name": name or user.name or "User",
+        "role": user.role,
+        "avatar": user.avatar,
+        "quick_links": user.quick_links,
+    }
+
+    response = JSONResponse(content={"result": "success", "data": {"user": user_data}})
+
+    # Cookie attributes are environment-configurable for production HTTPS and local HTTP.
+    response.set_cookie(
+        key="access_token",
+        value=access_jwt,
+        max_age=30 * 60,
+        httponly=True,
+        **COOKIE_OPTIONS,
+    )
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_jwt,
+        max_age=30 * 24 * 60 * 60,
+        httponly=True,
+        **COOKIE_OPTIONS,
+    )
+    
+    return response
+
+
 @router.get("/google/callback")
 async def google_callback(
     code: str = None, request: Request = None, db: AsyncSession = Depends(get_db)

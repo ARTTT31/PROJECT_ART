@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">ART PROJECT</string>
+    <string name="title_activity_main">ART PROJECT</string>
+    <string name="package_name">com.artproject.app</string>
+    <string name="custom_url_scheme">com.artproject.app</string>
+</resources>

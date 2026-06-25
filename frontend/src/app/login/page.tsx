@@ -6,6 +6,7 @@ import { ArrowRight, AlertCircle, Check, Eye, EyeOff, Loader2, Lock, Mail } from
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/components/Toast/ToastProvider';
+import { GoogleSignIn } from '@capawesome/capacitor-google-sign-in';
 
 const formatDate = (date: Date) =>
   new Intl.DateTimeFormat('th-TH', {
@@ -79,6 +80,55 @@ export default function LoginPage() {
       setCapsLock(event.getModifierState('CapsLock'));
     }
   }, []);
+
+  const handleGoogleSignIn = async () => {
+    if (isSubmitting || rateLimitSeconds > 0) return;
+
+    setIsSubmitting(true);
+    setError('');
+
+    try {
+      // Sign in with Google using Capacitor plugin
+      const result = await GoogleSignIn.signIn();
+
+      if (result && result.idToken) {
+        // Send the ID token to backend for verification
+        const response = await fetch(`${apiBaseUrl}/api/v1/auth/google/verify-token`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ id_token: result.idToken }),
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.result === 'success') {
+          localStorage.setItem('user', JSON.stringify(data.data.user));
+          if (data.data.session_id) localStorage.setItem('session_id', data.data.session_id);
+          login(data.data.user);
+          toast.success('เข้าสู่ระบบสำเร็จ', `ยินดีต้อนรับกลับมา ${data.data.user.name || ''}!`);
+          setTimeout(() => router.push('/dashboard'), 1500);
+        } else {
+          setError(data.detail || data.message || 'การยืนยันตัวตน Google ไม่สำเร็จ');
+          setErrorKey(k => k + 1);
+          setIsSubmitting(false);
+        }
+      } else {
+        setError('ไม่สามารถรับข้อมูลจาก Google ได้');
+        setErrorKey(k => k + 1);
+        setIsSubmitting(false);
+      }
+    } catch (error: any) {
+      console.error('Google Sign-In error:', error);
+      if (error.message && error.message.includes('User canceled')) {
+        setError('ยกเลิกการเข้าสู่ระบบด้วย Google');
+      } else {
+        setError('เกิดข้อผิดพลาดในการเข้าสู่ระบบด้วย Google');
+      }
+      setErrorKey(k => k + 1);
+      setIsSubmitting(false);
+    }
+  };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -274,14 +324,12 @@ export default function LoginPage() {
 
             <div className="login-divider">หรือ</div>
 
-            <a
-              href={`${apiBaseUrl}/api/v1/auth/google`}
+            <button
+              type="button"
+              onClick={handleGoogleSignIn}
+              disabled={isSubmitting || rateLimitSeconds > 0}
               className={`google-btn${isSubmitting || rateLimitSeconds > 0 ? ' google-btn--disabled' : ''}`}
-              role="button"
               aria-label="ดำเนินการต่อด้วย Google"
-              aria-disabled={isSubmitting || rateLimitSeconds > 0}
-              tabIndex={isSubmitting || rateLimitSeconds > 0 ? -1 : 0}
-              onClick={e => { if (isSubmitting || rateLimitSeconds > 0) e.preventDefault() }}
             >
               <span className="google-btn-mark" aria-hidden="true">
                 <svg className="google-btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" focusable="false">
@@ -292,7 +340,7 @@ export default function LoginPage() {
                 </svg>
               </span>
               <span className="google-text">ดำเนินการต่อด้วย Google</span>
-            </a>
+            </button>
           </form>
 
 
