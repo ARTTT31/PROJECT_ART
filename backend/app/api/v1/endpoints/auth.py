@@ -11,7 +11,7 @@ from urllib.parse import urlencode
 
 import requests
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
@@ -341,7 +341,7 @@ async def google_verify_token(
 
     # Extract verified user info
     email = verified_info.get("email")
-    name = verified_info.get("name") or verified_info.get("given_name") or ""
+    name = verified_info.get("name") or verified_info.get("given_name") or "Google User"
 
     if not email:
         raise HTTPException(
@@ -482,7 +482,7 @@ async def google_callback(
 
     # Extract verified user info
     email = verified_info.get("email")
-    name = verified_info.get("name") or verified_info.get("given_name") or ""
+    name = verified_info.get("name") or verified_info.get("given_name") or "Google User"
 
     if not email:
         raise HTTPException(
