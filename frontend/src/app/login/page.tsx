@@ -57,16 +57,58 @@ export default function LoginPage() {
     } else {
       setTimeout(() => emailRef.current?.focus(), 100);
     }
-    
-    // Initialize Google Sign-In with explicit clientId
+    // Initialize Google Sign-In with explicit clientId and redirectUrl for Web
     const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
     if (clientId) {
-      GoogleSignIn.initialize({ clientId }).catch(e => console.error('Failed to initialize GoogleSignIn:', e));
+      GoogleSignIn.initialize({ 
+        clientId,
+        redirectUrl: window.location.origin + '/login'
+      }).then(() => {
+        // Handle web redirect callback if returning from Google OAuth
+        return GoogleSignIn.handleRedirectCallback();
+      }).then((result) => {
+        if (result && result.idToken) {
+          setIsSubmitting(true);
+          verifyGoogleToken(result.idToken);
+        }
+      }).catch((e) => {
+        // Safe to ignore: means the page wasn't loaded from a Google redirect
+      });
     }
 
     const timer = window.setInterval(() => setNow(new Date()), 1000);
     return () => window.clearInterval(timer);
   }, []);
+
+  const verifyGoogleToken = async (idToken: string) => {
+    try {
+      const response = await fetch(`${apiBaseUrl}/api/v1/auth/google/verify-token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ id_token: idToken }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.result === 'success') {
+        localStorage.setItem('user', JSON.stringify(data.data.user));
+        if (data.data.session_id) localStorage.setItem('session_id', data.data.session_id);
+        login(data.data.user);
+        toast.success('เข้าสู่ระบบสำเร็จ', `ยินดีต้อนรับกลับมา ${data.data.user.name || ''}!`);
+        setTimeout(() => router.push('/dashboard'), 1500);
+      } else {
+        setError(data.detail || data.message || 'การยืนยันตัวตน Google ไม่สำเร็จ');
+        setErrorKey(k => k + 1);
+        setIsSubmitting(false);
+      }
+    } catch (error) {
+      console.error('Verify token error:', error);
+      setError('เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง');
+      setErrorKey(k => k + 1);
+      setIsSubmitting(false);
+    }
+  };
 
   useEffect(() => {
     if (rateLimitSeconds <= 0) return;
@@ -96,31 +138,11 @@ export default function LoginPage() {
 
     try {
       // Sign in with Google using Capacitor plugin
-      // clientId is configured in capacitor.config.ts
       const result = await GoogleSignIn.signIn();
 
       if (result && result.idToken) {
-        // Send the ID token to backend for verification
-        const response = await fetch(`${apiBaseUrl}/api/v1/auth/google/verify-token`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ id_token: result.idToken }),
-        });
-
-        const data = await response.json();
-
-        if (response.ok && data.result === 'success') {
-          localStorage.setItem('user', JSON.stringify(data.data.user));
-          if (data.data.session_id) localStorage.setItem('session_id', data.data.session_id);
-          login(data.data.user);
-          toast.success('เข้าสู่ระบบสำเร็จ', `ยินดีต้อนรับกลับมา ${data.data.user.name || ''}!`);
-          setTimeout(() => router.push('/dashboard'), 1500);
-        } else {
-          setError(data.detail || data.message || 'การยืนยันตัวตน Google ไม่สำเร็จ');
-          setErrorKey(k => k + 1);
-          setIsSubmitting(false);
-        }
+        // Send the ID token to backend for verification (for Android/iOS that resolve immediately)
+        await verifyGoogleToken(result.idToken);
       } else {
         setError('ไม่สามารถรับข้อมูลจาก Google ได้');
         setErrorKey(k => k + 1);
@@ -131,7 +153,7 @@ export default function LoginPage() {
       if (error.message && error.message.includes('User canceled')) {
         setError('ยกเลิกการเข้าสู่ระบบด้วย Google');
       } else {
-        setError('เกิดข้อผิดพลาดในการเข้าสู่ระบบด้วย Google');
+        setError(`เกิดข้อผิดพลาดในการเข้าสู่ระบบด้วย Google: ${error.message || 'Unknown error'}`);
       }
       setErrorKey(k => k + 1);
       setIsSubmitting(false);
