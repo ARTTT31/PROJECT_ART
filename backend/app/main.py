@@ -55,6 +55,11 @@ vercel_prod_origin = "https://project-art-sigma.vercel.app"
 if vercel_prod_origin not in allowed_origins:
     allowed_origins.append(vercel_prod_origin)
 
+# Add Android Capacitor local origins
+for android_origin in ["http://localhost", "capacitor://localhost", "ionic://localhost"]:
+    if android_origin not in allowed_origins:
+        allowed_origins.append(android_origin)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
