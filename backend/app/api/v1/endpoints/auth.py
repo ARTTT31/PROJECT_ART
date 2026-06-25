@@ -258,7 +258,7 @@ async def refresh_token(
 @router.get("/google")
 async def google_login(request: Request):
     """Redirect to Google's OAuth 2.0 consent screen"""
-    client_id = os.getenv("BACKEND_GOOGLE_CLIENT_ID")
+    client_id = os.getenv("BACKEND_GOOGLE_CLIENT_ID", "888211169337-6u8trsph6578m9e0799rj0vnh5gu59m2.apps.googleusercontent.com")
     redirect_uri = os.getenv(
         "BACKEND_GOOGLE_REDIRECT", "http://localhost:8000/api/v1/auth/google/callback"
     )
@@ -295,7 +295,7 @@ async def google_verify_token(
     
     # Accept both Web and Android Client IDs
     valid_client_ids = [
-        os.getenv("BACKEND_GOOGLE_CLIENT_ID", ""),  # Web Client ID
+        os.getenv("BACKEND_GOOGLE_CLIENT_ID", "888211169337-6u8trsph6578m9e0799rj0vnh5gu59m2.apps.googleusercontent.com"),  # Web Client ID
         "888211169337-8ilrpqid0ijhofcd1t8ijjm17tqa0e6v.apps.googleusercontent.com"  # Android Client ID
     ]
     
@@ -415,7 +415,7 @@ async def google_callback(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="google-auth library not installed. Run: pip install google-auth",
         )
-    client_id = os.getenv("BACKEND_GOOGLE_CLIENT_ID")
+    client_id = os.getenv("BACKEND_GOOGLE_CLIENT_ID", "888211169337-6u8trsph6578m9e0799rj0vnh5gu59m2.apps.googleusercontent.com")
     client_secret = os.getenv("BACKEND_GOOGLE_CLIENT_SECRET")
     redirect_uri = os.getenv(
         "BACKEND_GOOGLE_REDIRECT", "http://localhost:8000/api/v1/auth/google/callback"
