@@ -2,7 +2,7 @@
  * Authenticated fetch helper with automatic cookie-based session/token refresh.
  */
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://project-art-c7eh.onrender.com';
 
 // ── Shared refresh state ─────────────────────────────────────
 let isRefreshing = false;

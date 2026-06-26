@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "758449083268",
+    "project_id": "project-art-aec99",
+    "storage_bucket": "project-art-aec99.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:758449083268:android:0a4c9a01315437abb003d1",
+        "android_client_info": {
+          "package_name": "com.artproject.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCLZFlVoWLzg3eG-cNf9hP9RprXnurB7SY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
