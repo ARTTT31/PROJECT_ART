@@ -12,7 +12,20 @@
           "package_name": "com.artproject.app"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "758449083268-787pea8m2h38maivhhjt1eoctmidf465.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.artproject.app",
+            "certificate_hash": "a488a21d26181d2f36d214b4678019a49053eeea"
+          }
+        },
+        {
+          "client_id": "758449083268-55rok7lteipnqelck99e557b1lkhu5k8.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyCLZFlVoWLzg3eG-cNf9hP9RprXnurB7SY"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "758449083268-55rok7lteipnqelck99e557b1lkhu5k8.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

@@ -331,10 +331,12 @@ async def google_verify_token(
             detail="google-auth library not installed. Run: pip install google-auth",
         )
     
-    # Accept both Web and Android Client IDs
+    # Accept both Web and Android Client IDs (old and new projects)
     valid_client_ids = [
-        os.getenv("BACKEND_GOOGLE_CLIENT_ID", "888211169337-6u8trsph6578m9e0799rj0vnh5gu59m2.apps.googleusercontent.com"),  # Web Client ID
-        "888211169337-8ilrpqid0ijhofcd1t8ijjm17tqa0e6v.apps.googleusercontent.com"  # Android Client ID
+        os.getenv("BACKEND_GOOGLE_CLIENT_ID", "758449083268-55rok7lteipnqelck99e557b1lkhu5k8.apps.googleusercontent.com"),  # New Web Client ID
+        "888211169337-6u8trsph6578m9e0799rj0vnh5gu59m2.apps.googleusercontent.com",  # Old Web Client ID
+        "758449083268-787pea8m2h38maivhhjt1eoctmidf465.apps.googleusercontent.com",  # New Android Client ID
+        "888211169337-8ilrpqid0ijhofcd1t8ijjm17tqa0e6v.apps.googleusercontent.com"   # Old Android Client ID
     ]
     
     # Filter out empty values
