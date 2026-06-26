@@ -46,10 +46,12 @@ class Settings(BaseSettings):
         return "none" if not self.DEBUG else "lax"
 
     # CORS — explicit origins required (no wildcards) because allow_credentials=True
+    # Added http://localhost and capacitor://localhost for Capacitor Android and iOS applications
     CORS_ORIGINS: str = (
         "http://localhost:3000,http://localhost:3001,http://localhost:80,"
         "http://localhost:8000,https://project-art-sigma.vercel.app,"
-        "https://art-workspace-api.onrender.com"
+        "https://art-workspace-api.onrender.com,http://localhost,"
+        "capacitor://localhost"
     )
 
     def get_cors_origins(self) -> List[str]:
