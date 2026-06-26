@@ -111,6 +111,14 @@ async def login(
             httponly=True,
             **COOKIE_OPTIONS,
         )
+        # Non-httpOnly user data cookie (read by frontend for quick display/hydration)
+        response.set_cookie(
+            key="user",
+            value=json.dumps(response_data["user"]),
+            max_age=7 * 24 * 60 * 60,
+            httponly=False,
+            **COOKIE_OPTIONS,
+        )
         return response
 
     except HTTPException as e:
@@ -560,11 +568,14 @@ async def get_session(request: Request, db: AsyncSession = Depends(get_db)):
     """
     Get current user session from HTTP-only cookies.
     Used by frontend after OAuth redirect to read tokens securely.
+    
+    Supports two modes:
+    1. Fast-path: If both access_token and user cookie exist, return user from cookie
+    2. Fallback: If only access_token exists, decode JWT and fetch user from DB
     """
     access_token = request.cookies.get("access_token")
-    user_cookie = request.cookies.get("user")
 
-    if not access_token or not user_cookie:
+    if not access_token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="ไม่พบ session กรุณาเข้าสู่ระบบใหม่",
@@ -577,13 +588,48 @@ async def get_session(request: Request, db: AsyncSession = Depends(get_db)):
             detail="Token หมดอายุหรือไม่ถูกต้อง",
         )
 
-    try:
-        user_data = json.loads(user_cookie)
-    except (json.JSONDecodeError, TypeError):
+    # Try fast-path: use user cookie if available
+    user_cookie = request.cookies.get("user")
+    if user_cookie:
+        try:
+            user_data = json.loads(user_cookie)
+            return ResponseModel(
+                result="success",
+                message="พบ session ปัจจุบัน",
+                data={
+                    "access_token": access_token,
+                    "refresh_token": request.cookies.get("refresh_token", ""),
+                    "user": user_data,
+                },
+            )
+        except (json.JSONDecodeError, TypeError):
+            pass  # Fall through to DB lookup
+
+    # Fallback: decode JWT and fetch user from DB
+    user_id = payload.get("user_id")
+    email = payload.get("sub")
+
+    user_service = UserService(db)
+    user = None
+    if user_id is not None:
+        user = await user_service.get_user_by_id(user_id)
+    elif email is not None:
+        user = await user_service.get_user_by_email(email)
+
+    if not user:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="ข้อมูลผู้ใช้ไม่ถูกต้อง",
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="ไม่พบข้อมูลผู้ใช้",
         )
+
+    user_data = {
+        "id": user.id,
+        "email": user.email,
+        "name": user.name or "User",
+        "role": user.role,
+        "avatar": getattr(user, "avatar", None),
+        "quick_links": getattr(user, "quick_links", None),
+    }
 
     return ResponseModel(
         result="success",

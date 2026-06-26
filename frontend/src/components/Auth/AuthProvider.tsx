@@ -32,30 +32,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [status, setStatus] = useState<AuthStatus>('loading')
   const [user, setUser] = useState<AuthUser | null>(null)
 
-  // 1. Session check on mount
+  // 1. Session check on mount — fast-path from localStorage, background verify
   useEffect(() => {
     const checkSession = async () => {
+      // ── Fast-path: use localStorage/cookie for instant display ──
+      const userCookie = document.cookie
+        .split('; ')
+        .find((row) => row.startsWith('user='));
+
+      let localUser = safeParseUser(localStorage.getItem('user'));
+
+      if (userCookie) {
+        try {
+          const parsedCookie = JSON.parse(decodeURIComponent(userCookie.split('=')[1]));
+          localUser = parsedCookie;
+        } catch (e) {}
+      }
+
+      if (localUser) {
+        setUser(localUser);
+        setStatus('authenticated');
+      }
+
+      // ── Background verify: don't block UI ──
       try {
-        // Fast display using user cookie (non-httpOnly hydration helper)
-        const userCookie = document.cookie
-          .split('; ')
-          .find((row) => row.startsWith('user='));
-          
-        let localUser = safeParseUser(localStorage.getItem('user'));
-        
-        if (userCookie) {
-          try {
-            const parsedCookie = JSON.parse(decodeURIComponent(userCookie.split('=')[1]));
-            localUser = parsedCookie;
-          } catch (e) {}
-        }
-        
-        if (localUser) {
-          setUser(localUser);
-          setStatus('authenticated');
-        }
-        
-        // Verify token & session status with the backend
         const res = await fetchWithAuth('/api/v1/auth/session');
         if (res.ok) {
           const json = await res.json();
@@ -66,15 +66,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             return;
           }
         }
-        
-        // If API fails or says unauthorized, clear state
-        setUser(null);
-        localStorage.removeItem('user');
-        localStorage.removeItem('session_id');
-        setStatus('anonymous');
+
+        // Only clear auth if we got an explicit 401 AND had no local user
+        // This prevents clearing auth on network errors or Render cold-start timeouts
+        if (res.status === 401 || !localUser) {
+          setUser(null);
+          localStorage.removeItem('user');
+          localStorage.removeItem('session_id');
+          setStatus('anonymous');
+        }
       } catch (e) {
-        setUser(null);
-        setStatus('anonymous');
+        // Network error — if we have a local user, keep them authenticated
+        // (backend might be cold-starting on Render)
+        if (!localUser) {
+          setUser(null);
+          setStatus('anonymous');
+        }
       }
     };
 

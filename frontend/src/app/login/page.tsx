@@ -108,7 +108,7 @@ export default function LoginPage() {
         if (data.data.session_id) localStorage.setItem('session_id', data.data.session_id);
         login(data.data.user);
         toast.success('เข้าสู่ระบบสำเร็จ', `ยินดีต้อนรับกลับมา ${data.data.user.name || ''}!`);
-        setTimeout(() => router.push('/dashboard'), 1500);
+        setTimeout(() => router.push('/dashboard'), 300);
       } else {
         setError(data.detail || data.message || 'การยืนยันตัวตน Google ไม่สำเร็จ');
         setErrorKey(k => k + 1);
