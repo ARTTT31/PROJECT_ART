@@ -34,7 +34,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // 1. Session check on mount — fast-path from localStorage, background verify
   useEffect(() => {
-    const checkSession = async () => {
+    const initializeAuth = async () => {
       // ── Fast-path: use localStorage/cookie for instant display ──
       const userCookie = document.cookie
         .split('; ')
@@ -54,26 +54,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setStatus('authenticated');
       }
 
-      // ── Background verify: don't block UI ──
+      // ── Background verify: run session check and profile sync in parallel ──
       try {
-        const res = await fetchWithAuth('/api/v1/auth/session');
-        if (res.ok) {
-          const json = await res.json();
+        const [sessionRes, profileRes] = await Promise.all([
+          fetchWithAuth('/api/v1/auth/session').catch(() => null),
+          fetchWithAuth('/api/v1/profile/me').catch(() => null),
+        ]);
+
+        let sessionUser = null;
+        if (sessionRes && sessionRes.ok) {
+          const json = await sessionRes.json();
           if (json.data && json.data.user) {
-            setUser(json.data.user);
-            localStorage.setItem('user', JSON.stringify(json.data.user));
-            setStatus('authenticated');
-            return;
+            sessionUser = json.data.user;
           }
         }
 
-        // Only clear auth if we got an explicit 401 AND had no local user
-        // This prevents clearing auth on network errors or Render cold-start timeouts
-        if (res.status === 401 || !localUser) {
-          setUser(null);
-          localStorage.removeItem('user');
-          localStorage.removeItem('session_id');
-          setStatus('anonymous');
+        let profileData = null;
+        if (profileRes && profileRes.ok) {
+          try {
+            profileData = await profileRes.json();
+          } catch (e) {}
+        }
+
+        if (sessionUser) {
+          const mergedUser = profileData ? { ...sessionUser, ...profileData } : sessionUser;
+          setUser(mergedUser);
+          localStorage.setItem('user', JSON.stringify(mergedUser));
+          setStatus('authenticated');
+        } else {
+          // Only clear auth if we got an explicit 401 AND had no local user
+          // This prevents clearing auth on network errors or Render cold-start timeouts
+          if ((sessionRes && sessionRes.status === 401) || !localUser) {
+            setUser(null);
+            localStorage.removeItem('user');
+            localStorage.removeItem('session_id');
+            setStatus('anonymous');
+          }
         }
       } catch (e) {
         // Network error — if we have a local user, keep them authenticated
@@ -85,7 +101,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     };
 
-    checkSession();
+    initializeAuth();
 
     const onStorage = (e: StorageEvent) => {
       if (!e.key) return
@@ -117,35 +133,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       window.removeEventListener('auth-login', onLogin)
     }
   }, [])
-
-  // Sync profile details if authenticated
-  useEffect(() => {
-    if (status !== 'authenticated') return
-
-    let cancelled = false
-    ;(async () => {
-      try {
-        const res = await fetchWithAuth('/api/v1/profile/me')
-        if (!res.ok) return
-
-        const profile = (await res.json()) as Partial<AuthUser> & { quick_links?: string | null }
-        if (cancelled) return
-
-        setUser((prev) => {
-          if (!prev) return prev
-          const merged: AuthUser = { ...prev, ...profile }
-          localStorage.setItem('user', JSON.stringify(merged))
-          return merged
-        })
-      } catch {
-        // Fallback silently
-      }
-    })()
-
-    return () => {
-      cancelled = true
-    }
-  }, [status])
 
   const login = useCallback(
     (nextUser: AuthUser, sessionId?: string) => {

@@ -252,6 +252,36 @@ async def refresh_token(
                 **COOKIE_OPTIONS,
             )
 
+        # Set user cookie so frontend has consistent state
+        try:
+            payload = decode_token(refresh_token_val)
+            user_id = payload.get("user_id") if payload else None
+            user_service = UserService(db)
+            user = None
+            if user_id:
+                user = await user_service.get_user_by_id(user_id)
+            elif payload and payload.get("sub"):
+                user = await user_service.get_user_by_email(payload.get("sub"))
+
+            if user:
+                user_data = {
+                    "id": user.id,
+                    "email": user.email,
+                    "name": user.name or "User",
+                    "role": user.role,
+                    "avatar": getattr(user, "avatar", None),
+                    "quick_links": getattr(user, "quick_links", None),
+                }
+                response.set_cookie(
+                    key="user",
+                    value=json.dumps(user_data),
+                    max_age=7 * 24 * 60 * 60,
+                    httponly=False,
+                    **COOKIE_OPTIONS,
+                )
+        except Exception:
+            pass
+
         return response
 
     except HTTPException as e:
@@ -407,6 +437,14 @@ async def google_verify_token(
         value=refresh_jwt,
         max_age=30 * 24 * 60 * 60,
         httponly=True,
+        **COOKIE_OPTIONS,
+    )
+    # Non-httpOnly user data cookie for frontend hydration
+    response.set_cookie(
+        key="user",
+        value=json.dumps(user_data),
+        max_age=7 * 24 * 60 * 60,
+        httponly=False,
         **COOKIE_OPTIONS,
     )
     

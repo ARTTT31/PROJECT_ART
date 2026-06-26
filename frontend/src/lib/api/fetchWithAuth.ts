@@ -9,12 +9,16 @@ let isRefreshing = false;
 let refreshPromise: Promise<boolean> | null = null;
 
 async function refreshAccessToken(): Promise<boolean> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000);
   try {
     const res = await fetch(`${API_URL}/api/v1/auth/refresh`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include', // Send cookies
+      signal: controller.signal,
     });
+    clearTimeout(timeoutId);
 
     if (!res.ok) return false;
 
@@ -26,6 +30,7 @@ async function refreshAccessToken(): Promise<boolean> {
 
     return false;
   } catch {
+    clearTimeout(timeoutId);
     return false;
   }
 }
@@ -58,27 +63,50 @@ export async function fetchWithAuth(
   }
   fetchOptions.headers = headers;
 
-  let response = await fetch(`${API_URL}${path}`, fetchOptions);
-
-  // ── Auto-refresh on 401 ──────────────────────────────────
-  if (response.status === 401) {
-    if (!isRefreshing) {
-      isRefreshing = true;
-      refreshPromise = refreshAccessToken().finally(() => {
-        isRefreshing = false;
-      });
-    }
-
-    const success = await refreshPromise;
-
-    if (success) {
-      // Retry the original request (cookies are automatically attached)
-      response = await fetch(`${API_URL}${path}`, fetchOptions);
-    } else {
-      clearAuth();
-    }
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000);
+  
+  if (!fetchOptions.signal) {
+    fetchOptions.signal = controller.signal;
   }
 
-  return response;
+  try {
+    let response = await fetch(`${API_URL}${path}`, fetchOptions);
+    clearTimeout(timeoutId);
+
+    // ── Auto-refresh on 401 ──────────────────────────────────
+    if (response.status === 401) {
+      if (!isRefreshing) {
+        isRefreshing = true;
+        refreshPromise = refreshAccessToken().finally(() => {
+          isRefreshing = false;
+        });
+      }
+
+      const success = await refreshPromise;
+
+      if (success) {
+        // Retry the original request (cookies are automatically attached)
+        const retryController = new AbortController();
+        const retryTimeoutId = setTimeout(() => retryController.abort(), 10000);
+        fetchOptions.signal = retryController.signal;
+        try {
+          response = await fetch(`${API_URL}${path}`, fetchOptions);
+        } finally {
+          clearTimeout(retryTimeoutId);
+        }
+      } else {
+        clearAuth();
+      }
+    }
+
+    return response;
+  } catch (error: any) {
+    clearTimeout(timeoutId);
+    if (error.name === 'AbortError') {
+      throw new Error('Request timeout');
+    }
+    throw error;
+  }
 }
 

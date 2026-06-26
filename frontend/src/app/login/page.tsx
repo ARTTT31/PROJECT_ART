@@ -224,7 +224,7 @@ export default function LoginPage() {
 
         login(result.data.user);
         toast.success('เข้าสู่ระบบสำเร็จ', `ยินดีต้อนรับกลับมา ${result.data.user.name || ''}!`);
-        setTimeout(() => router.push('/dashboard'), 1500);
+        setTimeout(() => router.push('/dashboard'), 300);
       } else {
         setError(result.detail || result.message || 'เข้าสู่ระบบไม่สำเร็จ กรุณาตรวจสอบอีเมลและรหัสผ่าน');
         setErrorKey(k => k + 1);
