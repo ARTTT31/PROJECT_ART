@@ -27,10 +27,22 @@ class Settings(BaseSettings):
 
     @property
     def COOKIE_SECURE(self) -> bool:
+        import os
+        if "RENDER" in os.environ:
+            return True
+        env_val = os.getenv("COOKIE_SECURE")
+        if env_val is not None:
+            return env_val.lower() in ("true", "1", "yes")
         return not self.DEBUG
 
     @property
     def COOKIE_SAMESITE(self) -> str:
+        import os
+        if "RENDER" in os.environ:
+            return "none"
+        env_val = os.getenv("COOKIE_SAMESITE")
+        if env_val is not None:
+            return env_val.lower()
         return "none" if not self.DEBUG else "lax"
 
     # CORS — explicit origins required (no wildcards) because allow_credentials=True
