@@ -80,10 +80,11 @@ export default function LoginPage() {
            verifyGoogleToken(result.serverAuthCode);
         }
       }).catch((e) => {
-        console.error("handleRedirectCallback error (can be ignored if not returning from auth):", e);
-        // Only toast if it looks like an actual error from a redirect attempt
-        if (e && e.message && !e.message.includes('No result')) {
-           // toast.error(`Google Auth Callback Error: ${e.message}`);
+        const isNoTokenError = e?.message?.includes('No ID token found') || e?.message?.includes('No result');
+        if (isNoTokenError) {
+          console.log("GoogleSignIn: No redirect callback state found in URL (normal page load).");
+        } else {
+          console.error("handleRedirectCallback error:", e);
         }
       });
     }
