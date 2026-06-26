@@ -10,7 +10,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
-from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.core.config import settings
 from app.api.v1.router import api_router
@@ -110,18 +109,37 @@ CSP_HEADER_VALUE = (
 )
 
 
-class CSPMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next):
-        response = await call_next(request)
-        response.headers["Content-Security-Policy"] = CSP_HEADER_VALUE
-        response.headers["X-Content-Type-Options"] = "nosniff"
-        response.headers["X-Frame-Options"] = "DENY"
-        response.headers["X-XSS-Protection"] = "1; mode=block"
-        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-        response.headers["Permissions-Policy"] = (
-            "camera=(), microphone=(), geolocation=()"
-        )
-        return response
+class CSPMiddleware:
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        async def send_wrapper(message):
+            if message["type"] == "http.response.start":
+                headers = list(message.get("headers", []))
+                
+                def set_header(name: bytes, value: bytes):
+                    for idx, (h_name, h_val) in enumerate(headers):
+                        if h_name.lower() == name.lower():
+                            headers[idx] = (name, value)
+                            return
+                    headers.append((name, value))
+
+                set_header(b"content-security-policy", CSP_HEADER_VALUE.encode("utf-8"))
+                set_header(b"x-content-type-options", b"nosniff")
+                set_header(b"x-frame-options", b"DENY")
+                set_header(b"x-xss-protection", b"1; mode=block")
+                set_header(b"referrer-policy", b"strict-origin-when-cross-origin")
+                set_header(b"permissions-policy", b"camera=(), microphone=(), geolocation=()")
+                message["headers"] = headers
+
+            await send(message)
+
+        await self.app(scope, receive, send_wrapper)
 
 
 app.add_middleware(CSPMiddleware)
