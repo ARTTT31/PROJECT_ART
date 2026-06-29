@@ -70,14 +70,23 @@ export default function LoginPage() {
       }).then((result) => {
         console.log("handleRedirectCallback result:", result);
         if (result && result.idToken) {
+          // idToken is a signed Google JWT — safe to send to /verify-token
           toast.info("ได้รับข้อมูลจาก Google กำลังยืนยันตัวตน...");
           setIsSubmitting(true);
           verifyGoogleToken(result.idToken);
-        } else if (result && result.serverAuthCode) {
-           // In case forceCodeForRefreshToken causes only serverAuthCode to be returned
-           toast.info("ได้รับ Auth Code จาก Google กำลังยืนยันตัวตน...");
-           setIsSubmitting(true);
-           verifyGoogleToken(result.serverAuthCode);
+        } else if (result && result.serverAuthCode && !result.idToken) {
+          // serverAuthCode is an OAuth authorization code, NOT an id_token.
+          // It must NOT be sent to /verify-token — the backend cannot verify it as a JWT.
+          // It is only useful for server-side code exchange (/google/callback).
+          // If we land here it means the plugin returned a code flow result instead of
+          // an implicit-flow id_token. Log and surface a friendly error.
+          console.warn(
+            "Google Sign-In returned a serverAuthCode without an idToken. " +
+            "This cannot be verified by /verify-token. " +
+            "Ensure the Capacitor plugin is configured for the implicit (token) flow."
+          );
+          setError("ไม่สามารถรับ ID Token จาก Google ได้ กรุณาลองใหม่อีกครั้ง");
+          setErrorKey(k => k + 1);
         }
       }).catch((e) => {
         const isNoTokenError = e?.message?.includes('No ID token found') || e?.message?.includes('No result');

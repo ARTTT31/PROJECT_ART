@@ -51,7 +51,8 @@ class Settings(BaseSettings):
         "http://localhost:3000,http://localhost:3001,http://localhost:80,"
         "http://localhost:8000,https://project-art-sigma.vercel.app,"
         "https://art-workspace-api.onrender.com,http://localhost,"
-        "capacitor://localhost"
+        "capacitor://localhost,"
+        "null"  # Android WebViews send Origin: null for capacitor:// / file:// requests
     )
 
     def get_cors_origins(self) -> List[str]:
