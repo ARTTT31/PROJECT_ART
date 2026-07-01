@@ -69,7 +69,24 @@ export default function TaskListWidget({
       if (!response.ok) {
         const detail = await response.json().catch(() => ({}))
         const msg = detail?.detail || response.statusText
-        throw new Error(`HTTP ${response.status}: ${msg}`)
+        
+        // Provide user-friendly Thai error messages based on status code
+        let userMessage = 'ไม่สามารถโหลดข้อมูลปฏิทินได้'
+        
+        if (response.status === 404) {
+          userMessage = 'ไม่พบปฏิทิน - กรุณาตรวจสอบการตั้งค่าปฏิทินใน Google Calendar ให้เป็น "สาธารณะ"'
+          console.error('📅 Calendar not found or not public. Error:', msg)
+        } else if (response.status === 403) {
+          userMessage = 'ไม่สามารถเข้าถึงปฏิทินได้ - กรุณาตั้งค่าให้ปฏิทินเป็น "สาธารณะ" ใน Google Calendar'
+          console.error('🔒 Calendar access denied. Error:', msg)
+        } else if (response.status === 502 || response.status === 504) {
+          userMessage = 'เชื่อมต่อ Google Calendar ไม่สำเร็จ - กรุณาลองใหม่อีกครั้ง'
+          console.error('🌐 Calendar service error. Error:', msg)
+        } else {
+          console.error('❌ Calendar API Error:', msg)
+        }
+        
+        throw new Error(`HTTP ${response.status}: ${msg}`, { cause: userMessage })
       }
 
       const data = await response.json()
@@ -98,7 +115,10 @@ export default function TaskListWidget({
     } catch (err: any) {
       if (err?.name === 'AbortError') return
       console.error('❌ Calendar API Error:', err)
-      setError('ไม่สามารถโหลดข้อมูลปฏิทินได้')
+      
+      // Use custom error message if available, otherwise use generic message
+      const errorMessage = err?.cause || 'ไม่สามารถโหลดข้อมูลปฏิทินได้'
+      setError(errorMessage)
       setEvents([])
     } finally {
       setLoading(false)
