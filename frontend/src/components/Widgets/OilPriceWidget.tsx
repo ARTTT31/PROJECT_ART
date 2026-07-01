@@ -99,6 +99,27 @@ export default function OilPriceWidget({
     setError(null)
     try {
       const res = await fetchWithAuth('/api/v1/oil-prices/oil-prices', { signal: controller.signal })
+      
+      if (!res.ok) {
+        const detail = await res.json().catch(() => ({}))
+        const msg = detail?.detail || res.statusText
+        
+        // Provide user-friendly Thai error messages
+        let userMessage = 'ไม่สามารถโหลดข้อมูลราคาน้ำมันได้'
+        
+        if (res.status === 502 || res.status === 504) {
+          userMessage = 'เชื่อมต่อ EPPO ไม่สำเร็จ - กำลังแสดงข้อมูลสำรอง'
+          console.warn('🌐 EPPO connection error, using fallback data:', msg)
+        } else if (res.status === 503) {
+          userMessage = 'บริการ EPPO ไม่พร้อมใช้งานชั่วคราว'
+          console.error('⚠️ EPPO service unavailable:', msg)
+        } else {
+          console.error('❌ Oil price API error:', msg)
+        }
+        
+        throw new Error(`HTTP ${res.status}: ${msg}`, { cause: userMessage })
+      }
+      
       const result = await res.json()
       if (result.success && (result.prices || result.oil_prices)) {
         setData(result)
@@ -110,8 +131,11 @@ export default function OilPriceWidget({
       setLastUpdate(new Date())
     } catch (err: any) {
       if (err?.name === 'AbortError') return
-      console.error('Oil price fetch error:', err)
-      setError('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์')
+      console.error('❌ Oil price fetch error:', err)
+      
+      // Use custom error message if available, otherwise generic message
+      const errorMessage = err?.cause || 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์'
+      setError(errorMessage)
     } finally {
       setLoading(false)
       setRefreshing(false)

@@ -72,17 +72,94 @@ def _iso_now() -> str:
     return datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
+@router.get("/health", response_model=dict)
+async def check_eppo_health():
+    """
+    Health check endpoint to verify EPPO website accessibility
+    
+    Returns:
+        Status of EPPO connection and cache state
+    """
+    status = {
+        "service": "Oil Prices API",
+        "eppo_url": EPPO_OIL_URL,
+        "cache_age_seconds": None,
+        "cache_available": bool(_cache["data"]),
+        "is_accessible": False,
+        "message": "",
+    }
+    
+    # Check cache age
+    if _cache["timestamp"]:
+        age = (datetime.datetime.now() - _cache["timestamp"]).total_seconds()
+        status["cache_age_seconds"] = int(age)
+        status["cache_is_fresh"] = age < CACHE_TTL
+    
+    # Test EPPO connectivity
+    try:
+        async with httpx.AsyncClient(
+            timeout=httpx.Timeout(5.0, connect=3.0),
+            follow_redirects=True
+        ) as client:
+            response = await client.get(
+                EPPO_OIL_URL,
+                headers={"User-Agent": "Mozilla/5.0 (compatible; ART-Workspace/1.0)"}
+            )
+        
+        if response.status_code == 200:
+            # Try to parse to ensure data is valid
+            prices = _parse_eppo_html(response.text)
+            if prices:
+                status["is_accessible"] = True
+                status["message"] = f"✅ EPPO is accessible and returning {len(prices)} prices"
+                status["last_fetch_success"] = True
+            else:
+                status["is_accessible"] = False
+                status["message"] = "⚠️ EPPO is accessible but no prices found in HTML"
+                status["last_fetch_success"] = False
+        else:
+            status["is_accessible"] = False
+            status["message"] = f"❌ EPPO returned HTTP {response.status_code}"
+            status["last_fetch_success"] = False
+            
+    except httpx.TimeoutException:
+        status["is_accessible"] = False
+        status["message"] = "⏱️ Connection to EPPO timed out"
+        status["last_fetch_success"] = False
+    except Exception as e:
+        status["is_accessible"] = False
+        status["message"] = f"❌ Error connecting to EPPO: {str(e)}"
+        status["last_fetch_success"] = False
+    
+    return status
+
+
 @router.get("/oil-prices", response_model=dict)
 async def get_oil_prices():
+    """
+    Fetch current retail fuel prices from EPPO website
+    
+    Returns PTT column prices for each fuel type with caching.
+    Falls back to stale cache or hardcoded prices if live fetch fails.
+    """
     now = datetime.datetime.now()
+    
+    # Serve fresh cache if available
     if _cache["data"] and _cache["timestamp"] and (now - _cache["timestamp"]).total_seconds() < CACHE_TTL:
-        # Fresh cache hit — served as live data.
+        logger.info("✅ Serving oil prices from fresh cache")
         return _cache["data"]
 
+    # Attempt to fetch fresh data from EPPO
     try:
-        async with httpx.AsyncClient(timeout=10, follow_redirects=True) as client:
+        logger.info(f"🔄 Fetching fresh oil prices from EPPO: {EPPO_OIL_URL}")
+        
+        async with httpx.AsyncClient(
+            timeout=httpx.Timeout(10.0, connect=5.0), 
+            follow_redirects=True
+        ) as client:
             response = await client.get(
-                EPPO_OIL_URL, headers={"User-Agent": "Mozilla/5.0"}
+                EPPO_OIL_URL, 
+                headers={"User-Agent": "Mozilla/5.0 (compatible; ART-Workspace/1.0)"}
             )
 
         if response.status_code == 200:
@@ -99,20 +176,32 @@ async def get_oil_prices():
                 }
                 _cache["data"] = data
                 _cache["timestamp"] = now
+                logger.info(f"✅ Successfully fetched {len(prices)} oil prices from EPPO")
                 return data
-
-        logger.error(f"EPPO scrape failed: HTTP {response.status_code}")
+            else:
+                logger.warning("⚠️ EPPO HTML parsed but no prices found")
+        else:
+            logger.error(f"❌ EPPO scrape failed: HTTP {response.status_code}")
+            
+    except httpx.TimeoutException as e:
+        logger.error(f"⏱️ EPPO fetch timeout: {str(e)}")
+    except httpx.HTTPError as e:
+        logger.error(f"🌐 EPPO HTTP error: {str(e)}")
     except Exception as e:
-        logger.error(f"EPPO scrape error: {e}")
+        logger.error(f"❌ EPPO scrape unexpected error: {str(e)}")
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
 
-    # Fallback to cache if available, even if expired, when live fetch fails.
-    # Mark it as stale so the frontend can warn the user this is not fresh data.
+    # Fallback to stale cache if available
     if _cache["data"]:
+        logger.warning("⚠️ Returning stale cache due to fetch failure")
         stale = dict(_cache["data"])
         stale["is_stale"] = True
-        stale["source"] = stale.get("source", "EPPO") + " (stale cache)"
+        stale["source"] = stale.get("source", "EPPO") + " (cache)"
         return stale
 
+    # Last resort: return hardcoded fallback prices
+    logger.warning("⚠️ Returning hardcoded fallback prices")
     return _fallback_prices()
 
 
