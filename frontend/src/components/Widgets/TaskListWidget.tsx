@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { Bell, Calendar, Clock, MapPin, RotateCw, Search, Tag, AlertCircle } from 'lucide-react'
 import { pushNotifications } from '@/components/Layout/NotificationBell'
 import WidgetSizeToggle from './WidgetSizeToggle'
+import { fetchWithAuth } from '@/lib/api/fetchWithAuth'
 import DOMPurify from 'dompurify'
 
 interface CalendarEvent {
@@ -60,20 +61,10 @@ export default function TaskListWidget({
       const timeMin = startOfMonth.toISOString()
       const timeMax = endOfMonth.toISOString()
 
-      // Use Next.js rewrite proxy (more reliable in Docker)
+      // Call backend API directly via fetchWithAuth (static export has no server rewrites)
       const url = `/api/v1/calendar/events?calendar_id=${encodeURIComponent(CALENDAR_ID)}&time_min=${encodeURIComponent(timeMin)}&time_max=${encodeURIComponent(timeMax)}`
-      
-      const timer = setTimeout(() => controller.abort(), 60_000)
-      let response: Response
-      try {
-        response = await fetch(url, {
-          method: 'GET',
-          headers: { 'Accept': 'application/json' },
-          signal: controller.signal,
-        })
-      } finally {
-        clearTimeout(timer)
-      }
+
+      const response = await fetchWithAuth(url, { signal: controller.signal })
 
       if (!response.ok) {
         const detail = await response.json().catch(() => ({}))

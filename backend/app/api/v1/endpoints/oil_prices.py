@@ -66,10 +66,17 @@ _cache = {
 }
 CACHE_TTL = 3600  # 1 hour in seconds
 
+
+def _iso_now() -> str:
+    """ISO-8601 timestamp of the current UTC time, for client staleness checks."""
+    return datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
 @router.get("/oil-prices", response_model=dict)
 async def get_oil_prices():
     now = datetime.datetime.now()
     if _cache["data"] and _cache["timestamp"] and (now - _cache["timestamp"]).total_seconds() < CACHE_TTL:
+        # Fresh cache hit — served as live data.
         return _cache["data"]
 
     try:
@@ -86,6 +93,8 @@ async def get_oil_prices():
                     "success": True,
                     "prices": prices,
                     "update_date": today,
+                    "fetched_at": _iso_now(),
+                    "is_stale": False,
                     "source": "EPPO",
                 }
                 _cache["data"] = data
@@ -96,9 +105,13 @@ async def get_oil_prices():
     except Exception as e:
         logger.error(f"EPPO scrape error: {e}")
 
-    # Fallback to cache if available, even if expired, when live fetch fails
+    # Fallback to cache if available, even if expired, when live fetch fails.
+    # Mark it as stale so the frontend can warn the user this is not fresh data.
     if _cache["data"]:
-        return _cache["data"]
+        stale = dict(_cache["data"])
+        stale["is_stale"] = True
+        stale["source"] = stale.get("source", "EPPO") + " (stale cache)"
+        return stale
 
     return _fallback_prices()
 
@@ -141,5 +154,7 @@ def _fallback_prices():
             {"key": "diesel", "name": "ดีเซล", "price": 41.30, "unit": "บาท/ลิตร"},
         ],
         "update_date": today,
-        "source": "EPPO (cache)",
+        "fetched_at": None,
+        "is_stale": True,
+        "source": "Hardcoded fallback",
     }

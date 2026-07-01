@@ -19,6 +19,8 @@ interface OilPriceData {
   oil_prices?: OilPrice[]
   update_date: string
   source: string
+  is_stale?: boolean
+  fetched_at?: string | null
 }
 
 type OilCache = { savedAt: number; data: OilPriceData; lastUpdate: number }
@@ -171,6 +173,12 @@ export default function OilPriceWidget({
                 <p className="text-[11px] text-slate-500">
                   อัปเดต {data.update_date || lastUpdate.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}
                   {data.source !== 'EPPO' && ` • ${data.source}`}
+                </p>
+              )}
+              {data?.is_stale && (
+                <p className="text-[11px] font-medium text-amber-600 flex items-center gap-1">
+                  <AlertCircle size={11} className="flex-shrink-0" aria-hidden="true" />
+                  ข้อมูลอาจไม่เป็นปัจจุบัน
                 </p>
               )}
               {(loading || refreshing) && <p className="text-[11px] text-slate-500">กำลังอัปเดต...</p>}

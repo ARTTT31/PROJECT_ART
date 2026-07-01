@@ -6,7 +6,7 @@ import json
 import os
 import secrets
 import traceback
-from typing import Optional
+from typing import List, Optional
 from urllib.parse import urlencode
 
 import requests
@@ -296,16 +296,14 @@ async def refresh_token(
 @router.get("/google")
 async def google_login(request: Request):
     """Redirect to Google's OAuth 2.0 consent screen"""
-    client_id = os.getenv("BACKEND_GOOGLE_CLIENT_ID", "758449083268-55rok7lteipnqelck99e557b1lkhu5k8.apps.googleusercontent.com")
-    redirect_uri = os.getenv(
-        "BACKEND_GOOGLE_REDIRECT", "http://localhost:8000/api/v1/auth/google/callback"
-    )
-
-    if not client_id:
+    try:
+        client_id = settings.require_google_client_id()
+    except RuntimeError as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Google client ID not configured",
+            detail=str(e),
         )
+    redirect_uri = settings.get_google_redirect_uri()
 
     params = {
         "client_id": client_id,
@@ -320,6 +318,23 @@ async def google_login(request: Request):
     return RedirectResponse(url)
 
 
+def _get_valid_client_ids() -> List[str]:
+    """Return the list of accepted Google client IDs from the environment.
+
+    Configured via the comma-separated ``GOOGLE_VALID_CLIENT_IDS`` env var so that
+    valid Web/Android client IDs are not hardcoded in source. Falls back to the
+    single primary client ID if the multi-ID list is not set.
+    """
+    multi = os.getenv("GOOGLE_VALID_CLIENT_IDS", "").strip()
+    ids = [cid.strip() for cid in multi.split(",") if cid.strip()]
+    if not ids:
+        try:
+            ids = [settings.require_google_client_id()]
+        except RuntimeError:
+            ids = []
+    return ids
+
+
 @router.post("/google/verify-token")
 async def google_verify_token(
     token_request: dict, request: Request = None, db: AsyncSession = Depends(get_db)
@@ -330,22 +345,13 @@ async def google_verify_token(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="google-auth library not installed. Run: pip install google-auth",
         )
-    
-    # Accept both Web and Android Client IDs (old and new projects)
-    valid_client_ids = [
-        os.getenv("BACKEND_GOOGLE_CLIENT_ID", "758449083268-55rok7lteipnqelck99e557b1lkhu5k8.apps.googleusercontent.com"),  # New Web Client ID
-        "888211169337-6u8trsph6578m9e0799rj0vnh5gu59m2.apps.googleusercontent.com",  # Old Web Client ID
-        "758449083268-787pea8m2h38maivhhjt1eoctmidf465.apps.googleusercontent.com",  # New Android Client ID
-        "888211169337-8ilrpqid0ijhofcd1t8ijjm17tqa0e6v.apps.googleusercontent.com"   # Old Android Client ID
-    ]
-    
-    # Filter out empty values
-    valid_client_ids = [cid for cid in valid_client_ids if cid]
-    
+
+    valid_client_ids = _get_valid_client_ids()
+
     if not valid_client_ids:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Google client ID not configured",
+            detail="Google client ID not configured. Set GOOGLE_VALID_CLIENT_IDS or GOOGLE_CLIENT_ID.",
         )
     
     id_token_jwt = token_request.get("id_token")
@@ -437,7 +443,7 @@ async def google_verify_token(
     response.set_cookie(
         key="refresh_token",
         value=refresh_jwt,
-        max_age=30 * 24 * 60 * 60,
+        max_age=7 * 24 * 60 * 60,
         httponly=True,
         **COOKIE_OPTIONS,
     )
@@ -449,7 +455,7 @@ async def google_verify_token(
         httponly=False,
         **COOKIE_OPTIONS,
     )
-    
+
     return response
 
 
@@ -463,18 +469,17 @@ async def google_callback(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="google-auth library not installed. Run: pip install google-auth",
         )
-    client_id = os.getenv("BACKEND_GOOGLE_CLIENT_ID", "758449083268-55rok7lteipnqelck99e557b1lkhu5k8.apps.googleusercontent.com")
-    client_secret = os.getenv("BACKEND_GOOGLE_CLIENT_SECRET")
-    redirect_uri = os.getenv(
-        "BACKEND_GOOGLE_REDIRECT", "http://localhost:8000/api/v1/auth/google/callback"
-    )
-    frontend_redirect = os.getenv("FRONTEND_URL", "http://localhost:3000")
-
-    if not client_id:
+    try:
+        client_id = settings.require_google_client_id()
+        client_secret = settings.require_google_client_secret()
+    except RuntimeError as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Google client ID not configured",
+            detail=str(e),
         )
+    redirect_uri = settings.get_google_redirect_uri()
+    frontend_redirect = os.getenv("FRONTEND_URL", "http://localhost:3000")
+
     if not code:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Missing code from Google"

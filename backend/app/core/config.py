@@ -2,7 +2,8 @@
 Application Configuration
 """
 
-from typing import List
+import os
+from typing import List, Optional
 from pydantic import ConfigDict
 from pydantic_settings import BaseSettings
 
@@ -27,7 +28,6 @@ class Settings(BaseSettings):
 
     @property
     def COOKIE_SECURE(self) -> bool:
-        import os
         if "RENDER" in os.environ:
             return True
         env_val = os.getenv("COOKIE_SECURE")
@@ -37,7 +37,6 @@ class Settings(BaseSettings):
 
     @property
     def COOKIE_SAMESITE(self) -> str:
-        import os
         if "RENDER" in os.environ:
             return "none"
         env_val = os.getenv("COOKIE_SAMESITE")
@@ -60,6 +59,44 @@ class Settings(BaseSettings):
         if isinstance(self.CORS_ORIGINS, str):
             return [origin.strip() for origin in self.CORS_ORIGINS.split(",")]
         return self.CORS_ORIGINS
+
+    # ── Google OAuth ────────────────────────────────────────────────────────
+    # These have NO hardcoded defaults. An empty/missing value fails fast at the
+    # auth endpoints so we never silently fall back to a real client ID baked
+    # into source. Use settings.require_google_*() to validate before use.
+    GOOGLE_CLIENT_ID: str = ""
+    GOOGLE_CLIENT_SECRET: str = ""
+    GOOGLE_REDIRECT_URI: str = ""
+
+    def require_google_client_id(self) -> str:
+        """Return the configured Google client ID or raise a clear 500 error."""
+        val = (self.GOOGLE_CLIENT_ID or os.getenv("BACKEND_GOOGLE_CLIENT_ID") or "").strip()
+        if not val:
+            raise RuntimeError(
+                "Google Client ID is not configured. Set GOOGLE_CLIENT_ID "
+                "(or BACKEND_GOOGLE_CLIENT_ID) in the environment."
+            )
+        return val
+
+    def require_google_client_secret(self) -> str:
+        """Return the configured Google client secret or raise a clear 500 error."""
+        val = (
+            self.GOOGLE_CLIENT_SECRET or os.getenv("BACKEND_GOOGLE_CLIENT_SECRET") or ""
+        ).strip()
+        if not val:
+            raise RuntimeError(
+                "Google Client Secret is not configured. Set GOOGLE_CLIENT_SECRET "
+                "(or BACKEND_GOOGLE_CLIENT_SECRET) in the environment."
+            )
+        return val
+
+    def get_google_redirect_uri(self) -> str:
+        """Return the configured Google redirect URI or a sensible default."""
+        return (
+            self.GOOGLE_REDIRECT_URI
+            or os.getenv("BACKEND_GOOGLE_REDIRECT")
+            or "http://localhost:8000/api/v1/auth/google/callback"
+        )
 
     model_config = ConfigDict(
         env_file=".env",

@@ -149,12 +149,18 @@ class AuthService:
 
         await self.db.commit()
 
-        # Create tokens (fallback to username if email is null)
+        # Create tokens (fallback to username if email is null).
+        # session_id is embedded in the refresh token so that refresh can verify
+        # the session is still active in the DB (supports real revocation on logout).
         access_token = create_access_token(
             data={"sub": user.email or user.username, "user_id": user.id}
         )
         refresh_token = create_refresh_token(
-            data={"sub": user.email or user.username, "user_id": user.id}
+            data={
+                "sub": user.email or user.username,
+                "user_id": user.id,
+                "sid": session_id,
+            }
         )
 
         return {
@@ -188,7 +194,10 @@ class AuthService:
 
     async def refresh_access_token(self, refresh_token: str) -> Token:
         """
-        Create new access token from refresh token
+        Create new access token from refresh token.
+
+        Validates that the refresh token's session is still active in the DB,
+        so logging out (which sets ``is_active=False``) truly revokes the token.
 
         Args:
             refresh_token: Refresh token
@@ -197,7 +206,7 @@ class AuthService:
             New token pair
 
         Raises:
-            HTTPException: If refresh token is invalid
+            HTTPException: If refresh token is invalid or its session is revoked
         """
         payload = decode_token(refresh_token)
 
@@ -209,6 +218,7 @@ class AuthService:
 
         sub = payload.get("sub")
         user_id = payload.get("user_id")
+        session_id = payload.get("sid")
 
         if not sub or not user_id:
             raise HTTPException(
@@ -216,9 +226,28 @@ class AuthService:
                 detail="Invalid refresh token",
             )
 
-        # Create new tokens
+        # Verify the session bound to this refresh token is still active.
+        # Tokens issued before session_id was embedded (legacy) have no "sid" and
+        # are still accepted to avoid breaking existing sessions during rollout.
+        if session_id:
+            session = (
+                await self.db.execute(
+                    select(UserSession).where(UserSession.session_id == session_id)
+                )
+            ).scalar_one_or_none()
+            if not session or not session.is_active:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Session revoked หรือออกจากระบบแล้ว กรุณาเข้าสู่ระบบใหม่",
+                )
+
+        # Preserve session_id across refreshes so revocation keeps working.
+        new_token_data = {"sub": sub, "user_id": user_id}
+        if session_id:
+            new_token_data["sid"] = session_id
+
         access_token = create_access_token(data={"sub": sub, "user_id": user_id})
-        new_refresh_token = create_refresh_token(data={"sub": sub, "user_id": user_id})
+        new_refresh_token = create_refresh_token(data=new_token_data)
 
         return Token(
             access_token=access_token,
