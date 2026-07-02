@@ -139,6 +139,25 @@ async def root():
     }
 
 
+@app.options("/api/v1/auth/google/verify-token", include_in_schema=False)
+async def preflight_google_verify_token(request: Request):
+    """Explicit OPTIONS handler for Google verify-token preflight.
+    This is a safety-net: CORSMiddleware should handle preflights automatically,
+    but some mobile WebView environments require this explicit route to exist.
+    """
+    origin = request.headers.get("origin", "")
+    return Response(
+        status_code=200,
+        headers={
+            "Access-Control-Allow-Origin": origin or "*",
+            "Access-Control-Allow-Methods": "POST, OPTIONS",
+            "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Requested-With",
+            "Access-Control-Allow-Credentials": "true",
+            "Access-Control-Max-Age": "86400",
+        },
+    )
+
+
 @app.options("/api/v1/auth/microsoft/verify-token", include_in_schema=False)
 async def preflight_microsoft_verify_token(request: Request):
     """Explicit OPTIONS handler for Microsoft verify-token preflight.
