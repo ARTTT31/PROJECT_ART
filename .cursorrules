@@ -15,3 +15,14 @@ Every LLM, Agent, or Subagent parsing this codebase must maintain this strict be
 1. **Token Conservation:** Keep responses short, direct, and zero-fluff. No greetings, no repetitive summaries. "He says nothing. He writes one line. It works."
 2. **Code Minimalism:** Reduce code output volume by 80-94%. Reuse existing logic and prioritize standard native APIs over heavy third-party packages.
 3. **Recursive Inheritance:** Any new subagent or parallel thread spawned to handle tasks within this project directory must automatically read, inherit, and enforce this section.
+
+## 3. UI/UX DESIGN — SINGLE SOURCE OF TRUTH
+
+> **CRITICAL:** For ALL UI/UX design, component building, and front-end coding tasks,
+> strictly read and adhere to the global rules defined in:
+>
+> **`design-system/art-workspace/MASTER.md`**
+>
+> Do NOT invent styles, palettes, icon libraries, or component patterns outside this file.
+>
+> Quick constraints: `slate-*` colors only | Light mode only | Max 16px radius | Lucide React icons | Sky Blue `#0ea5e9` accent | WCAG AAA

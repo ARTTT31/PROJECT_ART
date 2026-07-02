@@ -1,6 +1,7 @@
 'use client'
 
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth'
 import type { AuthUser, AuthRole } from '@/types'
 
@@ -15,6 +16,8 @@ interface AuthContextValue {
   login: (user: AuthUser, sessionId?: string) => void
   logout: () => void
   updateUser: (next: Partial<AuthUser>) => void
+  /** Check if session is still valid - returns false if 401 */
+  validateSession: () => Promise<boolean>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -29,8 +32,45 @@ function safeParseUser(raw: string | null): AuthUser | null {
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const router = useRouter()
   const [status, setStatus] = useState<AuthStatus>('loading')
   const [user, setUser] = useState<AuthUser | null>(null)
+
+  // ── Validate session helper ──
+  const validateSession = useCallback(async (): Promise<boolean> => {
+    try {
+      const sessionRes = await fetchWithAuth('/api/v1/auth/session')
+      if (sessionRes.ok) {
+        const json = await sessionRes.json()
+        if (json.data?.user) {
+          return true
+        }
+      }
+      if (sessionRes.status === 401) {
+        return false
+      }
+      // Network error or other issue - assume valid to avoid false negatives
+      return true
+    } catch {
+      // Network error - assume valid
+      return true
+    }
+  }, [])
+
+  // ── Centralized 401 handler ──
+  useEffect(() => {
+    const handle401 = () => {
+      setUser(null)
+      setStatus('anonymous')
+      localStorage.removeItem('user')
+      localStorage.removeItem('session_id')
+      // Use router.replace for smooth navigation
+      router.replace('/login')
+    }
+
+    window.addEventListener('auth-logout', handle401)
+    return () => window.removeEventListener('auth-logout', handle401)
+  }, [router])
 
   // 1. Session check on mount — fast-path from localStorage, background verify
   useEffect(() => {
@@ -182,8 +222,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       login,
       logout,
       updateUser,
+      validateSession,
     }),
-    [status, user, login, logout, updateUser]
+    [status, user, login, logout, updateUser, validateSession]
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

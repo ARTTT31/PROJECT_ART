@@ -44,13 +44,14 @@ const QRCodeWidget = dynamic(() => import('@/components/Widgets/QRCodeWidget'), 
 })
 import { WidgetConfig } from '@/types'
 import ErrorBoundary from '@/components/ErrorBoundary'
-import { Dialog, DialogContent } from '@/components/ui/Dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogBody, DialogFooter } from '@/components/ui/Dialog'
 import { useAuth } from '@/hooks/useAuth'
 import {
   DndContext,
   closestCenter,
   KeyboardSensor,
   PointerSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   DragEndEvent,
@@ -95,7 +96,13 @@ export default function DashboardPage() {
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 250,
+        tolerance: 5,
+      },
+    })
   )
 
   // ── Hoisted before useEffect (const arrows are NOT hoisted in JS) ──
@@ -239,66 +246,76 @@ export default function DashboardPage() {
 
       {/* Widget Manager Modal */}
       <Dialog open={showConfigModal} onOpenChange={setShowConfigModal}>
-        <DialogContent title="การแสดงผลวิดเจ็ต" description="ติ๊กถูกเพื่อแสดงหรือซ่อนวิดเจ็ตบนแดชบอร์ดหลักของคุณ" className="!max-w-md">
-          <div className="rounded-[16px] border border-slate-200/70 bg-slate-50/70 p-2">
-            {defaultWidgets.filter(widget => widget.id !== 'syshealth' || user?.role === 'admin').map((widget) => {
-              const isVisible = visibleWidgetIds.includes(widget.id)
-              const isLocked = isVisible && visibleWidgetIds.length <= 1
-              return (
-                <label
-                  key={widget.id}
-                  className={`group relative mb-2 flex cursor-pointer items-center gap-3 rounded-[14px] border p-3.5 transition-all last:mb-0 ${
-                    isVisible
-                      ? 'border-sky-200 bg-white shadow-glass-sm'
-                      : 'border-transparent bg-transparent hover:border-slate-200 hover:bg-white/80'
-                  } ${isLocked ? 'cursor-default' : ''}`}
-                >
-                  <input
-                    type="checkbox"
-                    checked={isVisible}
-                    disabled={isLocked}
-                    onChange={() => toggleWidgetVisibility(widget.id)}
-                    className="peer sr-only"
-                  />
-
-                  <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-colors ${
-                    isVisible
-                      ? 'bg-sky-50 text-sky-700 ring-1 ring-sky-100'
-                      : 'bg-white text-slate-500 ring-1 ring-slate-200 group-hover:text-slate-700'
-                  }`}>
-                    {isVisible ? <Eye className="h-4 w-4" aria-hidden="true" /> : <EyeOff className="h-4 w-4" aria-hidden="true" />}
-                  </div>
-
-                  <div className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-semibold text-slate-800">{widgetNames[widget.id]}</span>
-                    <span className="mt-0.5 block text-xs font-medium leading-5 text-slate-500">{widgetDescriptions[widget.id]}</span>
-                  </div>
-
-                  <div className="flex shrink-0 items-center gap-2">
-                    <span className={`hidden rounded-full px-2.5 py-1 text-xs font-semibold sm:inline-flex ${
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>การแสดงผลวิดเจ็ต</DialogTitle>
+            <DialogDescription>
+              ติ๊กถูกเพื่อแสดงหรือซ่อนวิดเจ็ตบนแดชบอร์ดหลักของคุณ
+            </DialogDescription>
+          </DialogHeader>
+          
+          <DialogBody>
+            <div className="rounded-[16px] border border-slate-200/70 bg-slate-50/70 p-2">
+              {defaultWidgets.filter(widget => widget.id !== 'syshealth' || user?.role === 'admin').map((widget) => {
+                const isVisible = visibleWidgetIds.includes(widget.id)
+                const isLocked = isVisible && visibleWidgetIds.length <= 1
+                return (
+                  <label
+                    key={widget.id}
+                    className={`group relative mb-2 flex cursor-pointer items-center gap-3 rounded-[14px] border p-3.5 transition-all last:mb-0 ${
                       isVisible
-                        ? 'bg-sky-50 text-sky-700'
-                        : 'bg-slate-100 text-slate-500'
-                    }`}>
-                      {isVisible ? 'แสดงอยู่' : 'ซ่อนอยู่'}
-                    </span>
-                    <div className={`flex h-6 w-6 items-center justify-center rounded-full border transition-colors ${
+                        ? 'border-sky-200 bg-white shadow-glass-sm'
+                        : 'border-transparent bg-transparent hover:border-slate-200 hover:bg-white/80'
+                    } ${isLocked ? 'cursor-default' : ''}`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isVisible}
+                      disabled={isLocked}
+                      onChange={() => toggleWidgetVisibility(widget.id)}
+                      className="peer sr-only"
+                    />
+
+                    <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-colors ${
                       isVisible
-                        ? 'border-sky-500 bg-sky-500 text-white'
-                        : 'border-slate-300 bg-white text-transparent group-hover:border-slate-400'
+                        ? 'bg-sky-50 text-sky-700 ring-1 ring-sky-100'
+                        : 'bg-white text-slate-500 ring-1 ring-slate-200 group-hover:text-slate-700'
                     }`}>
-                      <Check className="h-3.5 w-3.5" aria-hidden="true" />
+                      {isVisible ? <Eye className="h-4 w-4" aria-hidden="true" /> : <EyeOff className="h-4 w-4" aria-hidden="true" />}
                     </div>
-                  </div>
-                </label>
-              )
-            })}
-          </div>
-          <div className="mt-6 flex justify-end">
+
+                    <div className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-semibold text-slate-800">{widgetNames[widget.id]}</span>
+                      <span className="mt-0.5 block text-xs font-medium leading-5 text-slate-500">{widgetDescriptions[widget.id]}</span>
+                    </div>
+
+                    <div className="flex shrink-0 items-center gap-2">
+                      <span className={`hidden rounded-full px-2.5 py-1 text-xs font-semibold sm:inline-flex ${
+                        isVisible
+                          ? 'bg-sky-50 text-sky-700'
+                          : 'bg-slate-100 text-slate-500'
+                      }`}>
+                        {isVisible ? 'แสดงอยู่' : 'ซ่อนอยู่'}
+                      </span>
+                      <div className={`flex h-6 w-6 items-center justify-center rounded-full border transition-colors ${
+                        isVisible
+                          ? 'border-sky-500 bg-sky-500 text-white'
+                          : 'border-slate-300 bg-white text-transparent group-hover:border-slate-400'
+                      }`}>
+                        <Check className="h-3.5 w-3.5" aria-hidden="true" />
+                      </div>
+                    </div>
+                  </label>
+                )
+              })}
+            </div>
+          </DialogBody>
+          
+          <DialogFooter>
             <button onClick={() => setShowConfigModal(false)} className="art-primary-button !min-h-10 !px-5 !py-2 !text-sm">
               ตกลง
             </button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </DashboardLayout>

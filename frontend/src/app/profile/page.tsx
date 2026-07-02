@@ -7,7 +7,7 @@ import DashboardLayout from '@/components/Layout/DashboardLayout'
 import { showDeleteConfirm, showToast, showSuccess, showError } from '@/utils/sweetalert'
 import { useAuth } from '@/hooks/useAuth'
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth'
-import { Dialog, DialogContent } from '@/components/ui/Dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/Dialog'
 import {
   QUICK_LINK_ICON_MAP,
   QUICK_LINK_ICON_OPTIONS,
@@ -734,10 +734,12 @@ export default function ProfilePage() {
 
               <Dialog open={quickLinkDialogOpen} onOpenChange={setQuickLinkDialogOpen}>
                 <DialogContent
-                  title={editingQuickLinkId ? 'แก้ไขควิกลิ้งค์' : 'เพิ่มควิกลิ้งค์'}
-                  description="ควิกลิ้งค์ที่สร้างจะไปแสดงที่ Sidebar ของหน้าหลัก"
                   className="!max-w-2xl"
                 >
+                  <DialogHeader>
+                    <DialogTitle>{editingQuickLinkId ? 'แก้ไขควิกลิ้งค์' : 'เพิ่มควิกลิ้งค์'}</DialogTitle>
+                    <DialogDescription>ควิกลิ้งค์ที่สร้างจะไปแสดงที่ Sidebar ของหน้าหลัก</DialogDescription>
+                  </DialogHeader>
                   <form onSubmit={handleSubmitQuickLink} className="space-y-4">
                     <div className="rounded-[12px] border border-slate-200 bg-slate-50/80 p-4">
                       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
