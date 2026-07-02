@@ -46,7 +46,7 @@ export default function CameraPage() {
         {/* ── Page header ────────────────────────────────────────────── */}
         <header className="flex flex-wrap items-center justify-between gap-4 border-b border-black/[0.06] pb-5">
           <div>
-            <h1 className="text-[22px] font-bold tracking-tight text-[#1d1d1f]">
+            <h1 className="text-[22px] font-extrabold tracking-[-0.03em] text-[#1d1d1f]">
               กล้องวงจรปิด
             </h1>
             <p className="mt-0.5 text-sm text-[#6e6e73]">
@@ -74,7 +74,7 @@ export default function CameraPage() {
 
           {/* Primary view */}
           <div className="lg:col-span-2">
-            <div className="relative aspect-video overflow-hidden rounded-2xl bg-slate-950 ring-1 ring-black/[0.08]">
+            <div className="relative aspect-video overflow-hidden rounded-2xl bg-slate-950 ring-1 ring-black/[0.08] shadow-[0_8px_32px_rgba(15,23,42,0.12)]">
               {active?.status === 'online' ? (
                 <>
                   {/* Simulated live frame */}
@@ -122,7 +122,7 @@ export default function CameraPage() {
 
           {/* Camera list */}
           <div className="flex flex-col gap-3">
-            <div className="rounded-2xl bg-white p-5 ring-1 ring-black/[0.06]">
+            <div className="rounded-2xl bg-white p-5 ring-1 ring-black/[0.06] shadow-[0_8px_32px_rgba(15,23,42,0.06)]">
               <h2 className="mb-4 flex items-center gap-2.5 text-[15px] font-bold text-[#1d1d1f]">
                 <div className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-[#f5f5f7]">
                   <Shield size={15} className="text-[#1d1d1f]" aria-hidden="true" />
@@ -141,8 +141,8 @@ export default function CameraPage() {
                       'flex items-center justify-between rounded-xl p-3 text-left transition-all duration-150',
                       'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3] focus-visible:ring-offset-1',
                       activeCamera === cam.id
-                        ? 'bg-[#0071e3]/[0.07] ring-1 ring-[#0071e3]/20'
-                        : 'bg-[#f5f5f7] hover:bg-white hover:ring-1 hover:ring-black/[0.06]',
+                        ? 'bg-[#0071e3]/[0.07] ring-1 ring-[#0071e3]/25 shadow-[0_2px_8px_rgba(0,113,227,0.08)]'
+                        : 'bg-[#f5f5f7] hover:bg-white hover:ring-1 hover:ring-black/[0.06] hover:shadow-[0_2px_8px_rgba(15,23,42,0.05)]',
                     ].join(' ')}
                   >
                     <div className="flex items-center gap-3">
