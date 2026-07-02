@@ -196,7 +196,6 @@ export default function OilPriceWidget({
               {data && (
                 <p className="text-[11px] text-slate-500">
                   อัปเดต {data.update_date || lastUpdate.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}
-                  {data.source !== 'EPPO' && ` • ${data.source}`}
                 </p>
               )}
               {data?.is_stale && (
@@ -261,7 +260,7 @@ export default function OilPriceWidget({
 
         {/* ── Footer source ── */}
         <div className="pt-1 border-t border-slate-100">
-          <span className="text-[10px] text-slate-400">แหล่งข้อมูล: {data?.source || 'EPPO'}</span>
+          <span className="text-[10px] text-slate-400">แหล่งข้อมูล: EPPO</span>
         </div>
       </div>
     </section>
