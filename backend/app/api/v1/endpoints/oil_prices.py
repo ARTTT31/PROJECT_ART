@@ -1,4 +1,4 @@
-"""
+﻿"""
 Oil Prices API Endpoint
 Scrapes retail fuel prices from EPPO website (eppo_oil_gen_new.php)
 Returns PTT column prices as JSON for the frontend widget.
@@ -17,15 +17,15 @@ EPPO_OIL_URL = (
     "https://www.eppo.go.th/templates/eppo_v15_mixed/eppo_oil/eppo_oil_gen_new.php"
 )
 
-# image filename → (key, display name)
+# image filename โ’ (key, display name)
 # Order matches the desired display order
 IMAGE_MAP: list[tuple[str, str, str]] = [
-    ("oil_name2.png", "gasohol_95", "แก๊สโซฮอล์ 95"),
-    ("oil_name3.png", "gasohol_91", "แก๊สโซฮอล์ 91"),
-    ("oil_name4.png", "gasohol_e20", "แก๊สโซฮอล์ E20"),
-    ("oil_name5.png", "gasohol_e85", "แก๊สโซฮอล์ E85"),
-    ("oil_name10.png", "benzene_95", "เบนซิน 95"),
-    ("oil_name6v2.png", "diesel", "ดีเซล"),
+    ("oil_name2.png", "gasohol_95", "เนเธเนเธชเนเธเธฎเธญเธฅเน 95"),
+    ("oil_name3.png", "gasohol_91", "เนเธเนเธชเนเธเธฎเธญเธฅเน 91"),
+    ("oil_name4.png", "gasohol_e20", "เนเธเนเธชเนเธเธฎเธญเธฅเน E20"),
+    ("oil_name5.png", "gasohol_e85", "เนเธเนเธชเนเธเธฎเธญเธฅเน E85"),
+    ("oil_name10.png", "benzene_95", "เน€เธเธเธเธดเธ 95"),
+    ("oil_name6v2.png", "diesel", "เธ”เธตเน€เธเธฅ"),
 ]
 
 
@@ -54,7 +54,7 @@ def _parse_eppo_html(html: str) -> list[dict]:
                     "key": key,
                     "name": name,
                     "price": row_map[img_file],
-                    "unit": "บาท/ลิตร",
+                    "unit": "เธเธฒเธ—/เธฅเธดเธ•เธฃ",
                 }
             )
     return result
@@ -76,7 +76,7 @@ def _iso_now() -> str:
 async def check_eppo_health():
     """
     Health check endpoint to verify EPPO website accessibility
-    
+
     Returns:
         Status of EPPO connection and cache state
     """
@@ -88,13 +88,13 @@ async def check_eppo_health():
         "is_accessible": False,
         "message": "",
     }
-    
+
     # Check cache age
     if _cache["timestamp"]:
         age = (datetime.datetime.now() - _cache["timestamp"]).total_seconds()
         status["cache_age_seconds"] = int(age)
         status["cache_is_fresh"] = age < CACHE_TTL
-    
+
     # Test EPPO connectivity
     try:
         async with httpx.AsyncClient(
@@ -105,32 +105,32 @@ async def check_eppo_health():
                 EPPO_OIL_URL,
                 headers={"User-Agent": "Mozilla/5.0 (compatible; ART-Workspace/1.0)"}
             )
-        
+
         if response.status_code == 200:
             # Try to parse to ensure data is valid
             prices = _parse_eppo_html(response.text)
             if prices:
                 status["is_accessible"] = True
-                status["message"] = f"✅ EPPO is accessible and returning {len(prices)} prices"
+                status["message"] = f"โ… EPPO is accessible and returning {len(prices)} prices"
                 status["last_fetch_success"] = True
             else:
                 status["is_accessible"] = False
-                status["message"] = "⚠️ EPPO is accessible but no prices found in HTML"
+                status["message"] = "โ ๏ธ EPPO is accessible but no prices found in HTML"
                 status["last_fetch_success"] = False
         else:
             status["is_accessible"] = False
-            status["message"] = f"❌ EPPO returned HTTP {response.status_code}"
+            status["message"] = f"โ EPPO returned HTTP {response.status_code}"
             status["last_fetch_success"] = False
-            
+
     except httpx.TimeoutException:
         status["is_accessible"] = False
-        status["message"] = "⏱️ Connection to EPPO timed out"
+        status["message"] = "โฑ๏ธ Connection to EPPO timed out"
         status["last_fetch_success"] = False
     except Exception as e:
         status["is_accessible"] = False
-        status["message"] = f"❌ Error connecting to EPPO: {str(e)}"
+        status["message"] = f"โ Error connecting to EPPO: {str(e)}"
         status["last_fetch_success"] = False
-    
+
     return status
 
 
@@ -138,27 +138,27 @@ async def check_eppo_health():
 async def get_oil_prices():
     """
     Fetch current retail fuel prices from EPPO website
-    
+
     Returns PTT column prices for each fuel type with caching.
     Falls back to stale cache or hardcoded prices if live fetch fails.
     """
     now = datetime.datetime.now()
-    
+
     # Serve fresh cache if available
     if _cache["data"] and _cache["timestamp"] and (now - _cache["timestamp"]).total_seconds() < CACHE_TTL:
-        logger.info("✅ Serving oil prices from fresh cache")
+        logger.info("โ… Serving oil prices from fresh cache")
         return _cache["data"]
 
     # Attempt to fetch fresh data from EPPO
     try:
-        logger.info(f"🔄 Fetching fresh oil prices from EPPO: {EPPO_OIL_URL}")
-        
+        logger.info(f"๐” Fetching fresh oil prices from EPPO: {EPPO_OIL_URL}")
+
         async with httpx.AsyncClient(
-            timeout=httpx.Timeout(10.0, connect=5.0), 
+            timeout=httpx.Timeout(10.0, connect=5.0),
             follow_redirects=True
         ) as client:
             response = await client.get(
-                EPPO_OIL_URL, 
+                EPPO_OIL_URL,
                 headers={"User-Agent": "Mozilla/5.0 (compatible; ART-Workspace/1.0)"}
             )
 
@@ -176,32 +176,32 @@ async def get_oil_prices():
                 }
                 _cache["data"] = data
                 _cache["timestamp"] = now
-                logger.info(f"✅ Successfully fetched {len(prices)} oil prices from EPPO")
+                logger.info(f"โ… Successfully fetched {len(prices)} oil prices from EPPO")
                 return data
             else:
-                logger.warning("⚠️ EPPO HTML parsed but no prices found")
+                logger.warning("โ ๏ธ EPPO HTML parsed but no prices found")
         else:
-            logger.error(f"❌ EPPO scrape failed: HTTP {response.status_code}")
-            
+            logger.error(f"โ EPPO scrape failed: HTTP {response.status_code}")
+
     except httpx.TimeoutException as e:
-        logger.error(f"⏱️ EPPO fetch timeout: {str(e)}")
+        logger.error(f"โฑ๏ธ EPPO fetch timeout: {str(e)}")
     except httpx.HTTPError as e:
-        logger.error(f"🌐 EPPO HTTP error: {str(e)}")
+        logger.error(f"๐ EPPO HTTP error: {str(e)}")
     except Exception as e:
-        logger.error(f"❌ EPPO scrape unexpected error: {str(e)}")
+        logger.error(f"โ EPPO scrape unexpected error: {str(e)}")
         import traceback
         logger.error(f"Traceback: {traceback.format_exc()}")
 
     # Fallback to stale cache if available
     if _cache["data"]:
-        logger.warning("⚠️ Returning stale cache due to fetch failure")
+        logger.warning("โ ๏ธ Returning stale cache due to fetch failure")
         stale = dict(_cache["data"])
         stale["is_stale"] = True
         stale["source"] = stale.get("source", "EPPO") + " (cache)"
         return stale
 
     # Last resort: return hardcoded fallback prices
-    logger.warning("⚠️ Returning hardcoded fallback prices")
+    logger.warning("โ ๏ธ Returning hardcoded fallback prices")
     return _fallback_prices()
 
 
@@ -212,35 +212,35 @@ def _fallback_prices():
         "prices": [
             {
                 "key": "gasohol_95",
-                "name": "แก๊สโซฮอล์ 95",
+                "name": "เนเธเนเธชเนเธเธฎเธญเธฅเน 95",
                 "price": 43.10,
-                "unit": "บาท/ลิตร",
+                "unit": "เธเธฒเธ—/เธฅเธดเธ•เธฃ",
             },
             {
                 "key": "gasohol_91",
-                "name": "แก๊สโซฮอล์ 91",
+                "name": "เนเธเนเธชเนเธเธฎเธญเธฅเน 91",
                 "price": 42.73,
-                "unit": "บาท/ลิตร",
+                "unit": "เธเธฒเธ—/เธฅเธดเธ•เธฃ",
             },
             {
                 "key": "gasohol_e20",
-                "name": "แก๊สโซฮอล์ E20",
+                "name": "เนเธเนเธชเนเธเธฎเธญเธฅเน E20",
                 "price": 38.10,
-                "unit": "บาท/ลิตร",
+                "unit": "เธเธฒเธ—/เธฅเธดเธ•เธฃ",
             },
             {
                 "key": "gasohol_e85",
-                "name": "แก๊สโซฮอล์ E85",
+                "name": "เนเธเนเธชเนเธเธฎเธญเธฅเน E85",
                 "price": 34.04,
-                "unit": "บาท/ลิตร",
+                "unit": "เธเธฒเธ—/เธฅเธดเธ•เธฃ",
             },
             {
                 "key": "benzene_95",
-                "name": "เบนซิน 95",
+                "name": "เน€เธเธเธเธดเธ 95",
                 "price": 50.99,
-                "unit": "บาท/ลิตร",
+                "unit": "เธเธฒเธ—/เธฅเธดเธ•เธฃ",
             },
-            {"key": "diesel", "name": "ดีเซล", "price": 41.30, "unit": "บาท/ลิตร"},
+            {"key": "diesel", "name": "เธ”เธตเน€เธเธฅ", "price": 41.30, "unit": "เธเธฒเธ—/เธฅเธดเธ•เธฃ"},
         ],
         "update_date": today,
         "fetched_at": None,

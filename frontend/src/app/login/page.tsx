@@ -47,6 +47,39 @@ export default function LoginPage() {
   const passwordRef = useRef<HTMLInputElement>(null);
   const errorId = 'login-error-message';
 
+  // ── Wrap verifyGoogleToken in useCallback so it is stable across renders.
+  // This satisfies react-hooks/immutability and lets the mount useEffect below
+  // declare it as a dependency without causing infinite re-runs.
+  const verifyGoogleToken = useCallback(async (idToken: string) => {
+    try {
+      const response = await fetch(`${apiBaseUrl}/api/v1/auth/google/verify-token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ id_token: idToken }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.result === 'success') {
+        localStorage.setItem('user', JSON.stringify(data.data.user));
+        if (data.data.session_id) localStorage.setItem('session_id', data.data.session_id);
+        login(data.data.user);
+        toast.success('เข้าสู่ระบบสำเร็จ', `ยินดีต้อนรับกลับมา ${data.data.user.name || ''}!`);
+        setTimeout(() => router.push('/dashboard'), 300);
+      } else {
+        setError(data.detail || data.message || 'การยืนยันตัวตน Google ไม่สำเร็จ');
+        setErrorKey(k => k + 1);
+        setIsSubmitting(false);
+      }
+    } catch (error) {
+      console.error('Verify token error:', error);
+      setError('เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง');
+      setErrorKey(k => k + 1);
+      setIsSubmitting(false);
+    }
+  }, [login, router, toast]);
+
   useEffect(() => {
     setIsClient(true);
     const rememberedEmail = localStorage.getItem('remembered_email');
@@ -100,37 +133,7 @@ export default function LoginPage() {
 
     const timer = window.setInterval(() => setNow(new Date()), 1000);
     return () => window.clearInterval(timer);
-  }, []);
-
-  const verifyGoogleToken = async (idToken: string) => {
-    try {
-      const response = await fetch(`${apiBaseUrl}/api/v1/auth/google/verify-token`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ id_token: idToken }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok && data.result === 'success') {
-        localStorage.setItem('user', JSON.stringify(data.data.user));
-        if (data.data.session_id) localStorage.setItem('session_id', data.data.session_id);
-        login(data.data.user);
-        toast.success('เข้าสู่ระบบสำเร็จ', `ยินดีต้อนรับกลับมา ${data.data.user.name || ''}!`);
-        setTimeout(() => router.push('/dashboard'), 300);
-      } else {
-        setError(data.detail || data.message || 'การยืนยันตัวตน Google ไม่สำเร็จ');
-        setErrorKey(k => k + 1);
-        setIsSubmitting(false);
-      }
-    } catch (error) {
-      console.error('Verify token error:', error);
-      setError('เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง');
-      setErrorKey(k => k + 1);
-      setIsSubmitting(false);
-    }
-  };
+  }, [toast, verifyGoogleToken]);
 
   useEffect(() => {
     if (rateLimitSeconds <= 0) return;

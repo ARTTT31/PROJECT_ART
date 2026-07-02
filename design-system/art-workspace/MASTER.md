@@ -1,6 +1,6 @@
 # ART Workspace - Design System Master Document
 
-**Version:** 1.0  
+**Version:** 1.1  
 **Last Updated:** 2026-07-02  
 **Philosophy:** "The Clarity Cockpit" - Calm, focused, professional productivity interface
 
@@ -188,6 +188,35 @@ import { Heart } from 'lucide-react'
 - **Header:** Icon badge + title + controls
 - **Resize:** Three sizes (full, 2/3, 1/2)
 
+### Dialogs (Radix UI Primitives)
+
+All modal dialogs **must** use `components/ui/Dialog.tsx` which wraps `@radix-ui/react-dialog`.
+
+✅ **CORRECT** — declarative subcomponent API:
+```tsx
+<Dialog open={open} onOpenChange={setOpen}>
+  <DialogContent className="!max-w-lg">
+    <DialogHeader>
+      <DialogTitle>ชื่อ Dialog</DialogTitle>
+      <DialogDescription>คำอธิบายสั้น ๆ</DialogDescription>
+    </DialogHeader>
+    <DialogBody>{/* scrollable content */}</DialogBody>
+    <DialogFooter>{/* actions */}</DialogFooter>
+  </DialogContent>
+</Dialog>
+```
+
+❌ **WRONG** — never pass `title`/`description` as props on `<DialogContent>`:
+```tsx
+<DialogContent title="ชื่อ" description="คำอธิบาย">
+```
+
+Dialog rules:
+- Max radius: `rounded-xl` (16px) — matches the global maximum
+- Glassmorphism on **overlay only** — never on the content panel
+- Built-in close button (X) — do not add a duplicate
+- Focus trap, ESC key, and focus restoration are automatic via Radix primitives (WCAG AAA)
+
 ---
 
 ## ⚡ Motion & Interaction
@@ -249,11 +278,14 @@ Before committing any component:
 - [ ] NO dark mode queries (`@media (prefers-color-scheme: dark)`)
 - [ ] NO glassmorphism on content cards (only header/sidebar/modals)
 - [ ] NO Bootstrap icons (`bi bi-*`), only Lucide React
+- [ ] NO `title`/`description` props on `<DialogContent>` — use `<DialogTitle>`/`<DialogDescription>` subcomponents
 - [ ] ALL buttons/inputs ≥48px min-height
 - [ ] ALL focus states have visible 2.5px ring
 - [ ] ALL text meets WCAG AAA contrast (7:1 body, 4.5:1 secondary)
 - [ ] ALL animations respect `prefers-reduced-motion`
 - [ ] ALL interactive elements have proper touch targets
+- [ ] ALL `useEffect` hooks declare complete dependency arrays (no `react-hooks/exhaustive-deps` warnings)
+- [ ] ALL functions used inside `useEffect` are wrapped in `useCallback` where needed
 
 ---
 
@@ -261,6 +293,7 @@ Before committing any component:
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 1.1 | 2026-07-02 | Add Dialog (Radix UI) component rules; add `react-hooks` lint compliance note |
 | 1.0 | 2026-07-02 | Initial MASTER.md with strict anti-patterns |
 
 ---

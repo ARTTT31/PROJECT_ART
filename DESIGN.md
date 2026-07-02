@@ -2,71 +2,133 @@
 
 ## Visual Direction
 
-ART Workspace uses a restrained premium product UI: light surfaces, soft depth, clear focus states, and a limited blue accent for primary actions and selected states.
+ART Workspace uses a restrained premium product UI: light surfaces, soft depth, clear focus states, and a limited sky-blue accent for primary actions and selected states. All design decisions are governed by the single source of truth at `design-system/art-workspace/MASTER.md`.
 
 ## Color
 
-- Primary: `--art-primary` (`#0ea5e9`) and `--art-blue` (`#2563eb`) for primary actions.
-- Ink: `--art-ink` (`#0f172a`) for main text.
-- Muted: `--art-muted` (`#475569`) for secondary labels.
-- Surfaces: white and translucent white over `--art-page-bg`.
-- State colors: success, warning, error, and info tokens in `frontend/src/app/globals.css`.
+- Primary: `--art-primary` (`#0ea5e9`) — primary actions, active states, focus rings.
+- Deep Sky: `#0369a1` — hover and pressed states.
+- Ink: `--art-ink` (`#0f172a`) — body text and headings (7:1 contrast, WCAG AAA).
+- Muted: `--art-muted` (`#475569`) — secondary labels and metadata (4.5:1 contrast).
+- Surfaces: pure white `#ffffff` for cards and inputs; `#f6f8fb` for the page background.
+- State colors: success `#22c55e`, error `#ef4444`, warning `#f59e0b`, info `#3b82f6`.
+- Neutral palette: `slate-*` family **only** — `gray-*` is prohibited throughout the codebase.
 
 ## Typography
 
-Use the project font stack from Tailwind and keep product UI type compact. Button labels use normal letter spacing, semibold weight, and direct action text.
+Font stack: **Anuphan** (primary, supports Thai script) + **Inter** (Latin fallback) + `system-ui`.
+
+Scale (1.2 modular ratio):
+
+| Role | Weight | Size | Usage |
+|---|---|---|---|
+| Display | 700 | 2rem | Page titles only |
+| Headline | 700 | 1.75rem | Section headings |
+| Title | 600 | 1.25rem | Card titles, widget headers |
+| Body | 400 | 1rem | Primary content |
+| Label | 600 | 0.875rem | Form labels, metadata |
+
+Rules: sentence case only (no `text-transform: uppercase`); `text-wrap: balance` for headings; max 75ch line length for body.
 
 ## Buttons
 
-All product buttons should use the shared button vocabulary in `frontend/src/app/globals.css`.
+All product buttons use the shared vocabulary defined in `frontend/src/app/globals.css`.
 
-- `art-primary-button`: Main commit action, submit, save, download, or current primary flow.
-- `art-soft-button`: Secondary action, neutral command, menu trigger, or lower-emphasis action.
-- `art-icon-button`: Icon-only action such as close, menu, profile photo, or password visibility.
-- `art-chip-button`: Filter, segmented option, compact toggle, and widget size option.
-- `action-btn`: Legacy alias that now follows the same base button system.
-- `refresh-btn` and `weather-refresh-btn`: Icon action variants that inherit the same sizing and motion.
+- `art-primary-button`: Main commit action — submit, save, download, current primary flow.
+- `art-soft-button`: Secondary action, neutral command, lower-emphasis action.
+- `art-icon-button`: Icon-only controls — close, menu, profile photo, password visibility.
+- `art-chip-button`: Filter, segmented option, compact toggle, widget size selector.
+- `action-btn`: Legacy alias that follows the same base button system.
+- `refresh-btn` / `weather-refresh-btn`: Icon action variants inheriting the same sizing and motion.
 
 Button rules:
 
-- Radius is 12px for standard and icon buttons; chips are pill-shaped.
-- Minimum touch target is 44px for standard/icon buttons.
-- Hover lifts by 1px with restrained shadow.
-- Active state returns to the base plane.
-- Primary buttons use the blue gradient sparingly.
-- Do not create new one-off button shapes unless a control has a distinct native affordance.
-- Login-specific classes such as `login-submit` and `google-btn` must visually match `art-primary-button` and `art-soft-button`.
-- Icon-only controls must use `art-icon-button` or an intentional size variant, include an `aria-label`, and keep a visible focus ring.
-- Toggle, filter, segmented, and compact state controls must use `art-chip-button` with `aria-pressed` for selected state.
+- Radius: 12px for standard and icon buttons; `rounded-full` for chips.
+- Minimum touch target: 48×48px for all interactive elements.
+- Hover: 1px lift with restrained shadow increase.
+- Active: returns to the base plane (no lift).
+- Primary buttons use a sky→blue gradient sparingly.
+- Do not create one-off button shapes unless a control has a distinct native affordance.
+- Login-specific classes (`login-submit`, `google-btn`) must visually match `art-primary-button` and `art-soft-button`.
+- Icon-only controls must include an `aria-label` and a visible focus ring.
+- Toggle, filter, and segmented controls must use `art-chip-button` with `aria-pressed`.
 
-## Notifications, Alerts, Toasts, And Modals
+## Dialogs (Radix UI)
 
-Notification surfaces use the same calm product system as buttons: white or lightly tinted state surfaces, 10-16px radius, restrained shadows, clear iconography, and readable contrast.
+All modal dialogs use `components/ui/Dialog.tsx`, which wraps Radix UI `@radix-ui/react-dialog` primitives with the ART design system styles.
 
-- In-app toasts use `.alert`, the semantic alert classes, and an `art-icon-button` close control.
-- NotificationBell uses `art-icon-button` for the trigger and dismiss actions, `art-soft-button` for secondary actions, and compact semantic badges for state.
-- Error banners and alert states use `.alert-error`, `.alert-success`, `.alert-warning`, or `.alert-info`; avoid local one-off alert colors unless introducing a new semantic token.
-- Dialog modals use the shared surface, radius, shadow, focus trap, close button, and scroll behavior from `components/ui/Dialog.tsx`.
-- Empty and error states should feel quiet and useful: a clear icon, direct heading, concise body text, and shared retry/navigation buttons.
-- Avoid excessive blur, oversized radius, decorative gradients, and animated alert effects that do not communicate state.
+Usage pattern — always use the declarative subcomponent API:
 
-## SweetAlert2
+```tsx
+import {
+  Dialog, DialogContent, DialogHeader,
+  DialogTitle, DialogDescription, DialogFooter, DialogBody
+} from '@/components/ui/Dialog'
 
-SweetAlert2 is styled through the wrapper in `frontend/src/utils/sweetalert.ts` and global classes in `frontend/src/app/globals.css`.
+<Dialog open={open} onOpenChange={setOpen}>
+  <DialogContent className="!max-w-lg">
+    <DialogHeader>
+      <DialogTitle>ชื่อ Dialog</DialogTitle>
+      <DialogDescription>คำอธิบายสั้น ๆ</DialogDescription>
+    </DialogHeader>
+    <DialogBody>
+      {/* scrollable content */}
+    </DialogBody>
+    <DialogFooter>
+      {/* actions */}
+    </DialogFooter>
+  </DialogContent>
+</Dialog>
+```
 
-- Do not set per-call `confirmButtonColor` or `cancelButtonColor`; use `buttonsStyling: false` and the shared custom classes.
-- Confirm buttons match `art-primary-button`; cancel and deny buttons match `art-soft-button`; destructive confirms add `art-swal-danger`.
-- SweetAlert2 toast surfaces match the in-app toast scale, shadow, typography, and focus behavior.
-- Loading and input alerts inherit the same popup, input, radius, typography, and focus tokens.
+Dialog rules:
+
+- Never pass `title` or `description` as props directly to `<DialogContent>`.
+- The close button (X) is built in — do not add a duplicate.
+- Max border radius: 16px (`rounded-xl`).
+- Glassmorphism (backdrop blur) applies to the overlay only, not the content panel.
+- WCAG AAA: focus trap, ESC key, and focus restoration to trigger element are automatic.
+
+## Notifications, Alerts, Toasts, and Modals
+
+- In-app toasts: use the `useToast()` hook from `components/Toast/ToastProvider`.
+- Confirm / alert dialogs: use the wrappers in `frontend/src/utils/sweetalert.ts` (`showDeleteConfirm`, `showSuccess`, `showError`, `showToast`).
+- SweetAlert2 is styled globally — never pass per-call `confirmButtonColor` or `cancelButtonColor`. Use `buttonsStyling: false` with shared custom classes.
+- Confirm buttons match `art-primary-button`; cancel/deny match `art-soft-button`; destructive confirms add `art-swal-danger`.
+- Error banners use `.alert-error`, `.alert-success`, `.alert-warning`, or `.alert-info` semantic classes.
+- Avoid excessive blur, oversized radius, decorative gradients, and animated effects that do not communicate state.
+
+## Drag and Drop (dnd-kit)
+
+Widget reordering on the dashboard uses `@dnd-kit/core` and `@dnd-kit/sortable`. Sensor configuration uses `PointerSensor` with a minimum activation distance to prevent accidental drags on click. `KeyboardSensor` is included for keyboard accessibility.
+
+## Authentication (AuthProvider)
+
+Session management is centralized in `components/Auth/AuthProvider.tsx`:
+
+- Fast-path render from `localStorage` / cookie on mount; background session and profile sync run in parallel via `Promise.all`.
+- `401` responses dispatch a global `auth-logout` event — all components react without prop drilling.
+- `validateSession()` is exposed via `useAuth()` for on-demand server-side session checks.
+- `login()`, `logout()`, `updateUser()` are stable `useCallback` references safe to include in `useEffect` dependency arrays.
 
 ## Components
 
-Widget configuration rows use selected-state cards with icon, label, helper text, status, and a visible checkmark. Filters and widget sizing use `art-chip-button` so compact controls still feel connected to the wider button system.
+Widget configuration rows use selected-state cards with icon, label, helper text, status badge, and a visible checkmark. Filters and widget sizing use `art-chip-button` so compact controls feel connected to the wider button system.
 
 ## Motion
 
-Use short 180-200ms transitions for button feedback. Respect existing reduced-motion rules in `globals.css`.
+- Fast: 150ms — color shifts, opacity changes.
+- Standard: 200ms — transforms, shadow transitions.
+- Slow: 250ms — complex animations.
+- Easing: `cubic-bezier(0.4, 0, 0.2, 1)` (exponential ease-out). Never use bounce or elastic.
+- Always provide `prefers-reduced-motion` alternatives (cross-fade or instant).
 
 ## Accessibility
 
-Maintain visible focus states, keep icon-only buttons labeled with `aria-label`, and use `aria-pressed` for toggle chips or segmented controls.
+- Body text contrast: ≥7:1 (Ink on white, WCAG AAA).
+- Secondary text contrast: ≥4.5:1 (Muted on white).
+- All interactive elements: 48×48px minimum touch target.
+- Focus ring: 2.5px solid `#0ea5e9`, 3px offset, 7:1 contrast.
+- Icon-only buttons: `aria-label` required.
+- Toggle and segmented controls: `aria-pressed` required.
+- Dialogs: focus trap, ESC key, and focus restoration are handled by Radix UI primitives.
