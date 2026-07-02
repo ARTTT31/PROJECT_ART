@@ -66,8 +66,8 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 
 const defaultWidgets: WidgetConfig[] = [
-  { id: 'calendar', w: 3 },
-  // { id: 'tasklist', w: 3 }, // 🚧 ยังไม่พร้อมใช้งาน
+  // { id: 'calendar', w: 3 }, // 🚧 ตารางงาน SharePoint - ยังไม่พร้อมใช้งาน
+  // { id: 'tasklist', w: 3 }, // 🚧 รายการงาน - ยังไม่พร้อมใช้งาน
   { id: 'oilprice', w: 1 },
   { id: 'qrcode', w: 1 },
 ]
