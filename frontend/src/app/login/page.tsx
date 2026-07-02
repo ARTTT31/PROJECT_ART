@@ -92,13 +92,6 @@ export default function LoginPage() {
     }
   }, []);
 
-      } else {
-        setError(`เกิดข้อผิดพลาดในการเข้าสู่ระบบด้วย Google: ${error.message || 'Unknown error'}`);
-      }
-      setErrorKey(k => k + 1);
-      setIsSubmitting(false);
-    }
-  };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();

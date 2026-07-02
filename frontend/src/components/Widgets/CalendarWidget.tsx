@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { ChevronLeft, ChevronRight, Calendar, AlertCircle } from 'lucide-react'
 import WidgetSizeToggle from './WidgetSizeToggle'
-import { fetchWithAuth } from '@/utils/fetch'
+import { fetchWithAuth } from '@/lib/api/fetchWithAuth'
 
 interface CalendarEvent {
   id: string
