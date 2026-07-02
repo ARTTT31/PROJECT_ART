@@ -21,51 +21,49 @@ export default function CalendarWidget({
 }) {
   return (
     <div
-      className="premium-card fade-in h-full flex flex-col"
+      className="flex h-full flex-col rounded-2xl bg-white ring-1 ring-black/[0.06]"
       role="region"
       aria-labelledby="calendar-title"
     >
       {/* Header */}
-      <div className={`widget-header ${width === 2 ? 'p-4 sm:p-5' : 'p-5 sm:p-6'}`}>
-        <div className="flex items-center justify-between w-full flex-wrap gap-2 sm:gap-3">
-          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-            <div
-              className={`widget-header-icon primary flex-shrink-0 ${
-                width === 2 ? 'p-1.5' : 'p-2'
-              }`}
-            >
-              <Calendar
-                className={`${width === 2 ? 'w-5 h-5' : 'w-6 h-6'}`}
-                aria-hidden="true"
-              />
-            </div>
-            <div className="min-w-0">
-              <h3
-                id="calendar-title"
-                className={`font-semibold text-primary-700 ${
-                  width === 2 ? 'text-base' : 'text-lg'
-                }`}
-              >
-                ตารางงาน SharePoint
-              </h3>
-              <p className={`text-neutral-500 ${width === 2 ? 'text-xs' : 'text-sm'}`}>
-                Technical Support &amp; IMACD Booking Schedule
-              </p>
-            </div>
+      <div className={`flex items-center justify-between gap-3 border-b border-black/[0.05] ${
+        width === 2 ? 'px-4 py-3' : 'px-5 py-4'
+      }`}>
+        <div className="flex min-w-0 items-center gap-3">
+          {/* Icon badge */}
+          <div className={`flex shrink-0 items-center justify-center rounded-[10px] bg-[#f5f5f7] ${
+            width === 2 ? 'h-8 w-8' : 'h-10 w-10'
+          }`}>
+            <Calendar
+              className={`text-[#1d1d1f] ${width === 2 ? 'h-4 w-4' : 'h-5 w-5'}`}
+              aria-hidden="true"
+            />
           </div>
 
-          {onResize && (
-            <WidgetSizeToggle value={width} onChange={onResize} />
-          )}
+          <div className="min-w-0">
+            <h3
+              id="calendar-title"
+              className={`font-bold tracking-tight text-[#1d1d1f] ${
+                width === 2 ? 'text-[13px]' : 'text-[15px]'
+              }`}
+            >
+              ตารางงาน SharePoint
+            </h3>
+            <p className={`text-[#6e6e73] ${width === 2 ? 'text-[11px]' : 'text-xs'}`}>
+              Technical Support &amp; IMACD Booking Schedule
+            </p>
+          </div>
         </div>
+
+        {onResize && <WidgetSizeToggle value={width} onChange={onResize} />}
       </div>
 
       {/* SharePoint iframe */}
-      <div className="flex-1 relative overflow-hidden rounded-b-2xl">
+      <div className="relative flex-1 overflow-hidden rounded-b-2xl">
         <iframe
           src={SHAREPOINT_LIST_URL}
           title="Technical Support and IMACD Booking Schedule"
-          className="absolute inset-0 w-full h-full border-0"
+          className="absolute inset-0 h-full w-full border-0"
           allow="fullscreen"
           loading="lazy"
         />
