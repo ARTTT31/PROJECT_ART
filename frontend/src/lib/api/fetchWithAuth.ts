@@ -76,6 +76,17 @@ export async function fetchWithAuth(
 
     // ── Auto-refresh on 401 ──────────────────────────────────
     if (response.status === 401) {
+      // Skip refresh entirely when there is no local session — avoids the
+      // /api/v1/auth/refresh call firing on public pages like /login.
+      const hasLocalSession =
+        typeof window !== 'undefined' &&
+        (localStorage.getItem('user') !== null ||
+          document.cookie.split('; ').some((c) => c.startsWith('user=')));
+
+      if (!hasLocalSession) {
+        return response;
+      }
+
       if (!isRefreshing) {
         isRefreshing = true;
         refreshPromise = refreshAccessToken().finally(() => {

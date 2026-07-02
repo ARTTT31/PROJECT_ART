@@ -94,7 +94,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setStatus('authenticated');
       }
 
-      // ── Background verify: run session check and profile sync in parallel ──
+      // ── Background verify: only run if we have a local user/cookie to validate ──
+      // Skip entirely on public pages like /login where no session exists yet.
+      if (!localUser) {
+        setStatus('anonymous');
+        return;
+      }
+
       try {
         const [sessionRes, profileRes] = await Promise.all([
           fetchWithAuth('/api/v1/auth/session').catch(() => null),
