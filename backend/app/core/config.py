@@ -67,42 +67,53 @@ class Settings(BaseSettings):
             return [origin.strip() for origin in self.CORS_ORIGINS.split(",")]
         return self.CORS_ORIGINS
 
-    # ── Google OAuth ────────────────────────────────────────────────────────
-    # These have NO hardcoded defaults. An empty/missing value fails fast at the
-    # auth endpoints so we never silently fall back to a real client ID baked
-    # into source. Use settings.require_google_*() to validate before use.
-    GOOGLE_CLIENT_ID: str = ""
-    GOOGLE_CLIENT_SECRET: str = ""
-    GOOGLE_REDIRECT_URI: str = ""
+    # ── Microsoft Entra ID & SharePoint ──────────────────────────────────────
+    MICROSOFT_TENANT_ID: str = ""
+    MICROSOFT_CLIENT_ID: str = ""
+    MICROSOFT_CLIENT_SECRET: str = ""
+    MICROSOFT_REDIRECT_URI: str = ""
+    SHAREPOINT_LIST_URL: str = "https://absscoth-my.sharepoint.com/personal/pornchai_abss_co_th/Lists/Technical%20Support%20and%20IMACD%20Booking%20Schedule/AllItems.aspx"
+    SHAREPOINT_SITE_ID: str = ""
+    SHAREPOINT_LIST_ID: str = ""
 
-    def require_google_client_id(self) -> str:
-        """Return the configured Google client ID or raise a clear 500 error."""
-        val = (self.GOOGLE_CLIENT_ID or os.getenv("BACKEND_GOOGLE_CLIENT_ID") or "").strip()
+    def require_microsoft_tenant_id(self) -> str:
+        """Return the configured Microsoft Tenant ID or raise a 500 error."""
+        val = (self.MICROSOFT_TENANT_ID or os.getenv("BACKEND_MICROSOFT_TENANT_ID") or "").strip()
         if not val:
             raise RuntimeError(
-                "Google Client ID is not configured. Set GOOGLE_CLIENT_ID "
-                "(or BACKEND_GOOGLE_CLIENT_ID) in the environment."
+                "Microsoft Tenant ID is not configured. Set MICROSOFT_TENANT_ID "
+                "(or BACKEND_MICROSOFT_TENANT_ID) in the environment."
             )
         return val
 
-    def require_google_client_secret(self) -> str:
-        """Return the configured Google client secret or raise a clear 500 error."""
+    def require_microsoft_client_id(self) -> str:
+        """Return the configured Microsoft client ID or raise a 500 error."""
+        val = (self.MICROSOFT_CLIENT_ID or os.getenv("BACKEND_MICROSOFT_CLIENT_ID") or "").strip()
+        if not val:
+            raise RuntimeError(
+                "Microsoft Client ID is not configured. Set MICROSOFT_CLIENT_ID "
+                "(or BACKEND_MICROSOFT_CLIENT_ID) in the environment."
+            )
+        return val
+
+    def require_microsoft_client_secret(self) -> str:
+        """Return the configured Microsoft client secret or raise a 500 error."""
         val = (
-            self.GOOGLE_CLIENT_SECRET or os.getenv("BACKEND_GOOGLE_CLIENT_SECRET") or ""
+            self.MICROSOFT_CLIENT_SECRET or os.getenv("BACKEND_MICROSOFT_CLIENT_SECRET") or ""
         ).strip()
         if not val:
             raise RuntimeError(
-                "Google Client Secret is not configured. Set GOOGLE_CLIENT_SECRET "
-                "(or BACKEND_GOOGLE_CLIENT_SECRET) in the environment."
+                "Microsoft Client Secret is not configured. Set MICROSOFT_CLIENT_SECRET "
+                "(or BACKEND_MICROSOFT_CLIENT_SECRET) in the environment."
             )
         return val
 
-    def get_google_redirect_uri(self) -> str:
-        """Return the configured Google redirect URI or a sensible default."""
+    def get_microsoft_redirect_uri(self) -> str:
+        """Return the configured Microsoft redirect URI or a sensible default."""
         return (
-            self.GOOGLE_REDIRECT_URI
-            or os.getenv("BACKEND_GOOGLE_REDIRECT")
-            or "http://localhost:8000/api/v1/auth/google/callback"
+            self.MICROSOFT_REDIRECT_URI
+            or os.getenv("BACKEND_MICROSOFT_REDIRECT")
+            or "http://localhost:8000/api/v1/auth/microsoft/callback"
         )
 
     model_config = ConfigDict(

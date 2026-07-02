@@ -36,8 +36,8 @@ export default function TaskListWidget({
   const abortRef = useRef<AbortController | null>(null)
   const [cacheNote, setCacheNote] = useState<string | null>(null)
 
-  // Google Calendar ID from environment variables or fallback
-  const CALENDAR_ID = process.env.NEXT_PUBLIC_GOOGLE_CALENDAR_ID || '935e8829bdbff55e909d6f3e533ded8a03acfbc24ac08b5d8ac781ed5e07f626@group.calendar.google.com'
+  // SharePoint List settings
+  const CALENDAR_ID = 'sharepoint'
 
   const CACHE_KEY = useMemo(() => `artTaskListCacheV1:${CALENDAR_ID}:${monthKey}`, [CALENDAR_ID, monthKey])
   const CACHE_TTL_MS = 15 * 60_000 // 15 นาที
@@ -61,7 +61,7 @@ export default function TaskListWidget({
       const timeMin = startOfMonth.toISOString()
       const timeMax = endOfMonth.toISOString()
 
-      // Call backend API directly via fetchWithAuth (static export has no server rewrites)
+      // Call backend API directly via fetchWithAuth
       const url = `/api/v1/calendar/events?calendar_id=${encodeURIComponent(CALENDAR_ID)}&time_min=${encodeURIComponent(timeMin)}&time_max=${encodeURIComponent(timeMax)}`
 
       const response = await fetchWithAuth(url, { signal: controller.signal })
@@ -71,19 +71,19 @@ export default function TaskListWidget({
         const msg = detail?.detail || response.statusText
         
         // Provide user-friendly Thai error messages based on status code
-        let userMessage = 'ไม่สามารถโหลดข้อมูลปฏิทินได้'
+        let userMessage = 'ไม่สามารถโหลดข้อมูลตารางงานได้'
         
         if (response.status === 404) {
-          userMessage = 'ไม่พบปฏิทิน - กรุณาตรวจสอบการตั้งค่าปฏิทินใน Google Calendar ให้เป็น "สาธารณะ"'
-          console.error('📅 Calendar not found or not public. Error:', msg)
+          userMessage = 'ไม่พบตารางงาน - กรุณาตรวจสอบการตั้งค่า SharePoint List'
+          console.error('📅 SharePoint List not found. Error:', msg)
         } else if (response.status === 403) {
-          userMessage = 'ไม่สามารถเข้าถึงปฏิทินได้ - กรุณาตั้งค่าให้ปฏิทินเป็น "สาธารณะ" ใน Google Calendar'
-          console.error('🔒 Calendar access denied. Error:', msg)
+          userMessage = 'ไม่สามารถเข้าถึงตารางงานได้ - กรุณาตรวจสอบสิทธิ์การใช้งาน Microsoft Graph'
+          console.error('🔒 SharePoint access denied. Error:', msg)
         } else if (response.status === 502 || response.status === 504) {
-          userMessage = 'เชื่อมต่อ Google Calendar ไม่สำเร็จ - กรุณาลองใหม่อีกครั้ง'
-          console.error('🌐 Calendar service error. Error:', msg)
+          userMessage = 'เชื่อมต่อบริการ Microsoft Graph ไม่สำเร็จ - กรุณาลองใหม่อีกครั้ง'
+          console.error('🌐 SharePoint service error. Error:', msg)
         } else {
-          console.error('❌ Calendar API Error:', msg)
+          console.error('❌ SharePoint API Error:', msg)
         }
         
         throw new Error(`HTTP ${response.status}: ${msg}`, { cause: userMessage })
@@ -245,7 +245,7 @@ export default function TaskListWidget({
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500 mx-auto mb-4"></div>
-            <p className="text-slate-500 text-sm">กำลังโหลดข้อมูลจาก Google Calendar...</p>
+            <p className="text-slate-500 text-sm">กำลังโหลดข้อมูลจาก SharePoint List...</p>
           </div>
         </div>
       </div>

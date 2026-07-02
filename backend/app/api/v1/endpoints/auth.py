@@ -15,16 +15,8 @@ from fastapi.responses import RedirectResponse, JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
-# Lazy imports for google-auth (optional dependency — may not be installed yet)
-try:
-    from google.oauth2 import id_token as google_id_token
-    from google.auth.transport import requests as google_requests
+# Microsoft Entra ID is handled via Graph API HTTP requests using python requests/httpx.
 
-    _GOOGLE_AUTH_AVAILABLE = True
-except ImportError:
-    google_id_token = None  # type: ignore[assignment]
-    google_requests = None  # type: ignore[assignment]
-    _GOOGLE_AUTH_AVAILABLE = False
 
 from app.core.config import settings
 from app.core.database import get_db
@@ -293,119 +285,71 @@ async def refresh_token(
         )
 
 
-@router.get("/google")
-async def google_login(request: Request):
-    """Redirect to Google's OAuth 2.0 consent screen"""
+@router.get("/microsoft")
+async def microsoft_login(request: Request):
+    """Redirect to Microsoft's OAuth 2.0 consent screen"""
     try:
-        client_id = settings.require_google_client_id()
+        client_id = settings.require_microsoft_client_id()
+        tenant_id = settings.require_microsoft_tenant_id()
     except RuntimeError as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e),
         )
-    redirect_uri = settings.get_google_redirect_uri()
+    redirect_uri = settings.get_microsoft_redirect_uri()
 
     params = {
         "client_id": client_id,
-        "redirect_uri": redirect_uri,
         "response_type": "code",
-        "scope": "openid email profile",
-        "access_type": "offline",
-        "prompt": "select_account",
+        "redirect_uri": redirect_uri,
+        "response_mode": "query",
+        "scope": "openid email profile User.Read",
+        "state": secrets.token_urlsafe(16),
     }
 
-    url = f"https://accounts.google.com/o/oauth2/v2/auth?{urlencode(params)}"
+    url = f"https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/authorize?{urlencode(params)}"
     return RedirectResponse(url)
 
 
-def _get_valid_client_ids() -> List[str]:
-    """Return the list of accepted Google client IDs from the environment.
-
-    Configured via the comma-separated ``GOOGLE_VALID_CLIENT_IDS`` env var so that
-    valid Web/Android client IDs are not hardcoded in source. Falls back to the
-    single primary client ID if the multi-ID list is not set.
-    """
-    multi = os.getenv("GOOGLE_VALID_CLIENT_IDS", "").strip()
-    ids = [cid.strip() for cid in multi.split(",") if cid.strip()]
-    if not ids:
-        try:
-            ids = [settings.require_google_client_id()]
-        except RuntimeError:
-            ids = []
-    return ids
-
-
-@router.post("/google/verify-token")
-async def google_verify_token(
+@router.post("/microsoft/verify-token")
+async def microsoft_verify_token(
     token_request: dict, request: Request = None, db: AsyncSession = Depends(get_db)
 ):
-    """Verify Google ID token from Capacitor plugin and issue JWT via HTTP-only cookies"""
-    if not _GOOGLE_AUTH_AVAILABLE:
+    """Verify Microsoft Access Token from Capacitor plugin and issue JWT via HTTP-only cookies"""
+    access_token = token_request.get("access_token") or token_request.get("id_token")
+
+    if not access_token:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="google-auth library not installed. Run: pip install google-auth",
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Missing access_token from request"
         )
 
-    valid_client_ids = _get_valid_client_ids()
-
-    if not valid_client_ids:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Google client ID not configured. Set GOOGLE_VALID_CLIENT_IDS or GOOGLE_CLIENT_ID.",
-        )
-
-    id_token_jwt = token_request.get("id_token")
-
-    if not id_token_jwt:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Missing id_token from request"
-        )
-
-    # ✅ SECURE: Verify id_token signature and audience using google-auth library
-    # We verify with the first valid client ID, then check if audience matches any valid ID
+    # Fetch user info from Microsoft Graph
+    me_url = "https://graph.microsoft.com/v1.0/me"
+    headers = {"Authorization": f"Bearer {access_token}"}
     try:
-        request_adapter = google_requests.Request()
-        verified_info = google_id_token.verify_oauth2_token(
-            id_token_jwt,
-            request_adapter,
-            valid_client_ids[0],  # Use first client ID for signature verification
-            clock_skew_in_seconds=30,  # Allow up to 30s clock skew
-        )
+        me_resp = requests.get(me_url, headers=headers, timeout=10)
+        me_resp.raise_for_status()
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Google token verification failed: {str(e)}",
+            detail=f"Microsoft token verification failed: {str(e)}",
         )
 
-    # Verify that the token's audience matches one of our valid client IDs
-    token_aud = verified_info.get("aud")
-    if token_aud not in valid_client_ids:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Token audience mismatch. Expected one of: {valid_client_ids}, got: {token_aud}",
-        )
-
-    # Extract verified user info
-    email = verified_info.get("email")
-    name = verified_info.get("name") or verified_info.get("given_name") or "Google User"
+    me_json = me_resp.json()
+    email = me_json.get("mail") or me_json.get("userPrincipalName")
+    name = me_json.get("displayName") or "Microsoft User"
 
     if not email:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Google account must have a verified email address",
-        )
-
-    # Ensure email is verified per Google
-    if not verified_info.get("email_verified", False):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Google email not verified"
+            detail="Microsoft account must have an email address",
         )
 
     # Find or create user
     user_service = UserService(db)
     user = await user_service.get_user_by_email(email)
     if not user:
-        # Create with a random password (not used)
+        # Create with a random password
         random_pwd = secrets.token_urlsafe(16)
         user_create = UserCreate(
             email=email, password=random_pwd, name=name, role="user"
@@ -413,14 +357,13 @@ async def google_verify_token(
         try:
             user = await user_service.create_user(user_create)
         except Exception:
-            # If creation failed, try fetching again
             user = await user_service.get_user_by_email(email)
 
     # Issue tokens
     access_jwt = create_access_token(data={"sub": user.email, "user_id": user.id})
     refresh_jwt = create_refresh_token(data={"sub": user.email, "user_id": user.id})
 
-    # Create response - tokens are ONLY in HTTP-only cookies (not in URL)
+    # Create response
     user_data = {
         "id": user.id,
         "email": user.email,
@@ -432,7 +375,6 @@ async def google_verify_token(
 
     response = JSONResponse(content={"result": "success", "data": {"user": user_data}})
 
-    # Cookie attributes are environment-configurable for production HTTPS and local HTTP.
     response.set_cookie(
         key="access_token",
         value=access_jwt,
@@ -447,7 +389,6 @@ async def google_verify_token(
         httponly=True,
         **COOKIE_OPTIONS,
     )
-    # Non-httpOnly user data cookie for frontend hydration
     response.set_cookie(
         key="user",
         value=json.dumps(user_data),
@@ -459,38 +400,34 @@ async def google_verify_token(
     return response
 
 
-@router.get("/google/callback")
-async def google_callback(
+@router.get("/microsoft/callback")
+async def microsoft_callback(
     code: str = None, request: Request = None, db: AsyncSession = Depends(get_db)
 ):
-    """Handle callback from Google with id_token verification, then issue JWT via HTTP-only cookies"""
-    if not _GOOGLE_AUTH_AVAILABLE:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="google-auth library not installed. Run: pip install google-auth",
-        )
+    """Handle callback from Microsoft, exchange code for access token, fetch profile, then issue JWT"""
     try:
-        client_id = settings.require_google_client_id()
-        client_secret = settings.require_google_client_secret()
+        client_id = settings.require_microsoft_client_id()
+        client_secret = settings.require_microsoft_client_secret()
+        tenant_id = settings.require_microsoft_tenant_id()
     except RuntimeError as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e),
         )
-    redirect_uri = settings.get_google_redirect_uri()
+    redirect_uri = settings.get_microsoft_redirect_uri()
     frontend_redirect = os.getenv("FRONTEND_URL", "http://localhost:3000")
 
     if not code:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Missing code from Google"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Missing code from Microsoft"
         )
 
     # Exchange code for tokens
-    token_url = "https://oauth2.googleapis.com/token"
+    token_url = f"https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/token"
     data = {
-        "code": code,
         "client_id": client_id,
         "client_secret": client_secret,
+        "code": code,
         "redirect_uri": redirect_uri,
         "grant_type": "authorization_code",
     }
@@ -499,61 +436,42 @@ async def google_callback(
     if token_resp.status_code != 200:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="Failed to exchange code for token",
+            detail=f"Failed to exchange code for token: {token_resp.text}",
         )
 
     token_json = token_resp.json()
-    id_token_jwt = token_json.get("id_token")
+    access_token = token_json.get("access_token")
 
-    if not id_token_jwt:
+    if not access_token:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="No id_token received from Google",
+            detail="No access_token received from Microsoft",
         )
 
-    # ✅ SECURE: Verify id_token signature and audience using google-auth library
-    try:
-        request_adapter = google_requests.Request()
-        verified_info = google_id_token.verify_oauth2_token(
-            id_token_jwt,
-            request_adapter,
-            client_id,
-            clock_skew_in_seconds=30,  # Allow up to 30s clock skew
-        )
-    except Exception as e:
+    # Fetch user info from Microsoft Graph
+    me_url = "https://graph.microsoft.com/v1.0/me"
+    headers = {"Authorization": f"Bearer {access_token}"}
+    me_resp = requests.get(me_url, headers=headers, timeout=10)
+    if me_resp.status_code != 200:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Google token verification failed: {str(e)}",
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Failed to retrieve user profile from Graph: {me_resp.text}",
         )
 
-    # Also verify that the token's audience matches our client ID
-    if verified_info.get("aud") != client_id:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token audience mismatch - possible token substitution attack",
-        )
-
-    # Extract verified user info
-    email = verified_info.get("email")
-    name = verified_info.get("name") or verified_info.get("given_name") or "Google User"
+    me_json = me_resp.json()
+    email = me_json.get("mail") or me_json.get("userPrincipalName")
+    name = me_json.get("displayName") or "Microsoft User"
 
     if not email:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Google account must have a verified email address",
-        )
-
-    # Ensure email is verified per Google
-    if not verified_info.get("email_verified", False):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Google email not verified"
+            detail="Microsoft account must have an email address",
         )
 
     # Find or create user
     user_service = UserService(db)
     user = await user_service.get_user_by_email(email)
     if not user:
-        # Create with a random password (not used)
         random_pwd = secrets.token_urlsafe(16)
         user_create = UserCreate(
             email=email, password=random_pwd, name=name, role="user"
@@ -561,14 +479,12 @@ async def google_callback(
         try:
             user = await user_service.create_user(user_create)
         except Exception:
-            # If creation failed, try fetching again
             user = await user_service.get_user_by_email(email)
 
     # Issue tokens
     access_jwt = create_access_token(data={"sub": user.email, "user_id": user.id})
     refresh_jwt = create_refresh_token(data={"sub": user.email, "user_id": user.id})
 
-    # Create response - tokens are ONLY in HTTP-only cookies (not in URL)
     user_data = {
         "id": user.id,
         "email": user.email,
@@ -578,11 +494,10 @@ async def google_callback(
         "quick_links": user.quick_links,
     }
 
-    # Redirect to frontend without leaking tokens in URL query params
+    # Redirect to frontend without leaking tokens in URL
     redirect_url = f"{frontend_redirect}/login-success"
     response = RedirectResponse(url=redirect_url)
 
-    # Cookie attributes are environment-configurable for production HTTPS and local HTTP.
     response.set_cookie(
         key="access_token",
         value=access_jwt,
@@ -597,7 +512,6 @@ async def google_callback(
         httponly=True,
         **COOKIE_OPTIONS,
     )
-    # Non-httpOnly user data cookie (read by frontend for quick display/hydration)
     response.set_cookie(
         key="user",
         value=json.dumps(user_data),
