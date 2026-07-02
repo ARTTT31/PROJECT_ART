@@ -2,7 +2,23 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { ExternalLink, Link2, PencilLine, Plus, Trash2, ChevronUp, ChevronDown } from 'lucide-react'
+import {
+  Camera,
+  User,
+  Lock,
+  Info,
+  Check,
+  Save,
+  Eye,
+  EyeOff,
+  ExternalLink,
+  Link2,
+  PencilLine,
+  Plus,
+  Trash2,
+  ChevronUp,
+  ChevronDown,
+} from 'lucide-react'
 import DashboardLayout from '@/components/Layout/DashboardLayout'
 import { showDeleteConfirm, showToast, showSuccess, showError } from '@/utils/sweetalert'
 import { useAuth } from '@/hooks/useAuth'
@@ -89,19 +105,16 @@ export default function ProfilePage() {
   }, [authUser])
 
   useEffect(() => {
-    // Calculate password strength
     if (!newPassword) {
       setPasswordStrength(0)
       return
     }
-
     let strength = 0
     if (newPassword.length >= 8) strength++
     if (newPassword.length >= 12) strength++
     if (/[a-z]/.test(newPassword) && /[A-Z]/.test(newPassword)) strength++
     if (/\d/.test(newPassword)) strength++
     if (/[^a-zA-Z0-9]/.test(newPassword)) strength++
-
     setPasswordStrength(strength)
   }, [newPassword])
 
@@ -124,28 +137,18 @@ export default function ProfilePage() {
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault()
-
     try {
       const response = await fetchWithAuth('/api/v1/profile/me', {
         method: 'PUT',
-        body: JSON.stringify({
-          name: name.trim(),
-          email: email.trim(),
-        }),
+        body: JSON.stringify({ name: name.trim(), email: email.trim() }),
       })
-
       const data = await response.json()
-
       if (response.ok) {
-        // Update localStorage with new user data
         const updatedUser = { ...user, name, email }
         localStorage.setItem('user', JSON.stringify(updatedUser))
         setUser(updatedUser)
         updateUser({ name, email })
-        
-        // Dispatch custom event to notify layout (Header/Sidebar)
         window.dispatchEvent(new Event('user-profile-updated'))
-        
         showSuccess('สำเร็จ', data.message || 'อัปเดตโปรไฟล์สำเร็จ!')
       } else {
         showError('เกิดข้อผิดพลาด', data.detail || 'เกิดข้อผิดพลาดในการอัพเดทโปรไฟล์')
@@ -158,56 +161,22 @@ export default function ProfilePage() {
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault()
-    
-    // Validation
-    if (!oldPassword) {
-      showToast('กรุณากรอกรหัสผ่านปัจจุบัน', 'warning')
-      return
-    }
-
-    if (!newPassword) {
-      showToast('กรุณากรอกรหัสผ่านใหม่', 'warning')
-      return
-    }
-
-    if (newPassword.length < 8) {
-      showToast('รหัสผ่านใหม่ต้องมีอย่างน้อย 8 ตัวอักษร', 'warning')
-      return
-    }
-
-    if (newPassword !== confirmPassword) {
-      showToast('รหัสผ่านใหม่ไม่ตรงกัน', 'warning')
-      return
-    }
-
-    if (passwordStrength < 3) {
-      showToast('รหัสผ่านไม่แข็งแรงพอ กรุณาใช้รหัสผ่านที่ปลอดภัยกว่านี้', 'warning')
-      return
-    }
-
+    if (!oldPassword) { showToast('กรุณากรอกรหัสผ่านปัจจุบัน', 'warning'); return }
+    if (!newPassword) { showToast('กรุณากรอกรหัสผ่านใหม่', 'warning'); return }
+    if (newPassword.length < 8) { showToast('รหัสผ่านใหม่ต้องมีอย่างน้อย 8 ตัวอักษร', 'warning'); return }
+    if (newPassword !== confirmPassword) { showToast('รหัสผ่านใหม่ไม่ตรงกัน', 'warning'); return }
+    if (passwordStrength < 3) { showToast('รหัสผ่านไม่แข็งแรงพอ กรุณาใช้รหัสผ่านที่ปลอดภัยกว่านี้', 'warning'); return }
     const userData = localStorage.getItem('user')
-    if (!userData) {
-      showError('เซสชันหมดอายุ', 'กรุณาเข้าสู่ระบบใหม่')
-      router.push('/login')
-      return
-    }
-
+    if (!userData) { showError('เซสชันหมดอายุ', 'กรุณาเข้าสู่ระบบใหม่'); router.push('/login'); return }
     try {
       const response = await fetchWithAuth('/api/v1/profile/change-password', {
         method: 'POST',
-        body: JSON.stringify({
-          old_password: oldPassword,
-          new_password: newPassword,
-        }),
+        body: JSON.stringify({ old_password: oldPassword, new_password: newPassword }),
       })
-
       const data = await response.json()
-
       if (response.ok) {
         showSuccess('สำเร็จ', data.message || 'เปลี่ยนรหัสผ่านสำเร็จ!')
-        setOldPassword('')
-        setNewPassword('')
-        setConfirmPassword('')
+        setOldPassword(''); setNewPassword(''); setConfirmPassword('')
       } else {
         showError('เกิดข้อผิดพลาด', data.detail || 'เกิดข้อผิดพลาดในการเปลี่ยนรหัสผ่าน')
       }
@@ -219,18 +188,13 @@ export default function ProfilePage() {
 
   const openCreateQuickLink = () => {
     setEditingQuickLinkId(null)
-    setQlLabel('')
-    setQlUrl('')
-    setQlIcon('link')
-    setQlColor('#0ea5e9')
+    setQlLabel(''); setQlUrl(''); setQlIcon('link'); setQlColor('#0ea5e9')
     setQuickLinkDialogOpen(true)
   }
 
   const openEditQuickLink = (link: QuickLink) => {
     setEditingQuickLinkId(link.id)
-    setQlLabel(link.label)
-    setQlUrl(link.url)
-    setQlIcon(link.icon)
+    setQlLabel(link.label); setQlUrl(link.url); setQlIcon(link.icon)
     setQlColor(link.color || '#0ea5e9')
     setQuickLinkDialogOpen(true)
   }
@@ -238,25 +202,20 @@ export default function ProfilePage() {
   const persistQuickLinks = async (nextLinks: QuickLink[]) => {
     try {
       const raw = serializeQuickLinks(nextLinks)
-
       const response = await fetchWithAuth('/api/v1/profile/quick-links', {
         method: 'POST',
         body: JSON.stringify({ quick_links: raw }),
       })
-
       if (!response.ok) {
         const data = await response.json().catch(() => ({} as any))
         showError('เกิดข้อผิดพลาด', data.detail || 'ไม่สามารถบันทึก Quick Links ได้')
         return false
       }
-
-      // Sync to local + Auth context (เพื่อให้ Sidebar เห็นทันที)
       const updatedUser = { ...user, quick_links: raw }
       localStorage.setItem('user', JSON.stringify(updatedUser))
       setUser(updatedUser)
       updateUser({ quick_links: raw })
       window.dispatchEvent(new Event('user-profile-updated'))
-
       setQuickLinks(nextLinks)
       return true
     } catch (error) {
@@ -268,48 +227,23 @@ export default function ProfilePage() {
 
   const handleSubmitQuickLink = async (e: React.FormEvent) => {
     e.preventDefault()
-
-    const label = qlLabel.trim()
-    const url = qlUrl.trim()
-
-    if (!label) {
-      showToast('กรุณากรอกชื่อควิกลิ้งค์', 'warning')
-      return
-    }
-
-    if (!url) {
-      showToast('กรุณากรอกลิงก์', 'warning')
-      return
-    }
-
+    const label = qlLabel.trim(); const url = qlUrl.trim()
+    if (!label) { showToast('กรุณากรอกชื่อควิกลิ้งค์', 'warning'); return }
+    if (!url) { showToast('กรุณากรอกลิงก์', 'warning'); return }
     const isValid = isExternalUrl(url) || url.startsWith('/')
-    if (!isValid) {
-      showToast('ลิงก์ต้องขึ้นต้นด้วย http://, https:// หรือ / (ลิงก์ภายใน)', 'warning')
-      return
-    }
-
+    if (!isValid) { showToast('ลิงก์ต้องขึ้นต้นด้วย http://, https:// หรือ / (ลิงก์ภายใน)', 'warning'); return }
     const next: QuickLink = {
-      id:
-        editingQuickLinkId ??
+      id: editingQuickLinkId ??
         (typeof crypto !== 'undefined' && 'randomUUID' in crypto
           ? crypto.randomUUID()
           : `ql_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`),
-      label,
-      url,
-      icon: qlIcon,
-      color: qlColor || undefined,
+      label, url, icon: qlIcon, color: qlColor || undefined,
     }
-
-    const nextLinks =
-      editingQuickLinkId
-        ? quickLinks.map((l) => (l.id === editingQuickLinkId ? next : l))
-        : [...quickLinks, next]
-
+    const nextLinks = editingQuickLinkId
+      ? quickLinks.map((l) => (l.id === editingQuickLinkId ? next : l))
+      : [...quickLinks, next]
     const ok = await persistQuickLinks(nextLinks)
-    if (ok) {
-      setQuickLinkDialogOpen(false)
-      showSuccess('สำเร็จ', 'บันทึก Quick Links สำเร็จ')
-    }
+    if (ok) { setQuickLinkDialogOpen(false); showSuccess('สำเร็จ', 'บันทึก Quick Links สำเร็จ') }
   }
 
   const handleMoveQuickLink = async (id: string, direction: 'up' | 'down') => {
@@ -334,7 +268,7 @@ export default function ProfilePage() {
   if (!user) {
     return (
       <div className="min-h-[100dvh] flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-500" />
       </div>
     )
   }
@@ -342,61 +276,77 @@ export default function ProfilePage() {
   return (
     <DashboardLayout>
       <div className="max-w-7xl mx-auto space-y-6">
-        {/* Page Header */}
+
+        {/* ── Page Header ──────────────────────────────────── */}
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">จัดการบัญชี</h1>
-          <p className="text-slate-600 mt-1">จัดการข้อมูลส่วนตัวและความปลอดภัยของบัญชี</p>
+          <h1
+            className="text-3xl font-extrabold tracking-[-0.03em]"
+            style={{ color: '#1d1d1f' }}
+          >
+            จัดการบัญชี
+          </h1>
+          <p className="mt-1 text-sm" style={{ color: '#6e6e73' }}>
+            จัดการข้อมูลส่วนตัวและความปลอดภัยของบัญชี
+          </p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Profile Card */}
+
+          {/* ── Profile Card (left column) ───────────────────── */}
           <div className="lg:col-span-1">
-            <div className="premium-card overflow-hidden !rounded-[14px]">
-              {/* Cover */}
-              <div className="h-32 bg-gradient-to-br from-sky-400/30 to-blue-600/30 backdrop-blur-xl"></div>
-              
-              {/* Profile Content */}
+            <div className="rounded-2xl bg-white ring-1 ring-black/[0.06] overflow-hidden shadow-[0_8px_32px_rgba(15,23,42,0.06)]">
+              {/* Cover gradient */}
+              <div className="h-32 bg-gradient-to-br from-sky-400/30 to-blue-600/30" />
+
+              {/* Avatar + info */}
               <div className="px-4 sm:px-6 pb-6 -mt-12 sm:-mt-16 text-center">
-                {/* Avatar */}
                 <div className="relative inline-block mb-4">
                   <div className="w-24 h-24 sm:w-32 sm:h-32 bg-gradient-to-br from-sky-500 to-blue-600 rounded-full flex items-center justify-center text-white text-3xl sm:text-4xl font-bold border-4 border-white shadow-[0_14px_30px_rgba(15,23,42,0.16)]">
                     {user.name?.charAt(0).toUpperCase() || 'U'}
                   </div>
-                  <button className="art-icon-button absolute bottom-2 right-2 !h-10 !w-10 !rounded-full" aria-label="เปลี่ยนรูปโปรไฟล์">
-                    <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
+                  <button
+                    className="art-icon-button absolute bottom-2 right-2 !h-10 !w-10 !rounded-full"
+                    aria-label="เปลี่ยนรูปโปรไฟล์"
+                  >
+                    <Camera className="w-5 h-5 text-slate-600" aria-hidden="true" />
                   </button>
                 </div>
 
-                {/* User Info */}
-                <h2 className="text-2xl font-bold text-slate-900 mb-1">{user.name || 'ผู้ใช้งาน'}</h2>
-                <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
-                  user.role === 'admin' 
-                    ? 'bg-purple-100 text-purple-700' 
-                    : 'bg-blue-100 text-blue-700'
-                }`}>
+                <h2
+                  className="text-2xl font-bold mb-1"
+                  style={{ color: '#1d1d1f' }}
+                >
+                  {user.name || 'ผู้ใช้งาน'}
+                </h2>
+                <span
+                  className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
+                    user.role === 'admin'
+                      ? 'bg-purple-100 text-purple-700'
+                      : 'bg-blue-100 text-blue-700'
+                  }`}
+                >
                   {user.role === 'admin' ? 'ผู้ดูแลระบบ' : 'ผู้ใช้งาน'}
                 </span>
-
               </div>
             </div>
           </div>
 
-          {/* Forms */}
+          {/* ── Forms Column (right 2 columns) ───────────────── */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Update Profile Form */}
-            <div className="premium-card p-4 sm:p-6 !rounded-[14px]">
+
+            {/* ── Update Profile Form ─────────────────────────── */}
+            <div className="rounded-2xl bg-white ring-1 ring-black/[0.06] p-4 sm:p-6 shadow-[0_8px_32px_rgba(15,23,42,0.06)]">
               <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-100">
                 <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center">
-                  <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
+                  <User className="w-6 h-6 text-green-600" aria-hidden="true" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-slate-900">ข้อมูลบัญชี</h2>
-                  <p className="text-sm text-slate-600">อัพเดทข้อมูลส่วนตัวของคุณ</p>
+                  <h2 className="text-xl font-bold" style={{ color: '#1d1d1f' }}>
+                    ข้อมูลบัญชี
+                  </h2>
+                  <p className="text-sm" style={{ color: '#6e6e73' }}>
+                    อัพเดทข้อมูลส่วนตัวของคุณ
+                  </p>
                 </div>
               </div>
 
@@ -429,23 +379,16 @@ export default function ProfilePage() {
                 </div>
 
                 <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-start gap-3">
-                  <svg className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                  </svg>
+                  <Info className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" aria-hidden="true" />
                   <div className="text-sm text-blue-800">
                     <strong>หมายเหตุ:</strong> หากเปลี่ยนอีเมล ครั้งถัดไปให้ล็อกอินด้วยอีเมลใหม่ (รหัสผ่านเดิม)
                   </div>
                 </div>
 
                 <div className="flex justify-end">
-                  <button
-                    type="submit"
-                    className="art-primary-button px-6 py-3"
-                  >
+                  <button type="submit" className="art-primary-button px-6 py-3">
                     <span className="flex items-center gap-2">
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
+                      <Check className="w-5 h-5" aria-hidden="true" />
                       บันทึกข้อมูล
                     </span>
                   </button>
@@ -453,17 +396,19 @@ export default function ProfilePage() {
               </form>
             </div>
 
-            {/* Change Password Form */}
-            <div className="premium-card p-4 sm:p-6 !rounded-[14px]">
+            {/* ── Change Password Form ─────────────────────────── */}
+            <div className="rounded-2xl bg-white ring-1 ring-black/[0.06] p-4 sm:p-6 shadow-[0_8px_32px_rgba(15,23,42,0.06)]">
               <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-100">
                 <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center">
-                  <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
+                  <Lock className="w-6 h-6 text-red-600" aria-hidden="true" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-slate-900">เปลี่ยนรหัสผ่าน</h2>
-                  <p className="text-sm text-slate-600">อัพเดทรหัสผ่านเพื่อความปลอดภัย</p>
+                  <h2 className="text-xl font-bold" style={{ color: '#1d1d1f' }}>
+                    เปลี่ยนรหัสผ่าน
+                  </h2>
+                  <p className="text-sm" style={{ color: '#6e6e73' }}>
+                    อัพเดทรหัสผ่านเพื่อความปลอดภัย
+                  </p>
                 </div>
               </div>
 
@@ -485,17 +430,11 @@ export default function ProfilePage() {
                       type="button"
                       onClick={() => setShowOldPassword(!showOldPassword)}
                       className="art-icon-button absolute right-3 top-1/2 !h-10 !w-10 -translate-y-1/2 !border-transparent !bg-transparent !shadow-none"
+                      aria-label={showOldPassword ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'}
                     >
-                      {showOldPassword ? (
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                        </svg>
-                      ) : (
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                        </svg>
-                      )}
+                      {showOldPassword
+                        ? <EyeOff className="w-5 h-5" aria-hidden="true" />
+                        : <Eye className="w-5 h-5" aria-hidden="true" />}
                     </button>
                   </div>
                 </div>
@@ -518,17 +457,11 @@ export default function ProfilePage() {
                         type="button"
                         onClick={() => setShowNewPassword(!showNewPassword)}
                         className="art-icon-button absolute right-3 top-1/2 !h-10 !w-10 -translate-y-1/2 !border-transparent !bg-transparent !shadow-none"
+                        aria-label={showNewPassword ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'}
                       >
-                        {showNewPassword ? (
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                          </svg>
-                        ) : (
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                          </svg>
-                        )}
+                        {showNewPassword
+                          ? <EyeOff className="w-5 h-5" aria-hidden="true" />
+                          : <Eye className="w-5 h-5" aria-hidden="true" />}
                       </button>
                     </div>
 
@@ -542,7 +475,8 @@ export default function ProfilePage() {
                           />
                         </div>
                         <p className="text-xs text-slate-600 mt-1">
-                          ความแข็งแรง: <span className="font-medium">{getStrengthLabel()}</span>
+                          ความแข็งแรง:{' '}
+                          <span className="font-medium">{getStrengthLabel()}</span>
                         </p>
                       </div>
                     )}
@@ -565,31 +499,20 @@ export default function ProfilePage() {
                         type="button"
                         onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                         className="art-icon-button absolute right-3 top-1/2 !h-10 !w-10 -translate-y-1/2 !border-transparent !bg-transparent !shadow-none"
+                        aria-label={showConfirmPassword ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'}
                       >
-                        {showConfirmPassword ? (
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                          </svg>
-                        ) : (
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                          </svg>
-                        )}
+                        {showConfirmPassword
+                          ? <EyeOff className="w-5 h-5" aria-hidden="true" />
+                          : <Eye className="w-5 h-5" aria-hidden="true" />}
                       </button>
                     </div>
                   </div>
                 </div>
 
                 <div className="flex justify-end">
-                  <button
-                    type="submit"
-                    className="art-primary-button px-6 py-3"
-                  >
+                  <button type="submit" className="art-primary-button px-6 py-3">
                     <span className="flex items-center gap-2">
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-                      </svg>
+                      <Save className="w-5 h-5" aria-hidden="true" />
                       บันทึกรหัสผ่านใหม่
                     </span>
                   </button>
@@ -597,8 +520,8 @@ export default function ProfilePage() {
               </form>
             </div>
 
-            {/* Quick Links */}
-            <div className="art-surface p-6 !rounded-[14px]">
+            {/* ── Quick Links ──────────────────────────────────── */}
+            <div className="rounded-2xl bg-white ring-1 ring-black/[0.06] p-6 shadow-[0_8px_32px_rgba(15,23,42,0.06)]">
               <div className="mb-6 border-b border-slate-200/70 pb-5">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-start gap-4">
@@ -607,12 +530,14 @@ export default function ProfilePage() {
                     </div>
                     <div className="space-y-2">
                       <div className="flex flex-wrap items-center gap-2">
-                        <h2 className="text-xl font-bold text-slate-900">ควิกลิ้งค์</h2>
+                        <h2 className="text-xl font-bold" style={{ color: '#1d1d1f' }}>
+                          ควิกลิ้งค์
+                        </h2>
                         <span className="inline-flex items-center rounded-full bg-sky-50 px-2.5 py-1 text-xs font-semibold text-sky-700">
                           {quickLinks.length} รายการ
                         </span>
                       </div>
-                      <p className="max-w-2xl text-sm leading-6 text-slate-600">
+                      <p className="max-w-2xl text-sm leading-6" style={{ color: '#6e6e73' }}>
                         รวมลิงก์ที่ใช้บ่อยไว้ใน Sidebar เพื่อเปิดได้เร็วขึ้น แยกให้อ่านง่ายทั้งลิงก์ภายในและลิงก์ภายนอก
                       </p>
                     </div>
@@ -629,12 +554,14 @@ export default function ProfilePage() {
               </div>
 
               {quickLinks.length === 0 ? (
-                <div className="rounded-[12px] border border-dashed border-slate-300 bg-slate-50/70 px-6 py-10 text-center">
+                <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50/70 px-6 py-10 text-center">
                   <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-sky-600 shadow-[0_10px_25px_rgba(15,23,42,0.08)]">
                     <Link2 className="h-6 w-6" aria-hidden="true" />
                   </div>
-                  <h3 className="text-base font-bold text-slate-900">ยังไม่มีควิกลิ้งค์</h3>
-                  <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-600">
+                  <h3 className="text-base font-bold" style={{ color: '#1d1d1f' }}>
+                    ยังไม่มีควิกลิ้งค์
+                  </h3>
+                  <p className="mx-auto mt-2 max-w-md text-sm leading-6" style={{ color: '#6e6e73' }}>
                     เพิ่มลิงก์ที่เปิดบ่อย เช่น Google Drive, ปฏิทิน หรือหน้าภายในระบบ เพื่อให้เข้าถึงได้จาก Sidebar ทันที
                   </p>
                   <button
@@ -656,17 +583,19 @@ export default function ProfilePage() {
                     return (
                       <div
                         key={link.id}
-                        className="rounded-[12px] border border-slate-200/80 bg-white/85 p-4 shadow-[0_10px_30px_rgba(15,23,42,0.05)] transition-colors duration-200 hover:border-sky-200 hover:bg-white"
+                        className="rounded-2xl bg-white ring-1 ring-black/[0.06] p-4 shadow-[0_2px_8px_rgba(15,23,42,0.04)] transition-shadow duration-200 hover:shadow-[0_8px_24px_rgba(15,23,42,0.08)] hover:ring-sky-200/60"
                       >
                         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                           <div className="flex min-w-0 items-start gap-4">
-                            <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
+                            <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-slate-50 ring-1 ring-black/[0.06]">
                               <Icon size={20} aria-hidden="true" style={{ color: link.color || '#0ea5e9' }} />
                             </div>
 
                             <div className="min-w-0 space-y-1.5">
                               <div className="flex flex-wrap items-center gap-2">
-                                <div className="truncate text-sm font-bold text-slate-900">{link.label}</div>
+                                <div className="truncate text-sm font-bold" style={{ color: '#1d1d1f' }}>
+                                  {link.label}
+                                </div>
                                 <span
                                   className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold ${
                                     external ? 'bg-sky-50 text-sky-700' : 'bg-violet-50 text-violet-700'
@@ -675,8 +604,12 @@ export default function ProfilePage() {
                                   {linkMeta.tone}
                                 </span>
                               </div>
-                              <div className="truncate text-sm font-medium text-slate-700">{linkMeta.title}</div>
-                              <div className="truncate text-xs text-slate-500">{linkMeta.subtitle}</div>
+                              <div className="truncate text-sm font-medium text-slate-700">
+                                {linkMeta.title}
+                              </div>
+                              <div className="truncate text-xs" style={{ color: '#6e6e73' }}>
+                                {linkMeta.subtitle}
+                              </div>
                             </div>
                           </div>
 
@@ -732,32 +665,39 @@ export default function ProfilePage() {
                 </div>
               )}
 
+              {/* ── Quick Link Dialog ──────────────────────────── */}
               <Dialog open={quickLinkDialogOpen} onOpenChange={setQuickLinkDialogOpen}>
-                <DialogContent
-                  className="!max-w-2xl"
-                >
+                <DialogContent className="!max-w-2xl">
                   <DialogHeader>
-                    <DialogTitle>{editingQuickLinkId ? 'แก้ไขควิกลิ้งค์' : 'เพิ่มควิกลิ้งค์'}</DialogTitle>
-                    <DialogDescription>ควิกลิ้งค์ที่สร้างจะไปแสดงที่ Sidebar ของหน้าหลัก</DialogDescription>
+                    <DialogTitle>
+                      {editingQuickLinkId ? 'แก้ไขควิกลิ้งค์' : 'เพิ่มควิกลิ้งค์'}
+                    </DialogTitle>
+                    <DialogDescription>
+                      ควิกลิ้งค์ที่สร้างจะไปแสดงที่ Sidebar ของหน้าหลัก
+                    </DialogDescription>
                   </DialogHeader>
+
                   <form onSubmit={handleSubmitQuickLink} className="space-y-4">
-                    <div className="rounded-[12px] border border-slate-200 bg-slate-50/80 p-4">
+                    {/* Preview card */}
+                    <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-4">
                       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                         <div className="flex min-w-0 items-center gap-3">
-                          <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-white shadow-[0_10px_24px_rgba(15,23,42,0.06)]">
+                          <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-white ring-1 ring-black/[0.06] shadow-[0_10px_24px_rgba(15,23,42,0.06)]">
                             <PreviewIcon size={20} aria-hidden="true" style={{ color: qlColor || '#0ea5e9' }} />
                           </div>
                           <div className="min-w-0">
-                            <div className="truncate text-sm font-bold text-slate-900">
+                            <div className="truncate text-sm font-bold" style={{ color: '#1d1d1f' }}>
                               {qlLabel.trim() || 'ตัวอย่างควิกลิ้งค์'}
                             </div>
-                            <div className="truncate text-sm text-slate-600">{previewMeta.title}</div>
+                            <div className="truncate text-sm" style={{ color: '#6e6e73' }}>
+                              {previewMeta.title}
+                            </div>
                             <div className="truncate text-xs text-slate-500">{previewMeta.subtitle}</div>
                           </div>
                         </div>
 
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-600 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-600 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] ring-1 ring-black/[0.06]">
                             <PreviewIcon className="h-3.5 w-3.5" aria-hidden="true" />
                             ไอคอน {previewIconLabel}
                           </span>
@@ -807,7 +747,6 @@ export default function ProfilePage() {
                           {QUICK_LINK_ICON_OPTIONS.map((opt) => {
                             const OptionIcon = QUICK_LINK_ICON_MAP[opt.key]
                             const isSelected = qlIcon === opt.key
-
                             return (
                               <button
                                 key={opt.key}
@@ -817,9 +756,7 @@ export default function ProfilePage() {
                                 aria-label={`เลือกไอคอน ${opt.label}`}
                                 title={opt.label}
                                 className={`art-chip-button h-[52px] w-full !rounded-[var(--art-radius-lg)] !p-2 ${
-                                  isSelected
-                                    ? 'is-active'
-                                    : ''
+                                  isSelected ? 'is-active' : ''
                                 }`}
                               >
                                 <span
@@ -839,7 +776,7 @@ export default function ProfilePage() {
 
                       <div>
                         <label className="mb-2 block text-sm font-semibold text-slate-700">สี</label>
-                        <div className="rounded-[12px] border border-slate-200 bg-slate-50/80 p-3">
+                        <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3">
                           <div className="flex items-center gap-3">
                             <input
                               type="color"
@@ -873,7 +810,6 @@ export default function ProfilePage() {
                       <div className="text-sm text-slate-500">
                         ปลายทางจะถูกบันทึกและแสดงใน Sidebar ทันทีหลังจากกดบันทึก
                       </div>
-
                       <div className="flex flex-col gap-2 sm:flex-row">
                         <button
                           type="button"
@@ -891,8 +827,9 @@ export default function ProfilePage() {
                 </DialogContent>
               </Dialog>
             </div>
-          </div>
-        </div>
+
+          </div>{/* end forms column */}
+        </div>{/* end grid */}
       </div>
     </DashboardLayout>
   )
