@@ -4,7 +4,7 @@ Application Configuration
 
 import os
 from typing import List
-from pydantic import ConfigDict
+from pydantic import ConfigDict, field_validator
 from pydantic_settings import BaseSettings
 
 
@@ -18,6 +18,13 @@ class Settings(BaseSettings):
 
     # Database
     DATABASE_URL: str
+
+    @field_validator("DATABASE_URL", mode="before")
+    @classmethod
+    def check_db_url(cls, v: str) -> str:
+        if v and v.startswith("sqlite://"):
+            return v.replace("sqlite://", "sqlite+aiosqlite://", 1)
+        return v
 
     # Security
     SECRET_KEY: str
