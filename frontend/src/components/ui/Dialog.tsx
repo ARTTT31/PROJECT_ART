@@ -182,6 +182,48 @@ const DialogDescription = React.forwardRef<
 ))
 DialogDescription.displayName = DialogPrimitive.Description.displayName
 
+/**
+ * DialogTitleSR — visually hidden DialogTitle for screen readers only.
+ *
+ * Use this when a dialog has no visible header but still needs an accessible
+ * name to satisfy Radix UI's ARIA requirements and avoid the console warning:
+ *   "Missing `Description` or `aria-describedby={undefined}`"
+ *
+ * Usage:
+ *   <DialogContent>
+ *     <DialogTitleSR>ชื่อ Dialog สำหรับ screen reader</DialogTitleSR>
+ *     <DialogDescriptionSR>คำอธิบายสั้นๆ สำหรับ screen reader</DialogDescriptionSR>
+ *     {children}
+ *   </DialogContent>
+ */
+const DialogTitleSR = React.forwardRef<
+  React.ElementRef<typeof DialogPrimitive.Title>,
+  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Title>
+>(({ className, ...props }, ref) => (
+  <DialogPrimitive.Title
+    ref={ref}
+    className={cn('sr-only', className)}
+    {...props}
+  />
+))
+DialogTitleSR.displayName = 'DialogTitleSR'
+
+/**
+ * DialogDescriptionSR — visually hidden DialogDescription for screen readers only.
+ * Pair with DialogTitleSR when a dialog has no visible header section.
+ */
+const DialogDescriptionSR = React.forwardRef<
+  React.ElementRef<typeof DialogPrimitive.Description>,
+  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Description>
+>(({ className, ...props }, ref) => (
+  <DialogPrimitive.Description
+    ref={ref}
+    className={cn('sr-only', className)}
+    {...props}
+  />
+))
+DialogDescriptionSR.displayName = 'DialogDescriptionSR'
+
 const DialogBody = ({
   className,
   ...props
@@ -210,6 +252,8 @@ export {
   DialogHeader,
   DialogFooter,
   DialogTitle,
+  DialogTitleSR,
   DialogDescription,
+  DialogDescriptionSR,
   DialogBody,
 }

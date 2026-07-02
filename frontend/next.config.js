@@ -39,7 +39,7 @@ const nextConfig = {
         headers: [
           {
             key: 'Content-Security-Policy',
-            value: `default-src 'self'; script-src 'self' 'unsafe-inline' ${isDev ? "'unsafe-eval'" : ""} https://apis.google.com https://va.vercel-scripts.com https://vercel.live; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' http://localhost:8000 https://art-workspace-api.onrender.com https://project-art-c7eh.onrender.com https://www.eppo.go.th https://calendar.google.com https://vitals.vercel-insights.com https://vercel.live https://*.pusher.com wss://*.pusher.com; frame-src 'self' https://accounts.google.com https://calendar.google.com https://vercel.live; object-src 'none'; base-uri 'self'; form-action 'self'`,
+            value: `default-src 'self'; script-src 'self' 'unsafe-inline' ${isDev ? "'unsafe-eval'" : ""} https://apis.google.com https://va.vercel-scripts.com https://vercel.live; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' https://fonts.gstatic.com https://vercel.live; connect-src 'self' http://localhost:8000 https://art-workspace-api.onrender.com https://project-art-c7eh.onrender.com https://www.eppo.go.th https://calendar.google.com https://vitals.vercel-insights.com https://vercel.live https://*.pusher.com wss://*.pusher.com; frame-src 'self' https://accounts.google.com https://calendar.google.com https://vercel.live; object-src 'none'; base-uri 'self'; form-action 'self'`,
           },
           {
             key: 'X-Content-Type-Options',
