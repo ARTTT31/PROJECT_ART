@@ -371,14 +371,7 @@ label {
   margin-bottom: 0.5rem;
 }
 
-/* Reduced motion support */
-@media (prefers-reduced-motion: reduce) {
-  * {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
-}
+/* Reduced motion support — comprehensive block lives below near accessibility utilities */
 
 /* ═══════════════════════════════════════════════════════
    LIQUID GLASS CARD SYSTEM - iOS Style
@@ -393,32 +386,22 @@ label {
   overflow: hidden;
 }
 
-
-
 .premium-card:hover {
   box-shadow: var(--shadow-glass-lg);
   transform: translateY(-2px);
 }
 
 /* Override hover for weather widget – keep static */
-.premium-card.weather-widget-no-hover:hover {
-  box-shadow: var(--shadow-glass);
-  transform: none !important;
-}
-
 .premium-card.weather-widget-no-hover {
   transform: none !important;
   transition: none !important;
   will-change: auto;
+  min-height: 200px;
 }
 
 .premium-card.weather-widget-no-hover:hover {
   transform: none !important;
   box-shadow: var(--shadow-glass) !important;
-}
-
-.premium-card.weather-widget-no-hover {
-  min-height: 200px;
 }
 
 .ios-weather-card {
@@ -436,8 +419,6 @@ label {
   background: var(--art-page-bg);
   overflow-x: hidden;
 }
-
-
 
 .art-gradient-panel {
   position: relative;
@@ -901,8 +882,6 @@ button:disabled {
   pointer-events: none;
 }
 
-
-
 /* ═══════════════════════════════════════════════════════
    GLASS PANELS & SURFACES - iOS Style
    ═══════════════════════════════════════════════════════ */
@@ -1007,10 +986,6 @@ button:disabled {
 
 .widget-body {
   padding: 0 1.75rem 1.75rem 1.75rem;
-}
-
-.premium-card {
-  min-height: 200px;
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -1595,8 +1570,6 @@ input[type="radio"],
   box-shadow: var(--shadow-glass-sm);
   transition: all 250ms cubic-bezier(0.4, 0, 0.2, 1);
 }
-
-
 
 /* Weather styles moved to: src/styles/pages/weather.css */
 
