@@ -5,10 +5,10 @@ import { Providers } from './providers';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 
 const anuphan = Anuphan({
-  weight: ['300', '400', '500', '600', '700', '800'],
   subsets: ['thai', 'latin'],
   display: 'swap',
   variable: '--font-anuphan',
+  axes: ['wght'],
 });
 
 export const viewport: Viewport = {
