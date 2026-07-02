@@ -59,9 +59,9 @@ const DialogContent = React.forwardRef<
         // Sizing
         'w-[calc(100vw-2rem)] max-w-lg',
         'max-h-[calc(100dvh-2rem)]',
-        // Liquid Glass UI: White with subtle border and glass shadow
-        'bg-white rounded-xl border border-slate-200/50',
-        // Shadow: Glass XL (from design system)
+        // Apple DS v2.0: 20px dialog radius, white surface, ring depth
+        'bg-white rounded-[20px] ring-1 ring-black/[0.08]',
+        // Shadow: Glass XL
         'shadow-[0_24px_64px_rgba(15,23,42,0.10),0_8px_24px_rgba(15,23,42,0.05)]',
         // Overflow handling
         'overflow-hidden',
@@ -90,12 +90,12 @@ const DialogContent = React.forwardRef<
           'rounded-lg',
           'inline-flex items-center justify-center',
           // Colors
-          'text-slate-500 hover:text-slate-900',
-          'hover:bg-slate-100',
+          'text-[#6e6e73] hover:text-[#1d1d1f]',
+          'hover:bg-[#f5f5f7]',
           // Transitions
           'transition-colors duration-150',
           // Focus ring (WCAG AAA)
-          'focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2',
+          'focus:outline-none focus:ring-2 focus:ring-[#0071e3] focus:ring-offset-2',
           // Disabled state
           'disabled:pointer-events-none disabled:opacity-50'
         )}
@@ -119,7 +119,7 @@ const DialogHeader = ({
       // Spacing
       'px-6 pt-6 pb-4',
       // Border separator
-      'border-b border-slate-200/50',
+      'border-b border-black/[0.06]',
       className
     )}
     {...props}
@@ -138,7 +138,7 @@ const DialogFooter = ({
       // Spacing
       'gap-2 px-6 py-4',
       // Border separator
-      'border-t border-slate-200/50',
+      'border-t border-black/[0.06]',
       className
     )}
     {...props}
