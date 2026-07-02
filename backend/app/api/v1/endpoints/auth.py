@@ -353,7 +353,7 @@ async def google_verify_token(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Google client ID not configured. Set GOOGLE_VALID_CLIENT_IDS or GOOGLE_CLIENT_ID.",
         )
-    
+
     id_token_jwt = token_request.get("id_token")
 
     if not id_token_jwt:
@@ -613,7 +613,7 @@ async def get_session(request: Request, db: AsyncSession = Depends(get_db)):
     """
     Get current user session from HTTP-only cookies.
     Used by frontend after OAuth redirect to read tokens securely.
-    
+
     Supports two modes:
     1. Fast-path: If both access_token and user cookie exist, return user from cookie
     2. Fallback: If only access_token exists, decode JWT and fetch user from DB

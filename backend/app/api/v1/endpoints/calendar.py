@@ -27,7 +27,7 @@ class CalendarEvent(BaseModel):
 
 class CalendarHealthCheck(BaseModel):
     """Calendar health check response"""
-    
+
     calendar_id: str
     is_accessible: bool
     message: str
@@ -40,7 +40,7 @@ async def check_calendar_health(
 ):
     """
     Test if a Google Calendar is publicly accessible
-    
+
     Use this endpoint to verify your calendar configuration before fetching events.
     """
     ical_url = f"https://calendar.google.com/calendar/ical/{calendar_id}/public/basic.ics"
@@ -48,7 +48,7 @@ async def check_calendar_health(
     try:
         async with httpx.AsyncClient(timeout=httpx.Timeout(10.0)) as client:
             response = await client.get(ical_url)
-            
+
             if response.status_code == 200:
                 # Try to parse to ensure it's valid iCal
                 try:
@@ -70,14 +70,21 @@ async def check_calendar_health(
                 return CalendarHealthCheck(
                     calendar_id=calendar_id,
                     is_accessible=False,
-                    message="❌ Calendar not found. Check: 1) Calendar ID is correct, 2) Calendar exists, 3) Calendar is set to 'Public' in Google Calendar settings",
+                    message=(
+                        "❌ Calendar not found. Check: 1) Calendar ID is correct, "
+                        "2) Calendar exists, "
+                        "3) Calendar is set to 'Public' in Google Calendar settings"
+                    ),
                     ical_url=ical_url
                 )
             elif response.status_code == 403:
                 return CalendarHealthCheck(
                     calendar_id=calendar_id,
                     is_accessible=False,
-                    message="❌ Access denied. Calendar must be set to 'Make available to public' in Google Calendar settings",
+                    message=(
+                        "❌ Access denied. Calendar must be set to 'Make available to public' "
+                        "in Google Calendar settings"
+                    ),
                     ical_url=ical_url
                 )
             else:
@@ -128,7 +135,7 @@ async def get_calendar_events(
         # Validate calendar_id format
         if not calendar_id or len(calendar_id.strip()) == 0:
             raise HTTPException(
-                status_code=400, 
+                status_code=400,
                 detail="Calendar ID is required and cannot be empty"
             )
 
@@ -284,7 +291,7 @@ async def get_calendar_events(
 
     except httpx.TimeoutException as e:
         raise HTTPException(
-            status_code=504, 
+            status_code=504,
             detail=f"Calendar fetch timed out after 45 seconds: {str(e)}"
         )
     except httpx.HTTPStatusError as e:
@@ -307,18 +314,18 @@ async def get_calendar_events(
             )
         else:
             raise HTTPException(
-                status_code=502, 
+                status_code=502,
                 detail=f"Google Calendar API error (HTTP {status_code}): {str(e)}"
             )
     except httpx.HTTPError as e:
         raise HTTPException(
-            status_code=502, 
+            status_code=502,
             detail=f"Failed to connect to Google Calendar: {str(e)}"
         )
     except ValueError as e:
         # Handle iCalendar parsing errors
         raise HTTPException(
-            status_code=500, 
+            status_code=500,
             detail=f"Invalid calendar data format: {str(e)}"
         )
     except Exception as e:
@@ -327,6 +334,6 @@ async def get_calendar_events(
         error_trace = traceback.format_exc()
         print(f"❌ Calendar API Error: {error_trace}")
         raise HTTPException(
-            status_code=500, 
+            status_code=500,
             detail=f"Unexpected error processing calendar: {str(e)}"
         )
