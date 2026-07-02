@@ -2,7 +2,7 @@
 
 ART Workspace is a Thai-language personal productivity dashboard built with a serverless-friendly full-stack architecture.
 
-Production: [https://project-art-sigma.vercel.app](https://project-art-sigma.vercel.app)
+Production: [https://your-production-domain.vercel.app](https://your-production-domain.vercel.app)
 
 ## CI Status
 
@@ -112,37 +112,11 @@ The frontend will be available at [http://localhost:3000](http://localhost:3000)
 
 ## Environment Variables
 
-### Backend `.env`
+For security and proper environment isolation, environment variables are not stored directly in this document. Please reference the [.env.example](file:///.env.example) file at the root of the project to configure your environment variables:
 
-```env
-APP_NAME="ART Workspace API"
-APP_VERSION="1.0.0"
-DEBUG=True
-
-DATABASE_URL=postgresql+asyncpg://<username>:<password>@<neon-host>/art_workspace?sslmode=require
-
-SECRET_KEY="replace_with_a_long_random_secret"
-ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=30
-REFRESH_TOKEN_EXPIRE_DAYS=7
-COOKIE_SECURE=True
-COOKIE_SAMESITE=none
-AUTO_CREATE_TABLES=False
-
-CORS_ORIGINS=http://localhost:3000,http://localhost:8080
-
-BACKEND_GOOGLE_CLIENT_ID="xxxx.apps.googleusercontent.com"
-BACKEND_GOOGLE_CLIENT_SECRET="GOCSPX-xxxx"
-BACKEND_GOOGLE_REDIRECT="http://localhost:8080/api/v1/auth/google/callback"
-FRONTEND_URL="http://localhost:3000"
-```
-
-### Frontend `.env.local`
-
-```env
-NEXT_PUBLIC_API_URL=http://localhost:8080
-NEXT_PUBLIC_GOOGLE_CLIENT_ID=xxxx.apps.googleusercontent.com
-```
+1. Copy `.env.example` to create backend/frontend environment files (e.g. `.env` for backend, and `.env.local` for frontend).
+2. Replace the placeholders with your actual settings (secret keys, credentials, local API ports, and database urls).
+3. Do NOT commit the actual `.env` files to git repositories.
 
 ## Database Migrations
 

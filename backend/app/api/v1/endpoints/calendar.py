@@ -44,7 +44,7 @@ async def check_calendar_health(
     Use this endpoint to verify your calendar configuration before fetching events.
     """
     ical_url = f"https://calendar.google.com/calendar/ical/{calendar_id}/public/basic.ics"
-    
+
     try:
         async with httpx.AsyncClient(timeout=httpx.Timeout(10.0)) as client:
             response = await client.get(ical_url)
