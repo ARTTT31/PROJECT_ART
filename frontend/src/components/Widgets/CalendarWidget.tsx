@@ -4,7 +4,7 @@ import { Calendar } from 'lucide-react'
 import WidgetSizeToggle from './WidgetSizeToggle'
 
 const SHAREPOINT_LIST_URL =
-  'https://absscoth-my.sharepoint.com/personal/pornchai_abss_co_th/Lists/Technical%20Support%20and%20IMACD%20Booking%20Schedule/AllItems.aspx?FocusModeOff=1'
+  'https://absscoth-my.sharepoint.com/personal/pornchai_abss_co_th/Lists/Technical%20Support%20and%20IMACD%20Booking%20Schedule/AllItems.aspx?isDlg=1&FocusModeOff=1'
 
 export default function CalendarWidget({
   width = 3,
