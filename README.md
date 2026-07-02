@@ -52,7 +52,7 @@ The GitHub Actions pipeline (`ci.yml`) runs on every push and pull request to `m
 
 | Layer | Technology |
 |---|---|
-| Framework | FastAPI 0.109, Uvicorn |
+| Framework | FastAPI 0.111, Uvicorn |
 | ORM / DB | SQLAlchemy 2 async, Alembic migrations |
 | Database | PostgreSQL (Neon in production, SQLite for CI tests) |
 | Auth | JWT access + refresh tokens in HTTP-only cookies |

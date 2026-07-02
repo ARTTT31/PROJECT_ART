@@ -15,18 +15,22 @@ class Base(DeclarativeBase):
 
 
 # Create database engine
+db_url = settings.DATABASE_URL
+if db_url.startswith("sqlite://"):
+    db_url = db_url.replace("sqlite://", "sqlite+aiosqlite://", 1)
+
 engine_kwargs = {
     "pool_pre_ping": True,
     "pool_recycle": 1800,
 }
-if "sqlite" in settings.DATABASE_URL:
+if "sqlite" in db_url:
     engine_kwargs["connect_args"] = {"check_same_thread": False}
 else:
     engine_kwargs["connect_args"] = {"ssl": True}
     engine_kwargs["pool_size"] = 5
     engine_kwargs["max_overflow"] = 5
 
-engine = create_async_engine(settings.DATABASE_URL, **engine_kwargs)
+engine = create_async_engine(db_url, **engine_kwargs)
 
 # Create session factory
 SessionLocal = async_sessionmaker(
