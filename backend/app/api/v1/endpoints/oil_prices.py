@@ -256,5 +256,5 @@ def _fallback_prices():
         "update_date": today,
         "fetched_at": None,
         "is_stale": True,
-        "source": "Hardcoded fallback (PTT 02/07/2026)",
+        "source": "Hardcoded fallback",
     }
