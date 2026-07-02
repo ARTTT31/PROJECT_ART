@@ -59,7 +59,7 @@ def parse_eppo_html(html: str) -> list[dict]:
     return result
 
 
-def test_eppo_connection() -> bool:
+def test_eppo_connection() -> None:
     """Test if EPPO website is accessible and oil prices can be scraped"""
     
     print("\n" + "=" * 80)
@@ -104,7 +104,6 @@ def test_eppo_connection() -> bool:
                     print("\n" + "=" * 80)
                     print("🎉 SUCCESS! EPPO oil prices are accessible and valid.")
                     print("=" * 80)
-                    return True
                     
                 else:
                     print("❌ ERROR: No oil prices found in HTML")
@@ -115,7 +114,7 @@ def test_eppo_connection() -> bool:
                     print("\n" + "=" * 80)
                     print("⚠️  FAILED: No prices found")
                     print("=" * 80)
-                    return False
+                    assert False, "No oil prices found"
                     
             except Exception as e:
                 print(f"❌ ERROR: Failed to parse EPPO HTML")
@@ -125,7 +124,7 @@ def test_eppo_connection() -> bool:
                 print("\n" + "=" * 80)
                 print("⚠️  FAILED: HTML parsing error")
                 print("=" * 80)
-                return False
+                assert False, f"HTML parsing error: {str(e)}"
                 
         elif response.status_code == 403:
             print("❌ ERROR: Access denied (HTTP 403)")
@@ -136,7 +135,7 @@ def test_eppo_connection() -> bool:
             print("\n" + "=" * 80)
             print("⚠️  FAILED: Access denied")
             print("=" * 80)
-            return False
+            assert False, "Access denied (HTTP 403)"
             
         elif response.status_code == 404:
             print("❌ ERROR: Page not found (HTTP 404)")
@@ -147,14 +146,14 @@ def test_eppo_connection() -> bool:
             print("\n" + "=" * 80)
             print("⚠️  FAILED: Page not found")
             print("=" * 80)
-            return False
+            assert False, "Page not found (HTTP 404)"
             
         else:
             print(f"❌ ERROR: Unexpected HTTP status code: {response.status_code}")
             print("\n" + "=" * 80)
             print(f"⚠️  FAILED: HTTP {response.status_code}")
             print("=" * 80)
-            return False
+            assert False, f"Unexpected HTTP status code: {response.status_code}"
             
     except httpx.TimeoutException:
         print("❌ ERROR: Connection timeout")
@@ -166,7 +165,7 @@ def test_eppo_connection() -> bool:
         print("\n" + "=" * 80)
         print("⚠️  FAILED: Timeout")
         print("=" * 80)
-        return False
+        assert False, "Connection timeout"
         
     except httpx.ConnectError as e:
         print(f"❌ ERROR: Connection failed")
@@ -178,14 +177,14 @@ def test_eppo_connection() -> bool:
         print("\n" + "=" * 80)
         print("⚠️  FAILED: Connection error")
         print("=" * 80)
-        return False
+        assert False, f"Connection failed: {str(e)}"
         
     except Exception as e:
         print(f"❌ ERROR: {str(e)}")
         print("\n" + "=" * 80)
         print("⚠️  FAILED: Unexpected error")
         print("=" * 80)
-        return False
+        assert False, f"Unexpected error: {str(e)}"
 
 
 def main():

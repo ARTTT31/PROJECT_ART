@@ -18,38 +18,39 @@ import httpx
 from icalendar import Calendar
 
 
-def test_calendar(calendar_id: str) -> bool:
+def test_calendar() -> None:
     """Test if a Google Calendar is publicly accessible"""
-    
+    calendar_id = os.environ.get("TEST_CALENDAR_ID") or get_calendar_id_from_env() or "your_test_calendar_id"
+
     ical_url = f"https://calendar.google.com/calendar/ical/{calendar_id}/public/basic.ics"
-    
+
     print(f"🔍 Testing Calendar Access")
     print(f"📅 Calendar ID: {calendar_id}")
     print(f"🔗 iCal URL: {ical_url}")
     print("-" * 80)
-    
+
     try:
         print("⏳ Fetching calendar data...")
         response = httpx.get(ical_url, timeout=10.0, follow_redirects=True)
-        
+
         print(f"📡 HTTP Status: {response.status_code}")
-        
+
         if response.status_code == 200:
             print("✅ Calendar is accessible!")
-            
+
             # Try to parse iCal data
             try:
                 calendar = Calendar.from_ical(response.content)
                 print("✅ iCalendar data is valid!")
-                
+
                 # Count events
                 event_count = 0
                 for component in calendar.walk():
                     if component.name == "VEVENT":
                         event_count += 1
-                
+
                 print(f"📊 Found {event_count} event(s) in calendar")
-                
+
                 # Show first 3 events as sample
                 if event_count > 0:
                     print("\n📋 Sample Events:")
@@ -61,20 +62,19 @@ def test_calendar(calendar_id: str) -> bool:
                             start_str = str(start.dt) if start else "Unknown"
                             print(f"  {count + 1}. {title} (Start: {start_str})")
                             count += 1
-                
+
                 print("\n" + "=" * 80)
                 print("🎉 SUCCESS! Your calendar is properly configured.")
                 print("=" * 80)
-                return True
-                
+
             except Exception as e:
                 print(f"❌ ERROR: Calendar data is invalid or corrupted")
                 print(f"   Details: {str(e)}")
                 print("\n" + "=" * 80)
                 print("⚠️  FAILED: Calendar data cannot be parsed")
                 print("=" * 80)
-                return False
-                
+                assert False, "Calendar data cannot be parsed"
+
         elif response.status_code == 404:
             print("❌ ERROR: Calendar not found (HTTP 404)")
             print("\n🔧 How to fix:")
@@ -89,8 +89,8 @@ def test_calendar(calendar_id: str) -> bool:
             print("\n" + "=" * 80)
             print("⚠️  FAILED: Calendar is not public or doesn't exist")
             print("=" * 80)
-            return False
-            
+            assert False, "Calendar not public or doesn't exist"
+
         elif response.status_code == 403:
             print("❌ ERROR: Access denied (HTTP 403)")
             print("\n🔧 How to fix:")
@@ -103,30 +103,30 @@ def test_calendar(calendar_id: str) -> bool:
             print("\n" + "=" * 80)
             print("⚠️  FAILED: Calendar is private or restricted")
             print("=" * 80)
-            return False
-            
+            assert False, "Calendar is private or restricted"
+
         else:
             print(f"❌ ERROR: Unexpected HTTP status code: {response.status_code}")
             print(f"   Response: {response.text[:200]}")
             print("\n" + "=" * 80)
             print(f"⚠️  FAILED: Unexpected error (HTTP {response.status_code})")
             print("=" * 80)
-            return False
-            
+            assert False, f"Unexpected error (HTTP {response.status_code})"
+
     except httpx.TimeoutException:
         print("❌ ERROR: Connection timeout")
         print("   Google Calendar service may be unreachable")
         print("\n" + "=" * 80)
         print("⚠️  FAILED: Timeout")
         print("=" * 80)
-        return False
-        
+        assert False, "Timeout connecting to Google Calendar"
+
     except Exception as e:
         print(f"❌ ERROR: {str(e)}")
         print("\n" + "=" * 80)
         print("⚠️  FAILED: Unexpected error")
         print("=" * 80)
-        return False
+        assert False, f"Unexpected error: {str(e)}"
 
 
 def get_calendar_id_from_env() -> str | None:
@@ -184,8 +184,14 @@ def main():
     print()
     
     # Run test
-    success = test_calendar(calendar_id)
-    
+    if calendar_id:
+        os.environ["TEST_CALENDAR_ID"] = calendar_id
+    try:
+        test_calendar()
+        success = True
+    except AssertionError:
+        success = False
+
     # Exit with appropriate code
     sys.exit(0 if success else 1)
 
