@@ -14,186 +14,173 @@ If no CALENDAR_ID is provided, it will use the one from frontend/.env.local
 import sys
 import os
 from pathlib import Path
+from unittest.mock import MagicMock, patch
 import httpx
 from icalendar import Calendar
 
+# ---------------------------------------------------------------------------
+# Minimal valid iCal payload used by the unit test mock
+# ---------------------------------------------------------------------------
+MOCK_ICAL_CONTENT = b"""BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//ART Workspace//Test//EN
+BEGIN:VEVENT
+UID:test-event-001@art-workspace
+SUMMARY:Mock Test Event
+DTSTART:20260701T090000Z
+DTEND:20260701T100000Z
+END:VEVENT
+END:VCALENDAR
+"""
 
-def test_calendar() -> None:
-    """Test if a Google Calendar is publicly accessible"""
-    calendar_id = os.environ.get("TEST_CALENDAR_ID") or get_calendar_id_from_env() or "your_test_calendar_id"
 
-    ical_url = f"https://calendar.google.com/calendar/ical/{calendar_id}/public/basic.ics"
+# ---------------------------------------------------------------------------
+# Core connectivity helpers (used both by tests and by main())
+# ---------------------------------------------------------------------------
 
-    print(f"🔍 Testing Calendar Access")
-    print(f"📅 Calendar ID: {calendar_id}")
-    print(f"🔗 iCal URL: {ical_url}")
-    print("-" * 80)
+def fetch_ical(calendar_id: str) -> httpx.Response:
+    """Fetch the iCal feed for the given Google Calendar ID."""
+    ical_url = (
+        f"https://calendar.google.com/calendar/ical/{calendar_id}/public/basic.ics"
+    )
+    return httpx.get(ical_url, timeout=10.0, follow_redirects=True)
 
-    try:
-        print("⏳ Fetching calendar data...")
-        response = httpx.get(ical_url, timeout=10.0, follow_redirects=True)
 
-        print(f"📡 HTTP Status: {response.status_code}")
+def check_calendar_response(response: httpx.Response) -> None:
+    """
+    Inspect an HTTP response from Google Calendar.
+    Raises AssertionError with a descriptive message on failure.
+    """
+    if response.status_code == 200:
+        try:
+            calendar = Calendar.from_ical(response.content)
+        except Exception as exc:
+            raise AssertionError(
+                f"Calendar data is invalid or corrupted: {exc}"
+            ) from exc
 
-        if response.status_code == 200:
-            print("✅ Calendar is accessible!")
+        event_count = sum(
+            1 for component in calendar.walk() if component.name == "VEVENT"
+        )
+        print(f"  📊 Found {event_count} event(s) in calendar")
+        return  # success
 
-            # Try to parse iCal data
-            try:
-                calendar = Calendar.from_ical(response.content)
-                print("✅ iCalendar data is valid!")
-
-                # Count events
-                event_count = 0
-                for component in calendar.walk():
-                    if component.name == "VEVENT":
-                        event_count += 1
-
-                print(f"📊 Found {event_count} event(s) in calendar")
-
-                # Show first 3 events as sample
-                if event_count > 0:
-                    print("\n📋 Sample Events:")
-                    count = 0
-                    for component in calendar.walk():
-                        if component.name == "VEVENT" and count < 3:
-                            title = str(component.get("summary", "No title"))
-                            start = component.get("dtstart")
-                            start_str = str(start.dt) if start else "Unknown"
-                            print(f"  {count + 1}. {title} (Start: {start_str})")
-                            count += 1
-
-                print("\n" + "=" * 80)
-                print("🎉 SUCCESS! Your calendar is properly configured.")
-                print("=" * 80)
-
-            except Exception as e:
-                print(f"❌ ERROR: Calendar data is invalid or corrupted")
-                print(f"   Details: {str(e)}")
-                print("\n" + "=" * 80)
-                print("⚠️  FAILED: Calendar data cannot be parsed")
-                print("=" * 80)
-                assert False, "Calendar data cannot be parsed"
-
-        elif response.status_code == 404:
-            print("❌ ERROR: Calendar not found (HTTP 404)")
-            print("\n🔧 How to fix:")
-            print("   1. Verify the Calendar ID is correct")
-            print("   2. Make sure the calendar exists in your Google Calendar")
-            print("   3. Set calendar to 'Public' in Google Calendar settings:")
-            print("      - Open Google Calendar")
-            print("      - Click ⋮ (three dots) next to calendar name")
-            print("      - Select 'Settings and sharing'")
-            print("      - Under 'Access permissions', check 'Make available to public'")
-            print("      - Set to 'See all event details'")
-            print("\n" + "=" * 80)
-            print("⚠️  FAILED: Calendar is not public or doesn't exist")
-            print("=" * 80)
-            assert False, "Calendar not public or doesn't exist"
-
-        elif response.status_code == 403:
-            print("❌ ERROR: Access denied (HTTP 403)")
-            print("\n🔧 How to fix:")
-            print("   1. Calendar must be set to 'Public'")
-            print("   2. Go to Google Calendar settings:")
-            print("      - Click ⋮ (three dots) next to calendar name")
-            print("      - Select 'Settings and sharing'")
-            print("      - Under 'Access permissions', check 'Make available to public'")
-            print("      - Set to 'See all event details' (not just free/busy)")
-            print("\n" + "=" * 80)
-            print("⚠️  FAILED: Calendar is private or restricted")
-            print("=" * 80)
-            assert False, "Calendar is private or restricted"
-
-        else:
-            print(f"❌ ERROR: Unexpected HTTP status code: {response.status_code}")
-            print(f"   Response: {response.text[:200]}")
-            print("\n" + "=" * 80)
-            print(f"⚠️  FAILED: Unexpected error (HTTP {response.status_code})")
-            print("=" * 80)
-            assert False, f"Unexpected error (HTTP {response.status_code})"
-
-    except httpx.TimeoutException:
-        print("❌ ERROR: Connection timeout")
-        print("   Google Calendar service may be unreachable")
-        print("\n" + "=" * 80)
-        print("⚠️  FAILED: Timeout")
-        print("=" * 80)
-        assert False, "Timeout connecting to Google Calendar"
-
-    except Exception as e:
-        print(f"❌ ERROR: {str(e)}")
-        print("\n" + "=" * 80)
-        print("⚠️  FAILED: Unexpected error")
-        print("=" * 80)
-        assert False, f"Unexpected error: {str(e)}"
+    if response.status_code == 404:
+        raise AssertionError("Calendar not found (HTTP 404). Check the Calendar ID and public visibility settings.")
+    if response.status_code == 403:
+        raise AssertionError("Access denied (HTTP 403). Set the calendar to 'Make available to public'.")
+    raise AssertionError(f"Unexpected HTTP status: {response.status_code}")
 
 
 def get_calendar_id_from_env() -> str | None:
     """Try to read calendar ID from frontend/.env.local"""
-    
-    # Try to find frontend/.env.local
     possible_paths = [
         Path(__file__).parent.parent.parent / "frontend" / ".env.local",
         Path.cwd() / "frontend" / ".env.local",
     ]
-    
     for env_path in possible_paths:
         if env_path.exists():
-            print(f"📁 Found .env.local at: {env_path}")
             try:
-                with open(env_path, 'r', encoding='utf-8') as f:
+                with open(env_path, "r", encoding="utf-8") as f:
                     for line in f:
                         if line.startswith("NEXT_PUBLIC_GOOGLE_CALENDAR_ID="):
-                            calendar_id = line.split("=", 1)[1].strip()
-                            if calendar_id:
-                                print(f"✅ Using Calendar ID from .env.local")
-                                return calendar_id
-            except Exception as e:
-                print(f"⚠️  Could not read .env.local: {e}")
-    
+                            value = line.split("=", 1)[1].strip()
+                            if value:
+                                return value
+            except Exception as exc:
+                print(f"⚠️  Could not read .env.local: {exc}")
     return None
 
 
-def main():
-    """Main entry point"""
-    
+# ---------------------------------------------------------------------------
+# Pytest-compatible unit tests (no live network calls)
+# ---------------------------------------------------------------------------
+
+def test_calendar_success_mock() -> None:
+    """
+    Unit test: mocks httpx.get to return HTTP 200 with valid iCal content.
+    Validates that check_calendar_response parses the mocked iCal without errors.
+    """
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_response.content = MOCK_ICAL_CONTENT
+
+    with patch("scripts.test_calendar.httpx.get", return_value=mock_response):
+        fetch_ical("mock-calendar-id@group.calendar.google.com")
+
+    # Should not raise
+    check_calendar_response(mock_response)
+
+
+def test_calendar_404_raises() -> None:
+    """
+    Unit test: mocks a HTTP 404 response and asserts that check_calendar_response
+    raises AssertionError containing '404'.
+    """
+    mock_response = MagicMock()
+    mock_response.status_code = 404
+
+    try:
+        check_calendar_response(mock_response)
+        assert False, "Expected AssertionError for HTTP 404"
+    except AssertionError as exc:
+        assert "404" in str(exc)
+
+
+def test_calendar_403_raises() -> None:
+    """
+    Unit test: mocks a HTTP 403 response and asserts that check_calendar_response
+    raises AssertionError containing '403'.
+    """
+    mock_response = MagicMock()
+    mock_response.status_code = 403
+
+    try:
+        check_calendar_response(mock_response)
+        assert False, "Expected AssertionError for HTTP 403"
+    except AssertionError as exc:
+        assert "403" in str(exc)
+
+
+# ---------------------------------------------------------------------------
+# CLI entry point (live run — not executed by pytest)
+# ---------------------------------------------------------------------------
+
+def main() -> None:
+    """Main entry point for running as a standalone script."""
     print("\n" + "=" * 80)
     print("🧪 Google Calendar Configuration Test")
     print("=" * 80 + "\n")
-    
-    # Get calendar ID from command line or environment
-    calendar_id = None
-    
-    if len(sys.argv) > 1:
-        calendar_id = sys.argv[1]
-        print(f"📝 Using Calendar ID from command line argument")
-    else:
-        print("📝 No Calendar ID provided, trying to read from frontend/.env.local...")
-        calendar_id = get_calendar_id_from_env()
-    
-    if not calendar_id:
-        print("\n❌ ERROR: No Calendar ID provided!")
-        print("\nUsage:")
-        print(f"  python {sys.argv[0]} <CALENDAR_ID>")
-        print("\nExample:")
-        print(f"  python {sys.argv[0]} your-email@group.calendar.google.com")
-        print("\nOr set NEXT_PUBLIC_GOOGLE_CALENDAR_ID in frontend/.env.local")
-        sys.exit(1)
-    
-    print()
-    
-    # Run test
-    if calendar_id:
-        os.environ["TEST_CALENDAR_ID"] = calendar_id
-    try:
-        test_calendar()
-        success = True
-    except AssertionError:
-        success = False
 
-    # Exit with appropriate code
-    sys.exit(0 if success else 1)
+    calendar_id = (
+        sys.argv[1]
+        if len(sys.argv) > 1
+        else os.environ.get("TEST_CALENDAR_ID") or get_calendar_id_from_env()
+    )
+
+    if not calendar_id:
+        print("❌ ERROR: No Calendar ID provided.")
+        print(f"  Usage: python {sys.argv[0]} <CALENDAR_ID>")
+        print("  Or set NEXT_PUBLIC_GOOGLE_CALENDAR_ID in frontend/.env.local")
+        sys.exit(1)
+
+    print(f"📅 Calendar ID : {calendar_id}")
+
+    try:
+        response = fetch_ical(calendar_id)
+        print(f"📡 HTTP Status : {response.status_code}")
+        check_calendar_response(response)
+        print("🎉 SUCCESS! Calendar is properly configured.")
+        sys.exit(0)
+    except AssertionError as exc:
+        print(f"⚠️  FAILED: {exc}")
+        sys.exit(1)
+    except httpx.TimeoutException:
+        print("⚠️  FAILED: Connection timeout")
+        sys.exit(1)
+    except Exception as exc:
+        print(f"⚠️  FAILED: Unexpected error — {exc}")
+        sys.exit(1)
 
 
 if __name__ == "__main__":
