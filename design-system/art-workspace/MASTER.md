@@ -1,198 +1,222 @@
-# ART Workspace - Design System Master Document
+# ART Workspace — Design System Master Document
 
-**Version:** 1.1  
-**Last Updated:** 2026-07-02  
-**Philosophy:** "The Clarity Cockpit" - Calm, focused, professional productivity interface
+**Version:** 2.0
+**Last Updated:** 2026-07-02
+**Philosophy:** "Apple Showcase DNA" — Premium, spacious, typography-led product surfaces
 
 ---
 
 ## 🎯 Global Source of Truth
 
-This document defines the strict anti-patterns and design rules for **ART Workspace**. All components, pages, and features MUST adhere to these principles unless a specific page override exists in `design-system/art-workspace/pages/[page].md`.
+This document defines the strict rules for **ART Workspace**. All components, pages, and features MUST adhere to these principles unless a specific page override exists in `design-system/art-workspace/pages/[page].md`.
+
+**v2.0 shift:** The system moves from a dense dashboard aesthetic ("Clarity Cockpit") to an Apple-inspired product showcase aesthetic. Bento-grid containers, oversized display typography, color-field tiles, and generous whitespace are now the standard — not exceptions.
 
 ---
 
 ## ⛔ Strict Anti-Patterns (NEVER DO)
 
 ### 1. Color Family Violations
-❌ **NEVER** use the `gray-*` Tailwind palette  
-✅ **ALWAYS** use the `slate-*` family exclusively for all neutral colors
+❌ **NEVER** use the `gray-*` Tailwind palette
+✅ **ALWAYS** use the `slate-*` family for neutral UI text/borders
+✅ **ALWAYS** use `#1d1d1f` / `#6e6e73` / `#f5f5f7` for Apple-style surfaces and display copy
 
 ```css
 /* WRONG */
-.text-gray-500
-.bg-gray-100
-.border-gray-300
+.text-gray-500 / .bg-gray-100
 
-/* CORRECT */
-.text-slate-500
-.bg-slate-100
-.border-slate-300
+/* CORRECT — neutral UI */
+.text-slate-500 / .bg-slate-100
+
+/* CORRECT — Apple display surfaces */
+color: #1d1d1f;        /* Apple Ink — headings */
+color: #6e6e73;        /* Apple Muted — body/description */
+background: #f5f5f7;   /* Apple Gray — section alternation */
 ```
 
 ### 2. Dark Mode Violations
-❌ **NEVER** implement dark mode features  
-❌ **NEVER** use `@media (prefers-color-scheme: dark)` queries  
+❌ **NEVER** implement dark mode
+❌ **NEVER** use `@media (prefers-color-scheme: dark)`
 ✅ **ALWAYS** design for light mode only
 
-```css
-/* WRONG - Delete these */
-@media (prefers-color-scheme: dark) {
-  /* any dark mode styles */
-}
-
-.dark:bg-gray-900
-```
-
 ### 3. Border Radius Violations
-❌ **NEVER** use border-radius > 16px on rectangular elements  
-✅ **Standard:** 12px for cards, buttons, inputs  
-✅ **Modal:** 16px maximum  
-✅ **Pills:** 9999px for badges/tags only
+❌ **NEVER** use borders alone to define card boundaries — use bg-fill contrast
+✅ **Bento tiles / feature cards:** `28px–32px` (`rounded-[28px]` or `rounded-[32px]`)
+✅ **Standard UI cards / widgets:** `16px` (`rounded-2xl`) — raised from v1 12px
+✅ **Dialogs / modals:** `20px` (`rounded-[20px]`)
+✅ **Buttons (standard):** `12px` (`rounded-xl`)
+✅ **Nav pills / badges:** `9999px` (`rounded-full`)
+✅ **Inputs:** `12px` (`rounded-xl`)
 
 ```css
-/* WRONG */
-.rounded-3xl  /* 24px - too inflated */
-.rounded-2xl  /* 16px - only for dialogs */
+/* WRONG — old dashboard style, too tight */
+.rounded-xl   /* 12px — now only for buttons/inputs */
 
-/* CORRECT */
-.rounded-xl   /* 12px - standard for cards/buttons/inputs */
-.rounded-full /* 9999px - badges/tags only */
+/* CORRECT — card/widget standard */
+.rounded-2xl  /* 16px */
+
+/* CORRECT — bento tile standard */
+.rounded-[28px] or .rounded-[32px]
 ```
 
 ### 4. Glassmorphism Abuse
-❌ **NEVER** apply glassmorphism to content cards, form panels, or widgets  
+❌ **NEVER** apply glassmorphism to content cards, bento tiles, or widgets
 ✅ **ONLY** use glass treatment for: Header, Sidebar, Modal Overlays
 
-```css
-/* WRONG - Don't use on content cards */
-.backdrop-blur-xl
-.bg-white/10
-
-/* CORRECT - Only on header/sidebar/modals */
-.header { backdrop-blur-2xl; background: rgba(255,255,255,0.7); }
-```
-
 ### 5. Icon Library Violations
-❌ **NEVER** use Bootstrap Icons (`bi bi-*`)  
-❌ **NEVER** mix icon libraries  
-✅ **ALWAYS** use Lucide React icons exclusively
+❌ **NEVER** use Bootstrap Icons (`bi bi-*`)
+✅ **ALWAYS** use Lucide React exclusively
 
-```tsx
-/* WRONG */
-<i className="bi bi-heart"></i>
+### 6. Border-Defined Cards
+❌ **NEVER** use a thin border as the only visual separator for a bento tile
+✅ **ALWAYS** define tile boundaries through background fill contrast:
+- Dark tile: `bg-[#1d1d1f]`
+- Color tile: gradient `from-[...] to-[...]`
+- White tile on gray section: `bg-white ring-1 ring-black/[0.06]`
 
-/* CORRECT */
-import { Heart } from 'lucide-react'
-<Heart className="w-5 h-5" />
-```
+### 7. Typography Anti-Patterns
+❌ **NEVER** use `text-transform: uppercase` for body or heading copy
+❌ **NEVER** use font sizes below `text-sm` (13px) for interactive labels
+❌ **NEVER** use display heading sizes inside dense data tables or compact widgets
+✅ **Sentence case** for all copy
 
 ---
 
 ## 🎨 Design Tokens
 
-### Colors
+### Colors — Two-Layer System
 
-#### Primary
-- **Sky Signal:** `#0ea5e9` - Primary actions, active states, focus rings
-- **Deep Sky:** `#0369a1` - Hover/pressed states
-- **Light Sky:** `#38bdf8` - Progress indicators (rare)
+#### Layer 1: Apple Display Surfaces (showcase pages, heroes, bento tiles, section headers)
+| Token | Value | Usage |
+|---|---|---|
+| `--apple-ink` | `#1d1d1f` | Hero headings, tile headings |
+| `--apple-muted` | `#6e6e73` | Body copy, descriptions, subheadings |
+| `--apple-bg` | `#f5f5f7` | Section alternation background |
+| `--apple-surface` | `#ffffff` | White tile on gray section |
+| `--apple-blue` | `#0071e3` | CTA buttons, primary actions |
+| `--apple-blue-hover` | `#0077ed` | CTA hover state |
 
-#### Secondary
-- **True Blue:** `#2563eb` - Gradient endpoint only (primary button)
+#### Layer 2: ART UI Controls (inputs, nav, data widgets, system components)
+| Token | Value | Usage |
+|---|---|---|
+| `--art-primary` | `#0ea5e9` | Focus rings, active states, links |
+| `--art-primary-dark` | `#0369a1` | Hover on sky-blue controls |
+| `--art-ink` | `#0f172a` | Body text in data-dense contexts |
+| `--art-muted` | `#475569` | Secondary labels, metadata |
+| `--art-shell` | `#f5f5f7` | Page background (aligned with Apple bg) |
 
-#### Neutrals (Slate Family Only)
-- **Ink:** `#0f172a` - Body text, headings (7:1 contrast)
-- **Muted:** `#475569` - Secondary text, metadata (4.6:1 contrast)
-- **Shell:** `#f6f8fb` - Page background base
-- **Surface:** `#ffffff` - Cards, inputs, elevated surfaces
-- **Border Subtle:** `#e2e8f0` - Dividers, card borders
-- **Border Strong:** `#cbd5e1` - Active input borders
+#### Semantic (unchanged)
+| Token | Value |
+|---|---|
+| `--art-success` | `#22c55e` |
+| `--art-error` | `#ef4444` |
+| `--art-warning` | `#f59e0b` |
+| `--art-info` | `#3b82f6` |
 
-#### Semantic
-- **Success:** `#22c55e` - Confirmations, positive states
-- **Error:** `#ef4444` - Validation errors, destructive actions
-- **Warning:** `#f59e0b` - Caution states
-- **Info:** `#3b82f6` - Informational messages
+#### Bento Tile Palette — Approved Gradients
+These are the only approved color-field backgrounds for bento tiles. Do not invent new tile colors outside this set.
 
-### Typography
+| Name | Gradient | Usage |
+|---|---|---|
+| Indigo-Violet | `from-[#4776e6] to-[#8e54e9]` | Calendar, featured content |
+| Cobalt-Navy | `from-[#0575e6] to-[#021b79]` | Security, system |
+| Orange-Red | `from-[#f09819] to-[#ff512f]` | Energy, alerts, highlights |
+| Violet-Purple | `from-[#667eea] to-[#764ba2]` | Communication, messages |
+| Midnight | `bg-[#1d1d1f]` | Team, settings, dark feature |
+| White (ring) | `bg-white ring-1 ring-black/[0.06]` | Neutral content on gray section |
 
-**Font Family:** Anuphan (primary), Inter (fallback), system-ui, sans-serif
+---
 
-#### Scale (Fixed rem, 1.2 ratio)
-- **Display:** 700 weight, 2rem (32px), 1.25 line-height - Page titles only
-- **Headline:** 700 weight, 1.75rem (28px), 1.25 line-height - Section headings
-- **Title:** 600 weight, 1.25rem (20px), 1.35 line-height - Card titles, widget headers
-- **Body:** 400 weight, 1rem (16px), 1.65 line-height - Primary content
-- **Label:** 600 weight, 0.875rem (14px), 1.5 line-height - Form labels, metadata
+## 🔤 Typography
 
-#### Rules
-- **NO UPPERCASE:** Use sentence case with semibold weight, never text-transform: uppercase
-- **Text Wrap:** `balance` for headings, `pretty` for body paragraphs
-- **Max Line Length:** 75ch for body text
+**Font Stack:** `Anuphan, SF Pro Display, Inter, system-ui, sans-serif`
+- Anuphan covers Thai script
+- SF Pro Display is a system fallback on Apple devices (no license needed)
+- Inter covers Latin on non-Apple systems
 
-### Border Radius
-- **Standard:** `12px` - Cards, buttons, inputs
-- **Dialog:** `16px` - Modals only
-- **Badge:** `9999px` - Pills and tags
-- **MAX:** Never exceed 16px on rectangular elements
+### Scale
 
-### Spacing Scale
-- **xs:** 4px
-- **sm:** 8px
-- **md:** 12px
-- **lg:** 16px
-- **xl:** 20px
-- **2xl:** 24px
-- **3xl:** 32px
-- **4xl:** 40px
+| Role | Size | Weight | Tracking | Line Height | Context |
+|---|---|---|---|---|---|
+| **Hero Display** | 56–68px (responsive) | 800 (extrabold) | `-0.03em` | 1.05 | Page hero h1 only |
+| **Section Display** | 40–48px | 800 | `-0.025em` | 1.08 | Section h2 headings |
+| **Tile Heading** | 28–32px | 800 | `-0.02em` | 1.1 | Bento tile titles |
+| **Card Title** | 20–24px | 700 | `-0.015em` | 1.2 | Feature card titles |
+| **UI Label** | 15px | 600 | `-0.01em` | 1.3 | Widget headers, nav |
+| **Body** | 17–19px | 400 | `0` | 1.6 | Paragraph copy |
+| **Caption** | 13px | 500 | `0` | 1.4 | Metadata, timestamps |
+| **Data** | 13–14px | 400–500 | `0` | 1.4 | Tables, dense widgets |
 
-### Shadows (Ambient Tonal Layering)
-- **Glass Small:** `0 2px 8px rgba(15,23,42,0.04), 0 1px 3px rgba(15,23,42,0.02)` - Inputs
-- **Glass Medium:** `0 8px 32px rgba(15,23,42,0.06), 0 2px 8px rgba(15,23,42,0.03)` - Cards at rest
-- **Glass Large:** `0 16px 48px rgba(15,23,42,0.08), 0 4px 16px rgba(15,23,42,0.04)` - Hover state, dropdowns
-- **Glass XL:** `0 24px 64px rgba(15,23,42,0.10), 0 8px 24px rgba(15,23,42,0.05)` - Modals
+### Rules
+- `text-balance` on all headings
+- `max-w-[60ch]` for body paragraphs on showcase pages, `75ch` for data-dense pages
+- No `text-transform: uppercase` — use `font-semibold` weight instead
+- Hero h1 uses `font-extrabold tracking-[-0.03em]` — this is the showcase standard
+
+---
+
+## 📐 Border Radius Reference
+
+| Context | Value | Tailwind |
+|---|---|---|
+| Bento tile (large) | 32px | `rounded-[32px]` |
+| Bento tile (small) | 28px | `rounded-[28px]` |
+| UI card / widget | 16px | `rounded-2xl` |
+| Dialog / modal | 20px | `rounded-[20px]` |
+| Icon badge in tile | 18px | `rounded-[18px]` |
+| Icon badge in card | 14px | `rounded-[14px]` |
+| Button (standard) | 12px | `rounded-xl` |
+| Button (CTA / pill) | 9999px | `rounded-full` |
+| Input | 12px | `rounded-xl` |
+| Badge / tag | 9999px | `rounded-full` |
+
+---
+
+## 📏 Spacing
+
+Section padding on showcase pages uses generous vertical rhythm:
+- **Hero section:** `py-24` (96px top/bottom)
+- **Grid/bento section:** `py-28` (112px)
+- **CTA / closing section:** `py-32` (128px)
+- **Tile internal padding:** `p-8` to `p-10` (32–40px)
+- **Card internal padding:** `p-5` to `p-6` (20–24px)
+- **Max content width:** `max-w-[1024px] mx-auto`
 
 ---
 
 ## 🧩 Component Rules
 
+### Bento Tiles
+- Background defines the tile — no borders on colored tiles
+- White tiles on gray sections: `bg-white ring-1 ring-black/[0.06]`
+- Icon at top-left in a `rounded-[16–18px]` badge with `bg-white/20 backdrop-blur-md` on color tiles, `bg-[#f5f5f7]` on white tiles
+- Heading and body copy at **bottom** of tile — tiles breathe upward
+- Min height: `320px` small tiles, `420px` large hero tiles
+- Hover: `-translate-y-1 transition-all duration-200` (subtle lift)
+
 ### Buttons
-- **Min Height:** 48px (touch target)
-- **Radius:** 12px (standard)
-- **Primary:** Sky Signal → True Blue gradient, white text, shadow
-- **Secondary:** White bg, subtle border, muted text
-- **Focus Ring:** 2.5px solid primary, 3px offset, 7:1 contrast
+- **CTA Primary:** `rounded-full bg-[#0071e3] text-white hover:bg-[#0077ed]` — Apple blue pill
+- **Standard UI:** `rounded-xl` with sky gradient — existing `art-primary-button`
+- **Nav pill active:** `rounded-full bg-[#1d1d1f] text-white`
+- **Nav pill default:** `rounded-full text-[#424245] hover:bg-black/[0.06]`
+- **Min touch target:** 48×48px (all interactive elements)
 
-### Cards
-- **Background:** Pure white `#ffffff`
-- **Radius:** 12px
-- **Shadow:** Glass Medium at rest, Glass Large on hover (interactive only)
-- **Border:** None by default, optional 1px `border-subtle`
-- **Padding:** 20-24px for content, 16px for compact
+### Navigation (Header)
+- `sticky top-0 z-[100]`
+- Background: `bg-[rgba(255,255,255,0.82)] backdrop-blur-2xl`
+- Border: `border-b border-black/[0.08]`
+- Height: `h-[52px]`
+- Max width: `max-w-[1024px] mx-auto`
 
-### Inputs
-- **Min Height:** 52px
-- **Radius:** 12px
-- **Border:** 1.5px solid `border-strong`
-- **Focus:** Primary border + 4px primary glow ring
-- **Placeholder:** slate-400, font-weight 500
+### Cards (Data Widgets)
+- `rounded-2xl` (16px) — raised from v1's 12px
+- `bg-white ring-1 ring-black/[0.06]` — no explicit border, ring instead
+- Hover: `-translate-y-0.5 shadow-[0_8px_24px_rgba(15,23,42,0.08)]`
+- Padding: `p-5` (20px)
 
-### Navigation
-- **Sidebar:** 256px fixed, white bg, section labels 11px bold
-- **Nav Items:** 44px min-height, 12px radius, sky-500/10% active
-- **Header:** Sticky, glass treatment (backdrop-blur 24px)
+### Dialogs (Radix UI)
+All modal dialogs use `components/ui/Dialog.tsx`.
 
-### Widgets
-- **Container:** Standard card (white, 12px radius, Glass Medium)
-- **Header:** Icon badge + title + controls
-- **Resize:** Three sizes (full, 2/3, 1/2)
-
-### Dialogs (Radix UI Primitives)
-
-All modal dialogs **must** use `components/ui/Dialog.tsx` which wraps `@radix-ui/react-dialog`.
-
-✅ **CORRECT** — declarative subcomponent API:
 ```tsx
 <Dialog open={open} onOpenChange={setOpen}>
   <DialogContent className="!max-w-lg">
@@ -206,104 +230,95 @@ All modal dialogs **must** use `components/ui/Dialog.tsx` which wraps `@radix-ui
 </Dialog>
 ```
 
-❌ **WRONG** — never pass `title`/`description` as props on `<DialogContent>`:
-```tsx
-<DialogContent title="ชื่อ" description="คำอธิบาย">
-```
-
-Dialog rules:
-- Max radius: `rounded-xl` (16px) — matches the global maximum
-- Glassmorphism on **overlay only** — never on the content panel
-- Built-in close button (X) — do not add a duplicate
-- Focus trap, ESC key, and focus restoration are automatic via Radix primitives (WCAG AAA)
+- Max radius: `rounded-[20px]` (updated from 16px)
+- Glassmorphism on **overlay only** — never on content panel
+- Built-in close button — do not add duplicate
+- For dialogs with no visible header: use `<DialogTitleSR>` and `<DialogDescriptionSR>` sr-only variants
 
 ---
 
 ## ⚡ Motion & Interaction
 
 ### Timing
-- **Fast:** 150ms - Color shifts, opacity changes
-- **Standard:** 200ms - Transforms, shadow transitions
-- **Slow:** 250ms - Complex animations
+| Speed | Duration | Usage |
+|---|---|---|
+| Fast | 150ms | Color shifts, opacity |
+| Standard | 200ms | Transforms, shadows, hover lifts |
+| Slow | 250ms | Complex reveals |
 
-### Easing
-- **Default:** `cubic-bezier(0.4, 0, 0.2, 1)` - Exponential ease-out
-- **NEVER:** bounce, elastic, wobble
+- Easing: `cubic-bezier(0.4, 0, 0.2, 1)` always
+- Hover lift on tiles/cards: `-translate-y-0.5` to `-translate-y-1`
+- Active: return to base plane (no lift)
+- **NEVER:** bounce, elastic, wobble, orchestrated page-load sequences
 
 ### Reduced Motion
-- **ALWAYS** provide `prefers-reduced-motion` alternatives
-- Default to crossfade or instant transition
+Always provide `prefers-reduced-motion` override:
+```css
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    transition-duration: 1ms !important;
+    animation-duration: 1ms !important;
+  }
+}
+```
 
 ---
 
-## ♿ Accessibility (WCAG AAA)
+## ♿ Accessibility (WCAG AA minimum, AAA for body text)
 
-### Contrast
-- **Body Text:** ≥7:1 (Ink on white)
-- **Secondary Text:** ≥4.5:1 (Muted on white)
-- **Interactive:** ≥3:1 for UI components
-
-### Touch Targets
-- **Minimum:** 48px height × 48px width for all interactive elements
-
-### Focus Indicators
-- **Ring:** 2.5px solid primary, 3px offset
-- **Contrast:** 7:1 minimum
-
-### Screen Reader
-- Use semantic HTML
-- Provide `aria-label` for icon-only buttons
-- Maintain logical tab order
+| Rule | Requirement |
+|---|---|
+| Body text contrast | ≥7:1 (`#1d1d1f` or `#0f172a` on white) |
+| Secondary text | ≥4.5:1 (`#6e6e73` on white passes AA, not AAA — acceptable for non-body) |
+| Interactive components | ≥3:1 |
+| Touch targets | 48×48px minimum |
+| Focus ring | `2.5px solid #0ea5e9`, `3px offset` |
+| Icon-only buttons | `aria-label` required |
+| Toggle/segmented | `aria-pressed` required |
+| Progress bars | `role="progressbar"` with `aria-valuenow/min/max` |
+| Nav active | `aria-current="page"` |
+| Dialogs | Focus trap + ESC + restoration via Radix (automatic) |
 
 ---
 
 ## 🌍 Localization
 
-### Language
-- **Primary:** Thai language throughout
-- **Date Format:** Buddhist calendar (year + 543)
-
-### Typography
-- Anuphan supports Thai script rendering
-- Inter fallback for Latin when needed
+- **Primary language:** Thai throughout
+- **Date format:** Buddhist calendar (CE + 543)
+- **Font:** Anuphan handles Thai script rendering
 
 ---
 
 ## 📋 Pre-Delivery Checklist
 
-Before committing any component:
-
-- [ ] NO `gray-*` classes (strictly `slate-*`)
-- [ ] NO `rounded-2xl` or larger on rectangles (max 16px)
-- [ ] NO dark mode queries (`@media (prefers-color-scheme: dark)`)
-- [ ] NO glassmorphism on content cards (only header/sidebar/modals)
-- [ ] NO Bootstrap icons (`bi bi-*`), only Lucide React
-- [ ] NO `title`/`description` props on `<DialogContent>` — use `<DialogTitle>`/`<DialogDescription>` subcomponents
-- [ ] ALL buttons/inputs ≥48px min-height
+- [ ] NO `gray-*` classes (use `slate-*` for UI, `#1d1d1f`/`#6e6e73`/`#f5f5f7` for Apple surfaces)
+- [ ] NO dark mode queries
+- [ ] NO glassmorphism on tiles or cards (header/sidebar/modals only)
+- [ ] NO Bootstrap icons — Lucide React only
+- [ ] NO `title`/`description` props on `<DialogContent>` — use subcomponents
+- [ ] NO `rounded-xl` on bento tiles — min `rounded-[28px]`
+- [ ] Bento tile boundaries defined by bg-fill, NOT borders alone
+- [ ] ALL buttons/inputs ≥48px touch target
 - [ ] ALL focus states have visible 2.5px ring
-- [ ] ALL text meets WCAG AAA contrast (7:1 body, 4.5:1 secondary)
+- [ ] ALL text meets contrast requirements
 - [ ] ALL animations respect `prefers-reduced-motion`
-- [ ] ALL interactive elements have proper touch targets
-- [ ] ALL `useEffect` hooks declare complete dependency arrays (no `react-hooks/exhaustive-deps` warnings)
-- [ ] ALL functions used inside `useEffect` are wrapped in `useCallback` where needed
+- [ ] ALL icon-only buttons have `aria-label`
+- [ ] ALL `useEffect` hooks declare complete dependency arrays
 
 ---
 
 ## 🔄 Version History
 
 | Version | Date | Changes |
-|---------|------|---------|
-| 1.1 | 2026-07-02 | Add Dialog (Radix UI) component rules; add `react-hooks` lint compliance note |
-| 1.0 | 2026-07-02 | Initial MASTER.md with strict anti-patterns |
+|---|---|---|
+| 2.0 | 2026-07-02 | Apple showcase DNA adopted as global standard. New radius scale, two-layer color system, display typography, bento tile rules, Apple nav spec, CTA button spec |
+| 1.1 | 2026-07-02 | Add Dialog (Radix UI) rules; add react-hooks lint note |
+| 1.0 | 2026-07-02 | Initial release |
 
 ---
 
 ## 📚 References
 
-- Full Design Principles: `docs/design/design-principles.md`
-- Liquid Glass UI: `docs/design/liquid-glass-ui.md`
-- Accessibility Standards: `docs/design/accessibility.md`
-
----
-
-**Remember:** This is the **Global Source of Truth**. Override only with page-specific rules in `pages/[page].md`. When in doubt, enforce these anti-patterns strictly.
+- Apple showcase page implementation: `frontend/src/app/apple-style/page.tsx`
+- Page overrides: `design-system/art-workspace/pages/[page].md`
+- CSS tokens: `frontend/src/app/globals.css`

@@ -6,14 +6,38 @@
   /* Enforce light mode (anti-reference: no dark mode) */
   color-scheme: light;
 
-  /* Liquid Glass Color System */
+  /* ── Apple Showcase Tokens (v2.0) ──────────────────────────────────────────
+     Use these for bento tiles, hero sections, display headings, CTA buttons,
+     and page/section backgrounds on showcase-style surfaces.
+  ─────────────────────────────────────────────────────────────────────────── */
+  --apple-ink: #1d1d1f;          /* Hero/tile headings */
+  --apple-muted: #6e6e73;        /* Body copy, descriptions */
+  --apple-bg: #f5f5f7;           /* Section alternation background */
+  --apple-surface: #ffffff;      /* White tile on gray section */
+  --apple-blue: #0071e3;         /* CTA primary button */
+  --apple-blue-hover: #0077ed;   /* CTA hover */
+  --apple-blue-shadow: rgba(0, 113, 227, 0.35); /* CTA button glow */
+
+  /* Apple Bento Tile Radius */
+  --art-radius-tile: 32px;       /* Large bento tiles */
+  --art-radius-tile-sm: 28px;    /* Small bento tiles */
+  --art-radius-tile-icon: 18px;  /* Icon badge inside color tile */
+  --art-radius-tile-icon-sm: 14px; /* Icon badge inside white card */
+  --art-radius-dialog: 20px;     /* Dialogs/modals (updated from 16px) */
+
+  /* Apple Nav */
+  --apple-nav-bg: rgba(255, 255, 255, 0.82);
+  --apple-nav-border: rgba(0, 0, 0, 0.08);
+  --apple-nav-height: 52px;
+
+  /* ── ART UI Control Tokens (unchanged — for inputs, widgets, data) ─────── */
   --art-primary: #0ea5e9;
   --art-primary-dark: #0369a1;
   --art-primary-light: #38bdf8;
   --art-blue: #2563eb;
   --art-ink: #0f172a;
   --art-muted: #475569;
-  --art-shell: #f6f8fb;
+  --art-shell: #f5f5f7;          /* Updated: aligned with --apple-bg */
   
   /* Liquid Glass Borders */
   --art-border: rgba(255, 255, 255, 0.25);
@@ -25,12 +49,11 @@
     radial-gradient(circle at 18% 12%, rgba(125, 211, 252, 0.5), transparent 34%),
     linear-gradient(145deg, #0f4c81 0%, #1675b9 38%, #4f8edb 68%, #6aa7e8 100%);
   
-  /* Liquid Glass Background */
+  /* Liquid Glass Background — updated to Apple #f5f5f7 base */
   --art-page-bg:
-    radial-gradient(ellipse at top right, rgba(14, 165, 233, 0.08), transparent 50%),
-    radial-gradient(ellipse at bottom left, rgba(99, 102, 241, 0.06), transparent 50%),
-    radial-gradient(ellipse at top left, rgba(236, 72, 153, 0.04), transparent 50%),
-    linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+    radial-gradient(ellipse at top right, rgba(14, 165, 233, 0.06), transparent 50%),
+    radial-gradient(ellipse at bottom left, rgba(99, 102, 241, 0.04), transparent 50%),
+    linear-gradient(180deg, #f5f5f7 0%, #f0f0f2 100%);
   
   /* Semantic Colors */
   --art-success: #22c55e;
@@ -38,11 +61,13 @@
   --art-warning: #f59e0b;
   --art-info: #3b82f6;
   
-  /* Refined Radii - The Clarity Cockpit */
-  --art-radius-xl: 16px;
-  --art-radius-lg: 12px;
-  --art-radius-md: 12px;
-  --art-radius-sm: 10px;
+  /* Refined Radii - Apple Showcase DNA (v2.0)
+     Tile radii live in --art-radius-tile* above.
+     These govern UI controls: buttons, inputs, cards, widgets. */
+  --art-radius-xl: 16px;   /* UI cards / widgets (raised from 12px) */
+  --art-radius-lg: 16px;   /* UI cards / widgets */
+  --art-radius-md: 12px;   /* Buttons, inputs */
+  --art-radius-sm: 12px;   /* Buttons, inputs */
 
   /* Spacing scale (use across pages/components) */
   --space-1: 4px;
@@ -94,6 +119,165 @@
   --line-snug: 1.35;
   --line-normal: 1.5;
   --line-relaxed: 1.65;
+}
+
+/* ═══════════════════════════════════════════════════════
+   APPLE SHOWCASE UTILITIES (v2.0)
+   Used by bento-tile pages, hero sections, product showcases.
+   Do NOT apply these classes inside dense data widgets.
+   ═══════════════════════════════════════════════════════ */
+
+/* Bento tile base — use as wrapper for all color-field tiles */
+.apple-tile {
+  overflow: hidden;
+  border-radius: var(--art-radius-tile);
+  transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.apple-tile:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
+}
+
+/* Display heading — hero h1 style */
+.apple-heading-hero {
+  font-family: Anuphan, 'SF Pro Display', Inter, system-ui, sans-serif;
+  font-size: clamp(3rem, 6vw + 1rem, 4.25rem); /* 48–68px */
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  text-wrap: balance;
+  color: var(--apple-ink);
+}
+
+/* Section display heading — h2 */
+.apple-heading-section {
+  font-family: Anuphan, 'SF Pro Display', Inter, system-ui, sans-serif;
+  font-size: clamp(2.5rem, 4vw + 1rem, 3rem); /* 40–48px */
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  line-height: 1.08;
+  text-wrap: balance;
+  color: var(--apple-ink);
+}
+
+/* Tile heading — inside bento tile */
+.apple-heading-tile {
+  font-family: Anuphan, 'SF Pro Display', Inter, system-ui, sans-serif;
+  font-size: clamp(1.75rem, 2vw + 1rem, 2rem); /* 28–32px */
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  text-wrap: balance;
+}
+
+/* Body copy for showcase pages */
+.apple-body {
+  font-family: Anuphan, Inter, system-ui, sans-serif;
+  font-size: clamp(1.0625rem, 0.5vw + 0.9rem, 1.1875rem); /* 17–19px */
+  font-weight: 400;
+  line-height: 1.6;
+  color: var(--apple-muted);
+}
+
+/* CTA primary pill button */
+.apple-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 9999px;
+  background: var(--apple-blue);
+  color: white;
+  font-family: Anuphan, Inter, system-ui, sans-serif;
+  font-size: 1.0625rem; /* 17px */
+  font-weight: 600;
+  padding: 0.75rem 1.75rem;
+  min-height: 48px;
+  border: none;
+  cursor: pointer;
+  transition: background-color 200ms cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 200ms cubic-bezier(0.4, 0, 0.2, 1),
+              transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.apple-btn-primary:hover:not(:disabled) {
+  background: var(--apple-blue-hover);
+  box-shadow: 0 4px 20px var(--apple-blue-shadow);
+}
+
+.apple-btn-primary:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.apple-btn-primary:focus-visible {
+  outline: 2px solid var(--apple-blue);
+  outline-offset: 2px;
+}
+
+/* CTA ghost pill button */
+.apple-btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  border-radius: 9999px;
+  background: transparent;
+  color: var(--apple-blue);
+  font-family: Anuphan, Inter, system-ui, sans-serif;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  padding: 0.75rem 1.75rem;
+  min-height: 48px;
+  border: none;
+  cursor: pointer;
+  transition: background-color 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.apple-btn-ghost:hover:not(:disabled) {
+  background: var(--apple-bg);
+}
+
+.apple-btn-ghost:focus-visible {
+  outline: 2px solid var(--apple-blue);
+  outline-offset: 2px;
+}
+
+/* Apple nav — sticky translucent */
+.apple-nav {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+  height: var(--apple-nav-height);
+  background: var(--apple-nav-bg);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-bottom: 1px solid var(--apple-nav-border);
+}
+
+/* Icon badge inside a color tile */
+.apple-tile-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--art-radius-tile-icon);
+  background: rgba(255, 255, 255, 0.20);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* Icon badge inside a white card */
+.apple-card-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--art-radius-tile-icon-sm);
+  background: var(--apple-bg);
 }
 
 /* Theme transition (applied via class, not globally) */
