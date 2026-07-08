@@ -267,8 +267,8 @@ export default function ProfilePage() {
 
   if (!user) {
     return (
-      <div className="min-h-[100dvh] flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-500" />
+      <div className="flex min-h-[100dvh] items-center justify-center bg-[#f5f5f7]">
+        <div className="h-11 w-11 animate-spin rounded-full border-[3px] border-[#f5f5f7] border-t-[#0071e3]" />
       </div>
     )
   }

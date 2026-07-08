@@ -195,7 +195,7 @@ export default function OilPriceWidget({
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
             {/* Icon badge */}
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] bg-[#f5f5f7]">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] bg-[#f5f5f7]">
               <Fuel size={18} className="text-[#1d1d1f]" aria-hidden="true" />
             </div>
 

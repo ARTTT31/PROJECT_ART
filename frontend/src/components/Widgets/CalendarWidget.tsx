@@ -31,7 +31,7 @@ export default function CalendarWidget({
       }`}>
         <div className="flex min-w-0 items-center gap-3">
           {/* Icon badge */}
-          <div className={`flex shrink-0 items-center justify-center rounded-[10px] bg-[#f5f5f7] ${
+          <div className={`flex shrink-0 items-center justify-center rounded-[14px] bg-[#f5f5f7] ${
             width === 2 ? 'h-8 w-8' : 'h-10 w-10'
           }`}>
             <Calendar

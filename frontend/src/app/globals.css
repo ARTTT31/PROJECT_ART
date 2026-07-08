@@ -470,7 +470,7 @@ input[type="email"]::placeholder,
 input[type="password"]::placeholder,
 input[type="search"]::placeholder,
 textarea::placeholder {
-  color: #94a3b8;
+  color: #6b7280;
   font-weight: 500;
 }
 
@@ -526,7 +526,7 @@ select:disabled {
 }
 
 .art-input::placeholder {
-  color: #94a3b8;
+  color: #6b7280;
   font-weight: 500;
 }
 

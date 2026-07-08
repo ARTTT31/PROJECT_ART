@@ -81,9 +81,9 @@ export default function CameraPage() {
                   <div className="absolute inset-0 flex flex-col justify-between p-4">
                     {/* Top bar */}
                     <div className="flex items-center justify-between">
-                      <span className="flex items-center gap-2 rounded-full bg-red-600/90 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-white backdrop-blur-sm">
+                      <span className="flex items-center gap-2 rounded-full bg-red-600/90 px-3 py-1 text-[11px] font-bold text-white backdrop-blur-sm">
                         <span className="h-1.5 w-1.5 animate-ping rounded-full bg-white" aria-hidden="true" />
-                        Live
+                        สด
                       </span>
                       <span className="rounded-full bg-black/60 px-3 py-1 text-[11px] font-semibold text-white backdrop-blur-sm">
                         FPS: {active.fps} &nbsp;|&nbsp; {active.resolution}
@@ -130,15 +130,15 @@ export default function CameraPage() {
                 สถานะกล้องทั้งหมด
               </h2>
 
-              <div className="flex flex-col gap-2" role="list">
+              <ul className="flex flex-col gap-2" role="list">
                 {streams.map((cam) => (
+                  <li key={cam.id}>
                   <button
-                    key={cam.id}
                     onClick={() => setActiveCamera(cam.id)}
-                    role="listitem"
                     aria-pressed={activeCamera === cam.id}
+                    aria-label={`${cam.name} — ${cam.status === 'online' ? 'ออนไลน์' : 'ออฟไลน์'}`}
                     className={[
-                      'flex items-center justify-between rounded-xl p-3 text-left transition-all duration-150',
+                      'flex w-full items-center justify-between rounded-xl p-3 text-left transition-all duration-150',
                       'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3] focus-visible:ring-offset-1',
                       activeCamera === cam.id
                         ? 'bg-[#0071e3]/[0.07] ring-1 ring-[#0071e3]/25 shadow-[0_2px_8px_rgba(0,113,227,0.08)]'
@@ -170,16 +170,17 @@ export default function CameraPage() {
 
                     {/* Status pill */}
                     <span className={[
-                      'ml-2 shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase',
+                      'ml-2 shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold',
                       cam.status === 'online'
                         ? 'bg-emerald-100 text-emerald-700'
                         : 'bg-rose-100 text-rose-600',
                     ].join(' ')}>
-                      {cam.status === 'online' ? 'Online' : 'Offline'}
+                      {cam.status === 'online' ? 'ออนไลน์' : 'ออฟไลน์'}
                     </span>
                   </button>
+                  </li>
                 ))}
-              </div>
+              </ul>
             </div>
           </div>
         </div>

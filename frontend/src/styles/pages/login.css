@@ -27,7 +27,7 @@
   overflow: visible;
   display: grid;
   grid-template-columns: 1.05fr 0.95fr;
-  border-radius: 28px;
+  border-radius: 32px;
   background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(28px) saturate(180%);
   -webkit-backdrop-filter: blur(28px) saturate(180%);
@@ -51,7 +51,7 @@
   min-height: min(580px, calc(100dvh - 48px));
   overflow: hidden;
   color: white;
-  border-radius: 26px 0 0 26px; /* Prevents background bleed on rounded corners */
+  border-radius: 30px 0 0 30px; /* Prevents background bleed on rounded corners */
   background:
     radial-gradient(circle at 82% 10%, rgba(255, 255, 255, 0.38), transparent 28%),
     radial-gradient(circle at 18% 12%, rgba(125, 211, 252, 0.52), transparent 34%),
@@ -164,7 +164,7 @@
   flex-direction: column;
   justify-content: center;
   padding: clamp(32px, 5vw, 52px);
-  border-radius: 0 26px 26px 0; /* Prevents background bleed on rounded corners */
+  border-radius: 0 30px 30px 0; /* Prevents background bleed on rounded corners */
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, transparent 100%);
 }
 
@@ -209,7 +209,7 @@
   align-items: center;
   gap: 12px;
   min-height: 54px;
-  border-radius: 14px; /* Rounder but restrained for modern layout */
+  border-radius: 12px; /* Rounder but restrained for modern layout */
   border: 1.5px solid rgba(203, 213, 225, 0.5);
   background: rgba(248, 250, 252, 0.85);
   backdrop-filter: blur(8px) saturate(180%);
@@ -242,7 +242,7 @@
 }
 
 .login-input-wrap input::placeholder {
-  color: #94a3b8;
+  color: #6b7280;
   font-weight: 500;
 }
 
@@ -420,7 +420,7 @@
 .login-submit {
   min-height: 56px;
   border: 1px solid rgba(14, 165, 233, 0.55);
-  border-radius: 14px; /* Softer, aligned with input fields */
+  border-radius: 12px; /* Softer, aligned with input fields */
   background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%);
   color: white;
   display: inline-flex;
@@ -589,7 +589,7 @@
   width: 100%;
   min-height: 56px;
   padding: 8px 18px;
-  border-radius: 14px; /* Softer layout matching submit button */
+  border-radius: 12px; /* Softer layout matching submit button */
   border: 1px solid rgba(148, 163, 184, 0.34);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.96));

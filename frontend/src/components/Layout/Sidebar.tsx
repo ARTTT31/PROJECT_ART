@@ -81,7 +81,7 @@ export default function Sidebar({ isOpen, isCollapsed = false, onClose, user, on
             {menuItems.map((section) => (
               <div key={section.title}>
                 <div
-                  className="mb-2 px-3 text-[10px] font-bold tracking-widest uppercase"
+                  className="mb-2 px-3 text-[11px] font-semibold"
                   style={{ color: '#6e6e73' }}
                 >
                   {section.title}

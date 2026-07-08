@@ -232,7 +232,7 @@ export default function QRCodeWidget({
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
             {/* Dark icon badge — intentional for "code" identity */}
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] bg-[#1d1d1f]">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] bg-[#1d1d1f]">
               {format === 'qrcode'
                 ? <QrCode size={18} className="text-white" aria-hidden="true" />
                 : <Barcode size={18} className="text-white" aria-hidden="true" />}
