@@ -9,9 +9,7 @@ const SHAREPOINT_LIST_URL =
 export default function CalendarWidget({
   width = 3,
   onResize,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   selectedMonth: _selectedMonth,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   onMonthChange: _onMonthChange,
 }: {
   width?: number
