@@ -1,157 +1,97 @@
 # ART Workspace — Design System Master Document
 
-**Version:** 2.0
-**Last Updated:** 2026-07-02
-**Philosophy:** "Apple Showcase DNA" — Premium, spacious, typography-led product surfaces
+**Version:** 3.0 (Enterprise Transition)
+**Last Updated:** 2026-07-14
+**Philosophy:** "Enterprise Admin DNA" — Structured, clean, information-dense, data-driven, and blue accent-led (Inspired by Ant Design Pro).
 
 ---
 
 ## 🎯 Global Source of Truth
 
-This document defines the strict rules for **ART Workspace**. All components, pages, and features MUST adhere to these principles unless a specific page override exists in `design-system/art-workspace/pages/[page].md`.
+This document defines the strict rules for **ART Workspace**. All components, pages, and features MUST adhere to these principles unless a specific page override exists.
 
-**v2.0 shift:** The system moves from a dense dashboard aesthetic ("Clarity Cockpit") to an Apple-inspired product showcase aesthetic. Bento-grid containers, oversized display typography, color-field tiles, and generous whitespace are now the standard — not exceptions.
+**v3.0 shift:** The system moves from a spacious bento-grid display aesthetic ("Apple Showcase DNA") to a clean, structured, and information-dense enterprise admin interface. Clean white cards, light-grey backgrounds, sharp borders, compact spacing, and a focus-led blue theme are now the standard.
 
 ---
 
 ## ⛔ Strict Anti-Patterns (NEVER DO)
 
 ### 1. Color Family Violations
-❌ **NEVER** use the `gray-*` Tailwind palette
-✅ **ALWAYS** use the `slate-*` family for neutral UI text/borders
-✅ **ALWAYS** use `#1d1d1f` / `#6e6e73` / `#f5f5f7` for Apple-style surfaces and display copy
+❌ **NEVER** use dark gray or neon background colors for main layout panels.
+❌ **NEVER** use custom background gradients on basic UI elements or content cards (gradients are reserved for charts or alerts).
+✅ **ALWAYS** use the `#f0f2f5` background for page layouts.
+✅ **ALWAYS** use `#001529` for dark sidebar navigation.
+✅ **ALWAYS** use Ant Design standard text hierarchy:
+- Primary Text: `#000000e0` (85% opacity black for main text/labels)
+- Secondary Text: `#00000073` (45% opacity black for descriptions/metadata)
+- Disabled Text: `#00000040` (25% opacity black)
 
-```css
-/* WRONG */
-.text-gray-500 / .bg-gray-100
-
-/* CORRECT — neutral UI */
-.text-slate-500 / .bg-slate-100
-
-/* CORRECT — Apple display surfaces */
-color: #1d1d1f;        /* Apple Ink — headings */
-color: #6e6e73;        /* Apple Muted — body/description */
-background: #f5f5f7;   /* Apple Gray — section alternation */
-```
-
-### 2. Dark Mode Violations
-❌ **NEVER** implement dark mode
-❌ **NEVER** use `@media (prefers-color-scheme: dark)`
-✅ **ALWAYS** design for light mode only
+### 2. Spacing and Margin Over-sizing
+❌ **NEVER** use oversized padding like `py-24` or `py-32` on dashboards.
+❌ **NEVER** use massive display typography (> 36px) inside tables, forms, or widgets.
+✅ **ALWAYS** keep layouts compact and structured (e.g., standard layout padding `p-6` or `p-4`).
 
 ### 3. Border Radius Violations
-❌ **NEVER** use borders alone to define card boundaries — use bg-fill contrast
-✅ **Bento tiles / feature cards:** `28px–32px` (`rounded-[28px]` or `rounded-[32px]`)
-✅ **Standard UI cards / widgets:** `16px` (`rounded-2xl`) — raised from v1 12px
-✅ **Dialogs / modals:** `20px` (`rounded-[20px]`)
-✅ **Buttons (standard):** `12px` (`rounded-xl`)
-✅ **Nav pills / badges:** `9999px` (`rounded-full`)
-✅ **Inputs:** `12px` (`rounded-xl`)
+❌ **NEVER** use oversized border radius values like `28px`, `32px` or `rounded-[32px]` for widgets and panels.
+✅ **Standard Cards / Widgets:** `8px` (`rounded-lg`)
+✅ **Buttons / Inputs / Small controls:** `6px` (`rounded-md`)
+✅ **Dialogs / Modals:** `8px` (`rounded-lg`)
+✅ **Nav pills / badges:** `9999px` (`rounded-full` / pill badges)
 
-```css
-/* WRONG — old dashboard style, too tight */
-.rounded-xl   /* 12px — now only for buttons/inputs */
+### 4. Borderless Content Panels
+❌ **NEVER** leave card boundaries undefined or reliant solely on soft drop shadows.
+✅ **ALWAYS** use sharp, clean borders or rings: `border border-[#f0f0f0]` or `ring-1 ring-[#f0f0f0]` on white content surfaces.
 
-/* CORRECT — card/widget standard */
-.rounded-2xl  /* 16px */
-
-/* CORRECT — bento tile standard */
-.rounded-[28px] or .rounded-[32px]
-```
-
-### 4. Glassmorphism Abuse
-❌ **NEVER** apply glassmorphism to content cards, bento tiles, or widgets
-✅ **ONLY** use glass treatment for: Header, Sidebar, Modal Overlays
-
-### 5. Icon Library Violations
-❌ **NEVER** use Bootstrap Icons (`bi bi-*`)
-✅ **ALWAYS** use Lucide React exclusively
-
-### 6. Border-Defined Cards
-❌ **NEVER** use a thin border as the only visual separator for a bento tile
-✅ **ALWAYS** define tile boundaries through background fill contrast:
-- Dark tile: `bg-[#1d1d1f]`
-- Color tile: gradient `from-[...] to-[...]`
-- White tile on gray section: `bg-white ring-1 ring-black/[0.06]`
-
-### 7. Typography Anti-Patterns
-❌ **NEVER** use `text-transform: uppercase` for body or heading copy
-❌ **NEVER** use font sizes below `text-sm` (13px) for interactive labels
-❌ **NEVER** use display heading sizes inside dense data tables or compact widgets
-✅ **Sentence case** for all copy
+### 5. Floating / Detached Headers
+❌ **NEVER** use floating, glassmorphic headers.
+✅ **ALWAYS** use a solid, top-pinned white header with a thin bottom border: `bg-white border-b border-[#f0f0f0]`.
 
 ---
 
 ## 🎨 Design Tokens
 
-### Colors — Two-Layer System
+### Colors — Ant Design Scale
 
-#### Layer 1: Apple Display Surfaces (showcase pages, heroes, bento tiles, section headers)
+#### Layer 1: Global Theme & Accents
 | Token | Value | Usage |
 |---|---|---|
-| `--apple-ink` | `#1d1d1f` | Hero headings, tile headings |
-| `--apple-muted` | `#6e6e73` | Body copy, descriptions, subheadings |
-| `--apple-bg` | `#f5f5f7` | Section alternation background |
-| `--apple-surface` | `#ffffff` | White tile on gray section |
-| `--apple-blue` | `#0071e3` | CTA buttons, primary actions |
-| `--apple-blue-hover` | `#0077ed` | CTA hover state |
+| `--ant-primary` | `#1677ff` | Primary buttons, active states, link colors |
+| `--ant-primary-hover` | `#4096ff` | Hover states on primary controls |
+| `--ant-primary-active` | `#0958d9` | Active/Pressed states |
+| `--ant-bg-layout` | `#f0f2f5` | Main page background |
+| `--ant-bg-container` | `#ffffff` | Card, container, and widget backgrounds |
+| `--ant-border-color` | `#f0f0f0` | General divider and border color |
 
-#### Layer 2: ART UI Controls (inputs, nav, data widgets, system components)
+#### Layer 2: Text Colors (Dark on Light)
 | Token | Value | Usage |
 |---|---|---|
-| `--art-primary` | `#0ea5e9` | Focus rings, active states, links |
-| `--art-primary-dark` | `#0369a1` | Hover on sky-blue controls |
-| `--art-ink` | `#0f172a` | Body text in data-dense contexts |
-| `--art-muted` | `#475569` | Secondary labels, metadata |
-| `--art-shell` | `#f5f5f7` | Page background (aligned with Apple bg) |
+| `--ant-text-primary` | `rgba(0, 0, 0, 0.88)` | Primary headings, body copy, and form labels |
+| `--ant-text-secondary` | `rgba(0, 0, 0, 0.45)` | Secondary metadata, descriptions, subtexts |
+| `--ant-text-placeholder` | `rgba(0, 0, 0, 0.25)` | Form input placeholders |
 
-#### Semantic (unchanged)
-| Token | Value |
-|---|---|
-| `--art-success` | `#22c55e` |
-| `--art-error` | `#ef4444` |
-| `--art-warning` | `#f59e0b` |
-| `--art-info` | `#3b82f6` |
-
-#### Bento Tile Palette — Approved Gradients
-These are the only approved color-field backgrounds for bento tiles. Do not invent new tile colors outside this set.
-
-| Name | Gradient | Usage |
+#### Layer 3: Dark Sidebar Theme
+| Token | Value | Usage |
 |---|---|---|
-| Indigo-Violet | `from-[#4776e6] to-[#8e54e9]` | Calendar, featured content |
-| Cobalt-Navy | `from-[#0575e6] to-[#021b79]` | Security, system |
-| Orange-Red | `from-[#f09819] to-[#ff512f]` | Energy, alerts, highlights |
-| Violet-Purple | `from-[#667eea] to-[#764ba2]` | Communication, messages |
-| Midnight | `bg-[#1d1d1f]` | Team, settings, dark feature |
-| White (ring) | `bg-white ring-1 ring-black/[0.06]` | Neutral content on gray section |
+| `--ant-sidebar-bg` | `#001529` | Dark menu background |
+| `--ant-sidebar-text` | `rgba(255, 255, 255, 0.65)` | Unselected menu items |
+| `--ant-sidebar-active-bg` | `#1677ff` | Active menu item highlight background |
+| `--ant-sidebar-active-text` | `#ffffff` | Active menu item text color |
 
 ---
 
 ## 🔤 Typography
 
-**Font Stack:** `Anuphan, SF Pro Display, Inter, system-ui, sans-serif`
-- Anuphan covers Thai script
-- SF Pro Display is a system fallback on Apple devices (no license needed)
-- Inter covers Latin on non-Apple systems
+**Font Stack:** `Anuphan, Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif`
 
 ### Scale
 
-| Role | Size | Weight | Tracking | Line Height | Context |
-|---|---|---|---|---|---|
-| **Hero Display** | 56–68px (responsive) | 800 (extrabold) | `-0.03em` | 1.05 | Page hero h1 only |
-| **Section Display** | 40–48px | 800 | `-0.025em` | 1.08 | Section h2 headings |
-| **Tile Heading** | 28–32px | 800 | `-0.02em` | 1.1 | Bento tile titles |
-| **Card Title** | 20–24px | 700 | `-0.015em` | 1.2 | Feature card titles |
-| **UI Label** | 15px | 600 | `-0.01em` | 1.3 | Widget headers, nav |
-| **Body** | 17–19px | 400 | `0` | 1.6 | Paragraph copy |
-| **Caption** | 13px | 500 | `0` | 1.4 | Metadata, timestamps |
-| **Data** | 13–14px | 400–500 | `0` | 1.4 | Tables, dense widgets |
-
-### Rules
-- `text-balance` on all headings
-- `max-w-[60ch]` for body paragraphs on showcase pages, `75ch` for data-dense pages
-- No `text-transform: uppercase` — use `font-semibold` weight instead
-- Hero h1 uses `font-extrabold tracking-[-0.03em]` — this is the showcase standard
+| Role | Size | Weight | Line Height | Context |
+|---|---|---|---|---|
+| **Page Heading** | 20px (`text-xl`) | 600 (semibold) | 1.4 | Page title / Page header |
+| **Section Title** | 16px (`text-base`) | 600 | 1.5 | Widget headers, card titles |
+| **UI Label** | 14px (`text-sm`) | 500/600 | 1.4 | Form labels, navigation items |
+| **Body Text** | 14px (`text-sm`) | 400 | 1.5 | Paragraphs, metadata |
+| **Data / Code** | 13px | 400 | 1.4 | Tables, lists, compact widgets |
 
 ---
 
@@ -159,166 +99,53 @@ These are the only approved color-field backgrounds for bento tiles. Do not inve
 
 | Context | Value | Tailwind |
 |---|---|---|
-| Bento tile (large) | 32px | `rounded-[32px]` |
-| Bento tile (small) | 28px | `rounded-[28px]` |
-| UI card / widget | 16px | `rounded-2xl` |
-| Dialog / modal | 20px | `rounded-[20px]` |
-| Icon badge in tile | 18px | `rounded-[18px]` |
-| Icon badge in card | 14px | `rounded-[14px]` |
-| Button (standard) | 12px | `rounded-xl` |
-| Button (CTA / pill) | 9999px | `rounded-full` |
-| Input | 12px | `rounded-xl` |
-| Badge / tag | 9999px | `rounded-full` |
+| UI Card / Widget | 8px | `rounded-lg` |
+| Dialog / Modal | 8px | `rounded-lg` |
+| Buttons / Inputs | 6px | `rounded-md` |
+| Badges / Tags | 4px | `rounded` |
 
 ---
 
-## 📏 Spacing
+## 🧩 Layout & Component Rules
 
-Section padding on showcase pages uses generous vertical rhythm:
-- **Hero section:** `py-24` (96px top/bottom)
-- **Grid/bento section:** `py-28` (112px)
-- **CTA / closing section:** `py-32` (128px)
-- **Tile internal padding:** `p-8` to `p-10` (32–40px)
-- **Card internal padding:** `p-5` to `p-6` (20–24px)
-- **Max content width:** `max-w-[1024px] mx-auto`
+### 1. Sidebar (Dark / Light Options)
+- Default: Dark mode style (`bg-[#001529]`).
+- Width: `w-64` (256px).
+- Navigation links use vertical listing with Lucide icons on the left, label on the right.
+- Active state uses a clear blue highlight background (`bg-[#1677ff]`) with white text, or soft blue tint background for light mode.
 
----
+### 2. Header
+- Solid white surface: `bg-white`.
+- Fixed height: `56px` (`h-14`).
+- Thin bottom border: `border-b border-[#f0f0f0]`.
+- Displays Page Breadcrumbs on the left and User Actions (profile, search, notification bell) on the right.
 
-## 🧩 Component Rules
+### 3. Cards & Widgets
+- Background: `bg-white`.
+- Border: `border border-[#f0f0f0]`.
+- Border Radius: `rounded-lg` (8px).
+- Shadow: Subtle shadow `shadow-sm` or `shadow-[0_1px_2px_0_rgba(0,0,0,0.03)]`.
+- Internal Padding: `p-5` or `p-6` depending on content density.
 
-### Bento Tiles
-- Background defines the tile — no borders on colored tiles
-- White tiles on gray sections: `bg-white ring-1 ring-black/[0.06]`
-- Icon at top-left in a `rounded-[16–18px]` badge with `bg-white/20 backdrop-blur-md` on color tiles, `bg-[#f5f5f7]` on white tiles
-- Heading and body copy at **bottom** of tile — tiles breathe upward
-- Min height: `320px` small tiles, `420px` large hero tiles
-- Hover: `-translate-y-1 transition-all duration-200` (subtle lift)
-
-### Buttons
-- **CTA Primary:** `rounded-full bg-[#0071e3] text-white hover:bg-[#0077ed]` — Apple blue pill
-- **Standard UI:** `rounded-xl` with sky gradient — existing `art-primary-button`
-- **Nav pill active:** `rounded-full bg-[#1d1d1f] text-white`
-- **Nav pill default:** `rounded-full text-[#424245] hover:bg-black/[0.06]`
-- **Min touch target:** 48×48px (all interactive elements)
-
-### Navigation (Header)
-- `sticky top-0 z-[100]`
-- Background: `bg-[rgba(255,255,255,0.82)] backdrop-blur-2xl`
-- Border: `border-b border-black/[0.08]`
-- Height: `h-[52px]`
-- Max width: `max-w-[1024px] mx-auto`
-
-### Cards (Data Widgets)
-- `rounded-2xl` (16px) — raised from v1's 12px
-- `bg-white ring-1 ring-black/[0.06]` — no explicit border, ring instead
-- Hover: `-translate-y-0.5 shadow-[0_8px_24px_rgba(15,23,42,0.08)]`
-- Padding: `p-5` (20px)
-
-### Dialogs (Radix UI)
-All modal dialogs use `components/ui/Dialog.tsx`.
-
-```tsx
-<Dialog open={open} onOpenChange={setOpen}>
-  <DialogContent className="!max-w-lg">
-    <DialogHeader>
-      <DialogTitle>ชื่อ Dialog</DialogTitle>
-      <DialogDescription>คำอธิบายสั้น ๆ</DialogDescription>
-    </DialogHeader>
-    <DialogBody>{/* scrollable content */}</DialogBody>
-    <DialogFooter>{/* actions */}</DialogFooter>
-  </DialogContent>
-</Dialog>
-```
-
-- Max radius: `rounded-[20px]` (updated from 16px)
-- Glassmorphism on **overlay only** — never on content panel
-- Built-in close button — do not add duplicate
-- For dialogs with no visible header: use `<DialogTitleSR>` and `<DialogDescriptionSR>` sr-only variants
-
----
-
-## ⚡ Motion & Interaction
-
-### Timing
-| Speed | Duration | Usage |
-|---|---|---|
-| Fast | 150ms | Color shifts, opacity |
-| Standard | 200ms | Transforms, shadows, hover lifts |
-| Slow | 250ms | Complex reveals |
-
-- Easing: `cubic-bezier(0.4, 0, 0.2, 1)` always
-- Hover lift on tiles/cards: `-translate-y-0.5` to `-translate-y-1`
-- Active: return to base plane (no lift)
-- **NEVER:** bounce, elastic, wobble, orchestrated page-load sequences
-
-### Reduced Motion
-Always provide `prefers-reduced-motion` override:
-```css
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    transition-duration: 1ms !important;
-    animation-duration: 1ms !important;
-  }
-}
-```
-
----
-
-## ♿ Accessibility (WCAG AA minimum, AAA for body text)
-
-| Rule | Requirement |
-|---|---|
-| Body text contrast | ≥7:1 (`#1d1d1f` or `#0f172a` on white) |
-| Secondary text | ≥4.5:1 (`#6e6e73` on white passes AA, not AAA — acceptable for non-body) |
-| Interactive components | ≥3:1 |
-| Touch targets | 48×48px minimum |
-| Focus ring | `2.5px solid #0ea5e9`, `3px offset` |
-| Icon-only buttons | `aria-label` required |
-| Toggle/segmented | `aria-pressed` required |
-| Progress bars | `role="progressbar"` with `aria-valuenow/min/max` |
-| Nav active | `aria-current="page"` |
-| Dialogs | Focus trap + ESC + restoration via Radix (automatic) |
+### 4. Buttons
+- **Primary:** `bg-[#1677ff] text-white hover:bg-[#4096ff] rounded-md transition-colors`.
+- **Default:** `border border-[#d9d9d9] bg-white text-[rgba(0,0,0,0.88)] hover:text-[#4096ff] hover:border-[#4096ff] rounded-md`.
 
 ---
 
 ## 🌍 Localization
 
-- **Primary language:** Thai throughout
-- **Date format:** Buddhist calendar (CE + 543)
-- **Font:** Anuphan handles Thai script rendering
+- **Primary language:** Thai throughout.
+- **Date format:** Buddhist calendar (CE + 543) for local displays.
+- **Font:** Anuphan handles Thai script rendering properly.
 
 ---
 
 ## 📋 Pre-Delivery Checklist
 
-- [ ] NO `gray-*` classes (use `slate-*` for UI, `#1d1d1f`/`#6e6e73`/`#f5f5f7` for Apple surfaces)
-- [ ] NO dark mode queries
-- [ ] NO glassmorphism on tiles or cards (header/sidebar/modals only)
-- [ ] NO Bootstrap icons — Lucide React only
-- [ ] NO `title`/`description` props on `<DialogContent>` — use subcomponents
-- [ ] NO `rounded-xl` on bento tiles — min `rounded-[28px]`
-- [ ] Bento tile boundaries defined by bg-fill, NOT borders alone
-- [ ] ALL buttons/inputs ≥48px touch target
-- [ ] ALL focus states have visible 2.5px ring
-- [ ] ALL text meets contrast requirements
-- [ ] ALL animations respect `prefers-reduced-motion`
-- [ ] ALL icon-only buttons have `aria-label`
-- [ ] ALL `useEffect` hooks declare complete dependency arrays
-
----
-
-## 🔄 Version History
-
-| Version | Date | Changes |
-|---|---|---|
-| 2.0 | 2026-07-02 | Apple showcase DNA adopted as global standard. New radius scale, two-layer color system, display typography, bento tile rules, Apple nav spec, CTA button spec |
-| 1.1 | 2026-07-02 | Add Dialog (Radix UI) rules; add react-hooks lint note |
-| 1.0 | 2026-07-02 | Initial release |
-
----
-
-## 📚 References
-
-- Apple showcase page implementation: `frontend/src/app/apple-style/page.tsx`
-- Page overrides: `design-system/art-workspace/pages/[page].md`
-- CSS tokens: `frontend/src/app/globals.css`
+- [ ] NO floating glass headers or sidebar overlays (use solid backgrounds)
+- [ ] NO `gray-*` classes for borders/backgrounds (use `#f0f2f5` and `#f0f0f0`)
+- [ ] Corner radius values do not exceed 8px for containers/modals and 6px for buttons/inputs
+- [ ] Primary buttons use `#1677ff` and secondary states use `#4096ff`
+- [ ] Typography uses Anuphan for Thai, structured for data-dense layouts
+- [ ] ALL forms follow Ant Design alignment and validation spacing

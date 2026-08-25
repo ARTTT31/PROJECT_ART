@@ -23,8 +23,9 @@ The GitHub Actions pipeline (`ci.yml`) runs on every push and pull request to `m
 ### Architecture and Design
 
 - [Design Principles](docs/design/design-principles.md)
-- [Liquid Glass UI Guidelines](docs/design/liquid-glass-ui.md)
+- [Enterprise Admin UI Guidelines](docs/design/enterprise-admin-ui.md)
 - [Frontend Architecture Review](docs/design/frontend-arch-review.md)
+
 - [Accessibility Guide](docs/design/accessibility.md)
 
 ### Product

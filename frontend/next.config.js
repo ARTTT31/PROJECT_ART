@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'export',
+  ...(process.env.EXPORT_STATIC === 'true' ? { output: 'export' } : {}),
   reactStrictMode: true,
   turbopack: {
     root: __dirname,

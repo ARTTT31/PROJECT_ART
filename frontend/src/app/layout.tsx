@@ -17,6 +17,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://project-art-sigma.vercel.app'),
   title: 'ART Workspace',
   description: 'Modern workspace management system',
   openGraph: {

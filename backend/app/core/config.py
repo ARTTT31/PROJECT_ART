@@ -107,7 +107,10 @@ class Settings(BaseSettings):
     MICROSOFT_CLIENT_ID: str = ""
     MICROSOFT_CLIENT_SECRET: str = ""
     MICROSOFT_REDIRECT_URI: str = ""
-    SHAREPOINT_LIST_URL: str = "https://absscoth-my.sharepoint.com/personal/pornchai_abss_co_th/Lists/Technical%20Support%20and%20IMACD%20Booking%20Schedule/AllItems.aspx"
+    SHAREPOINT_LIST_URL: str = (
+        "https://absscoth-my.sharepoint.com/personal/pornchai_abss_co_th/Lists/"
+        "Technical%20Support%20and%20IMACD%20Booking%20Schedule/AllItems.aspx"
+    )
     SHAREPOINT_SITE_ID: str = ""
     SHAREPOINT_LIST_ID: str = ""
 

@@ -189,8 +189,20 @@ async def get_calendar_events(
 
             # Robust field extraction matching various SharePoint schema patterns
             title = fields.get("Title") or fields.get("title") or fields.get("LinkTitle") or "Untitled Booking"
-            start_str = fields.get("EventDate") or fields.get("Event_x0020_Date") or fields.get("StartDateTime") or fields.get("start") or fields.get("Created")
-            end_str = fields.get("EndDate") or fields.get("End_x0020_Date") or fields.get("EndDateTime") or fields.get("end") or start_str
+            start_str = (
+                fields.get("EventDate")
+                or fields.get("Event_x0020_Date")
+                or fields.get("StartDateTime")
+                or fields.get("start")
+                or fields.get("Created")
+            )
+            end_str = (
+                fields.get("EndDate")
+                or fields.get("End_x0020_Date")
+                or fields.get("EndDateTime")
+                or fields.get("end")
+                or start_str
+            )
             description = fields.get("Description") or fields.get("description") or fields.get("Notes") or ""
             location = fields.get("Location") or fields.get("location") or ""
 

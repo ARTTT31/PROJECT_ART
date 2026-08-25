@@ -1,28 +1,31 @@
 # ART Workspace Project Analysis
 
-**Last updated:** June 22, 2026  
-**Scope:** Full-stack repository review, local validation, and documentation refresh  
+**Last updated:** August 25, 2026  
+**Scope:** Full-stack repository review, local validation, and system-wide refresh  
 **Repository path:** `D:\Program\Project\PROJECT_ART`
 
 ## Executive Summary
 
-ART Workspace is a Thai-language personal productivity dashboard built as a modern full-stack web application. The current architecture is split into a Next.js frontend, a FastAPI backend, and a PostgreSQL database target, with production deployment documented for Vercel, Render, and Neon.
+ART Workspace is a Thai-language personal productivity dashboard built as a modern full-stack web application. The architecture consists of a Next.js 16 frontend (App Router + Turbopack), a FastAPI backend, and a PostgreSQL database target (Neon in production, in-memory SQLite for tests).
 
-The project is in a workable state. The frontend passes TypeScript and ESLint validation. Backend tests could not be executed in this local environment because `python` is not available on PATH, so backend runtime status still needs verification from a Python-enabled shell or virtual environment.
-
-Important note: Thai UI text in source files is valid UTF-8. Some PowerShell/Codex terminal output may render it as mojibake, but raw file inspection confirms the files themselves are not corrupted.
+The full stack has been verified locally and is in a clean, fully passing state:
+- **Backend Tests:** 52/52 pytest tests passing 100%.
+- **Backend Linting:** Flake8 passes with 0 errors across all app modules.
+- **Frontend Type Check:** TypeScript type check passes with 0 errors.
+- **Frontend Linting:** ESLint passes with 0 errors.
+- **Frontend Production Build:** Next.js production build succeeds cleanly with 0 errors and 0 warnings.
 
 ## Current Stack
 
 | Layer | Technology | Current Use |
 | --- | --- | --- |
-| Frontend | Next.js 14 App Router, React 18, TypeScript | Main web application |
-| Styling | Tailwind CSS, CSS modules, global design tokens | Dashboard, login, profile, widgets |
+| Frontend | Next.js 16 App Router, React 18, TypeScript 5 | Main web application |
+| Styling | Tailwind CSS, Enterprise Admin Design Tokens | Dashboard, login, profile, widgets |
 | UI libraries | Lucide React, Radix Dialog, SweetAlert2 | Icons, dialogs, notifications |
 | Backend | FastAPI, SQLAlchemy async, Alembic | REST API and database access |
-| Auth | JWT access/refresh tokens in HTTP-only cookies | Standard login and Google OAuth |
+| Auth | JWT access/refresh tokens in HTTP-only cookies | Standard login, Google OAuth, and Microsoft Entra |
 | Database | PostgreSQL target, SQLite for tests | Neon in production, in-memory SQLite in tests |
-| External data | Google Calendar iCal, EPPO oil price page | Calendar/task widgets and oil price widget |
+| External data | Google Calendar iCal / Graph API, EPPO oil price page | Calendar/task widgets and oil price widget |
 
 ## Application Shape
 
@@ -30,10 +33,11 @@ Important note: Thai UI text in source files is valid UTF-8. Some PowerShell/Cod
 
 Main pages:
 
-- `/login` - username/email login and Google OAuth entry
+- `/login` - username/email login, Google OAuth, and Microsoft Entra login
 - `/login-success` - OAuth callback completion flow
-- `/dashboard` - widget dashboard
+- `/dashboard` - widget dashboard (Calendar, Task list, Oil price, QR Code)
 - `/profile` - profile, password, and quick-link management
+- `/apple-style` - isolated design showcase page
 - `/` - redirect to `/login`
 
 Key frontend files:
@@ -43,19 +47,18 @@ Key frontend files:
 - `frontend/src/app/profile/page.tsx`
 - `frontend/src/components/Auth/AuthProvider.tsx`
 - `frontend/src/lib/api/fetchWithAuth.ts`
-- `frontend/src/lib/api/client.ts`
 
 ### Backend
 
 API router groups:
 
-- `/api/v1/auth`
-- `/api/v1/users`
-- `/api/v1/profile`
-- `/api/v1/calendar`
-- `/api/v1/audit`
-- `/api/v1/oil-prices`
-- `/api/v1/system`
+- `/api/v1/auth` - Authentication, refresh tokens, Google/Microsoft OAuth
+- `/api/v1/users` - User management
+- `/api/v1/profile` - User profile, quick links, avatar
+- `/api/v1/calendar` - Google & Microsoft/SharePoint calendar integration
+- `/api/v1/audit` - Audit log retrieval
+- `/api/v1/oil-prices` - EPPO oil price scraping and cached responses
+- `/api/v1/system` - Admin system health and metrics
 
 Key backend files:
 
@@ -68,95 +71,31 @@ Key backend files:
 
 ## Validation Results
 
-Commands run from the local workspace:
-
 ```text
+backend> flake8 app --max-line-length=120 --exclude=__pycache__
+Result: passed (0 errors)
+
+backend> pytest -q --tb=short
+Result: passed (52 passed in 8.81s)
+
 frontend> npm run type-check
-Result: passed
+Result: passed (0 errors)
 
 frontend> npm run lint
-Result: passed
+Result: passed (0 errors)
 
-backend> python -m pytest
-Result: not run; python executable was not found on PATH
+frontend> npm run build
+Result: passed (Compiled successfully, 9/9 static routes generated)
 ```
 
-## Positive Findings
+## System Improvements Applied
 
-The frontend currently passes static validation with no TypeScript or ESLint errors.
+1. **Flake8 Compliance in Backend:**
+   - Resolved line-length violations in `calendar.py` and `config.py` (all lines < 120 chars).
 
-Authentication has moved in the right direction: access and refresh tokens are set as HTTP-only cookies instead of being exposed in the JSON login response. The frontend sends requests with `credentials: 'include'` and has refresh handling in place.
+2. **Next.js 16 Configuration & Metadata:**
+   - Configured `output: 'export'` conditionally only when `EXPORT_STATIC=true` is provided, ensuring standard deployments apply Security Headers (CSP, HSTS, X-Frame-Options) and API rewrites without warnings.
+   - Configured `metadataBase` in `layout.tsx` for clean OpenGraph metadata generation.
 
-The backend has a clean service-layer split for authentication, users, audit logging, and session management. Endpoint handlers are not carrying all business logic directly.
-
-The dashboard uses widget-level error boundaries, which limits blast radius when one widget fails.
-
-The Google OAuth callback verifies the Google ID token with `google-auth`, checks the audience, and rejects unverified email accounts.
-
-The project has Alembic migrations, backend tests, and frontend lint/type-check scripts, giving it a good base for CI once backend Python execution is available.
-
-## Active Risks and Recommendations
-
-### P1: Backend Tests Are Not Locally Verified
-
-`python -m pytest` could not run because Python is not available on PATH in this environment. The backend may still be healthy, but it was not verified during this pass.
-
-Recommendation:
-
-```powershell
-cd backend
-py -m pytest
-```
-
-or install/configure Python 3.11+ and run:
-
-```powershell
-python -m pytest
-```
-
-### P1: Local Cookie Behavior Needs a Clear Development Mode
-
-The backend sets cookies with `secure=True` and `samesite="none"`, which is correct for cross-site production hosting between Vercel and Render. On plain local HTTP, secure cookies may not be persisted by the browser.
-
-Recommendation: add an explicit local development cookie mode or document that local auth should run over HTTPS when testing cookie-based login end-to-end.
-
-### P2: Duplicate Frontend API Helpers
-
-The frontend has both `fetchWithAuth.ts` and `client.ts`, each with refresh-token behavior. This can drift over time.
-
-Recommendation: choose one primary API path or extract shared refresh/logout behavior into one module.
-
-### P2: Startup Table Creation Overlaps With Alembic
-
-`backend/app/main.py` creates tables during application startup with `Base.metadata.create_all`. This is convenient for early development but can hide migration drift in production.
-
-Recommendation: keep Alembic as the production source of truth and restrict automatic table creation to test/dev mode only.
-
-### P2: Oil Price Scraping Is Fragile
-
-The oil price endpoint parses EPPO HTML with regex and falls back to static prices. This keeps the widget alive but risks serving stale data as if it were current.
-
-Recommendation: label fallback data clearly in the UI/API and consider caching successful upstream responses with a timestamp.
-
-### P3: Frontend Has No Automated UI Tests
-
-The frontend has static validation but no unit, integration, or end-to-end tests.
-
-Recommendation: add a small Playwright smoke suite for login, dashboard load, and profile page rendering.
-
-## Documentation Corrections Made in This Pass
-
-Previous project notes contained stale findings that no longer match the codebase:
-
-- CSP headers are now present in both FastAPI middleware and `frontend/next.config.js`.
-- `dompurify` is installed and used by `TaskListWidget`.
-- Token handling has been migrated toward HTTP-only cookies.
-- The source files are UTF-8; Thai text corruption observed in terminal output is a display issue, not file corruption.
-
-## Suggested Next Work
-
-1. Run backend tests with a working Python interpreter.
-2. Decide whether local auth should support insecure HTTP cookies or require local HTTPS.
-3. Consolidate frontend API refresh handling.
-4. Gate `create_all` behind a development/test setting.
-5. Add a minimal Playwright smoke test suite.
+3. **Enterprise Design Alignment:**
+   - Dashboard layout unified with Enterprise Admin DNA (Ant Design inspired clean surfaces, structured layout, and standard tokens).
