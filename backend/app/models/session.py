@@ -15,7 +15,7 @@ class UserSession(Base, TimestampMixin):
 
     id = Column(Integer, primary_key=True, index=True)
     session_id = Column(String(255), unique=True, index=True, nullable=False)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
 
     # Session metadata
     user_agent = Column(String(500), nullable=True)
@@ -24,8 +24,8 @@ class UserSession(Base, TimestampMixin):
 
     # Session status
     is_active = Column(Boolean, default=True, nullable=False)
-    last_activity = Column(DateTime, default=_utcnow, nullable=False)
-    expires_at = Column(DateTime, nullable=True)
+    last_activity = Column(DateTime, default=_utcnow, nullable=False, index=True)
+    expires_at = Column(DateTime, nullable=True, index=True)
 
     # Relationships
     user = relationship("User", back_populates="sessions")

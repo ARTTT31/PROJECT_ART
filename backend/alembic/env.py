@@ -44,8 +44,10 @@ def run_migrations_online() -> None:
     """Run migrations in 'online' mode."""
     # Convert async driver string to sync for Alembic
     sync_url = settings.DATABASE_URL
-    if sync_url.startswith("postgresql+asyncpg://"):
-        sync_url = sync_url.replace("postgresql+asyncpg://", "postgresql://")
+    if "+asyncpg" in sync_url:
+        sync_url = sync_url.replace("+asyncpg", "")
+    elif "+aiosqlite" in sync_url:
+        sync_url = sync_url.replace("+aiosqlite", "")
         
     configuration = config.get_section(config.config_ini_section, {})
     configuration["sqlalchemy.url"] = sync_url
@@ -58,7 +60,11 @@ def run_migrations_online() -> None:
     )
 
     with connectable.connect() as connection:
-        context.configure(connection=connection, target_metadata=target_metadata)
+        context.configure(
+            connection=connection,
+            target_metadata=target_metadata,
+            render_as_batch=True,
+        )
 
         with context.begin_transaction():
             context.run_migrations()

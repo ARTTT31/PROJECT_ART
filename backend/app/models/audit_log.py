@@ -8,13 +8,13 @@ class AuditLog(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(
-        Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+        Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
     )
-    action = Column(String(100), nullable=False)
+    action = Column(String(100), nullable=False, index=True)
     details = Column(Text, nullable=True)
     ip_address = Column(String(45), nullable=True)
     user_agent = Column(String(255), nullable=True)
-    created_at = Column(DateTime, default=_utcnow, nullable=False)
+    created_at = Column(DateTime, default=_utcnow, nullable=False, index=True)
 
     # Relationship to user
     user = relationship("User")

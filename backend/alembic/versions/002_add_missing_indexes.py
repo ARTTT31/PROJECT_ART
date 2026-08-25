@@ -41,30 +41,32 @@ def upgrade() -> None:
     op.create_index('ix_audit_logs_created_at', 'audit_logs', ['created_at'])
 
     # ── Fix nullable constraints (align ORM with DB schema) ──
-    # The ORM models set nullable=False, but migration had nullable=True.
-    # Since all existing rows already have values (default applied at ORM level),
-    # we can safely set NOT NULL.
+    bind = op.get_bind()
+    is_postgres = bind.dialect.name == 'postgresql'
 
-    # Disable auto-commit for transactional DDL
-    op.execute('SET session_replication_role = replica;')
+    if is_postgres:
+        op.execute('SET session_replication_role = replica;')
 
     # users: created_at / updated_at should not be nullable
-    op.alter_column('users', 'created_at',
-                    existing_type=sa.DateTime(),
-                    nullable=False)
-    op.alter_column('users', 'updated_at',
-                    existing_type=sa.DateTime(),
-                    nullable=False)
+    with op.batch_alter_table('users') as batch_op:
+        batch_op.alter_column('created_at',
+                              existing_type=sa.DateTime(),
+                              nullable=False)
+        batch_op.alter_column('updated_at',
+                              existing_type=sa.DateTime(),
+                              nullable=False)
 
     # sessions: created_at / updated_at should not be nullable
-    op.alter_column('sessions', 'created_at',
-                    existing_type=sa.DateTime(),
-                    nullable=False)
-    op.alter_column('sessions', 'updated_at',
-                    existing_type=sa.DateTime(),
-                    nullable=False)
+    with op.batch_alter_table('sessions') as batch_op:
+        batch_op.alter_column('created_at',
+                              existing_type=sa.DateTime(),
+                              nullable=False)
+        batch_op.alter_column('updated_at',
+                              existing_type=sa.DateTime(),
+                              nullable=False)
 
-    op.execute('SET session_replication_role = DEFAULT;')
+    if is_postgres:
+        op.execute('SET session_replication_role = DEFAULT;')
 
 
 def downgrade() -> None:
@@ -77,15 +79,18 @@ def downgrade() -> None:
     op.drop_index('ix_audit_logs_created_at', table_name='audit_logs')
 
     # Revert nullable constraints
-    op.alter_column('users', 'created_at',
-                    existing_type=sa.DateTime(),
-                    nullable=True)
-    op.alter_column('users', 'updated_at',
-                    existing_type=sa.DateTime(),
-                    nullable=True)
-    op.alter_column('sessions', 'created_at',
-                    existing_type=sa.DateTime(),
-                    nullable=True)
-    op.alter_column('sessions', 'updated_at',
-                    existing_type=sa.DateTime(),
-                    nullable=True)
+    with op.batch_alter_table('users') as batch_op:
+        batch_op.alter_column('created_at',
+                              existing_type=sa.DateTime(),
+                              nullable=True)
+        batch_op.alter_column('updated_at',
+                              existing_type=sa.DateTime(),
+                              nullable=True)
+
+    with op.batch_alter_table('sessions') as batch_op:
+        batch_op.alter_column('created_at',
+                              existing_type=sa.DateTime(),
+                              nullable=True)
+        batch_op.alter_column('updated_at',
+                              existing_type=sa.DateTime(),
+                              nullable=True)

@@ -16,29 +16,22 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # 1. Add username and display_name columns
-    op.add_column('users', sa.Column('username', sa.String(length=255), nullable=True))
-    op.add_column('users', sa.Column('display_name', sa.String(length=255), nullable=True))
-    
-    # 2. Create unique index for username
-    op.create_index('ix_users_username', 'users', ['username'], unique=True)
-    
-    # 3. Alter email column to be nullable
-    op.alter_column('users', 'email',
-                    existing_type=sa.String(length=255),
-                    nullable=True)
+    # 1. Add username and display_name columns, create index, alter email column
+    with op.batch_alter_table('users') as batch_op:
+        batch_op.add_column(sa.Column('username', sa.String(length=255), nullable=True))
+        batch_op.add_column(sa.Column('display_name', sa.String(length=255), nullable=True))
+        batch_op.create_index('ix_users_username', ['username'], unique=True)
+        batch_op.alter_column('email',
+                              existing_type=sa.String(length=255),
+                              nullable=True)
 
 
 def downgrade() -> None:
-    # 1. Revert email column to not nullable
-    # Note: Make sure there are no null values in email before running downgrade, or it will fail
-    op.alter_column('users', 'email',
-                    existing_type=sa.String(length=255),
-                    nullable=False)
-    
-    # 2. Drop unique index for username
-    op.drop_index('ix_users_username', table_name='users')
-    
-    # 3. Drop columns
-    op.drop_column('users', 'display_name')
-    op.drop_column('users', 'username')
+    # 1. Revert changes
+    with op.batch_alter_table('users') as batch_op:
+        batch_op.alter_column('email',
+                              existing_type=sa.String(length=255),
+                              nullable=False)
+        batch_op.drop_index('ix_users_username')
+        batch_op.drop_column('display_name')
+        batch_op.drop_column('username')
