@@ -115,7 +115,7 @@ function Hero() {
         </div>
 
         <h1
-          className="text-balance text-[56px] font-extrabold leading-[1.05] tracking-[-0.03em] text-[#1d1d1f] sm:text-[68px]"
+          className="text-balance text-[34px] sm:text-[52px] md:text-[68px] font-extrabold leading-[1.08] tracking-[-0.03em] text-[#1d1d1f]"
           style={{ fontFamily: 'Anuphan, SF Pro Display, Inter, system-ui, sans-serif' }}
         >
           ทำงานได้มากขึ้น
@@ -124,7 +124,7 @@ function Hero() {
         </h1>
 
         <p
-          className="mx-auto mt-6 max-w-[480px] text-[19px] leading-[1.6] text-[#6e6e73]"
+          className="mx-auto mt-6 max-w-[480px] text-[16px] sm:text-[19px] leading-[1.6] text-[#6e6e73]"
           style={{ fontFamily: 'Anuphan, Inter, system-ui, sans-serif' }}
         >
           ART Workspace รวมปฏิทิน, รายงาน, ราคาน้ำมัน และเครื่องมือทีมงาน ไว้ในแดชบอร์ดเดียว
@@ -154,29 +154,29 @@ function Hero() {
 
 function BentoGrid() {
   return (
-    <section className="bg-[#f5f5f7] px-6 py-28">
+    <section className="bg-[#f5f5f7] px-4 py-16 sm:px-6 sm:py-28">
       <div className="mx-auto max-w-[1024px]">
         {/* Grid row 1: large + small */}
         <div className="mb-3 grid grid-cols-1 gap-3 lg:grid-cols-12">
           {/* Calendar tile — spans 8 cols */}
-          <div className="flex flex-col justify-end overflow-hidden rounded-[32px] bg-gradient-to-br from-[#4776e6] to-[#8e54e9] p-10 lg:col-span-8 lg:min-h-[420px]">
-            <div className="mb-8 flex h-16 w-16 items-center justify-center rounded-[18px] bg-white/20 backdrop-blur-md">
-              <Calendar className="h-8 w-8 text-white" aria-hidden="true" />
+          <div className="flex flex-col justify-end overflow-hidden rounded-[28px] sm:rounded-[32px] bg-gradient-to-br from-[#4776e6] to-[#8e54e9] p-6 sm:p-10 lg:col-span-8 lg:min-h-[420px]">
+            <div className="mb-6 sm:mb-8 flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-[18px] bg-white/20 backdrop-blur-md">
+              <Calendar className="h-7 w-7 sm:h-8 sm:w-8 text-white" aria-hidden="true" />
             </div>
             <h2
-              className="mb-3 text-[40px] font-extrabold leading-[1.1] tracking-[-0.02em] text-white lg:text-[48px]"
+              className="mb-3 text-[26px] sm:text-[36px] lg:text-[48px] font-extrabold leading-[1.1] tracking-[-0.02em] text-white"
               style={{ fontFamily: 'Anuphan, SF Pro Display, Inter, system-ui, sans-serif' }}
             >
               ปฏิทินกิจกรรม
             </h2>
             <p
-              className="max-w-[420px] text-[19px] leading-relaxed text-white/90"
+              className="max-w-[420px] text-[16px] sm:text-[19px] leading-relaxed text-white/90"
               style={{ fontFamily: 'Anuphan, Inter, system-ui, sans-serif' }}
             >
               เชื่อมต่อกับ Google Calendar พร้อมสรุปกิจกรรมสำคัญทั้งหมดในมุมมองเดียว
             </p>
             <button
-              className="mt-6 inline-flex w-fit items-center gap-1.5 text-[17px] font-semibold text-white transition-transform duration-150 hover:translate-x-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[#4776e6]"
+              className="mt-6 inline-flex w-fit items-center gap-1.5 text-[15px] sm:text-[17px] font-semibold text-white transition-transform duration-150 hover:translate-x-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[#4776e6]"
               style={{ fontFamily: 'Anuphan, Inter, system-ui, sans-serif' }}
             >
               เรียนรู้เพิ่มเติม <ArrowRight className="h-4 w-4" />
@@ -184,18 +184,18 @@ function BentoGrid() {
           </div>
 
           {/* Oil price tile — spans 4 cols */}
-          <div className="flex flex-col justify-end overflow-hidden rounded-[32px] bg-gradient-to-br from-[#f09819] to-[#ff512f] p-8 lg:col-span-4 lg:min-h-[420px]">
-            <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-[16px] bg-white/20 backdrop-blur-md">
-              <Flame className="h-7 w-7 text-white" aria-hidden="true" />
+          <div className="flex flex-col justify-end overflow-hidden rounded-[28px] sm:rounded-[32px] bg-gradient-to-br from-[#f09819] to-[#ff512f] p-6 sm:p-8 lg:col-span-4 lg:min-h-[420px]">
+            <div className="mb-4 sm:mb-6 flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-[16px] bg-white/20 backdrop-blur-md">
+              <Flame className="h-6 w-6 sm:h-7 sm:w-7 text-white" aria-hidden="true" />
             </div>
             <h3
-              className="mb-2 text-[32px] font-extrabold leading-tight tracking-[-0.02em] text-white"
+              className="mb-2 text-[22px] sm:text-[28px] lg:text-[32px] font-extrabold leading-tight tracking-[-0.02em] text-white"
               style={{ fontFamily: 'Anuphan, SF Pro Display, Inter, system-ui, sans-serif' }}
             >
               ราคาน้ำมัน
             </h3>
             <p
-              className="text-[17px] leading-relaxed text-white/90"
+              className="text-[15px] sm:text-[17px] leading-relaxed text-white/90"
               style={{ fontFamily: 'Anuphan, Inter, system-ui, sans-serif' }}
             >
               อัปเดตอัตโนมัติทุกวัน

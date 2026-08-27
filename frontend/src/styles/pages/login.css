@@ -496,12 +496,12 @@
   }
 
   .login-time {
-    font-size: 56px;
+    font-size: clamp(34px, 12vw, 56px);
   }
 
   .login-date {
-    margin-top: 12px;
-    font-size: 24px;
+    margin-top: 8px;
+    font-size: clamp(15px, 4.5vw, 24px);
   }
 }
 

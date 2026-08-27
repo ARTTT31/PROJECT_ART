@@ -41,7 +41,7 @@ export default function CameraPage() {
 
   return (
     <DashboardLayout>
-      <div className="flex flex-col gap-5 p-4 sm:p-6">
+      <div className="flex flex-col gap-5">
 
         {/* ── Page header ────────────────────────────────────────────── */}
         <header className="flex flex-wrap items-center justify-between gap-4 border-b border-black/[0.06] pb-5">

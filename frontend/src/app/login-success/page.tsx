@@ -73,11 +73,11 @@ export default function LoginSuccessPage() {
   }, [login, router]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#f5f5f7]">
+    <div className="min-h-[100dvh] flex items-center justify-center bg-[#f5f5f7] p-4">
       <div className="text-center">
         <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-[3px] border-[#f5f5f7] border-t-[#0071e3]" />
         <h2 className="text-[17px] font-bold text-[#1d1d1f]">เข้าสู่ระบบสำเร็จ</h2>
-        <p className="mt-1 text-sm text-[#6e6e73]">กำลังพาคุณเข้าสู่ Dashboard...</p>
+        <p className="mt-1 text-sm text-[#475569]">กำลังพาคุณเข้าสู่ Dashboard...</p>
       </div>
     </div>
   );
