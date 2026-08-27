@@ -378,14 +378,16 @@ export default function DashboardPage() {
 
   return (
     <DashboardLayout>
-      <h1 className="sr-only">แดชบอร์ด — ART Workspace</h1>
-
-      {/* ── Toolbar ─────────────────────────────────────────────────────── */}
-      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-        {/* Page eyebrow */}
-        <p className="text-[15px] font-semibold tracking-tight text-[#1d1d1f]">
-          แดชบอร์ด
-        </p>
+      {/* ── Page header ────────────────────────────────────────────── */}
+      <header className="mb-5 flex flex-wrap items-center justify-between gap-4 border-b border-black/[0.06] pb-5">
+        <div>
+          <h1 className="text-[22px] font-extrabold tracking-[-0.03em] text-[#1d1d1f]">
+            แดชบอร์ด
+          </h1>
+          <p className="mt-0.5 text-sm text-[#6e6e73]">
+            ภาพรวมข้อมูลและวิดเจ็ตการทำงานของคุณ ({visibleWidgets.length} วิดเจ็ตที่แสดง)
+          </p>
+        </div>
 
         {/* Manage widgets — Apple pill button */}
         <button
@@ -397,7 +399,7 @@ export default function DashboardPage() {
           <SlidersHorizontal className="h-3.5 w-3.5 text-[#475569]" aria-hidden="true" />
           จัดการวิดเจ็ต
         </button>
-      </div>
+      </header>
 
       {/* ── Widget grid ─────────────────────────────────────────────────── */}
       <DndContext

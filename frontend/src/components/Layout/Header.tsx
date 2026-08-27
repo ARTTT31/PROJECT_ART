@@ -64,9 +64,9 @@ export default function Header({ user, onMenuClick, onLogout, sidebarCollapsed =
 
     // default: dashboard
     return {
-      title: 'ภาพรวม',
-      subtitle: 'แดชบอร์ดหลักของคุณ',
-      crumbs: [{ label: 'หน้าหลัก' }],
+      title: 'แดชบอร์ด',
+      subtitle: 'ภาพรวมระบบและวิดเจ็ตการทำงานของคุณ',
+      crumbs: [{ label: 'หน้าหลัก' }, { label: 'แดชบอร์ด' }],
     }
   })()
 

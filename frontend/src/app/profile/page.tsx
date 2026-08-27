@@ -290,13 +290,13 @@ export default function ProfilePage() {
     <DashboardLayout>
       <div className="w-full space-y-6">
 
-        {/* ── Page Title & Status Banner ──────────────────────────── */}
-        <div className="flex flex-wrap items-center justify-between gap-4">
+        {/* ── Page header ────────────────────────────────────────────── */}
+        <header className="flex flex-wrap items-center justify-between gap-4 border-b border-black/[0.06] pb-5">
           <div>
-            <h1 className="text-2xl font-extrabold tracking-tight text-[#1d1d1f] sm:text-3xl">
-              จัดการบัญชี
+            <h1 className="text-[22px] font-extrabold tracking-[-0.03em] text-[#1d1d1f]">
+              โปรไฟล์
             </h1>
-            <p className="mt-1 text-sm text-[#475569]">
+            <p className="mt-0.5 text-sm text-[#6e6e73]">
               จัดการข้อมูลส่วนตัว ความปลอดภัย และกำหนดทางลัดควิกลิ้งค์ของระบบ
             </p>
           </div>
@@ -305,7 +305,7 @@ export default function ProfilePage() {
             <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" aria-hidden="true" />
             บัญชีใช้งานปกติ
           </div>
-        </div>
+        </header>
 
         {/* ── 2-Column Responsive Layout ───────────────────────────── */}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
