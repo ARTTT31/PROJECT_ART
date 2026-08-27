@@ -43,7 +43,6 @@ export default function Header({ user, onMenuClick, onLogout, sidebarCollapsed =
     if (pathname.startsWith('/camera')) {
       return {
         title: 'กล้องวงจรปิด',
-        subtitle: 'ระบบตรวจสอบความปลอดภัย',
         crumbs: [
           { label: 'หน้าหลัก', href: '/dashboard' },
           { label: 'กล้องวงจรปิด' },
@@ -54,7 +53,6 @@ export default function Header({ user, onMenuClick, onLogout, sidebarCollapsed =
     if (pathname.startsWith('/profile')) {
       return {
         title: 'โปรไฟล์',
-        subtitle: 'จัดการข้อมูลส่วนตัวและความปลอดภัยของบัญชี',
         crumbs: [
           { label: 'หน้าหลัก', href: '/dashboard' },
           { label: 'โปรไฟล์' },
@@ -65,7 +63,6 @@ export default function Header({ user, onMenuClick, onLogout, sidebarCollapsed =
     // default: dashboard
     return {
       title: 'แดชบอร์ด',
-      subtitle: 'ภาพรวมระบบและวิดเจ็ตการทำงานของคุณ',
       crumbs: [{ label: 'หน้าหลัก' }, { label: 'แดชบอร์ด' }],
     }
   })()
@@ -103,8 +100,6 @@ export default function Header({ user, onMenuClick, onLogout, sidebarCollapsed =
                   )
                 })}
               </nav>
-              <span aria-hidden="true" className="hidden text-slate-300 md:inline">•</span>
-              <p className="hidden text-sm font-medium text-[#475569] md:inline-block">{headerMeta.subtitle}</p>
             </div>
           </div>
         </div>
