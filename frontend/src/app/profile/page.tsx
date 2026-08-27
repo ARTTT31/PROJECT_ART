@@ -288,7 +288,7 @@ export default function ProfilePage() {
 
   return (
     <DashboardLayout>
-      <div className="mx-auto max-w-6xl space-y-6">
+      <div className="w-full space-y-6">
 
         {/* ── Page Title & Status Banner ──────────────────────────── */}
         <div className="flex flex-wrap items-center justify-between gap-4">
@@ -311,7 +311,7 @@ export default function ProfilePage() {
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
 
           {/* ── Left Column: Profile Card & Summary ────────────────── */}
-          <div className="space-y-6 lg:col-span-4">
+          <div className="space-y-6 lg:col-span-4 xl:col-span-3">
 
             {/* Profile Hero Card */}
             <div className="overflow-hidden rounded-2xl bg-white ring-1 ring-black/[0.06] shadow-[0_8px_32px_rgba(15,23,42,0.06)]">
@@ -382,21 +382,10 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            {/* Security Tip Card */}
-            <div className="rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 p-5 text-white shadow-[0_8px_32px_rgba(15,23,42,0.12)]">
-              <div className="flex items-center gap-2.5 mb-2.5 text-sky-400">
-                <Shield size={16} aria-hidden="true" />
-                <span className="text-xs font-bold tracking-wider uppercase">คำแนะนำความปลอดภัย</span>
-              </div>
-              <p className="text-xs leading-relaxed text-slate-300">
-                แนะนำให้ใช้รหัสผ่านที่มีความยาว 8 ตัวอักษรขึ้นไป และผสมผสานระหว่างตัวพิมพ์ใหญ่ ตัวเลข และสัญลักษณ์เพื่อความปลอดภัยสูงสุด
-              </p>
-            </div>
-
           </div>
 
           {/* ── Right Column: Management Forms ──────────────────────── */}
-          <div className="space-y-6 lg:col-span-8">
+          <div className="space-y-6 lg:col-span-8 xl:col-span-9">
 
             {/* ── 1. Account Info Form ─────────────────────────────── */}
             <div className="rounded-2xl bg-white p-5 sm:p-6 ring-1 ring-black/[0.06] shadow-[0_8px_32px_rgba(15,23,42,0.06)]">
