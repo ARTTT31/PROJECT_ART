@@ -18,6 +18,10 @@ import {
   Trash2,
   ChevronUp,
   ChevronDown,
+  ShieldCheck,
+  KeyRound,
+  Mail,
+  Shield,
 } from 'lucide-react'
 import DashboardLayout from '@/components/Layout/DashboardLayout'
 import { showDeleteConfirm, showToast, showSuccess, showError } from '@/utils/sweetalert'
@@ -81,6 +85,8 @@ export default function ProfilePage() {
   const [showOldPassword, setShowOldPassword] = useState(false)
   const [showNewPassword, setShowNewPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [isSavingProfile, setIsSavingProfile] = useState(false)
+  const [isChangingPassword, setIsChangingPassword] = useState(false)
 
   // Quick Links
   const [quickLinks, setQuickLinks] = useState<QuickLink[]>([])
@@ -119,24 +125,25 @@ export default function ProfilePage() {
   }, [newPassword])
 
   const getStrengthLabel = () => {
-    if (passwordStrength === 0) return ''
+    if (passwordStrength === 0) return 'ยังไม่ได้ระบุ'
     if (passwordStrength === 1) return 'อ่อนมาก'
     if (passwordStrength === 2) return 'อ่อน'
     if (passwordStrength === 3) return 'ปานกลาง'
     if (passwordStrength === 4) return 'แข็งแรง'
-    return 'แข็งแรงมาก'
+    return 'ปลอดภัยสูงมาก'
   }
 
   const getStrengthColor = () => {
-    if (passwordStrength <= 1) return 'bg-red-500'
-    if (passwordStrength === 2) return 'bg-orange-500'
-    if (passwordStrength === 3) return 'bg-yellow-500'
-    if (passwordStrength === 4) return 'bg-green-500'
-    return 'bg-emerald-500'
+    if (passwordStrength <= 1) return 'bg-rose-500 text-rose-700'
+    if (passwordStrength === 2) return 'bg-amber-500 text-amber-700'
+    if (passwordStrength === 3) return 'bg-yellow-500 text-yellow-700'
+    if (passwordStrength === 4) return 'bg-emerald-500 text-emerald-700'
+    return 'bg-emerald-600 text-emerald-800'
   }
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault()
+    setIsSavingProfile(true)
     try {
       const response = await fetchWithAuth('/api/v1/profile/me', {
         method: 'PUT',
@@ -149,13 +156,15 @@ export default function ProfilePage() {
         setUser(updatedUser)
         updateUser({ name, email })
         window.dispatchEvent(new Event('user-profile-updated'))
-        showSuccess('สำเร็จ', data.message || 'อัปเดตโปรไฟล์สำเร็จ!')
+        showSuccess('สำเร็จ', data.message || 'อัปเดตข้อมูลโปรไฟล์เรียบร้อยแล้ว!')
       } else {
-        showError('เกิดข้อผิดพลาด', data.detail || 'เกิดข้อผิดพลาดในการอัพเดทโปรไฟล์')
+        showError('เกิดข้อผิดพลาด', data.detail || 'เกิดข้อผิดพลาดในการอัปเดตโปรไฟล์')
       }
     } catch (error) {
       console.error('Profile update error:', error)
       showError('ไม่สามารถเชื่อมต่อได้', 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้')
+    } finally {
+      setIsSavingProfile(false)
     }
   }
 
@@ -164,10 +173,12 @@ export default function ProfilePage() {
     if (!oldPassword) { showToast('กรุณากรอกรหัสผ่านปัจจุบัน', 'warning'); return }
     if (!newPassword) { showToast('กรุณากรอกรหัสผ่านใหม่', 'warning'); return }
     if (newPassword.length < 8) { showToast('รหัสผ่านใหม่ต้องมีอย่างน้อย 8 ตัวอักษร', 'warning'); return }
-    if (newPassword !== confirmPassword) { showToast('รหัสผ่านใหม่ไม่ตรงกัน', 'warning'); return }
-    if (passwordStrength < 3) { showToast('รหัสผ่านไม่แข็งแรงพอ กรุณาใช้รหัสผ่านที่ปลอดภัยกว่านี้', 'warning'); return }
+    if (newPassword !== confirmPassword) { showToast('รหัสผ่านยืนยันไม่ตรงกับรหัสผ่านใหม่', 'warning'); return }
+    if (passwordStrength < 3) { showToast('รหัสผ่านยังไม่แข็งแรงพอ กรุณาเพิ่มตัวเลขหรืออักขระพิเศษ', 'warning'); return }
     const userData = localStorage.getItem('user')
     if (!userData) { showError('เซสชันหมดอายุ', 'กรุณาเข้าสู่ระบบใหม่'); router.push('/login'); return }
+
+    setIsChangingPassword(true)
     try {
       const response = await fetchWithAuth('/api/v1/profile/change-password', {
         method: 'POST',
@@ -175,7 +186,7 @@ export default function ProfilePage() {
       })
       const data = await response.json()
       if (response.ok) {
-        showSuccess('สำเร็จ', data.message || 'เปลี่ยนรหัสผ่านสำเร็จ!')
+        showSuccess('สำเร็จ', data.message || 'เปลี่ยนรหัสผ่านใหม่สำเร็จแล้ว!')
         setOldPassword(''); setNewPassword(''); setConfirmPassword('')
       } else {
         showError('เกิดข้อผิดพลาด', data.detail || 'เกิดข้อผิดพลาดในการเปลี่ยนรหัสผ่าน')
@@ -183,6 +194,8 @@ export default function ProfilePage() {
     } catch (error) {
       console.error('Password change error:', error)
       showError('ไม่สามารถเชื่อมต่อได้', 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้')
+    } finally {
+      setIsChangingPassword(false)
     }
   }
 
@@ -229,7 +242,7 @@ export default function ProfilePage() {
     e.preventDefault()
     const label = qlLabel.trim(); const url = qlUrl.trim()
     if (!label) { showToast('กรุณากรอกชื่อควิกลิ้งค์', 'warning'); return }
-    if (!url) { showToast('กรุณากรอกลิงก์', 'warning'); return }
+    if (!url) { showToast('กรุณากรอกลิงก์ปลายทาง', 'warning'); return }
     const isValid = isExternalUrl(url) || url.startsWith('/')
     if (!isValid) { showToast('ลิงก์ต้องขึ้นต้นด้วย http://, https:// หรือ / (ลิงก์ภายใน)', 'warning'); return }
     const next: QuickLink = {
@@ -243,7 +256,7 @@ export default function ProfilePage() {
       ? quickLinks.map((l) => (l.id === editingQuickLinkId ? next : l))
       : [...quickLinks, next]
     const ok = await persistQuickLinks(nextLinks)
-    if (ok) { setQuickLinkDialogOpen(false); showSuccess('สำเร็จ', 'บันทึก Quick Links สำเร็จ') }
+    if (ok) { setQuickLinkDialogOpen(false); showSuccess('สำเร็จ', 'บันทึก Quick Links สำเร็จแล้ว') }
   }
 
   const handleMoveQuickLink = async (id: string, direction: 'up' | 'down') => {
@@ -262,7 +275,7 @@ export default function ProfilePage() {
     if (!result.isConfirmed) return
     const nextLinks = quickLinks.filter((l) => l.id !== id)
     const ok = await persistQuickLinks(nextLinks)
-    if (ok) showSuccess('สำเร็จ', 'ลบควิกลิ้งค์แล้ว')
+    if (ok) showSuccess('สำเร็จ', 'ลบควิกลิ้งค์เรียบร้อยแล้ว')
   }
 
   if (!user) {
@@ -275,306 +288,371 @@ export default function ProfilePage() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-7xl mx-auto space-y-6">
+      <div className="mx-auto max-w-6xl space-y-6">
 
-        {/* ── Page Header ──────────────────────────────────── */}
-        <div>
-          <h1
-            className="text-3xl font-extrabold tracking-[-0.03em]"
-            style={{ color: '#1d1d1f' }}
-          >
-            จัดการบัญชี
-          </h1>
-          <p className="mt-1 text-sm" style={{ color: '#6e6e73' }}>
-            จัดการข้อมูลส่วนตัวและความปลอดภัยของบัญชี
-          </p>
+        {/* ── Page Title & Status Banner ──────────────────────────── */}
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-extrabold tracking-tight text-[#1d1d1f] sm:text-3xl">
+              จัดการบัญชี
+            </h1>
+            <p className="mt-1 text-sm text-[#475569]">
+              จัดการข้อมูลส่วนตัว ความปลอดภัย และกำหนดทางลัดควิกลิ้งค์ของระบบ
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2 rounded-full bg-emerald-50 px-3.5 py-1.5 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200/80 shadow-sm">
+            <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" aria-hidden="true" />
+            บัญชีใช้งานปกติ
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* ── 2-Column Responsive Layout ───────────────────────────── */}
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
 
-          {/* ── Profile Card (left column) ───────────────────── */}
-          <div className="lg:col-span-1">
-            <div className="rounded-2xl bg-white ring-1 ring-black/[0.06] overflow-hidden shadow-[0_8px_32px_rgba(15,23,42,0.06)]">
-              {/* Cover gradient */}
-              <div className="h-32 bg-gradient-to-br from-sky-400/30 to-blue-600/30" />
+          {/* ── Left Column: Profile Card & Summary ────────────────── */}
+          <div className="space-y-6 lg:col-span-4">
 
-              {/* Avatar + info */}
-              <div className="px-4 sm:px-6 pb-6 -mt-12 sm:-mt-16 text-center">
-                <div className="relative inline-block mb-4">
-                  <div className="w-24 h-24 sm:w-32 sm:h-32 bg-gradient-to-br from-sky-500 to-blue-600 rounded-full flex items-center justify-center text-white text-3xl sm:text-4xl font-bold border-4 border-white shadow-[0_14px_30px_rgba(15,23,42,0.16)]">
+            {/* Profile Hero Card */}
+            <div className="overflow-hidden rounded-2xl bg-white ring-1 ring-black/[0.06] shadow-[0_8px_32px_rgba(15,23,42,0.06)]">
+              {/* Subtle gradient banner */}
+              <div className="relative h-28 bg-gradient-to-r from-blue-600 via-sky-500 to-indigo-600">
+                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.3),transparent_70%)]" />
+              </div>
+
+              {/* Avatar + Primary User Details */}
+              <div className="relative px-5 pb-6 pt-0 text-center">
+                <div className="relative -mt-14 inline-block mb-3">
+                  <div className="flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-sky-500 to-blue-600 text-3xl font-extrabold text-white ring-4 ring-white shadow-[0_12px_28px_rgba(14,165,233,0.35)]">
                     {user.name?.charAt(0).toUpperCase() || 'U'}
                   </div>
                   <button
-                    className="art-icon-button absolute bottom-2 right-2 !h-10 !w-10 !rounded-full"
+                    type="button"
+                    className="absolute bottom-0 right-0 flex h-8 w-8 items-center justify-center rounded-full bg-white text-slate-700 shadow-md ring-1 ring-black/[0.08] transition-all duration-150 hover:bg-slate-50 hover:scale-105 active:scale-95"
                     aria-label="เปลี่ยนรูปโปรไฟล์"
+                    title="เปลี่ยนรูปโปรไฟล์"
                   >
-                    <Camera className="w-5 h-5 text-slate-600" aria-hidden="true" />
+                    <Camera size={14} aria-hidden="true" />
                   </button>
                 </div>
 
-                <h2
-                  className="text-2xl font-bold mb-1"
-                  style={{ color: '#1d1d1f' }}
-                >
+                <h2 className="text-xl font-bold tracking-tight text-[#1d1d1f]">
                   {user.name || 'ผู้ใช้งาน'}
                 </h2>
-                <span
-                  className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
-                    user.role === 'admin'
-                      ? 'bg-purple-100 text-purple-700'
-                      : 'bg-blue-100 text-blue-700'
-                  }`}
-                >
-                  {user.role === 'admin' ? 'ผู้ดูแลระบบ' : 'ผู้ใช้งาน'}
-                </span>
+                <p className="mt-0.5 text-xs text-[#475569]">{user.email || 'ไม่มีอีเมล'}</p>
+
+                {/* Role Pill */}
+                <div className="mt-3 flex justify-center">
+                  <span
+                    className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${
+                      user.role === 'admin'
+                        ? 'bg-purple-50 text-purple-700 ring-1 ring-purple-200'
+                        : 'bg-sky-50 text-sky-700 ring-1 ring-sky-200'
+                    }`}
+                  >
+                    {user.role === 'admin' ? (
+                      <>
+                        <ShieldCheck size={13} aria-hidden="true" />
+                        ผู้ดูแลระบบ (Admin)
+                      </>
+                    ) : (
+                      <>
+                        <User size={13} aria-hidden="true" />
+                        ผู้ใช้งานทั่วไป
+                      </>
+                    )}
+                  </span>
+                </div>
+
+                {/* Account Details Checklist */}
+                <div className="mt-6 divide-y divide-slate-100 border-t border-slate-100 pt-4 text-left text-xs">
+                  <div className="flex items-center justify-between py-2.5">
+                    <span className="text-[#475569]">สถานะบัญชี</span>
+                    <span className="font-semibold text-emerald-600">พร้อมใช้งาน</span>
+                  </div>
+                  <div className="flex items-center justify-between py-2.5">
+                    <span className="text-[#475569]">การยืนยันตัวตน</span>
+                    <span className="font-semibold text-slate-800">รหัสผ่าน & อีเมล</span>
+                  </div>
+                  <div className="flex items-center justify-between py-2.5">
+                    <span className="text-[#475569]">ควิกลิ้งค์ของฉัน</span>
+                    <span className="font-semibold text-[#0071e3]">{quickLinks.length} รายการ</span>
+                  </div>
+                </div>
               </div>
             </div>
+
+            {/* Security Tip Card */}
+            <div className="rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 p-5 text-white shadow-[0_8px_32px_rgba(15,23,42,0.12)]">
+              <div className="flex items-center gap-2.5 mb-2.5 text-sky-400">
+                <Shield size={16} aria-hidden="true" />
+                <span className="text-xs font-bold tracking-wider uppercase">คำแนะนำความปลอดภัย</span>
+              </div>
+              <p className="text-xs leading-relaxed text-slate-300">
+                แนะนำให้ใช้รหัสผ่านที่มีความยาว 8 ตัวอักษรขึ้นไป และผสมผสานระหว่างตัวพิมพ์ใหญ่ ตัวเลข และสัญลักษณ์เพื่อความปลอดภัยสูงสุด
+              </p>
+            </div>
+
           </div>
 
-          {/* ── Forms Column (right 2 columns) ───────────────── */}
-          <div className="lg:col-span-2 space-y-6">
+          {/* ── Right Column: Management Forms ──────────────────────── */}
+          <div className="space-y-6 lg:col-span-8">
 
-            {/* ── Update Profile Form ─────────────────────────── */}
-            <div className="rounded-2xl bg-white ring-1 ring-black/[0.06] p-4 sm:p-6 shadow-[0_8px_32px_rgba(15,23,42,0.06)]">
-              <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-100">
-                <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center">
-                  <User className="w-6 h-6 text-green-600" aria-hidden="true" />
+            {/* ── 1. Account Info Form ─────────────────────────────── */}
+            <div className="rounded-2xl bg-white p-5 sm:p-6 ring-1 ring-black/[0.06] shadow-[0_8px_32px_rgba(15,23,42,0.06)]">
+              {/* Header */}
+              <div className="mb-5 flex items-center gap-3 border-b border-slate-100 pb-4">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200/60">
+                  <User size={20} aria-hidden="true" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold" style={{ color: '#1d1d1f' }}>
+                  <h2 className="text-[17px] font-bold text-[#1d1d1f]">
                     ข้อมูลบัญชี
                   </h2>
-                  <p className="text-sm" style={{ color: '#6e6e73' }}>
-                    อัพเดทข้อมูลส่วนตัวของคุณ
+                  <p className="text-xs text-[#475569]">
+                    อัปเดตชื่อที่แสดงและที่อยู่อีเมลสำหรับเข้าสู่ระบบ
                   </p>
                 </div>
               </div>
 
-              <form onSubmit={handleUpdateProfile} className="space-y-5">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <form onSubmit={handleUpdateProfile} className="space-y-4">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                    <label className="mb-1.5 block text-xs font-semibold text-slate-700">
                       ชื่อที่แสดง
                     </label>
-                    <input
-                      type="text"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      className="art-input w-full px-4 py-3"
-                      placeholder="เช่น สมชาย ใจดี"
-                    />
+                    <div className="relative">
+                      <User size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden="true" />
+                      <input
+                        type="text"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        className="w-full rounded-xl bg-[#f8fafc] py-2.5 pl-10 pr-4 text-sm text-[#1d1d1f] ring-1 ring-black/[0.08] transition-all duration-150 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0071e3]"
+                        placeholder="เช่น สมชาย ใจดี"
+                        required
+                      />
+                    </div>
                   </div>
+
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">
-                      อีเมล
+                    <label className="mb-1.5 block text-xs font-semibold text-slate-700">
+                      อีเมลสำหรับล็อกอิน
                     </label>
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="art-input w-full px-4 py-3"
-                      placeholder="name@company.com"
-                    />
+                    <div className="relative">
+                      <Mail size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden="true" />
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="w-full rounded-xl bg-[#f8fafc] py-2.5 pl-10 pr-4 text-sm text-[#1d1d1f] ring-1 ring-black/[0.08] transition-all duration-150 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0071e3]"
+                        placeholder="name@company.com"
+                        required
+                      />
+                    </div>
                   </div>
                 </div>
 
-                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-start gap-3">
-                  <Info className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" aria-hidden="true" />
-                  <div className="text-sm text-blue-800">
-                    <strong>หมายเหตุ:</strong> หากเปลี่ยนอีเมล ครั้งถัดไปให้ล็อกอินด้วยอีเมลใหม่ (รหัสผ่านเดิม)
+                {/* Info Callout */}
+                <div className="flex items-start gap-2.5 rounded-xl bg-sky-50/80 p-3.5 text-xs text-sky-900 ring-1 ring-sky-200/60">
+                  <Info size={16} className="mt-0.5 shrink-0 text-sky-600" aria-hidden="true" />
+                  <div>
+                    <strong>คำแนะนำ:</strong> หากเปลี่ยนอีเมล การเข้าสู่ระบบครั้งถัดไปจะต้องใช้อีเมลใหม่คู่กับรหัสผ่านเดิม
                   </div>
                 </div>
 
-                <div className="flex justify-end">
-                  <button type="submit" className="art-primary-button px-6 py-3">
-                    <span className="flex items-center gap-2">
-                      <Check className="w-5 h-5" aria-hidden="true" />
-                      บันทึกข้อมูล
-                    </span>
+                {/* Action Button */}
+                <div className="flex justify-end pt-2">
+                  <button
+                    type="submit"
+                    disabled={isSavingProfile}
+                    className="inline-flex items-center gap-2 rounded-full bg-[#0071e3] px-5 py-2.5 text-xs font-semibold text-white shadow-sm transition-all duration-150 hover:bg-[#0077ed] hover:shadow-[0_2px_10px_rgba(0,113,227,0.3)] disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3] focus-visible:ring-offset-2 active:scale-[0.98]"
+                  >
+                    <Check size={14} aria-hidden="true" />
+                    {isSavingProfile ? 'กำลังบันทึก...' : 'บันทึกข้อมูล'}
                   </button>
                 </div>
               </form>
             </div>
 
-            {/* ── Change Password Form ─────────────────────────── */}
-            <div className="rounded-2xl bg-white ring-1 ring-black/[0.06] p-4 sm:p-6 shadow-[0_8px_32px_rgba(15,23,42,0.06)]">
-              <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-100">
-                <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center">
-                  <Lock className="w-6 h-6 text-red-600" aria-hidden="true" />
+            {/* ── 2. Change Password Form ──────────────────────────── */}
+            <div className="rounded-2xl bg-white p-5 sm:p-6 ring-1 ring-black/[0.06] shadow-[0_8px_32px_rgba(15,23,42,0.06)]">
+              {/* Header */}
+              <div className="mb-5 flex items-center gap-3 border-b border-slate-100 pb-4">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-50 text-rose-600 ring-1 ring-rose-200/60">
+                  <Lock size={20} aria-hidden="true" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold" style={{ color: '#1d1d1f' }}>
+                  <h2 className="text-[17px] font-bold text-[#1d1d1f]">
                     เปลี่ยนรหัสผ่าน
                   </h2>
-                  <p className="text-sm" style={{ color: '#6e6e73' }}>
-                    อัพเดทรหัสผ่านเพื่อความปลอดภัย
+                  <p className="text-xs text-[#475569]">
+                    อัปเดตรหัสผ่านใหม่เพื่อความปลอดภัยของบัญชี
                   </p>
                 </div>
               </div>
 
-              <form onSubmit={handleChangePassword} className="space-y-5">
-                {/* Old Password */}
+              <form onSubmit={handleChangePassword} className="space-y-4">
+                {/* Current password */}
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                  <label className="mb-1.5 block text-xs font-semibold text-slate-700">
                     รหัสผ่านปัจจุบัน
                   </label>
                   <div className="relative">
+                    <Lock size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden="true" />
                     <input
                       type={showOldPassword ? 'text' : 'password'}
                       value={oldPassword}
                       onChange={(e) => setOldPassword(e.target.value)}
-                      className="art-input w-full px-4 py-3 pr-12"
+                      className="w-full rounded-xl bg-[#f8fafc] py-2.5 pl-10 pr-11 text-sm text-[#1d1d1f] ring-1 ring-black/[0.08] transition-all duration-150 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0071e3]"
                       placeholder="กรอกรหัสผ่านปัจจุบันของคุณ"
                     />
                     <button
                       type="button"
                       onClick={() => setShowOldPassword(!showOldPassword)}
-                      className="art-icon-button absolute right-3 top-1/2 !h-10 !w-10 -translate-y-1/2 !border-transparent !bg-transparent !shadow-none"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3]"
                       aria-label={showOldPassword ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'}
                     >
-                      {showOldPassword
-                        ? <EyeOff className="w-5 h-5" aria-hidden="true" />
-                        : <Eye className="w-5 h-5" aria-hidden="true" />}
+                      {showOldPassword ? <EyeOff size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
                     </button>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   {/* New Password */}
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                    <label className="mb-1.5 block text-xs font-semibold text-slate-700">
                       รหัสผ่านใหม่
                     </label>
                     <div className="relative">
+                      <KeyRound size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden="true" />
                       <input
                         type={showNewPassword ? 'text' : 'password'}
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
-                        className="art-input w-full px-4 py-3 pr-12"
+                        className="w-full rounded-xl bg-[#f8fafc] py-2.5 pl-10 pr-11 text-sm text-[#1d1d1f] ring-1 ring-black/[0.08] transition-all duration-150 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0071e3]"
                         placeholder="อย่างน้อย 8 ตัวอักษร"
                       />
                       <button
                         type="button"
                         onClick={() => setShowNewPassword(!showNewPassword)}
-                        className="art-icon-button absolute right-3 top-1/2 !h-10 !w-10 -translate-y-1/2 !border-transparent !bg-transparent !shadow-none"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3]"
                         aria-label={showNewPassword ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'}
                       >
-                        {showNewPassword
-                          ? <EyeOff className="w-5 h-5" aria-hidden="true" />
-                          : <Eye className="w-5 h-5" aria-hidden="true" />}
+                        {showNewPassword ? <EyeOff size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
                       </button>
                     </div>
 
-                    {/* Password Strength Meter */}
+                    {/* Password Strength Indicator */}
                     {newPassword && (
-                      <div className="mt-2" aria-live="polite">
-                        <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
+                      <div className="mt-2 space-y-1.5" aria-live="polite">
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className="text-[#475569]">ความแข็งแรงของรหัสผ่าน:</span>
+                          <span className="font-bold">{getStrengthLabel()}</span>
+                        </div>
+                        <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
                           <div
                             className={`h-full transition-all duration-300 ${getStrengthColor()}`}
-                            style={{ width: `${(passwordStrength / 5) * 100}%` }}
+                            style={{ width: `${Math.min(100, (passwordStrength / 5) * 100)}%` }}
                           />
                         </div>
-                        <p className="text-xs text-slate-600 mt-1">
-                          ความแข็งแรง:{' '}
-                          <span className="font-medium">{getStrengthLabel()}</span>
-                        </p>
                       </div>
                     )}
                   </div>
 
                   {/* Confirm Password */}
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                    <label className="mb-1.5 block text-xs font-semibold text-slate-700">
                       ยืนยันรหัสผ่านใหม่
                     </label>
                     <div className="relative">
+                      <KeyRound size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden="true" />
                       <input
                         type={showConfirmPassword ? 'text' : 'password'}
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
-                        className="art-input w-full px-4 py-3 pr-12"
+                        className="w-full rounded-xl bg-[#f8fafc] py-2.5 pl-10 pr-11 text-sm text-[#1d1d1f] ring-1 ring-black/[0.08] transition-all duration-150 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0071e3]"
                         placeholder="กรอกรหัสผ่านใหม่อีกครั้ง"
                       />
                       <button
                         type="button"
                         onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="art-icon-button absolute right-3 top-1/2 !h-10 !w-10 -translate-y-1/2 !border-transparent !bg-transparent !shadow-none"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3]"
                         aria-label={showConfirmPassword ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'}
                       >
-                        {showConfirmPassword
-                          ? <EyeOff className="w-5 h-5" aria-hidden="true" />
-                          : <Eye className="w-5 h-5" aria-hidden="true" />}
+                        {showConfirmPassword ? <EyeOff size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
                       </button>
                     </div>
                   </div>
                 </div>
 
-                <div className="flex justify-end">
-                  <button type="submit" className="art-primary-button px-6 py-3">
-                    <span className="flex items-center gap-2">
-                      <Save className="w-5 h-5" aria-hidden="true" />
-                      บันทึกรหัสผ่านใหม่
-                    </span>
+                {/* Action Button */}
+                <div className="flex justify-end pt-2">
+                  <button
+                    type="submit"
+                    disabled={isChangingPassword}
+                    className="inline-flex items-center gap-2 rounded-full bg-[#0071e3] px-5 py-2.5 text-xs font-semibold text-white shadow-sm transition-all duration-150 hover:bg-[#0077ed] hover:shadow-[0_2px_10px_rgba(0,113,227,0.3)] disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3] focus-visible:ring-offset-2 active:scale-[0.98]"
+                  >
+                    <Save size={14} aria-hidden="true" />
+                    {isChangingPassword ? 'กำลังเปลี่ยนรหัสผ่าน...' : 'บันทึกรหัสผ่านใหม่'}
                   </button>
                 </div>
               </form>
             </div>
 
-            {/* ── Quick Links ──────────────────────────────────── */}
-            <div className="rounded-2xl bg-white ring-1 ring-black/[0.06] p-6 shadow-[0_8px_32px_rgba(15,23,42,0.06)]">
-              <div className="mb-6 border-b border-slate-200/70 pb-5">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex items-start gap-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-100 text-sky-600 shadow-[inset_0_1px_0_rgba(255,255,255,0.5)]">
-                      <Link2 className="h-5 w-5" aria-hidden="true" />
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h2 className="text-xl font-bold" style={{ color: '#1d1d1f' }}>
-                          ควิกลิ้งค์
-                        </h2>
-                        <span className="inline-flex items-center rounded-full bg-sky-50 px-2.5 py-1 text-xs font-semibold text-sky-700">
-                          {quickLinks.length} รายการ
-                        </span>
-                      </div>
-                      <p className="max-w-2xl text-sm leading-6" style={{ color: '#6e6e73' }}>
-                        รวมลิงก์ที่ใช้บ่อยไว้ใน Sidebar เพื่อเปิดได้เร็วขึ้น แยกให้อ่านง่ายทั้งลิงก์ภายในและลิงก์ภายนอก
-                      </p>
-                    </div>
+            {/* ── 3. Quick Links Management ────────────────────────── */}
+            <div className="rounded-2xl bg-white p-5 sm:p-6 ring-1 ring-black/[0.06] shadow-[0_8px_32px_rgba(15,23,42,0.06)]">
+              {/* Header */}
+              <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-50 text-sky-600 ring-1 ring-sky-200/60">
+                    <Link2 size={20} aria-hidden="true" />
                   </div>
-                  <button
-                    type="button"
-                    onClick={openCreateQuickLink}
-                    className="art-primary-button inline-flex flex-shrink-0 items-center gap-2 px-4 py-2.5"
-                  >
-                    <Plus className="h-4 w-4" aria-hidden="true" />
-                    เพิ่ม
-                  </button>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-[17px] font-bold text-[#1d1d1f]">
+                        ควิกลิ้งค์สำหรับแถบข้าง
+                      </h2>
+                      <span className="rounded-full bg-sky-50 px-2.5 py-0.5 text-[11px] font-bold text-sky-700 ring-1 ring-sky-200">
+                        {quickLinks.length}
+                      </span>
+                    </div>
+                    <p className="text-xs text-[#475569]">
+                      สร้างทางลัดเข้าถึงเว็บไซต์หรือหน้างานสำคัญใน Sidebar
+                    </p>
+                  </div>
                 </div>
+
+                <button
+                  type="button"
+                  onClick={openCreateQuickLink}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-2 text-xs font-semibold text-[#1d1d1f] ring-1 ring-black/[0.08] shadow-sm transition-all duration-150 hover:bg-[#f5f5f7] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3] active:scale-[0.98]"
+                >
+                  <Plus size={14} aria-hidden="true" />
+                  เพิ่มควิกลิ้งค์
+                </button>
               </div>
 
+              {/* Content List */}
               {quickLinks.length === 0 ? (
-                <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50/70 px-6 py-10 text-center">
-                  <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-sky-600 shadow-[0_10px_25px_rgba(15,23,42,0.08)]">
-                    <Link2 className="h-6 w-6" aria-hidden="true" />
+                <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 p-8 text-center">
+                  <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-sky-600 shadow-sm ring-1 ring-black/[0.06]">
+                    <Link2 size={22} aria-hidden="true" />
                   </div>
-                  <h3 className="text-base font-bold" style={{ color: '#1d1d1f' }}>
-                    ยังไม่มีควิกลิ้งค์
-                  </h3>
-                  <p className="mx-auto mt-2 max-w-md text-sm leading-6" style={{ color: '#6e6e73' }}>
-                    เพิ่มลิงก์ที่เปิดบ่อย เช่น Google Drive, ปฏิทิน หรือหน้าภายในระบบ เพื่อให้เข้าถึงได้จาก Sidebar ทันที
+                  <h3 className="text-sm font-bold text-[#1d1d1f]">ยังไม่มีควิกลิ้งค์</h3>
+                  <p className="mx-auto mt-1 max-w-sm text-xs text-[#475569]">
+                    เพิ่มลิงก์ที่ใช้งานบ่อย เช่น Google Drive, ปฏิทิน หรือระบบภายใน เพื่อให้คลิกเปิดได้ทันทีจาก Sidebar
                   </p>
                   <button
                     type="button"
                     onClick={openCreateQuickLink}
-                    className="art-primary-button mt-5 inline-flex items-center justify-center gap-2 px-5 py-2.5"
+                    className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-[#0071e3] px-4 py-2 text-xs font-semibold text-white shadow-sm transition-all hover:bg-[#0077ed] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3]"
                   >
-                    <Plus className="h-4 w-4" aria-hidden="true" />
+                    <Plus size={13} aria-hidden="true" />
                     สร้างควิกลิ้งค์แรก
                   </button>
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-2.5">
                   {quickLinks.map((link) => {
                     const Icon = QUICK_LINK_ICON_MAP[link.icon]
                     const linkMeta = describeQuickLink(link.url)
@@ -583,253 +661,229 @@ export default function ProfilePage() {
                     return (
                       <div
                         key={link.id}
-                        className="rounded-2xl bg-white ring-1 ring-black/[0.06] p-4 shadow-[0_2px_8px_rgba(15,23,42,0.04)] transition-shadow duration-200 hover:shadow-[0_8px_24px_rgba(15,23,42,0.08)] hover:ring-sky-200/60"
+                        className="flex flex-col gap-3 rounded-2xl bg-[#f8fafc] p-3.5 ring-1 ring-black/[0.05] transition-all duration-150 hover:bg-white hover:ring-black/[0.08] hover:shadow-sm sm:flex-row sm:items-center sm:justify-between"
                       >
-                        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                          <div className="flex min-w-0 items-start gap-4">
-                            <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-slate-50 ring-1 ring-black/[0.06]">
-                              <Icon size={20} aria-hidden="true" style={{ color: link.color || '#0ea5e9' }} />
-                            </div>
-
-                            <div className="min-w-0 space-y-1.5">
-                              <div className="flex flex-wrap items-center gap-2">
-                                <div className="truncate text-sm font-bold" style={{ color: '#1d1d1f' }}>
-                                  {link.label}
-                                </div>
-                                <span
-                                  className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold ${
-                                    external ? 'bg-sky-50 text-sky-700' : 'bg-violet-50 text-violet-700'
-                                  }`}
-                                >
-                                  {linkMeta.tone}
-                                </span>
-                              </div>
-                              <div className="truncate text-sm font-medium text-slate-700">
-                                {linkMeta.title}
-                              </div>
-                              <div className="truncate text-xs" style={{ color: '#6e6e73' }}>
-                                {linkMeta.subtitle}
-                              </div>
-                            </div>
+                        {/* Link Info */}
+                        <div className="flex min-w-0 items-center gap-3">
+                          <div
+                            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white ring-1 ring-black/[0.06] shadow-sm"
+                          >
+                            <Icon size={18} aria-hidden="true" style={{ color: link.color || '#0ea5e9' }} />
                           </div>
 
-                          <div className="flex flex-wrap items-center gap-1.5 lg:justify-end">
-                            <button
-                              type="button"
-                              onClick={() => handleMoveQuickLink(link.id, 'up')}
-                              disabled={quickLinks.indexOf(link) === 0}
-                              aria-label="ย้ายขึ้น"
-                              className="art-icon-button small-control !h-9 !w-9 !rounded-lg"
-                            >
-                              <ChevronUp className="h-3.5 w-3.5" aria-hidden="true" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleMoveQuickLink(link.id, 'down')}
-                              disabled={quickLinks.indexOf(link) === quickLinks.length - 1}
-                              aria-label="ย้ายลง"
-                              className="art-icon-button small-control !h-9 !w-9 !rounded-lg"
-                            >
-                              <ChevronDown className="h-3.5 w-3.5" aria-hidden="true" />
-                            </button>
-                            <a
-                              href={link.url}
-                              target={external ? '_blank' : undefined}
-                              rel={external ? 'noopener noreferrer' : undefined}
-                              className="art-soft-button !min-h-9 !gap-1.5 !px-3 !py-1.5 !text-xs"
-                            >
-                              <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
-                              เปิด
-                            </a>
-                            <button
-                              type="button"
-                              onClick={() => openEditQuickLink(link)}
-                              className="art-soft-button !min-h-9 !gap-1.5 !px-3 !py-1.5 !text-xs"
-                            >
-                              <PencilLine className="h-3.5 w-3.5" aria-hidden="true" />
-                              แก้ไข
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteQuickLink(link.id)}
-                              className="art-soft-button !min-h-9 !gap-1.5 !border-red-200 !bg-red-50/80 !px-3 !py-1.5 !text-xs !text-red-700 hover:!bg-red-50"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
-                              ลบ
-                            </button>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="truncate text-sm font-bold text-[#1d1d1f]">
+                                {link.label}
+                              </span>
+                              <span
+                                className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                                  external ? 'bg-sky-50 text-sky-700' : 'bg-violet-50 text-violet-700'
+                                }`}
+                              >
+                                {linkMeta.tone}
+                              </span>
+                            </div>
+                            <p className="truncate text-xs text-[#475569]">
+                              {link.url}
+                            </p>
                           </div>
+                        </div>
+
+                        {/* Action buttons */}
+                        <div className="flex items-center justify-end gap-1.5 border-t border-slate-200/50 pt-2 sm:border-t-0 sm:pt-0">
+                          <button
+                            type="button"
+                            onClick={() => handleMoveQuickLink(link.id, 'up')}
+                            disabled={quickLinks.indexOf(link) === 0}
+                            aria-label="ย้ายขึ้น"
+                            className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-slate-500 ring-1 ring-black/[0.06] transition-colors hover:bg-slate-100 hover:text-slate-800 disabled:opacity-40"
+                          >
+                            <ChevronUp size={14} aria-hidden="true" />
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleMoveQuickLink(link.id, 'down')}
+                            disabled={quickLinks.indexOf(link) === quickLinks.length - 1}
+                            aria-label="ย้ายลง"
+                            className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-slate-500 ring-1 ring-black/[0.06] transition-colors hover:bg-slate-100 hover:text-slate-800 disabled:opacity-40"
+                          >
+                            <ChevronDown size={14} aria-hidden="true" />
+                          </button>
+
+                          <a
+                            href={link.url}
+                            target={external ? '_blank' : undefined}
+                            rel={external ? 'noopener noreferrer' : undefined}
+                            className="inline-flex h-8 items-center gap-1 rounded-lg bg-white px-2.5 text-xs font-semibold text-slate-700 ring-1 ring-black/[0.06] transition-colors hover:bg-slate-100"
+                          >
+                            <ExternalLink size={12} aria-hidden="true" />
+                            เปิด
+                          </a>
+
+                          <button
+                            type="button"
+                            onClick={() => openEditQuickLink(link)}
+                            className="inline-flex h-8 items-center gap-1 rounded-lg bg-white px-2.5 text-xs font-semibold text-slate-700 ring-1 ring-black/[0.06] transition-colors hover:bg-slate-100"
+                          >
+                            <PencilLine size={12} aria-hidden="true" />
+                            แก้ไข
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteQuickLink(link.id)}
+                            className="inline-flex h-8 items-center gap-1 rounded-lg bg-red-50 px-2.5 text-xs font-semibold text-red-600 ring-1 ring-red-200/80 transition-colors hover:bg-red-100"
+                          >
+                            <Trash2 size={12} aria-hidden="true" />
+                            ลบ
+                          </button>
                         </div>
                       </div>
                     )
                   })}
                 </div>
               )}
-
-              {/* ── Quick Link Dialog ──────────────────────────── */}
-              <Dialog open={quickLinkDialogOpen} onOpenChange={setQuickLinkDialogOpen}>
-                <DialogContent className="!max-w-2xl">
-                  <DialogHeader>
-                    <DialogTitle>
-                      {editingQuickLinkId ? 'แก้ไขควิกลิ้งค์' : 'เพิ่มควิกลิ้งค์'}
-                    </DialogTitle>
-                    <DialogDescription>
-                      ควิกลิ้งค์ที่สร้างจะไปแสดงที่ Sidebar ของหน้าหลัก
-                    </DialogDescription>
-                  </DialogHeader>
-
-                  <form onSubmit={handleSubmitQuickLink} className="space-y-4">
-                    {/* Preview card */}
-                    <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-4">
-                      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                        <div className="flex min-w-0 items-center gap-3">
-                          <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-white ring-1 ring-black/[0.06] shadow-[0_10px_24px_rgba(15,23,42,0.06)]">
-                            <PreviewIcon size={20} aria-hidden="true" style={{ color: qlColor || '#0ea5e9' }} />
-                          </div>
-                          <div className="min-w-0">
-                            <div className="truncate text-sm font-bold" style={{ color: '#1d1d1f' }}>
-                              {qlLabel.trim() || 'ตัวอย่างควิกลิ้งค์'}
-                            </div>
-                            <div className="truncate text-sm" style={{ color: '#6e6e73' }}>
-                              {previewMeta.title}
-                            </div>
-                            <div className="truncate text-xs text-slate-500">{previewMeta.subtitle}</div>
-                          </div>
-                        </div>
-
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-600 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] ring-1 ring-black/[0.06]">
-                            <PreviewIcon className="h-3.5 w-3.5" aria-hidden="true" />
-                            ไอคอน {previewIconLabel}
-                          </span>
-                          <span
-                            className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${
-                              previewMeta.tone === 'ภายนอก'
-                                ? 'bg-sky-50 text-sky-700'
-                                : previewMeta.tone === 'ภายใน'
-                                  ? 'bg-violet-50 text-violet-700'
-                                  : 'bg-slate-200/80 text-slate-600'
-                            }`}
-                          >
-                            {previewMeta.tone}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="mb-2 block text-sm font-semibold text-slate-700">ชื่อปุ่ม</label>
-                      <input
-                        value={qlLabel}
-                        onChange={(e) => setQlLabel(e.target.value)}
-                        autoFocus
-                        className="art-input w-full px-4 py-3"
-                        placeholder="เช่น Google Drive"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="mb-2 block text-sm font-semibold text-slate-700">ลิงก์</label>
-                      <input
-                        value={qlUrl}
-                        onChange={(e) => setQlUrl(e.target.value)}
-                        className="art-input w-full px-4 py-3"
-                        placeholder="https://... หรือ /dashboard"
-                      />
-                      <p className="mt-1 text-xs text-slate-500">
-                        รองรับลิงก์ภายนอก (http/https) หรือเส้นทางภายในขึ้นต้นด้วย /
-                      </p>
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.3fr)_minmax(280px,0.9fr)]">
-                      <div>
-                        <label className="mb-2 block text-sm font-semibold text-slate-700">ไอคอน</label>
-                        <div className="grid grid-cols-5 gap-2 sm:grid-cols-7">
-                          {QUICK_LINK_ICON_OPTIONS.map((opt) => {
-                            const OptionIcon = QUICK_LINK_ICON_MAP[opt.key]
-                            const isSelected = qlIcon === opt.key
-                            return (
-                              <button
-                                key={opt.key}
-                                type="button"
-                                onClick={() => setQlIcon(opt.key)}
-                                aria-pressed={isSelected}
-                                aria-label={`เลือกไอคอน ${opt.label}`}
-                                title={opt.label}
-                                className={`art-chip-button h-[52px] w-full !rounded-[var(--art-radius-lg)] !p-2 ${
-                                  isSelected ? 'is-active' : ''
-                                }`}
-                              >
-                                <span
-                                  className={`flex h-9 w-9 items-center justify-center rounded-xl border ${
-                                    isSelected
-                                      ? 'border-sky-200 bg-white text-sky-600'
-                                      : 'border-slate-200 bg-slate-50 text-slate-500'
-                                  }`}
-                                >
-                                  <OptionIcon className="h-4 w-4" aria-hidden="true" />
-                                </span>
-                              </button>
-                            )
-                          })}
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="mb-2 block text-sm font-semibold text-slate-700">สี</label>
-                        <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3">
-                          <div className="flex items-center gap-3">
-                            <input
-                              type="color"
-                              value={qlColor}
-                              onChange={(e) => setQlColor(e.target.value)}
-                              className="art-color-input"
-                              aria-label="เลือกสี"
-                            />
-                            <input
-                              value={qlColor}
-                              onChange={(e) => setQlColor(e.target.value)}
-                              className="art-input flex-1 px-4 py-3"
-                              placeholder="#0ea5e9"
-                            />
-                          </div>
-                          <div className="mt-3 flex items-center gap-2">
-                            <span
-                              className="h-3.5 w-3.5 rounded-full border border-white shadow-[0_0_0_1px_rgba(148,163,184,0.28)]"
-                              style={{ backgroundColor: qlColor || '#0ea5e9' }}
-                              aria-hidden="true"
-                            />
-                            <span className="text-xs font-medium text-slate-500">
-                              สีที่เลือกจะใช้กับไอคอนใน Sidebar
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col-reverse gap-3 border-t border-slate-200/70 pt-4 sm:flex-row sm:items-center sm:justify-between">
-                      <div className="text-sm text-slate-500">
-                        ปลายทางจะถูกบันทึกและแสดงใน Sidebar ทันทีหลังจากกดบันทึก
-                      </div>
-                      <div className="flex flex-col gap-2 sm:flex-row">
-                        <button
-                          type="button"
-                          onClick={() => setQuickLinkDialogOpen(false)}
-                          className="art-soft-button px-4 py-2.5 text-sm"
-                        >
-                          ยกเลิก
-                        </button>
-                        <button type="submit" className="art-primary-button px-5 py-2.5">
-                          บันทึก
-                        </button>
-                      </div>
-                    </div>
-                  </form>
-                </DialogContent>
-              </Dialog>
             </div>
 
-          </div>{/* end forms column */}
-        </div>{/* end grid */}
+          </div>
+        </div>
+
+        {/* ── Quick Link Create/Edit Dialog ────────────────────────── */}
+        <Dialog open={quickLinkDialogOpen} onOpenChange={setQuickLinkDialogOpen}>
+          <DialogContent className="max-w-xl">
+            <DialogHeader>
+              <DialogTitle>
+                {editingQuickLinkId ? 'แก้ไขควิกลิ้งค์' : 'เพิ่มควิกลิ้งค์ใหม่'}
+              </DialogTitle>
+              <DialogDescription>
+                กำหนดชื่อ URL ปลายทาง ไอคอน และสีเพื่อแสดงในแถบเมนูข้าง (Sidebar)
+              </DialogDescription>
+            </DialogHeader>
+
+            <form onSubmit={handleSubmitQuickLink} className="space-y-4">
+              {/* Preview Card */}
+              <div className="rounded-2xl border border-slate-200/80 bg-slate-50/80 p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white ring-1 ring-black/[0.06] shadow-sm">
+                      <PreviewIcon size={20} aria-hidden="true" style={{ color: qlColor || '#0ea5e9' }} />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-bold text-[#1d1d1f]">
+                        {qlLabel.trim() || 'ตัวอย่างควิกลิ้งค์'}
+                      </p>
+                      <p className="truncate text-xs text-[#475569]">
+                        {previewMeta.title}
+                      </p>
+                    </div>
+                  </div>
+                  <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 shadow-sm ring-1 ring-black/[0.06]">
+                    {previewIconLabel}
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold text-slate-700">ชื่อปุ่มควิกลิ้งค์</label>
+                <input
+                  type="text"
+                  value={qlLabel}
+                  onChange={(e) => setQlLabel(e.target.value)}
+                  autoFocus
+                  className="w-full rounded-xl bg-[#f8fafc] px-4 py-2.5 text-sm text-[#1d1d1f] ring-1 ring-black/[0.08] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0071e3]"
+                  placeholder="เช่น Google Drive, ทะเบียนงาน"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold text-slate-700">ลิงก์ปลายทาง (URL)</label>
+                <input
+                  type="text"
+                  value={qlUrl}
+                  onChange={(e) => setQlUrl(e.target.value)}
+                  className="w-full rounded-xl bg-[#f8fafc] px-4 py-2.5 text-sm text-[#1d1d1f] ring-1 ring-black/[0.08] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0071e3]"
+                  placeholder="https://... หรือ /camera"
+                  required
+                />
+              </div>
+
+              {/* Icon & Color Selection Grid */}
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1.5 block text-xs font-semibold text-slate-700">เลือกไอคอน</label>
+                  <div className="grid grid-cols-5 gap-1.5 rounded-xl border border-slate-200 bg-slate-50/50 p-2">
+                    {QUICK_LINK_ICON_OPTIONS.map((opt) => {
+                      const OptionIcon = QUICK_LINK_ICON_MAP[opt.key]
+                      const isSelected = qlIcon === opt.key
+                      return (
+                        <button
+                          key={opt.key}
+                          type="button"
+                          onClick={() => setQlIcon(opt.key)}
+                          aria-pressed={isSelected}
+                          title={opt.label}
+                          className={`flex h-10 w-full items-center justify-center rounded-lg transition-all ${
+                            isSelected
+                              ? 'bg-white text-[#0071e3] shadow-sm ring-2 ring-[#0071e3]'
+                              : 'text-slate-500 hover:bg-white/80 hover:text-slate-800'
+                          }`}
+                        >
+                          <OptionIcon size={16} aria-hidden="true" />
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="mb-1.5 block text-xs font-semibold text-slate-700">เลือกสีไอคอน</label>
+                  <div className="flex h-[130px] flex-col justify-between rounded-xl border border-slate-200 bg-slate-50/50 p-3">
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="color"
+                        value={qlColor}
+                        onChange={(e) => setQlColor(e.target.value)}
+                        className="h-10 w-12 cursor-pointer rounded-lg border-0 bg-transparent p-0"
+                        aria-label="เลือกสีไอคอน"
+                      />
+                      <input
+                        type="text"
+                        value={qlColor}
+                        onChange={(e) => setQlColor(e.target.value)}
+                        className="flex-1 rounded-lg bg-white px-3 py-2 text-xs font-semibold text-slate-700 ring-1 ring-black/[0.08] focus:outline-none focus:ring-2 focus:ring-[#0071e3]"
+                        placeholder="#0ea5e9"
+                      />
+                    </div>
+                    <p className="text-[11px] text-[#475569]">
+                      สีที่เลือกจะแสดงเป็นเฉดสีของไอคอนใน Sidebar
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Dialog Footer */}
+              <div className="flex items-center justify-end gap-2.5 border-t border-slate-100 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setQuickLinkDialogOpen(false)}
+                  className="rounded-full bg-white px-4 py-2 text-xs font-semibold text-slate-700 ring-1 ring-black/[0.08] transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3]"
+                >
+                  ยกเลิก
+                </button>
+                <button
+                  type="submit"
+                  className="rounded-full bg-[#0071e3] px-5 py-2 text-xs font-semibold text-white shadow-sm transition-all hover:bg-[#0077ed] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3]"
+                >
+                  {editingQuickLinkId ? 'บันทึกการแก้ไข' : 'เพิ่มควิกลิ้งค์'}
+                </button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
+
       </div>
     </DashboardLayout>
   )

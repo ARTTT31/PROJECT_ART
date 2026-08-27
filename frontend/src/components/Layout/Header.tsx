@@ -103,8 +103,8 @@ export default function Header({ user, onMenuClick, onLogout, sidebarCollapsed =
                   )
                 })}
               </nav>
-              <span aria-hidden="true" className="hidden text-slate-300 sm:inline">•</span>
-              <p className="hidden max-w-[200px] truncate text-sm font-medium text-slate-500 sm:block">{headerMeta.subtitle}</p>
+              <span aria-hidden="true" className="hidden text-slate-300 md:inline">•</span>
+              <p className="hidden text-sm font-medium text-[#475569] md:inline-block">{headerMeta.subtitle}</p>
             </div>
           </div>
         </div>
