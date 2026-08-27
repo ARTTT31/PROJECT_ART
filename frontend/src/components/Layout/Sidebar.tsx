@@ -67,16 +67,8 @@ export default function Sidebar({ isOpen, isCollapsed = false, onClose, user, on
       } ${isCollapsed ? 'lg:-translate-x-full' : 'lg:translate-x-0'}`}
     >
       <div className="flex h-full flex-col">
-        <div className="flex items-center justify-between border-b border-slate-200/60 p-5">
-          <Link href="/dashboard" className="flex items-center gap-3" onClick={onClose}>
-            <div>
-              <div className="text-base font-bold tracking-wide" style={{ color: '#1d1d1f' }}>ART Workspace</div>
-              <div className="text-[11px] font-semibold tracking-wide" style={{ color: '#6e6e73' }}>Personal Dashboard</div>
-            </div>
-          </Link>
-        </div>
-
-        <nav className="flex-1 overflow-y-auto p-4">
+        {/* Navigation Menu */}
+        <nav className="flex-1 overflow-y-auto p-4 pt-6">
           <div className="space-y-6">
             {menuItems.map((section) => (
               <div key={section.title}>
@@ -123,10 +115,16 @@ export default function Sidebar({ isOpen, isCollapsed = false, onClose, user, on
           </div>
         </nav>
 
+        {/* Logout Button */}
         <div className="border-t border-slate-200/60 p-4">
           <button
-            onClick={onLogout}
-            className="flex min-h-11 w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-red-500 transition-all duration-200 hover:bg-red-50 hover:text-red-600"
+            type="button"
+            onClick={() => {
+              onClose()
+              onLogout()
+            }}
+            className="flex min-h-11 w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-red-500 transition-all duration-200 hover:bg-red-50 hover:text-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
+            aria-label="ออกจากระบบ"
           >
             <LogOut size={20} aria-hidden="true" />
             ออกจากระบบ

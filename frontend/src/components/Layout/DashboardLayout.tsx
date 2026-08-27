@@ -18,13 +18,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const { user, logout } = useAuth()
 
-  const handleLogout = () => {
-    showConfirm('ต้องการออกจากระบบหรือไม่?', 'กดยืนยันเพื่อออกจากระบบ').then((result) => {
-      if (result.isConfirmed) {
-        logout()
-        router.replace('/login')
-      }
-    })
+  const handleLogout = async () => {
+    const result = await showConfirm('ต้องการออกจากระบบหรือไม่?', 'กดยืนยันเพื่อออกจากระบบ')
+    if (result.isConfirmed) {
+      await logout()
+      router.replace('/login')
+    }
   }
 
   return (

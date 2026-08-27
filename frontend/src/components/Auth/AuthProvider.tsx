@@ -224,22 +224,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   )
 
   const logout = useCallback(async () => {
-    try {
-      const sessionId = localStorage.getItem('session_id')
-      await fetchWithAuth('/api/v1/auth/logout', {
-        method: 'POST',
-        body: JSON.stringify({ session_id: sessionId })
-      })
-    } catch (e) {
-      console.error('Logout failed:', e)
-    }
+    const sessionId = typeof window !== 'undefined' ? localStorage.getItem('session_id') : null
 
-    localStorage.removeItem('session_id')
-    localStorage.removeItem('user')
+    // 1. Immediately wipe local state & cookies for instant UI response
+    try {
+      localStorage.removeItem('session_id')
+      localStorage.removeItem('user')
+      document.cookie = 'user=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; max-age=0'
+      document.cookie = 'access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; max-age=0'
+      document.cookie = 'refresh_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; max-age=0'
+    } catch {}
 
     setUser(null)
     setStatus('anonymous')
     window.dispatchEvent(new Event('auth-logout'))
+
+    // 2. Notify backend in background to invalidate session & clear httpOnly cookies
+    try {
+      await fetchWithAuth(`/api/v1/auth/logout${sessionId ? `?session_id=${sessionId}` : ''}`, {
+        method: 'POST',
+        body: JSON.stringify({ session_id: sessionId })
+      })
+    } catch (e) {
+      console.warn('Backend logout notification:', e)
+    }
   }, [])
 
   const updateUser = useCallback((next: Partial<AuthUser>) => {
