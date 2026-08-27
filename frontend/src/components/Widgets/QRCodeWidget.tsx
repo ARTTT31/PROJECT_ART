@@ -244,7 +244,7 @@ export default function QRCodeWidget({
               >
                 {format === 'qrcode' ? 'QR Code' : 'Code 128'}
               </h3>
-              <p className="mt-0.5 text-[11px] text-[#6e6e73]">
+              <p className="mt-0.5 text-[11px] text-[#475569]">
                 {format === 'qrcode' ? 'แปลงข้อความหรือ URL' : 'แปลงข้อความเป็นบาร์โค้ด'}
               </p>
             </div>
@@ -273,7 +273,7 @@ export default function QRCodeWidget({
                   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3] focus-visible:ring-offset-1',
                   isActive
                     ? 'bg-white text-[#1d1d1f] shadow-sm ring-1 ring-black/[0.06]'
-                    : 'text-[#6e6e73] hover:text-[#1d1d1f]',
+                    : 'text-[#475569] hover:text-[#1d1d1f]',
                 ].join(' ')}
               >
                 <Icon size={14} aria-hidden="true" />
@@ -295,7 +295,7 @@ export default function QRCodeWidget({
           }
           className={[
             'w-full rounded-xl bg-[#f5f5f7] px-4 py-2.5 text-sm text-[#1d1d1f]',
-            'placeholder:text-[#6e6e73]',
+            'placeholder:text-[#475569]',
             'border-none outline-none',
             'ring-1 ring-black/[0.06]',
             'transition-all duration-150',
@@ -336,7 +336,7 @@ export default function QRCodeWidget({
               )}
 
               {/* Generated text label */}
-              <p className="w-full truncate rounded-xl bg-[#f5f5f7] px-3 py-1.5 text-center text-xs font-medium text-[#6e6e73]">
+              <p className="w-full truncate rounded-xl bg-[#f5f5f7] px-3 py-1.5 text-center text-xs font-medium text-[#475569]">
                 {generatedText}
               </p>
 
@@ -385,7 +385,7 @@ export default function QRCodeWidget({
               <p className="text-sm font-semibold text-[#1d1d1f]">
                 {format === 'qrcode' ? 'ยังไม่มี QR Code' : 'ยังไม่มีบาร์โค้ด'}
               </p>
-              <p className="max-w-[180px] text-xs text-[#6e6e73]">
+              <p className="max-w-[180px] text-xs text-[#475569]">
                 {format === 'qrcode' ? 'พิมพ์ข้อความหรือ URL ด้านบน' : 'พิมพ์ข้อความด้านบน'}
               </p>
             </div>

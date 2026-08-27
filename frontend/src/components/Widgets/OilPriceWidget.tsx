@@ -208,7 +208,7 @@ export default function OilPriceWidget({
               </h3>
 
               {/* Meta line */}
-              <p className="mt-0.5 text-[11px] text-[#6e6e73]">
+              <p className="mt-0.5 text-[11px] text-[#475569]">
                 {(loading || refreshing)
                   ? 'กำลังอัปเดต...'
                   : cacheNote
@@ -261,18 +261,18 @@ export default function OilPriceWidget({
                 </div>
 
                 {/* Price */}
-                <span className="tabular-nums text-2xl font-extrabold leading-none tracking-tight text-[#1d1d1f] sm:text-3xl">
+                <span className="tabular-nums text-xl font-extrabold leading-none tracking-tight text-[#1d1d1f] sm:text-2xl lg:text-3xl">
                   {item.price.toFixed(2)}
                 </span>
 
                 {/* Unit */}
-                <span className="text-[11px] font-medium text-[#6e6e73]">{item.unit}</span>
+                <span className="text-[11px] font-medium text-[#475569]">{item.unit}</span>
               </div>
             ))}
           </div>
         ) : (
           !error && (
-            <div className="flex flex-1 items-center justify-center text-sm text-[#6e6e73]">
+            <div className="flex flex-1 items-center justify-center text-sm text-[#475569]">
               ไม่มีข้อมูลราคาน้ำมัน
             </div>
           )
@@ -280,7 +280,7 @@ export default function OilPriceWidget({
 
         {/* ── Footer ────────────────────────────────────────────────────── */}
         <div className="border-t border-black/[0.05] pt-2">
-          <span className="text-[10px] text-[#6e6e73]">แหล่งข้อมูล: EPPO</span>
+          <span className="text-[10px] text-[#475569]">แหล่งข้อมูล: EPPO</span>
         </div>
       </div>
     </section>

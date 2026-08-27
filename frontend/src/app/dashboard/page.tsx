@@ -37,16 +37,46 @@ import { CSS } from '@dnd-kit/utilities'
 
 // ── Lazy-load heavy widgets ──────────────────────────────────────────────────
 
-/** Shared skeleton tile used while a widget is loading */
+/** Shared skeleton card with smooth shimmer wave used while a widget is loading */
 function WidgetSkeleton({ minHeight = 220 }: { minHeight?: number }) {
   return (
     <div
-      className="flex items-center justify-center rounded-[28px] bg-[#f5f5f7]"
+      className="relative flex flex-col justify-between overflow-hidden rounded-2xl bg-white p-5 ring-1 ring-black/[0.06] shadow-sm"
       style={{ minHeight }}
       role="status"
-      aria-label="กำลังโหลด"
+      aria-label="กำลังโหลดข้อมูล..."
     >
-      <Loader2 className="h-7 w-7 animate-spin text-slate-300" />
+      {/* Header skeleton */}
+      <div className="flex items-center justify-between gap-3 mb-4">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 shrink-0 rounded-[14px] bg-slate-100 animate-pulse" />
+          <div className="space-y-1.5">
+            <div className="h-4 w-24 rounded-md bg-slate-100 animate-pulse" />
+            <div className="h-3 w-32 rounded-md bg-slate-100/70 animate-pulse" />
+          </div>
+        </div>
+        <div className="h-7 w-20 rounded-full bg-slate-100 animate-pulse" />
+      </div>
+
+      {/* Content grid skeleton */}
+      <div className="grid flex-1 grid-cols-2 gap-2.5 sm:grid-cols-3">
+        {[1, 2, 3, 4, 5, 6].map((i) => (
+          <div
+            key={i}
+            className="flex flex-col items-center justify-center gap-2 rounded-2xl bg-[#f8fafc] p-4 animate-pulse"
+          >
+            <div className="h-3 w-14 rounded-md bg-slate-200/60" />
+            <div className="h-6 w-16 rounded-md bg-slate-200" />
+            <div className="h-2.5 w-10 rounded-md bg-slate-200/40" />
+          </div>
+        ))}
+      </div>
+
+      {/* Shimmer sweep effect */}
+      <div
+        className="pointer-events-none absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/40 to-transparent"
+        aria-hidden="true"
+      />
     </div>
   )
 }
@@ -106,7 +136,7 @@ const getColSpanClass = (w: number) => {
 
 function WidgetErrorFallback({ name, error, reset }: { name: string; error: Error; reset: () => void }) {
   return (
-    <div className="flex min-h-[220px] items-center justify-center rounded-[28px] bg-[#fff0f0] p-6">
+    <div className="flex min-h-[220px] items-center justify-center rounded-2xl bg-[#fff0f0] p-6 ring-1 ring-red-100">
       <div className="text-center">
         <p className="text-sm font-bold text-red-700">วิดเจ็ต{name} โหลดไม่สำเร็จ</p>
         <p className="mt-1 text-xs text-red-500/80">{error.message}</p>
