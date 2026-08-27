@@ -1668,12 +1668,7 @@ input[type="radio"],
 
 /* SweetAlert2 follows the shared alert, modal, and button system. */
 .swal2-container {
-  z-index: var(--z-toast) !important;
-}
-
-.swal2-container:not(.swal2-shown) {
-  display: none !important;
-  pointer-events: none !important;
+  z-index: var(--z-modal, 1050) !important;
 }
 
 .swal2-container.swal2-backdrop-show:not(.swal2-top-end):not(.swal2-top-start):not(.swal2-bottom-end):not(.swal2-bottom-start):not(.swal2-toast-shown) {
