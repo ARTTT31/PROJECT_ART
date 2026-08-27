@@ -45,6 +45,8 @@ class UserUpdate(BaseModel):
     email: Optional[EmailStr] = None
     avatar: Optional[str] = None
     quick_links: Optional[str] = None
+    dashboard_layout: Optional[str] = None
+    camera_config: Optional[str] = None
 
 
 class UserAdminUpdate(BaseModel):
@@ -68,6 +70,18 @@ class UserQuickLinksUpdate(BaseModel):
     """Schema for updating user quick links"""
 
     quick_links: str = Field(..., min_length=0)
+
+
+class UserDashboardLayoutUpdate(BaseModel):
+    """Schema for updating user dashboard layout"""
+
+    dashboard_layout: str = Field(..., min_length=0)
+
+
+class UserCameraConfigUpdate(BaseModel):
+    """Schema for updating user camera configuration"""
+
+    camera_config: str = Field(..., min_length=0)
 
 
 class UserPasswordChange(BaseModel):
@@ -112,6 +126,8 @@ class UserResponse(BaseModel):
     role: str
     avatar: Optional[str] = None
     quick_links: Optional[str] = None
+    dashboard_layout: Optional[str] = None
+    camera_config: Optional[str] = None
     is_active: bool
     last_login: Optional[datetime] = None
     created_at: datetime

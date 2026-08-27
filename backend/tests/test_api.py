@@ -171,3 +171,31 @@ class TestProfileAPI:
     async def test_get_profile_unauthorized(self, client):
         resp = await client.get("/api/v1/profile/me")
         assert resp.status_code in [401, 403]
+
+    async def test_update_dashboard_layout(self, client, logged_in_user):
+        layout_data = '[{"id":"oilprice","w":1},{"id":"qrcode","w":1}]'
+        resp = await client.post(
+            "/api/v1/profile/dashboard-layout",
+            json={"dashboard_layout": layout_data}
+        )
+        assert resp.status_code == 200
+        assert resp.json()["result"] == "success"
+
+        # Verify through profile/me
+        me_resp = await client.get("/api/v1/profile/me")
+        assert me_resp.status_code == 200
+        assert me_resp.json()["dashboard_layout"] == layout_data
+
+    async def test_update_camera_config(self, client, logged_in_user):
+        camera_data = '[{"id":"cam-1","name":"Front Door","location":"Entrance","streamType":"simulated"}]'
+        resp = await client.post(
+            "/api/v1/profile/camera-config",
+            json={"camera_config": camera_data}
+        )
+        assert resp.status_code == 200
+        assert resp.json()["result"] == "success"
+
+        # Verify through profile/me
+        me_resp = await client.get("/api/v1/profile/me")
+        assert me_resp.status_code == 200
+        assert me_resp.json()["camera_config"] == camera_data

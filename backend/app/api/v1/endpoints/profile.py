@@ -13,6 +13,8 @@ from app.schemas.user import (
     UserPasswordChange,
     UserAvatarUpdate,
     UserQuickLinksUpdate,
+    UserDashboardLayoutUpdate,
+    UserCameraConfigUpdate,
 )
 from app.schemas.response import ResponseModel
 from app.services.user_service import UserService
@@ -251,6 +253,62 @@ async def update_quick_links(
         return ResponseModel(
             result="success",
             message="อัปเดต Quick Links สำเร็จ",
+        )
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e),
+        )
+
+
+@router.post("/dashboard-layout", response_model=ResponseModel)
+async def update_dashboard_layout(
+    layout_update: UserDashboardLayoutUpdate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Update user dashboard layout preferences (JSON string)
+    """
+    user_service = UserService(db)
+
+    try:
+        await user_service.update_dashboard_layout(
+            current_user.id, layout_update.dashboard_layout
+        )
+
+        return ResponseModel(
+            result="success",
+            message="บันทึกการจัดวางหน้าแดชบอร์ดสำเร็จ",
+        )
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e),
+        )
+
+
+@router.post("/camera-config", response_model=ResponseModel)
+async def update_camera_config(
+    camera_update: UserCameraConfigUpdate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Update user camera streams configuration (JSON string)
+    """
+    user_service = UserService(db)
+
+    try:
+        await user_service.update_camera_config(
+            current_user.id, camera_update.camera_config
+        )
+
+        return ResponseModel(
+            result="success",
+            message="บันทึกการตั้งค่ากล้องวงจรปิดสำเร็จ",
         )
 
     except Exception as e:

@@ -158,6 +158,10 @@ class UserService:
             user.avatar = user_update.avatar
         if user_update.quick_links is not None:
             user.quick_links = user_update.quick_links
+        if user_update.dashboard_layout is not None:
+            user.dashboard_layout = user_update.dashboard_layout
+        if user_update.camera_config is not None:
+            user.camera_config = user_update.camera_config
 
         user.updated_at = _utcnow()
 
@@ -214,6 +218,28 @@ class UserService:
             raise ValueError("ไม่พบผู้ใช้")
 
         user.quick_links = quick_links
+        user.updated_at = _utcnow()
+
+        await self.db.commit()
+
+    async def update_dashboard_layout(self, user_id: int, dashboard_layout: str) -> None:
+        """Update user dashboard layout"""
+        user = await self.get_user_by_id(user_id)
+        if not user:
+            raise ValueError("ไม่พบผู้ใช้")
+
+        user.dashboard_layout = dashboard_layout
+        user.updated_at = _utcnow()
+
+        await self.db.commit()
+
+    async def update_camera_config(self, user_id: int, camera_config: str) -> None:
+        """Update user camera configuration"""
+        user = await self.get_user_by_id(user_id)
+        if not user:
+            raise ValueError("ไม่พบผู้ใช้")
+
+        user.camera_config = camera_config
         user.updated_at = _utcnow()
 
         await self.db.commit()

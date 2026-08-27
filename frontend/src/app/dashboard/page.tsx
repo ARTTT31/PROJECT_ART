@@ -1,11 +1,12 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
 import DashboardLayout from '@/components/Layout/DashboardLayout'
 import { Check, Eye, EyeOff, GripHorizontal, Loader2, SlidersHorizontal } from 'lucide-react'
 import { WidgetConfig } from '@/types'
 import ErrorBoundary from '@/components/ErrorBoundary'
+import { fetchWithAuth } from '@/lib/api/fetchWithAuth'
 import {
   Dialog,
   DialogBody,
@@ -235,12 +236,13 @@ function SortableWidget({
 // ── Dashboard page ───────────────────────────────────────────────────────────
 
 export default function DashboardPage() {
-  const { user } = useAuth()
+  const { user, updateUser } = useAuth()
   const [widgets, setWidgets] = useState<WidgetConfig[]>([])
   const [visibleWidgetIds, setVisibleWidgetIds] = useState<string[]>([])
   const [showConfigModal, setShowConfigModal] = useState(false)
   const [isClient, setIsClient] = useState(false)
   const [selectedMonth, setSelectedMonth] = useState(new Date())
+  const hasInitializedRef = useRef(false)
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -248,63 +250,95 @@ export default function DashboardPage() {
     useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } }),
   )
 
-  const saveLayout = (newLayout: WidgetConfig[]) => {
-    setWidgets(newLayout)
-    localStorage.setItem('artWorkspaceLayoutV3', JSON.stringify(newLayout))
-  }
-
-  const saveVisibleWidgets = (visibleIds: string[]) => {
-    setVisibleWidgetIds(visibleIds)
-    localStorage.setItem('artWorkspaceVisibleWidgets', JSON.stringify(visibleIds))
-  }
-
   const saveLayoutDebouncedRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  // Cloud sync helper
+  const persistLayout = useCallback((newLayout: WidgetConfig[], newVisibleIds: string[]) => {
+    setWidgets(newLayout)
+    setVisibleWidgetIds(newVisibleIds)
+
+    const payload = JSON.stringify({
+      widgets: newLayout,
+      visibleWidgetIds: newVisibleIds,
+    })
+
+    // 1. Fast local cache
+    try {
+      localStorage.setItem('artWorkspaceLayoutV3', JSON.stringify(newLayout))
+      localStorage.setItem('artWorkspaceVisibleWidgets', JSON.stringify(newVisibleIds))
+    } catch {}
+
+    // 2. Debounced backend sync
+    if (saveLayoutDebouncedRef.current) clearTimeout(saveLayoutDebouncedRef.current)
+    saveLayoutDebouncedRef.current = setTimeout(async () => {
+      try {
+        await fetchWithAuth('/api/v1/profile/dashboard-layout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ dashboard_layout: payload }),
+        })
+        updateUser({ dashboard_layout: payload })
+      } catch (err) {
+        console.error('Failed to sync dashboard layout to backend:', err)
+      }
+    }, 400)
+  }, [updateUser])
+
+  // Initialize layout from user profile (cloud) or local storage
   useEffect(() => {
     setIsClient(true)
+    if (hasInitializedRef.current && !user?.dashboard_layout) return
 
-    // Restore visible widgets
-    const savedVisible = localStorage.getItem('artWorkspaceVisibleWidgets')
-    if (savedVisible) {
-      try {
-        setVisibleWidgetIds(JSON.parse(savedVisible))
-      } catch {
-        setVisibleWidgetIds(defaultWidgets.map((w) => w.id))
-      }
-    } else {
-      setVisibleWidgetIds(defaultWidgets.map((w) => w.id))
-    }
+    let loadedWidgets = defaultWidgets
+    let loadedVisible = defaultWidgets.map((w) => w.id)
+    let foundCloud = false
 
-    // Restore layout
-    const savedLayout = localStorage.getItem('artWorkspaceLayoutV3')
-    if (savedLayout) {
+    if (user?.dashboard_layout) {
       try {
-        const parsed = JSON.parse(savedLayout)
-        const stale =
-          parsed.length !== defaultWidgets.length ||
-          parsed.some((widget: any) => !defaultWidgets.find((d) => d.id === widget.id))
-        if (stale) {
-          saveLayout(defaultWidgets)
-        } else {
-          setWidgets(parsed)
+        const parsed = JSON.parse(user.dashboard_layout)
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          loadedWidgets = parsed
+          loadedVisible = parsed.map((w: any) => w.id)
+          foundCloud = true
+        } else if (parsed && typeof parsed === 'object') {
+          if (Array.isArray(parsed.widgets) && parsed.widgets.length > 0) {
+            loadedWidgets = parsed.widgets
+            foundCloud = true
+          }
+          if (Array.isArray(parsed.visibleWidgetIds) && parsed.visibleWidgetIds.length > 0) {
+            loadedVisible = parsed.visibleWidgetIds
+          }
         }
-      } catch {
-        setWidgets(defaultWidgets)
-      }
-    } else {
-      setWidgets(defaultWidgets)
+      } catch {}
     }
-  }, [])
+
+    if (!foundCloud) {
+      const savedVisible = localStorage.getItem('artWorkspaceVisibleWidgets')
+      if (savedVisible) {
+        try {
+          loadedVisible = JSON.parse(savedVisible)
+        } catch {}
+      }
+
+      const savedLayout = localStorage.getItem('artWorkspaceLayoutV3')
+      if (savedLayout) {
+        try {
+          const parsed = JSON.parse(savedLayout)
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            loadedWidgets = parsed
+          }
+        } catch {}
+      }
+    }
+
+    setWidgets(loadedWidgets)
+    setVisibleWidgetIds(loadedVisible)
+    hasInitializedRef.current = true
+  }, [user?.dashboard_layout])
 
   const handleResize = (id: string, newWidth: number) => {
-    setWidgets((prev) => prev.map((w) => (w.id === id ? { ...w, w: newWidth } : w)))
-    if (saveLayoutDebouncedRef.current) clearTimeout(saveLayoutDebouncedRef.current)
-    saveLayoutDebouncedRef.current = setTimeout(() => {
-      setWidgets((prev) => {
-        localStorage.setItem('artWorkspaceLayoutV3', JSON.stringify(prev))
-        return prev
-      })
-    }, 300)
+    const updated = widgets.map((w) => (w.id === id ? { ...w, w: newWidth } : w))
+    persistLayout(updated, visibleWidgetIds)
   }
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -314,20 +348,18 @@ export default function DashboardPage() {
     const newIndex = widgets.findIndex((w) => w.id === over.id)
     if (oldIndex === -1 || newIndex === -1) return
     const newLayout = arrayMove(widgets, oldIndex, newIndex)
-    setWidgets(newLayout)
-    if (saveLayoutDebouncedRef.current) clearTimeout(saveLayoutDebouncedRef.current)
-    saveLayoutDebouncedRef.current = setTimeout(() => {
-      localStorage.setItem('artWorkspaceLayoutV3', JSON.stringify(newLayout))
-    }, 150)
+    persistLayout(newLayout, visibleWidgetIds)
   }
 
   const toggleWidgetVisibility = (id: string) => {
+    let newVisible: string[]
     if (visibleWidgetIds.includes(id)) {
       if (visibleWidgetIds.length <= 1) return
-      saveVisibleWidgets(visibleWidgetIds.filter((vId) => vId !== id))
+      newVisible = visibleWidgetIds.filter((vId) => vId !== id)
     } else {
-      saveVisibleWidgets([...visibleWidgetIds, id])
+      newVisible = [...visibleWidgetIds, id]
     }
+    persistLayout(widgets, newVisible)
   }
 
   const visibleWidgets = widgets.filter((w) => visibleWidgetIds.includes(w.id))

@@ -14,12 +14,29 @@ export interface AuthUser {
   role: AuthRole
   avatar?: string | null
   quick_links?: string | null
+  dashboard_layout?: string | null
+  camera_config?: string | null
 }
 
 /** @deprecated Use AuthUser instead */
 export type DashboardUser = AuthUser
 
-/** Widget configuration stored in localStorage */
+/** Camera stream configuration */
+export type CameraStreamType = 'snapshot' | 'mjpeg' | 'iframe' | 'simulated'
+
+export interface CameraStreamConfig {
+  id: string
+  name: string
+  location: string
+  url?: string
+  streamType: CameraStreamType
+  refreshInterval?: number // in seconds, for snapshot mode
+  status?: 'online' | 'offline'
+  fps?: number
+  resolution?: string
+}
+
+/** Widget configuration stored in localStorage and synced to backend */
 export interface WidgetConfig {
   id: string
   w: number

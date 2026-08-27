@@ -5,12 +5,13 @@ Security utilities for authentication and authorization
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 from jose import JWTError, jwt
-from passlib.context import CryptContext
+from argon2 import PasswordHasher
+from argon2.exceptions import VerifyMismatchError, VerificationError, InvalidHashError
 
 from app.core.config import settings
 
-# Password hashing context - use argon2 instead of bcrypt to avoid issues
-pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
+# Direct Argon2 password hasher (modern standard, avoids passlib deprecation warnings)
+_password_hasher = PasswordHasher()
 
 
 def _utcnow() -> datetime:
@@ -20,12 +21,17 @@ def _utcnow() -> datetime:
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a password against a hash"""
-    return pwd_context.verify(plain_password, hashed_password)
+    try:
+        return _password_hasher.verify(hashed_password, plain_password)
+    except (VerifyMismatchError, VerificationError, InvalidHashError):
+        return False
+    except Exception:
+        return False
 
 
 def get_password_hash(password: str) -> str:
-    """Hash a password"""
-    return pwd_context.hash(password)
+    """Hash a password with Argon2id"""
+    return _password_hasher.hash(password)
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:

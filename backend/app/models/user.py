@@ -27,6 +27,12 @@ class User(Base, TimestampMixin):
     # Quick links (JSON stored as text)
     quick_links = Column(Text, nullable=True)
 
+    # Dashboard layout and widget preferences (JSON stored as text)
+    dashboard_layout = Column(Text, nullable=True)
+
+    # Camera streams configuration (JSON stored as text)
+    camera_config = Column(Text, nullable=True)
+
     # Account status
     is_active = Column(Boolean, default=True, nullable=False)
     is_locked = Column(Boolean, default=False, nullable=False)
