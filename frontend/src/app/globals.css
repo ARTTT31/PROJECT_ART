@@ -1667,19 +1667,31 @@ input[type="radio"],
    - src/styles/pages/weather.css */
 
 /* SweetAlert2 follows the shared alert, modal, and button system. */
-.swal2-container.swal2-top-end {
-  top: var(--space-4) !important;
-  right: var(--space-4) !important;
-  height: auto !important;
-  bottom: auto !important;
-}
-
 .swal2-container {
   z-index: var(--z-toast) !important;
 }
 
-.swal2-container.swal2-backdrop-show {
+.swal2-container.swal2-backdrop-show:not(.swal2-top-end):not(.swal2-top-start):not(.swal2-bottom-end):not(.swal2-bottom-start):not(.swal2-toast-shown) {
   background: rgba(15, 23, 42, 0.4) !important;
+}
+
+.swal2-container.swal2-top-end,
+.swal2-container.swal2-top-start,
+.swal2-container.swal2-bottom-end,
+.swal2-container.swal2-bottom-start,
+.swal2-container.swal2-toast-shown {
+  top: var(--space-4) !important;
+  right: var(--space-4) !important;
+  height: auto !important;
+  bottom: auto !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  pointer-events: none !important;
+}
+
+.swal2-container .swal2-toast {
+  pointer-events: auto !important;
 }
 
 .art-swal-popup {

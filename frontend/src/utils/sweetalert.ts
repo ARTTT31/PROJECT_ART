@@ -20,19 +20,21 @@ const modalDefaults = {
 // Toast notification (มุมขวาบน)
 export const showToast = (title: string, icon: 'success' | 'error' | 'warning' | 'info' = 'success') => {
   const Toast = Swal.mixin({
-    ...modalDefaults,
     toast: true,
     position: 'top-end',
     showConfirmButton: false,
+    showCloseButton: false,
     timer: 3000,
     timerProgressBar: true,
+    backdrop: false, // Prevents any dark background overlay behind the toast
+    buttonsStyling: false,
     didOpen: (toast) => {
       toast.addEventListener('mouseenter', Swal.stopTimer)
       toast.addEventListener('mouseleave', Swal.resumeTimer)
     }
   })
 
-  Toast.fire({
+  return Toast.fire({
     icon,
     title
   })
