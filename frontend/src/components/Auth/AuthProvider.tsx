@@ -173,7 +173,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     window.addEventListener('auth-logout', onLogout)
     window.addEventListener('auth-login', onLogin)
 
+    // ── Proactive Keep-Alive: Refresh token every 15 mins while app is active ──
+    const keepAliveInterval = setInterval(async () => {
+      const u = safeParseUser(localStorage.getItem('user'))
+      if (!u) return
+      try {
+        await fetchWithAuth('/api/v1/auth/session')
+      } catch (e) {
+        console.warn('Background session keep-alive ping:', e)
+      }
+    }, 15 * 60 * 1000)
+
+    // ── Tab re-focus / visibility change handler ──
+    const onVisibilityChange = async () => {
+      if (document.visibilityState === 'visible') {
+        const u = safeParseUser(localStorage.getItem('user'))
+        if (u) {
+          try {
+            await fetchWithAuth('/api/v1/auth/session')
+          } catch (e) {
+            console.warn('Visibility session check:', e)
+          }
+        }
+      }
+    }
+
+    document.addEventListener('visibilitychange', onVisibilityChange)
+    window.addEventListener('focus', onVisibilityChange)
+
     return () => {
+      clearInterval(keepAliveInterval)
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+      window.removeEventListener('focus', onVisibilityChange)
       window.removeEventListener('storage', onStorage)
       window.removeEventListener('auth-logout', onLogout)
       window.removeEventListener('auth-login', onLogin)

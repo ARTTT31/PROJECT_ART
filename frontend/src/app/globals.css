@@ -1671,6 +1671,11 @@ input[type="radio"],
   z-index: var(--z-toast) !important;
 }
 
+.swal2-container:not(.swal2-shown) {
+  display: none !important;
+  pointer-events: none !important;
+}
+
 .swal2-container.swal2-backdrop-show:not(.swal2-top-end):not(.swal2-top-start):not(.swal2-bottom-end):not(.swal2-bottom-start):not(.swal2-toast-shown) {
   background: rgba(15, 23, 42, 0.4) !important;
 }
