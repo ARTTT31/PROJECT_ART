@@ -40,18 +40,25 @@ def sync_db_columns(sync_conn):
         for col_name, col_type in columns_to_ensure:
             if col_name not in existing_cols:
                 try:
-                    sync_conn.execute(text(f"ALTER TABLE users ADD COLUMN {col_name} {col_type}"))
+                    sync_conn.execute(text(f"ALTER TABLE users ADD COLUMN IF NOT EXISTS {col_name} {col_type}"))
                     print(f"[DB AUTO-MIGRATE] Added column {col_name} to users table")
-                except Exception as e:
-                    print(f"[DB AUTO-MIGRATE] Notice adding column {col_name}: {e}")
+                except Exception:
+                    try:
+                        sync_conn.execute(text(f"ALTER TABLE users ADD COLUMN {col_name} {col_type}"))
+                        print(f"[DB AUTO-MIGRATE] Added column {col_name} to users table (fallback)")
+                    except Exception as e:
+                        print(f"[DB AUTO-MIGRATE] Notice adding column {col_name}: {e}")
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    if settings.AUTO_CREATE_TABLES:
+    try:
         async with engine.begin() as conn:
-            await conn.run_sync(base.Base.metadata.create_all)
+            if settings.AUTO_CREATE_TABLES:
+                await conn.run_sync(base.Base.metadata.create_all)
             await conn.run_sync(sync_db_columns)
+    except Exception as e:
+        print(f"[STARTUP DB SYNC NOTICE] {e}")
     yield
 
 
