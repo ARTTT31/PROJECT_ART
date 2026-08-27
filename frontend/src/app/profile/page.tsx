@@ -416,7 +416,7 @@ export default function ProfilePage() {
                         type="text"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        className="w-full rounded-xl bg-[#f8fafc] py-2.5 pl-10 pr-4 text-sm text-[#1d1d1f] ring-1 ring-black/[0.08] transition-all duration-150 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0071e3]"
+                        className="w-full rounded-xl bg-[#f8fafc] py-2.5 !pl-11 !pr-4 text-sm text-[#1d1d1f] ring-1 ring-black/[0.08] transition-all duration-150 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0071e3]"
                         placeholder="เช่น สมชาย ใจดี"
                         required
                       />
@@ -433,7 +433,7 @@ export default function ProfilePage() {
                         type="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="w-full rounded-xl bg-[#f8fafc] py-2.5 pl-10 pr-4 text-sm text-[#1d1d1f] ring-1 ring-black/[0.08] transition-all duration-150 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0071e3]"
+                        className="w-full rounded-xl bg-[#f8fafc] py-2.5 !pl-11 !pr-4 text-sm text-[#1d1d1f] ring-1 ring-black/[0.08] transition-all duration-150 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0071e3]"
                         placeholder="name@company.com"
                         required
                       />
@@ -492,7 +492,7 @@ export default function ProfilePage() {
                       type={showOldPassword ? 'text' : 'password'}
                       value={oldPassword}
                       onChange={(e) => setOldPassword(e.target.value)}
-                      className="w-full rounded-xl bg-[#f8fafc] py-2.5 pl-10 pr-11 text-sm text-[#1d1d1f] ring-1 ring-black/[0.08] transition-all duration-150 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0071e3]"
+                      className="w-full rounded-xl bg-[#f8fafc] py-2.5 !pl-11 !pr-11 text-sm text-[#1d1d1f] ring-1 ring-black/[0.08] transition-all duration-150 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0071e3]"
                       placeholder="กรอกรหัสผ่านปัจจุบันของคุณ"
                     />
                     <button
@@ -518,7 +518,7 @@ export default function ProfilePage() {
                         type={showNewPassword ? 'text' : 'password'}
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
-                        className="w-full rounded-xl bg-[#f8fafc] py-2.5 pl-10 pr-11 text-sm text-[#1d1d1f] ring-1 ring-black/[0.08] transition-all duration-150 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0071e3]"
+                        className="w-full rounded-xl bg-[#f8fafc] py-2.5 !pl-11 !pr-11 text-sm text-[#1d1d1f] ring-1 ring-black/[0.08] transition-all duration-150 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0071e3]"
                         placeholder="อย่างน้อย 8 ตัวอักษร"
                       />
                       <button
@@ -559,7 +559,7 @@ export default function ProfilePage() {
                         type={showConfirmPassword ? 'text' : 'password'}
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
-                        className="w-full rounded-xl bg-[#f8fafc] py-2.5 pl-10 pr-11 text-sm text-[#1d1d1f] ring-1 ring-black/[0.08] transition-all duration-150 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0071e3]"
+                        className="w-full rounded-xl bg-[#f8fafc] py-2.5 !pl-11 !pr-11 text-sm text-[#1d1d1f] ring-1 ring-black/[0.08] transition-all duration-150 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0071e3]"
                         placeholder="กรอกรหัสผ่านใหม่อีกครั้ง"
                       />
                       <button
