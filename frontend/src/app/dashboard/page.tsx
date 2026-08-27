@@ -384,9 +384,6 @@ export default function DashboardPage() {
           <h1 className="text-[22px] font-extrabold tracking-[-0.03em] text-[#1d1d1f]">
             แดชบอร์ด
           </h1>
-          <p className="mt-0.5 text-sm text-[#6e6e73]">
-            ภาพรวมข้อมูลและวิดเจ็ตการทำงานของคุณ ({visibleWidgets.length} วิดเจ็ตที่แสดง)
-          </p>
         </div>
 
         {/* Manage widgets — Apple pill button */}

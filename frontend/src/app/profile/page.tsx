@@ -296,9 +296,6 @@ export default function ProfilePage() {
             <h1 className="text-[22px] font-extrabold tracking-[-0.03em] text-[#1d1d1f]">
               โปรไฟล์
             </h1>
-            <p className="mt-0.5 text-sm text-[#6e6e73]">
-              จัดการข้อมูลส่วนตัว ความปลอดภัย และกำหนดทางลัดควิกลิ้งค์ของระบบ
-            </p>
           </div>
 
           <div className="flex items-center gap-2 rounded-full bg-emerald-50 px-3.5 py-1.5 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200/80 shadow-sm">

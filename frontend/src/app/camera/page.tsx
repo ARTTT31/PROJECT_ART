@@ -354,9 +354,6 @@ export default function CameraPage() {
             <h1 className="text-[22px] font-extrabold tracking-[-0.03em] text-[#1d1d1f]">
               กล้องวงจรปิด
             </h1>
-            <p className="mt-0.5 text-sm text-[#6e6e73]">
-              ระบบตรวจสอบความปลอดภัยและกล้องวงจรปิด ({streams.length} ตัวที่เชื่อมต่อ)
-            </p>
           </div>
 
           <div className="flex items-center gap-2">
