@@ -18,11 +18,40 @@ from app.models import base  # Import all models
 from fastapi.staticfiles import StaticFiles
 
 
+def sync_db_columns(sync_conn):
+    from sqlalchemy import inspect, text
+    inspector = inspect(sync_conn)
+    tables = inspector.get_table_names()
+    if "users" in tables:
+        existing_cols = {c["name"] for c in inspector.get_columns("users")}
+        columns_to_ensure = [
+            ("dashboard_layout", "TEXT"),
+            ("camera_config", "TEXT"),
+            ("quick_links", "TEXT"),
+            ("display_name", "VARCHAR(255)"),
+            ("username", "VARCHAR(255)"),
+            ("avatar", "TEXT"),
+            ("last_login_ip", "VARCHAR(45)"),
+            ("last_login_device", "VARCHAR(255)"),
+            ("failed_login_attempts", "INTEGER DEFAULT 0"),
+            ("locked_until", "TIMESTAMP"),
+            ("is_locked", "BOOLEAN DEFAULT FALSE"),
+        ]
+        for col_name, col_type in columns_to_ensure:
+            if col_name not in existing_cols:
+                try:
+                    sync_conn.execute(text(f"ALTER TABLE users ADD COLUMN {col_name} {col_type}"))
+                    print(f"[DB AUTO-MIGRATE] Added column {col_name} to users table")
+                except Exception as e:
+                    print(f"[DB AUTO-MIGRATE] Notice adding column {col_name}: {e}")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     if settings.AUTO_CREATE_TABLES:
         async with engine.begin() as conn:
             await conn.run_sync(base.Base.metadata.create_all)
+            await conn.run_sync(sync_db_columns)
     yield
 
 

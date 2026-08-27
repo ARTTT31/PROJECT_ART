@@ -146,21 +146,23 @@ export default function LoginPage() {
         clientId,
         redirectUrl: window.location.origin + '/login'
       }).then(() => {
-        return GoogleSignIn.handleRedirectCallback();
+        const hasAuthParams =
+          window.location.hash.includes('id_token') ||
+          window.location.hash.includes('access_token') ||
+          window.location.search.includes('code=');
+
+        if (hasAuthParams) {
+          return GoogleSignIn.handleRedirectCallback();
+        }
+        return null;
       }).then((result) => {
         if (result && result.idToken) {
           toast.info("ได้รับข้อมูลจาก Google กำลังยืนยันตัวตน...");
           setIsSubmitting(true);
           verifyGoogleToken(result.idToken);
-        } else if (result && result.serverAuthCode && !result.idToken) {
-          setError("ไม่สามารถรับ ID Token จาก Google ได้ กรุณาลองใหม่อีกครั้ง");
-          setErrorKey(k => k + 1);
         }
       }).catch((e) => {
-        const isNoTokenError = e?.message?.includes('No ID token found') || e?.message?.includes('No result');
-        if (!isNoTokenError) {
-          console.error("handleRedirectCallback error:", e);
-        }
+        console.warn("Google redirect callback check:", e);
       });
     }
 
