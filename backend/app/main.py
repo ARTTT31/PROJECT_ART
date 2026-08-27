@@ -39,12 +39,12 @@ limiter = Limiter(key_func=get_real_client_ip)
 
 # ── Content Security Policy (CSP) Middleware ──
 CSP_HEADER_VALUE = (
-    "default-src 'self'; "
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://cdn.jsdelivr.net; "
+    "default-src 'self' https: data: blob: 'unsafe-inline' 'unsafe-eval'; "
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://accounts.google.com https://cdn.jsdelivr.net; "
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; "
-    "img-src 'self' data: https:; "
-    "font-src 'self' https://fonts.gstatic.com; "
-    "connect-src 'self' https://www.eppo.go.th https://calendar.google.com; "
+    "img-src 'self' data: https: blob:; "
+    "font-src 'self' https://fonts.gstatic.com data:; "
+    "connect-src 'self' https: wss:; "
     "frame-src 'self' https://accounts.google.com; "
     "object-src 'none'; "
     "base-uri 'self'; "
@@ -58,6 +58,11 @@ class CSPMiddleware:
 
     async def __call__(self, scope, receive, send):
         if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        # Do not modify OPTIONS preflight responses so CORSMiddleware handles them cleanly
+        if scope.get("method") == "OPTIONS":
             await self.app(scope, receive, send)
             return
 
@@ -96,31 +101,33 @@ app = FastAPI(
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-# CORS Middleware — explicit origins + regex for Vercel preview URLs
+# CORS Middleware — explicit origins + regex for all Vercel domains
 # allow_credentials=True requires explicit origins (no wildcard "*")
-allowed_origins = settings.get_cors_origins()
-vercel_prod_origin = "https://project-art-sigma.vercel.app"
-if vercel_prod_origin not in allowed_origins:
-    allowed_origins.append(vercel_prod_origin)
+base_origins = [
+    "https://project-art-sigma.vercel.app",
+    "http://localhost:3000",
+    "http://localhost:3001",
+    "http://localhost:8000",
+    "http://localhost",
+    "capacitor://localhost",
+    "ionic://localhost",
+    "null",
+]
 
-# Add Android Capacitor local origins.
-# NOTE: "null" (the literal string) must be included because Android WebViews running
-# a Capacitor app frequently send `Origin: null` for requests from capacitor:// or file://
-# contexts. Without it, CORSMiddleware strips the ACAO header and the preflight fails.
-for android_origin in ["http://localhost", "capacitor://localhost", "ionic://localhost", "null"]:
-    if android_origin not in allowed_origins:
-        allowed_origins.append(android_origin)
+allowed_origins = list(base_origins)
+for origin in settings.get_cors_origins():
+    cleaned = origin.rstrip("/")
+    if cleaned and cleaned not in allowed_origins:
+        allowed_origins.append(cleaned)
 
-# NOTE: Middleware registration order is REVERSED by Starlette — last registered runs first.
-# CSPMiddleware must be registered BEFORE CORSMiddleware so that CORS runs first in the
-# actual request pipeline. If CSPMiddleware intercepts the OPTIONS preflight first, it can
-# inject security headers before CORS can respond with 200, breaking the preflight.
+# Middleware registration order is REVERSED by Starlette:
+# CORSMiddleware is added LAST so it wraps CSPMiddleware and executes FIRST.
 app.add_middleware(CSPMiddleware)
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
-    allow_origin_regex=r"https://(project-art|art-workspace)-.*\.vercel\.app",
+    allow_origin_regex=r"^https:\/\/.*\.vercel\.app$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

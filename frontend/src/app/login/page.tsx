@@ -48,15 +48,23 @@ export default function LoginPage() {
   const errorId = 'login-error-message';
 
   const verifyGoogleToken = useCallback(async (idToken: string) => {
+    setIsSubmitting(true);
+    setError('');
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 45000);
+
     try {
       const response = await fetch(`${apiBaseUrl}/api/v1/auth/google/verify-token`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({ id_token: idToken }),
+        signal: controller.signal,
       });
+      clearTimeout(timeoutId);
 
-      const data = await response.json();
+      const data = await response.json().catch(() => ({}));
 
       if (response.ok && data.result === 'success') {
         localStorage.setItem('user', JSON.stringify(data.data.user));
@@ -69,9 +77,14 @@ export default function LoginPage() {
         setErrorKey(k => k + 1);
         setIsSubmitting(false);
       }
-    } catch (error) {
-      console.error('Verify token error:', error);
-      setError('เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง');
+    } catch (err: any) {
+      clearTimeout(timeoutId);
+      console.error('Verify token error:', err);
+      if (err.name === 'AbortError') {
+        setError('การเชื่อมต่อเซิร์ฟเวอร์ใช้เวลานานเกินไป กรุณากดลองใหม่อีกครั้ง');
+      } else {
+        setError('เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง');
+      }
       setErrorKey(k => k + 1);
       setIsSubmitting(false);
     }
@@ -188,6 +201,9 @@ export default function LoginPage() {
 
     setIsSubmitting(true);
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 45000);
+
     try {
       let sessionId = localStorage.getItem('session_id');
       if (!sessionId) {
@@ -203,7 +219,9 @@ export default function LoginPage() {
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify(payload),
+        signal: controller.signal,
       });
+      clearTimeout(timeoutId);
 
       if (response.status === 429) {
         const retryAfter = parseInt(response.headers.get('Retry-After') || '30', 10);
@@ -214,7 +232,7 @@ export default function LoginPage() {
         return;
       }
 
-      const result = await response.json();
+      const result = await response.json().catch(() => ({}));
 
       if (response.ok && result.result === 'success') {
         localStorage.setItem('user', JSON.stringify(result.data.user));
@@ -234,8 +252,14 @@ export default function LoginPage() {
         setErrorKey(k => k + 1);
         setIsSubmitting(false);
       }
-    } catch {
-      setError('เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง');
+    } catch (err: any) {
+      clearTimeout(timeoutId);
+      console.error('Login submit error:', err);
+      if (err.name === 'AbortError') {
+        setError('การเชื่อมต่อเซิร์ฟเวอร์ใช้เวลานานเกินไป กรุณากดลองใหม่อีกครั้ง');
+      } else {
+        setError('เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง');
+      }
       setErrorKey(k => k + 1);
       setIsSubmitting(false);
     }
