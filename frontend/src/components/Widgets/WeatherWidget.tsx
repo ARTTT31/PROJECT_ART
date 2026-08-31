@@ -18,6 +18,7 @@ import {
   ShieldCheck,
   ChevronDown,
   AlertCircle,
+  Navigation,
 } from 'lucide-react'
 import WidgetSizeToggle from './WidgetSizeToggle'
 
@@ -28,6 +29,7 @@ interface CityLocation {
   name: string
   lat: number
   lon: number
+  isGps?: boolean
 }
 
 const CITY_PRESETS: CityLocation[] = [
@@ -70,14 +72,16 @@ interface CombinedWeatherCache {
   savedAt: number
   cityId: string
   cityName: string
+  lat: number
+  lon: number
   weather: WeatherData
   airQuality: AirQualityData
 }
 
 // ── Cache helpers ────────────────────────────────────────────────────────────
 
-const CACHE_KEY = 'artWeatherCacheV3'
-const LOCATION_KEY = 'artWeatherLocationV3'
+const CACHE_KEY = 'artWeatherCacheV4'
+const LOCATION_KEY = 'artWeatherLocationV4'
 const CACHE_TTL_MS = 20 * 60_000 // 20 minutes
 
 function safeJsonParse<T>(raw: string | null): T | null {
@@ -87,6 +91,25 @@ function safeJsonParse<T>(raw: string | null): T | null {
   } catch {
     return null
   }
+}
+
+// ── Reverse Geocoding Helper ─────────────────────────────────────────────────
+
+async function resolveLocationName(lat: number, lon: number): Promise<string> {
+  try {
+    const res = await fetch(
+      `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=th`,
+    )
+    if (res.ok) {
+      const data = await res.json()
+      const locality = data.locality || ''
+      const city = data.city || data.principalSubdivision || ''
+      if (locality && city) return `${locality}, ${city}`
+      if (city) return city
+      if (data.countryName) return data.countryName
+    }
+  } catch {}
+  return `พิกัด ${lat.toFixed(2)}, ${lon.toFixed(2)}`
 }
 
 // ── Weather Code Interpreter (WMO standard) ───────────────────────────────────
@@ -196,27 +219,6 @@ export default function WeatherWidget({
   const dropdownRef = useRef<HTMLDivElement>(null)
   const abortRef = useRef<AbortController | null>(null)
 
-  // ── Load saved city location from localStorage on mount ───────────────────
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const saved = safeJsonParse<CityLocation>(localStorage.getItem(LOCATION_KEY))
-      if (saved && saved.name && typeof saved.lat === 'number' && typeof saved.lon === 'number') {
-        setSelectedCity(saved)
-      }
-    }
-  }, [])
-
-  // Close dropdown on outside click
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setIsCityDropdownOpen(false)
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
-
   // ── Fetch Weather & AQI from Open-Meteo ─────────────────────────────────────
   const fetchWeatherData = useCallback(
     async (city: CityLocation, isRefresh = false) => {
@@ -293,6 +295,8 @@ export default function WeatherWidget({
             savedAt: Date.now(),
             cityId: city.id,
             cityName: city.name,
+            lat: city.lat,
+            lon: city.lon,
             weather: mappedWeather,
             airQuality: mappedAqi,
           }
@@ -312,14 +316,27 @@ export default function WeatherWidget({
     [],
   )
 
-  // ── Initial load & cache check ─────────────────────────────────────────────
+  // ── Auto-Detect Location on Mount (Matches user machine GPS) ───────────────
   useEffect(() => {
-    let hasLoadedFromCache = false
+    let initialCity = CITY_PRESETS[0]
+    let hasSavedLocation = false
+
+    if (typeof window !== 'undefined') {
+      const saved = safeJsonParse<CityLocation>(localStorage.getItem(LOCATION_KEY))
+      if (saved && saved.name && typeof saved.lat === 'number') {
+        initialCity = saved
+        hasSavedLocation = true
+      }
+    }
+
+    setSelectedCity(initialCity)
+
+    // Check Cache
     if (typeof window !== 'undefined') {
       const cached = safeJsonParse<CombinedWeatherCache>(localStorage.getItem(CACHE_KEY))
       if (
         cached &&
-        cached.cityId === selectedCity.id &&
+        cached.cityId === initialCity.id &&
         Date.now() - cached.savedAt <= CACHE_TTL_MS &&
         cached.weather &&
         cached.airQuality
@@ -328,22 +345,59 @@ export default function WeatherWidget({
         setAirQuality(cached.airQuality)
         setLastUpdated(new Date(cached.savedAt))
         setLoading(false)
-        hasLoadedFromCache = true
       }
     }
 
-    fetchWeatherData(selectedCity, hasLoadedFromCache)
+    fetchWeatherData(initialCity)
 
-    // Auto-refresh every 20 minutes
+    // If user has never selected a manual city preset, automatically ask/detect machine GPS location
+    if (!hasSavedLocation && typeof window !== 'undefined' && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+          const lat = Math.round(pos.coords.latitude * 10000) / 10000
+          const lon = Math.round(pos.coords.longitude * 10000) / 10000
+          const resolvedName = await resolveLocationName(lat, lon)
+          const gpsLocation: CityLocation = {
+            id: 'gps',
+            name: resolvedName,
+            lat,
+            lon,
+            isGps: true,
+          }
+          setSelectedCity(gpsLocation)
+          try {
+            localStorage.setItem(LOCATION_KEY, JSON.stringify(gpsLocation))
+          } catch {}
+          fetchWeatherData(gpsLocation)
+        },
+        (err) => {
+          console.log('GPS auto-detect skipped (using default Bangkok):', err.message)
+        },
+        { timeout: 8000, maximumAge: 300000 },
+      )
+    }
+
+    // Auto-refresh interval
     const interval = setInterval(() => {
-      fetchWeatherData(selectedCity, true)
+      fetchWeatherData(initialCity, true)
     }, CACHE_TTL_MS)
 
     return () => {
       clearInterval(interval)
       abortRef.current?.abort()
     }
-  }, [selectedCity, fetchWeatherData])
+  }, [fetchWeatherData])
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setIsCityDropdownOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   // ── Handle City Selection ───────────────────────────────────────────────────
   const handleSelectCity = (city: CityLocation) => {
@@ -357,7 +411,7 @@ export default function WeatherWidget({
     fetchWeatherData(city)
   }
 
-  // ── Handle Geolocation Detection ───────────────────────────────────────────
+  // ── Handle Manual Geolocation Detection ────────────────────────────────────
   const handleDetectLocation = () => {
     if (typeof window === 'undefined' || !navigator.geolocation) {
       alert('เบราว์เซอร์ของคุณไม่รองรับการระบุตำแหน่ง GPS')
@@ -366,12 +420,16 @@ export default function WeatherWidget({
 
     setIsLocating(true)
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
+      async (pos) => {
+        const lat = Math.round(pos.coords.latitude * 10000) / 10000
+        const lon = Math.round(pos.coords.longitude * 10000) / 10000
+        const resolvedName = await resolveLocationName(lat, lon)
         const gpsCity: CityLocation = {
           id: 'gps',
-          name: 'ตำแหน่งปัจจุบัน (GPS)',
-          lat: Math.round(pos.coords.latitude * 10000) / 10000,
-          lon: Math.round(pos.coords.longitude * 10000) / 10000,
+          name: resolvedName,
+          lat,
+          lon,
+          isGps: true,
         }
         setIsLocating(false)
         handleSelectCity(gpsCity)
@@ -379,7 +437,7 @@ export default function WeatherWidget({
       (err) => {
         setIsLocating(false)
         console.warn('Geolocation error:', err)
-        alert('ไม่สามารถดึงตำแหน่งปัจจุบันได้ กรุณาอนุญาตการเข้าถึง GPS')
+        alert('ไม่สามารถดึงตำแหน่งปัจจุบันได้ กรุณาอนุญาตการเข้าถึง Location/GPS บนเบราว์เซอร์')
       },
       { timeout: 10000, maximumAge: 60000 },
     )
@@ -453,12 +511,16 @@ export default function WeatherWidget({
                 <button
                   type="button"
                   onClick={() => setIsCityDropdownOpen(!isCityDropdownOpen)}
-                  className="group inline-flex items-center gap-1 text-[12px] font-medium text-slate-600 hover:text-sky-600 focus-visible:outline-none transition-colors"
+                  className="group inline-flex items-center gap-1.5 text-[12px] font-medium text-slate-600 hover:text-sky-600 focus-visible:outline-none transition-colors"
                   aria-expanded={isCityDropdownOpen}
                   aria-label="เปลี่ยนตำแหน่งพื้นที่"
                 >
-                  <MapPin size={12} className="text-sky-500 shrink-0" aria-hidden="true" />
-                  <span className="truncate max-w-[120px] sm:max-w-[160px]">{selectedCity.name}</span>
+                  {selectedCity.isGps ? (
+                    <Navigation size={12} className="text-sky-500 shrink-0 fill-sky-500" aria-hidden="true" />
+                  ) : (
+                    <MapPin size={12} className="text-sky-500 shrink-0" aria-hidden="true" />
+                  )}
+                  <span className="truncate max-w-[130px] sm:max-w-[170px]">{selectedCity.name}</span>
                   <ChevronDown
                     size={12}
                     className={`text-slate-400 group-hover:text-sky-500 transition-transform ${
@@ -469,10 +531,27 @@ export default function WeatherWidget({
 
                 {/* Dropdown Menu */}
                 {isCityDropdownOpen && (
-                  <div className="absolute left-0 top-full z-30 mt-1 w-52 rounded-xl bg-white p-1.5 shadow-xl ring-1 ring-black/[0.08] animate-in fade-in zoom-in-95 duration-100">
+                  <div className="absolute left-0 top-full z-30 mt-1 w-56 rounded-xl bg-white p-1.5 shadow-xl ring-1 ring-black/[0.08] animate-in fade-in zoom-in-95 duration-100">
                     <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                      เลือกจังหวัด
+                      ตำแหน่งพื้นที่
                     </div>
+
+                    <div className="mb-1 border-b border-slate-100 pb-1">
+                      <button
+                        type="button"
+                        onClick={handleDetectLocation}
+                        disabled={isLocating}
+                        className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs font-semibold text-sky-600 hover:bg-sky-50 transition-colors disabled:opacity-50"
+                      >
+                        <LocateFixed size={13} className={isLocating ? 'animate-spin' : ''} />
+                        <span>{isLocating ? 'กำลังค้นหาพิกัด...' : 'ใช้ตำแหน่งเครื่องปัจจุบัน (GPS)'}</span>
+                      </button>
+                    </div>
+
+                    <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                      จังหวัดยอดนิยม
+                    </div>
+
                     <div className="max-h-48 overflow-y-auto space-y-0.5">
                       {CITY_PRESETS.map((c) => (
                         <button
@@ -491,18 +570,6 @@ export default function WeatherWidget({
                           )}
                         </button>
                       ))}
-                    </div>
-
-                    <div className="mt-1 border-t border-slate-100 pt-1">
-                      <button
-                        type="button"
-                        onClick={handleDetectLocation}
-                        disabled={isLocating}
-                        className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs font-semibold text-sky-600 hover:bg-sky-50 transition-colors disabled:opacity-50"
-                      >
-                        <LocateFixed size={13} className={isLocating ? 'animate-spin' : ''} />
-                        <span>{isLocating ? 'กำลังค้นหาพิกัด...' : 'ใช้ตำแหน่ง GPS ปัจจุบัน'}</span>
-                      </button>
                     </div>
                   </div>
                 )}
