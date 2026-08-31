@@ -868,15 +868,15 @@ export default function ProfilePage() {
                             <span className="hidden sm:inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-500">
                               จำเป็น
                             </span>
-                            {/* Locked toggle — always ON, same element as active toggle */}
+                            {/* Locked toggle — always ON, same style as login page */}
                             <button
                               type="button"
                               disabled
                               aria-checked={true}
                               role="switch"
-                              className="relative h-6 w-11 shrink-0 cursor-not-allowed rounded-full p-0 border-0 appearance-none bg-[#0071e3]/30 opacity-55"
+                              className="relative h-[30px] w-11 shrink-0 cursor-not-allowed rounded-full p-1 border-0 appearance-none bg-[#0071e3]/30 opacity-55"
                             >
-                              <span className="pointer-events-none absolute top-[2px] left-[calc(100%-22px)] h-5 w-5 rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,0.16)]" />
+                              <span className="pointer-events-none h-[22px] w-[22px] rounded-full bg-white shadow-[0_2px_6px_rgba(15,23,42,0.12)] transition-transform duration-200 block translate-x-[14px]" />
                             </button>
                           </div>
                         ) : (
@@ -899,31 +899,29 @@ export default function ProfilePage() {
                               )}
                             </span>
 
-                            {/* iOS-style toggle */}
+                            {/* iOS-style toggle — same as login page */}
                             <button
                               type="button"
                               role="switch"
                               aria-checked={item.enabled}
                               aria-label={`สลับการแสดงผล ${item.name}`}
                               onClick={() => handleToggleMainMenu(item.id)}
-                              className={`group relative h-6 w-11 shrink-0 cursor-pointer rounded-full p-0 border-0 appearance-none transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3] focus-visible:ring-offset-2 active:scale-[0.93] ${
+                              className={`group relative h-[30px] w-11 shrink-0 cursor-pointer rounded-full p-1 border-0 appearance-none transition-all duration-250 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3] focus-visible:ring-offset-2 active:scale-95 ${
                                 item.enabled
-                                  ? 'bg-[#0071e3] shadow-[0_2px_8px_rgba(0,113,227,0.35),inset_0_1px_2px_rgba(255,255,255,0.12)]'
-                                  : 'bg-slate-200/90 shadow-[inset_0_1px_2px_rgba(0,0,0,0.06)] hover:bg-slate-300/80'
+                                  ? 'bg-[#0071e3] shadow-[inset_0_1px_0_rgba(255,255,255,0.2),0_4px_12px_rgba(0,113,227,0.3)]'
+                                  : 'bg-gradient-to-b from-slate-300 to-slate-400 shadow-[inset_0_2px_4px_rgba(0,0,0,0.08)] hover:from-slate-400 hover:to-slate-500'
                               }`}
                             >
-                              {/* Track inner glow (on state) */}
-                              {item.enabled && (
-                                <span className="absolute inset-0 rounded-full bg-gradient-to-b from-white/10 to-transparent pointer-events-none" />
-                              )}
-                              {/* Knob */}
+                              {/* Knob with transform */}
                               <span
-                                className={`pointer-events-none absolute top-[2px] h-5 w-5 rounded-full bg-white transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
+                                className={`pointer-events-none h-[22px] w-[22px] rounded-full bg-white transition-all duration-250 ease-out flex items-center justify-center ${
                                   item.enabled
-                                    ? 'left-[calc(100%-22px)] shadow-[0_2px_5px_rgba(0,0,0,0.20),0_0_0_0.5px_rgba(0,0,0,0.04)]'
-                                    : 'left-[2px] shadow-[0_1px_3px_rgba(0,0,0,0.14),0_0_0_0.5px_rgba(0,0,0,0.04)]'
+                                    ? 'translate-x-[14px] shadow-[0_4px_12px_rgba(15,23,42,0.2),0_2px_6px_rgba(15,23,42,0.12)]'
+                                    : 'translate-x-0 shadow-[0_2px_8px_rgba(15,23,42,0.15),0_1px_3px_rgba(15,23,42,0.1)]'
                                 }`}
-                              />
+                              >
+                                {item.enabled && <Check size={13} strokeWidth={2.5} aria-hidden="true" />}
+                              </span>
                             </button>
                           </div>
                         )}
