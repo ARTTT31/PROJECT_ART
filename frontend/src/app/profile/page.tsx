@@ -874,9 +874,9 @@ export default function ProfilePage() {
                               disabled
                               aria-checked={true}
                               role="switch"
-                              className="relative h-[30px] w-[52px] shrink-0 cursor-not-allowed rounded-full p-0 border-0 appearance-none bg-[#0071e3]/30 opacity-55"
+                              className="relative h-6 w-11 shrink-0 cursor-not-allowed rounded-full p-0 border-0 appearance-none bg-[#0071e3]/30 opacity-55"
                             >
-                              <span className="pointer-events-none absolute top-[3px] left-[calc(100%-27px)] h-6 w-6 rounded-full bg-white shadow-[0_1px_4px_rgba(0,0,0,0.18)]" />
+                              <span className="pointer-events-none absolute top-[2px] left-[calc(100%-22px)] h-5 w-5 rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,0.16)]" />
                             </button>
                           </div>
                         ) : (
@@ -906,10 +906,10 @@ export default function ProfilePage() {
                               aria-checked={item.enabled}
                               aria-label={`สลับการแสดงผล ${item.name}`}
                               onClick={() => handleToggleMainMenu(item.id)}
-                              className={`group relative h-[30px] w-[52px] shrink-0 cursor-pointer rounded-full p-0 border-0 appearance-none transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3] focus-visible:ring-offset-2 active:scale-[0.93] ${
+                              className={`group relative h-6 w-11 shrink-0 cursor-pointer rounded-full p-0 border-0 appearance-none transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3] focus-visible:ring-offset-2 active:scale-[0.93] ${
                                 item.enabled
-                                  ? 'bg-[#0071e3] shadow-[0_2px_10px_rgba(0,113,227,0.40),inset_0_1px_2px_rgba(255,255,255,0.15)]'
-                                  : 'bg-slate-200/90 shadow-[inset_0_1px_3px_rgba(0,0,0,0.08)] hover:bg-slate-300/80'
+                                  ? 'bg-[#0071e3] shadow-[0_2px_8px_rgba(0,113,227,0.35),inset_0_1px_2px_rgba(255,255,255,0.12)]'
+                                  : 'bg-slate-200/90 shadow-[inset_0_1px_2px_rgba(0,0,0,0.06)] hover:bg-slate-300/80'
                               }`}
                             >
                               {/* Track inner glow (on state) */}
@@ -918,10 +918,10 @@ export default function ProfilePage() {
                               )}
                               {/* Knob */}
                               <span
-                                className={`pointer-events-none absolute top-[3px] h-6 w-6 rounded-full bg-white transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
+                                className={`pointer-events-none absolute top-[2px] h-5 w-5 rounded-full bg-white transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
                                   item.enabled
-                                    ? 'left-[calc(100%-27px)] shadow-[0_2px_6px_rgba(0,0,0,0.22),0_0_0_0.5px_rgba(0,0,0,0.04)]'
-                                    : 'left-[3px] shadow-[0_1px_4px_rgba(0,0,0,0.16),0_0_0_0.5px_rgba(0,0,0,0.04)]'
+                                    ? 'left-[calc(100%-22px)] shadow-[0_2px_5px_rgba(0,0,0,0.20),0_0_0_0.5px_rgba(0,0,0,0.04)]'
+                                    : 'left-[2px] shadow-[0_1px_3px_rgba(0,0,0,0.14),0_0_0_0.5px_rgba(0,0,0,0.04)]'
                                 }`}
                               />
                             </button>
