@@ -25,6 +25,7 @@ import {
   Layers,
   RotateCcw,
   Sparkles,
+  X,
 } from 'lucide-react'
 import DashboardLayout from '@/components/Layout/DashboardLayout'
 import { showDeleteConfirm, showToast, showSuccess, showError } from '@/utils/sweetalert'
@@ -864,63 +865,67 @@ export default function ProfilePage() {
                       {/* Toggle Switch with Status Badge */}
                       <div className="shrink-0 flex items-center gap-3">
                         {item.required ? (
-                          <div className="flex items-center gap-2.5">
-                            <span className="hidden sm:inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-500">
+                          <div className="flex items-center gap-3">
+                            {/* Required badge — lock icon + label */}
+                            <span className="hidden sm:inline-flex items-center gap-1.5 rounded-xl bg-slate-100/80 px-3 py-1.5 text-[11px] font-semibold text-slate-500 ring-1 ring-slate-200/60">
+                              <Lock size={10} strokeWidth={2.5} className="shrink-0" aria-hidden="true" />
                               จำเป็น
                             </span>
-                            {/* Locked toggle — always ON, same style as login page */}
-                            <button
-                              type="button"
-                              disabled
-                              aria-checked={true}
-                              role="switch"
-                              className="relative h-[30px] w-11 shrink-0 cursor-not-allowed rounded-full p-1 border-0 appearance-none bg-[#0071e3]/30 opacity-55"
-                            >
-                              <span className="pointer-events-none h-[22px] w-[22px] rounded-full bg-white shadow-[0_2px_6px_rgba(15,23,42,0.12)] transition-transform duration-200 block translate-x-[14px]" />
-                            </button>
+                            {/* Locked toggle — always ON */}
+                            <div className="relative h-[30px] w-11 shrink-0 rounded-full p-1 bg-[#0071e3]/20 ring-1 ring-[#0071e3]/15 cursor-not-allowed">
+                              <span className="pointer-events-none h-[22px] w-[22px] rounded-full bg-[#0071e3]/50 shadow-sm transition-transform duration-200 flex items-center justify-center translate-x-[14px]">
+                                <Lock size={9} strokeWidth={3} className="text-white/90" aria-hidden="true" />
+                              </span>
+                            </div>
                           </div>
                         ) : (
-                          <div className="flex items-center gap-2.5">
-                            {/* Status label */}
+                          <div className="flex items-center gap-3">
+                            {/* Status label — consistent min-width so layout doesn't shift */}
                             <span
-                              className={`hidden sm:inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold transition-all duration-200 ${
+                              className={`hidden sm:inline-flex items-center justify-center gap-1.5 rounded-xl px-3 py-1.5 text-[11px] font-semibold min-w-[82px] transition-all duration-200 ${
                                 item.enabled
                                   ? 'bg-[#0071e3]/10 text-[#0071e3] ring-1 ring-[#0071e3]/20'
-                                  : 'bg-slate-100 text-slate-400'
+                                  : 'bg-slate-100 text-slate-400 ring-1 ring-slate-200/60'
                               }`}
                             >
                               {item.enabled ? (
                                 <>
-                                  <Check size={11} strokeWidth={2.5} className="shrink-0" />
+                                  <Check size={10} strokeWidth={2.5} className="shrink-0" aria-hidden="true" />
                                   <span>แสดงในเมนู</span>
                                 </>
                               ) : (
-                                <span>ซ่อนไว้</span>
+                                <>
+                                  <EyeOff size={10} strokeWidth={2.5} className="shrink-0" aria-hidden="true" />
+                                  <span>ซ่อนไว้</span>
+                                </>
                               )}
                             </span>
 
-                            {/* iOS-style toggle — same as login page */}
+                            {/* iOS-style toggle */}
                             <button
                               type="button"
                               role="switch"
                               aria-checked={item.enabled}
                               aria-label={`สลับการแสดงผล ${item.name}`}
                               onClick={() => handleToggleMainMenu(item.id)}
-                              className={`group relative h-[30px] w-11 shrink-0 cursor-pointer rounded-full p-1 border-0 appearance-none transition-all duration-250 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3] focus-visible:ring-offset-2 active:scale-95 ${
+                              className={`group relative h-[30px] w-[52px] shrink-0 cursor-pointer rounded-full px-[3px] py-[3px] border-0 appearance-none transition-all duration-300 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3] focus-visible:ring-offset-2 active:scale-[0.93] ${
                                 item.enabled
-                                  ? 'bg-[#0071e3] shadow-[inset_0_1px_0_rgba(255,255,255,0.2),0_4px_12px_rgba(0,113,227,0.3)]'
-                                  : 'bg-gradient-to-b from-slate-300 to-slate-400 shadow-[inset_0_2px_4px_rgba(0,0,0,0.08)] hover:from-slate-400 hover:to-slate-500'
+                                  ? 'bg-[#0071e3] shadow-[0_2px_10px_rgba(0,113,227,0.40),inset_0_1px_0_rgba(255,255,255,0.18)]'
+                                  : 'bg-slate-200 ring-1 ring-slate-300/60 hover:bg-slate-300 shadow-[inset_0_1px_3px_rgba(0,0,0,0.10)]'
                               }`}
                             >
-                              {/* Knob with transform */}
+                              {/* Knob */}
                               <span
-                                className={`pointer-events-none h-[22px] w-[22px] rounded-full bg-white transition-all duration-250 ease-out flex items-center justify-center ${
+                                className={`pointer-events-none h-6 w-6 rounded-full bg-white flex items-center justify-center transition-all duration-300 ease-out ${
                                   item.enabled
-                                    ? 'translate-x-[14px] shadow-[0_4px_12px_rgba(15,23,42,0.2),0_2px_6px_rgba(15,23,42,0.12)]'
-                                    : 'translate-x-0 shadow-[0_2px_8px_rgba(15,23,42,0.15),0_1px_3px_rgba(15,23,42,0.1)]'
+                                    ? 'translate-x-[22px] shadow-[0_2px_8px_rgba(0,113,227,0.25),0_1px_3px_rgba(15,23,42,0.15)]'
+                                    : 'translate-x-0 shadow-[0_1px_4px_rgba(15,23,42,0.14),0_0_0_0.5px_rgba(15,23,42,0.06)]'
                                 }`}
                               >
-                                {item.enabled && <Check size={13} strokeWidth={2.5} aria-hidden="true" />}
+                                {item.enabled
+                                  ? <Check size={12} strokeWidth={2.8} className="text-[#0071e3]" aria-hidden="true" />
+                                  : <X size={11} strokeWidth={2.5} className="text-slate-400" aria-hidden="true" />
+                                }
                               </span>
                             </button>
                           </div>
