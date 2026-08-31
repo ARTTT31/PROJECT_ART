@@ -19,6 +19,7 @@ import {
   ChevronDown,
   AlertCircle,
   Navigation,
+  Clock,
 } from 'lucide-react'
 import WidgetSizeToggle from './WidgetSizeToggle'
 
@@ -43,13 +44,13 @@ const CITY_PRESETS: CityLocation[] = [
   { id: 'spk', name: 'สมุทรปราการ', lat: 13.5991, lon: 100.5968 },
 ]
 
-interface DailyForecastItem {
-  date: string
-  dayName: string
+interface HourlyForecastItem {
+  time: string
+  rawTime: string
   weatherCode: number
-  tempMax: number
-  tempMin: number
+  temp: number
   rainProb: number
+  isCurrent?: boolean
 }
 
 interface WeatherData {
@@ -61,7 +62,7 @@ interface WeatherData {
   tempMax: number
   tempMin: number
   rainProb: number
-  dailyForecast: DailyForecastItem[]
+  hourlyForecast: HourlyForecastItem[]
 }
 
 interface AirQualityData {
@@ -82,8 +83,8 @@ interface CombinedWeatherCache {
 
 // ── Cache helpers ────────────────────────────────────────────────────────────
 
-const CACHE_KEY = 'artWeatherCacheV6'
-const LOCATION_KEY = 'artWeatherLocationV6'
+const CACHE_KEY = 'artWeatherCacheV7'
+const LOCATION_KEY = 'artWeatherLocationV7'
 const CACHE_TTL_MS = 20 * 60_000 // 20 minutes
 
 function safeJsonParse<T>(raw: string | null): T | null {
@@ -197,8 +198,6 @@ function getPM25Meta(pm25: number) {
   }
 }
 
-const THAI_DAY_NAMES = ['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.']
-
 // ── Main Component ───────────────────────────────────────────────────────────
 
 export default function WeatherWidget({
@@ -236,7 +235,7 @@ export default function WeatherWidget({
       setError(null)
 
       try {
-        const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${city.lat}&longitude=${city.lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=Asia%2FBangkok`
+        const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${city.lat}&longitude=${city.lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m&hourly=temperature_2m,weather_code,precipitation_probability&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=Asia%2FBangkok&forecast_days=2`
         const aqiUrl = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${city.lat}&longitude=${city.lon}&current=pm2_5,pm10,us_aqi&timezone=Asia%2FBangkok`
 
         const [weatherRes, aqiRes] = await Promise.all([
@@ -250,24 +249,48 @@ export default function WeatherWidget({
 
         const [weatherJson, aqiJson] = await Promise.all([weatherRes.json(), aqiRes.json()])
 
-        const dailyTimes: string[] = weatherJson.daily?.time || []
-        const dailyCodes: number[] = weatherJson.daily?.weather_code || []
         const dailyMax: number[] = weatherJson.daily?.temperature_2m_max || []
         const dailyMin: number[] = weatherJson.daily?.temperature_2m_min || []
         const dailyRain: number[] = weatherJson.daily?.precipitation_probability_max || []
 
-        const forecastList: DailyForecastItem[] = dailyTimes.slice(0, 5).map((dStr, idx) => {
-          const dObj = new Date(dStr)
-          const dayName = idx === 0 ? 'วันนี้' : idx === 1 ? 'พรุ่งนี้' : THAI_DAY_NAMES[dObj.getDay()]
-          return {
-            date: dStr,
-            dayName,
-            weatherCode: dailyCodes[idx] ?? 0,
-            tempMax: Math.round(dailyMax[idx] ?? 0),
-            tempMin: Math.round(dailyMin[idx] ?? 0),
-            rainProb: dailyRain[idx] ?? 0,
-          }
+        // Hourly forecast extraction
+        const hourlyTimes: string[] = weatherJson.hourly?.time || []
+        const hourlyTemps: number[] = weatherJson.hourly?.temperature_2m || []
+        const hourlyCodes: number[] = weatherJson.hourly?.weather_code || []
+        const hourlyRains: number[] = weatherJson.hourly?.precipitation_probability || []
+
+        const now = new Date()
+        const currentHour = now.getHours()
+        const todayIsoDate = now.toISOString().slice(0, 10)
+
+        // Find matching current hour index
+        let startIndex = hourlyTimes.findIndex((tStr) => {
+          const d = new Date(tStr)
+          return d.getHours() === currentHour && tStr.startsWith(todayIsoDate)
         })
+
+        if (startIndex === -1) {
+          startIndex = 0
+        }
+
+        const hourlyList: HourlyForecastItem[] = []
+        const totalHoursToExtract = 8
+
+        for (let i = startIndex; i < Math.min(hourlyTimes.length, startIndex + totalHoursToExtract); i++) {
+          const d = new Date(hourlyTimes[i])
+          const hour = d.getHours()
+          const isNow = i === startIndex
+          const formattedHour = `${String(hour).padStart(2, '0')}:00`
+
+          hourlyList.push({
+            time: isNow ? 'ตอนนี้' : formattedHour,
+            rawTime: hourlyTimes[i],
+            weatherCode: hourlyCodes[i] ?? 0,
+            temp: Math.round(hourlyTemps[i] ?? 0),
+            rainProb: hourlyRains[i] ?? 0,
+            isCurrent: isNow,
+          })
+        }
 
         const mappedWeather: WeatherData = {
           currentTemp: Math.round(weatherJson.current?.temperature_2m ?? 0),
@@ -278,7 +301,7 @@ export default function WeatherWidget({
           tempMax: Math.round(dailyMax[0] ?? 0),
           tempMin: Math.round(dailyMin[0] ?? 0),
           rainProb: Math.round(dailyRain[0] ?? 0),
-          dailyForecast: forecastList,
+          hourlyForecast: hourlyList,
         }
 
         const mappedAqi: AirQualityData = {
@@ -647,33 +670,50 @@ export default function WeatherWidget({
           </div>
         )}
 
-        {/* ── Multi-day Forecast Strip (Clean Minimalist Cards) ─────────────── */}
-        {weather && weather.dailyForecast && (
+        {/* ── Hourly Forecast Strip (เวลาล่วงหน้า) ──────────────────────────── */}
+        {weather && weather.hourlyForecast && (
           <div className="mt-3.5 rounded-xl bg-slate-50/60 p-3 ring-1 ring-slate-200/50">
             <div className="mb-2.5 flex items-center justify-between">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                พยากรณ์อากาศล่วงหน้า {width >= 2 ? '5 วัน' : '4 วัน'}
+              <span className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                <Clock size={12} />
+                <span>พยากรณ์รายชั่วโมง (เวลาล่วงหน้า)</span>
               </span>
-              <span className="text-[10px] font-medium text-slate-400">สูงสุด / ต่ำสุด</span>
+              <span className="text-[10px] font-medium text-slate-400">อุณหภูมิ / สภาพอากาศ</span>
             </div>
 
-            <div className={`grid gap-2 ${width >= 2 ? 'grid-cols-5' : 'grid-cols-4'}`}>
-              {weather.dailyForecast.slice(0, width >= 2 ? 5 : 4).map((item) => {
-                const dayMeta = getWeatherMeta(item.weatherCode)
-                const DayIcon = dayMeta.icon
+            <div className={`grid gap-2 ${width >= 3 ? 'grid-cols-6' : width >= 2 ? 'grid-cols-5' : 'grid-cols-5'}`}>
+              {weather.hourlyForecast.slice(0, width >= 3 ? 6 : 5).map((item) => {
+                const hourMeta = getWeatherMeta(item.weatherCode)
+                const HourIcon = hourMeta.icon
                 return (
                   <div
-                    key={item.date}
-                    className="flex flex-col items-center justify-center rounded-xl bg-white p-2.5 text-center shadow-2xs ring-1 ring-black/[0.04] transition-transform hover:-translate-y-0.5 duration-150"
+                    key={item.rawTime}
+                    className={`flex flex-col items-center justify-center rounded-xl p-2 text-center transition-all duration-150 ${
+                      item.isCurrent
+                        ? 'bg-sky-50/80 ring-1 ring-sky-200/80 shadow-2xs'
+                        : 'bg-white shadow-2xs ring-1 ring-black/[0.04] hover:-translate-y-0.5'
+                    }`}
                   >
-                    <span className="text-xs font-bold text-slate-700">{item.dayName}</span>
-                    <DayIcon size={20} className={`my-1.5 ${dayMeta.colorClass}`} />
-                    <span className="text-[11px] font-extrabold text-slate-800">
-                      {item.tempMax}°
+                    <span
+                      className={`text-xs font-bold ${
+                        item.isCurrent ? 'text-sky-700' : 'text-slate-700'
+                      }`}
+                    >
+                      {item.time}
                     </span>
-                    <span className="text-[10px] font-medium text-slate-400">
-                      {item.tempMin}°
+                    <HourIcon size={18} className={`my-1.5 ${hourMeta.colorClass}`} />
+                    <span className="text-xs font-extrabold text-slate-800">
+                      {item.temp}°
                     </span>
+                    {item.rainProb > 0 ? (
+                      <span className="mt-0.5 text-[9px] font-semibold text-sky-600">
+                        💧{item.rainProb}%
+                      </span>
+                    ) : (
+                      <span className="mt-0.5 text-[9px] font-medium text-slate-300">
+                        -
+                      </span>
+                    )}
                   </div>
                 )
               })}
