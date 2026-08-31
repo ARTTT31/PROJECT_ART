@@ -864,26 +864,29 @@ export default function ProfilePage() {
                       {/* Toggle Switch with Status Badge */}
                       <div className="shrink-0 flex items-center gap-3">
                         {item.required ? (
-                          <div className="flex items-center gap-2">
-                            <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-500">
+                          <div className="flex items-center gap-2.5">
+                            <span className="hidden sm:inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-500">
                               จำเป็น
                             </span>
-                            <div className="relative inline-flex h-7 w-12 shrink-0 cursor-not-allowed items-center rounded-full bg-[#0071e3]/40 p-0.5 opacity-70">
-                              <span className="inline-block h-6 w-6 translate-x-5 transform rounded-full bg-white shadow-[0_2px_4px_rgba(0,0,0,0.15)]" />
+                            {/* Locked toggle — always ON */}
+                            <div className="relative h-[30px] w-[52px] shrink-0 cursor-not-allowed rounded-full bg-[#0071e3]/30 p-[3px] opacity-60">
+                              <div className="absolute inset-0 rounded-full ring-1 ring-inset ring-[#0071e3]/20" />
+                              <span className="absolute right-[3px] top-[3px] h-6 w-6 rounded-full bg-white shadow-[0_1px_4px_rgba(0,0,0,0.18)]" />
                             </div>
                           </div>
                         ) : (
                           <div className="flex items-center gap-2.5">
+                            {/* Status label */}
                             <span
-                              className={`hidden sm:inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold transition-colors ${
+                              className={`hidden sm:inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold transition-all duration-200 ${
                                 item.enabled
-                                  ? 'bg-sky-50 text-[#0071e3] ring-1 ring-sky-200/60'
+                                  ? 'bg-[#0071e3]/10 text-[#0071e3] ring-1 ring-[#0071e3]/20'
                                   : 'bg-slate-100 text-slate-400'
                               }`}
                             >
                               {item.enabled ? (
                                 <>
-                                  <Check size={12} className="shrink-0" />
+                                  <Check size={11} strokeWidth={2.5} className="shrink-0" />
                                   <span>แสดงในเมนู</span>
                                 </>
                               ) : (
@@ -891,21 +894,29 @@ export default function ProfilePage() {
                               )}
                             </span>
 
+                            {/* iOS-style toggle */}
                             <button
                               type="button"
                               role="switch"
                               aria-checked={item.enabled}
                               aria-label={`สลับการแสดงผล ${item.name}`}
                               onClick={() => handleToggleMainMenu(item.id)}
-                              className={`relative inline-flex h-7 w-12 shrink-0 cursor-pointer items-center rounded-full p-0.5 transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3] focus-visible:ring-offset-2 active:scale-95 ${
+                              className={`group relative h-[30px] w-[52px] shrink-0 cursor-pointer rounded-full p-[3px] transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3] focus-visible:ring-offset-2 active:scale-[0.93] ${
                                 item.enabled
-                                  ? 'bg-[#0071e3] shadow-[0_2px_8px_rgba(0,113,227,0.35)]'
-                                  : 'bg-slate-200 hover:bg-slate-300'
+                                  ? 'bg-[#0071e3] shadow-[0_2px_10px_rgba(0,113,227,0.40),inset_0_1px_2px_rgba(255,255,255,0.15)]'
+                                  : 'bg-slate-200/90 shadow-[inset_0_1px_3px_rgba(0,0,0,0.08)] hover:bg-slate-300/80'
                               }`}
                             >
+                              {/* Track inner glow (on state) */}
+                              {item.enabled && (
+                                <span className="absolute inset-0 rounded-full bg-gradient-to-b from-white/10 to-transparent pointer-events-none" />
+                              )}
+                              {/* Knob */}
                               <span
-                                className={`pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow-[0_2px_5px_rgba(0,0,0,0.2)] transition-transform duration-200 ease-out ${
-                                  item.enabled ? 'translate-x-5' : 'translate-x-0'
+                                className={`pointer-events-none absolute top-[3px] h-6 w-6 rounded-full bg-white transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
+                                  item.enabled
+                                    ? 'left-[calc(100%-27px)] shadow-[0_2px_6px_rgba(0,0,0,0.22),0_0_0_0.5px_rgba(0,0,0,0.04)]'
+                                    : 'left-[3px] shadow-[0_1px_4px_rgba(0,0,0,0.16),0_0_0_0.5px_rgba(0,0,0,0.04)]'
                                 }`}
                               />
                             </button>

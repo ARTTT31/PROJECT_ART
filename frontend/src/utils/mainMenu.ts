@@ -65,19 +65,9 @@ export const DEFAULT_MAIN_MENU_ITEMS: MainMenuItemConfig[] = [
     enabled: true,
     description: 'จัดการข้อมูลส่วนตัว ความปลอดภัย และการตั้งค่า',
   },
-  {
-    id: 'schedule',
-    name: 'ตารางงาน & ปฏิทิน',
-    href: '/schedule',
-    icon: 'calendar',
-    enabled: false,
-    isWip: true,
-    wipLabel: 'กำลังพัฒนา',
-    description: 'ระบบนัดหมาย กำหนดการ และกิจกรรมของทีม',
-  },
 ]
 
-export const MAIN_MENU_STORAGE_KEY = 'artMainMenuConfigV3'
+export const MAIN_MENU_STORAGE_KEY = 'artMainMenuConfigV4'
 
 export function parseMainMenuConfig(raw: string | null | undefined): MainMenuItemConfig[] {
   if (!raw) return DEFAULT_MAIN_MENU_ITEMS
