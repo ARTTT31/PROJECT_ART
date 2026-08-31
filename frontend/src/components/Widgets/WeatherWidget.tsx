@@ -13,15 +13,12 @@ import {
   MapPin,
   RefreshCw,
   Sun,
-  Sunset,
-  Sunrise,
   Wind,
   ShieldAlert,
   ShieldCheck,
   ChevronDown,
   AlertCircle,
   Navigation,
-  Sparkles,
 } from 'lucide-react'
 import WidgetSizeToggle from './WidgetSizeToggle'
 
@@ -53,7 +50,6 @@ interface DailyForecastItem {
   tempMax: number
   tempMin: number
   rainProb: number
-  uvIndex: number
 }
 
 interface WeatherData {
@@ -65,9 +61,6 @@ interface WeatherData {
   tempMax: number
   tempMin: number
   rainProb: number
-  uvIndex: number
-  sunrise: string
-  sunset: string
   dailyForecast: DailyForecastItem[]
 }
 
@@ -89,8 +82,8 @@ interface CombinedWeatherCache {
 
 // ── Cache helpers ────────────────────────────────────────────────────────────
 
-const CACHE_KEY = 'artWeatherCacheV5'
-const LOCATION_KEY = 'artWeatherLocationV5'
+const CACHE_KEY = 'artWeatherCacheV6'
+const LOCATION_KEY = 'artWeatherLocationV6'
 const CACHE_TTL_MS = 20 * 60_000 // 20 minutes
 
 function safeJsonParse<T>(raw: string | null): T | null {
@@ -156,16 +149,6 @@ function getWeatherMeta(code: number) {
   }
 }
 
-// ── UV Index Helper ──────────────────────────────────────────────────────────
-
-function getUVMeta(uv: number) {
-  if (uv <= 2) return { label: 'ต่ำ', colorClass: 'text-emerald-600', bgClass: 'bg-emerald-50' }
-  if (uv <= 5) return { label: 'ปานกลาง', colorClass: 'text-amber-600', bgClass: 'bg-amber-50' }
-  if (uv <= 7) return { label: 'สูง', colorClass: 'text-orange-600', bgClass: 'bg-orange-50' }
-  if (uv <= 10) return { label: 'สูงมาก', colorClass: 'text-rose-600', bgClass: 'bg-rose-50' }
-  return { label: 'อันตราย', colorClass: 'text-purple-600', bgClass: 'bg-purple-50' }
-}
-
 // ── PM 2.5 Evaluation (Thailand & US AQI Standards) ──────────────────────────
 
 function getPM25Meta(pm25: number) {
@@ -176,7 +159,6 @@ function getPM25Meta(pm25: number) {
       badgeClass: 'bg-emerald-50 text-emerald-700 ring-emerald-200/80',
       dotClass: 'bg-emerald-500',
       icon: ShieldCheck,
-      percentage: Math.min(100, (pm25 / 75) * 100),
     }
   }
   if (pm25 <= 25) {
@@ -186,7 +168,6 @@ function getPM25Meta(pm25: number) {
       badgeClass: 'bg-sky-50 text-sky-700 ring-sky-200/80',
       dotClass: 'bg-sky-500',
       icon: ShieldCheck,
-      percentage: Math.min(100, (pm25 / 75) * 100),
     }
   }
   if (pm25 <= 37.5) {
@@ -196,17 +177,15 @@ function getPM25Meta(pm25: number) {
       badgeClass: 'bg-amber-50 text-amber-700 ring-amber-200/80',
       dotClass: 'bg-amber-500',
       icon: ShieldAlert,
-      percentage: Math.min(100, (pm25 / 75) * 100),
     }
   }
   if (pm25 <= 75) {
     return {
       level: 'เริ่มมีผลกระทบ',
-      healthTip: 'ควรสวมหน้ากากป้องกันฝุ่น N95 เมื่อออกกลางแจ้ง',
+      healthTip: 'ควรสวมหน้ากากป้องกันฝุ่นเมื่อออกกลางแจ้ง',
       badgeClass: 'bg-orange-50 text-orange-700 ring-orange-200/80',
       dotClass: 'bg-orange-500',
       icon: ShieldAlert,
-      percentage: Math.min(100, (pm25 / 75) * 100),
     }
   }
   return {
@@ -215,7 +194,6 @@ function getPM25Meta(pm25: number) {
     badgeClass: 'bg-rose-50 text-rose-700 ring-rose-200/80',
     dotClass: 'bg-rose-500',
     icon: ShieldAlert,
-    percentage: Math.min(100, (pm25 / 75) * 100),
   }
 }
 
@@ -258,7 +236,7 @@ export default function WeatherWidget({
       setError(null)
 
       try {
-        const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${city.lat}&longitude=${city.lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,uv_index_max,sunrise,sunset&timezone=Asia%2FBangkok`
+        const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${city.lat}&longitude=${city.lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=Asia%2FBangkok`
         const aqiUrl = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${city.lat}&longitude=${city.lon}&current=pm2_5,pm10,us_aqi&timezone=Asia%2FBangkok`
 
         const [weatherRes, aqiRes] = await Promise.all([
@@ -277,9 +255,6 @@ export default function WeatherWidget({
         const dailyMax: number[] = weatherJson.daily?.temperature_2m_max || []
         const dailyMin: number[] = weatherJson.daily?.temperature_2m_min || []
         const dailyRain: number[] = weatherJson.daily?.precipitation_probability_max || []
-        const dailyUv: number[] = weatherJson.daily?.uv_index_max || []
-        const sunrises: string[] = weatherJson.daily?.sunrise || []
-        const sunsets: string[] = weatherJson.daily?.sunset || []
 
         const forecastList: DailyForecastItem[] = dailyTimes.slice(0, 5).map((dStr, idx) => {
           const dObj = new Date(dStr)
@@ -291,16 +266,8 @@ export default function WeatherWidget({
             tempMax: Math.round(dailyMax[idx] ?? 0),
             tempMin: Math.round(dailyMin[idx] ?? 0),
             rainProb: dailyRain[idx] ?? 0,
-            uvIndex: Math.round((dailyUv[idx] ?? 0) * 10) / 10,
           }
         })
-
-        // Format sunrise & sunset (HH:mm)
-        const formatSunTime = (isoString?: string) => {
-          if (!isoString) return '--:--'
-          const parts = isoString.split('T')
-          return parts[1] ? parts[1].slice(0, 5) : '--:--'
-        }
 
         const mappedWeather: WeatherData = {
           currentTemp: Math.round(weatherJson.current?.temperature_2m ?? 0),
@@ -311,9 +278,6 @@ export default function WeatherWidget({
           tempMax: Math.round(dailyMax[0] ?? 0),
           tempMin: Math.round(dailyMin[0] ?? 0),
           rainProb: Math.round(dailyRain[0] ?? 0),
-          uvIndex: Math.round((dailyUv[0] ?? 0) * 10) / 10,
-          sunrise: formatSunTime(sunrises[0]),
-          sunset: formatSunTime(sunsets[0]),
           dailyForecast: forecastList,
         }
 
@@ -462,7 +426,6 @@ export default function WeatherWidget({
     [weather?.weatherCode],
   )
   const pm25Meta = useMemo(() => getPM25Meta(airQuality?.pm25 ?? 0), [airQuality?.pm25])
-  const uvMeta = useMemo(() => getUVMeta(weather?.uvIndex ?? 0), [weather?.uvIndex])
 
   const WeatherIcon = weatherMeta.icon
   const ShieldIcon = pm25Meta.icon
@@ -604,74 +567,78 @@ export default function WeatherWidget({
           </div>
         )}
 
-        {/* ── Core Metric Cards ────────────────────────────────────────────── */}
+        {/* ── Core Metric Cards (Clean & Spacious) ─────────────────────────── */}
         {weather && airQuality && (
-          <div className={`mt-3.5 grid gap-2.5 ${width >= 3 ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1 sm:grid-cols-2'}`}>
+          <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
             {/* Card 1: Weather Info */}
-            <div className="flex flex-col justify-between rounded-xl bg-slate-50/90 p-3 ring-1 ring-slate-200/60">
+            <div className="flex flex-col justify-between rounded-xl bg-slate-50/80 p-3.5 ring-1 ring-slate-200/60">
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <div className="flex items-baseline gap-1">
-                    <span className="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
+                    <span className="text-3xl font-extrabold tracking-tight text-slate-900">
                       {weather.currentTemp}°
                     </span>
                     <span className="text-xs font-bold text-slate-500">C</span>
                   </div>
-                  <div className="mt-0.5 flex items-center gap-1.5">
-                    <span className="text-xs font-semibold text-slate-700">{weatherMeta.label}</span>
+                  <div className="mt-0.5 text-xs font-semibold text-slate-700">
+                    {weatherMeta.label}
                   </div>
                 </div>
 
                 <div className="text-right">
-                  <span className="inline-block rounded-md bg-white px-2 py-0.5 text-[10px] font-semibold text-slate-600 shadow-2xs ring-1 ring-black/[0.04]">
+                  <span className="inline-block rounded-md bg-white px-2 py-0.5 text-[11px] font-semibold text-slate-600 shadow-2xs ring-1 ring-black/[0.04]">
                     {weather.tempMax}° / {weather.tempMin}°
                   </span>
-                  <div className="mt-1 text-[10px] font-medium text-slate-400">
+                  <div className="mt-1 text-[11px] font-medium text-slate-400">
                     รู้สึกเหมือน {weather.apparentTemp}°C
                   </div>
                 </div>
               </div>
 
-              {/* Sub metrics: Humidity & Wind */}
-              <div className="mt-2.5 flex items-center justify-between border-t border-slate-200/60 pt-2 text-[11px] font-medium text-slate-600">
-                <div className="flex items-center gap-1" title="ความชื้นสัมพัทธ์">
+              {/* Sub metrics: Rain chance & Humidity */}
+              <div className="mt-3 flex items-center justify-between border-t border-slate-200/60 pt-2 text-[11px] font-medium text-slate-600">
+                <div className="flex items-center gap-1">
                   <Droplets size={12} className="text-sky-500" />
-                  <span>ชื้น {weather.humidity}%</span>
+                  <span>ความชื้น {weather.humidity}%</span>
                 </div>
-                <div className="flex items-center gap-1" title="ความเร็วลม">
-                  <Wind size={12} className="text-slate-400" />
-                  <span>ลม {weather.windSpeed} km/h</span>
-                </div>
+                {weather.rainProb > 0 ? (
+                  <span className="text-sky-600 font-semibold">โอกาสฝน {weather.rainProb}%</span>
+                ) : (
+                  <div className="flex items-center gap-1 text-slate-400">
+                    <Wind size={12} />
+                    <span>ลม {weather.windSpeed} km/h</span>
+                  </div>
+                )}
               </div>
             </div>
 
             {/* Card 2: PM 2.5 & Air Quality */}
-            <div className="flex flex-col justify-between rounded-xl bg-slate-50/90 p-3 ring-1 ring-slate-200/60">
+            <div className="flex flex-col justify-between rounded-xl bg-slate-50/80 p-3.5 ring-1 ring-slate-200/60">
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <div className="flex items-baseline gap-1.5">
-                    <span className="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
+                    <span className="text-3xl font-extrabold tracking-tight text-slate-900">
                       {airQuality.pm25}
                     </span>
                     <span className="text-[11px] font-bold text-slate-500">µg/m³</span>
                   </div>
-                  <div className="mt-0.5 text-[10px] font-semibold text-slate-500">
+                  <div className="mt-0.5 text-[11px] font-semibold text-slate-500">
                     ดัชนีฝุ่น PM 2.5 (US AQI: {airQuality.usAqi})
                   </div>
                 </div>
 
                 {/* Level badge */}
                 <div
-                  className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold ring-1 ${pm25Meta.badgeClass}`}
+                  className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold ring-1 ${pm25Meta.badgeClass}`}
                 >
-                  <span className={`h-1.5 w-1.5 rounded-full ${pm25Meta.dotClass}`} />
+                  <span className={`h-2 w-2 rounded-full ${pm25Meta.dotClass}`} />
                   <span>{pm25Meta.level}</span>
                 </div>
               </div>
 
               {/* Health recommendation */}
-              <div className="mt-2.5 flex items-center gap-1.5 border-t border-slate-200/60 pt-2 text-[10px] font-medium text-slate-600">
-                <ShieldIcon size={12} className="shrink-0 text-slate-400" />
+              <div className="mt-3 flex items-center gap-1.5 border-t border-slate-200/60 pt-2 text-[11px] font-medium text-slate-600">
+                <ShieldIcon size={13} className="shrink-0 text-slate-400" />
                 <span className="truncate" title={pm25Meta.healthTip}>
                   {pm25Meta.healthTip}
                 </span>
@@ -680,109 +647,33 @@ export default function WeatherWidget({
           </div>
         )}
 
-        {/* ── PM 2.5 Visual Scale Gauge ─────────────────────────────────────── */}
-        {airQuality && (
-          <div className="mt-3 rounded-xl bg-slate-50/70 p-2.5 ring-1 ring-slate-200/50">
-            <div className="flex items-center justify-between text-[10px] font-semibold text-slate-500 mb-1.5">
-              <span>ระดับมลพิษ PM 2.5</span>
-              <span className="text-slate-700 font-bold">{airQuality.pm25} µg/m³ ({pm25Meta.level})</span>
-            </div>
-
-            {/* Gradient Gauge Bar */}
-            <div className="relative h-2 w-full overflow-hidden rounded-full bg-slate-200">
-              <div className="absolute inset-0 bg-gradient-to-r from-emerald-500 via-yellow-400 via-orange-500 to-rose-600" />
-              {/* Marker pin */}
-              <div
-                className="absolute top-0 bottom-0 w-1 bg-slate-900 shadow-sm transition-all duration-300"
-                style={{ left: `${Math.min(98, Math.max(2, pm25Meta.percentage))}%` }}
-              />
-            </div>
-
-            {/* Scale legend */}
-            <div className="mt-1 flex justify-between text-[9px] font-medium text-slate-400">
-              <span>0 (ดีมาก)</span>
-              <span>15 (ดี)</span>
-              <span>25 (ปานกลาง)</span>
-              <span>37.5 (เริ่มมีผล)</span>
-              <span>75+ (อันตราย)</span>
-            </div>
-          </div>
-        )}
-
-        {/* ── Environment & Sun Details Grid (4 mini cards) ────────────────── */}
-        {weather && airQuality && (
-          <div className="mt-2.5 grid grid-cols-2 sm:grid-cols-4 gap-2">
-            {/* Rain Chance */}
-            <div className="flex flex-col justify-center rounded-lg bg-slate-50/80 p-2 text-center ring-1 ring-slate-200/40">
-              <span className="text-[10px] font-semibold text-slate-400">โอกาสเกิดฝน</span>
-              <div className="mt-0.5 flex items-center justify-center gap-1 font-bold text-xs text-sky-600">
-                <Droplets size={12} />
-                <span>{weather.rainProb}%</span>
-              </div>
-            </div>
-
-            {/* UV Index */}
-            <div className="flex flex-col justify-center rounded-lg bg-slate-50/80 p-2 text-center ring-1 ring-slate-200/40">
-              <span className="text-[10px] font-semibold text-slate-400">ดัชนีรังสี UV</span>
-              <div className={`mt-0.5 flex items-center justify-center gap-1 font-bold text-xs ${uvMeta.colorClass}`}>
-                <Sun size={12} />
-                <span>{weather.uvIndex} ({uvMeta.label})</span>
-              </div>
-            </div>
-
-            {/* Sunrise */}
-            <div className="flex flex-col justify-center rounded-lg bg-slate-50/80 p-2 text-center ring-1 ring-slate-200/40">
-              <span className="text-[10px] font-semibold text-slate-400">พระอาทิตย์ขึ้น</span>
-              <div className="mt-0.5 flex items-center justify-center gap-1 font-bold text-xs text-amber-600">
-                <Sunrise size={12} />
-                <span>{weather.sunrise} น.</span>
-              </div>
-            </div>
-
-            {/* Sunset */}
-            <div className="flex flex-col justify-center rounded-lg bg-slate-50/80 p-2 text-center ring-1 ring-slate-200/40">
-              <span className="text-[10px] font-semibold text-slate-400">พระอาทิตย์ตก</span>
-              <div className="mt-0.5 flex items-center justify-center gap-1 font-bold text-xs text-indigo-600">
-                <Sunset size={12} />
-                <span>{weather.sunset} น.</span>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ── Multi-day Forecast Strip (Now shown across ALL sizes) ─────────── */}
+        {/* ── Multi-day Forecast Strip (Clean Minimalist Cards) ─────────────── */}
         {weather && weather.dailyForecast && (
-          <div className="mt-3 rounded-xl bg-slate-50/60 p-2.5 ring-1 ring-slate-200/50">
-            <div className="mb-2 flex items-center justify-between">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+          <div className="mt-3.5 rounded-xl bg-slate-50/60 p-3 ring-1 ring-slate-200/50">
+            <div className="mb-2.5 flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
                 พยากรณ์อากาศล่วงหน้า {width >= 2 ? '5 วัน' : '4 วัน'}
               </span>
               <span className="text-[10px] font-medium text-slate-400">สูงสุด / ต่ำสุด</span>
             </div>
 
-            <div className={`grid gap-1.5 ${width >= 3 ? 'grid-cols-5' : width >= 2 ? 'grid-cols-5' : 'grid-cols-4'}`}>
+            <div className={`grid gap-2 ${width >= 2 ? 'grid-cols-5' : 'grid-cols-4'}`}>
               {weather.dailyForecast.slice(0, width >= 2 ? 5 : 4).map((item) => {
                 const dayMeta = getWeatherMeta(item.weatherCode)
                 const DayIcon = dayMeta.icon
                 return (
                   <div
                     key={item.date}
-                    className="flex flex-col items-center justify-center rounded-lg bg-white p-2 text-center shadow-2xs ring-1 ring-black/[0.04]"
+                    className="flex flex-col items-center justify-center rounded-xl bg-white p-2.5 text-center shadow-2xs ring-1 ring-black/[0.04] transition-transform hover:-translate-y-0.5 duration-150"
                   >
-                    <span className="text-[11px] font-bold text-slate-700">{item.dayName}</span>
-                    <DayIcon size={16} className={`my-1 ${dayMeta.colorClass}`} />
-                    <span className="text-[10px] font-semibold text-slate-900">
-                      {item.tempMax}°/{item.tempMin}°
+                    <span className="text-xs font-bold text-slate-700">{item.dayName}</span>
+                    <DayIcon size={20} className={`my-1.5 ${dayMeta.colorClass}`} />
+                    <span className="text-[11px] font-extrabold text-slate-800">
+                      {item.tempMax}°
                     </span>
-                    {item.rainProb > 0 ? (
-                      <span className="mt-0.5 text-[9px] font-medium text-sky-600">
-                        💧{item.rainProb}%
-                      </span>
-                    ) : (
-                      <span className="mt-0.5 text-[9px] font-medium text-slate-300">
-                        -
-                      </span>
-                    )}
+                    <span className="text-[10px] font-medium text-slate-400">
+                      {item.tempMin}°
+                    </span>
                   </div>
                 )
               })}
@@ -792,7 +683,7 @@ export default function WeatherWidget({
       </div>
 
       {/* ── Footer ─────────────────────────────────────────────────────────── */}
-      <footer className="mt-3 flex items-center justify-between border-t border-slate-100 pt-2 text-[11px] text-slate-400">
+      <footer className="mt-3.5 flex items-center justify-between border-t border-slate-100 pt-2 text-[11px] text-slate-400">
         <span>ข้อมูลสภาพอากาศ &amp; ฝุ่นละอองจาก Open-Meteo</span>
         <span>
           อัปเดต:{' '}
