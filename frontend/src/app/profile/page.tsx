@@ -22,6 +22,9 @@ import {
   KeyRound,
   Mail,
   Shield,
+  Layers,
+  RotateCcw,
+  Sparkles,
 } from 'lucide-react'
 import DashboardLayout from '@/components/Layout/DashboardLayout'
 import { showDeleteConfirm, showToast, showSuccess, showError } from '@/utils/sweetalert'
@@ -36,6 +39,14 @@ import {
   parseQuickLinks,
   serializeQuickLinks,
 } from '@/utils/quickLinks'
+import {
+  DEFAULT_MAIN_MENU_ITEMS,
+  MAIN_MENU_ICON_MAP,
+  MAIN_MENU_STORAGE_KEY,
+  MainMenuItemConfig,
+  parseMainMenuConfig,
+  serializeMainMenuConfig,
+} from '@/utils/mainMenu'
 
 function describeQuickLink(url: string) {
   const value = url.trim()
@@ -87,6 +98,47 @@ export default function ProfilePage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isSavingProfile, setIsSavingProfile] = useState(false)
   const [isChangingPassword, setIsChangingPassword] = useState(false)
+
+  // Main Menu Management
+  const [mainMenuItems, setMainMenuItems] = useState<MainMenuItemConfig[]>(() => {
+    if (typeof window === 'undefined') return parseMainMenuConfig(null)
+    const saved = localStorage.getItem(MAIN_MENU_STORAGE_KEY)
+    return parseMainMenuConfig(saved)
+  })
+
+  const handleToggleMainMenu = (id: string) => {
+    setMainMenuItems((prev) => {
+      const next = prev.map((item) => {
+        if (item.id === id) {
+          if (item.required) return item
+          return { ...item, enabled: !item.enabled }
+        }
+        return item
+      })
+      const serialized = serializeMainMenuConfig(next)
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(MAIN_MENU_STORAGE_KEY, serialized)
+        window.dispatchEvent(new Event('art-main-menu-updated'))
+      }
+      const targetItem = next.find((i) => i.id === id)
+      showToast(
+        targetItem?.enabled
+          ? `เปิดการแสดงผล "${targetItem?.name}" ในเมนูหลักแล้ว`
+          : `ซ่อน "${targetItem?.name}" จากเมนูหลักแล้ว`,
+        'success',
+      )
+      return next
+    })
+  }
+
+  const handleResetMainMenu = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem(MAIN_MENU_STORAGE_KEY)
+      window.dispatchEvent(new Event('art-main-menu-updated'))
+    }
+    setMainMenuItems(DEFAULT_MAIN_MENU_ITEMS)
+    showToast('รีเซ็ตการแสดงผลเมนูหลักเป็นค่าเริ่มต้นแล้ว', 'info')
+  }
 
   // Quick Links
   const [quickLinks, setQuickLinks] = useState<QuickLink[]>([])
@@ -731,6 +783,111 @@ export default function ProfilePage() {
                   })}
                 </div>
               )}
+            </div>
+
+            {/* ── 4. Main Menu Management ────────────────────────── */}
+            <div className="rounded-2xl bg-white p-5 sm:p-6 ring-1 ring-black/[0.06] shadow-[0_8px_32px_rgba(15,23,42,0.06)]">
+              {/* Header */}
+              <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 ring-1 ring-indigo-200/60">
+                    <Layers size={20} aria-hidden="true" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-[17px] font-bold text-[#1d1d1f]">
+                        จัดการการแสดงผลเมนูหลัก
+                      </h2>
+                      <span className="rounded-full bg-indigo-50 px-2.5 py-0.5 text-[11px] font-bold text-indigo-700 ring-1 ring-indigo-200">
+                        {mainMenuItems.filter((i) => i.enabled).length} / {mainMenuItems.length}
+                      </span>
+                    </div>
+                    <p className="text-xs text-[#475569]">
+                      เลือกเปิดหรือซ่อนเมนูที่ต้องการแสดงในแถบเมนูข้าง (รวมถึงเมนูที่อยู่ระหว่างพัฒนา)
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleResetMainMenu}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-white px-3.5 py-1.5 text-xs font-semibold text-[#1d1d1f] ring-1 ring-black/[0.08] shadow-sm transition-all hover:bg-[#f5f5f7] active:scale-[0.98]"
+                >
+                  <RotateCcw size={13} aria-hidden="true" />
+                  <span>รีเซ็ตค่าเริ่มต้น</span>
+                </button>
+              </div>
+
+              {/* Items List */}
+              <div className="space-y-2.5">
+                {mainMenuItems.map((item) => {
+                  const Icon = MAIN_MENU_ICON_MAP[item.icon] || Sparkles
+                  return (
+                    <div
+                      key={item.id}
+                      className={`flex items-center justify-between gap-3 rounded-2xl p-3.5 ring-1 transition-all duration-150 ${
+                        item.enabled
+                          ? 'bg-[#f8fafc] ring-black/[0.05] hover:bg-white hover:ring-black/[0.08] hover:shadow-sm'
+                          : 'bg-slate-50/50 ring-slate-100 opacity-60'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white ring-1 ring-black/[0.06] shadow-sm text-slate-700">
+                          <Icon size={18} aria-hidden="true" />
+                        </div>
+
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-sm font-bold text-[#1d1d1f] truncate">
+                              {item.name}
+                            </span>
+
+                            {item.required && (
+                              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600">
+                                เมนูจำเป็น
+                              </span>
+                            )}
+
+                            {item.isWip && (
+                              <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700 ring-1 ring-amber-200/60">
+                                {item.wipLabel || 'อยู่ระหว่างพัฒนา'}
+                              </span>
+                            )}
+                          </div>
+
+                          <p className="text-xs text-[#475569] truncate">
+                            {item.description || item.href}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Toggle Switch */}
+                      <div className="shrink-0 flex items-center gap-2">
+                        {item.required ? (
+                          <span className="text-xs font-semibold text-slate-400">เปิดตลอดเวลา</span>
+                        ) : (
+                          <button
+                            type="button"
+                            role="switch"
+                            aria-checked={item.enabled}
+                            aria-label={`สลับการแสดงผล ${item.name}`}
+                            onClick={() => handleToggleMainMenu(item.id)}
+                            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[#0071e3] focus:ring-offset-2 ${
+                              item.enabled ? 'bg-[#0071e3]' : 'bg-slate-200'
+                            }`}
+                          >
+                            <span
+                              className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                                item.enabled ? 'translate-x-5' : 'translate-x-0'
+                              }`}
+                            />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
             </div>
 
           </div>

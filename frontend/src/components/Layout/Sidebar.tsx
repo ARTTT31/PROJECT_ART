@@ -1,9 +1,16 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { Home, LogOut, User, Cctv, ExternalLink } from 'lucide-react'
+import { LogOut, ExternalLink, Sparkles } from 'lucide-react'
 import { isExternalUrl, parseQuickLinks, QUICK_LINK_ICON_MAP } from '@/utils/quickLinks'
+import {
+  parseMainMenuConfig,
+  MAIN_MENU_ICON_MAP,
+  MAIN_MENU_STORAGE_KEY,
+  MainMenuItemConfig,
+} from '@/utils/mainMenu'
 import { AuthUser } from '@/types'
 
 interface SidebarProps {
@@ -19,6 +26,8 @@ interface MenuItem {
   href: string
   icon: JSX.Element
   external?: boolean
+  isWip?: boolean
+  wipLabel?: string
 }
 
 interface MenuSection {
@@ -28,6 +37,26 @@ interface MenuSection {
 
 export default function Sidebar({ isOpen, isCollapsed = false, onClose, user, onLogout }: SidebarProps) {
   const pathname = usePathname()
+
+  const [mainMenuConfig, setMainMenuConfig] = useState<MainMenuItemConfig[]>(() => {
+    if (typeof window === 'undefined') return parseMainMenuConfig(null)
+    const saved = localStorage.getItem(MAIN_MENU_STORAGE_KEY)
+    return parseMainMenuConfig(saved)
+  })
+
+  // Listen for changes from Profile Page
+  useEffect(() => {
+    const handleMenuUpdate = () => {
+      const saved = localStorage.getItem(MAIN_MENU_STORAGE_KEY)
+      setMainMenuConfig(parseMainMenuConfig(saved))
+    }
+    window.addEventListener('art-main-menu-updated', handleMenuUpdate)
+    window.addEventListener('storage', handleMenuUpdate)
+    return () => {
+      window.removeEventListener('art-main-menu-updated', handleMenuUpdate)
+      window.removeEventListener('storage', handleMenuUpdate)
+    }
+  }, [])
 
   const quickLinks = parseQuickLinks(user?.quick_links)
 
@@ -48,15 +77,25 @@ export default function Sidebar({ isOpen, isCollapsed = false, onClose, user, on
         }
       : null
 
-  const menuItems: MenuSection[] = [
-    {
-      title: 'เมนูหลัก',
-      items: [
-        { name: 'หน้าหลัก', href: '/dashboard', icon: <Home size={20} aria-hidden="true" /> },
-        { name: 'กล้องวงจรปิด', href: '/camera', icon: <Cctv size={20} aria-hidden="true" /> },
-        { name: 'โปรไฟล์', href: '/profile', icon: <User size={20} aria-hidden="true" /> },
-      ],
-    },
+  // Active Main Menu Items based on user configuration
+  const enabledMainItems = mainMenuConfig.filter((item) => item.enabled)
+
+  const mainMenuItemsSection: MenuSection = {
+    title: 'เมนูหลัก',
+    items: enabledMainItems.map((item) => {
+      const Icon = MAIN_MENU_ICON_MAP[item.icon] || Sparkles
+      return {
+        name: item.name,
+        href: item.href,
+        icon: <Icon size={20} aria-hidden="true" />,
+        isWip: item.isWip,
+        wipLabel: item.wipLabel,
+      }
+    }),
+  }
+
+  const menuSections: MenuSection[] = [
+    mainMenuItemsSection,
     ...(quickLinkSection ? [quickLinkSection] : []),
   ]
 
@@ -70,11 +109,10 @@ export default function Sidebar({ isOpen, isCollapsed = false, onClose, user, on
         {/* Navigation Menu */}
         <nav className="flex-1 overflow-y-auto p-4 pt-6">
           <div className="space-y-6">
-            {menuItems.map((section) => (
+            {menuSections.map((section) => (
               <div key={section.title}>
                 <div
-                  className="mb-2 px-3 text-[11px] font-semibold"
-                  style={{ color: '#6e6e73' }}
+                  className="mb-2 px-3 text-[11px] font-semibold text-[#6e6e73]"
                 >
                   {section.title}
                 </div>
@@ -99,7 +137,21 @@ export default function Sidebar({ isOpen, isCollapsed = false, onClose, user, on
                           <span className={isActive ? 'text-white/90' : 'text-slate-400 group-hover:text-slate-600'}>
                             {item.icon}
                           </span>
-                          <span className="flex-1">{item.name}</span>
+                          <span className="flex-1 truncate">{item.name}</span>
+
+                          {/* WIP Indicator Badge */}
+                          {item.isWip && (
+                            <span
+                              className={`rounded-md px-1.5 py-0.5 text-[10px] font-bold ${
+                                isActive
+                                  ? 'bg-white/20 text-white'
+                                  : 'bg-amber-50 text-amber-700 ring-1 ring-amber-200/60'
+                              }`}
+                            >
+                              {item.wipLabel || 'WIP'}
+                            </span>
+                          )}
+
                           {item.external && (
                             <ExternalLink
                               size={12}
