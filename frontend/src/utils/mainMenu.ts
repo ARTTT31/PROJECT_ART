@@ -65,26 +65,6 @@ export const DEFAULT_MAIN_MENU_ITEMS: MainMenuItemConfig[] = [
     enabled: true,
     description: 'จัดการข้อมูลส่วนตัว ความปลอดภัย และการตั้งค่า',
   },
-  {
-    id: 'schedule',
-    name: 'ตารางงาน & ปฏิทิน',
-    href: '/schedule',
-    icon: 'calendar',
-    enabled: false,
-    isWip: true,
-    wipLabel: 'กำลังพัฒนา',
-    description: 'ระบบนัดหมาย กำหนดการ และกิจกรรมของทีม',
-  },
-  {
-    id: 'reports',
-    name: 'รายงานสรุป & สถิติ',
-    href: '/reports',
-    icon: 'chart',
-    enabled: false,
-    isWip: true,
-    wipLabel: 'กำลังพัฒนา',
-    description: 'แดชบอร์ดวิเคราะห์สรุปผลการดำเนินงาน',
-  },
 ]
 
 export const MAIN_MENU_STORAGE_KEY = 'artMainMenuConfigV2'
