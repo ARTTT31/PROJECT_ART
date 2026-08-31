@@ -40,12 +40,14 @@ import TaskListWidget from '@/components/Widgets/TaskListWidget'
 import OilPriceWidget from '@/components/Widgets/OilPriceWidget'
 import QRCodeWidget from '@/components/Widgets/QRCodeWidget'
 import WeatherWidget from '@/components/Widgets/WeatherWidget'
+import HolidayWidget from '@/components/Widgets/HolidayWidget'
 
 // ── Widget registry ──────────────────────────────────────────────────────────
 
 const defaultWidgets: WidgetConfig[] = [
   // { id: 'calendar', w: 3 }, // 🚧 ปฏิทินกิจกรรม — ยังไม่พร้อมใช้งาน
   // { id: 'tasklist', w: 3 }, // 🚧 รายการงาน — ยังไม่พร้อมใช้งาน
+  { id: 'holidays', w: 1 },
   { id: 'weather', w: 1 },
   { id: 'oilprice', w: 1 },
   { id: 'qrcode', w: 1 },
@@ -54,6 +56,7 @@ const defaultWidgets: WidgetConfig[] = [
 const widgetNames: Record<string, string> = {
   calendar: 'ปฏิทินกิจกรรม',
   tasklist: 'รายการงาน IMACD / ธัญพงศ์',
+  holidays: 'วันหยุดนักขัตฤกษ์ (2569)',
   weather: 'สภาพอากาศ & PM 2.5',
   oilprice: 'ราคาน้ำมัน',
   qrcode: 'สร้าง QR Code',
@@ -62,6 +65,7 @@ const widgetNames: Record<string, string> = {
 const widgetDescriptions: Record<string, string> = {
   calendar: 'แสดงปฏิทินกิจกรรมจาก Google Calendar',
   tasklist: 'สรุปรายการงานและกำหนดการสำคัญ',
+  holidays: 'ปฏิทินวันหยุดนักขัตฤกษ์ประจำปี 2569 พร้อมระบบนับถอยหลัง',
   weather: 'ตรวจสอบสภาพอากาศ อุณหภูมิ และดัชนีฝุ่น PM 2.5 รายวัน',
   oilprice: 'ติดตามราคาน้ำมันล่าสุดในหน้าแดชบอร์ด',
   qrcode: 'เปิดเครื่องมือสร้าง QR Code อย่างรวดเร็ว',
@@ -168,6 +172,11 @@ function SortableWidget({
             onResize={(newSize) => onResize(widget.id, newSize)}
             selectedMonth={selectedMonth}
           />
+        </ErrorBoundary>
+      )}
+      {widget.id === 'holidays' && (
+        <ErrorBoundary fallback={(err, reset) => <WidgetErrorFallback name="วันหยุดนักขัตฤกษ์" error={err} reset={reset} />}>
+          <HolidayWidget width={widget.w} onResize={(newSize) => onResize(widget.id, newSize)} />
         </ErrorBoundary>
       )}
       {widget.id === 'weather' && (
