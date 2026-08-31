@@ -35,8 +35,6 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 
-import CalendarWidget from '@/components/Widgets/CalendarWidget'
-import TaskListWidget from '@/components/Widgets/TaskListWidget'
 import OilPriceWidget from '@/components/Widgets/OilPriceWidget'
 import QRCodeWidget from '@/components/Widgets/QRCodeWidget'
 import WeatherWidget from '@/components/Widgets/WeatherWidget'
@@ -45,8 +43,6 @@ import HolidayWidget from '@/components/Widgets/HolidayWidget'
 // ── Widget registry ──────────────────────────────────────────────────────────
 
 const defaultWidgets: WidgetConfig[] = [
-  // { id: 'calendar', w: 3 }, // 🚧 ปฏิทินกิจกรรม — ยังไม่พร้อมใช้งาน
-  // { id: 'tasklist', w: 3 }, // 🚧 รายการงาน — ยังไม่พร้อมใช้งาน
   { id: 'holidays', w: 1 },
   { id: 'weather', w: 1 },
   { id: 'oilprice', w: 1 },
@@ -54,8 +50,6 @@ const defaultWidgets: WidgetConfig[] = [
 ]
 
 const widgetNames: Record<string, string> = {
-  calendar: 'ปฏิทินกิจกรรม',
-  tasklist: 'รายการงาน IMACD / ธัญพงศ์',
   holidays: 'วันหยุดนักขัตฤกษ์ (2569)',
   weather: 'สภาพอากาศ & PM 2.5',
   oilprice: 'ราคาน้ำมัน',
@@ -63,8 +57,6 @@ const widgetNames: Record<string, string> = {
 }
 
 const widgetDescriptions: Record<string, string> = {
-  calendar: 'แสดงปฏิทินกิจกรรมจาก Google Calendar',
-  tasklist: 'สรุปรายการงานและกำหนดการสำคัญ',
   holidays: 'ปฏิทินวันหยุดนักขัตฤกษ์ประจำปี 2569 พร้อมระบบนับถอยหลัง',
   weather: 'ตรวจสอบสภาพอากาศ อุณหภูมิ และดัชนีฝุ่น PM 2.5 รายวัน',
   oilprice: 'ติดตามราคาน้ำมันล่าสุดในหน้าแดชบอร์ด',
@@ -112,13 +104,9 @@ function WidgetErrorFallback({ name, error, reset }: { name: string; error: Erro
 function SortableWidget({
   widget,
   onResize,
-  selectedMonth,
-  onMonthChange,
 }: {
   widget: WidgetConfig
   onResize: (id: string, newWidth: number) => void
-  selectedMonth: Date
-  onMonthChange: (date: Date) => void
 }) {
   const {
     attributes,
@@ -155,25 +143,6 @@ function SortableWidget({
       </div>
 
       {/* Widget content */}
-      {widget.id === 'calendar' && (
-        <ErrorBoundary fallback={(err, reset) => <WidgetErrorFallback name="ปฏิทิน" error={err} reset={reset} />}>
-          <CalendarWidget
-            width={widget.w}
-            onResize={(newSize) => onResize(widget.id, newSize)}
-            selectedMonth={selectedMonth}
-            onMonthChange={onMonthChange}
-          />
-        </ErrorBoundary>
-      )}
-      {widget.id === 'tasklist' && (
-        <ErrorBoundary fallback={(err, reset) => <WidgetErrorFallback name="รายการงาน" error={err} reset={reset} />}>
-          <TaskListWidget
-            width={widget.w}
-            onResize={(newSize) => onResize(widget.id, newSize)}
-            selectedMonth={selectedMonth}
-          />
-        </ErrorBoundary>
-      )}
       {widget.id === 'holidays' && (
         <ErrorBoundary fallback={(err, reset) => <WidgetErrorFallback name="วันหยุดนักขัตฤกษ์" error={err} reset={reset} />}>
           <HolidayWidget width={widget.w} onResize={(newSize) => onResize(widget.id, newSize)} />
@@ -206,7 +175,6 @@ export default function DashboardPage() {
   const [visibleWidgetIds, setVisibleWidgetIds] = useState<string[]>([])
   const [showConfigModal, setShowConfigModal] = useState(false)
   const [isClient, setIsClient] = useState(false)
-  const [selectedMonth, setSelectedMonth] = useState(new Date())
   const hasInitializedRef = useRef(false)
 
   const sensors = useSensors(
@@ -396,8 +364,6 @@ export default function DashboardPage() {
                 key={widget.id}
                 widget={widget}
                 onResize={handleResize}
-                selectedMonth={selectedMonth}
-                onMonthChange={setSelectedMonth}
               />
             ))}
           </div>
