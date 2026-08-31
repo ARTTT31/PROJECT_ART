@@ -24,7 +24,7 @@ const sizeDescriptions: Record<number, string> = {
 export default function WidgetSizeToggle({
   value,
   onChange,
-  sizes = [2, 3],
+  sizes = [1, 2, 3],
   className,
 }: WidgetSizeToggleProps) {
   return (

@@ -17,6 +17,7 @@ import {
   ShieldAlert,
   ShieldCheck,
   ChevronDown,
+  AlertCircle,
 } from 'lucide-react'
 import WidgetSizeToggle from './WidgetSizeToggle'
 
@@ -38,6 +39,15 @@ const CITY_PRESETS: CityLocation[] = [
   { id: 'kkn', name: 'ขอนแก่น', lat: 16.4419, lon: 102.8359 },
 ]
 
+interface DailyForecastItem {
+  date: string
+  dayName: string
+  weatherCode: number
+  tempMax: number
+  tempMin: number
+  rainProb: number
+}
+
 interface WeatherData {
   currentTemp: number
   apparentTemp: number
@@ -47,14 +57,7 @@ interface WeatherData {
   tempMax: number
   tempMin: number
   rainProb: number
-  dailyForecast: {
-    date: string
-    dayName: string
-    weatherCode: number
-    tempMax: number
-    tempMin: number
-    rainProb: number
-  }[]
+  dailyForecast: DailyForecastItem[]
 }
 
 interface AirQualityData {
@@ -73,8 +76,8 @@ interface CombinedWeatherCache {
 
 // ── Cache helpers ────────────────────────────────────────────────────────────
 
-const CACHE_KEY = 'artWeatherCacheV2'
-const LOCATION_KEY = 'artWeatherLocationV2'
+const CACHE_KEY = 'artWeatherCacheV3'
+const LOCATION_KEY = 'artWeatherLocationV3'
 const CACHE_TTL_MS = 20 * 60_000 // 20 minutes
 
 function safeJsonParse<T>(raw: string | null): T | null {
@@ -180,14 +183,7 @@ export default function WeatherWidget({
   width?: number
   onResize?: (size: number) => void
 }) {
-  const [selectedCity, setSelectedCity] = useState<CityLocation>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = safeJsonParse<CityLocation>(localStorage.getItem(LOCATION_KEY))
-      if (saved && saved.name && typeof saved.lat === 'number') return saved
-    }
-    return CITY_PRESETS[0]
-  })
-
+  const [selectedCity, setSelectedCity] = useState<CityLocation>(CITY_PRESETS[0])
   const [weather, setWeather] = useState<WeatherData | null>(null)
   const [airQuality, setAirQuality] = useState<AirQualityData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -199,6 +195,16 @@ export default function WeatherWidget({
 
   const dropdownRef = useRef<HTMLDivElement>(null)
   const abortRef = useRef<AbortController | null>(null)
+
+  // ── Load saved city location from localStorage on mount ───────────────────
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = safeJsonParse<CityLocation>(localStorage.getItem(LOCATION_KEY))
+      if (saved && saved.name && typeof saved.lat === 'number' && typeof saved.lon === 'number') {
+        setSelectedCity(saved)
+      }
+    }
+  }, [])
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -212,7 +218,6 @@ export default function WeatherWidget({
   }, [])
 
   // ── Fetch Weather & AQI from Open-Meteo ─────────────────────────────────────
-
   const fetchWeatherData = useCallback(
     async (city: CityLocation, isRefresh = false) => {
       abortRef.current?.abort()
@@ -247,7 +252,7 @@ export default function WeatherWidget({
         const dailyMin: number[] = weatherJson.daily?.temperature_2m_min || []
         const dailyRain: number[] = weatherJson.daily?.precipitation_probability_max || []
 
-        const forecastList = dailyTimes.slice(0, 4).map((dStr, idx) => {
+        const forecastList: DailyForecastItem[] = dailyTimes.slice(0, 5).map((dStr, idx) => {
           const dObj = new Date(dStr)
           const dayName = idx === 0 ? 'วันนี้' : idx === 1 ? 'พรุ่งนี้' : THAI_DAY_NAMES[dObj.getDay()]
           return {
@@ -308,8 +313,8 @@ export default function WeatherWidget({
   )
 
   // ── Initial load & cache check ─────────────────────────────────────────────
-
   useEffect(() => {
+    let hasLoadedFromCache = false
     if (typeof window !== 'undefined') {
       const cached = safeJsonParse<CombinedWeatherCache>(localStorage.getItem(CACHE_KEY))
       if (
@@ -323,10 +328,11 @@ export default function WeatherWidget({
         setAirQuality(cached.airQuality)
         setLastUpdated(new Date(cached.savedAt))
         setLoading(false)
+        hasLoadedFromCache = true
       }
     }
 
-    fetchWeatherData(selectedCity)
+    fetchWeatherData(selectedCity, hasLoadedFromCache)
 
     // Auto-refresh every 20 minutes
     const interval = setInterval(() => {
@@ -340,7 +346,6 @@ export default function WeatherWidget({
   }, [selectedCity, fetchWeatherData])
 
   // ── Handle City Selection ───────────────────────────────────────────────────
-
   const handleSelectCity = (city: CityLocation) => {
     setSelectedCity(city)
     setIsCityDropdownOpen(false)
@@ -353,9 +358,8 @@ export default function WeatherWidget({
   }
 
   // ── Handle Geolocation Detection ───────────────────────────────────────────
-
   const handleDetectLocation = () => {
-    if (!navigator.geolocation) {
+    if (typeof window === 'undefined' || !navigator.geolocation) {
       alert('เบราว์เซอร์ของคุณไม่รองรับการระบุตำแหน่ง GPS')
       return
     }
@@ -382,7 +386,6 @@ export default function WeatherWidget({
   }
 
   // ── Loading Skeleton ───────────────────────────────────────────────────────
-
   if (loading && !weather) {
     return (
       <div
@@ -398,12 +401,12 @@ export default function WeatherWidget({
               <div className="h-3 w-36 rounded-md bg-slate-100/70 animate-pulse" />
             </div>
           </div>
-          <div className="h-8 w-20 rounded-full bg-slate-100 animate-pulse" />
+          <div className="h-8 w-24 rounded-full bg-slate-100 animate-pulse" />
         </div>
 
-        <div className="my-4 grid grid-cols-2 gap-3">
-          <div className="h-20 rounded-xl bg-slate-100 animate-pulse" />
-          <div className="h-20 rounded-xl bg-slate-100 animate-pulse" />
+        <div className="my-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="h-24 rounded-xl bg-slate-100 animate-pulse" />
+          <div className="h-24 rounded-xl bg-slate-100 animate-pulse" />
         </div>
 
         <div className="flex justify-between items-center">
@@ -455,7 +458,7 @@ export default function WeatherWidget({
                   aria-label="เปลี่ยนตำแหน่งพื้นที่"
                 >
                   <MapPin size={12} className="text-sky-500 shrink-0" aria-hidden="true" />
-                  <span className="truncate max-w-[130px] sm:max-w-[160px]">{selectedCity.name}</span>
+                  <span className="truncate max-w-[120px] sm:max-w-[160px]">{selectedCity.name}</span>
                   <ChevronDown
                     size={12}
                     className={`text-slate-400 group-hover:text-sky-500 transition-transform ${
@@ -524,21 +527,36 @@ export default function WeatherWidget({
               />
             </button>
 
-            {onResize && <WidgetSizeToggle value={width} onChange={onResize} />}
+            {onResize && (
+              <WidgetSizeToggle
+                value={width}
+                onChange={onResize}
+                sizes={[1, 2, 3]}
+              />
+            )}
           </div>
         </div>
 
         {/* ── Error Banner ─────────────────────────────────────────────────── */}
         {error && (
-          <div className="mt-3 flex items-center gap-2 rounded-xl bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700 ring-1 ring-rose-200">
-            <ShieldAlert size={14} className="shrink-0 text-rose-500" />
-            <span className="truncate">{error}</span>
+          <div className="mt-3 flex items-center justify-between gap-2 rounded-xl bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700 ring-1 ring-rose-200">
+            <div className="flex items-center gap-2 min-w-0">
+              <AlertCircle size={14} className="shrink-0 text-rose-500" />
+              <span className="truncate">{error}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => fetchWeatherData(selectedCity, true)}
+              className="shrink-0 font-bold underline hover:text-rose-900"
+            >
+              ลองใหม่
+            </button>
           </div>
         )}
 
         {/* ── Core Metric Cards ────────────────────────────────────────────── */}
         {weather && airQuality && (
-          <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className={`mt-4 grid gap-3 ${width >= 3 ? 'grid-cols-1 md:grid-cols-3' : 'grid-cols-1 sm:grid-cols-2'}`}>
             {/* Card 1: Weather Info */}
             <div className="flex flex-col justify-between rounded-xl bg-slate-50/80 p-3.5 ring-1 ring-slate-200/60">
               <div className="flex items-start justify-between gap-2">
@@ -556,7 +574,7 @@ export default function WeatherWidget({
 
                 <div className="text-right">
                   <span className="inline-block rounded-md bg-white px-2 py-0.5 text-[11px] font-semibold text-slate-600 shadow-2xs ring-1 ring-black/[0.04]">
-                    สูงสุด {weather.tempMax}° / ต่ำสุด {weather.tempMin}°
+                    {weather.tempMax}° / {weather.tempMin}°
                   </span>
                   <div className="mt-1 text-[11px] font-medium text-slate-400">
                     รู้สึกเหมือน {weather.apparentTemp}°C
@@ -609,6 +627,32 @@ export default function WeatherWidget({
                 </span>
               </div>
             </div>
+
+            {/* Card 3: Additional Environment Details (Shown on L width >= 3) */}
+            {width >= 3 && (
+              <div className="flex flex-col justify-between rounded-xl bg-slate-50/80 p-3.5 ring-1 ring-slate-200/60">
+                <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                  รายละเอียดสภาพแวดล้อม
+                </div>
+                <div className="my-2 space-y-1.5 text-xs text-slate-700">
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">โอกาสเกิดฝน:</span>
+                    <span className="font-semibold text-sky-600">{weather.rainProb}%</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">ดัชนีฝุ่น PM 10:</span>
+                    <span className="font-semibold">{airQuality.pm10} µg/m³</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">ดัชนี US AQI:</span>
+                    <span className="font-semibold">{airQuality.usAqi}</span>
+                  </div>
+                </div>
+                <div className="border-t border-slate-200/60 pt-2 text-[10px] text-slate-400">
+                  พิกัด: {selectedCity.lat.toFixed(2)}, {selectedCity.lon.toFixed(2)}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -616,16 +660,16 @@ export default function WeatherWidget({
         {width >= 2 && weather && weather.dailyForecast && (
           <div className="mt-3 rounded-xl bg-slate-50/60 p-3 ring-1 ring-slate-200/50">
             <div className="mb-2 text-[11px] font-bold uppercase tracking-wider text-slate-400">
-              พยากรณ์อากาศล่วงหน้า
+              พยากรณ์อากาศล่วงหน้า 5 วัน
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <div className={`grid gap-2 ${width >= 3 ? 'grid-cols-5' : 'grid-cols-2 sm:grid-cols-4'}`}>
               {weather.dailyForecast.map((item) => {
                 const dayMeta = getWeatherMeta(item.weatherCode)
                 const DayIcon = dayMeta.icon
                 return (
                   <div
                     key={item.date}
-                    className="flex flex-col items-center justify-center rounded-lg bg-white p-2 text-center shadow-2xs ring-1 ring-black/[0.04]"
+                    className="flex flex-col items-center justify-center rounded-lg bg-white p-2.5 text-center shadow-2xs ring-1 ring-black/[0.04]"
                   >
                     <span className="text-xs font-bold text-slate-700">{item.dayName}</span>
                     <DayIcon size={18} className={`my-1.5 ${dayMeta.colorClass}`} />
@@ -647,7 +691,7 @@ export default function WeatherWidget({
 
       {/* ── Footer ─────────────────────────────────────────────────────────── */}
       <footer className="mt-3 flex items-center justify-between border-t border-slate-100 pt-2 text-[11px] text-slate-400">
-        <span>ข้อมูลจาก Open-Meteo</span>
+        <span>ข้อมูลสภาพอากาศ &amp; ฝุ่นละอองจาก Open-Meteo</span>
         <span>
           อัปเดต:{' '}
           {lastUpdated.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })} น.
