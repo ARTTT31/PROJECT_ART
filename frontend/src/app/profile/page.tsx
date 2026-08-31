@@ -861,27 +861,55 @@ export default function ProfilePage() {
                         </div>
                       </div>
 
-                      {/* Toggle Switch */}
-                      <div className="shrink-0 flex items-center gap-2">
+                      {/* Toggle Switch with Status Badge */}
+                      <div className="shrink-0 flex items-center gap-3">
                         {item.required ? (
-                          <span className="text-xs font-semibold text-slate-400">เปิดตลอดเวลา</span>
+                          <div className="flex items-center gap-2">
+                            <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-500">
+                              จำเป็น
+                            </span>
+                            <div className="relative inline-flex h-7 w-12 shrink-0 cursor-not-allowed items-center rounded-full bg-[#0071e3]/40 p-0.5 opacity-70">
+                              <span className="inline-block h-6 w-6 translate-x-5 transform rounded-full bg-white shadow-[0_2px_4px_rgba(0,0,0,0.15)]" />
+                            </div>
+                          </div>
                         ) : (
-                          <button
-                            type="button"
-                            role="switch"
-                            aria-checked={item.enabled}
-                            aria-label={`สลับการแสดงผล ${item.name}`}
-                            onClick={() => handleToggleMainMenu(item.id)}
-                            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[#0071e3] focus:ring-offset-2 ${
-                              item.enabled ? 'bg-[#0071e3]' : 'bg-slate-200'
-                            }`}
-                          >
+                          <div className="flex items-center gap-2.5">
                             <span
-                              className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
-                                item.enabled ? 'translate-x-5' : 'translate-x-0'
+                              className={`hidden sm:inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold transition-colors ${
+                                item.enabled
+                                  ? 'bg-sky-50 text-[#0071e3] ring-1 ring-sky-200/60'
+                                  : 'bg-slate-100 text-slate-400'
                               }`}
-                            />
-                          </button>
+                            >
+                              {item.enabled ? (
+                                <>
+                                  <Check size={12} className="shrink-0" />
+                                  <span>แสดงในเมนู</span>
+                                </>
+                              ) : (
+                                <span>ซ่อนไว้</span>
+                              )}
+                            </span>
+
+                            <button
+                              type="button"
+                              role="switch"
+                              aria-checked={item.enabled}
+                              aria-label={`สลับการแสดงผล ${item.name}`}
+                              onClick={() => handleToggleMainMenu(item.id)}
+                              className={`relative inline-flex h-7 w-12 shrink-0 cursor-pointer items-center rounded-full p-0.5 transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3] focus-visible:ring-offset-2 active:scale-95 ${
+                                item.enabled
+                                  ? 'bg-[#0071e3] shadow-[0_2px_8px_rgba(0,113,227,0.35)]'
+                                  : 'bg-slate-200 hover:bg-slate-300'
+                              }`}
+                            >
+                              <span
+                                className={`pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow-[0_2px_5px_rgba(0,0,0,0.2)] transition-transform duration-200 ease-out ${
+                                  item.enabled ? 'translate-x-5' : 'translate-x-0'
+                                }`}
+                              />
+                            </button>
+                          </div>
                         )}
                       </div>
                     </div>
