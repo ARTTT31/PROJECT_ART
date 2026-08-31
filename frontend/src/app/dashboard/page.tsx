@@ -102,11 +102,17 @@ const QRCodeWidget = dynamic(() => import('@/components/Widgets/QRCodeWidget'), 
   loading: () => <WidgetSkeleton minHeight={220} />,
 })
 
+const WeatherWidget = dynamic(() => import('@/components/Widgets/WeatherWidget'), {
+  ssr: false,
+  loading: () => <WidgetSkeleton minHeight={220} />,
+})
+
 // ── Widget registry ──────────────────────────────────────────────────────────
 
 const defaultWidgets: WidgetConfig[] = [
   // { id: 'calendar', w: 3 }, // 🚧 ปฏิทินกิจกรรม — ยังไม่พร้อมใช้งาน
   // { id: 'tasklist', w: 3 }, // 🚧 รายการงาน — ยังไม่พร้อมใช้งาน
+  { id: 'weather', w: 1 },
   { id: 'oilprice', w: 1 },
   { id: 'qrcode', w: 1 },
 ]
@@ -114,6 +120,7 @@ const defaultWidgets: WidgetConfig[] = [
 const widgetNames: Record<string, string> = {
   calendar: 'ปฏิทินกิจกรรม',
   tasklist: 'รายการงาน IMACD / ธัญพงศ์',
+  weather: 'สภาพอากาศ & PM 2.5',
   oilprice: 'ราคาน้ำมัน',
   qrcode: 'สร้าง QR Code',
 }
@@ -121,6 +128,7 @@ const widgetNames: Record<string, string> = {
 const widgetDescriptions: Record<string, string> = {
   calendar: 'แสดงปฏิทินกิจกรรมจาก Google Calendar',
   tasklist: 'สรุปรายการงานและกำหนดการสำคัญ',
+  weather: 'ตรวจสอบสภาพอากาศ อุณหภูมิ และดัชนีฝุ่น PM 2.5 รายวัน',
   oilprice: 'ติดตามราคาน้ำมันล่าสุดในหน้าแดชบอร์ด',
   qrcode: 'เปิดเครื่องมือสร้าง QR Code อย่างรวดเร็ว',
 }
@@ -217,6 +225,11 @@ function SortableWidget({
             onResize={(newSize) => onResize(widget.id, newSize)}
             selectedMonth={selectedMonth}
           />
+        </ErrorBoundary>
+      )}
+      {widget.id === 'weather' && (
+        <ErrorBoundary fallback={(err, reset) => <WidgetErrorFallback name="สภาพอากาศ" error={err} reset={reset} />}>
+          <WeatherWidget width={widget.w} onResize={(newSize) => onResize(widget.id, newSize)} />
         </ErrorBoundary>
       )}
       {widget.id === 'oilprice' && (
@@ -331,6 +344,17 @@ export default function DashboardPage() {
       }
     }
 
+    // Ensure newly added default widgets exist in loadedWidgets
+    const existingWidgetIds = new Set(loadedWidgets.map((w: any) => w.id))
+    defaultWidgets.forEach((dw) => {
+      if (!existingWidgetIds.has(dw.id)) {
+        loadedWidgets = [dw, ...loadedWidgets]
+        if (!loadedVisible.includes(dw.id)) {
+          loadedVisible = [dw.id, ...loadedVisible]
+        }
+      }
+    })
+
     setWidgets(loadedWidgets)
     setVisibleWidgetIds(loadedVisible)
     hasInitializedRef.current = true
@@ -353,13 +377,19 @@ export default function DashboardPage() {
 
   const toggleWidgetVisibility = (id: string) => {
     let newVisible: string[]
+    let newWidgets = [...widgets]
+    if (!newWidgets.some((w) => w.id === id)) {
+      const defaultW = defaultWidgets.find((w) => w.id === id)
+      newWidgets.push(defaultW || { id, w: 1 })
+    }
+
     if (visibleWidgetIds.includes(id)) {
       if (visibleWidgetIds.length <= 1) return
       newVisible = visibleWidgetIds.filter((vId) => vId !== id)
     } else {
       newVisible = [...visibleWidgetIds, id]
     }
-    persistLayout(widgets, newVisible)
+    persistLayout(newWidgets, newVisible)
   }
 
   const visibleWidgets = widgets.filter((w) => visibleWidgetIds.includes(w.id))
