@@ -1,7 +1,6 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import dynamic from 'next/dynamic'
 import DashboardLayout from '@/components/Layout/DashboardLayout'
 import { Check, Eye, EyeOff, GripHorizontal, Loader2, SlidersHorizontal } from 'lucide-react'
 import { WidgetConfig } from '@/types'
@@ -36,76 +35,11 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 
-// ── Lazy-load heavy widgets ──────────────────────────────────────────────────
-
-/** Shared skeleton card with smooth shimmer wave used while a widget is loading */
-function WidgetSkeleton({ minHeight = 220 }: { minHeight?: number }) {
-  return (
-    <div
-      className="relative flex flex-col justify-between overflow-hidden rounded-2xl bg-white p-5 ring-1 ring-black/[0.06] shadow-sm"
-      style={{ minHeight }}
-      role="status"
-      aria-label="กำลังโหลดข้อมูล..."
-    >
-      {/* Header skeleton */}
-      <div className="flex items-center justify-between gap-3 mb-4">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 shrink-0 rounded-[14px] bg-slate-100 animate-pulse" />
-          <div className="space-y-1.5">
-            <div className="h-4 w-24 rounded-md bg-slate-100 animate-pulse" />
-            <div className="h-3 w-32 rounded-md bg-slate-100/70 animate-pulse" />
-          </div>
-        </div>
-        <div className="h-7 w-20 rounded-full bg-slate-100 animate-pulse" />
-      </div>
-
-      {/* Content grid skeleton */}
-      <div className="grid flex-1 grid-cols-2 gap-2.5 sm:grid-cols-3">
-        {[1, 2, 3, 4, 5, 6].map((i) => (
-          <div
-            key={i}
-            className="flex flex-col items-center justify-center gap-2 rounded-2xl bg-[#f8fafc] p-4 animate-pulse"
-          >
-            <div className="h-3 w-14 rounded-md bg-slate-200/60" />
-            <div className="h-6 w-16 rounded-md bg-slate-200" />
-            <div className="h-2.5 w-10 rounded-md bg-slate-200/40" />
-          </div>
-        ))}
-      </div>
-
-      {/* Shimmer sweep effect */}
-      <div
-        className="pointer-events-none absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/40 to-transparent"
-        aria-hidden="true"
-      />
-    </div>
-  )
-}
-
-const CalendarWidget = dynamic(() => import('@/components/Widgets/CalendarWidget'), {
-  ssr: false,
-  loading: () => <WidgetSkeleton minHeight={400} />,
-})
-
-const TaskListWidget = dynamic(() => import('@/components/Widgets/TaskListWidget'), {
-  ssr: false,
-  loading: () => <WidgetSkeleton minHeight={400} />,
-})
-
-const OilPriceWidget = dynamic(() => import('@/components/Widgets/OilPriceWidget'), {
-  ssr: false,
-  loading: () => <WidgetSkeleton minHeight={220} />,
-})
-
-const QRCodeWidget = dynamic(() => import('@/components/Widgets/QRCodeWidget'), {
-  ssr: false,
-  loading: () => <WidgetSkeleton minHeight={220} />,
-})
-
-const WeatherWidget = dynamic(() => import('@/components/Widgets/WeatherWidget'), {
-  ssr: false,
-  loading: () => <WidgetSkeleton minHeight={220} />,
-})
+import CalendarWidget from '@/components/Widgets/CalendarWidget'
+import TaskListWidget from '@/components/Widgets/TaskListWidget'
+import OilPriceWidget from '@/components/Widgets/OilPriceWidget'
+import QRCodeWidget from '@/components/Widgets/QRCodeWidget'
+import WeatherWidget from '@/components/Widgets/WeatherWidget'
 
 // ── Widget registry ──────────────────────────────────────────────────────────
 
@@ -144,16 +78,25 @@ const getColSpanClass = (w: number) => {
 // ── Inline error fallback ────────────────────────────────────────────────────
 
 function WidgetErrorFallback({ name, error, reset }: { name: string; error: Error; reset: () => void }) {
+  const isChunkError = error?.name === 'ChunkLoadError' || error?.message?.includes('Failed to load chunk')
   return (
     <div className="flex min-h-[220px] items-center justify-center rounded-2xl bg-[#fff0f0] p-6 ring-1 ring-red-100">
       <div className="text-center">
         <p className="text-sm font-bold text-red-700">วิดเจ็ต{name} โหลดไม่สำเร็จ</p>
-        <p className="mt-1 text-xs text-red-500/80">{error.message}</p>
+        <p className="mt-1 text-xs text-red-500/80">
+          {isChunkError ? 'มีการอัปเดตเวอร์ชันใหม่ กรุณารีเฟรชหน้าเว็บ' : error.message}
+        </p>
         <button
-          onClick={reset}
+          onClick={() => {
+            if (isChunkError && typeof window !== 'undefined') {
+              window.location.reload()
+            } else {
+              reset()
+            }
+          }}
           className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-1.5 text-xs font-semibold text-red-700 shadow-sm ring-1 ring-red-200 transition-colors hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
         >
-          ลองใหม่
+          {isChunkError ? 'รีเฟรชหน้าเว็บ' : 'ลองใหม่'}
         </button>
       </div>
     </div>
