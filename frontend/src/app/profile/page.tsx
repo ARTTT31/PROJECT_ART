@@ -868,10 +868,9 @@ export default function ProfilePage() {
                             <span className="hidden sm:inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-500">
                               จำเป็น
                             </span>
-                            {/* Locked toggle — always ON */}
-                            <div className="relative h-[30px] w-[52px] shrink-0 cursor-not-allowed rounded-full bg-[#0071e3]/30 p-[3px] opacity-60">
-                              <div className="absolute inset-0 rounded-full ring-1 ring-inset ring-[#0071e3]/20" />
-                              <span className="absolute right-[3px] top-[3px] h-6 w-6 rounded-full bg-white shadow-[0_1px_4px_rgba(0,0,0,0.18)]" />
+                            {/* Locked toggle — same size as active toggle, always ON */}
+                            <div className="relative h-[30px] w-[52px] shrink-0 cursor-not-allowed rounded-full bg-[#0071e3]/30 p-[3px] opacity-55">
+                              <span className="pointer-events-none absolute top-[3px] left-[calc(100%-27px)] h-6 w-6 rounded-full bg-white shadow-[0_1px_4px_rgba(0,0,0,0.18)]" />
                             </div>
                           </div>
                         ) : (
