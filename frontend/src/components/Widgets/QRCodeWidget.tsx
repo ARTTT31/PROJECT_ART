@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Barcode, Copy, Download, Printer, QrCode, Sparkles, Check, AlertCircle } from 'lucide-react'
+import { Barcode, Copy, Download, Printer, QrCode, Check, AlertCircle } from 'lucide-react'
 import WidgetSizeToggle from './WidgetSizeToggle'
 import { QRCodeCanvas } from 'qrcode.react'
 import JsBarcode from 'jsbarcode'
@@ -45,7 +45,7 @@ export default function QRCodeWidget({
     readStorage('format', 'code128', (v) => v === 'qrcode' || v === 'code128'),
   )
   const [text, setText] = useState<string>(() =>
-    readStorage('text', 'ART-2026-001', (v) => typeof v === 'string' && v.trim().length > 0),
+    readStorage('text', '', (v) => typeof v === 'string' && v.trim().length > 0),
   )
   const [qrSize, setQrSize] = useState<number>(() =>
     readStorage('qrSize', 160, (v) => Number.isFinite(+v) && +v >= 120 && +v <= 320),
@@ -411,12 +411,6 @@ export default function QRCodeWidget({
                 )}
               </div>
 
-              {/* Text label */}
-              <div className="flex w-full items-center justify-between gap-2 rounded-xl bg-slate-50 px-3 py-1.5 text-xs text-slate-600 ring-1 ring-slate-200/50">
-                <span className="font-semibold text-slate-400">เนื้อหา:</span>
-                <span className="truncate font-mono font-medium text-slate-800">{generatedText}</span>
-              </div>
-
               {/* Action Buttons: Copy / Download / Print */}
               <div className="flex flex-wrap items-center justify-center gap-2">
                 <button
@@ -477,15 +471,6 @@ export default function QRCodeWidget({
           ) : null}
         </div>
       </div>
-
-      {/* ── Footer ─────────────────────────────────────────────────────────── */}
-      <footer className="mt-4 flex items-center justify-between border-t border-slate-100 pt-2 text-[11px] text-slate-400">
-        <span className="flex items-center gap-1">
-          <Sparkles size={11} className="text-amber-500" />
-          <span>ความละเอียดสูง (PNG 300 DPI)</span>
-        </span>
-        <span>มาตรฐาน ISO/IEC 18004 &amp; Code 128</span>
-      </footer>
     </section>
   )
 }
