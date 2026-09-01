@@ -787,25 +787,24 @@ export default function ProfilePage() {
             </div>
 
             {/* ── 4. Main Menu Management ────────────────────────── */}
-            <div className="rounded-lg bg-white border border-[#f0f0f0] shadow-[0_1px_2px_0_rgba(0,0,0,0.03)]">
+            <div className="rounded-2xl bg-white p-5 sm:p-6 ring-1 ring-black/[0.06] shadow-[0_8px_32px_rgba(15,23,42,0.06)]">
 
               {/* ── Header ── */}
-              <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 border-b border-[#f0f0f0]">
+              <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#e6f4ff] text-[#1677ff]">
-                    <Layers size={18} aria-hidden="true" />
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 ring-1 ring-indigo-200/60">
+                    <Layers size={20} aria-hidden="true" />
                   </div>
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h2 className="text-[15px] font-semibold text-[rgba(0,0,0,0.88)] leading-snug">
+                      <h2 className="text-[17px] font-bold text-[#1d1d1f] leading-snug">
                         จัดการการแสดงผลเมนูหลัก
                       </h2>
-                      <span className="inline-flex items-center gap-1 rounded-full bg-[#e6f4ff] px-2 py-0.5 text-[11px] font-semibold text-[#1677ff]">
-                        <span className="h-1.5 w-1.5 rounded-full bg-[#1677ff]" aria-hidden="true" />
+                      <span className="rounded-full bg-indigo-50 px-2.5 py-0.5 text-[11px] font-bold text-indigo-700 ring-1 ring-indigo-200">
                         {mainMenuItems.filter((i) => i.enabled).length} / {mainMenuItems.length} เมนู
                       </span>
                     </div>
-                    <p className="text-xs text-[rgba(0,0,0,0.45)] mt-0.5 leading-relaxed">
+                    <p className="text-xs text-[#475569] mt-0.5">
                       เลือกเปิดหรือซ่อนเมนูที่ต้องการแสดงในแถบเมนูข้าง
                     </p>
                   </div>
@@ -814,30 +813,30 @@ export default function ProfilePage() {
                 <button
                   type="button"
                   onClick={handleResetMainMenu}
-                  className="inline-flex items-center gap-1.5 rounded-md border border-[#d9d9d9] bg-white px-3 py-1.5 text-xs font-medium text-[rgba(0,0,0,0.88)] transition-colors hover:border-[#4096ff] hover:text-[#4096ff] active:border-[#0958d9] active:text-[#0958d9] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1677ff] focus-visible:ring-offset-1"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-2 text-xs font-semibold text-[#1d1d1f] ring-1 ring-black/[0.08] shadow-sm transition-all duration-150 hover:bg-[#f5f5f7] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3] active:scale-[0.98]"
                 >
-                  <RotateCcw size={12} aria-hidden="true" />
+                  <RotateCcw size={13} aria-hidden="true" />
                   <span>รีเซ็ตค่าเริ่มต้น</span>
                 </button>
               </div>
 
               {/* ── Summary bar ── */}
-              <div className="flex items-center justify-between gap-4 px-5 py-2.5 bg-[#fafafa] border-b border-[#f0f0f0]">
-                <div className="flex items-center gap-2">
-                  <div className="relative h-1.5 w-24 rounded-full bg-[#f0f0f0] overflow-hidden">
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-4 rounded-xl bg-[#f8fafc] px-4 py-3 ring-1 ring-black/[0.04]">
+                <div className="flex items-center gap-3">
+                  <div className="relative h-2 w-32 rounded-full bg-slate-200 overflow-hidden">
                     <div
-                      className="absolute left-0 top-0 h-full rounded-full bg-[#1677ff] transition-all duration-500 ease-out"
+                      className="absolute left-0 top-0 h-full rounded-full bg-[#0071e3] transition-all duration-500 ease-out"
                       style={{ width: `${(mainMenuItems.filter((i) => i.enabled).length / mainMenuItems.length) * 100}%` }}
                       aria-hidden="true"
                     />
                   </div>
-                  <span className="text-[11px] text-[rgba(0,0,0,0.45)]">
+                  <span className="text-[11px] font-semibold text-[#475569]">
                     {mainMenuItems.filter((i) => i.enabled).length === mainMenuItems.length
                       ? 'แสดงทุกเมนูแล้ว'
                       : `ซ่อน ${mainMenuItems.filter((i) => !i.enabled).length} รายการ`}
                   </span>
                 </div>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-2">
                   <button
                     type="button"
                     onClick={() => {
@@ -851,11 +850,11 @@ export default function ProfilePage() {
                       })
                       showToast('เปิดการแสดงผลทุกเมนูแล้ว', 'success')
                     }}
-                    className="rounded px-2 py-1 text-[11px] font-medium text-[rgba(0,0,0,0.45)] transition-colors hover:bg-[#e6f4ff] hover:text-[#1677ff] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#1677ff]"
+                    className="inline-flex items-center gap-1 rounded-full bg-[#0071e3]/10 px-3 py-1.5 text-[11px] font-semibold text-[#0071e3] ring-1 ring-[#0071e3]/20 transition-all duration-150 hover:bg-[#0071e3]/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3] active:scale-[0.98]"
                   >
+                    <Eye size={11} aria-hidden="true" />
                     เปิดทั้งหมด
                   </button>
-                  <span className="text-[#d9d9d9] select-none text-xs">|</span>
                   <button
                     type="button"
                     onClick={() => {
@@ -869,15 +868,16 @@ export default function ProfilePage() {
                       })
                       showToast('ซ่อนเมนูที่ไม่จำเป็นทั้งหมดแล้ว', 'info')
                     }}
-                    className="rounded px-2 py-1 text-[11px] font-medium text-[rgba(0,0,0,0.45)] transition-colors hover:bg-[#fff7e6] hover:text-[#d46b08] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#1677ff]"
+                    className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-3 py-1.5 text-[11px] font-semibold text-amber-700 ring-1 ring-amber-200 transition-all duration-150 hover:bg-amber-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 active:scale-[0.98]"
                   >
+                    <EyeOff size={11} aria-hidden="true" />
                     ซ่อนทั้งหมด
                   </button>
                 </div>
               </div>
 
               {/* ── Items List ── */}
-              <div className="divide-y divide-[#f0f0f0]">
+              <div className="space-y-2.5">
                 {mainMenuItems.map((item) => {
                   const Icon = MAIN_MENU_ICON_MAP[item.icon] || Sparkles
                   const isOn = item.enabled
@@ -885,41 +885,39 @@ export default function ProfilePage() {
                   return (
                     <div
                       key={item.id}
-                      className={`group flex items-center justify-between gap-4 px-5 py-3.5 transition-colors duration-150 ${
-                        isOn ? 'bg-white hover:bg-[#fafafa]' : 'bg-[#fafafa] hover:bg-[#f5f5f5]'
-                      }`}
+                      className="flex flex-col gap-3 rounded-2xl bg-[#f8fafc] p-3.5 ring-1 ring-black/[0.05] transition-all duration-150 hover:bg-white hover:ring-black/[0.08] hover:shadow-sm sm:flex-row sm:items-center sm:justify-between"
                     >
                       {/* Left — icon + text */}
                       <div className="flex items-center gap-3 min-w-0">
                         <div
-                          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border transition-colors duration-200 ${
+                          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ring-1 transition-all duration-200 ${
                             isOn
-                              ? 'border-[#1677ff]/20 bg-[#e6f4ff] text-[#1677ff]'
-                              : 'border-[#f0f0f0] bg-[#f5f5f5] text-[rgba(0,0,0,0.25)]'
+                              ? 'bg-white ring-indigo-200/70 text-indigo-600 shadow-sm'
+                              : 'bg-white/50 ring-black/[0.04] text-slate-400'
                           }`}
                         >
-                          <Icon size={16} aria-hidden="true" />
+                          <Icon size={18} aria-hidden="true" />
                         </div>
 
-                        <div className="min-w-0">
+                        <div className="min-w-0 flex-1">
                           <div className="flex flex-wrap items-center gap-1.5">
                             <span
-                              className={`text-[13px] font-semibold truncate transition-colors duration-200 ${
-                                isOn ? 'text-[rgba(0,0,0,0.88)]' : 'text-[rgba(0,0,0,0.35)]'
+                              className={`text-sm font-bold truncate transition-colors duration-200 ${
+                                isOn ? 'text-[#1d1d1f]' : 'text-[#94a3b8]'
                               }`}
                             >
                               {item.name}
                             </span>
 
                             {item.required && (
-                              <span className="inline-flex items-center gap-0.5 rounded bg-[#fff7e6] px-1.5 py-0.5 text-[10px] font-semibold text-[#d46b08] border border-[#ffe7ba]">
+                              <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700 ring-1 ring-amber-200">
                                 <Lock size={8} strokeWidth={2.5} aria-hidden="true" />
                                 จำเป็น
                               </span>
                             )}
 
                             {item.isWip && (
-                              <span className="rounded bg-[#fffbe6] px-1.5 py-0.5 text-[10px] font-semibold text-[#d48806] border border-[#ffe58f]">
+                              <span className="inline-flex items-center rounded-full bg-sky-50 px-2 py-0.5 text-[10px] font-bold text-sky-700 ring-1 ring-sky-200">
                                 {item.wipLabel || 'กำลังพัฒนา'}
                               </span>
                             )}
@@ -927,7 +925,7 @@ export default function ProfilePage() {
 
                           <p
                             className={`text-xs truncate mt-0.5 transition-colors duration-200 ${
-                              isOn ? 'text-[rgba(0,0,0,0.45)]' : 'text-[rgba(0,0,0,0.25)]'
+                              isOn ? 'text-[#475569]' : 'text-[#cbd5e1]'
                             }`}
                           >
                             {item.description || item.href}
@@ -936,16 +934,16 @@ export default function ProfilePage() {
                       </div>
 
                       {/* Right — status chip + toggle */}
-                      <div className="shrink-0 flex items-center gap-3">
+                      <div className="shrink-0 flex items-center justify-end gap-3 border-t border-slate-200/50 pt-2 sm:border-t-0 sm:pt-0">
 
                         {/* Status chip — fixed width so rows don't shift */}
                         <span
-                          className={`hidden sm:inline-flex items-center justify-center gap-1 w-[76px] rounded border px-0 py-1 text-[11px] font-semibold transition-all duration-200 ${
+                          className={`hidden sm:inline-flex items-center justify-center gap-1 w-[80px] rounded-full px-2 py-1 text-[11px] font-bold transition-all duration-200 ${
                             item.required
-                              ? 'border-[#ffe7ba] bg-[#fff7e6] text-[#d46b08]'
+                              ? 'bg-amber-50 text-amber-700 ring-1 ring-amber-200'
                               : isOn
-                                ? 'border-[#b7eb8f] bg-[#f6ffed] text-[#389e0d]'
-                                : 'border-[#f0f0f0] bg-[#fafafa] text-[rgba(0,0,0,0.25)]'
+                                ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200'
+                                : 'bg-slate-100 text-slate-500 ring-1 ring-slate-200'
                           }`}
                         >
                           {item.required ? (
@@ -974,13 +972,11 @@ export default function ProfilePage() {
                             aria-checked={true}
                             aria-label={`${item.name} (เมนูจำเป็น ปิดไม่ได้)`}
                             aria-disabled="true"
-                            className="relative h-[28px] w-[52px] shrink-0 cursor-not-allowed rounded-full bg-[#0ea5e9]/20 p-[3px]"
+                            className="relative h-[28px] w-[52px] shrink-0 cursor-not-allowed rounded-full bg-[#0071e3]/15 p-[3px]"
                           >
-                            {/* track shimmer */}
                             <span className="pointer-events-none absolute inset-0 rounded-full" aria-hidden="true" />
-                            {/* thumb */}
                             <span
-                              className="absolute top-[3px] left-auto right-[3px] h-[22px] w-[22px] rounded-full bg-white/60 shadow-[0_1px_4px_rgba(0,0,0,0.12)] backdrop-blur-[2px]"
+                              className="absolute top-[3px] left-auto right-[3px] h-[22px] w-[22px] rounded-full bg-white/80 shadow-[0_1px_4px_rgba(0,0,0,0.12)] backdrop-blur-[2px]"
                               aria-hidden="true"
                             />
                           </div>
@@ -994,22 +990,20 @@ export default function ProfilePage() {
                             className={[
                               'group/toggle relative h-[28px] w-[52px] shrink-0 cursor-pointer rounded-full border-0 appearance-none p-[3px]',
                               'transition-all duration-200 [transition-timing-function:cubic-bezier(0.4,0,0.2,1)]',
-                              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0ea5e9] focus-visible:ring-offset-2',
+                              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3] focus-visible:ring-offset-2',
                               'active:scale-95',
                               isOn
-                                ? 'bg-[#0ea5e9] shadow-[0_0_0_0px_rgba(14,165,233,0)] hover:bg-[#0284c7] hover:shadow-[0_2px_8px_rgba(14,165,233,0.45)]'
-                                : 'bg-slate-200 hover:bg-slate-300',
+                                ? 'bg-[#0071e3] hover:bg-[#0077ed] hover:shadow-[0_2px_10px_rgba(0,113,227,0.35)]'
+                                : 'bg-slate-300 hover:bg-slate-400',
                             ].join(' ')}
                           >
-                            {/* glow halo — only when on */}
                             {isOn && (
                               <span
                                 className="pointer-events-none absolute inset-0 rounded-full opacity-0 group-hover/toggle:opacity-100 transition-opacity duration-200"
-                                style={{ boxShadow: '0 0 0 3px rgba(14,165,233,0.18)' }}
+                                style={{ boxShadow: '0 0 0 3px rgba(0,113,227,0.18)' }}
                                 aria-hidden="true"
                               />
                             )}
-                            {/* thumb */}
                             <span
                               className={[
                                 'pointer-events-none absolute top-[3px] h-[22px] w-[22px] rounded-full',
@@ -1020,12 +1014,11 @@ export default function ProfilePage() {
                               ].join(' ')}
                               aria-hidden="true"
                             >
-                              {/* inner dot — subtle state indicator */}
                               <span
                                 className={[
                                   'absolute inset-0 m-auto h-[6px] w-[6px] rounded-full',
                                   'transition-all duration-200',
-                                  isOn ? 'bg-[#0ea5e9] opacity-100 scale-100' : 'bg-slate-300 opacity-0 scale-50',
+                                  isOn ? 'bg-[#0071e3] opacity-100 scale-100' : 'bg-slate-300 opacity-0 scale-50',
                                 ].join(' ')}
                                 aria-hidden="true"
                               />
@@ -1040,10 +1033,10 @@ export default function ProfilePage() {
               </div>
 
               {/* ── Footer hint ── */}
-              <div className="flex items-center gap-1.5 px-5 py-3 border-t border-[#f0f0f0] bg-[#fafafa] rounded-b-lg">
-                <Info size={12} className="shrink-0 text-[rgba(0,0,0,0.25)]" aria-hidden="true" />
-                <p className="text-[11px] text-[rgba(0,0,0,0.35)] leading-relaxed">
-                  เมนูจำเป็น ไม่สามารถปิดได้ — เปลี่ยนแปลงมีผลทันทีในแถบเมนูข้าง
+              <div className="mt-4 flex items-start gap-2 rounded-xl bg-sky-50/80 p-3.5 text-xs text-sky-900 ring-1 ring-sky-200/60">
+                <Info size={14} className="mt-0.5 shrink-0 text-sky-600" aria-hidden="true" />
+                <p className="leading-relaxed">
+                  <strong className="font-semibold">คำแนะนำ:</strong> เมนูจำเป็น ไม่สามารถปิดได้ — การเปลี่ยนแปลงมีผลทันทีในแถบเมนูข้าง
                 </p>
               </div>
 
