@@ -856,13 +856,6 @@ export default function ProfilePage() {
                               {item.name}
                             </span>
 
-                            {item.required && (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold text-amber-700 ring-1 ring-amber-200">
-                                <Lock size={8} strokeWidth={2.5} aria-hidden="true" />
-                                จำเป็น
-                              </span>
-                            )}
-
                             {item.isWip && (
                               <span className="inline-flex items-center rounded-full bg-sky-50 px-1.5 py-0.5 text-[10px] font-bold text-sky-700 ring-1 ring-sky-200">
                                 {item.wipLabel || 'กำลังพัฒนา'}
@@ -883,22 +876,15 @@ export default function ProfilePage() {
                       {/* Right — status chip + toggle */}
                       <div className="shrink-0 flex items-center justify-end gap-3 border-t border-slate-200/50 pt-2 sm:border-t-0 sm:pt-0">
 
-                        {/* Status chip — fixed width so rows don't shift */}
+                        {/* Status chip — fixed width so rows don't shift (no special "required" variant) */}
                         <span
                           className={`hidden sm:inline-flex items-center justify-center gap-1 w-[76px] rounded-full px-2 py-0.5 text-[10px] font-bold transition-all duration-200 ${
-                            item.required
-                              ? 'bg-amber-50 text-amber-700 ring-1 ring-amber-200'
-                              : isOn
-                                ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200'
-                                : 'bg-slate-100 text-slate-500 ring-1 ring-slate-200'
+                            isOn
+                              ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200'
+                              : 'bg-slate-100 text-slate-500 ring-1 ring-slate-200'
                           }`}
                         >
-                          {item.required ? (
-                            <>
-                              <Lock size={8} strokeWidth={2.5} aria-hidden="true" />
-                              <span>เมนูหลัก</span>
-                            </>
-                          ) : isOn ? (
+                          {isOn ? (
                             <>
                               <Check size={8} strokeWidth={2.5} aria-hidden="true" />
                               <span>แสดงอยู่</span>
@@ -911,19 +897,21 @@ export default function ProfilePage() {
                           )}
                         </span>
 
-                        {/* Toggle switch — compact size */}
+                        {/* Toggle switch — uniform pill style for all states.
+                            Visual looks identical across on/off/required:
+                            subtle tinted track + white thumb (no bold filled circle). */}
                         {item.required ? (
-                          /* Locked — always on, non-interactive */
+                          /* Locked (required) — same visual as interactive ON, but non-interactive. */
                           <div
                             role="switch"
                             aria-checked={true}
-                            aria-label={`${item.name} (เมนูจำเป็น ปิดไม่ได้)`}
+                            aria-label={`${item.name} (เปิดค้างไว้)`}
                             aria-disabled="true"
-                            className="relative h-[22px] w-[40px] shrink-0 cursor-not-allowed rounded-full bg-[#0071e3]/15 p-[2px]"
+                            className="relative h-[22px] w-[40px] shrink-0 cursor-not-allowed rounded-full bg-sky-100 p-[2px]"
                           >
                             <span className="pointer-events-none absolute inset-0 rounded-full" aria-hidden="true" />
                             <span
-                              className="absolute top-[2px] left-auto right-[2px] h-[18px] w-[18px] rounded-full bg-white/80 shadow-[0_1px_3px_rgba(0,0,0,0.12)] backdrop-blur-[2px]"
+                              className="absolute top-[2px] left-auto right-[2px] h-[18px] w-[18px] rounded-full bg-white shadow-[0_1px_3px_rgba(15,23,42,0.14)]"
                               aria-hidden="true"
                             />
                           </div>
@@ -936,40 +924,23 @@ export default function ProfilePage() {
                             onClick={() => handleToggleMainMenu(item.id)}
                             className={[
                               'group/toggle relative h-[22px] w-[40px] shrink-0 cursor-pointer rounded-full border-0 appearance-none p-[2px]',
-                              'transition-all duration-200 [transition-timing-function:cubic-bezier(0.4,0,0.2,1)]',
+                              'transition-colors duration-200',
                               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3] focus-visible:ring-offset-1',
                               'active:scale-95',
                               isOn
-                                ? 'bg-[#0071e3] hover:bg-[#0077ed] hover:shadow-[0_2px_8px_rgba(0,113,227,0.32)]'
-                                : 'bg-slate-300 hover:bg-slate-400',
+                                ? 'bg-sky-100 hover:bg-sky-200'
+                                : 'bg-slate-200 hover:bg-slate-300',
                             ].join(' ')}
                           >
-                            {isOn && (
-                              <span
-                                className="pointer-events-none absolute inset-0 rounded-full opacity-0 group-hover/toggle:opacity-100 transition-opacity duration-200"
-                                style={{ boxShadow: '0 0 0 3px rgba(0,113,227,0.15)' }}
-                                aria-hidden="true"
-                              />
-                            )}
                             <span
                               className={[
                                 'pointer-events-none absolute top-[2px] h-[18px] w-[18px] rounded-full',
-                                'bg-white',
-                                'shadow-[0_1px_2px_rgba(0,0,0,0.14),0_2px_5px_rgba(0,0,0,0.10)]',
+                                'bg-white shadow-[0_1px_2px_rgba(15,23,42,0.12),0_2px_4px_rgba(15,23,42,0.08)]',
                                 'transition-all duration-200 [transition-timing-function:cubic-bezier(0.4,0,0.2,1)]',
                                 isOn ? 'left-[calc(100%-20px)]' : 'left-[2px]',
                               ].join(' ')}
                               aria-hidden="true"
-                            >
-                              <span
-                                className={[
-                                  'absolute inset-0 m-auto h-[5px] w-[5px] rounded-full',
-                                  'transition-all duration-200',
-                                  isOn ? 'bg-[#0071e3] opacity-100 scale-100' : 'bg-slate-300 opacity-0 scale-50',
-                                ].join(' ')}
-                                aria-hidden="true"
-                              />
-                            </span>
+                            />
                           </button>
                         )}
 
