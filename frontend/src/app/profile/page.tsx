@@ -821,63 +821,10 @@ export default function ProfilePage() {
               </div>
 
               {/* ── Summary bar ── */}
-              <div className="mb-4 flex flex-wrap items-center justify-between gap-4 rounded-xl bg-[#f8fafc] px-4 py-3 ring-1 ring-black/[0.04]">
-                <div className="flex items-center gap-3">
-                  <div className="relative h-2 w-32 rounded-full bg-slate-200 overflow-hidden">
-                    <div
-                      className="absolute left-0 top-0 h-full rounded-full bg-[#0071e3] transition-all duration-500 ease-out"
-                      style={{ width: `${(mainMenuItems.filter((i) => i.enabled).length / mainMenuItems.length) * 100}%` }}
-                      aria-hidden="true"
-                    />
-                  </div>
-                  <span className="text-[11px] font-semibold text-[#475569]">
-                    {mainMenuItems.filter((i) => i.enabled).length === mainMenuItems.length
-                      ? 'แสดงทุกเมนูแล้ว'
-                      : `ซ่อน ${mainMenuItems.filter((i) => !i.enabled).length} รายการ`}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMainMenuItems((prev) => {
-                        const next = prev.map((item) => ({ ...item, enabled: true }))
-                        if (typeof window !== 'undefined') {
-                          localStorage.setItem(MAIN_MENU_STORAGE_KEY, JSON.stringify(next.map(({ id, enabled }) => ({ id, enabled }))))
-                          window.dispatchEvent(new Event('art-main-menu-updated'))
-                        }
-                        return next
-                      })
-                      showToast('เปิดการแสดงผลทุกเมนูแล้ว', 'success')
-                    }}
-                    className="inline-flex items-center gap-1 rounded-full bg-[#0071e3]/10 px-3 py-1.5 text-[11px] font-semibold text-[#0071e3] ring-1 ring-[#0071e3]/20 transition-all duration-150 hover:bg-[#0071e3]/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3] active:scale-[0.98]"
-                  >
-                    <Eye size={11} aria-hidden="true" />
-                    เปิดทั้งหมด
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMainMenuItems((prev) => {
-                        const next = prev.map((item) => ({ ...item, enabled: item.required ? true : false }))
-                        if (typeof window !== 'undefined') {
-                          localStorage.setItem(MAIN_MENU_STORAGE_KEY, JSON.stringify(next.map(({ id, enabled }) => ({ id, enabled }))))
-                          window.dispatchEvent(new Event('art-main-menu-updated'))
-                        }
-                        return next
-                      })
-                      showToast('ซ่อนเมนูที่ไม่จำเป็นทั้งหมดแล้ว', 'info')
-                    }}
-                    className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-3 py-1.5 text-[11px] font-semibold text-amber-700 ring-1 ring-amber-200 transition-all duration-150 hover:bg-amber-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 active:scale-[0.98]"
-                  >
-                    <EyeOff size={11} aria-hidden="true" />
-                    ซ่อนทั้งหมด
-                  </button>
-                </div>
-              </div>
+              {/* (removed — cleaner layout) */}
 
               {/* ── Items List ── */}
-              <div className="space-y-2.5">
+              <div className="space-y-2">
                 {mainMenuItems.map((item) => {
                   const Icon = MAIN_MENU_ICON_MAP[item.icon] || Sparkles
                   const isOn = item.enabled
@@ -885,24 +832,24 @@ export default function ProfilePage() {
                   return (
                     <div
                       key={item.id}
-                      className="flex flex-col gap-3 rounded-2xl bg-[#f8fafc] p-3.5 ring-1 ring-black/[0.05] transition-all duration-150 hover:bg-white hover:ring-black/[0.08] hover:shadow-sm sm:flex-row sm:items-center sm:justify-between"
+                      className="flex flex-col gap-3 rounded-2xl bg-[#f8fafc] p-3 ring-1 ring-black/[0.05] transition-all duration-150 hover:bg-white hover:ring-black/[0.08] hover:shadow-sm sm:flex-row sm:items-center sm:justify-between"
                     >
                       {/* Left — icon + text */}
                       <div className="flex items-center gap-3 min-w-0">
                         <div
-                          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ring-1 transition-all duration-200 ${
+                          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ring-1 transition-all duration-200 ${
                             isOn
                               ? 'bg-white ring-indigo-200/70 text-indigo-600 shadow-sm'
                               : 'bg-white/50 ring-black/[0.04] text-slate-400'
                           }`}
                         >
-                          <Icon size={18} aria-hidden="true" />
+                          <Icon size={16} aria-hidden="true" />
                         </div>
 
                         <div className="min-w-0 flex-1">
                           <div className="flex flex-wrap items-center gap-1.5">
                             <span
-                              className={`text-sm font-bold truncate transition-colors duration-200 ${
+                              className={`text-[13px] font-bold truncate transition-colors duration-200 ${
                                 isOn ? 'text-[#1d1d1f]' : 'text-[#94a3b8]'
                               }`}
                             >
@@ -910,21 +857,21 @@ export default function ProfilePage() {
                             </span>
 
                             {item.required && (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700 ring-1 ring-amber-200">
+                              <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold text-amber-700 ring-1 ring-amber-200">
                                 <Lock size={8} strokeWidth={2.5} aria-hidden="true" />
                                 จำเป็น
                               </span>
                             )}
 
                             {item.isWip && (
-                              <span className="inline-flex items-center rounded-full bg-sky-50 px-2 py-0.5 text-[10px] font-bold text-sky-700 ring-1 ring-sky-200">
+                              <span className="inline-flex items-center rounded-full bg-sky-50 px-1.5 py-0.5 text-[10px] font-bold text-sky-700 ring-1 ring-sky-200">
                                 {item.wipLabel || 'กำลังพัฒนา'}
                               </span>
                             )}
                           </div>
 
                           <p
-                            className={`text-xs truncate mt-0.5 transition-colors duration-200 ${
+                            className={`text-[11px] truncate mt-0.5 transition-colors duration-200 ${
                               isOn ? 'text-[#475569]' : 'text-[#cbd5e1]'
                             }`}
                           >
@@ -938,7 +885,7 @@ export default function ProfilePage() {
 
                         {/* Status chip — fixed width so rows don't shift */}
                         <span
-                          className={`hidden sm:inline-flex items-center justify-center gap-1 w-[80px] rounded-full px-2 py-1 text-[11px] font-bold transition-all duration-200 ${
+                          className={`hidden sm:inline-flex items-center justify-center gap-1 w-[76px] rounded-full px-2 py-0.5 text-[10px] font-bold transition-all duration-200 ${
                             item.required
                               ? 'bg-amber-50 text-amber-700 ring-1 ring-amber-200'
                               : isOn
@@ -948,23 +895,23 @@ export default function ProfilePage() {
                         >
                           {item.required ? (
                             <>
-                              <Lock size={9} strokeWidth={2.5} aria-hidden="true" />
+                              <Lock size={8} strokeWidth={2.5} aria-hidden="true" />
                               <span>เมนูหลัก</span>
                             </>
                           ) : isOn ? (
                             <>
-                              <Check size={9} strokeWidth={2.5} aria-hidden="true" />
+                              <Check size={8} strokeWidth={2.5} aria-hidden="true" />
                               <span>แสดงอยู่</span>
                             </>
                           ) : (
                             <>
-                              <EyeOff size={9} strokeWidth={2.5} aria-hidden="true" />
+                              <EyeOff size={8} strokeWidth={2.5} aria-hidden="true" />
                               <span>ซ่อนไว้</span>
                             </>
                           )}
                         </span>
 
-                        {/* Toggle switch */}
+                        {/* Toggle switch — compact size */}
                         {item.required ? (
                           /* Locked — always on, non-interactive */
                           <div
@@ -972,11 +919,11 @@ export default function ProfilePage() {
                             aria-checked={true}
                             aria-label={`${item.name} (เมนูจำเป็น ปิดไม่ได้)`}
                             aria-disabled="true"
-                            className="relative h-[28px] w-[52px] shrink-0 cursor-not-allowed rounded-full bg-[#0071e3]/15 p-[3px]"
+                            className="relative h-[22px] w-[40px] shrink-0 cursor-not-allowed rounded-full bg-[#0071e3]/15 p-[2px]"
                           >
                             <span className="pointer-events-none absolute inset-0 rounded-full" aria-hidden="true" />
                             <span
-                              className="absolute top-[3px] left-auto right-[3px] h-[22px] w-[22px] rounded-full bg-white/80 shadow-[0_1px_4px_rgba(0,0,0,0.12)] backdrop-blur-[2px]"
+                              className="absolute top-[2px] left-auto right-[2px] h-[18px] w-[18px] rounded-full bg-white/80 shadow-[0_1px_3px_rgba(0,0,0,0.12)] backdrop-blur-[2px]"
                               aria-hidden="true"
                             />
                           </div>
@@ -988,35 +935,35 @@ export default function ProfilePage() {
                             aria-label={`สลับการแสดงผล ${item.name}`}
                             onClick={() => handleToggleMainMenu(item.id)}
                             className={[
-                              'group/toggle relative h-[28px] w-[52px] shrink-0 cursor-pointer rounded-full border-0 appearance-none p-[3px]',
+                              'group/toggle relative h-[22px] w-[40px] shrink-0 cursor-pointer rounded-full border-0 appearance-none p-[2px]',
                               'transition-all duration-200 [transition-timing-function:cubic-bezier(0.4,0,0.2,1)]',
-                              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3] focus-visible:ring-offset-2',
+                              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3] focus-visible:ring-offset-1',
                               'active:scale-95',
                               isOn
-                                ? 'bg-[#0071e3] hover:bg-[#0077ed] hover:shadow-[0_2px_10px_rgba(0,113,227,0.35)]'
+                                ? 'bg-[#0071e3] hover:bg-[#0077ed] hover:shadow-[0_2px_8px_rgba(0,113,227,0.32)]'
                                 : 'bg-slate-300 hover:bg-slate-400',
                             ].join(' ')}
                           >
                             {isOn && (
                               <span
                                 className="pointer-events-none absolute inset-0 rounded-full opacity-0 group-hover/toggle:opacity-100 transition-opacity duration-200"
-                                style={{ boxShadow: '0 0 0 3px rgba(0,113,227,0.18)' }}
+                                style={{ boxShadow: '0 0 0 3px rgba(0,113,227,0.15)' }}
                                 aria-hidden="true"
                               />
                             )}
                             <span
                               className={[
-                                'pointer-events-none absolute top-[3px] h-[22px] w-[22px] rounded-full',
+                                'pointer-events-none absolute top-[2px] h-[18px] w-[18px] rounded-full',
                                 'bg-white',
-                                'shadow-[0_1px_2px_rgba(0,0,0,0.14),0_2px_6px_rgba(0,0,0,0.10)]',
+                                'shadow-[0_1px_2px_rgba(0,0,0,0.14),0_2px_5px_rgba(0,0,0,0.10)]',
                                 'transition-all duration-200 [transition-timing-function:cubic-bezier(0.4,0,0.2,1)]',
-                                isOn ? 'left-[calc(100%-25px)]' : 'left-[3px]',
+                                isOn ? 'left-[calc(100%-20px)]' : 'left-[2px]',
                               ].join(' ')}
                               aria-hidden="true"
                             >
                               <span
                                 className={[
-                                  'absolute inset-0 m-auto h-[6px] w-[6px] rounded-full',
+                                  'absolute inset-0 m-auto h-[5px] w-[5px] rounded-full',
                                   'transition-all duration-200',
                                   isOn ? 'bg-[#0071e3] opacity-100 scale-100' : 'bg-slate-300 opacity-0 scale-50',
                                 ].join(' ')}
@@ -1033,12 +980,7 @@ export default function ProfilePage() {
               </div>
 
               {/* ── Footer hint ── */}
-              <div className="mt-4 flex items-start gap-2 rounded-xl bg-sky-50/80 p-3.5 text-xs text-sky-900 ring-1 ring-sky-200/60">
-                <Info size={14} className="mt-0.5 shrink-0 text-sky-600" aria-hidden="true" />
-                <p className="leading-relaxed">
-                  <strong className="font-semibold">คำแนะนำ:</strong> เมนูจำเป็น ไม่สามารถปิดได้ — การเปลี่ยนแปลงมีผลทันทีในแถบเมนูข้าง
-                </p>
-              </div>
+              {/* (removed — cleaner layout) */}
 
             </div>
 
