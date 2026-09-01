@@ -8,10 +8,11 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
 from app.core.config import settings
+from app.core.rate_limit import limiter
 from app.api.v1.router import api_router
 from app.core.database import engine
 from app.models import base  # Import all models
@@ -109,35 +110,6 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         print(f"[STARTUP DB SYNC NOTICE] {e}")
     yield
-
-
-# Rate Limiter - Uses X-Forwarded-For to get real client IP behind proxy (Render/Vercel)
-def get_real_client_ip(request: Request) -> str:
-    forwarded_for = request.headers.get("X-Forwarded-For")
-    if forwarded_for:
-        return forwarded_for.split(",")[0].strip()
-    return request.client.host if request.client else "127.0.0.1"
-
-
-def _build_limiter() -> Limiter:
-    """Build a SlowAPI Limiter using the configured storage backend.
-
-    Falls back to in-memory storage if Redis is configured but not available,
-    so the app can still start during a transient redis outage.
-    """
-    uri = settings.SLOWAPI_STORAGE_URI
-    try:
-        if uri and uri != "memory://":
-            return Limiter(key_func=get_real_client_ip, storage_uri=uri)
-    except Exception as exc:  # pragma: no cover - defensive fallback
-        print(f"[RATE-LIMIT] WARNING: Failed to init storage '{uri}' ({exc}). "
-              "Falling back to in-memory backend.")
-    return Limiter(key_func=get_real_client_ip)
-
-
-limiter = _build_limiter()
-# Expose key_func for convenience re-export (endpoints import `from app.main import limiter`)
-limiter.key_function = get_real_client_ip  # type: ignore[attr-defined]
 
 
 # CORS Origins — built early so the CSP connect-src directive can trust them.

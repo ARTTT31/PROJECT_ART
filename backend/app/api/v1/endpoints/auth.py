@@ -27,6 +27,7 @@ except ImportError:
     _GOOGLE_AUTH_AVAILABLE = False
 from app.core.config import settings
 from app.core.database import get_db
+from app.core.rate_limit import limiter
 from app.core.security import create_access_token, create_refresh_token, decode_token
 from app.models.session import UserSession
 from app.schemas.response import ResponseModel
@@ -47,9 +48,6 @@ COOKIE_OPTIONS = {
 # SlowAPI "limit" strings are static decorator values, so we build them up-front.
 _AUTH_LIMIT = f"{settings.RATE_LIMIT_AUTH_PER_MINUTE}/minute"
 _GENERAL_LIMIT = f"{settings.RATE_LIMIT_GENERAL_PER_MINUTE}/minute"
-
-# Import limiter lazily to avoid a circular import between main → router → endpoints.
-from app.main import limiter  # noqa: E402
 
 
 @router.post("/login", response_model=ResponseModel)
