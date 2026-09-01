@@ -968,14 +968,21 @@ export default function ProfilePage() {
 
                         {/* Toggle switch */}
                         {item.required ? (
+                          /* Locked — always on, non-interactive */
                           <div
                             role="switch"
                             aria-checked={true}
                             aria-label={`${item.name} (เมนูจำเป็น ปิดไม่ได้)`}
                             aria-disabled="true"
-                            className="relative flex h-[22px] w-[40px] shrink-0 cursor-not-allowed items-center rounded-full bg-[#1677ff]/30 px-[3px]"
+                            className="relative h-[28px] w-[52px] shrink-0 cursor-not-allowed rounded-full bg-[#0ea5e9]/20 p-[3px]"
                           >
-                            <span className="h-4 w-4 rounded-full bg-white/70 shadow-sm ml-auto" aria-hidden="true" />
+                            {/* track shimmer */}
+                            <span className="pointer-events-none absolute inset-0 rounded-full" aria-hidden="true" />
+                            {/* thumb */}
+                            <span
+                              className="absolute top-[3px] left-auto right-[3px] h-[22px] w-[22px] rounded-full bg-white/60 shadow-[0_1px_4px_rgba(0,0,0,0.12)] backdrop-blur-[2px]"
+                              aria-hidden="true"
+                            />
                           </div>
                         ) : (
                           <button
@@ -984,18 +991,45 @@ export default function ProfilePage() {
                             aria-checked={isOn}
                             aria-label={`สลับการแสดงผล ${item.name}`}
                             onClick={() => handleToggleMainMenu(item.id)}
-                            className={`relative flex h-[22px] w-[40px] shrink-0 cursor-pointer items-center rounded-full border-0 appearance-none p-[3px] transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1677ff] focus-visible:ring-offset-2 active:scale-95 ${
+                            className={[
+                              'group/toggle relative h-[28px] w-[52px] shrink-0 cursor-pointer rounded-full border-0 appearance-none p-[3px]',
+                              'transition-all duration-200 [transition-timing-function:cubic-bezier(0.4,0,0.2,1)]',
+                              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0ea5e9] focus-visible:ring-offset-2',
+                              'active:scale-95',
                               isOn
-                                ? 'bg-[#1677ff] shadow-[0_1px_4px_rgba(22,119,255,0.35)]'
-                                : 'bg-[rgba(0,0,0,0.15)] hover:bg-[rgba(0,0,0,0.25)]'
-                            }`}
+                                ? 'bg-[#0ea5e9] shadow-[0_0_0_0px_rgba(14,165,233,0)] hover:bg-[#0284c7] hover:shadow-[0_2px_8px_rgba(14,165,233,0.45)]'
+                                : 'bg-slate-200 hover:bg-slate-300',
+                            ].join(' ')}
                           >
+                            {/* glow halo — only when on */}
+                            {isOn && (
+                              <span
+                                className="pointer-events-none absolute inset-0 rounded-full opacity-0 group-hover/toggle:opacity-100 transition-opacity duration-200"
+                                style={{ boxShadow: '0 0 0 3px rgba(14,165,233,0.18)' }}
+                                aria-hidden="true"
+                              />
+                            )}
+                            {/* thumb */}
                             <span
-                              className={`pointer-events-none h-4 w-4 rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,0.20)] transition-transform duration-200 ease-out ${
-                                isOn ? 'translate-x-[18px]' : 'translate-x-0'
-                              }`}
+                              className={[
+                                'pointer-events-none absolute top-[3px] h-[22px] w-[22px] rounded-full',
+                                'bg-white',
+                                'shadow-[0_1px_2px_rgba(0,0,0,0.14),0_2px_6px_rgba(0,0,0,0.10)]',
+                                'transition-all duration-200 [transition-timing-function:cubic-bezier(0.4,0,0.2,1)]',
+                                isOn ? 'left-[calc(100%-25px)]' : 'left-[3px]',
+                              ].join(' ')}
                               aria-hidden="true"
-                            />
+                            >
+                              {/* inner dot — subtle state indicator */}
+                              <span
+                                className={[
+                                  'absolute inset-0 m-auto h-[6px] w-[6px] rounded-full',
+                                  'transition-all duration-200',
+                                  isOn ? 'bg-[#0ea5e9] opacity-100 scale-100' : 'bg-slate-300 opacity-0 scale-50',
+                                ].join(' ')}
+                                aria-hidden="true"
+                              />
+                            </span>
                           </button>
                         )}
 
