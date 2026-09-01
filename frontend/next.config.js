@@ -5,6 +5,7 @@ const nextConfig = {
   turbopack: {
     root: __dirname,
   },
+  outputFileTracingRoot: __dirname,
   images: {
     remotePatterns: [
       {
