@@ -897,9 +897,7 @@ export default function ProfilePage() {
                           )}
                         </span>
 
-                        {/* Toggle switch — uniform pill style for all states.
-                            Visual looks identical across on/off/required:
-                            subtle tinted track + white thumb (no bold filled circle). */}
+                        {/* Toggle switch — uniform pill style, compact size (no bold filled circle). */}
                         {item.required ? (
                           /* Locked (required) — same visual as interactive ON, but non-interactive. */
                           <div
@@ -907,11 +905,11 @@ export default function ProfilePage() {
                             aria-checked={true}
                             aria-label={`${item.name} (เปิดค้างไว้)`}
                             aria-disabled="true"
-                            className="relative h-[22px] w-[40px] shrink-0 cursor-not-allowed rounded-full bg-sky-100 p-[2px]"
+                            className="relative h-[18px] w-[34px] shrink-0 cursor-not-allowed rounded-full bg-sky-100 p-[2px]"
                           >
                             <span className="pointer-events-none absolute inset-0 rounded-full" aria-hidden="true" />
                             <span
-                              className="absolute top-[2px] left-auto right-[2px] h-[18px] w-[18px] rounded-full bg-white shadow-[0_1px_3px_rgba(15,23,42,0.14)]"
+                              className="absolute top-[2px] left-auto right-[2px] h-[14px] w-[14px] rounded-full bg-white shadow-[0_1px_2px_rgba(15,23,42,0.18)]"
                               aria-hidden="true"
                             />
                           </div>
@@ -923,7 +921,7 @@ export default function ProfilePage() {
                             aria-label={`สลับการแสดงผล ${item.name}`}
                             onClick={() => handleToggleMainMenu(item.id)}
                             className={[
-                              'group/toggle relative h-[22px] w-[40px] shrink-0 cursor-pointer rounded-full border-0 appearance-none p-[2px]',
+                              'group/toggle relative h-[18px] w-[34px] shrink-0 cursor-pointer rounded-full border-0 appearance-none p-[2px]',
                               'transition-colors duration-200',
                               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3] focus-visible:ring-offset-1',
                               'active:scale-95',
@@ -934,10 +932,10 @@ export default function ProfilePage() {
                           >
                             <span
                               className={[
-                                'pointer-events-none absolute top-[2px] h-[18px] w-[18px] rounded-full',
-                                'bg-white shadow-[0_1px_2px_rgba(15,23,42,0.12),0_2px_4px_rgba(15,23,42,0.08)]',
+                                'pointer-events-none absolute top-[2px] h-[14px] w-[14px] rounded-full',
+                                'bg-white shadow-[0_1px_2px_rgba(15,23,42,0.16)]',
                                 'transition-all duration-200 [transition-timing-function:cubic-bezier(0.4,0,0.2,1)]',
-                                isOn ? 'left-[calc(100%-20px)]' : 'left-[2px]',
+                                isOn ? 'left-[calc(100%-16px)]' : 'left-[2px]',
                               ].join(' ')}
                               aria-hidden="true"
                             />
