@@ -158,9 +158,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           localStorage.setItem('user', JSON.stringify(mergedUser));
           setStatus('authenticated');
         } else {
-          // Only clear auth if we got an explicit 401 AND had no local user
-          // This prevents clearing auth on network errors or Render cold-start timeouts
-          if ((sessionRes && sessionRes.status === 401) || !localUser) {
+          // sessionUser is null but no explicit 401 thrown yet — only clear if no local user
+          // (network errors / schema parse failures should NOT logout a locally authenticated user)
+          if (!localUser) {
             setUser(null);
             localStorage.removeItem('user');
             localStorage.removeItem('session_id');
@@ -168,10 +168,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         }
       } catch (e) {
-        // Network error — if we have a local user, keep them authenticated
-        // (backend might be cold-starting on Render)
-        if (!localUser) {
+        // Explicit 401 from backend (refresh token invalid / session revoked) → clear auth regardless of local state
+        // Any other error (network / timeout / 5xx cold-start) → only clear if no local user cached
+        const status = (e as Error & { status?: number })?.status;
+        if (status === 401 || !localUser) {
           setUser(null);
+          localStorage.removeItem('user');
+          localStorage.removeItem('session_id');
           setStatus('anonymous');
         }
       }
