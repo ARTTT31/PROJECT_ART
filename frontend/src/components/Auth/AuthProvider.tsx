@@ -2,10 +2,23 @@
 
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { fetchWithAuth } from '@/lib/api/fetchWithAuth'
+import { fetchWithAuth, fetchWithAuthJson } from '@/lib/api/fetchWithAuth'
+import { AuthUserSchema, makeEnvelopeSchema } from '@/lib/api/schemas'
 import type { AuthUser, AuthRole } from '@/types'
+import { ZodError } from 'zod'
 
 export type { AuthUser, AuthRole }
+
+// Auth envelope: backend always returns { result, message, data: { user, session_id? } }
+const AuthEnvelopeSchema = makeEnvelopeSchema(
+  AuthUserSchema.and(
+    // `data.user` is the canonical user object inside the envelope body:
+    //   { data: { user: {...}, session_id: "..." } }
+    // But /auth/session returns { data: { user: {...} } } (no session_id key).
+    // This schema accepts both via `.partial()` on extras.
+    AuthUserSchema.extend({ session_id: AuthUserSchema.shape.id.optional() }).partial().passthrough(),
+  ).nullable().optional(),
+)
 
 type AuthStatus = 'loading' | 'authenticated' | 'anonymous'
 
@@ -22,10 +35,20 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
+/**
+ * Parse raw JSON user string and validate with Zod runtime schema.
+ * Falls back to null on parse failure (instead of silently returning `any`).
+ */
 function safeParseUser(raw: string | null): AuthUser | null {
   if (!raw) return null
   try {
-    return JSON.parse(raw) as AuthUser
+    const parsed = JSON.parse(raw)
+    const result = AuthUserSchema.safeParse(parsed)
+    if (result.success) return result.data
+    if (typeof window !== 'undefined') {
+      console.warn('[AUTH] localStorage user failed Zod validation:', result.error.message)
+    }
+    return null
   } catch {
     return null
   }
@@ -39,20 +62,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // ── Validate session helper ──
   const validateSession = useCallback(async (): Promise<boolean> => {
     try {
-      const sessionRes = await fetchWithAuth('/api/v1/auth/session')
-      if (sessionRes.ok) {
-        const json = await sessionRes.json()
-        if (json.data?.user) {
+      const json = await fetchWithAuthJson('/api/v1/auth/session', {}, AuthEnvelopeSchema)
+      const sessionData = json?.data as unknown as Record<string, unknown> | undefined
+      if (sessionData?.user) return true
+      // Network error or other issue - assume valid to avoid false negatives
+      return true
+    } catch (err) {
+      if (err instanceof Error) {
+        const anyErr = err as Error & { status?: number }
+        if (anyErr.status === 401 || anyErr.status === 403) return false
+        if (err instanceof ZodError) {
+          // Schema mismatch — session data shape is unexpected but server returned 2xx,
+          // keep session alive rather than logging the user out.
+          console.warn('[AUTH] Session envelope Zod mismatch (server version drift?)')
           return true
         }
       }
-      if (sessionRes.status === 401) {
-        return false
-      }
-      // Network error or other issue - assume valid to avoid false negatives
-      return true
-    } catch {
-      // Network error - assume valid
+      // Network error / timeout — treat as valid to not punish cold-starts
       return true
     }
   }, [])
@@ -102,24 +128,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       try {
-        const [sessionRes, profileRes] = await Promise.all([
-          fetchWithAuth('/api/v1/auth/session').catch(() => null),
-          fetchWithAuth('/api/v1/profile/me').catch(() => null),
-        ]);
+        const [sessionJson, profileJson] = await Promise.all([
+          fetchWithAuthJson('/api/v1/auth/session', {}, AuthEnvelopeSchema)
+            .catch((e) => {
+              if ((e as Error & { status?: number }).status === 401) throw e
+              return null
+            }),
+          fetchWithAuthJson('/api/v1/profile/me', {}, makeEnvelopeSchema(AuthUserSchema))
+            .catch(() => null),
+        ])
 
-        let sessionUser = null;
-        if (sessionRes && sessionRes.ok) {
-          const json = await sessionRes.json();
-          if (json.data && json.data.user) {
-            sessionUser = json.data.user;
-          }
+        let sessionUser: AuthUser | null = null
+        if (sessionJson) {
+          const sessionData = sessionJson?.data as unknown as Record<string, unknown> | undefined
+          const rawSessionUser = sessionData?.user
+          const parsed = AuthUserSchema.safeParse(rawSessionUser)
+          if (parsed.success) sessionUser = parsed.data
         }
 
-        let profileData = null;
-        if (profileRes && profileRes.ok) {
-          try {
-            profileData = await profileRes.json();
-          } catch (e) {}
+        let profileData = null
+        if (profileJson) {
+          const parsed = AuthUserSchema.safeParse(profileJson.data)
+          if (parsed.success) profileData = parsed.data
         }
 
         if (sessionUser) {

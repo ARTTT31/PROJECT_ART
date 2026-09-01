@@ -70,11 +70,11 @@ docs: add comprehensive quick start guide
 2. ✅ `README_COMPLETE_FIX.md` - Complete overview
 3. ✅ `README_CALENDAR_FIX.md` - Calendar quick start
 4. ✅ `README_OIL_PRICES_FIX.md` - Oil prices quick start
-5. ✅ `docs/CALENDAR_FIX_SUMMARY.md` - Technical details
-6. ✅ `docs/CALENDAR_TROUBLESHOOTING.md` - Troubleshooting
-7. ✅ `docs/CALENDAR_QUICK_REFERENCE.md` - Quick reference
-8. ✅ `docs/DEPLOYMENT_CHECKLIST.md` - Deployment guide
-9. ✅ `docs/OIL_PRICES_TROUBLESHOOTING.md` - Troubleshooting
+5. ✅ `docs/internal/CALENDAR_FIX_SUMMARY.md` - Technical details
+6. ✅ `docs/setup/CALENDAR_TROUBLESHOOTING.md` - Troubleshooting
+7. ✅ `docs/setup/CALENDAR_QUICK_REFERENCE.md` - Quick reference
+8. ✅ `docs/setup/DEPLOYMENT_CHECKLIST.md` - Deployment guide
+9. ✅ `docs/setup/OIL_PRICES_TROUBLESHOOTING.md` - Troubleshooting
 10. ✅ `DEPLOYMENT_SUMMARY.md` - This file
 
 **Total: 23 files** (6 backend + 3 frontend + 4 scripts + 10 docs)
@@ -177,15 +177,15 @@ curl "https://project-art-c7eh.onrender.com/api/v1/oil-prices/health"
 - **Oil Prices:** `README_OIL_PRICES_FIX.md`
 
 ### Troubleshooting
-- **Calendar Issues:** `docs/CALENDAR_TROUBLESHOOTING.md`
-- **Oil Prices Issues:** `docs/OIL_PRICES_TROUBLESHOOTING.md`
+- **Calendar Issues:** `docs/setup/CALENDAR_TROUBLESHOOTING.md`
+- **Oil Prices Issues:** `docs/setup/OIL_PRICES_TROUBLESHOOTING.md`
 
 ### Scripts
 - **Auto-commit Usage:** `scripts/README.md`
 
 ### Deployment
-- **Checklist:** `docs/DEPLOYMENT_CHECKLIST.md`
-- **Quick Reference:** `docs/CALENDAR_QUICK_REFERENCE.md`
+- **Checklist:** `docs/setup/DEPLOYMENT_CHECKLIST.md`
+- **Quick Reference:** `docs/setup/CALENDAR_QUICK_REFERENCE.md`
 
 ---
 
@@ -334,15 +334,15 @@ chmod +x scripts/auto-commit-docs.sh
 
 ### Documentation
 - Start with: `QUICK_START.md`
-- Troubleshooting: `docs/CALENDAR_TROUBLESHOOTING.md`, `docs/OIL_PRICES_TROUBLESHOOTING.md`
-- API Reference: `docs/CALENDAR_QUICK_REFERENCE.md`
+- Troubleshooting: `docs/setup/CALENDAR_TROUBLESHOOTING.md`, `docs/setup/OIL_PRICES_TROUBLESHOOTING.md`
+- API Reference: `docs/setup/CALENDAR_QUICK_REFERENCE.md`
 
 ### Testing
-- Test scripts: `backend/scripts/test_*.py`
+- Test scripts: `backend/scripts/tests/test_*.py`
 - Health checks: See verification section above
 
 ### Deployment
-- Checklist: `docs/DEPLOYMENT_CHECKLIST.md`
+- Checklist: `docs/setup/DEPLOYMENT_CHECKLIST.md`
 - This summary: `DEPLOYMENT_SUMMARY.md`
 
 ---

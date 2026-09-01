@@ -43,8 +43,17 @@ COOKIE_OPTIONS = {
     "path": "/",
 }
 
+# Convenience rate-limit strings — pulled from config but evaluated once at import.
+# SlowAPI "limit" strings are static decorator values, so we build them up-front.
+_AUTH_LIMIT = f"{settings.RATE_LIMIT_AUTH_PER_MINUTE}/minute"
+_GENERAL_LIMIT = f"{settings.RATE_LIMIT_GENERAL_PER_MINUTE}/minute"
+
+# Import limiter lazily to avoid a circular import between main → router → endpoints.
+from app.main import limiter  # noqa: E402
+
 
 @router.post("/login", response_model=ResponseModel)
+@limiter.limit(_AUTH_LIMIT)
 async def login(
     request: Request,
     user_login: UserLogin,
@@ -149,6 +158,7 @@ async def login(
 @router.post(
     "/register", response_model=ResponseModel, status_code=status.HTTP_201_CREATED
 )
+@limiter.limit(_AUTH_LIMIT)
 async def register(
     user_create: UserCreate,
     request: Request,
@@ -196,6 +206,7 @@ async def register(
 
 
 @router.post("/refresh", response_model=ResponseModel)
+@limiter.limit(_AUTH_LIMIT)
 async def refresh_token(
     request: Request,
     db: AsyncSession = Depends(get_db),
@@ -335,6 +346,7 @@ def _get_valid_client_ids() -> List[str]:
 
 
 @router.post("/google/verify-token")
+@limiter.limit(_AUTH_LIMIT)
 async def google_verify_token(
     token_request: dict, request: Request = None, db: AsyncSession = Depends(get_db)
 ):
@@ -396,7 +408,10 @@ async def google_verify_token(
         # Check azp as well for Google GIS web apps
         token_azp = verified_info.get("azp")
         if token_azp not in valid_client_ids:
-            print(f"[GOOGLE_AUTH] Warning: Token audience '{token_aud}' (azp: '{token_azp}') not in configured client IDs: {valid_client_ids}")
+            print(
+                f"[GOOGLE_AUTH] Warning: Token audience '{token_aud}' (azp: '{token_azp}')"
+                f" not in configured client IDs: {valid_client_ids}"
+            )
 
     # Extract verified user info
     email = verified_info.get("email")

@@ -256,10 +256,10 @@ npm cache clean --force
 - **Oil Prices Fix:** `README_OIL_PRICES_FIX.md`
 
 ### Detailed Documentation
-- **Calendar Troubleshooting:** `docs/CALENDAR_TROUBLESHOOTING.md`
-- **Calendar Quick Reference:** `docs/CALENDAR_QUICK_REFERENCE.md`
-- **Oil Prices Troubleshooting:** `docs/OIL_PRICES_TROUBLESHOOTING.md`
-- **Deployment Checklist:** `docs/DEPLOYMENT_CHECKLIST.md`
+- **Calendar Troubleshooting:** `docs/setup/CALENDAR_TROUBLESHOOTING.md`
+- **Calendar Quick Reference:** `docs/setup/CALENDAR_QUICK_REFERENCE.md`
+- **Oil Prices Troubleshooting:** `docs/setup/OIL_PRICES_TROUBLESHOOTING.md`
+- **Deployment Checklist:** `docs/setup/DEPLOYMENT_CHECKLIST.md`
 - **Scripts Documentation:** `scripts/README.md`
 
 ---
@@ -322,8 +322,8 @@ git push origin main
 ### Tip 2: Test Before Deploy
 รัน test scripts ก่อน push เสมอ:
 ```bash
-python backend/scripts/test_calendar.py
-python backend/scripts/test_oil_prices.py
+python backend/scripts/tests/test_calendar.py
+python backend/scripts/tests/test_oil_prices.py
 ```
 
 ### Tip 3: Monitor Logs

@@ -32,6 +32,32 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     AUTO_CREATE_TABLES: bool = False
+    AUTO_MIGRATE_COLUMNS: bool = False
+
+    @field_validator("AUTO_MIGRATE_COLUMNS", mode="before")
+    @classmethod
+    def default_migrate_from_debug(cls, v, info):
+        if v is None or (isinstance(v, str) and v == ""):
+            debug_val = info.data.get("DEBUG", True)
+            return bool(debug_val)
+        return v
+
+    # Rate Limiting — SlowAPI backend
+    # Memory backend is local-only and resets on restart (ok for single-pod deploys).
+    # For multi-pod / production horizontal scaling set to a Redis URI:
+    #   SLOWAPI_STORAGE_URI="redis://user:pass@host:port/db"
+    # Backwards-compatible default: memory:// (in-process dict)
+    SLOWAPI_STORAGE_URI: str = "memory://"
+    # Sensible defaults — auth endpoints get stricter limits than general API.
+    RATE_LIMIT_AUTH_PER_MINUTE: int = 10  # login / token verify / refresh attempts per IP
+    RATE_LIMIT_GENERAL_PER_MINUTE: int = 120  # general profile/oil/calendar endpoints per IP
+
+    # Error Monitoring — Sentry (optional, disabled if DSN is empty)
+    # Get a DSN from https://sentry.io/ or your self-hosted Sentry instance.
+    SENTRY_DSN: str = ""
+    SENTRY_TRACES_SAMPLE_RATE: float = 0.1  # 10% of requests get APM traces
+    SENTRY_PROFILES_SAMPLE_RATE: float = 0.0  # disabled by default (high overhead)
+    SENTRY_ENVIRONMENT: str = "development"  # set via ENV to "production" in prod
 
     @property
     def COOKIE_SECURE(self) -> bool:

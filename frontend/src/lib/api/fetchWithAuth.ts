@@ -2,6 +2,9 @@
  * Authenticated fetch helper with automatic cookie-based session/token refresh.
  */
 
+import { parseJsonWithSchema, type ResponseModelParsed } from './schemas';
+import type { z } from 'zod';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://project-art-c7eh.onrender.com';
 
 // ── Shared refresh state ─────────────────────────────────────
@@ -133,4 +136,41 @@ export async function fetchWithAuth(
     }
     throw error;
   }
+}
+
+/**
+ * Like fetchWithAuth but also:
+ *   1. parses response JSON,
+ *   2. validates it against the given Zod schema,
+ *   3. returns the typed result.
+ *
+ * Usage:
+ *   const data = await fetchWithAuthJson('/api/v1/profile/me', {}, AuthUserSchema);
+ *   //   👆 typed as AuthUserParsed — no more `any`!
+ *
+ * If you don't pass a schema it falls back to `ResponseModelSchema` (the default
+ * {result, message, data} envelope).
+ */
+export async function fetchWithAuthJson<T extends z.ZodTypeAny>(
+  path: string,
+  options: RequestInit = {},
+  schema?: T,
+): Promise<T extends undefined ? ResponseModelParsed : z.infer<T>> {
+  const res = await fetchWithAuth(path, options);
+  if (!res.ok) {
+    try {
+      const errData = await res.json();
+      const msg = errData?.message || errData?.detail || res.statusText;
+      const error = new Error(`Request failed: ${res.status} ${msg}`) as Error & { status?: number; data?: unknown };
+      error.status = res.status;
+      error.data = errData;
+      throw error;
+    } catch {
+      throw new Error(`Request failed: ${res.status} ${res.statusText}`);
+    }
+  }
+  return parseJsonWithSchema(
+    res,
+    (schema || (await import('./schemas')).ResponseModelSchema) as T,
+  );
 }

@@ -17,6 +17,40 @@ from app.core.database import engine
 from app.models import base  # Import all models
 from fastapi.staticfiles import StaticFiles
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# Optional: Sentry Error Monitoring (only activates when SENTRY_DSN is set)
+# Wrapped in try/except because sentry-sdk may not be installed in every env.
+# ═══════════════════════════════════════════════════════════════════════════════
+_SENTRY_INITIALIZED = False
+try:
+    if settings.SENTRY_DSN:
+        import sentry_sdk  # type: ignore
+        from sentry_sdk.integrations.fastapi import FastApiIntegration  # type: ignore
+        from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration  # type: ignore
+
+        sentry_sdk.init(
+            dsn=settings.SENTRY_DSN,
+            environment=settings.SENTRY_ENVIRONMENT,
+            release=os.environ.get("RENDER_GIT_COMMIT") or settings.APP_VERSION,
+            traces_sample_rate=settings.SENTRY_TRACES_SAMPLE_RATE,
+            profiles_sample_rate=settings.SENTRY_PROFILES_SAMPLE_RATE,
+            send_default_pii=False,  # Never attach user IP/emails by default
+            integrations=[
+                FastApiIntegration(transaction_style="url"),
+                SqlalchemyIntegration(),
+            ],
+        )
+        _SENTRY_INITIALIZED = True
+        print(f"[MONITOR] Sentry initialized (env={settings.SENTRY_ENVIRONMENT})")
+    else:
+        print("[MONITOR] Sentry disabled — set SENTRY_DSN to enable error monitoring.")
+except ImportError:  # pragma: no cover
+    if settings.SENTRY_DSN:
+        print("[MONITOR] WARNING: SENTRY_DSN is set but sentry-sdk is not installed. "
+              "Run `pip install 'sentry-sdk[fastapi]'` to enable.")
+except Exception as exc:  # pragma: no cover
+    print(f"[MONITOR] WARNING: Sentry init failed ({exc}). Continuing without monitoring.")
+
 
 def sync_db_columns(sync_conn):
     from sqlalchemy import inspect, text
@@ -55,8 +89,23 @@ async def lifespan(app: FastAPI):
     try:
         async with engine.begin() as conn:
             if settings.AUTO_CREATE_TABLES:
+                if settings.DEBUG:
+                    print("[DB] AUTO_CREATE_TABLES=True: Creating tables (dev-only convenience)")
+                else:
+                    print("[DB WARNING] AUTO_CREATE_TABLES=True in non-DEBUG mode! "
+                          "Prefer Alembic migrations in production.")
                 await conn.run_sync(base.Base.metadata.create_all)
-            await conn.run_sync(sync_db_columns)
+
+            if settings.AUTO_MIGRATE_COLUMNS:
+                if settings.DEBUG:
+                    print("[DB] AUTO_MIGRATE_COLUMNS=True: Syncing columns (dev-only convenience)")
+                else:
+                    print("[DB WARNING] AUTO_MIGRATE_COLUMNS=True in non-DEBUG mode! "
+                          "Prefer Alembic migrations in production — unsafe ALTER TABLE on live data.")
+                await conn.run_sync(sync_db_columns)
+            elif not settings.DEBUG:
+                print("[DB] Production mode: Column auto-sync DISABLED. "
+                      "Run `alembic upgrade head` to apply migrations.")
     except Exception as e:
         print(f"[STARTUP DB SYNC NOTICE] {e}")
     yield
@@ -70,22 +119,111 @@ def get_real_client_ip(request: Request) -> str:
     return request.client.host if request.client else "127.0.0.1"
 
 
-limiter = Limiter(key_func=get_real_client_ip)
+def _build_limiter() -> Limiter:
+    """Build a SlowAPI Limiter using the configured storage backend.
+
+    Falls back to in-memory storage if Redis is configured but not available,
+    so the app can still start during a transient redis outage.
+    """
+    uri = settings.SLOWAPI_STORAGE_URI
+    try:
+        if uri and uri != "memory://":
+            return Limiter(key_func=get_real_client_ip, storage_uri=uri)
+    except Exception as exc:  # pragma: no cover - defensive fallback
+        print(f"[RATE-LIMIT] WARNING: Failed to init storage '{uri}' ({exc}). "
+              "Falling back to in-memory backend.")
+    return Limiter(key_func=get_real_client_ip)
+
+
+limiter = _build_limiter()
+# Expose key_func for convenience re-export (endpoints import `from app.main import limiter`)
+limiter.key_function = get_real_client_ip  # type: ignore[attr-defined]
+
+
+# CORS Origins — built early so the CSP connect-src directive can trust them.
+# allow_credentials=True requires explicit origins (no wildcard "*").
+base_origins = [
+    "https://project-art-sigma.vercel.app",
+    "http://localhost:3000",
+    "http://localhost:3001",
+    "http://localhost:8000",
+    "http://localhost",
+    "capacitor://localhost",
+    "ionic://localhost",
+    "null",
+]
+
+allowed_origins = list(base_origins)
+for origin in settings.get_cors_origins():
+    cleaned = origin.rstrip("/")
+    if cleaned and cleaned not in allowed_origins:
+        allowed_origins.append(cleaned)
 
 
 # ── Content Security Policy (CSP) Middleware ──
-CSP_HEADER_VALUE = (
-    "default-src 'self' https: data: blob: 'unsafe-inline' 'unsafe-eval'; "
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://accounts.google.com https://cdn.jsdelivr.net; "
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; "
-    "img-src 'self' data: https: blob:; "
-    "font-src 'self' https://fonts.gstatic.com data:; "
-    "connect-src 'self' https: wss:; "
-    "frame-src 'self' https://accounts.google.com; "
-    "object-src 'none'; "
-    "base-uri 'self'; "
-    "form-action 'self'"
+# Two tiers:
+#   PRODUCTION (DEBUG=False) — strict: no 'unsafe-eval', minimal origins
+#   DEVELOPMENT (DEBUG=True) — permissive enough for Next.js HMR + hot reload
+_CSP_SCRIPT_GOOGLE = "https://apis.google.com https://accounts.google.com"
+
+# Explicitly-trusted connect origins (frontend API backend + Google auth flows).
+# Widgets that call third-party endpoints (weather etc.) should do so via the
+# backend proxy to keep this list tight.
+_CSP_CONNECT_TRUSTED = (
+    "'self' "
+    + " ".join(
+        o for o in allowed_origins
+        if o.startswith(("https://", "http://", "capacitor://", "ionic://"))
+    )
+    + " wss: https: data:"
 )
+# Note: `https:` is kept in connect-src as a pragmatic fallback because the
+# dashboard widgets proxy data server-side but some browser features (OAuth
+# popups, analytics, WebSockets) need to connect to arbitrary HTTPS hosts.
+# If the deployment is fully locked down, replace the trailing `https:` with
+# an explicit enumeration of allowed third-party hostnames.
+
+CSP_HEADER_VALUE_PROD = (
+    # default-src fallback: self-only (no unsafe-eval), plus fonts/images data/blob
+    f"default-src 'self' data: blob:; "
+    # script-src: keep 'unsafe-inline' (Next.js inline bootstrap), NO unsafe-eval
+    f"script-src 'self' 'unsafe-inline' {_CSP_SCRIPT_GOOGLE}; "
+    # style-src: 'unsafe-inline' required for Tailwind / Radix style injection
+    f"style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+    # images + media: permissive for avatars / widget visuals
+    f"img-src 'self' data: https: blob:; "
+    f"media-src 'self' data: https: blob:; "
+    # fonts: Google Fonts + data:
+    f"font-src 'self' https://fonts.gstatic.com data:; "
+    # connect: explicit trusted origins + wss for live features
+    f"connect-src {_CSP_CONNECT_TRUSTED}; "
+    # frames: only Google OAuth popup
+    f"frame-src 'self' https://accounts.google.com; "
+    # workers / manifests
+    f"worker-src 'self' blob:; "
+    f"manifest-src 'self'; "
+    # Hard blocks
+    f"object-src 'none'; "
+    f"base-uri 'self'; "
+    f"form-action 'self'; "
+    f"frame-ancestors 'none'; "
+)
+
+CSP_HEADER_VALUE_DEV = (
+    # Dev-only: allow 'unsafe-eval' + looser defaults for Next.js HMR / Fast Refresh
+    f"default-src 'self' https: data: blob: 'unsafe-inline' 'unsafe-eval'; "
+    f"script-src 'self' 'unsafe-inline' 'unsafe-eval' {_CSP_SCRIPT_GOOGLE}; "
+    f"style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+    f"img-src 'self' data: https: blob:; "
+    f"font-src 'self' https://fonts.gstatic.com data:; "
+    f"connect-src 'self' https: wss: http: ws:; "
+    f"frame-src 'self' https://accounts.google.com; "
+    f"object-src 'none'; "
+    f"base-uri 'self'; "
+    f"form-action 'self'; "
+)
+
+CSP_HEADER_VALUE = CSP_HEADER_VALUE_DEV if settings.DEBUG else CSP_HEADER_VALUE_PROD
 
 
 class CSPMiddleware:
@@ -136,25 +274,6 @@ app = FastAPI(
 )
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
-
-# CORS Middleware — explicit origins + regex for all Vercel domains
-# allow_credentials=True requires explicit origins (no wildcard "*")
-base_origins = [
-    "https://project-art-sigma.vercel.app",
-    "http://localhost:3000",
-    "http://localhost:3001",
-    "http://localhost:8000",
-    "http://localhost",
-    "capacitor://localhost",
-    "ionic://localhost",
-    "null",
-]
-
-allowed_origins = list(base_origins)
-for origin in settings.get_cors_origins():
-    cleaned = origin.rstrip("/")
-    if cleaned and cleaned not in allowed_origins:
-        allowed_origins.append(cleaned)
 
 # Middleware registration order is REVERSED by Starlette:
 # CORSMiddleware is added LAST so it wraps CSPMiddleware and executes FIRST.

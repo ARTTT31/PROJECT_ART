@@ -111,7 +111,7 @@ Committed: 2026-07-01 17:30:45
 📊 Current status:
 M  backend/app/api/v1/endpoints/calendar.py
 M  frontend/src/components/Widgets/TaskListWidget.tsx
-A  docs/CALENDAR_TROUBLESHOOTING.md
+A  docs/setup/CALENDAR_TROUBLESHOOTING.md
 
 📝 Staging all changes...
 🤖 Generating commit message...
@@ -302,7 +302,7 @@ git pull origin main
 
 ```bash
 # 1. Edit documentation files
-nano docs/CALENDAR_TROUBLESHOOTING.md
+nano docs/setup/CALENDAR_TROUBLESHOOTING.md
 
 # 2. Auto-commit with custom message
 ./scripts/auto-commit-docs.sh "docs: update calendar troubleshooting guide"
@@ -317,7 +317,7 @@ nano docs/CALENDAR_TROUBLESHOOTING.md
 # 1. Make changes across multiple files
 # - backend/app/api/v1/endpoints/calendar.py
 # - frontend/src/components/Widgets/TaskListWidget.tsx
-# - docs/CALENDAR_FIX_SUMMARY.md
+# - docs/internal/CALENDAR_FIX_SUMMARY.md
 
 # 2. Auto-commit (will categorize changes)
 ./scripts/auto-commit-docs.sh

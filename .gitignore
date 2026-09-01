@@ -15,6 +15,43 @@
 *.swp
 *.swo
 
+# ══════════════════════════════════════════════════════════════════════════════
+# IDE-specific SKILL folders — 15+ near-duplicate copies across different editors.
+# These are workspace-local IDE metadata (same class as .vscode/), NOT project
+# source. If your particular IDE needs them, re-download via the IDE's skill
+# installer or keep a local uncommitted copy.
+#
+# KEEP: .github/   (real project asset — holds CI workflows and prompt templates)
+# ══════════════════════════════════════════════════════════════════════════════
+.augment/skills/
+.claude/skills/
+.codebuddy/skills/
+.codex/skills/
+.continue/skills/
+.factory/skills/
+.kilocode/skills/
+.opencode/skills/
+.qoder/skills/
+.roo/skills/
+.trae/skills/
+.warp/skills/
+.windsurf/skills/
+
+# Also ignore top-level skill helper/reference markdown in IDE folders
+.augment/DESIGN_RULES_REF.md
+.claude/DESIGN_RULES_REF.md
+.codebuddy/DESIGN_RULES_REF.md
+.codex/DESIGN_RULES_REF.md
+.continue/DESIGN_RULES_REF.md
+.factory/DESIGN_RULES_REF.md
+.kilocode/DESIGN_RULES_REF.md
+.opencode/DESIGN_RULES_REF.md
+.qoder/DESIGN_RULES_REF.md
+.roo/DESIGN_RULES_REF.md
+.trae/DESIGN_RULES_REF.md
+.warp/DESIGN_RULES_REF.md
+.windsurf/DESIGN_RULES_REF.md
+
 # OS
 .DS_Store
 Thumbs.db
@@ -52,6 +89,14 @@ android/build/
 android/app/build/
 android/local.properties
 android/captacitor/
+
+# Firebase / Google Service Credentials (mobile apps)
+# DO NOT COMMIT REAL google-services.json — use .example template and env secrets.
+# After adding to gitignore, run once:  git rm --cached frontend/android/app/google-services.json
+frontend/android/app/google-services.json
+ios/App/App/GoogleService-Info.plist
+GoogleService-Info.plist
+google-services.json
 
 # Uploads
 uploads/
