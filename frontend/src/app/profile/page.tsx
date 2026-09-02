@@ -21,12 +21,7 @@ import {
   ShieldCheck,
   KeyRound,
   Mail,
-  Shield,
-  Clock,
-  MapPin,
-  Activity,
   AtSign,
-  Hash,
   X,
   Palette,
   Bookmark,
@@ -466,27 +461,6 @@ export default function ProfilePage() {
                     <AtSign size={12} className="text-slate-400" aria-hidden="true" />
                     {user.email || 'ไม่ได้ตั้งค่าอีเมล'}
                   </span>
-                  <span className="text-slate-300">·</span>
-                  <span className="inline-flex items-center gap-1.5 text-[12px] text-[#475569]">
-                    <Hash size={12} className="text-slate-400" aria-hidden="true" />
-                    ID #{user.id}
-                  </span>
-                </div>
-
-                {/* Status chips */}
-                <div className="mt-4 flex flex-wrap items-center justify-center gap-2 sm:justify-start">
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 text-[11px] font-bold text-emerald-700 ring-1 ring-emerald-200">
-                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" aria-hidden="true" />
-                    ใช้งานปกติ
-                  </span>
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-50 px-3 py-1.5 text-[11px] font-bold text-slate-700 ring-1 ring-slate-200">
-                    <Shield size={12} aria-hidden="true" />
-                    รหัสผ่าน
-                  </span>
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-sky-50 px-3 py-1.5 text-[11px] font-bold text-sky-700 ring-1 ring-sky-200">
-                    <Link2 size={12} aria-hidden="true" />
-                    {quickLinks.length} ลิงก์
-                  </span>
                 </div>
               </div>
             </div>
@@ -526,10 +500,6 @@ export default function ProfilePage() {
                 required
                 autoComplete="email"
               />
-              <div className="flex items-start gap-2.5 rounded-2xl bg-sky-50/70 p-3.5 text-[11.5px] text-sky-900 ring-1 ring-sky-200/60 leading-relaxed">
-                <Info size={14} className="mt-0.5 shrink-0 text-sky-600" aria-hidden="true" />
-                <p><strong className="font-bold">คำแนะนำ:</strong> เปลี่ยนอีเมล = ต้องใช้อีเมลใหม่เข้าสู่ระบบครั้งหน้า</p>
-              </div>
               <div className="flex justify-end pt-1">
                 <button
                   type="submit"
@@ -824,28 +794,6 @@ export default function ProfilePage() {
           )}
         </SectionCard>
 
-        {/* Footer info strip */}
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-3xl bg-white/50 px-5 sm:px-6 py-3.5 ring-1 ring-black/[0.04] backdrop-blur">
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[11px] text-[#6e6e73]">
-            <span className="inline-flex items-center gap-1.5">
-              <Clock size={12} className="text-slate-400" />
-              ART Workspace v1.0
-            </span>
-            <span className="text-slate-300 hidden sm:inline">·</span>
-            <span className="inline-flex items-center gap-1.5">
-              <Activity size={12} className="text-slate-400" />
-              Apple-inspired UI
-            </span>
-            <span className="text-slate-300 hidden sm:inline">·</span>
-            <span className="inline-flex items-center gap-1.5">
-              <MapPin size={12} className="text-slate-400" />
-              การตั้งค่าถูกซิงค์กับทุกอุปกรณ์
-            </span>
-          </div>
-          <span className="text-[10.5px] text-slate-400">
-            บันทึกอัตโนมัติ · ข้อมูลปลอดภัยด้วย Argon2 + HTTPS
-          </span>
-        </div>
       </div>
 
       {/* ══════════════════════════════════════════════════
