@@ -75,16 +75,26 @@ export function parseMainMenuConfig(raw: string | null | undefined): MainMenuIte
     const parsed = JSON.parse(raw)
     if (!Array.isArray(parsed)) return DEFAULT_MAIN_MENU_ITEMS
 
-    // Merge with defaults to preserve new items & structure
-    const map = new Map<string, any>(parsed.map((item) => [item.id, item]))
-    return DEFAULT_MAIN_MENU_ITEMS.map((defaultItem) => {
-      const saved = map.get(defaultItem.id)
-      if (!saved) return defaultItem
-      return {
-        ...defaultItem,
-        enabled: defaultItem.required ? true : Boolean(saved.enabled),
-      }
-    })
+    const defaultMap = new Map(DEFAULT_MAIN_MENU_ITEMS.map((item) => [item.id, item]))
+    const seen = new Set<string>()
+    const ordered: MainMenuItemConfig[] = []
+
+    for (const saved of parsed) {
+      if (!saved || typeof saved.id !== 'string') continue
+      const fallback = defaultMap.get(saved.id)
+      if (!fallback) continue
+      seen.add(fallback.id)
+      ordered.push({
+        ...fallback,
+        enabled: fallback.required ? true : Boolean(saved.enabled),
+      })
+    }
+
+    for (const fallback of DEFAULT_MAIN_MENU_ITEMS) {
+      if (!seen.has(fallback.id)) ordered.push(fallback)
+    }
+
+    return ordered
   } catch {
     return DEFAULT_MAIN_MENU_ITEMS
   }
