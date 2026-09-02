@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
-import { useRouter, usePathname } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import {
   Camera,
   User,
@@ -22,9 +22,6 @@ import {
   KeyRound,
   Mail,
   Shield,
-  Layers,
-  RotateCcw,
-  Sparkles,
   Clock,
   MapPin,
   Activity,
@@ -35,7 +32,7 @@ import {
   Bookmark,
 } from 'lucide-react'
 import DashboardLayout from '@/components/Layout/DashboardLayout'
-import { showConfirm, showDeleteConfirm, showToast, showSuccess, showError } from '@/utils/sweetalert'
+import { showDeleteConfirm, showToast, showSuccess, showError } from '@/utils/sweetalert'
 import { useAuth } from '@/hooks/useAuth'
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth'
 import {
@@ -56,14 +53,6 @@ import {
   parseQuickLinks,
   serializeQuickLinks,
 } from '@/utils/quickLinks'
-import {
-  DEFAULT_MAIN_MENU_ITEMS,
-  MAIN_MENU_ICON_MAP,
-  MAIN_MENU_STORAGE_KEY,
-  type MainMenuItemConfig,
-  parseMainMenuConfig,
-  serializeMainMenuConfig,
-} from '@/utils/mainMenu'
 import type { AuthUser } from '@/types'
 
 // ─────────────────────────────────────────────────────────────
@@ -95,58 +84,6 @@ const QUICK_LINK_COLOR_PRESETS = [
   '#f97316', '#eab308', '#22c55e', '#14b8a6', '#06b6d4',
   '#64748b',
 ]
-
-// ─────────────────────────────────────────────────────────────
-// Toggle Switch (Pill 34x18 — Apple-inspired)
-// ─────────────────────────────────────────────────────────────
-
-interface PillToggleProps {
-  checked: boolean
-  onChange: () => void
-  disabled?: boolean
-  label: string
-}
-
-function PillToggle({ checked, onChange, disabled, label }: PillToggleProps) {
-  if (disabled) {
-    return (
-      <div
-        role="switch"
-        aria-checked={true}
-        aria-label={`${label} เปิดค้างไว้`}
-        aria-disabled="true"
-        className="relative h-[18px] w-[34px] shrink-0 cursor-not-allowed rounded-full bg-sky-100 p-[2px]"
-      >
-        <span
-          className="absolute top-[2px] right-[2px] h-[14px] w-[14px] rounded-full bg-white shadow-[0_1px_2px_rgba(15,23,42,0.18)]"
-          aria-hidden="true"
-        />
-      </div>
-    )
-  }
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      aria-label={`สลับการแสดงผล ${label}`}
-      onClick={onChange}
-      className={[
-        'relative h-[18px] w-[34px] shrink-0 cursor-pointer rounded-full border-0 appearance-none p-[2px] transition-colors duration-200',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3] focus-visible:ring-offset-1 active:scale-95',
-        checked ? 'bg-sky-100 hover:bg-sky-200' : 'bg-slate-200 hover:bg-slate-300',
-      ].join(' ')}
-    >
-      <span
-        className={[
-          'pointer-events-none absolute top-[2px] h-[14px] w-[14px] rounded-full bg-white shadow-[0_1px_2px_rgba(15,23,42,0.16)] transition-all duration-200',
-          checked ? 'left-[calc(100%-16px)]' : 'left-[2px]',
-        ].join(' ')}
-        aria-hidden="true"
-      />
-    </button>
-  )
-}
 
 // ─────────────────────────────────────────────────────────────
 // Section Card
@@ -251,7 +188,6 @@ function InsetField({
 
 export default function ProfilePage() {
   const router = useRouter()
-  const pathname = usePathname()
   const { user: authUser, updateUser } = useAuth()
   const [user, setUser] = useState<AuthUser | null>(null)
   const [name, setName] = useState('')
@@ -266,13 +202,6 @@ export default function ProfilePage() {
   const [isSavingProfile, setIsSavingProfile] = useState(false)
   const [isChangingPassword, setIsChangingPassword] = useState(false)
 
-  // Main Menu
-  const [mainMenuItems, setMainMenuItems] = useState<MainMenuItemConfig[]>(() => {
-    if (typeof window === 'undefined') return parseMainMenuConfig(null)
-    const saved = localStorage.getItem(MAIN_MENU_STORAGE_KEY)
-    return parseMainMenuConfig(saved)
-  })
-
   // Quick Links
   const [quickLinks, setQuickLinks] = useState<QuickLink[]>([])
   const [quickLinkDialogOpen, setQuickLinkDialogOpen] = useState(false)
@@ -286,11 +215,6 @@ export default function ProfilePage() {
   const PreviewIcon = QUICK_LINK_ICON_MAP[qlIcon]
   const previewIconLabel =
     QUICK_LINK_ICON_OPTIONS.find((option) => option.key === qlIcon)?.label ?? 'ลิงก์'
-
-  const enabledMenuCount = useMemo(
-    () => mainMenuItems.filter((i) => i.enabled).length,
-    [mainMenuItems],
-  )
 
   // ── Init ──────────────────────────────────────────────────────
 
@@ -382,57 +306,6 @@ export default function ProfilePage() {
     } finally {
       setIsChangingPassword(false)
     }
-  }
-
-  // ── Handlers: Main Menu ───────────────────────────────────────
-
-  const persistMainMenu = (next: MainMenuItemConfig[]) => {
-    const serialized = serializeMainMenuConfig(next)
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(MAIN_MENU_STORAGE_KEY, serialized)
-      window.dispatchEvent(new Event('art-main-menu-updated'))
-    }
-    setMainMenuItems(next)
-  }
-
-  const handleToggleMainMenu = (id: string) => {
-    const target = mainMenuItems.find((item) => item.id === id)
-    if (!target || target.required) return
-    const next = mainMenuItems.map((item) =>
-      item.id === id ? { ...item, enabled: !item.enabled } : item,
-    )
-    persistMainMenu(next)
-    const updated = next.find((item) => item.id === id)
-    showToast(
-      updated?.enabled
-        ? `เปิดการแสดงผล "${updated.name}" ในเมนูหลักแล้ว`
-        : `ซ่อน "${updated?.name}" จากเมนูหลักแล้ว`,
-      'success',
-    )
-  }
-
-  const handleMoveMainMenu = (id: string, direction: 'up' | 'down') => {
-    const idx = mainMenuItems.findIndex((item) => item.id === id)
-    if (idx === -1) return
-    const swap = direction === 'up' ? idx - 1 : idx + 1
-    if (swap < 0 || swap >= mainMenuItems.length) return
-    const next = [...mainMenuItems]
-    ;[next[idx], next[swap]] = [next[swap], next[idx]]
-    persistMainMenu(next)
-  }
-
-  const handleResetMainMenu = async () => {
-    const result = await showConfirm(
-      'รีเซ็ตเมนูหลัก?',
-      'ลำดับและการแสดงผลจะกลับเป็นค่าเริ่มต้นของระบบ',
-    )
-    if (!result.isConfirmed) return
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem(MAIN_MENU_STORAGE_KEY)
-      window.dispatchEvent(new Event('art-main-menu-updated'))
-    }
-    setMainMenuItems(DEFAULT_MAIN_MENU_ITEMS)
-    showToast('รีเซ็ตการแสดงผลเมนูหลักเป็นค่าเริ่มต้นแล้ว', 'info')
   }
 
   // ── Handlers: Quick Links ─────────────────────────────────────
@@ -609,10 +482,6 @@ export default function ProfilePage() {
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-50 px-3 py-1.5 text-[11px] font-bold text-slate-700 ring-1 ring-slate-200">
                     <Shield size={12} aria-hidden="true" />
                     รหัสผ่าน
-                  </span>
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-3 py-1.5 text-[11px] font-bold text-indigo-700 ring-1 ring-indigo-200">
-                    <Layers size={12} aria-hidden="true" />
-                    {enabledMenuCount}/{mainMenuItems.length} เมนู
                   </span>
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-sky-50 px-3 py-1.5 text-[11px] font-bold text-sky-700 ring-1 ring-sky-200">
                     <Link2 size={12} aria-hidden="true" />
@@ -814,353 +683,7 @@ export default function ProfilePage() {
         </div>
 
         {/* ══════════════════════════════════════════════════
-            SECTION 3 — MAIN MENU MANAGEMENT (NEW REBUILD)
-            ══════════════════════════════════════════════════ */}
-        <section className="overflow-hidden rounded-3xl bg-white ring-1 ring-black/[0.06] shadow-[0_8px_32px_rgba(15,23,42,0.05)]">
-
-          {/* ── Section Header ───────────────────────────── */}
-          <div className="relative border-b border-slate-100 px-5 sm:px-7 lg:px-10 py-5 sm:py-6 bg-gradient-to-b from-indigo-50/40 via-indigo-50/20 to-white">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-              <div className="flex items-start gap-4 min-w-0">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 via-indigo-600 to-violet-600 text-white shadow-[0_8px_20px_rgba(99,102,241,0.28)]">
-                  <Layers size={20} strokeWidth={2.3} aria-hidden="true" />
-                </div>
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2.5">
-                    <h2 className="text-[18px] sm:text-[20px] font-black tracking-tight text-[#1d1d1f] leading-snug">
-                      จัดการเมนูหลัก
-                    </h2>
-                    <span className="inline-flex items-center gap-1 rounded-full bg-white px-3 py-1 text-[11px] font-extrabold text-indigo-700 ring-1 ring-indigo-200 shadow-[0_1px_2px_rgba(99,102,241,0.10)]">
-                      <span className="h-1.5 w-1.5 rounded-full bg-indigo-500" aria-hidden="true" />
-                      {enabledMenuCount} จาก {mainMenuItems.length}
-                    </span>
-                  </div>
-                  <p className="mt-1 text-[13px] sm:text-[13.5px] text-[#6e6e73] leading-snug">
-                    เปิด / ปิด การแสดงผลเมนูในแถบข้าง ตามที่คุณต้องการใช้งาน
-                  </p>
-                </div>
-              </div>
-              <div className="flex flex-wrap items-center gap-2 shrink-0">
-                <div className="hidden md:flex items-center gap-2 rounded-2xl bg-slate-50 px-3.5 py-2 ring-1 ring-slate-200/70">
-                  <span className="flex items-center gap-1 text-[10.5px] font-extrabold text-slate-500">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                    {enabledMenuCount} เปิด
-                  </span>
-                  <span className="text-slate-300">·</span>
-                  <span className="flex items-center gap-1 text-[10.5px] font-extrabold text-slate-500">
-                    <span className="h-1.5 w-1.5 rounded-full bg-slate-300" />
-                    {mainMenuItems.length - enabledMenuCount} ซ่อน
-                  </span>
-                  <span className="mx-1 h-4 w-px bg-slate-200" />
-                  <div className="flex items-center gap-1.5">
-                    <div className="h-1.5 w-24 overflow-hidden rounded-full bg-slate-200">
-                      <div
-                        className="h-full bg-gradient-to-r from-indigo-500 via-indigo-500 to-violet-500 transition-all duration-500"
-                        style={{ width: `${Math.round((enabledMenuCount / Math.max(1, mainMenuItems.length)) * 100)}%` }}
-                      />
-                    </div>
-                    <span className="tabular-nums text-[10.5px] font-extrabold text-slate-600">
-                      {Math.round((enabledMenuCount / Math.max(1, mainMenuItems.length)) * 100)}%
-                    </span>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleResetMainMenu}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-2 text-[11.5px] font-bold text-[#1d1d1f] ring-1 ring-black/[0.08] shadow-sm transition-all duration-150 hover:bg-[#f5f5f7] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3] active:scale-[0.98]"
-                >
-                  <RotateCcw size={12.5} aria-hidden="true" />
-                  รีเซ็ตค่าเริ่มต้น
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* ── Body: Split Layout (Preview + List) ──────── */}
-          <div className="px-5 sm:px-7 lg:px-10 py-5 sm:py-7">
-            <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1.45fr)] gap-4 sm:gap-6 lg:gap-8">
-
-              {/* ═══ Column 1: SIDEBAR PREVIEW (โชว์ผลเมนูที่จะเกิดขึ้น) */}
-              <div className="flex flex-col">
-                <div className="mb-2.5 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="flex h-6 w-6 items-center justify-center rounded-md bg-indigo-100 text-indigo-700">
-                      <Eye size={12.5} aria-hidden="true" />
-                    </span>
-                    <h3 className="text-[13px] font-extrabold tracking-tight text-[#1d1d1f]">
-                      ตัวอย่างแถบเมนู
-                    </h3>
-                  </div>
-                  <span className="text-[10.5px] font-bold text-slate-400 uppercase tracking-wider">
-                    Live Preview
-                  </span>
-                </div>
-
-                <div className="relative flex flex-1 flex-col overflow-hidden rounded-2xl border border-[#f0f0f0] bg-white shadow-[0_8px_24px_rgba(15,23,42,0.06)]">
-                  <div className="flex items-center gap-3 border-b border-[#f0f0f0] px-4 py-3.5">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#0071e3] text-[11px] font-black text-white">
-                      {user.name?.charAt(0).toUpperCase() || 'U'}
-                    </div>
-                    <div className="min-w-0">
-                      <div className="truncate text-[13px] font-semibold text-[#1d1d1f]">ART Workspace</div>
-                      <div className="truncate text-[11px] text-[#6e6e73]">แถบข้างจริงในระบบ</div>
-                    </div>
-                  </div>
-
-                  <div className="flex-1 p-4">
-                    <div className="mb-2 px-3 text-[11px] font-semibold text-[#6e6e73]">เมนูหลัก</div>
-                    <ul className="space-y-1">
-                      {mainMenuItems.filter((item) => item.enabled).map((item) => {
-                        const Icon = MAIN_MENU_ICON_MAP[item.icon] || Sparkles
-                        const isActive = pathname === item.href
-                        return (
-                          <li key={`preview-${item.id}`}>
-                            <div
-                              className={[
-                                'flex min-h-11 items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-colors',
-                                isActive
-                                  ? 'bg-[#0071e3] text-white shadow-[0_4px_12px_rgba(0,113,227,0.30)]'
-                                  : 'text-slate-700',
-                              ].join(' ')}
-                            >
-                              <span className={isActive ? 'text-white/90' : 'text-slate-400'}>
-                                <Icon size={20} aria-hidden="true" />
-                              </span>
-                              <span className="flex-1 truncate">{item.name}</span>
-                              {item.isWip && (
-                                <span className={`rounded-md px-1.5 py-0.5 text-[10px] font-bold ${
-                                  isActive ? 'bg-white/20 text-white' : 'bg-amber-50 text-amber-700 ring-1 ring-amber-200/60'
-                                }`}>
-                                  {item.wipLabel || 'WIP'}
-                                </span>
-                              )}
-                            </div>
-                          </li>
-                        )
-                      })}
-                    </ul>
-
-                    {quickLinks.length > 0 && (
-                      <>
-                        <div className="mb-2 mt-6 px-3 text-[11px] font-semibold text-[#6e6e73]">ควิกลิ้งค์</div>
-                        <ul className="space-y-1">
-                          {quickLinks.slice(0, 4).map((link) => {
-                            const LinkIcon = QUICK_LINK_ICON_MAP[link.icon]
-                            return (
-                              <li key={`preview-ql-${link.id}`}>
-                                <div className="flex min-h-11 items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-slate-700">
-                                  <LinkIcon size={20} aria-hidden="true" style={{ color: link.color || '#0ea5e9' }} />
-                                  <span className="flex-1 truncate">{link.label}</span>
-                                </div>
-                              </li>
-                            )
-                          })}
-                        </ul>
-                      </>
-                    )}
-
-                    {mainMenuItems.some((item) => !item.enabled) && (
-                      <div className="mt-5 rounded-xl bg-[#f8fafc] p-3 ring-1 ring-[#f0f0f0]">
-                        <div className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold text-[#6e6e73]">
-                          <EyeOff size={12} aria-hidden="true" />
-                          ซ่อนจากแถบข้าง
-                        </div>
-                        <div className="flex flex-wrap gap-1.5">
-                          {mainMenuItems.filter((item) => !item.enabled).map((item) => (
-                            <span
-                              key={`hidden-${item.id}`}
-                              className="inline-flex items-center rounded-full bg-white px-2.5 py-1 text-[11px] font-medium text-[#6e6e73] ring-1 ring-[#f0f0f0]"
-                            >
-                              {item.name}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="mt-3 flex items-start gap-2 rounded-2xl bg-sky-50/70 px-3 py-2.5 ring-1 ring-sky-200/60">
-                  <Info size={12.5} className="mt-0.5 shrink-0 text-sky-600" aria-hidden="true" />
-                  <p className="text-[11px] leading-relaxed text-sky-900">
-                    ตัวอย่างนี้สะท้อนแถบข้างจริง: ลำดับ, รายการที่เปิด และหน้าปัจจุบัน
-                  </p>
-                </div>
-              </div>
-
-              {/* ═══ Column 2: MANAGEMENT LIST ═══════════════ */}
-              <div className="flex flex-col">
-                <div className="mb-2.5 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="flex h-6 w-6 items-center justify-center rounded-md bg-sky-100 text-sky-700">
-                      <Layers size={12.5} aria-hidden="true" />
-                    </span>
-                    <h3 className="text-[13px] font-extrabold tracking-tight text-[#1d1d1f]">
-                      รายการเมนูทั้งหมด
-                    </h3>
-                  </div>
-                  <span className="inline-flex items-center gap-1 text-[10.5px] font-bold text-slate-500">
-                    เปิด/ปิด และจัดลำดับ
-                  </span>
-                </div>
-
-                <div className="space-y-2">
-                  {mainMenuItems.map((item, index) => {
-                    const Icon = MAIN_MENU_ICON_MAP[item.icon] || Sparkles
-                    const isOn = item.enabled
-                    const isRequired = item.required
-
-                    return (
-                      <div
-                        key={item.id}
-                        className={[
-                          'group relative flex items-center gap-3 sm:gap-4 rounded-2xl transition-all duration-200 px-3 sm:px-3.5 py-3 sm:py-3.5',
-                          'ring-1 focus-within:ring-2 focus-within:ring-[#0071e3]/40',
-                          isOn
-                            ? 'bg-white ring-black/[0.06] hover:ring-black/[0.10] hover:shadow-[0_3px_12px_rgba(15,23,42,0.05)]'
-                            : 'bg-[#fafafa] ring-black/[0.035] hover:bg-white hover:ring-black/[0.07] hover:shadow-[0_2px_8px_rgba(15,23,42,0.035)]',
-                        ].join(' ')}
-                      >
-                        {/* Number + Icon block */}
-                        <div className="flex items-center gap-2.5 shrink-0">
-                          <span className={[
-                            'hidden sm:flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-md text-[9.5px] font-black tabular-nums transition-colors',
-                            isOn ? 'bg-indigo-50 text-indigo-600 ring-1 ring-indigo-100' : 'bg-slate-100 text-slate-400',
-                          ].join(' ')}>
-                            {String(index + 1).padStart(2, '0')}
-                          </span>
-                          <div
-                            className={[
-                              'relative flex h-11 w-11 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-[17px] transition-all duration-300 ring-1',
-                              isOn
-                                ? 'bg-gradient-to-br from-indigo-500 via-indigo-500 to-violet-500 text-white ring-transparent shadow-[0_7px_16px_rgba(99,102,241,0.30)]'
-                                : 'bg-white text-slate-400 ring-black/[0.05] group-hover:text-slate-600 group-hover:ring-black/[0.08]',
-                            ].join(' ')}
-                          >
-                            <Icon size={19} strokeWidth={isOn ? 2.15 : 2} aria-hidden="true" />
-                            {isRequired && (
-                              <span
-                                className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full bg-emerald-500 text-white flex items-center justify-center ring-2 ring-white shadow-sm"
-                                aria-hidden="true"
-                              >
-                                <Check size={9.5} strokeWidth={3.5} aria-hidden="true" />
-                              </span>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Text block */}
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
-                            <h4
-                              className={[
-                                'text-[14px] sm:text-[14.5px] font-black tracking-tight leading-snug truncate transition-colors',
-                                isOn ? 'text-[#1d1d1f]' : 'text-[#6e6e73]',
-                              ].join(' ')}
-                            >
-                              {item.name}
-                            </h4>
-                            {item.isWip && (
-                              <span className="inline-flex items-center rounded-full bg-sky-50 px-1.5 py-[0.5px] text-[8.5px] font-black text-sky-700 ring-1 ring-sky-200">
-                                {item.wipLabel || 'กำลังพัฒนา'}
-                              </span>
-                            )}
-                            {item.required && (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-1.5 py-[0.5px] text-[8.5px] font-black text-emerald-700 ring-1 ring-emerald-200">
-                                <span className="h-1 w-1 rounded-full bg-emerald-500" />
-                                เริ่มต้น
-                              </span>
-                            )}
-                          </div>
-                          <p
-                            className={[
-                              'text-[11.5px] leading-snug line-clamp-2 transition-colors',
-                              isOn ? 'text-[#6e6e73]' : 'text-[#a1a1aa]',
-                            ].join(' ')}
-                          >
-                            {item.description || item.href}
-                          </p>
-                        </div>
-
-                        {/* Status tag + reorder + toggle */}
-                        <div className="flex items-center gap-1 sm:gap-2 shrink-0 pl-1 sm:pl-2">
-                          <div className="flex items-center">
-                            <button
-                              type="button"
-                              onClick={() => handleMoveMainMenu(item.id, 'up')}
-                              disabled={index === 0}
-                              aria-label={`ย้าย ${item.name} ขึ้น`}
-                              className="flex h-7 w-7 items-center justify-center rounded-md text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-slate-400"
-                            >
-                              <ChevronUp size={14} aria-hidden="true" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleMoveMainMenu(item.id, 'down')}
-                              disabled={index === mainMenuItems.length - 1}
-                              aria-label={`ย้าย ${item.name} ลง`}
-                              className="flex h-7 w-7 items-center justify-center rounded-md text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-slate-400"
-                            >
-                              <ChevronDown size={14} aria-hidden="true" />
-                            </button>
-                          </div>
-                          <span
-                            className={[
-                              'hidden sm:inline-flex items-center justify-center rounded-full px-2.5 py-0.5 text-[9.5px] font-black ring-1 transition-all',
-                              isOn
-                                ? 'bg-emerald-50 text-emerald-700 ring-emerald-200'
-                                : 'bg-slate-100 text-slate-500 ring-slate-200',
-                            ].join(' ')}
-                          >
-                            {isOn ? 'แสดง' : 'ซ่อน'}
-                          </span>
-                          <PillToggle
-                            checked={isOn}
-                            onChange={() => handleToggleMainMenu(item.id)}
-                            disabled={isRequired}
-                            label={item.name}
-                          />
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-
-                {/* Bottom: Legend */}
-                <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-2">
-                  <div className="flex items-center gap-2 rounded-xl bg-[#fbfcfe] px-3 py-2.5 ring-1 ring-indigo-100/80">
-                    <span className="h-6 w-6 shrink-0 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-500 shadow-sm" />
-                    <div className="min-w-0">
-                      <div className="text-[10.5px] font-black text-[#1d1d1f] leading-tight">ไอคอนสีสด</div>
-                      <div className="text-[9.5px] text-[#6e6e73] leading-tight">เปิดแสดงผลอยู่</div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 rounded-xl bg-slate-50/70 px-3 py-2.5 ring-1 ring-slate-200/70">
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-xl bg-white text-slate-400 ring-1 ring-black/[0.05]">
-                      <EyeOff size={11} aria-hidden="true" />
-                    </span>
-                    <div className="min-w-0">
-                      <div className="text-[10.5px] font-black text-[#1d1d1f] leading-tight">จาง + สีเทา</div>
-                      <div className="text-[9.5px] text-[#6e6e73] leading-tight">ปิดซ่อนแล้ว</div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 rounded-xl bg-emerald-50/60 px-3 py-2.5 ring-1 ring-emerald-100">
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700 ring-1 ring-emerald-200/70">
-                      <Check size={11} strokeWidth={3} aria-hidden="true" />
-                    </span>
-                    <div className="min-w-0">
-                      <div className="text-[10.5px] font-black text-[#1d1d1f] leading-tight">เมนูเริ่มต้น</div>
-                      <div className="text-[9.5px] text-[#6e6e73] leading-tight">ปิดไม่ได้</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ══════════════════════════════════════════════════
-            SECTION 4 — QUICK LINKS MANAGEMENT
+            SECTION 3 — QUICK LINKS MANAGEMENT
             ══════════════════════════════════════════════════ */}
         <SectionCard
           icon={<Link2 size={20} aria-hidden="true" />}
