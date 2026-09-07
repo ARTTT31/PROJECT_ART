@@ -9,7 +9,7 @@
 
 ## Purpose
 
-The main operational dashboard — widgets, calendar, task list, oil prices, QR code. This page is data-dense and task-focused. It implements the Enterprise Admin DNA of MASTER.md v3.0.
+The main operational dashboard — widgets, weather, Thai holidays, oil prices, QR code. This page is data-dense and task-focused. It implements the Enterprise Admin DNA of MASTER.md v3.0.
 
 ---
 

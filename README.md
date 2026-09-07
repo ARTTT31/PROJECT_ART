@@ -17,7 +17,6 @@ The GitHub Actions pipeline (`ci.yml`) runs on every push and pull request to `m
 
 - [Quick Reference](docs/setup/quick-reference.md)
 - [Login System Setup](docs/setup/login-system.md)
-- [Google Calendar Setup](docs/setup/google-calendar.md)
 - [Migration and Deployment](docs/setup/migration-deployment.md)
 
 ### Architecture and Design
@@ -176,7 +175,7 @@ PROJECT_ART/
 │       └── utils/               # quickLinks, sweetalert, userAgent
 ├── backend/                     # FastAPI
 │   └── app/
-│       ├── api/v1/endpoints/    # auth, profile, oil_prices, calendar, users
+│       ├── api/v1/endpoints/    # auth, profile, oil_prices, users, audit, system
 │       └── core/                # config.py, database.py, security.py
 ├── design-system/art-workspace/ # MASTER.md + page overrides
 └── .github/workflows/ci.yml     # CI: flake8 + pytest + ESLint + build

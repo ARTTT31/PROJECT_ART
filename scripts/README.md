@@ -109,9 +109,9 @@ Committed: 2026-07-01 17:30:45
 ========================================
 
 📊 Current status:
-M  backend/app/api/v1/endpoints/calendar.py
-M  frontend/src/components/Widgets/TaskListWidget.tsx
-A  docs/setup/CALENDAR_TROUBLESHOOTING.md
+M  backend/app/api/v1/endpoints/oil_prices.py
+M  frontend/src/components/Widgets/OilPriceWidget.tsx
+A  docs/setup/quick-reference.md
 
 📝 Staging all changes...
 🤖 Generating commit message...
@@ -302,10 +302,10 @@ git pull origin main
 
 ```bash
 # 1. Edit documentation files
-nano docs/setup/CALENDAR_TROUBLESHOOTING.md
+nano docs/setup/quick-reference.md
 
 # 2. Auto-commit with custom message
-./scripts/auto-commit-docs.sh "docs: update calendar troubleshooting guide"
+./scripts/auto-commit-docs.sh "docs: update quick reference guide"
 
 # 3. Push when prompted
 # 🚀 Push to remote? (y/n): y
@@ -315,9 +315,9 @@ nano docs/setup/CALENDAR_TROUBLESHOOTING.md
 
 ```bash
 # 1. Make changes across multiple files
-# - backend/app/api/v1/endpoints/calendar.py
-# - frontend/src/components/Widgets/TaskListWidget.tsx
-# - docs/internal/CALENDAR_FIX_SUMMARY.md
+# - backend/app/api/v1/endpoints/oil_prices.py
+# - frontend/src/components/Widgets/OilPriceWidget.tsx
+# - docs/setup/quick-reference.md
 
 # 2. Auto-commit (will categorize changes)
 ./scripts/auto-commit-docs.sh

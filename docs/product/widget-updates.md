@@ -1,18 +1,13 @@
 # Widget Updates Summary
 
-## 📅 Calendar Widget
-### Changes:
-- ✅ **Removed Fullscreen button** - No longer has a full screen expansion button
-- ✅ **Kept M/L buttons** - Widget can still be resized (medium 2/3 or large full)
-- ✅ **Removed Fullscreen Modal** - Removed all code related to fullscreen mode
-
-### Features Retained:
-- ✅ Navigation (Previous/Next month)
-- ✅ Return to today button
-- ✅ M/L buttons for resizing
-- ✅ Google Calendar embed
-
----
+> [!NOTE]
+> **Current Dashboard Active Widgets:**
+> - 🌤️ `WeatherWidget` - Real-time weather, forecast & GPS
+> - 🇹🇭 `HolidayWidget` - Thai official holidays for the current year
+> - ⛽ `OilPriceWidget` - Fuel prices from EPPO with cached fallback
+> - 📱 `QRCodeWidget` - Dynamic QR code & barcode generator
+> 
+> *Note: Legacy Calendar and SharePoint-based TaskList widgets have been removed.*
 
 ## 🌤️ Weather Widget  
 ### Changes:

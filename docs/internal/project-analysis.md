@@ -25,7 +25,7 @@ The full stack has been verified locally and is in a clean, fully passing state:
 | Backend | FastAPI, SQLAlchemy async, Alembic | REST API and database access |
 | Auth | JWT access/refresh tokens in HTTP-only cookies | Standard login, Google OAuth, and Microsoft Entra |
 | Database | PostgreSQL target, SQLite for tests | Neon in production, in-memory SQLite in tests |
-| External data | Google Calendar iCal / Graph API, EPPO oil price page | Calendar/task widgets and oil price widget |
+| External data | Open-Meteo weather API, EPPO oil price page | Weather widget and oil price widget |
 
 ## Application Shape
 
@@ -35,7 +35,7 @@ Main pages:
 
 - `/login` - username/email login, Google OAuth, and Microsoft Entra login
 - `/login-success` - OAuth callback completion flow
-- `/dashboard` - widget dashboard (Calendar, Task list, Oil price, QR Code)
+- `/dashboard` - widget dashboard (Weather, Holiday, Oil price, QR Code)
 - `/profile` - profile, password, and quick-link management
 - `/apple-style` - isolated design showcase page
 - `/` - redirect to `/login`

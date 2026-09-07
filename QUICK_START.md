@@ -64,19 +64,10 @@ Frontend จะรันที่: http://localhost:3000
 
 ## 🧪 ทดสอบ APIs
 
-### Test Calendar API
-```bash
-# ใช้ Python script
-python backend/scripts/test_calendar.py YOUR_CALENDAR_ID
-
-# หรือใช้ curl
-curl "http://localhost:8080/api/v1/calendar/health?calendar_id=YOUR_ID"
-```
-
 ### Test Oil Prices API
 ```bash
 # ใช้ Python script
-python backend/scripts/test_oil_prices.py
+python backend/scripts/tests/test_oil_prices.py
 
 # หรือใช้ curl
 curl "http://localhost:8080/api/v1/oil-prices/health"
@@ -108,9 +99,6 @@ GOOGLE_CLIENT_SECRET=your-google-client-secret
 ```env
 # API URL
 NEXT_PUBLIC_API_URL=http://localhost:8080
-
-# Google Calendar
-NEXT_PUBLIC_GOOGLE_CALENDAR_ID=your-calendar-id@group.calendar.google.com
 
 # Google Sign-In (Optional)
 NEXT_PUBLIC_GOOGLE_CLIENT_ID=your-google-client-id
@@ -235,12 +223,6 @@ npm install
 npm cache clean --force
 ```
 
-### Calendar Widget แสดง Error
-1. ตรวจสอบว่าปฏิทินเป็น **Public** ใน Google Calendar
-2. ตรวจสอบ Calendar ID ใน `.env.local`
-3. รัน test script: `python backend/scripts/test_calendar.py`
-4. ดู logs: DevTools → Console
-
 ### Oil Prices Widget แสดง Stale Data
 - นี่เป็นเรื่องปกติเมื่อ EPPO ช้าหรือล่ม
 - Widget จะ auto-refresh ทุก 5 นาที
@@ -250,16 +232,11 @@ npm cache clean --force
 
 ## 📖 Documentation
 
-### Quick Start Guides
-- **Complete Fix:** `README_COMPLETE_FIX.md`
-- **Calendar Fix:** `README_CALENDAR_FIX.md`
-- **Oil Prices Fix:** `README_OIL_PRICES_FIX.md`
-
-### Detailed Documentation
-- **Calendar Troubleshooting:** `docs/setup/CALENDAR_TROUBLESHOOTING.md`
-- **Calendar Quick Reference:** `docs/setup/CALENDAR_QUICK_REFERENCE.md`
+### Setup & Guides
+- **Quick Reference:** `docs/setup/quick-reference.md`
+- **Login System:** `docs/setup/login-system.md`
+- **Migration & Deployment:** `docs/setup/migration-deployment.md`
 - **Oil Prices Troubleshooting:** `docs/setup/OIL_PRICES_TROUBLESHOOTING.md`
-- **Deployment Checklist:** `docs/setup/DEPLOYMENT_CHECKLIST.md`
 - **Scripts Documentation:** `scripts/README.md`
 
 ---
