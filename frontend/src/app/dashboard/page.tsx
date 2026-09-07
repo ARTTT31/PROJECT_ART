@@ -1,11 +1,19 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import DashboardLayout from '@/components/Layout/DashboardLayout'
-import { Check, Eye, EyeOff, GripHorizontal, Loader2, SlidersHorizontal } from 'lucide-react'
+import { Check, Eye, EyeOff, GripHorizontal, Loader2, SlidersHorizontal, Sparkles } from 'lucide-react'
 import { WidgetConfig } from '@/types'
+import DashboardLayout from '@/components/Layout/DashboardLayout'
 import ErrorBoundary from '@/components/ErrorBoundary'
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth'
+
+function getGreeting(): string {
+  const hour = new Date().getHours()
+  if (hour >= 5 && hour < 12) return 'สวัสดีตอนเช้า'
+  if (hour >= 12 && hour < 17) return 'สวัสดีตอนบ่าย'
+  if (hour >= 17 && hour < 21) return 'สวัสดีตอนเย็น'
+  return 'ราตรีสวัสดิ์'
+}
 import {
   Dialog,
   DialogBody,
@@ -128,17 +136,18 @@ function SortableWidget({
     <div
       ref={setNodeRef}
       style={style}
-      className={`group relative ${getColSpanClass(widget.w)}`}
+      className={`group relative transition-all duration-300 ${getColSpanClass(widget.w)}`}
     >
       {/* Drag handle — visible on hover, sits above widget */}
       <div
         {...attributes}
         {...listeners}
-        className="absolute inset-x-0 top-0 z-10 flex h-10 cursor-grab items-center justify-center opacity-0 transition-opacity duration-150 group-hover:opacity-100 active:cursor-grabbing touch-none"
+        className="absolute inset-x-0 top-0 z-10 flex h-10 cursor-grab items-center justify-center opacity-0 transition-opacity duration-200 group-hover:opacity-100 active:cursor-grabbing touch-none"
         aria-label={`ย้ายวิดเจ็ต ${widgetNames[widget.id]}`}
       >
-        <span className="flex items-center gap-1 rounded-full bg-white px-2.5 py-1 shadow-sm ring-1 ring-black/[0.06]">
-          <GripHorizontal className="h-3.5 w-3.5 text-slate-400" aria-hidden="true" />
+        <span className="flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1 shadow-md ring-1 ring-black/[0.08] backdrop-blur-md">
+          <GripHorizontal className="h-3.5 w-3.5 text-[#6e6e73]" aria-hidden="true" />
+          <span className="text-[11px] font-semibold text-[#6e6e73]">จัดลำดับ</span>
         </span>
       </div>
 
@@ -326,27 +335,60 @@ export default function DashboardPage() {
 
   // ── Render ───────────────────────────────────────────────────────────────
 
+  const greeting = getGreeting()
+  const thaiDate = new Intl.DateTimeFormat('th-TH', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  }).format(new Date())
+
   return (
     <DashboardLayout>
-      {/* ── Page header ────────────────────────────────────────────── */}
-      <header className="mb-5 flex flex-wrap items-center justify-between gap-4 border-b border-black/[0.06] pb-5">
-        <div>
-          <h1 className="text-[22px] font-extrabold tracking-[-0.03em] text-[#1d1d1f]">
-            แดชบอร์ด
-          </h1>
+      {/* ── Apple HIG Hero Welcome Banner ───────────────────────────────── */}
+      <section
+        aria-label="การทักทายและสถานะประจำวัน"
+        className="relative mb-6 overflow-hidden rounded-[24px] border border-black/[0.06] bg-gradient-to-br from-white via-white to-[#e8f2fe]/50 p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)] sm:p-7"
+      >
+        <div className="relative z-10 flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+          <div className="space-y-1.5">
+            <div className="inline-flex items-center gap-2 rounded-full bg-[#0071e3]/10 px-3 py-1 text-xs font-semibold text-[#0071e3]">
+              <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
+              <span>{thaiDate}</span>
+            </div>
+            <h1 className="text-2xl font-bold tracking-tight text-[#1d1d1f] sm:text-3xl">
+              {greeting}, <span className="text-[#0071e3]">{user.display_name || user.username}</span> 👋
+            </h1>
+            <p className="text-sm text-[#6e6e73]">
+              ยินดีต้อนรับสู่ระบบ ART Workspace ข้อมูลสรุปและวิดเจ็ตการทำงานของคุณพร้อมใช้งานแล้ว
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2.5">
+            <div className="flex items-center gap-2 rounded-full bg-black/[0.04] px-3.5 py-1.5 text-xs font-medium text-[#424245]">
+              <span className="h-2 w-2 rounded-full bg-[#34c759] shadow-[0_0_6px_rgba(52,199,89,0.6)]" />
+              <span>วิดเจ็ตเปิดใช้งาน {visibleWidgets.length}/{defaultWidgets.length} ตัว</span>
+            </div>
+
+            {/* Manage widgets — Apple pill button */}
+            <button
+              type="button"
+              onClick={() => setShowConfigModal(true)}
+              className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-[13px] font-semibold text-[#1d1d1f] shadow-sm ring-1 ring-black/[0.08] transition-all duration-150 hover:bg-[#f5f5f7] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3] focus-visible:ring-offset-2 active:scale-[0.98]"
+              aria-label="จัดการวิดเจ็ต"
+            >
+              <SlidersHorizontal className="h-3.5 w-3.5 text-[#475569]" aria-hidden="true" />
+              จัดการวิดเจ็ต
+            </button>
+          </div>
         </div>
 
-        {/* Manage widgets — Apple pill button */}
-        <button
-          type="button"
-          onClick={() => setShowConfigModal(true)}
-          className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-[13px] font-semibold text-[#1d1d1f] shadow-sm ring-1 ring-black/[0.08] transition-all duration-150 hover:bg-[#f5f5f7] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3] focus-visible:ring-offset-2 active:scale-[0.98]"
-          aria-label="จัดการวิดเจ็ต"
-        >
-          <SlidersHorizontal className="h-3.5 w-3.5 text-[#475569]" aria-hidden="true" />
-          จัดการวิดเจ็ต
-        </button>
-      </header>
+        {/* Ambient subtle glow */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-[#0071e3]/10 blur-3xl"
+        />
+      </section>
 
       {/* ── Widget grid ─────────────────────────────────────────────────── */}
       <DndContext

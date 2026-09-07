@@ -13,6 +13,9 @@ export interface AuthUser {
   name: string
   role: AuthRole
   avatar?: string | null
+  avatar_url?: string | null
+  display_name?: string | null
+  username?: string | null
   quick_links?: string | null
   dashboard_layout?: string | null
   camera_config?: string | null
