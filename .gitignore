@@ -69,11 +69,16 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 .mypy_cache/
+htmlcov/
+.coverage
+.coverage.*
 *.egg-info/
 .eggs/
 dist/
 build/
 art_workspace.db
+ruff/
+skills-lock.json
 
 # Node
 node_modules/
