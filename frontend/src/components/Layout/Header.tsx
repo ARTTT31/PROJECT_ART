@@ -46,46 +46,45 @@ export default function Header({ onMenuClick, sidebarCollapsed = false }: Header
   })()
 
   return (
-    <header className="sticky top-0 z-20 border-b border-black/[0.06] bg-white/75 backdrop-blur-[24px] [-webkit-backdrop-filter:blur(24px)]">
-      <div className="flex items-center justify-between px-4 py-3 lg:px-6">
+    <header className="sticky top-0 z-20 border-b border-black/[0.06] bg-[rgba(255,255,255,0.80)] backdrop-blur-2xl">
+      <div className="flex items-center justify-between px-4 py-2.5 lg:px-6">
         {/* Left Side: Sidebar Toggle & Page Title/Breadcrumb */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 sm:gap-4">
           <button
             onClick={onMenuClick}
-            className="art-icon-button"
+            className="flex h-9 w-9 items-center justify-center rounded-full text-[#1d1d1f] transition-all duration-150 hover:bg-black/[0.05] active:scale-[0.95] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3]"
             aria-label={sidebarCollapsed ? 'เปิดแถบเมนูด้านข้าง' : 'พับแถบเมนูด้านข้าง'}
             aria-pressed={!sidebarCollapsed}
           >
-            <Menu size={22} aria-hidden="true" />
+            <Menu size={20} aria-hidden="true" />
           </button>
 
           <div>
-            <h1 className="text-[18px] font-bold tracking-tight" style={{ color: '#1d1d1f' }}>
+            <h1 className="text-[17px] font-bold tracking-tight text-[#1d1d1f]">
               {headerMeta.title}
             </h1>
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-1.5">
               <nav
                 aria-label="breadcrumb"
-                className="flex items-center gap-2 text-sm font-semibold"
-                style={{ color: '#6e6e73' }}
+                className="flex items-center gap-1.5 text-[12px] font-medium text-[#86868b]"
               >
                 {headerMeta.crumbs.map((c, idx) => {
                   const isLast = idx === headerMeta.crumbs.length - 1
                   return (
-                    <span key={`${c.label}-${idx}`} className="flex items-center gap-2">
+                    <span key={`${c.label}-${idx}`} className="flex items-center gap-1.5">
                       {c.href ? (
                         <Link
                           href={c.href}
-                          className="transition-colors hover:text-slate-700 text-xs sm:text-sm"
+                          className="transition-colors hover:text-[#1d1d1f]"
                         >
                           {c.label}
                         </Link>
                       ) : (
-                        <span className={`${isLast ? 'text-slate-700' : ''} text-xs sm:text-sm`}>
+                        <span className={isLast ? 'text-[#1d1d1f]' : ''}>
                           {c.label}
                         </span>
                       )}
-                      {!isLast && <span aria-hidden="true" className="text-slate-300 text-xs">/</span>}
+                      {!isLast && <span aria-hidden="true" className="text-black/20">/</span>}
                     </span>
                   )
                 })}
@@ -95,8 +94,8 @@ export default function Header({ onMenuClick, sidebarCollapsed = false }: Header
         </div>
 
         {/* Right Side: Clock & Notification Bell */}
-        <div className="flex items-center gap-3">
-          <div className="hidden min-h-11 items-center gap-2 rounded-full border border-black/[0.06] bg-white/60 px-3.5 py-2 text-sm font-semibold text-slate-700 shadow-[0_1px_3px_rgba(15,23,42,0.04)] sm:flex">
+        <div className="flex items-center gap-2.5">
+          <div className="hidden min-h-[36px] items-center gap-2 rounded-full border border-black/[0.06] bg-white/80 px-3 py-1.5 text-[13px] font-semibold text-[#1d1d1f] shadow-sm sm:flex">
             <ClockTime />
           </div>
 
@@ -115,7 +114,7 @@ const ClockTime = memo(function ClockTime() {
     return () => clearInterval(id)
   }, [])
   const formatted = time.toLocaleString('th-TH', {
-    weekday: 'long',
+    weekday: 'short',
     day: 'numeric',
     month: 'short',
     year: 'numeric',
@@ -124,7 +123,7 @@ const ClockTime = memo(function ClockTime() {
   })
   return (
     <>
-      <Clock size={17} className="text-sky-600" aria-hidden="true" />
+      <Clock size={15} className="text-[#0071e3]" aria-hidden="true" />
       <span>{formatted}</span>
     </>
   )

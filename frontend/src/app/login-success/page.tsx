@@ -38,7 +38,7 @@ export default function LoginSuccessPage() {
         }
 
         // Step 2: Fallback to verify and fetch session details from backend via HTTP-only cookies
-        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://art-workspace-api.onrender.com';
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://project-art-c7eh.onrender.com';
         const res = await fetch(`${API_URL}/api/v1/auth/session`, {
           credentials: 'include', // Ensure cookies are sent
         });

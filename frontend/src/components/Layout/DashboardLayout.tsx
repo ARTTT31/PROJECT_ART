@@ -28,7 +28,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   return (
     <AuthGuard>
-      <div className="art-app-shell relative overflow-x-hidden bg-[#f0f2f5] min-h-[100dvh]">
+      <div className="art-app-shell relative overflow-x-hidden bg-[#f5f5f7] min-h-[100dvh] text-[#1d1d1f]">
         {/* Sidebar wrapper */}
         <div className="relative z-20">
 
@@ -43,7 +43,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
         {/* Main Content wrapper */}
         <div
-          className={`relative z-10 min-h-[100dvh] flex flex-col transition-[padding] duration-300 ${
+          className={`relative z-10 min-h-[100dvh] flex flex-col transition-[padding] duration-300 ease-out ${
             sidebarCollapsed ? 'lg:pl-0' : 'lg:pl-64'
           }`}
         >
@@ -62,13 +62,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           />
 
           {/* Page Content */}
-          <main className="flex-1 p-3 sm:p-4 lg:p-6">{children}</main>
+          <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-[1600px] w-full mx-auto">{children}</main>
         </div>
 
         {/* Mobile Sidebar Overlay */}
         {sidebarOpen && (
           <div
-            className="fixed inset-0 z-30 bg-black/30 backdrop-blur-[2px] transition-all duration-300 lg:hidden"
+            className="fixed inset-0 z-30 bg-black/25 backdrop-blur-sm transition-all duration-300 lg:hidden"
             onClick={() => setSidebarOpen(false)}
             aria-hidden="true"
           />

@@ -37,27 +37,7 @@ export function pushNotifications(items: Notification[]) {
   listeners.forEach((fn) => fn([...store]))
 }
 
-// ── Thai Holidays Definition for Smart Alert ──────────────────────────────────
-
-const THAI_HOLIDAYS_2026 = [
-  { id: 'h-1', dayOfWeek: 'วันพฤหัสบดี', day: 1, month: 1, monthName: 'มกราคม', year: 2026, title: 'วันขึ้นปีใหม่' },
-  { id: 'h-2', dayOfWeek: 'วันอังคาร', day: 3, month: 3, monthName: 'มีนาคม', year: 2026, title: 'วันมาฆบูชา' },
-  { id: 'h-3', dayOfWeek: 'วันจันทร์', day: 6, month: 4, monthName: 'เมษายน', year: 2026, title: 'วันจักรี' },
-  { id: 'h-4', dayOfWeek: 'วันจันทร์', day: 13, month: 4, monthName: 'เมษายน', year: 2026, title: 'วันสงกรานต์' },
-  { id: 'h-5', dayOfWeek: 'วันอังคาร', day: 14, month: 4, monthName: 'เมษายน', year: 2026, title: 'วันสงกรานต์' },
-  { id: 'h-6', dayOfWeek: 'วันพุธ', day: 15, month: 4, monthName: 'เมษายน', year: 2026, title: 'วันสงกรานต์' },
-  { id: 'h-7', dayOfWeek: 'วันศุกร์', day: 1, month: 5, monthName: 'พฤษภาคม', year: 2026, title: 'วันแรงงานแห่งชาติ' },
-  { id: 'h-8', dayOfWeek: 'วันจันทร์', day: 4, month: 5, monthName: 'พฤษภาคม', year: 2026, title: 'วันฉัตรมงคล' },
-  { id: 'h-9', dayOfWeek: 'วันพุธ', day: 3, month: 6, monthName: 'มิถุนายน', year: 2026, title: 'วันเฉลิมพระชนมพรรษาสมเด็จพระนางเจ้าฯ พระบรมราชินี' },
-  { id: 'h-10', dayOfWeek: 'วันอังคาร', day: 28, month: 7, monthName: 'กรกฎาคม', year: 2026, title: 'วันเฉลิมพระชนมพรรษาพระเจ้าอยู่หัว' },
-  { id: 'h-11', dayOfWeek: 'วันพุธ', day: 29, month: 7, monthName: 'กรกฎาคม', year: 2026, title: 'วันอาสาฬหบูชา' },
-  { id: 'h-12', dayOfWeek: 'วันพุธ', day: 12, month: 8, monthName: 'สิงหาคม', year: 2026, title: 'วันแม่แห่งชาติ' },
-  { id: 'h-13', dayOfWeek: 'วันอังคาร', day: 13, month: 10, monthName: 'ตุลาคม', year: 2026, title: 'วันนวมินทรมหาราช' },
-  { id: 'h-14', dayOfWeek: 'วันศุกร์', day: 23, month: 10, monthName: 'ตุลาคม', year: 2026, title: 'วันปิยมหาราช' },
-  { id: 'h-15', dayOfWeek: 'วันจันทร์', day: 7, month: 12, monthName: 'ธันวาคม', year: 2026, title: 'ชดเชยวันพ่อแห่งชาติ' },
-  { id: 'h-16', dayOfWeek: 'วันพฤหัสบดี', day: 10, month: 12, monthName: 'ธันวาคม', year: 2026, title: 'วันรัฐธรรมนูญ' },
-  { id: 'h-17', dayOfWeek: 'วันพฤหัสบดี', day: 31, month: 12, monthName: 'ธันวาคม', year: 2026, title: 'วันสิ้นปี' },
-]
+import { getHolidaysWithDiff } from '@/utils/holidays'
 
 const levelIcon = {
   info: <Info size={14} className="text-sky-500 shrink-0 mt-0.5" />,
@@ -132,12 +112,7 @@ export default function NotificationBell() {
     } catch {}
 
     // 1. Check Thai Holidays Alert
-    const holidaysWithDiff = THAI_HOLIDAYS_2026.map((h) => {
-      const holidayDate = new Date(h.year, h.month - 1, h.day)
-      const diffTime = holidayDate.getTime() - today.getTime()
-      const daysLeft = Math.round(diffTime / (1000 * 60 * 60 * 24))
-      return { ...h, daysLeft }
-    })
+    const holidaysWithDiff = getHolidaysWithDiff(today)
 
     const nextHoliday = holidaysWithDiff.find((h) => h.daysLeft >= 0)
     if (nextHoliday) {
@@ -321,33 +296,33 @@ export default function NotificationBell() {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="art-icon-button relative"
+        className="relative flex h-9 w-9 items-center justify-center rounded-full text-[#1d1d1f] transition-all duration-150 hover:bg-black/[0.05] active:scale-[0.95] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3]"
         aria-label={`การแจ้งเตือน${unreadCount > 0 ? ` (${unreadCount} รายการใหม่)` : ''}`}
         aria-haspopup="true"
         aria-expanded={open}
       >
-        <Bell size={20} />
+        <Bell size={19} />
         {unreadCount > 0 && (
-          <span className="absolute right-1.5 top-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white leading-none shadow-xs animate-pulse">
+          <span className="absolute -right-0.5 -top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#ff3b30] px-1 text-[10px] font-bold text-white shadow-sm ring-2 ring-white">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
       </button>
 
       {open && (
-        <div className="absolute right-0 z-50 mt-2 w-[min(calc(100vw-2rem),26rem)] overflow-hidden rounded-2xl border border-slate-200 bg-white/95 backdrop-blur-md shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+        <div className="absolute right-0 z-50 mt-2.5 w-[min(calc(100vw-2rem),26rem)] overflow-hidden rounded-[22px] border border-black/[0.08] bg-[rgba(255,255,255,0.92)] backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.14)] animate-in fade-in zoom-in-95 duration-150">
           {/* Panel Header */}
-          <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-4 bg-slate-50/50">
+          <div className="flex items-start justify-between gap-4 border-b border-black/[0.06] px-5 py-4 bg-white/40">
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-base font-bold text-slate-900">การแจ้งเตือน</span>
+                <span className="text-[16px] font-bold text-[#1d1d1f]">การแจ้งเตือน</span>
                 {unreadCount > 0 && (
-                  <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-bold text-rose-700">
+                  <span className="rounded-full bg-[#ff3b30]/10 px-2 py-0.5 text-[11px] font-bold text-[#ff3b30]">
                     {unreadCount} ใหม่
                   </span>
                 )}
               </div>
-              <p className="mt-0.5 text-xs text-slate-500">
+              <p className="mt-0.5 text-[12px] text-[#86868b]">
                 {notifications.length > 0
                   ? `ทั้งหมด ${notifications.length} รายการ`
                   : 'ไม่มีการแจ้งเตือนในขณะนี้'}
@@ -360,7 +335,7 @@ export default function NotificationBell() {
                   <button
                     type="button"
                     onClick={markAllRead}
-                    className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-sky-600 hover:bg-sky-50 transition-colors"
+                    className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-[12px] font-semibold text-[#0071e3] hover:bg-[#0071e3]/10 transition-colors"
                     title="ทำเครื่องหมายว่าอ่านแล้วทั้งหมด"
                   >
                     <CheckCheck size={14} />
@@ -369,7 +344,7 @@ export default function NotificationBell() {
                   <button
                     type="button"
                     onClick={clearAllNotifications}
-                    className="inline-flex items-center gap-1 rounded-lg p-1.5 text-xs font-semibold text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                    className="inline-flex items-center justify-center rounded-full h-7 w-7 text-[#86868b] hover:text-[#ff3b30] hover:bg-[#ff3b30]/10 transition-colors"
                     title="ล้างการแจ้งเตือนทั้งหมด"
                     aria-label="ล้างทั้งหมด"
                   >
@@ -383,12 +358,12 @@ export default function NotificationBell() {
           {/* Notification List */}
           <div className="max-h-[26rem] overflow-y-auto p-3 space-y-2.5">
             {notifications.length === 0 ? (
-              <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50/60 px-6 py-10 text-center text-slate-500">
-                <div className="mb-2.5 flex h-10 w-10 items-center justify-center rounded-full bg-white text-slate-400 shadow-sm ring-1 ring-black/[0.04]">
+              <div className="flex flex-col items-center justify-center rounded-[16px] border border-dashed border-black/[0.08] bg-[#f5f5f7]/60 px-6 py-10 text-center text-[#86868b]">
+                <div className="mb-2.5 flex h-10 w-10 items-center justify-center rounded-full bg-white text-[#86868b] shadow-sm ring-1 ring-black/[0.04]">
                   <Bell size={20} />
                 </div>
-                <span className="text-xs font-bold text-slate-700">ไม่มีการแจ้งเตือนใหม่</span>
-                <p className="mt-0.5 text-[11px] text-slate-400">
+                <span className="text-[13px] font-bold text-[#1d1d1f]">ไม่มีการแจ้งเตือนใหม่</span>
+                <p className="mt-0.5 text-[12px] text-[#86868b]">
                   ระบบจะแจ้งเตือนอัตโนมัติเมื่อใกล้ถึงวันหยุด หรือมีข้อมูลสภาพอากาศสำคัญ
                 </p>
               </div>
@@ -399,40 +374,40 @@ export default function NotificationBell() {
                 return (
                   <div
                     key={n.id}
-                    className={`relative flex gap-3 rounded-xl border p-3.5 transition-all ${
+                    className={`relative flex gap-3 rounded-[16px] border p-3.5 transition-all duration-150 ${
                       meta.itemClass
-                    } ${isRead ? 'opacity-70' : 'shadow-2xs ring-1 ring-black/[0.04]'}`}
+                    } ${isRead ? 'opacity-60' : 'shadow-sm ring-1 ring-black/[0.04]'}`}
                   >
                     {!isRead && (
                       <span
-                        className="absolute right-3 top-3 h-2 w-2 rounded-full bg-sky-500"
+                        className="absolute right-3.5 top-3.5 h-2 w-2 rounded-full bg-[#0071e3]"
                         aria-label="ยังไม่ได้อ่าน"
                       />
                     )}
 
                     <div
-                      className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${meta.iconWrapClass}`}
+                      className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] ${meta.iconWrapClass}`}
                     >
                       {levelIcon[n.level]}
                     </div>
 
                     <div className="min-w-0 flex-1 pr-6">
                       <div className="mb-1 flex flex-wrap items-center gap-1.5">
-                        <span className="inline-flex items-center gap-1 rounded-md bg-white px-2 py-0.5 text-[10px] font-bold text-slate-700 shadow-2xs ring-1 ring-black/[0.04]">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-white px-2 py-0.5 text-[10px] font-bold text-[#1d1d1f] shadow-2xs ring-1 ring-black/[0.04]">
                           {typeIcon[n.type]}
                           <span>{typeLabel[n.type]}</span>
                         </span>
                         <span
-                          className={`rounded-md px-1.5 py-0.5 text-[10px] font-bold ${meta.badgeClass}`}
+                          className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${meta.badgeClass}`}
                         >
                           {meta.label}
                         </span>
                       </div>
 
-                      <h4 className="text-xs font-bold leading-snug text-slate-900">{n.title}</h4>
-                      <p className="mt-0.5 text-xs leading-relaxed text-slate-600">{n.body}</p>
+                      <h4 className="text-[13px] font-bold leading-snug text-[#1d1d1f]">{n.title}</h4>
+                      <p className="mt-0.5 text-[12px] leading-relaxed text-[#6e6e73]">{n.body}</p>
 
-                      <span className="mt-1.5 block text-[10px] font-medium text-slate-400">
+                      <span className="mt-1.5 block text-[11px] font-medium text-[#86868b]">
                         {formatTime(n.at)} น.
                       </span>
                     </div>
@@ -440,7 +415,7 @@ export default function NotificationBell() {
                     <button
                       type="button"
                       onClick={() => dismiss(n.id)}
-                      className="absolute right-2 top-8 rounded-lg p-1 text-slate-400 hover:text-slate-700 hover:bg-black/[0.05] transition-colors"
+                      className="absolute right-2.5 top-8 rounded-full p-1 text-[#86868b] hover:text-[#1d1d1f] hover:bg-black/[0.05] transition-colors"
                       aria-label="ปิดการแจ้งเตือนนี้"
                     >
                       <X size={13} />

@@ -455,7 +455,7 @@ export default function WeatherWidget({
 
   return (
     <section
-      className="flex h-full flex-col justify-between rounded-2xl bg-white p-4 sm:p-5 ring-1 ring-black/[0.06] shadow-sm transition-all duration-200"
+      className="flex h-full flex-col justify-between rounded-[24px] bg-white p-5 border border-black/[0.06] shadow-[0_2px_12px_rgba(0,0,0,0.04)] transition-all duration-200"
       aria-labelledby="weather-title"
     >
       <div>
@@ -464,7 +464,7 @@ export default function WeatherWidget({
           <div className="flex items-center gap-3">
             {/* Icon badge */}
             <div
-              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] ${weatherMeta.bgClass} ${weatherMeta.colorClass}`}
+              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] ${weatherMeta.bgClass} ${weatherMeta.colorClass}`}
             >
               <WeatherIcon size={20} aria-hidden="true" />
             </div>
@@ -472,7 +472,7 @@ export default function WeatherWidget({
             {/* City Selector & Title */}
             <div>
               <div className="flex items-center gap-1.5">
-                <h2 id="weather-title" className="text-[15px] font-bold tracking-tight text-slate-900">
+                <h2 id="weather-title" className="text-[16px] font-bold tracking-tight text-[#1d1d1f]">
                   สภาพอากาศ &amp; PM 2.5
                 </h2>
               </div>
@@ -482,42 +482,42 @@ export default function WeatherWidget({
                 <button
                   type="button"
                   onClick={() => setIsCityDropdownOpen(!isCityDropdownOpen)}
-                  className="group flex items-center gap-1 text-[11px] font-semibold text-slate-600 hover:text-slate-900 transition-colors"
+                  className="group flex items-center gap-1 text-[12px] font-semibold text-[#6e6e73] hover:text-[#1d1d1f] transition-colors"
                   aria-expanded={isCityDropdownOpen}
                   aria-haspopup="listbox"
                 >
                   {selectedCity.isGps ? (
-                    <Navigation size={11} className="text-sky-600 fill-sky-500 shrink-0" />
+                    <Navigation size={11} className="text-[#0071e3] fill-[#0071e3] shrink-0" />
                   ) : (
-                    <MapPin size={11} className="text-slate-400 group-hover:text-slate-600 shrink-0" />
+                    <MapPin size={11} className="text-[#86868b] group-hover:text-[#1d1d1f] shrink-0" />
                   )}
                   <span className="truncate max-w-[140px] sm:max-w-[200px]">
                     {selectedCity.name}
                   </span>
                   <ChevronDown
                     size={12}
-                    className={`text-slate-400 transition-transform duration-200 ${
-                      isCityDropdownOpen ? 'rotate-180 text-slate-700' : ''
+                    className={`text-[#86868b] transition-transform duration-200 ${
+                      isCityDropdownOpen ? 'rotate-180 text-[#1d1d1f]' : ''
                     }`}
                   />
                 </button>
 
                 {/* Dropdown Menu */}
                 {isCityDropdownOpen && (
-                  <div className="absolute left-0 top-full z-30 mt-1.5 w-60 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl animate-in fade-in zoom-in-95 duration-150">
-                    <div className="border-b border-slate-100 pb-1 mb-1">
+                  <div className="absolute left-0 top-full z-30 mt-1.5 w-60 rounded-[18px] border border-black/[0.08] bg-[rgba(255,255,255,0.95)] backdrop-blur-2xl p-1.5 shadow-[0_16px_36px_rgba(0,0,0,0.12)] animate-in fade-in zoom-in-95 duration-150">
+                    <div className="border-b border-black/[0.06] pb-1 mb-1">
                       <button
                         type="button"
                         onClick={handleDetectLocation}
                         disabled={isLocating}
-                        className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs font-semibold text-sky-600 hover:bg-sky-50 transition-colors disabled:opacity-50"
+                        className="flex w-full items-center gap-2 rounded-[10px] px-2.5 py-1.5 text-left text-xs font-semibold text-[#0071e3] hover:bg-[#0071e3]/10 transition-colors disabled:opacity-50"
                       >
                         <LocateFixed size={13} className={isLocating ? 'animate-spin' : ''} />
                         <span>{isLocating ? 'กำลังค้นหาพิกัด...' : 'ใช้ตำแหน่งเครื่องปัจจุบัน (GPS)'}</span>
                       </button>
                     </div>
 
-                    <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-[#86868b]">
                       จังหวัดยอดนิยม
                     </div>
 
@@ -527,15 +527,15 @@ export default function WeatherWidget({
                           key={c.id}
                           type="button"
                           onClick={() => handleSelectCity(c)}
-                          className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-left text-xs font-semibold transition-colors ${
+                          className={`flex w-full items-center justify-between rounded-[10px] px-2.5 py-1.5 text-left text-xs font-semibold transition-colors ${
                             selectedCity.id === c.id
-                              ? 'bg-sky-50 text-sky-700'
-                              : 'text-slate-700 hover:bg-slate-50'
+                              ? 'bg-[#0071e3]/10 text-[#0071e3]'
+                              : 'text-[#1d1d1f] hover:bg-black/[0.05]'
                           }`}
                         >
                           <span>{c.name}</span>
                           {selectedCity.id === c.id && (
-                            <span className="h-1.5 w-1.5 rounded-full bg-sky-500" />
+                            <span className="h-1.5 w-1.5 rounded-full bg-[#0071e3]" />
                           )}
                         </button>
                       ))}
@@ -552,13 +552,13 @@ export default function WeatherWidget({
               type="button"
               onClick={() => fetchWeatherData(selectedCity, true)}
               disabled={refreshing}
-              className="art-icon-button text-slate-500 hover:text-slate-800"
+              className="flex h-8 w-8 items-center justify-center rounded-full text-[#6e6e73] hover:bg-black/[0.05] hover:text-[#1d1d1f] active:scale-[0.95] transition-all"
               aria-label="รีเฟรชข้อมูลสภาพอากาศ"
               title="รีเฟรชข้อมูล"
             >
               <RefreshCw
                 size={15}
-                className={`transition-transform duration-500 ${refreshing ? 'animate-spin text-sky-600' : ''}`}
+                className={`transition-transform duration-500 ${refreshing ? 'animate-spin text-[#0071e3]' : ''}`}
                 aria-hidden="true"
               />
             </button>
@@ -575,15 +575,15 @@ export default function WeatherWidget({
 
         {/* ── Error Banner ─────────────────────────────────────────────────── */}
         {error && (
-          <div className="mt-3 flex items-center justify-between gap-2 rounded-xl bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700 ring-1 ring-rose-200">
+          <div className="mt-3 flex items-center justify-between gap-2 rounded-[14px] bg-[#ff3b30]/10 px-3.5 py-2.5 text-[12px] font-medium text-[#ff3b30]">
             <div className="flex items-center gap-2 min-w-0">
-              <AlertCircle size={14} className="shrink-0 text-rose-500" />
+              <AlertCircle size={14} className="shrink-0 text-[#ff3b30]" />
               <span className="truncate">{error}</span>
             </div>
             <button
               type="button"
               onClick={() => fetchWeatherData(selectedCity, true)}
-              className="shrink-0 font-bold underline hover:text-rose-900"
+              className="shrink-0 font-bold underline hover:text-[#ff3b30]"
             >
               ลองใหม่
             </button>
@@ -594,40 +594,40 @@ export default function WeatherWidget({
         {weather && airQuality && (
           <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
             {/* Card 1: Weather Info */}
-            <div className="flex flex-col justify-between rounded-xl bg-slate-50/80 p-3.5 ring-1 ring-slate-200/60">
+            <div className="flex flex-col justify-between rounded-[18px] bg-[#f5f5f7] p-4 ring-1 ring-black/[0.04]">
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <div className="flex items-baseline gap-1">
-                    <span className="text-3xl font-extrabold tracking-tight text-slate-900">
+                    <span className="text-3xl font-extrabold tracking-tight text-[#1d1d1f]">
                       {weather.currentTemp}°
                     </span>
-                    <span className="text-xs font-bold text-slate-500">C</span>
+                    <span className="text-xs font-bold text-[#86868b]">C</span>
                   </div>
-                  <div className="mt-0.5 text-xs font-semibold text-slate-700">
+                  <div className="mt-0.5 text-[13px] font-semibold text-[#1d1d1f]">
                     {weatherMeta.label}
                   </div>
                 </div>
 
                 <div className="text-right">
-                  <span className="inline-block rounded-md bg-white px-2 py-0.5 text-[11px] font-semibold text-slate-600 shadow-2xs ring-1 ring-black/[0.04]">
+                  <span className="inline-block rounded-full bg-white px-2.5 py-0.5 text-[11px] font-semibold text-[#1d1d1f] shadow-2xs ring-1 ring-black/[0.04]">
                     {weather.tempMax}° / {weather.tempMin}°
                   </span>
-                  <div className="mt-1 text-[11px] font-medium text-slate-400">
+                  <div className="mt-1 text-[11px] font-medium text-[#86868b]">
                     รู้สึกเหมือน {weather.apparentTemp}°C
                   </div>
                 </div>
               </div>
 
               {/* Sub metrics: Rain chance & Humidity */}
-              <div className="mt-3 flex items-center justify-between border-t border-slate-200/60 pt-2 text-[11px] font-medium text-slate-600">
+              <div className="mt-3 flex items-center justify-between border-t border-black/[0.05] pt-2 text-[11px] font-medium text-[#6e6e73]">
                 <div className="flex items-center gap-1">
-                  <Droplets size={12} className="text-sky-500" />
+                  <Droplets size={12} className="text-[#0071e3]" />
                   <span>ความชื้น {weather.humidity}%</span>
                 </div>
                 {weather.rainProb > 0 ? (
-                  <span className="text-sky-600 font-semibold">โอกาสฝน {weather.rainProb}%</span>
+                  <span className="text-[#0071e3] font-semibold">โอกาสฝน {weather.rainProb}%</span>
                 ) : (
-                  <div className="flex items-center gap-1 text-slate-400">
+                  <div className="flex items-center gap-1 text-[#86868b]">
                     <Wind size={12} />
                     <span>ลม {weather.windSpeed} km/h</span>
                   </div>
@@ -636,16 +636,16 @@ export default function WeatherWidget({
             </div>
 
             {/* Card 2: PM 2.5 & Air Quality */}
-            <div className="flex flex-col justify-between rounded-xl bg-slate-50/80 p-3.5 ring-1 ring-slate-200/60">
+            <div className="flex flex-col justify-between rounded-[18px] bg-[#f5f5f7] p-4 ring-1 ring-black/[0.04]">
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <div className="flex items-baseline gap-1.5">
-                    <span className="text-3xl font-extrabold tracking-tight text-slate-900">
+                    <span className="text-3xl font-extrabold tracking-tight text-[#1d1d1f]">
                       {airQuality.pm25}
                     </span>
-                    <span className="text-[11px] font-bold text-slate-500">µg/m³</span>
+                    <span className="text-[11px] font-bold text-[#86868b]">µg/m³</span>
                   </div>
-                  <div className="mt-0.5 text-[11px] font-semibold text-slate-500">
+                  <div className="mt-0.5 text-[11px] font-semibold text-[#86868b]">
                     ดัชนีฝุ่น PM 2.5 (US AQI: {airQuality.usAqi})
                   </div>
                 </div>
@@ -660,8 +660,8 @@ export default function WeatherWidget({
               </div>
 
               {/* Health recommendation */}
-              <div className="mt-3 flex items-center gap-1.5 border-t border-slate-200/60 pt-2 text-[11px] font-medium text-slate-600">
-                <ShieldIcon size={13} className="shrink-0 text-slate-400" />
+              <div className="mt-3 flex items-center gap-1.5 border-t border-black/[0.05] pt-2 text-[11px] font-medium text-[#6e6e73]">
+                <ShieldIcon size={13} className="shrink-0 text-[#86868b]" />
                 <span className="truncate" title={pm25Meta.healthTip}>
                   {pm25Meta.healthTip}
                 </span>
@@ -672,13 +672,13 @@ export default function WeatherWidget({
 
         {/* ── Hourly Forecast Strip (เวลาล่วงหน้า) ──────────────────────────── */}
         {weather && weather.hourlyForecast && (
-          <div className="mt-3.5 rounded-xl bg-slate-50/60 p-3 ring-1 ring-slate-200/50">
+          <div className="mt-3.5 rounded-[18px] bg-[#f5f5f7] p-3.5 ring-1 ring-black/[0.04]">
             <div className="mb-2.5 flex items-center justify-between">
-              <span className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+              <span className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-[#86868b]">
                 <Clock size={12} />
                 <span>พยากรณ์รายชั่วโมง (เวลาล่วงหน้า)</span>
               </span>
-              <span className="text-[10px] font-medium text-slate-400">อุณหภูมิ / สภาพอากาศ</span>
+              <span className="text-[10px] font-medium text-[#86868b]">อุณหภูมิ / สภาพอากาศ</span>
             </div>
 
             <div className={`grid gap-2 ${width >= 3 ? 'grid-cols-6' : width >= 2 ? 'grid-cols-5' : 'grid-cols-5'}`}>
@@ -688,29 +688,29 @@ export default function WeatherWidget({
                 return (
                   <div
                     key={item.rawTime}
-                    className={`flex flex-col items-center justify-center rounded-xl p-2 text-center transition-all duration-150 ${
+                    className={`flex flex-col items-center justify-center rounded-[14px] p-2 text-center transition-all duration-150 ${
                       item.isCurrent
-                        ? 'bg-sky-50/80 ring-1 ring-sky-200/80 shadow-2xs'
+                        ? 'bg-[#0071e3]/10 ring-1 ring-[#0071e3]/30 shadow-2xs'
                         : 'bg-white shadow-2xs ring-1 ring-black/[0.04] hover:-translate-y-0.5'
                     }`}
                   >
                     <span
                       className={`text-xs font-bold ${
-                        item.isCurrent ? 'text-sky-700' : 'text-slate-700'
+                        item.isCurrent ? 'text-[#0071e3]' : 'text-[#1d1d1f]'
                       }`}
                     >
                       {item.time}
                     </span>
                     <HourIcon size={18} className={`my-1.5 ${hourMeta.colorClass}`} />
-                    <span className="text-xs font-extrabold text-slate-800">
+                    <span className="text-xs font-extrabold text-[#1d1d1f]">
                       {item.temp}°
                     </span>
                     {item.rainProb > 0 ? (
-                      <span className="mt-0.5 text-[9px] font-semibold text-sky-600">
+                      <span className="mt-0.5 text-[9px] font-semibold text-[#0071e3]">
                         💧{item.rainProb}%
                       </span>
                     ) : (
-                      <span className="mt-0.5 text-[9px] font-medium text-slate-300">
+                      <span className="mt-0.5 text-[9px] font-medium text-[#86868b]">
                         -
                       </span>
                     )}
@@ -723,7 +723,7 @@ export default function WeatherWidget({
       </div>
 
       {/* ── Footer ─────────────────────────────────────────────────────────── */}
-      <footer className="mt-3.5 flex items-center justify-between border-t border-slate-100 pt-2 text-[11px] text-slate-400">
+      <footer className="mt-3.5 flex items-center justify-between border-t border-black/[0.06] pt-2.5 text-[11px] text-[#86868b]">
         <span>ข้อมูลสภาพอากาศ &amp; ฝุ่นละอองจาก Open-Meteo</span>
         <span>
           อัปเดต:{' '}

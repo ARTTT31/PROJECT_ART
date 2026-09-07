@@ -894,8 +894,6 @@ async def get_session(request: Request, db: AsyncSession = Depends(get_db)):
                 result="success",
                 message="พบ session ปัจจุบัน",
                 data={
-                    "access_token": access_token,
-                    "refresh_token": request.cookies.get("refresh_token", ""),
                     "user": user_data,
                 },
             )
@@ -932,8 +930,6 @@ async def get_session(request: Request, db: AsyncSession = Depends(get_db)):
         result="success",
         message="พบ session ปัจจุบัน",
         data={
-            "access_token": access_token,
-            "refresh_token": request.cookies.get("refresh_token", ""),
             "user": user_data,
         },
     )

@@ -28,7 +28,6 @@ backend/scripts/
 | Script | Usage | Output / Side effect |
 |---|---|---|
 | `parse_oil.py` | `py scripts/data/parse_oil.py` | ดึงราคาน้ำมันล่าสุดจาก eppo.go.th → print JSON |
-| `sync_calendar_server.py` | `py scripts/data/sync_calendar_server.py` | Pull calendar events จาก Google Calendar → sync เข้า local DB |
 
 ## 🧪 `tests/` — Manual Test scripts
 
@@ -39,7 +38,6 @@ backend/scripts/
 | `test_api.ps1` | API health + auth flow via PowerShell | Backend รันที่ `localhost:8000` |
 | `test_login.py` | Login endpoint + session creation | User อยู่แล้วในฐานข้อมูล |
 | `test_user_flow.py` | Register → Login → Profile refresh cycle | Fresh dev database |
-| `test_calendar.py` | Calendar endpoints | Google OAuth env vars ตั้งค่าแล้ว |
 | `test_oil_prices.py` | `/api/v1/oil-prices/*` endpoints | Network to EPPO / cached data |
 | `test_db.js` | DB connectivity + schema existence (Node.js) | Postgres / SQLite รันแล้ว |
 

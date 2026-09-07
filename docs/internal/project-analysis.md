@@ -55,7 +55,6 @@ API router groups:
 - `/api/v1/auth` - Authentication, refresh tokens, Google/Microsoft OAuth
 - `/api/v1/users` - User management
 - `/api/v1/profile` - User profile, quick links, avatar
-- `/api/v1/calendar` - Google & Microsoft/SharePoint calendar integration
 - `/api/v1/audit` - Audit log retrieval
 - `/api/v1/oil-prices` - EPPO oil price scraping and cached responses
 - `/api/v1/system` - Admin system health and metrics

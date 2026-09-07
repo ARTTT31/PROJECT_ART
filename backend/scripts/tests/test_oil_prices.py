@@ -126,7 +126,7 @@ def test_eppo_connection() -> None:
     mock_response.status_code = 200
     mock_response.text = MOCK_EPPO_HTML
 
-    with patch("scripts.test_oil_prices.httpx.get", return_value=mock_response):
+    with patch.object(httpx, "get", return_value=mock_response):
         fetch_eppo()
 
     prices = check_eppo_response(mock_response)

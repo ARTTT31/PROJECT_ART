@@ -45,3 +45,8 @@ class AuditService:
             .limit(limit)
         )
         return result.scalars().all()
+
+    async def count_logs(self) -> int:
+        from sqlalchemy import func
+        result = await self.db.execute(select(func.count(AuditLog.id)))
+        return result.scalar() or 0

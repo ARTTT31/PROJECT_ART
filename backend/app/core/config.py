@@ -22,8 +22,13 @@ class Settings(BaseSettings):
     @field_validator("DATABASE_URL", mode="before")
     @classmethod
     def check_db_url(cls, v: str) -> str:
-        if v and v.startswith("sqlite://"):
-            return v.replace("sqlite://", "sqlite+aiosqlite://", 1)
+        if v:
+            if v.startswith("sqlite://"):
+                return v.replace("sqlite://", "sqlite+aiosqlite://", 1)
+            elif v.startswith("postgres://"):
+                return v.replace("postgres://", "postgresql+asyncpg://", 1)
+            elif v.startswith("postgresql://") and not v.startswith("postgresql+asyncpg://"):
+                return v.replace("postgresql://", "postgresql+asyncpg://", 1)
         return v
 
     # Security
@@ -50,7 +55,7 @@ class Settings(BaseSettings):
     SLOWAPI_STORAGE_URI: str = "memory://"
     # Sensible defaults — auth endpoints get stricter limits than general API.
     RATE_LIMIT_AUTH_PER_MINUTE: int = 10  # login / token verify / refresh attempts per IP
-    RATE_LIMIT_GENERAL_PER_MINUTE: int = 120  # general profile/oil/calendar endpoints per IP
+    RATE_LIMIT_GENERAL_PER_MINUTE: int = 120  # general profile/oil endpoints per IP
 
     # Error Monitoring — Sentry (optional, disabled if DSN is empty)
     # Get a DSN from https://sentry.io/ or your self-hosted Sentry instance.
@@ -82,9 +87,8 @@ class Settings(BaseSettings):
     CORS_ORIGINS: str = (
         "http://localhost:3000,http://localhost:3001,http://localhost:80,"
         "http://localhost:8000,https://project-art-sigma.vercel.app,"
-        "https://art-workspace-api.onrender.com,http://localhost,"
-        "capacitor://localhost,"
-        "null"  # Android WebViews send Origin: null for capacitor:// / file:// requests
+        "https://art-workspace-api.onrender.com,https://project-art-c7eh.onrender.com,"
+        "http://localhost,capacitor://localhost,null"
     )
 
     def get_cors_origins(self) -> List[str]:
@@ -128,17 +132,11 @@ class Settings(BaseSettings):
             or "http://localhost:8000/api/v1/auth/google/callback"
         )
 
-    # ── Microsoft Entra ID & SharePoint ──────────────────────────────────────
+    # ── Microsoft Entra ID ───────────────────────────────────────────────────
     MICROSOFT_TENANT_ID: str = ""
     MICROSOFT_CLIENT_ID: str = ""
     MICROSOFT_CLIENT_SECRET: str = ""
     MICROSOFT_REDIRECT_URI: str = ""
-    SHAREPOINT_LIST_URL: str = (
-        "https://absscoth-my.sharepoint.com/personal/pornchai_abss_co_th/Lists/"
-        "Technical%20Support%20and%20IMACD%20Booking%20Schedule/AllItems.aspx"
-    )
-    SHAREPOINT_SITE_ID: str = ""
-    SHAREPOINT_LIST_ID: str = ""
 
     def require_microsoft_tenant_id(self) -> str:
         """Return the configured Microsoft Tenant ID or raise a 500 error."""
@@ -167,7 +165,7 @@ class Settings(BaseSettings):
         ).strip()
         if not val:
             raise RuntimeError(
-                "Microsoft Client Secret is not configured. Set MICROSOFT_MICROSOFT_CLIENT_SECRET "
+                "Microsoft Client Secret is not configured. Set MICROSOFT_CLIENT_SECRET "
                 "(or BACKEND_MICROSOFT_CLIENT_SECRET) in the environment."
             )
         return val

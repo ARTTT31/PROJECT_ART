@@ -30,7 +30,7 @@ export default function WidgetSizeToggle({
   return (
     <div
       className={clsx(
-        'inline-flex items-center gap-0.5 rounded-full bg-white p-1 ring-1 ring-black/[0.06]',
+        'inline-flex items-center gap-0.5 rounded-full bg-[#e5e5ea] p-0.5',
         className,
       )}
       role="group"
@@ -49,11 +49,11 @@ export default function WidgetSizeToggle({
             aria-label={`ปรับเป็น${description}`}
             title={description}
             className={clsx(
-              'min-h-7 min-w-7 rounded-full px-2.5 text-xs font-bold transition-all duration-150',
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3] focus-visible:ring-offset-1',
+              'h-6 min-w-[26px] rounded-full px-2 text-[11px] font-bold transition-all duration-150 active:scale-[0.95]',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3]',
               isActive
-                ? 'bg-[#1d1d1f] text-white shadow-sm'
-                : 'bg-transparent text-[#475569] hover:bg-[#f5f5f7] hover:text-[#1d1d1f]',
+                ? 'bg-white text-[#1d1d1f] shadow-[0_1px_3px_rgba(0,0,0,0.12)]'
+                : 'bg-transparent text-[#6e6e73] hover:text-[#1d1d1f]',
             )}
           >
             {label}

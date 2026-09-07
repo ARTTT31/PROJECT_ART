@@ -48,19 +48,18 @@ async def list_audit_logs_paginated(
     """
     audit_service = AuditService(db)
     skip = (page - 1) * size
-    logs = await audit_service.get_logs(
-        skip=skip, limit=size + 1
-    )  # Get one extra to check hasNext
-
+    logs = await audit_service.get_logs(skip=skip, limit=size + 1)
     has_next = len(logs) > size
     if has_next:
         logs = logs[:size]
+
+    total = await audit_service.count_logs()
 
     return PaginatedAuditLogsResponse(
         items=logs,
         page=page,
         size=size,
-        total=0,  # Set to 0 to avoid PostgreSQL full-table COUNT(*) query bottlenecks
+        total=total,
         hasNext=has_next,
         hasPrev=page > 1,
     )

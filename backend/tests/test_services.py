@@ -9,7 +9,7 @@ from sqlalchemy import select
 from app.core.database import Base
 from app.services.user_service import UserService
 from app.services.auth_service import AuthService
-from app.schemas.user import UserCreate, UserUpdate, UserPasswordChange
+from app.schemas.user import UserCreate, UserUpdate
 
 # ── Fixtures ──────────────────────────────────────────────
 

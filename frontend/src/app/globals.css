@@ -280,6 +280,82 @@
   background: var(--apple-bg);
 }
 
+/* ── Apple HIG Card Container ─────────────────────── */
+.apple-card {
+  background: #ffffff;
+  border-radius: 24px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.apple-card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.03);
+}
+
+/* ── Apple HIG Segmented Control ──────────────────── */
+.apple-segmented-control {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px;
+  border-radius: 9999px;
+  background-color: #e5e5ea;
+  border: none;
+}
+
+.apple-segmented-item {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  padding: 4px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #6e6e73;
+  transition: all 180ms cubic-bezier(0.4, 0, 0.2, 1);
+  border: none;
+  cursor: pointer;
+  background: transparent;
+}
+
+.apple-segmented-item.active {
+  background-color: #ffffff;
+  color: #1d1d1f;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+/* ── Apple HIG Inputs ─────────────────────────────── */
+.apple-input {
+  width: 100%;
+  border-radius: 12px;
+  background-color: #f2f2f7;
+  border: 1px solid transparent;
+  padding: 10px 14px;
+  font-size: 15px;
+  color: #1d1d1f;
+  transition: all 150ms ease-in-out;
+}
+
+.apple-input:focus {
+  background-color: #ffffff;
+  border-color: #0071e3;
+  box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.20);
+  outline: none;
+}
+
+.apple-input::placeholder {
+  color: #86868b;
+}
+
+/* ── Apple HIG Glass Panel ────────────────────────── */
+.apple-glass-panel {
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
 /* Theme transition (applied via class, not globally) */
 .theme-transitioning html,
 .theme-transitioning body {

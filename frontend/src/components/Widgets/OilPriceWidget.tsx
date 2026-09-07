@@ -186,29 +186,27 @@ export default function OilPriceWidget({
 
   return (
     <section
-      className="flex h-full flex-col rounded-2xl bg-white ring-1 ring-black/[0.06]"
+      className="flex h-full flex-col justify-between rounded-[24px] bg-white p-5 border border-black/[0.06] shadow-[0_2px_12px_rgba(0,0,0,0.04)] transition-all duration-200"
       aria-labelledby="oil-price-title"
     >
-      <div className="flex flex-1 flex-col gap-3 p-4 sm:p-5">
-
+      <div className="flex flex-1 flex-col gap-4">
         {/* ── Header ────────────────────────────────────────────────────── */}
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
-            {/* Icon badge */}
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] bg-[#f5f5f7]">
-              <Fuel size={18} className="text-[#1d1d1f]" aria-hidden="true" />
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[#ff9500]/10 text-[#ff9500]">
+              <Fuel size={20} aria-hidden="true" />
             </div>
 
             <div>
               <h3
                 id="oil-price-title"
-                className="text-[15px] font-bold tracking-tight text-[#1d1d1f]"
+                className="text-[16px] font-bold tracking-tight text-[#1d1d1f]"
               >
                 ราคาน้ำมัน
               </h3>
 
               {/* Meta line */}
-              <p className="mt-0.5 text-[11px] text-[#475569]">
+              <p className="mt-0.5 text-[12px] text-[#86868b]">
                 {(loading || refreshing)
                   ? 'กำลังอัปเดต...'
                   : cacheNote
@@ -220,7 +218,7 @@ export default function OilPriceWidget({
 
               {/* Stale warning */}
               {data?.is_stale && (
-                <p className="mt-0.5 flex items-center gap-1 text-[11px] font-medium text-amber-600">
+                <p className="mt-0.5 flex items-center gap-1 text-[11px] font-medium text-[#ff9500]">
                   <AlertCircle size={10} aria-hidden="true" />
                   ข้อมูลอาจไม่เป็นปัจจุบัน
                 </p>
@@ -235,8 +233,8 @@ export default function OilPriceWidget({
 
         {/* ── Error banner ──────────────────────────────────────────────── */}
         {error && (
-          <div className="flex items-center gap-2 rounded-xl bg-red-50 px-3 py-2 text-xs font-medium text-red-700 ring-1 ring-red-200">
-            <AlertCircle size={13} className="shrink-0" aria-hidden="true" />
+          <div className="flex items-center gap-2 rounded-[14px] bg-[#ff3b30]/10 px-3.5 py-2.5 text-[12px] font-medium text-[#ff3b30]">
+            <AlertCircle size={14} className="shrink-0" aria-hidden="true" />
             {error}
           </div>
         )}
@@ -247,7 +245,7 @@ export default function OilPriceWidget({
             {prices.map((item, idx) => (
               <div
                 key={item.key || idx}
-                className="flex cursor-default flex-col items-center justify-center gap-2 rounded-2xl bg-[#f5f5f7] px-3 py-4 transition-all duration-200 hover:bg-white hover:ring-1 hover:ring-black/[0.06]"
+                className="flex cursor-default flex-col items-center justify-center gap-1.5 rounded-[18px] bg-[#f5f5f7] px-3 py-3.5 transition-all duration-150 hover:bg-white hover:shadow-md hover:ring-1 hover:ring-black/[0.06]"
               >
                 {/* Dot + name */}
                 <div className="flex items-center gap-1.5">

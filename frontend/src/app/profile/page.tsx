@@ -75,9 +75,9 @@ function describeQuickLink(url: string) {
 }
 
 const QUICK_LINK_COLOR_PRESETS = [
-  '#0ea5e9', '#6366f1', '#8b5cf6', '#ec4899', '#f43f5e',
-  '#f97316', '#eab308', '#22c55e', '#14b8a6', '#06b6d4',
-  '#64748b',
+  '#0071e3', '#5856d6', '#af52de', '#ff2d55', '#ff3b30',
+  '#ff9500', '#ffcc00', '#34c759', '#00c7be', '#30b0c7',
+  '#8e8e93',
 ]
 
 // ─────────────────────────────────────────────────────────────
@@ -100,17 +100,17 @@ function SectionCard({
   icon, iconBg, iconColor, iconRing, title, subtitle, badge, action, children,
 }: SectionCardProps) {
   return (
-    <section className="overflow-hidden rounded-3xl bg-white ring-1 ring-black/[0.06] shadow-[0_8px_32px_rgba(15,23,42,0.05)]">
-      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 px-5 sm:px-6 py-5">
+    <section className="overflow-hidden rounded-3xl bg-white border border-black/[0.06] shadow-[0_2px_12px_rgba(0,0,0,0.04)]">
+      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-black/[0.06] px-5 sm:px-6 py-5">
         <div className="flex items-start gap-3 min-w-0">
-          <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${iconBg} ${iconColor} ring-1 ${iconRing}`}>
+          <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-[12px] ${iconBg} ${iconColor} ring-1 ${iconRing}`}>
             {icon}
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <h2 className="text-[17px] font-bold tracking-tight text-[#1d1d1f] leading-snug">{title}</h2>
               {badge && (
-                <span className="rounded-full bg-slate-50 px-2.5 py-0.5 text-[11px] font-bold text-slate-600 ring-1 ring-slate-200">
+                <span className="rounded-full bg-[#f2f2f7] px-2.5 py-0.5 text-[11px] font-bold text-[#6e6e73]">
                   {badge}
                 </span>
               )}
@@ -150,7 +150,7 @@ function InsetField({
         {label}
       </label>
       <div className="relative">
-        <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
+        <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[#86868b]">
           {icon}
         </span>
         <input
@@ -161,7 +161,7 @@ function InsetField({
           required={required}
           autoComplete={autoComplete}
           className={[
-            'w-full rounded-2xl bg-[#f8fafc] py-3 text-sm font-medium text-[#1d1d1f] ring-1 ring-black/[0.06]',
+            'w-full rounded-[14px] bg-[#f2f2f7] py-3 text-[14px] font-medium text-[#1d1d1f] placeholder:text-[#86868b]',
             'transition-all duration-150 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0071e3]',
             trailing ? '!pr-12' : '!pr-4',
           ].join(' ')}

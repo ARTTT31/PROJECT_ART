@@ -18,6 +18,10 @@ class Base(DeclarativeBase):
 db_url = settings.DATABASE_URL
 if db_url.startswith("sqlite://"):
     db_url = db_url.replace("sqlite://", "sqlite+aiosqlite://", 1)
+elif db_url.startswith("postgres://"):
+    db_url = db_url.replace("postgres://", "postgresql+asyncpg://", 1)
+elif db_url.startswith("postgresql://") and not db_url.startswith("postgresql+asyncpg://"):
+    db_url = db_url.replace("postgresql://", "postgresql+asyncpg://", 1)
 
 engine_kwargs = {
     "pool_pre_ping": True,
@@ -26,7 +30,9 @@ engine_kwargs = {
 if "sqlite" in db_url:
     engine_kwargs["connect_args"] = {"check_same_thread": False}
 else:
-    engine_kwargs["connect_args"] = {"ssl": True}
+    is_local = "localhost" in db_url or "127.0.0.1" in db_url
+    if not is_local and "sslmode=disable" not in db_url:
+        engine_kwargs["connect_args"] = {"ssl": True}
     engine_kwargs["pool_size"] = 5
     engine_kwargs["max_overflow"] = 5
 

@@ -52,7 +52,7 @@ export default function QRCodeWidget({
   )
 
   // ── Ephemeral state ─────────────────────────────────────────────────────────
-  const [generatedText, setGeneratedText] = useState<string | null>(null)
+  const [generatedText, setGeneratedText] = useState<string | null>(() => text.trim() || null)
   const [error, setError] = useState<string | null>(null)
   const [copyingImage, setCopyingImage] = useState(false)
   const [printing, setPrinting] = useState(false)
@@ -61,12 +61,6 @@ export default function QRCodeWidget({
   const barcodeCanvasRef = useRef<HTMLCanvasElement | null>(null)
   const qrWrapRef = useRef<HTMLDivElement | null>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  // ── Hydrate generated text on mount ────────────────────────────────────────
-  useEffect(() => {
-    const trimmed = text.trim()
-    setGeneratedText(trimmed || null)
-  }, [])
 
   // ── Debounced code generation ────────────────────────────────────────────────
   useEffect(() => {
@@ -102,7 +96,6 @@ export default function QRCodeWidget({
     if (generatedText && format === 'code128' && barcodeCanvasRef.current) {
       try {
         // Validate ASCII for Code 128
-        // eslint-disable-next-line no-control-regex
         const isNonAscii = /[^\x00-\x7F]/.test(generatedText)
         if (isNonAscii) {
           setError('บาร์โค้ด Code 128 รองรับเฉพาะภาษาอังกฤษและตัวเลข (สำหรับภาษาไทยแนะนำให้เลือกใช้ QR Code)')
@@ -300,7 +293,7 @@ export default function QRCodeWidget({
   // ── Render ───────────────────────────────────────────────────────────────────
   return (
     <section
-      className="flex h-full flex-col justify-between rounded-2xl bg-white p-4 sm:p-5 ring-1 ring-black/[0.06] shadow-sm transition-all duration-200"
+      className="flex h-full flex-col justify-between rounded-[24px] bg-white p-5 border border-black/[0.06] shadow-[0_2px_12px_rgba(0,0,0,0.04)] transition-all duration-200"
       aria-labelledby="qr-title"
     >
       <div>
@@ -308,18 +301,18 @@ export default function QRCodeWidget({
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
             {/* Icon badge */}
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] bg-[#1d1d1f]">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[#0071e3]/10 text-[#0071e3]">
               {format === 'qrcode' ? (
-                <QrCode size={18} className="text-white" aria-hidden="true" />
+                <QrCode size={20} aria-hidden="true" />
               ) : (
-                <Barcode size={18} className="text-white" aria-hidden="true" />
+                <Barcode size={20} aria-hidden="true" />
               )}
             </div>
             <div>
-              <h2 id="qr-title" className="text-[15px] font-bold tracking-tight text-[#1d1d1f]">
+              <h2 id="qr-title" className="text-[16px] font-bold tracking-tight text-[#1d1d1f]">
                 {format === 'qrcode' ? 'สร้าง QR Code' : 'สร้างบาร์โค้ด Code 128'}
               </h2>
-              <p className="mt-0.5 text-[11px] text-[#475569]">
+              <p className="mt-0.5 text-[12px] text-[#86868b]">
                 {format === 'qrcode' ? 'แปลงข้อความ หรือ URL เป็น QR Code' : 'แปลงรหัสสินค้า/ตัวเลข เป็นบาร์โค้ดมาตรฐาน'}
               </p>
             </div>
@@ -332,7 +325,7 @@ export default function QRCodeWidget({
 
         {/* ── Format toggle pills ─────────────────────────────────────── */}
         <div
-          className="mt-4 flex gap-1.5 rounded-full bg-[#f5f5f7] p-1 ring-1 ring-black/[0.04]"
+          className="mt-4 flex gap-1 rounded-full bg-[#e5e5ea] p-0.5"
           role="group"
           aria-label="เลือกรูปแบบโค้ด"
         >
@@ -347,10 +340,10 @@ export default function QRCodeWidget({
                   setError(null)
                 }}
                 aria-pressed={isActive}
-                className={`flex flex-1 items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3] ${
+                className={`flex flex-1 items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3] active:scale-[0.98] ${
                   isActive
-                    ? 'bg-white text-[#1d1d1f] shadow-sm ring-1 ring-black/[0.06]'
-                    : 'text-[#475569] hover:text-[#1d1d1f]'
+                    ? 'bg-white text-[#1d1d1f] shadow-[0_1px_3px_rgba(0,0,0,0.12)]'
+                    : 'text-[#6e6e73] hover:text-[#1d1d1f]'
                 }`}
               >
                 <Icon size={14} aria-hidden="true" />
@@ -374,15 +367,15 @@ export default function QRCodeWidget({
                 ? 'พิมพ์ข้อความ, URL, เบอร์โทร หรือ PromptPay...'
                 : 'พิมพ์รหัส เช่น ART-10023, 12345678 (ภาษาอังกฤษ/ตัวเลข)...'
             }
-            className="w-full rounded-xl bg-[#f8fafc] px-3.5 py-2.5 text-sm text-[#1d1d1f] placeholder:text-slate-400 ring-1 ring-slate-200/80 transition-all duration-150 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0071e3]"
+            className="w-full rounded-[12px] bg-[#f2f2f7] px-3.5 py-2.5 text-[14px] text-[#1d1d1f] placeholder:text-[#86868b] transition-all duration-150 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0071e3]"
             aria-label="ข้อความสำหรับสร้างโค้ด"
           />
         </div>
 
         {/* ── Error Banner ─────────────────────────────────────────────── */}
         {error && (
-          <div className="mt-3 flex items-center gap-2 rounded-xl bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800 ring-1 ring-amber-200">
-            <AlertCircle size={14} className="shrink-0 text-amber-600" />
+          <div className="mt-3 flex items-center gap-2 rounded-[14px] bg-[#ff9500]/10 px-3.5 py-2.5 text-[12px] font-medium text-[#ff9500]">
+            <AlertCircle size={14} className="shrink-0" />
             <span>{error}</span>
           </div>
         )}
@@ -392,20 +385,20 @@ export default function QRCodeWidget({
           {generatedText && !error ? (
             <div className="flex w-full flex-col items-center gap-3.5 animate-in fade-in duration-200">
               {/* Render Canvas Wrapper */}
-              <div className="flex w-full items-center justify-center overflow-hidden rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200/60 shadow-2xs">
+              <div className="flex w-full items-center justify-center overflow-hidden rounded-[18px] bg-[#f5f5f7] p-4 ring-1 ring-black/[0.04]">
                 {format === 'qrcode' ? (
-                  <div ref={qrWrapRef} className="rounded-xl bg-white p-2.5 shadow-sm ring-1 ring-black/[0.05]">
+                  <div ref={qrWrapRef} className="rounded-[14px] bg-white p-3 shadow-sm ring-1 ring-black/[0.05]">
                     <QRCodeCanvas
                       value={generatedText}
                       size={width >= 3 ? 200 : width >= 2 ? 170 : 145}
-                      fgColor="#0f172a"
+                      fgColor="#1d1d1f"
                       bgColor="#ffffff"
                       level="M"
                       includeMargin={false}
                     />
                   </div>
                 ) : (
-                  <div className="flex w-full items-center justify-center overflow-x-auto rounded-xl bg-white p-2.5 shadow-sm ring-1 ring-black/[0.05]">
+                  <div className="flex w-full items-center justify-center overflow-x-auto rounded-[14px] bg-white p-3 shadow-sm ring-1 ring-black/[0.05]">
                     <canvas ref={barcodeCanvasRef} className="max-w-full" />
                   </div>
                 )}
@@ -417,13 +410,13 @@ export default function QRCodeWidget({
                   type="button"
                   onClick={copyImageToClipboard}
                   disabled={copyingImage}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-4 py-2 text-xs font-semibold text-slate-800 transition-all duration-150 hover:bg-white hover:shadow-sm ring-1 ring-slate-200 active:scale-[0.98] disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-[#f2f2f7] px-4 py-2 text-[12px] font-semibold text-[#1d1d1f] transition-all duration-150 hover:bg-[#e5e5ea] active:scale-[0.98] disabled:opacity-50"
                   aria-label="คัดลอกรูปภาพลงคลิปบอร์ด"
                 >
                   {copiedSuccess ? (
                     <>
-                      <Check size={14} className="text-emerald-600" />
-                      <span className="text-emerald-700">คัดลอกแล้ว!</span>
+                      <Check size={14} className="text-[#34c759]" />
+                      <span className="text-[#34c759]">คัดลอกแล้ว!</span>
                     </>
                   ) : (
                     <>
@@ -436,7 +429,7 @@ export default function QRCodeWidget({
                 <button
                   type="button"
                   onClick={downloadImage}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-[#0071e3] px-4 py-2 text-xs font-semibold text-white transition-all duration-150 hover:bg-[#0077ed] hover:shadow-[0_2px_8px_rgba(0,113,227,0.3)] active:scale-[0.98]"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-[#0071e3] px-4 py-2 text-[12px] font-semibold text-white transition-all duration-150 hover:bg-[#0077ed] active:scale-[0.98] shadow-sm"
                   aria-label="ดาวน์โหลดรูปภาพ PNG"
                 >
                   <Download size={13} />
@@ -447,7 +440,7 @@ export default function QRCodeWidget({
                   type="button"
                   onClick={printCode}
                   disabled={printing}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-4 py-2 text-xs font-semibold text-slate-800 transition-all duration-150 hover:bg-white hover:shadow-sm ring-1 ring-slate-200 active:scale-[0.98] disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-[#f2f2f7] px-4 py-2 text-[12px] font-semibold text-[#1d1d1f] transition-all duration-150 hover:bg-[#e5e5ea] active:scale-[0.98] disabled:opacity-50"
                   aria-label="พิมพ์โค้ด"
                 >
                   <Printer size={13} />
@@ -458,13 +451,13 @@ export default function QRCodeWidget({
           ) : !generatedText ? (
             /* Empty state */
             <div className="flex flex-1 flex-col items-center justify-center gap-2 py-6 text-center">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
+              <div className="flex h-14 w-14 items-center justify-center rounded-[16px] bg-[#f5f5f7] text-[#86868b]">
                 {format === 'qrcode' ? <QrCode size={28} /> : <Barcode size={28} />}
               </div>
-              <p className="text-sm font-semibold text-slate-800">
+              <p className="text-[14px] font-semibold text-[#1d1d1f]">
                 {format === 'qrcode' ? 'ยังไม่ได้ระบุข้อความ QR Code' : 'ยังไม่ได้ระบุรหัสบาร์โค้ด'}
               </p>
-              <p className="max-w-[220px] text-xs text-slate-500">
+              <p className="max-w-[220px] text-[12px] text-[#86868b]">
                 พิมพ์ข้อความหรือรหัสสินค้าในช่องด้านบนเพื่อสร้างภาพ
               </p>
             </div>

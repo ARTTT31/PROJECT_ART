@@ -228,7 +228,7 @@ class CSPMiddleware:
                 set_header(b"x-frame-options", b"DENY")
                 set_header(b"x-xss-protection", b"1; mode=block")
                 set_header(b"referrer-policy", b"strict-origin-when-cross-origin")
-                set_header(b"permissions-policy", b"camera=(), microphone=(), geolocation=()")
+                set_header(b"permissions-policy", b"camera=(self), microphone=(), geolocation=(self)")
                 message["headers"] = headers
 
             await send(message)

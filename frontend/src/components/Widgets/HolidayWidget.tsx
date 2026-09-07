@@ -11,39 +11,9 @@ import {
   CalendarHeart,
 } from 'lucide-react'
 import WidgetSizeToggle from './WidgetSizeToggle'
+import { HolidayItem, getHolidaysWithDiff } from '@/utils/holidays'
 
-// ── Holiday Data (17 Official Holidays 2569 / 2026) ──────────────────────────
-
-export interface HolidayItem {
-  id: string
-  dayOfWeek: string
-  day: number
-  month: number // 1-12
-  monthName: string
-  year: number
-  title: string
-  description?: string
-}
-
-const THAI_HOLIDAYS_2026: HolidayItem[] = [
-  { id: 'h-1', dayOfWeek: 'วันพฤหัสบดี', day: 1, month: 1, monthName: 'มกราคม', year: 2026, title: 'วันขึ้นปีใหม่' },
-  { id: 'h-2', dayOfWeek: 'วันอังคาร', day: 3, month: 3, monthName: 'มีนาคม', year: 2026, title: 'วันมาฆบูชา' },
-  { id: 'h-3', dayOfWeek: 'วันจันทร์', day: 6, month: 4, monthName: 'เมษายน', year: 2026, title: 'วันจักรี' },
-  { id: 'h-4', dayOfWeek: 'วันจันทร์', day: 13, month: 4, monthName: 'เมษายน', year: 2026, title: 'วันสงกรานต์' },
-  { id: 'h-5', dayOfWeek: 'วันอังคาร', day: 14, month: 4, monthName: 'เมษายน', year: 2026, title: 'วันสงกรานต์' },
-  { id: 'h-6', dayOfWeek: 'วันพุธ', day: 15, month: 4, monthName: 'เมษายน', year: 2026, title: 'วันสงกรานต์' },
-  { id: 'h-7', dayOfWeek: 'วันศุกร์', day: 1, month: 5, monthName: 'พฤษภาคม', year: 2026, title: 'วันแรงงานแห่งชาติ' },
-  { id: 'h-8', dayOfWeek: 'วันจันทร์', day: 4, month: 5, monthName: 'พฤษภาคม', year: 2026, title: 'วันฉัตรมงคล' },
-  { id: 'h-9', dayOfWeek: 'วันพุธ', day: 3, month: 6, monthName: 'มิถุนายน', year: 2026, title: 'วันเฉลิมพระชนมพรรษาสมเด็จพระนางเจ้าฯ พระบรมราชินี' },
-  { id: 'h-10', dayOfWeek: 'วันอังคาร', day: 28, month: 7, monthName: 'กรกฎาคม', year: 2026, title: 'วันเฉลิมพระชนมพรรษาพระเจ้าอยู่หัว' },
-  { id: 'h-11', dayOfWeek: 'วันพุธ', day: 29, month: 7, monthName: 'กรกฎาคม', year: 2026, title: 'วันอาสาฬหบูชา' },
-  { id: 'h-12', dayOfWeek: 'วันพุธ', day: 12, month: 8, monthName: 'สิงหาคม', year: 2026, title: 'วันแม่แห่งชาติ', description: 'วันคล้ายวันพระราชสมภพ สมเด็จพระบรมราชินีนาถในรัชกาลที่ 9' },
-  { id: 'h-13', dayOfWeek: 'วันอังคาร', day: 13, month: 10, monthName: 'ตุลาคม', year: 2026, title: 'วันนวมินทรมหาราช', description: 'วันคล้ายวันสวรรคตพระบาทสมเด็จพระปรมินทรมหาภูมิพลอดุลยเดชมหาราช บรมนาถบพิตร' },
-  { id: 'h-14', dayOfWeek: 'วันศุกร์', day: 23, month: 10, monthName: 'ตุลาคม', year: 2026, title: 'วันปิยมหาราช' },
-  { id: 'h-15', dayOfWeek: 'วันจันทร์', day: 7, month: 12, monthName: 'ธันวาคม', year: 2026, title: 'ชดเชยวันพ่อแห่งชาติ' },
-  { id: 'h-16', dayOfWeek: 'วันพฤหัสบดี', day: 10, month: 12, monthName: 'ธันวาคม', year: 2026, title: 'วันรัฐธรรมนูญ' },
-  { id: 'h-17', dayOfWeek: 'วันพฤหัสบดี', day: 31, month: 12, monthName: 'ธันวาคม', year: 2026, title: 'วันสิ้นปี' },
-]
+export type { HolidayItem }
 
 export default function HolidayWidget({
   width = 1,
@@ -62,20 +32,7 @@ export default function HolidayWidget({
   }, [])
 
   const holidaysWithDiff = useMemo(() => {
-    return THAI_HOLIDAYS_2026.map((h) => {
-      const holidayDate = new Date(h.year, h.month - 1, h.day)
-      holidayDate.setHours(0, 0, 0, 0)
-      const diffTime = holidayDate.getTime() - today.getTime()
-      const daysLeft = Math.round(diffTime / (1000 * 60 * 60 * 24))
-      return {
-        ...h,
-        dateObj: holidayDate,
-        daysLeft,
-        isPast: daysLeft < 0,
-        isToday: daysLeft === 0,
-        isUpcoming: daysLeft > 0,
-      }
-    })
+    return getHolidaysWithDiff(today)
   }, [today])
 
   // Next upcoming holiday
@@ -94,7 +51,7 @@ export default function HolidayWidget({
 
   return (
     <section
-      className="flex h-full flex-col justify-between rounded-2xl bg-white p-4 sm:p-5 ring-1 ring-black/[0.06] shadow-sm transition-all duration-200"
+      className="flex h-full flex-col justify-between rounded-[24px] bg-white p-5 border border-black/[0.06] shadow-[0_2px_12px_rgba(0,0,0,0.04)] transition-all duration-200"
       aria-labelledby="holiday-widget-title"
     >
       <div>
@@ -102,22 +59,22 @@ export default function HolidayWidget({
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
             {/* Icon badge */}
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] bg-emerald-50 text-emerald-600">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[#af52de]/10 text-[#af52de]">
               <Palmtree size={20} aria-hidden="true" />
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <h2
                   id="holiday-widget-title"
-                  className="text-[15px] font-bold tracking-tight text-slate-900"
+                  className="text-[16px] font-bold tracking-tight text-[#1d1d1f]"
                 >
                   วันหยุดนักขัตฤกษ์
                 </h2>
-                <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-600">
+                <span className="rounded-full bg-[#f2f2f7] px-2 py-0.5 text-[11px] font-bold text-[#6e6e73]">
                   ปี 2569
                 </span>
               </div>
-              <p className="mt-0.5 text-[11px] text-slate-500">
+              <p className="mt-0.5 text-[12px] text-[#86868b]">
                 ปฏิทินวันหยุดราชการและวันหยุดตามประเพณี
               </p>
             </div>
@@ -130,18 +87,18 @@ export default function HolidayWidget({
 
         {/* ── Upcoming Holiday Hero Card ───────────────────────────────── */}
         {nextHoliday && (
-          <div className="mt-4 overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-sky-500/10 p-4 ring-1 ring-emerald-500/20">
+          <div className="mt-4 overflow-hidden rounded-[18px] bg-gradient-to-br from-[#af52de]/10 via-[#5856d6]/5 to-[#0071e3]/10 p-4 border border-[#af52de]/20">
             <div className="flex items-start justify-between gap-2">
               <div>
-                <span className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-emerald-700">
+                <span className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-[#af52de]">
                   <Clock size={12} />
                   <span>วันหยุดรอบถัดไป</span>
                 </span>
-                <h3 className="mt-1 text-base font-extrabold text-slate-900 sm:text-lg">
+                <h3 className="mt-1 text-[16px] font-extrabold text-[#1d1d1f] sm:text-[18px]">
                   {nextHoliday.title}
                 </h3>
                 {nextHoliday.description && (
-                  <p className="mt-0.5 text-xs text-slate-600 line-clamp-1">
+                  <p className="mt-0.5 text-[12px] text-[#6e6e73] line-clamp-1">
                     {nextHoliday.description}
                   </p>
                 )}
@@ -150,14 +107,14 @@ export default function HolidayWidget({
               {/* Countdown badge */}
               <div className="shrink-0 text-right">
                 {nextHoliday.isToday ? (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-600 px-3 py-1 text-xs font-bold text-white shadow-sm animate-pulse">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-[#34c759] px-3 py-1 text-xs font-bold text-white shadow-sm animate-pulse">
                     <Sparkles size={12} />
                     <span>วันนี้เป็นวันหยุด!</span>
                   </span>
                 ) : (
-                  <div className="rounded-xl bg-white/90 px-3 py-1.5 text-center shadow-2xs ring-1 ring-black/[0.06]">
-                    <span className="block text-[10px] font-semibold text-slate-500">เหลืออีก</span>
-                    <span className="text-sm font-extrabold text-emerald-700 sm:text-base">
+                  <div className="rounded-[12px] bg-white/95 px-3 py-1.5 text-center shadow-sm ring-1 ring-black/[0.06]">
+                    <span className="block text-[10px] font-semibold text-[#86868b]">เหลืออีก</span>
+                    <span className="text-[15px] font-extrabold text-[#af52de] sm:text-[17px]">
                       {nextHoliday.daysLeft} วัน
                     </span>
                   </div>
@@ -166,9 +123,9 @@ export default function HolidayWidget({
             </div>
 
             {/* Date bar */}
-            <div className="mt-3 flex items-center gap-2 border-t border-emerald-500/15 pt-2 text-xs font-semibold text-slate-700">
-              <span className="text-emerald-700">{nextHoliday.dayOfWeek}</span>
-              <span className="text-slate-300">•</span>
+            <div className="mt-3 flex items-center gap-2 border-t border-[#af52de]/15 pt-2 text-[12px] font-semibold text-[#1d1d1f]">
+              <span className="text-[#af52de]">{nextHoliday.dayOfWeek}</span>
+              <span className="text-black/20">•</span>
               <span>
                 {nextHoliday.day} {nextHoliday.monthName} {nextHoliday.year + 543}
               </span>
@@ -179,7 +136,7 @@ export default function HolidayWidget({
         {/* ── Filter Tabs ─────────────────────────────────────────────── */}
         <div className="mt-4 flex items-center justify-between gap-2">
           <div
-            className="inline-flex rounded-full bg-slate-100 p-0.5 ring-1 ring-black/[0.04]"
+            className="inline-flex rounded-full bg-[#e5e5ea] p-0.5"
             role="group"
             aria-label="ตัวกรองวันหยุด"
           >
@@ -187,10 +144,10 @@ export default function HolidayWidget({
               type="button"
               onClick={() => setFilterMode('upcoming')}
               aria-pressed={filterMode === 'upcoming'}
-              className={`rounded-full px-3 py-1 text-xs font-bold transition-all ${
+              className={`rounded-full px-3 py-1 text-[11px] font-bold transition-all duration-150 ${
                 filterMode === 'upcoming'
-                  ? 'bg-white text-slate-900 shadow-sm ring-1 ring-black/[0.06]'
-                  : 'text-slate-600 hover:text-slate-900'
+                  ? 'bg-white text-[#1d1d1f] shadow-[0_1px_3px_rgba(0,0,0,0.12)]'
+                  : 'text-[#6e6e73] hover:text-[#1d1d1f]'
               }`}
             >
               กำลังจะมาถึง ({holidaysWithDiff.filter((h) => h.daysLeft >= 0).length})
@@ -199,63 +156,63 @@ export default function HolidayWidget({
               type="button"
               onClick={() => setFilterMode('all')}
               aria-pressed={filterMode === 'all'}
-              className={`rounded-full px-3 py-1 text-xs font-bold transition-all ${
+              className={`rounded-full px-3 py-1 text-[11px] font-bold transition-all duration-150 ${
                 filterMode === 'all'
-                  ? 'bg-white text-slate-900 shadow-sm ring-1 ring-black/[0.06]'
-                  : 'text-slate-600 hover:text-slate-900'
+                  ? 'bg-white text-[#1d1d1f] shadow-[0_1px_3px_rgba(0,0,0,0.12)]'
+                  : 'text-[#6e6e73] hover:text-[#1d1d1f]'
               }`}
             >
               ทั้งหมด (17 วัน)
             </button>
           </div>
 
-          <span className="text-[11px] font-medium text-slate-400">
+          <span className="text-[11px] font-medium text-[#86868b]">
             {displayedHolidays.length} รายการ
           </span>
         </div>
 
         {/* ── Holiday List ────────────────────────────────────────────── */}
         <div
-          className={`mt-3 divide-y divide-slate-100 overflow-y-auto ${
+          className={`mt-3 divide-y divide-black/[0.04] overflow-y-auto ${
             width >= 3 ? 'max-h-72 grid grid-cols-1 md:grid-cols-2 gap-2 divide-y-0' : width >= 2 ? 'max-h-64' : 'max-h-48'
           }`}
         >
           {displayedHolidays.map((item) => (
             <div
               key={item.id}
-              className={`flex items-center justify-between gap-3 p-2.5 transition-colors rounded-xl ${
+              className={`flex items-center justify-between gap-3 p-2.5 transition-colors rounded-[14px] ${
                 item.id === nextHoliday?.id
-                  ? 'bg-emerald-50/60 ring-1 ring-emerald-200/60'
+                  ? 'bg-[#af52de]/10 ring-1 ring-[#af52de]/30'
                   : item.isPast
-                  ? 'opacity-60 hover:bg-slate-50'
-                  : 'hover:bg-slate-50'
+                  ? 'opacity-60 hover:bg-[#f5f5f7]'
+                  : 'hover:bg-[#f5f5f7]'
               }`}
             >
               <div className="flex items-center gap-3 min-w-0">
                 {/* Date bubble */}
                 <div
-                  className={`flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded-xl font-bold text-center ${
+                  className={`flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded-[10px] font-bold text-center ${
                     item.id === nextHoliday?.id
-                      ? 'bg-emerald-600 text-white shadow-2xs'
+                      ? 'bg-[#af52de] text-white shadow-sm'
                       : item.isPast
-                      ? 'bg-slate-100 text-slate-400'
-                      : 'bg-slate-100 text-slate-700'
+                      ? 'bg-[#f2f2f7] text-[#86868b]'
+                      : 'bg-[#f2f2f7] text-[#1d1d1f]'
                   }`}
                 >
-                  <span className="text-[10px] leading-tight text-opacity-80">
+                  <span className="text-[10px] leading-tight opacity-80">
                     {item.monthName.slice(0, 3)}
                   </span>
-                  <span className="text-sm leading-tight">{item.day}</span>
+                  <span className="text-[13px] leading-tight">{item.day}</span>
                 </div>
 
                 {/* Holiday details */}
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5">
-                    <span className="truncate text-xs font-bold text-slate-900">
+                    <span className="truncate text-[13px] font-bold text-[#1d1d1f]">
                       {item.title}
                     </span>
                   </div>
-                  <span className="text-[11px] text-slate-500">
+                  <span className="text-[11px] text-[#86868b]">
                     {item.dayOfWeek} {item.day} {item.monthName}
                   </span>
                 </div>
@@ -264,16 +221,16 @@ export default function HolidayWidget({
               {/* Status indicator */}
               <div className="shrink-0 text-right">
                 {item.isPast ? (
-                  <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-400">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-[#f2f2f7] px-2 py-0.5 text-[10px] font-semibold text-[#86868b]">
                     <CheckCircle2 size={10} />
                     <span>ผ่านแล้ว</span>
                   </span>
                 ) : item.isToday ? (
-                  <span className="inline-flex items-center gap-1 rounded-md bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-[#34c759]/15 px-2 py-0.5 text-[10px] font-bold text-[#34c759]">
                     <span>วันนี้</span>
                   </span>
                 ) : (
-                  <span className="inline-flex items-center rounded-md bg-sky-50 px-2 py-0.5 text-[10px] font-bold text-sky-700">
+                  <span className="inline-flex items-center rounded-full bg-[#0071e3]/10 px-2 py-0.5 text-[10px] font-bold text-[#0071e3]">
                     อีก {item.daysLeft} วัน
                   </span>
                 )}
@@ -284,7 +241,7 @@ export default function HolidayWidget({
       </div>
 
       {/* ── Footer ─────────────────────────────────────────────────────────── */}
-      <footer className="mt-3 flex items-center justify-between border-t border-slate-100 pt-2 text-[11px] text-slate-400">
+      <footer className="mt-3 flex items-center justify-between border-t border-black/[0.06] pt-2.5 text-[11px] text-[#86868b]">
         <span>ข้อมูลวันหยุดราชการประจำปี 2569</span>
         <span>รวมทั้งหมด 17 วัน</span>
       </footer>

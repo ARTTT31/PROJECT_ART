@@ -54,7 +54,7 @@ async def get_system_health(
     return SystemHealth(
         uptime_seconds=round(time.time() - START_TIME, 1),
         database=db_status,
-        cpu_percent=psutil.cpu_percent(interval=0.1),
+        cpu_percent=psutil.cpu_percent(interval=None),
         memory_percent=mem.percent,
         memory_used_mb=round(mem.used / 1024 / 1024, 1),
         memory_total_mb=round(mem.total / 1024 / 1024, 1),

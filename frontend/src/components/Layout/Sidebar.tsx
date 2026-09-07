@@ -101,18 +101,18 @@ export default function Sidebar({ isOpen, isCollapsed = false, onClose, user, on
 
   return (
     <aside
-      className={`fixed left-0 top-0 z-40 h-screen w-[80vw] max-w-64 border-r border-slate-200/60 bg-white/80 backdrop-blur-md shadow-glass-lg text-slate-900 transition-transform duration-300 ${
+      className={`fixed left-0 top-0 z-40 h-screen w-[80vw] max-w-64 border-r border-black/[0.06] bg-[rgba(255,255,255,0.82)] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.04)] text-[#1d1d1f] transition-transform duration-300 ease-out ${
         isOpen ? 'translate-x-0' : '-translate-x-full'
       } ${isCollapsed ? 'lg:-translate-x-full' : 'lg:translate-x-0'}`}
     >
       <div className="flex h-full flex-col">
         {/* Navigation Menu */}
-        <nav className="flex-1 overflow-y-auto p-4 pt-6">
+        <nav className="flex-1 overflow-y-auto p-3.5 pt-6">
           <div className="space-y-6">
             {menuSections.map((section) => (
               <div key={section.title}>
                 <div
-                  className="mb-2 px-3 text-[11px] font-semibold text-[#6e6e73]"
+                  className="mb-1.5 px-3 text-[11px] font-semibold tracking-wide text-[#86868b]"
                 >
                   {section.title}
                 </div>
@@ -127,14 +127,20 @@ export default function Sidebar({ isOpen, isCollapsed = false, onClose, user, on
                           href={item.href}
                           target={item.external ? '_blank' : undefined}
                           rel={item.external ? 'noopener noreferrer' : undefined}
-                          className={`group flex min-h-11 items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-all duration-200 ${
+                          className={`group flex min-h-[42px] items-center gap-2.5 rounded-[12px] px-3 py-2 text-[14px] font-semibold transition-all duration-150 active:scale-[0.98] ${
                             isActive
-                              ? 'bg-[#0071e3] text-white shadow-[0_4px_12px_rgba(0,113,227,0.30)]'
-                              : 'text-slate-700 hover:bg-black/[0.04] hover:text-slate-900'
+                              ? 'bg-[#0071e3] text-white shadow-[0_4px_14px_rgba(0,113,227,0.30)]'
+                              : 'text-[#1d1d1f] hover:bg-black/[0.05] hover:text-[#1d1d1f]'
                           }`}
                           onClick={() => !item.external && onClose()}
                         >
-                          <span className={isActive ? 'text-white/90' : 'text-slate-400 group-hover:text-slate-600'}>
+                          <span
+                            className={`flex h-7 w-7 items-center justify-center rounded-[8px] transition-colors ${
+                              isActive
+                                ? 'bg-white/20 text-white'
+                                : 'text-[#6e6e73] group-hover:text-[#1d1d1f]'
+                            }`}
+                          >
                             {item.icon}
                           </span>
                           <span className="flex-1 truncate">{item.name}</span>
@@ -142,10 +148,10 @@ export default function Sidebar({ isOpen, isCollapsed = false, onClose, user, on
                           {/* WIP Indicator Badge */}
                           {item.isWip && (
                             <span
-                              className={`rounded-md px-1.5 py-0.5 text-[10px] font-bold ${
+                              className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
                                 isActive
                                   ? 'bg-white/20 text-white'
-                                  : 'bg-amber-50 text-amber-700 ring-1 ring-amber-200/60'
+                                  : 'bg-[#ff9500]/10 text-[#ff9500]'
                               }`}
                             >
                               {item.wipLabel || 'WIP'}
@@ -156,7 +162,7 @@ export default function Sidebar({ isOpen, isCollapsed = false, onClose, user, on
                             <ExternalLink
                               size={12}
                               aria-hidden="true"
-                              className={isActive ? 'text-white/70' : 'text-slate-400/80'}
+                              className={isActive ? 'text-white/70' : 'text-[#86868b]'}
                             />
                           )}
                         </ItemComponent>
@@ -170,17 +176,19 @@ export default function Sidebar({ isOpen, isCollapsed = false, onClose, user, on
         </nav>
 
         {/* Logout Button */}
-        <div className="border-t border-slate-200/60 p-4">
+        <div className="border-t border-black/[0.06] p-3.5">
           <button
             type="button"
             onClick={() => {
               onClose()
               onLogout()
             }}
-            className="flex min-h-11 w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-rose-500 transition-all duration-200 hover:bg-rose-50 hover:text-rose-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400"
+            className="flex min-h-[42px] w-full items-center gap-2.5 rounded-[12px] px-3 py-2 text-[14px] font-semibold text-[#ff3b30] transition-all duration-150 hover:bg-[#ff3b30]/10 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ff3b30]"
             aria-label="ออกจากระบบ"
           >
-            <LogOut size={20} aria-hidden="true" />
+            <span className="flex h-7 w-7 items-center justify-center rounded-[8px] bg-[#ff3b30]/10 text-[#ff3b30]">
+              <LogOut size={16} aria-hidden="true" />
+            </span>
             <span>ออกจากระบบ</span>
           </button>
         </div>

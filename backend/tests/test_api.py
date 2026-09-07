@@ -5,7 +5,6 @@ from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, Asyn
 
 from app.core.database import Base, get_db
 from app.main import app
-from app.schemas.user import UserCreate
 
 # Mark all tests in this file as asyncio tests
 pytestmark = pytest.mark.asyncio

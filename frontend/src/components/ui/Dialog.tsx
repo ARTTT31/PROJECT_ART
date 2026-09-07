@@ -59,14 +59,14 @@ const DialogContent = React.forwardRef<
         // Sizing
         'w-[calc(100vw-2rem)] max-w-lg',
         'max-h-[calc(100dvh-2rem)]',
-        // Apple DS v2.0: 20px dialog radius, white surface, ring depth
-        'bg-white rounded-[20px] ring-1 ring-black/[0.08]',
-        // Shadow: Glass XL
-        'shadow-[0_24px_64px_rgba(15,23,42,0.10),0_8px_24px_rgba(15,23,42,0.05)]',
+        // Apple HIG: 24px squircle radius, white surface, ring depth
+        'bg-white rounded-[24px] ring-1 ring-black/[0.08]',
+        // Shadow: Apple modal elevation
+        'shadow-[0_32px_80px_rgba(0,0,0,0.14),0_8px_24px_rgba(0,0,0,0.06)]',
         // Overflow handling
         'overflow-hidden',
-        // Focus styles (WCAG AAA: 7:1 contrast)
-        'focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2',
+        // Focus styles
+        'focus:outline-none focus:ring-2 focus:ring-[#0071e3] focus:ring-offset-2',
         // Animations
         'data-[state=open]:animate-in data-[state=closed]:animate-out',
         'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
@@ -84,24 +84,24 @@ const DialogContent = React.forwardRef<
         className={cn(
           // Positioning
           'absolute right-4 top-4',
-          // Sizing (48px min for touch targets)
-          'h-10 w-10',
+          // Sizing
+          'h-8 w-8',
           // Styling
-          'rounded-lg',
+          'rounded-full',
           'inline-flex items-center justify-center',
           // Colors
-          'text-[#6e6e73] hover:text-[#1d1d1f]',
-          'hover:bg-[#f5f5f7]',
+          'text-[#86868b] hover:text-[#1d1d1f]',
+          'hover:bg-black/[0.05]',
           // Transitions
-          'transition-colors duration-150',
-          // Focus ring (WCAG AAA)
-          'focus:outline-none focus:ring-2 focus:ring-[#0071e3] focus:ring-offset-2',
+          'transition-all duration-150 active:scale-[0.95]',
+          // Focus ring
+          'focus:outline-none focus:ring-2 focus:ring-[#0071e3]',
           // Disabled state
           'disabled:pointer-events-none disabled:opacity-50'
         )}
         aria-label="ปิดหน้าต่าง"
       >
-        <X className="h-5 w-5" aria-hidden="true" />
+        <X className="h-4 w-4" aria-hidden="true" />
       </DialogPrimitive.Close>
     </DialogPrimitive.Content>
   </DialogPortal>
