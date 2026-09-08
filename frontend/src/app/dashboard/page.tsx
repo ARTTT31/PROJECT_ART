@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Check, Eye, EyeOff, GripHorizontal, Loader2, SlidersHorizontal, Sparkles } from 'lucide-react'
+import { Check, Eye, EyeOff, GripHorizontal, Loader2, SlidersHorizontal } from 'lucide-react'
 import { WidgetConfig } from '@/types'
 import DashboardLayout from '@/components/Layout/DashboardLayout'
 import ErrorBoundary from '@/components/ErrorBoundary'
@@ -336,12 +336,6 @@ export default function DashboardPage() {
   // ── Render ───────────────────────────────────────────────────────────────
 
   const greeting = getGreeting()
-  const thaiDate = new Intl.DateTimeFormat('th-TH', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  }).format(new Date())
 
   return (
     <DashboardLayout>
@@ -352,16 +346,9 @@ export default function DashboardPage() {
       >
         <div className="relative z-10 flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
           <div className="space-y-1.5">
-            <div className="inline-flex items-center gap-2 rounded-full bg-[#0071e3]/10 px-3 py-1 text-xs font-semibold text-[#0071e3]">
-              <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
-              <span>{thaiDate}</span>
-            </div>
             <h1 className="text-2xl font-bold tracking-tight text-[#1d1d1f] sm:text-3xl">
               {greeting}, <span className="text-[#0071e3]">{user.display_name || user.username}</span> 👋
             </h1>
-            <p className="text-sm text-[#6e6e73]">
-              ยินดีต้อนรับสู่ระบบ ART Workspace ข้อมูลสรุปและวิดเจ็ตการทำงานของคุณพร้อมใช้งานแล้ว
-            </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5">
