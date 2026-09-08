@@ -331,14 +331,66 @@ curl http://localhost:8080/api/v1/oil-prices/health
 
 ## ✨ Key Features
 
+✅ **Dashboard** - หน้าหลักพร้อมวิดเจ็ตที่ปรับแต่งและจัดเรียงได้
 ✅ **Calendar Widget** - แสดง events จาก Google Calendar
 ✅ **Oil Prices Widget** - แสดงราคาน้ำมันจาก EPPO
+✅ **Weather & AQI Widget** - สภาพอากาศและค่าฝุ่น PM 2.5 แบบ real-time
+✅ **Holiday Widget** - ปฏิทินวันหยุดนักขัตฤกษ์ไทย (ปีปัจจุบัน dynamic)
+✅ **QR Code Widget** - สร้าง QR Code
+✅ **Quick Links** - ลิงก์ด่วนในแถบเมนูด้านข้าง ตั้งค่าได้ที่หน้าโปรไฟล์
+✅ **Notification Bell** - แจ้งเตือนอัตโนมัติ (วันหยุด, สภาพอากาศ, ราคาน้ำมัน)
+✅ **Profile Page** - แก้ไขชื่อ, อีเมล, รหัสผ่าน และ Quick Links
 ✅ **Auto-commit Scripts** - Commit อัตโนมัติ (Bash, Batch, PowerShell)
 ✅ **Health Check Endpoints** - ตรวจสอบ API status
-✅ **Test Scripts** - ทดสอบ APIs ก่อน deploy
-✅ **Comprehensive Docs** - เอกสารครบถ้วนภาษาไทย
 ✅ **Graceful Fallbacks** - ระบบทำงานต่อได้แม้ API ล่ม
-✅ **Thai Error Messages** - ข้อความ error เข้าใจง่าย
+✅ **Thai UI** - ข้อความและ error ภาษาไทยทั้งหมด
+
+---
+
+## 🖥️ UI Components Overview
+
+### Layout
+- **Header** — แถบบนสุด แสดงชื่อหน้า, breadcrumb, นาฬิกา, และกระดิ่งแจ้งเตือน
+- **Sidebar** — เมนูด้านข้าง แสดงเมนูหลักและ Quick Links (ปรับได้ที่โปรไฟล์)
+
+### Pages
+| หน้า | URL | คำอธิบาย |
+|------|-----|----------|
+| Login | `/login` | หน้าเข้าสู่ระบบ (Email/Password + Google) |
+| Dashboard | `/dashboard` | หน้าหลักพร้อมวิดเจ็ต drag-and-drop |
+| Profile | `/profile` | ตั้งค่าข้อมูลส่วนตัว, รหัสผ่าน, Quick Links, เมนูหลัก |
+
+### Widgets (Dashboard)
+| Widget | ขนาด (S/M/L) | ข้อมูลจาก |
+|--------|-------------|----------|
+| วันหยุดนักขัตฤกษ์ | S/M/L | ข้อมูลคงที่ (ไทย) |
+| สภาพอากาศ & PM 2.5 | S/M/L | open-meteo.com |
+| ราคาน้ำมัน | S/M/L | EPPO (ผ่าน backend) |
+| สร้าง QR Code | S/M/L | client-side |
+
+---
+
+## 🔄 Recent Changes (UI)
+
+### สิ่งที่ถูกลบออก (cleanup)
+- ลบ badge "วิดเจ็ตเปิดใช้งาน X/X ตัว" ออกจาก dashboard
+- ลบชื่อผู้ใช้และตำแหน่งออกจาก header
+- ลบวันที่และข้อความต้อนรับออกจาก dashboard hero
+- ลบ status dot สีข้างไอคอน Quick Links
+- ลบ gradient สีม่วง-น้ำเงินออกจาก profile banner
+- ลบปุ่มกล้องโปรไฟล์ที่ไม่มีฟังก์ชัน
+- ลบ badge "ผู้ดูแลระบบ" ออกจาก header และ profile
+- ลบจุดเขียวกระพริบ (animate-ping) จากนาฬิกาและหน้า login
+- ลบ brand header "ART Workspace" ออกจาก sidebar
+- ลบ avatar วงกลมออกจาก header
+
+### สิ่งที่เพิ่ม/แก้ไข
+- Profile hero ขาวล้วน จัดกึ่งกลาง
+- เพิ่มช่อง Username (read-only) ในหน้าโปรไฟล์
+- Holiday widget แสดงปีและจำนวนวันหยุดแบบ dynamic
+- Dashboard loading spinner อยู่ใน DashboardLayout แล้ว
+- Notification "ระบบพร้อมใช้งาน" ใช้ sessionStorage ไม่โผล่ซ้ำ
+- Touch target ของ Sidebar เพิ่มเป็น 48px (WCAG)
 
 ---
 
