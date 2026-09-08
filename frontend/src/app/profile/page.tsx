@@ -409,15 +409,12 @@ export default function ProfilePage() {
             ══════════════════════════════════════════════════ */}
         <section className="overflow-hidden rounded-3xl bg-white ring-1 ring-black/[0.06] shadow-[0_10px_40px_rgba(15,23,42,0.07)]">
           {/* Banner */}
-          {/* Banner */}
-          <div className="relative h-24 sm:h-28 bg-[#f5f5f7]" />
-
-          {/* Identity row */}
-          <div className="px-6 sm:px-8 pb-6 pt-0">
-            <div className="flex flex-col items-center gap-4 text-center sm:flex-row sm:items-end sm:gap-5 sm:text-left">
+          {/* Identity — centered, white background */}
+          <div className="px-6 py-8 sm:px-8 sm:py-10">
+            <div className="flex flex-col items-center gap-3 text-center">
               {/* Avatar */}
-              <div className="relative -mt-12 flex-shrink-0">
-                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-[#0071e3] to-[#42a5f5] text-3xl font-black text-white ring-4 ring-white shadow-[0_8px_24px_rgba(0,113,227,0.25)]">
+              <div className="relative">
+                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-[#0071e3] to-[#42a5f5] text-3xl font-black text-white ring-4 ring-white shadow-[0_8px_24px_rgba(0,113,227,0.20)]">
                   {user.name?.charAt(0).toUpperCase() || 'U'}
                 </div>
                 <button
@@ -430,12 +427,12 @@ export default function ProfilePage() {
                 </button>
               </div>
 
-              {/* Name + meta */}
-              <div className="min-w-0 flex-1 pb-1">
-                <h1 className="text-xl font-black tracking-[-0.03em] text-[#1d1d1f] sm:text-2xl leading-tight mb-1">
+              {/* Name + email */}
+              <div>
+                <h1 className="text-xl font-black tracking-[-0.03em] text-[#1d1d1f] sm:text-2xl leading-tight">
                   {user.name || 'ผู้ใช้งาน'}
                 </h1>
-                <span className="inline-flex items-center gap-1.5 text-[12px] text-[#6e6e73]">
+                <span className="inline-flex items-center gap-1 mt-1 text-[12px] text-[#6e6e73]">
                   <AtSign size={11} className="text-slate-400" aria-hidden="true" />
                   {user.email || 'ไม่ได้ตั้งค่าอีเมล'}
                 </span>
