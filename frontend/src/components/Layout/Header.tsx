@@ -124,14 +124,6 @@ export default function Header({ user, onMenuClick, sidebarCollapsed = false }: 
                   {initial}
                 </div>
               )}
-              <div className="hidden text-left sm:block">
-                <p className="max-w-[120px] truncate text-[12px] font-bold text-[#1d1d1f] group-hover:text-[#0071e3] transition-colors leading-tight">
-                  {displayName}
-                </p>
-                <p className="text-[10px] font-medium text-[#86868b] leading-tight">
-                  {roleLabel}
-                </p>
-              </div>
             </Link>
           )}
         </div>

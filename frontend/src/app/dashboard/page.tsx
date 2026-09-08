@@ -365,11 +365,6 @@ export default function DashboardPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5">
-            <div className="flex items-center gap-2 rounded-full bg-black/[0.04] px-3.5 py-1.5 text-xs font-medium text-[#424245]">
-              <span className="h-2 w-2 rounded-full bg-[#34c759] shadow-[0_0_6px_rgba(52,199,89,0.6)]" />
-              <span>วิดเจ็ตเปิดใช้งาน {visibleWidgets.length}/{defaultWidgets.length} ตัว</span>
-            </div>
-
             {/* Manage widgets — Apple pill button */}
             <button
               type="button"
