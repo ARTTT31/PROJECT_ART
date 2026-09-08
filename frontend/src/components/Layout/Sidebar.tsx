@@ -106,16 +106,8 @@ export default function Sidebar({ isOpen, isCollapsed = false, onClose, user, on
       } ${isCollapsed ? 'lg:-translate-x-full' : 'lg:translate-x-0'}`}
     >
       <div className="flex h-full flex-col">
-        {/* Brand Header */}
-        <div className="flex h-14 shrink-0 items-center gap-2.5 border-b border-black/[0.06] px-4">
-          <div className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-[#0071e3] shadow-sm">
-            <Sparkles size={16} className="text-white" aria-hidden="true" />
-          </div>
-          <span className="text-[15px] font-extrabold tracking-tight text-[#1d1d1f]">ART Workspace</span>
-        </div>
-
         {/* Navigation Menu */}
-        <nav className="flex-1 overflow-y-auto p-3.5 pt-4">
+        <nav className="flex-1 overflow-y-auto p-3.5 pt-6">
           <div className="space-y-6">
             {menuSections.map((section) => (
               <div key={section.title}>

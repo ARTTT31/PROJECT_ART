@@ -44,9 +44,6 @@ export default function Header({ user, onMenuClick, sidebarCollapsed = false }: 
     }
   })()
 
-  const displayName = user?.display_name || user?.name || user?.username || 'ผู้ใช้งาน'
-  const initial = displayName.trim().charAt(0).toUpperCase() || 'U'
-
   return (
     <header className="sticky top-0 z-20 border-b border-black/[0.06] bg-[rgba(255,255,255,0.82)] backdrop-blur-2xl transition-all">
       <div className="flex items-center justify-between px-4 py-2.5 lg:px-6">
@@ -102,28 +99,6 @@ export default function Header({ user, onMenuClick, sidebarCollapsed = false }: 
           </div>
 
           <NotificationBell />
-
-          {/* User Profile Pill */}
-          {user && (
-            <Link
-              href="/profile"
-              className="group flex items-center gap-2.5 rounded-full border border-black/[0.06] bg-white/90 py-1 pl-1 pr-3 shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all duration-150 hover:bg-white hover:shadow-md active:scale-[0.98]"
-              aria-label={`โปรไฟล์ของ ${displayName}`}
-            >
-              {user.avatar || user.avatar_url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={user.avatar || user.avatar_url || ''}
-                  alt={displayName}
-                  className="h-7 w-7 rounded-full object-cover ring-1 ring-black/[0.08]"
-                />
-              ) : (
-                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-tr from-[#0071e3] to-[#42a5f5] text-[11px] font-bold text-white shadow-xs">
-                  {initial}
-                </div>
-              )}
-            </Link>
-          )}
         </div>
       </div>
     </header>
