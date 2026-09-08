@@ -268,7 +268,6 @@ export default function LoginPage() {
             <div className="flex flex-wrap items-center gap-2.5">
               <span className="login-kicker">ART Workspace</span>
               <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1 text-xs font-semibold text-white/95 backdrop-blur-md">
-                <span className="h-2 w-2 rounded-full bg-[#34c759] shadow-[0_0_6px_#34c759]" />
                 ระบบพร้อมใช้งาน
               </span>
             </div>

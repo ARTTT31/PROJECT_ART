@@ -122,10 +122,6 @@ const ClockTime = memo(function ClockTime() {
   })
   return (
     <>
-      <span className="relative flex h-2 w-2">
-        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#34c759] opacity-75"></span>
-        <span className="relative inline-flex h-2 w-2 rounded-full bg-[#34c759]"></span>
-      </span>
       <Clock size={14} className="text-[#0071e3]" aria-hidden="true" />
       <span>{formatted}</span>
     </>
