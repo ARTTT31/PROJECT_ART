@@ -18,7 +18,6 @@ import {
   Trash2,
   ChevronUp,
   ChevronDown,
-  ShieldCheck,
   KeyRound,
   Mail,
   AtSign,
@@ -410,10 +409,7 @@ export default function ProfilePage() {
             ══════════════════════════════════════════════════ */}
         <section className="overflow-hidden rounded-3xl bg-white ring-1 ring-black/[0.06] shadow-[0_10px_40px_rgba(15,23,42,0.07)]">
           {/* Banner */}
-          <div className="relative h-40 sm:h-44 bg-gradient-to-br from-[#0071e3] via-[#5856d6] to-[#af52de]">
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.35),transparent_60%)]" />
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,rgba(255,255,255,0.14),transparent_55%)]" />
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.10),transparent_40%)]" />
+          <div className="relative h-40 sm:h-44 bg-[#f5f5f7]">
           </div>
 
           {/* Identity row */}
@@ -421,7 +417,7 @@ export default function ProfilePage() {
             <div className="flex flex-col items-center gap-5 pt-0 text-center sm:flex-row sm:items-end sm:gap-6 sm:text-left">
               {/* Avatar */}
               <div className="relative -mt-14 flex-shrink-0 sm:-mt-10">
-                <div className="flex h-28 w-28 items-center justify-center rounded-full bg-gradient-to-br from-[#0071e3] via-[#5856d6] to-[#af52de] text-4xl font-black text-white ring-[5px] ring-white shadow-[0_12px_32px_rgba(0,113,227,0.35)] sm:h-24 sm:w-24 sm:text-3xl">
+                <div className="flex h-28 w-28 items-center justify-center rounded-full bg-gradient-to-br from-[#0071e3] to-[#42a5f5] text-4xl font-black text-white ring-[5px] ring-white shadow-[0_12px_32px_rgba(0,113,227,0.25)] sm:h-24 sm:w-24 sm:text-3xl">
                   {user.name?.charAt(0).toUpperCase() || 'U'}
                 </div>
                 <button
@@ -440,19 +436,7 @@ export default function ProfilePage() {
                   <h1 className="text-2xl font-black tracking-[-0.03em] text-[#1d1d1f] sm:text-[28px] leading-tight">
                     {user.name || 'ผู้ใช้งาน'}
                   </h1>
-                  <span
-                    className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-bold ring-1 ${
-                      user.role === 'admin'
-                        ? 'bg-purple-50 text-purple-700 ring-purple-200'
-                        : 'bg-sky-50 text-sky-700 ring-sky-200'
-                    }`}
-                  >
-                    {user.role === 'admin' ? (
-                      <><ShieldCheck size={12} aria-hidden="true" />ผู้ดูแลระบบ</>
-                    ) : (
-                      <><User size={12} aria-hidden="true" />ผู้ใช้งาน</>
-                    )}
-                  </span>
+                
                 </div>
 
                 {/* Contact info inline */}
