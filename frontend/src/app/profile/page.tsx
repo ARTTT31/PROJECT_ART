@@ -712,11 +712,7 @@ export default function ProfilePage() {
                       >
                         <Icon size={17} aria-hidden="true" style={{ color: link.color || '#0ea5e9' }} />
                       </div>
-                      <span
-                        className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full ring-2 ring-white"
-                        style={{ backgroundColor: link.color || '#0ea5e9' }}
-                        aria-hidden="true"
-                      />
+
                     </div>
 
                     {/* Text */}
