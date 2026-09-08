@@ -10,7 +10,6 @@ import NotificationBell from './NotificationBell'
 interface HeaderProps {
   user?: AuthUser | null
   onMenuClick: () => void
-  onLogout?: () => void
   sidebarCollapsed?: boolean
 }
 
@@ -47,7 +46,6 @@ export default function Header({ user, onMenuClick, sidebarCollapsed = false }: 
 
   const displayName = user?.display_name || user?.name || user?.username || 'ผู้ใช้งาน'
   const initial = displayName.trim().charAt(0).toUpperCase() || 'U'
-  const roleLabel = user?.role === 'admin' ? 'ผู้ดูแลระบบ' : 'ผู้ใช้งาน'
 
   return (
     <header className="sticky top-0 z-20 border-b border-black/[0.06] bg-[rgba(255,255,255,0.82)] backdrop-blur-2xl transition-all">

@@ -118,16 +118,6 @@ export default function LoginPage() {
     }
   };
 
-  // ── Microsoft Entra ID Authentication flow
-  const handleMicrosoftSignIn = () => {
-    if (isSubmitting || rateLimitSeconds > 0) return;
-
-    setIsSubmitting(true);
-    setError('');
-
-    // Redirect directly to the backend Microsoft OAuth route
-    window.location.href = `${apiBaseUrl}/api/v1/auth/microsoft`;
-  };
 
   useEffect(() => {
     setIsClient(true);

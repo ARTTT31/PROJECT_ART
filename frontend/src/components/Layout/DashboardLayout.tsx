@@ -58,7 +58,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               setSidebarOpen(true)
             }}
             sidebarCollapsed={sidebarCollapsed}
-            onLogout={handleLogout}
           />
 
           {/* Page Content */}

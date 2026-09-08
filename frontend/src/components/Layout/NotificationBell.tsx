@@ -199,17 +199,24 @@ export default function NotificationBell() {
       }
     } catch {}
 
-    // 3. System Welcome Notification
+    // 3. System Welcome Notification — show only once (respect dismissed)
     const sysId = 'system-workspace-ready'
     if (!dismissedSet.has(sysId)) {
-      smartAlerts.push({
-        id: sysId,
-        type: 'system',
-        level: 'info',
-        title: 'ระบบ ART Workspace พร้อมใช้งาน ✨',
-        body: 'คุณสามารถปรับแต่ง จัดเรียงวิดเจ็ต และตั้งค่าลิงก์ด่วนได้ตามต้องการ',
-        at: now,
-      })
+      // Also check if already shown this session via sessionStorage to avoid re-showing on soft navigations
+      const shownThisSession = typeof sessionStorage !== 'undefined' && sessionStorage.getItem(sysId)
+      if (!shownThisSession) {
+        smartAlerts.push({
+          id: sysId,
+          type: 'system',
+          level: 'info',
+          title: 'ระบบ ART Workspace พร้อมใช้งาน ✨',
+          body: 'คุณสามารถปรับแต่ง จัดเรียงวิดเจ็ต และตั้งค่าลิงก์ด่วนได้ตามต้องการ',
+          at: now,
+        })
+        if (typeof sessionStorage !== 'undefined') {
+          sessionStorage.setItem(sysId, '1')
+        }
+      }
     }
 
     if (smartAlerts.length > 0) {

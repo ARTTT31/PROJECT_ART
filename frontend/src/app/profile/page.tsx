@@ -3,7 +3,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import {
-  Camera,
   User,
   Lock,
   Info,
@@ -138,10 +137,11 @@ interface InsetFieldProps {
   trailing?: React.ReactNode
   required?: boolean
   autoComplete?: string
+  readOnly?: boolean
 }
 
 function InsetField({
-  label, type = 'text', value, onChange, placeholder, icon, trailing, required, autoComplete,
+  label, type = 'text', value, onChange, placeholder, icon, trailing, required, autoComplete, readOnly,
 }: InsetFieldProps) {
   return (
     <div>
@@ -159,9 +159,12 @@ function InsetField({
           placeholder={placeholder}
           required={required}
           autoComplete={autoComplete}
+          readOnly={readOnly}
           className={[
-            'w-full rounded-[14px] bg-[#f2f2f7] py-3 text-[14px] font-medium text-[#1d1d1f] placeholder:text-[#86868b]',
-            'transition-all duration-150 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0071e3]',
+            'w-full rounded-[14px] py-3 text-[14px] font-medium text-[#1d1d1f] placeholder:text-[#86868b]',
+            readOnly
+              ? 'bg-[#f2f2f7]/60 cursor-default select-text'
+              : 'bg-[#f2f2f7] transition-all duration-150 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0071e3]',
             trailing ? '!pr-12' : '!pr-4',
           ].join(' ')}
           style={{ paddingLeft: '2.75rem' }}
@@ -413,18 +416,8 @@ export default function ProfilePage() {
           <div className="px-6 py-8 sm:px-8 sm:py-10">
             <div className="flex flex-col items-center gap-3 text-center">
               {/* Avatar */}
-              <div className="relative">
-                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-[#0071e3] to-[#42a5f5] text-3xl font-black text-white ring-4 ring-white shadow-[0_8px_24px_rgba(0,113,227,0.20)]">
-                  {user.name?.charAt(0).toUpperCase() || 'U'}
-                </div>
-                <button
-                  type="button"
-                  className="absolute bottom-0 right-0 flex h-7 w-7 items-center justify-center rounded-full bg-white text-slate-600 shadow-md ring-1 ring-black/[0.08] transition-all duration-150 hover:bg-[#f5f5f7] hover:scale-105 active:scale-95"
-                  aria-label="เปลี่ยนรูปโปรไฟล์"
-                  title="เปลี่ยนรูปโปรไฟล์"
-                >
-                  <Camera size={12} aria-hidden="true" />
-                </button>
+              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-[#0071e3] to-[#42a5f5] text-3xl font-black text-white ring-4 ring-white shadow-[0_8px_24px_rgba(0,113,227,0.20)]">
+                {user.name?.charAt(0).toUpperCase() || 'U'}
               </div>
 
               {/* Name + email */}
@@ -463,6 +456,15 @@ export default function ProfilePage() {
                 placeholder="เช่น สมชาย ใจดี"
                 icon={<User size={16} aria-hidden="true" />}
                 required
+              />
+              <InsetField
+                label="ชื่อผู้ใช้ (Username)"
+                value={user.username || ''}
+                onChange={() => {}}
+                placeholder="ชื่อผู้ใช้ในระบบ"
+                icon={<AtSign size={16} aria-hidden="true" />}
+                autoComplete="username"
+                readOnly
               />
               <InsetField
                 label="อีเมลสำหรับเข้าสู่ระบบ"

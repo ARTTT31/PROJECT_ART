@@ -106,8 +106,16 @@ export default function Sidebar({ isOpen, isCollapsed = false, onClose, user, on
       } ${isCollapsed ? 'lg:-translate-x-full' : 'lg:translate-x-0'}`}
     >
       <div className="flex h-full flex-col">
+        {/* Brand Header */}
+        <div className="flex h-14 shrink-0 items-center gap-2.5 border-b border-black/[0.06] px-4">
+          <div className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-[#0071e3] shadow-sm">
+            <Sparkles size={16} className="text-white" aria-hidden="true" />
+          </div>
+          <span className="text-[15px] font-extrabold tracking-tight text-[#1d1d1f]">ART Workspace</span>
+        </div>
+
         {/* Navigation Menu */}
-        <nav className="flex-1 overflow-y-auto p-3.5 pt-6">
+        <nav className="flex-1 overflow-y-auto p-3.5 pt-4">
           <div className="space-y-6">
             {menuSections.map((section) => (
               <div key={section.title}>
@@ -127,7 +135,7 @@ export default function Sidebar({ isOpen, isCollapsed = false, onClose, user, on
                           href={item.href}
                           target={item.external ? '_blank' : undefined}
                           rel={item.external ? 'noopener noreferrer' : undefined}
-                          className={`group flex min-h-[42px] items-center gap-2.5 rounded-[12px] px-3 py-2 text-[14px] font-semibold transition-all duration-150 active:scale-[0.98] ${
+                          className={`group flex min-h-[48px] items-center gap-2.5 rounded-[12px] px-3 py-2 text-[14px] font-semibold transition-all duration-150 active:scale-[0.98] ${
                             isActive
                               ? 'bg-[#0071e3] text-white shadow-[0_4px_14px_rgba(0,113,227,0.30)]'
                               : 'text-[#1d1d1f] hover:bg-black/[0.05] hover:text-[#1d1d1f]'
@@ -183,7 +191,7 @@ export default function Sidebar({ isOpen, isCollapsed = false, onClose, user, on
               onClose()
               onLogout()
             }}
-            className="flex min-h-[42px] w-full items-center gap-2.5 rounded-[12px] px-3 py-2 text-[14px] font-semibold text-[#ff3b30] transition-all duration-150 hover:bg-[#ff3b30]/10 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ff3b30]"
+            className="flex min-h-[48px] w-full items-center gap-2.5 rounded-[12px] px-3 py-2 text-[14px] font-semibold text-[#ff3b30] transition-all duration-150 hover:bg-[#ff3b30]/10 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ff3b30]"
             aria-label="ออกจากระบบ"
           >
             <span className="flex h-7 w-7 items-center justify-center rounded-[8px] bg-[#ff3b30]/10 text-[#ff3b30]">

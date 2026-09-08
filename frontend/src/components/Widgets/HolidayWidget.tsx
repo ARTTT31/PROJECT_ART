@@ -71,7 +71,7 @@ export default function HolidayWidget({
                   วันหยุดนักขัตฤกษ์
                 </h2>
                 <span className="rounded-full bg-[#f2f2f7] px-2 py-0.5 text-[11px] font-bold text-[#6e6e73]">
-                  ปี 2569
+                  ปี {new Date().getFullYear() + 543}
                 </span>
               </div>
               <p className="mt-0.5 text-[12px] text-[#86868b]">
@@ -162,7 +162,7 @@ export default function HolidayWidget({
                   : 'text-[#6e6e73] hover:text-[#1d1d1f]'
               }`}
             >
-              ทั้งหมด (17 วัน)
+              ทั้งหมด ({holidaysWithDiff.length} วัน)
             </button>
           </div>
 
@@ -242,8 +242,8 @@ export default function HolidayWidget({
 
       {/* ── Footer ─────────────────────────────────────────────────────────── */}
       <footer className="mt-3 flex items-center justify-between border-t border-black/[0.06] pt-2.5 text-[11px] text-[#86868b]">
-        <span>ข้อมูลวันหยุดราชการประจำปี 2569</span>
-        <span>รวมทั้งหมด 17 วัน</span>
+        <span>ข้อมูลวันหยุดราชการประจำปี {new Date().getFullYear() + 543}</span>
+        <span>รวมทั้งหมด {holidaysWithDiff.length} วัน</span>
       </footer>
     </section>
   )

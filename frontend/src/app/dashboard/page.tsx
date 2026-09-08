@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Check, Eye, EyeOff, GripHorizontal, Loader2, SlidersHorizontal } from 'lucide-react'
+import { Check, Eye, EyeOff, GripHorizontal, SlidersHorizontal } from 'lucide-react'
 import { WidgetConfig } from '@/types'
 import DashboardLayout from '@/components/Layout/DashboardLayout'
 import ErrorBoundary from '@/components/ErrorBoundary'
@@ -327,9 +327,11 @@ export default function DashboardPage() {
 
   if (!user || !isClient) {
     return (
-      <div className="flex min-h-[100dvh] items-center justify-center bg-[#f5f5f7]">
-        <div className="h-11 w-11 animate-spin rounded-full border-[3px] border-[#f5f5f7] border-t-[#0071e3]" />
-      </div>
+      <DashboardLayout>
+        <div className="flex min-h-[60vh] items-center justify-center">
+          <div className="h-11 w-11 animate-spin rounded-full border-[3px] border-[#f5f5f7] border-t-[#0071e3]" />
+        </div>
+      </DashboardLayout>
     )
   }
 
