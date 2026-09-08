@@ -23,6 +23,7 @@ import {
   X,
   Palette,
   Bookmark,
+  LayoutGrid,
 } from 'lucide-react'
 import DashboardLayout from '@/components/Layout/DashboardLayout'
 import { showDeleteConfirm, showToast, showSuccess, showError } from '@/utils/sweetalert'
@@ -46,6 +47,13 @@ import {
   parseQuickLinks,
   serializeQuickLinks,
 } from '@/utils/quickLinks'
+import {
+  parseMainMenuConfig,
+  serializeMainMenuConfig,
+  MAIN_MENU_STORAGE_KEY,
+  MAIN_MENU_ICON_MAP,
+  type MainMenuItemConfig,
+} from '@/utils/mainMenu'
 import type { AuthUser } from '@/types'
 
 // ─────────────────────────────────────────────────────────────
@@ -208,10 +216,43 @@ export default function ProfilePage() {
   const [qlIcon, setQlIcon] = useState<QuickLinkIconKey>('link')
   const [qlColor, setQlColor] = useState('#0ea5e9')
 
+  // Main Menu Config
+  const [mainMenuConfig, setMainMenuConfig] = useState<MainMenuItemConfig[]>(() => {
+    if (typeof window === 'undefined') return parseMainMenuConfig(null)
+    const saved = localStorage.getItem(MAIN_MENU_STORAGE_KEY)
+    return parseMainMenuConfig(saved)
+  })
+
   const previewMeta = useMemo(() => describeQuickLink(qlUrl), [qlUrl])
   const PreviewIcon = QUICK_LINK_ICON_MAP[qlIcon]
   const previewIconLabel =
     QUICK_LINK_ICON_OPTIONS.find((option) => option.key === qlIcon)?.label ?? 'ลิงก์'
+
+  // ── Main Menu Handlers ────────────────────────────────────────
+
+  const saveMainMenu = (items: MainMenuItemConfig[]) => {
+    const serialized = serializeMainMenuConfig(items)
+    localStorage.setItem(MAIN_MENU_STORAGE_KEY, serialized)
+    window.dispatchEvent(new Event('art-main-menu-updated'))
+    setMainMenuConfig(items)
+  }
+
+  const toggleMainMenuItem = (id: string) => {
+    const updated = mainMenuConfig.map((item) =>
+      item.id === id && !item.required ? { ...item, enabled: !item.enabled } : item
+    )
+    saveMainMenu(updated)
+  }
+
+  const moveMainMenuItem = (id: string, dir: 'up' | 'down') => {
+    const idx = mainMenuConfig.findIndex((item) => item.id === id)
+    if (idx === -1) return
+    const newList = [...mainMenuConfig]
+    const target = dir === 'up' ? idx - 1 : idx + 1
+    if (target < 0 || target >= newList.length) return
+    ;[newList[idx], newList[target]] = [newList[target], newList[idx]]
+    saveMainMenu(newList)
+  }
 
   // ── Init ──────────────────────────────────────────────────────
 
@@ -764,6 +805,108 @@ export default function ProfilePage() {
               })}
             </div>
           )}
+        </SectionCard>
+
+        {/* ══════════════════════════════════════════════════
+            SECTION 4 — MAIN MENU CONFIGURATION
+            ══════════════════════════════════════════════════ */}
+        <SectionCard
+          icon={<LayoutGrid size={20} aria-hidden="true" />}
+          iconBg="bg-violet-50"
+          iconColor="text-violet-600"
+          iconRing="ring-violet-200/60"
+          title="เมนูหลัก"
+          subtitle="เปิด/ปิด และจัดลำดับรายการในแถบเมนูด้านข้าง"
+          badge={`${mainMenuConfig.filter((i) => i.enabled).length} รายการ`}
+        >
+          <div className="space-y-1.5">
+            {mainMenuConfig.map((item, idx) => {
+              const Icon = MAIN_MENU_ICON_MAP[item.icon]
+              return (
+                <div
+                  key={item.id}
+                  className={`flex items-center gap-3 rounded-2xl p-2.5 ring-1 transition-all duration-150 sm:p-3 ${
+                    item.enabled
+                      ? 'bg-white ring-black/[0.05] shadow-sm'
+                      : 'bg-[#f5f5f7] ring-transparent opacity-60'
+                  }`}
+                >
+                  {/* Icon */}
+                  <div
+                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] ${
+                      item.enabled ? 'bg-[#0071e3]/10 text-[#0071e3]' : 'bg-slate-100 text-slate-400'
+                    }`}
+                  >
+                    <Icon size={18} aria-hidden="true" />
+                  </div>
+
+                  {/* Name + description */}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[13.5px] font-bold tracking-tight text-[#1d1d1f]">
+                        {item.name}
+                      </span>
+                      {item.required && (
+                        <span className="rounded-full bg-slate-100 px-1.5 py-[1px] text-[9.5px] font-bold text-slate-500 ring-1 ring-slate-200">
+                          บังคับ
+                        </span>
+                      )}
+                    </div>
+                    {item.description && (
+                      <p className="mt-0.5 truncate text-[11px] text-[#6e6e73]">{item.description}</p>
+                    )}
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex shrink-0 items-center gap-1">
+                    {/* Reorder up/down */}
+                    <button
+                      type="button"
+                      onClick={() => moveMainMenuItem(item.id, 'up')}
+                      disabled={idx === 0}
+                      aria-label="ย้ายขึ้น"
+                      className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 transition-all hover:bg-slate-100 hover:text-slate-700 disabled:opacity-30 disabled:hover:bg-transparent"
+                    >
+                      <ChevronUp size={14} aria-hidden="true" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => moveMainMenuItem(item.id, 'down')}
+                      disabled={idx === mainMenuConfig.length - 1}
+                      aria-label="ย้ายลง"
+                      className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 transition-all hover:bg-slate-100 hover:text-slate-700 disabled:opacity-30 disabled:hover:bg-transparent"
+                    >
+                      <ChevronDown size={14} aria-hidden="true" />
+                    </button>
+
+                    {/* Toggle switch */}
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={item.enabled}
+                      aria-label={`${item.enabled ? 'ซ่อน' : 'แสดง'} ${item.name}`}
+                      disabled={!!item.required}
+                      onClick={() => toggleMainMenuItem(item.id)}
+                      className={`relative ml-1 h-6 w-10 rounded-full transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3] focus-visible:ring-offset-1 disabled:cursor-default ${
+                        item.enabled ? 'bg-[#0071e3]' : 'bg-slate-200'
+                      }`}
+                    >
+                      <span
+                        className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform duration-200 ${
+                          item.enabled ? 'translate-x-4' : 'translate-x-0.5'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          <p className="mt-3 text-[11px] text-[#86868b] flex items-center gap-1">
+            <Info size={11} aria-hidden="true" />
+            รายการที่ปิดจะไม่แสดงในแถบเมนูด้านข้าง รายการ "บังคับ" ไม่สามารถปิดได้
+          </p>
         </SectionCard>
 
       </div>
