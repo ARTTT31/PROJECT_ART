@@ -887,13 +887,13 @@ export default function ProfilePage() {
                       aria-label={`${item.enabled ? 'ซ่อน' : 'แสดง'} ${item.name}`}
                       disabled={!!item.required}
                       onClick={() => toggleMainMenuItem(item.id)}
-                      className={`relative ml-1 h-6 w-10 rounded-full transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3] focus-visible:ring-offset-1 disabled:cursor-default ${
-                        item.enabled ? 'bg-[#0071e3]' : 'bg-slate-200'
-                      }`}
+                      className={`relative ml-1 inline-flex h-7 w-12 shrink-0 cursor-pointer items-center rounded-full p-0.5 transition-colors duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3] focus-visible:ring-offset-2 disabled:cursor-not-allowed ${
+                        item.enabled ? 'bg-[#0071e3]' : 'bg-[#e5e5ea]'
+                      } ${item.required ? 'opacity-70' : ''}`}
                     >
                       <span
-                        className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform duration-200 ${
-                          item.enabled ? 'translate-x-4' : 'translate-x-0.5'
+                        className={`pointer-events-none inline-block h-6 w-6 rounded-full bg-white shadow-[0_2px_4px_rgba(0,0,0,0.15),0_0_1px_rgba(0,0,0,0.1)] transition-transform duration-200 ease-in-out ${
+                          item.enabled ? 'translate-x-5' : 'translate-x-0'
                         }`}
                       />
                     </button>
@@ -905,7 +905,7 @@ export default function ProfilePage() {
 
           <p className="mt-3 text-[11px] text-[#86868b] flex items-center gap-1">
             <Info size={11} aria-hidden="true" />
-            รายการที่ปิดจะไม่แสดงในแถบเมนูด้านข้าง รายการ "บังคับ" ไม่สามารถปิดได้
+            รายการที่ปิดจะไม่แสดงในแถบเมนูด้านข้าง รายการ &quot;บังคับ&quot; ไม่สามารถปิดได้
           </p>
         </SectionCard>
 
