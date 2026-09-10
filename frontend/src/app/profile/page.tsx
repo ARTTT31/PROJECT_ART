@@ -887,14 +887,14 @@ export default function ProfilePage() {
                       aria-label={`${item.enabled ? 'ซ่อน' : 'แสดง'} ${item.name}`}
                       disabled={!!item.required}
                       onClick={() => toggleMainMenuItem(item.id)}
-                      className={`relative ml-1 inline-flex h-7 w-12 shrink-0 cursor-pointer items-center rounded-full p-0.5 transition-colors duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3] focus-visible:ring-offset-2 disabled:cursor-not-allowed ${
+                      style={{ width: '51px', height: '31px', minWidth: '51px', minHeight: '31px', padding: '2px', display: 'flex', alignItems: 'center' }}
+                      className={`relative ml-1 shrink-0 cursor-pointer rounded-full transition-colors duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3] focus-visible:ring-offset-2 disabled:cursor-not-allowed ${
                         item.enabled ? 'bg-[#0071e3]' : 'bg-[#e5e5ea]'
                       } ${item.required ? 'opacity-70' : ''}`}
                     >
                       <span
-                        className={`pointer-events-none inline-block h-6 w-6 rounded-full bg-white shadow-[0_2px_4px_rgba(0,0,0,0.15),0_0_1px_rgba(0,0,0,0.1)] transition-transform duration-200 ease-in-out ${
-                          item.enabled ? 'translate-x-5' : 'translate-x-0'
-                        }`}
+                        style={{ width: '27px', height: '27px', transform: item.enabled ? 'translateX(20px)' : 'translateX(0px)' }}
+                        className={`pointer-events-none inline-block rounded-full bg-white shadow-[0_2px_4px_rgba(0,0,0,0.15),0_0_1px_rgba(0,0,0,0.1)] transition-transform duration-200 ease-in-out`}
                       />
                     </button>
                   </div>
