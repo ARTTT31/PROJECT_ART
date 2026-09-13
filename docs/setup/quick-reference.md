@@ -345,13 +345,6 @@ docker-compose exec -T backend python create_admin_simple.py
 # 4. If all proxies fail → Shows error message
 # 5. Check localStorage → oil_price_cache
 
-# Todo Widget not saving data:
-# 1. Open DevTools → Application → Local Storage
-# 2. Check for "todos" key
-# 3. If missing → localStorage might be blocked
-# 4. Try clearing localStorage and adding a new todo
-# 5. Check Console → Should have no localStorage errors
-
 # Calculator Widget not working:
 # 1. Check Console → Should have no JavaScript errors
 # 2. Try refreshing page (Ctrl+R)
@@ -372,12 +365,6 @@ docker-compose exec -T backend python create_admin_simple.py
 # 2. Weather Widget: Open-Meteo API should respond within 1-2 seconds
 # 3. Oil Price Widget: Thai Oil API might be slow, uses cache
 # 4. Try clearing localStorage cache and refreshing
-
-# Widgets using high memory:
-# 1. Open DevTools → Performance tab
-# 2. Record and view memory usage
-# 3. Todo Widget: Might be slow with many todos (>1000)
-# 4. Try clearing completed todos
 
 # Auto-refresh causing slowdown:
 # 1. Weather Widget refreshes every 2 minutes
@@ -615,7 +602,6 @@ docker-compose stop
 8. ✅ **Dashboard Widgets (Phase 2)**
    - ✅ Weather Widget (Open-Meteo API, UV Index, Sunrise/Sunset, PM2.5, AQI, 7-day forecast)
    - ✅ Oil Price Widget (Thai Oil API, Price Change Indicator, Percentage)
-   - ✅ Todo Widget (CRUD, Filter, localStorage, Stats)
    - ✅ Calculator Widget (Basic operations, Keyboard support)
    - ✅ Barcode/QR Widget (Generate, Download, Copy, Share, Print)
 
@@ -659,17 +645,6 @@ docker-compose stop
   - Fallback proxies (3 levels)
   - Cache system (localStorage)
 
-### Todo Widget
-- **Storage**: localStorage
-- **Features**:
-  - CRUD operations (Add/Edit/Delete)
-  - Mark as complete/incomplete
-  - Filter (All/Active/Completed)
-  - Clear completed tasks
-  - Inline edit (double-click)
-  - Stats display (Total/Active/Completed)
-  - Responsive design
-
 ### Calculator Widget
 - **Features**:
   - Basic operations (+, -, ×, ÷)
@@ -703,7 +678,6 @@ docker-compose stop
 frontend/src/components/Widgets/
 ├── WeatherWidget.tsx
 ├── OilPriceWidget.tsx
-├── TodoWidget.tsx
 ├── CalculatorWidget.tsx
 └── BarcodeQRWidget.tsx
 ```
@@ -736,15 +710,6 @@ open http://localhost:3000/dashboard
 # - View all fuel prices
 # - Verify Price Change Indicator (↑↓)
 # - View Change Percentage (%)
-
-# Todo Widget:
-# - Add new todo
-# - Mark as complete/incomplete
-# - Edit todo (double-click)
-# - Delete todo
-# - Filter (All/Active/Completed)
-# - Clear completed
-
 # Calculator Widget:
 # - Calculate using mouse
 # - Test keyboard (0-9, +, -, *, /, Enter, Esc)
@@ -763,7 +728,6 @@ open http://localhost:3000/dashboard
 # Should contain keys:
 # - weather_cache
 # - oil_price_cache
-# - todos
 
 # 5. Check Console
 # Open DevTools (F12) → Console

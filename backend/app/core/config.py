@@ -4,8 +4,8 @@ Application Configuration
 
 import os
 from typing import List
-from pydantic import ConfigDict, field_validator
-from pydantic_settings import BaseSettings
+from pydantic import field_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -178,11 +178,11 @@ class Settings(BaseSettings):
             or "http://localhost:8000/api/v1/auth/microsoft/callback"
         )
 
-    model_config = ConfigDict(
+    model_config = SettingsConfigDict(
         env_file=".env",
         case_sensitive=True,
         extra="ignore",
     )
 
 
-settings = Settings()
+settings = Settings()  # type: ignore[call-arg]

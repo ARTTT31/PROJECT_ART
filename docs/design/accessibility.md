@@ -12,8 +12,7 @@
 1. **TaskListWidget** ✅ (Previously completed)
 2. **WeatherWidget** ✅ (Previously completed)
 3. **OilPriceWidget** ✅ (Previously completed)
-4. **TodoWidget** ✅ (Just completed)
-5. **CalculatorWidget** ✅ (Just completed)
+4. **CalculatorWidget** ✅ (Just completed)
 6. **BarcodeQRWidget** ✅ (Just completed)
 7. **CalendarWidget** ✅ (Just completed)
 
@@ -21,13 +20,6 @@
 
 ## 🎯 Changes Made in This Iteration
 
-### 1. TodoWidget
-- ✅ Added `role="region"` and `aria-labelledby`
-- ✅ Added `role="tablist"` for filter buttons
-- ✅ Added `role="tab"` and `aria-selected` for each button
-- ✅ Added `role="list"` and `role="listitem"` for todo items
-- ✅ Added `role="checkbox"` and `aria-checked` for checkboxes
-- ✅ Added `aria-label` for all action buttons
 - ✅ Added `aria-live="polite"` for task count
 - ✅ Added `focus:ring-2` focus indicators for all buttons
 - ✅ Hid decorative icons with `aria-hidden="true"`
@@ -90,7 +82,6 @@
 | TaskListWidget | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ Complete |
 | WeatherWidget | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ Complete |
 | OilPriceWidget | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ Complete |
-| TodoWidget | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ Complete |
 | CalculatorWidget | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ Complete |
 | BarcodeQRWidget | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ Complete |
 | CalendarWidget | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ Complete |
@@ -182,8 +173,7 @@
 
 ## 📝 Files Modified
 
-1. `frontend/src/components/Widgets/TodoWidget.tsx` - Added accessibility
-2. `frontend/src/components/Widgets/CalculatorWidget.tsx` - Added accessibility
+1. `frontend/src/components/Widgets/CalculatorWidget.tsx` - Added accessibility
 3. `frontend/src/components/Widgets/BarcodeQRWidget.tsx` - Added accessibility
 4. `frontend/src/components/Widgets/CalendarWidget.tsx` - Added accessibility + keyboard nav
 5. `frontend/src/app/globals.css` - Added accessibility utilities

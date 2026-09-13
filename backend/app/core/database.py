@@ -23,7 +23,9 @@ elif db_url.startswith("postgres://"):
 elif db_url.startswith("postgresql://") and not db_url.startswith("postgresql+asyncpg://"):
     db_url = db_url.replace("postgresql://", "postgresql+asyncpg://", 1)
 
-engine_kwargs = {
+from typing import Any
+
+engine_kwargs: dict[str, Any] = {
     "pool_pre_ping": True,
     "pool_recycle": 1800,
 }

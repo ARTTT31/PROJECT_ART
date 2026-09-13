@@ -271,7 +271,9 @@ async def refresh_token(
             if user_id:
                 user = await user_service.get_user_by_id(user_id)
             elif payload and payload.get("sub"):
-                user = await user_service.get_user_by_email(payload.get("sub"))
+                sub_val = payload.get("sub")
+                if isinstance(sub_val, str):
+                    user = await user_service.get_user_by_email(sub_val)
 
             if user:
                 user_data = {
@@ -348,7 +350,7 @@ def _get_valid_client_ids() -> List[str]:
 @router.post("/google/verify-token")
 @limiter.limit(_AUTH_LIMIT)
 async def google_verify_token(
-    token_request: dict, request: Request = None, db: AsyncSession = Depends(get_db)
+    token_request: dict, request: Request, db: AsyncSession = Depends(get_db)
 ):
     """Verify Google ID token from web or Capacitor and issue JWT via HTTP-only cookies"""
     id_token_jwt = token_request.get("id_token")
@@ -444,6 +446,12 @@ async def google_verify_token(
         except Exception:
             user = await user_service.get_user_by_email(email)
 
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to create or retrieve user",
+        )
+
     # Issue tokens
     access_jwt = create_access_token(data={"sub": user.email, "user_id": user.id})
     refresh_jwt = create_refresh_token(data={"sub": user.email, "user_id": user.id})
@@ -487,7 +495,7 @@ async def google_verify_token(
 
 @router.get("/google/callback")
 async def google_callback(
-    code: str = None, request: Request = None, db: AsyncSession = Depends(get_db)
+    request: Request, code: str | None = None, db: AsyncSession = Depends(get_db)
 ):
     """Handle callback from Google with id_token verification, then issue JWT via HTTP-only cookies"""
     if not _GOOGLE_AUTH_AVAILABLE:
@@ -585,6 +593,12 @@ async def google_callback(
         except Exception:
             user = await user_service.get_user_by_email(email)
 
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to create or retrieve user",
+        )
+
     # Issue tokens
     access_jwt = create_access_token(data={"sub": user.email, "user_id": user.id})
     refresh_jwt = create_refresh_token(data={"sub": user.email, "user_id": user.id})
@@ -653,7 +667,7 @@ async def microsoft_login(request: Request):
 
 @router.post("/microsoft/verify-token")
 async def microsoft_verify_token(
-    token_request: dict, request: Request = None, db: AsyncSession = Depends(get_db)
+    token_request: dict, request: Request, db: AsyncSession = Depends(get_db)
 ):
     """Verify Microsoft Access Token from Capacitor plugin and issue JWT via HTTP-only cookies"""
     access_token = token_request.get("access_token") or token_request.get("id_token")
@@ -698,6 +712,12 @@ async def microsoft_verify_token(
             user = await user_service.create_user(user_create)
         except Exception:
             user = await user_service.get_user_by_email(email)
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to create or retrieve user",
+        )
 
     # Issue tokens
     access_jwt = create_access_token(data={"sub": user.email, "user_id": user.id})
