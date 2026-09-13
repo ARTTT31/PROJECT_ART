@@ -461,7 +461,7 @@ export default function WeatherWidget({
       <div>
         {/* ── Header ──────────────────────────────────────────────────── */}
         <div className="flex items-start justify-between gap-3">
-          <div className="flex items-center gap-3 min-w-0">
+          <div className="flex items-start gap-3 min-w-0">
             {/* Icon badge */}
             <div
               className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] ${weatherMeta.bgClass} ${weatherMeta.colorClass}`}
