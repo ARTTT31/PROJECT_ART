@@ -36,9 +36,11 @@ from app.services.auth_service import AuthService
 from app.services.audit_service import AuditService
 from app.services.user_service import UserService
 
+from typing import Any
+
 router = APIRouter()
 
-COOKIE_OPTIONS = {
+COOKIE_OPTIONS: dict[str, Any] = {
     "secure": settings.COOKIE_SECURE,
     "samesite": settings.COOKIE_SAMESITE,
     "path": "/",
@@ -740,7 +742,7 @@ async def microsoft_verify_token(
 
 @router.get("/microsoft/callback")
 async def microsoft_callback(
-    code: str = None, request: Request = None, db: AsyncSession = Depends(get_db)
+    request: Request, code: Optional[str] = None, db: AsyncSession = Depends(get_db)
 ):
     """Handle callback from Microsoft, exchange code for access token, fetch profile, then issue JWT"""
     try:
@@ -818,6 +820,9 @@ async def microsoft_callback(
             user = await user_service.create_user(user_create)
         except Exception:
             user = await user_service.get_user_by_email(email)
+
+    if not user:
+        raise HTTPException(status_code=500, detail="User creation failed")
 
     # Issue tokens
     access_jwt = create_access_token(data={"sub": user.email, "user_id": user.id})

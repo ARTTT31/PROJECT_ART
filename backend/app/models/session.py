@@ -2,8 +2,9 @@
 Session Model for tracking user sessions
 """
 
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean
-from sqlalchemy.orm import relationship
+from datetime import datetime
+from sqlalchemy import Integer, String, DateTime, ForeignKey, Boolean
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin, _utcnow
 
@@ -13,19 +14,19 @@ class UserSession(Base, TimestampMixin):
 
     __tablename__ = "sessions"
 
-    id = Column(Integer, primary_key=True, index=True)
-    session_id = Column(String(255), unique=True, index=True, nullable=False)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    session_id: Mapped[str] = mapped_column(String(255), unique=True, index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
 
     # Session metadata
-    user_agent = Column(String(500), nullable=True)
-    device_label = Column(String(255), nullable=True)
-    ip_address = Column(String(45), nullable=True)
+    user_agent: Mapped[str | None] = mapped_column(String(500))
+    device_label: Mapped[str | None] = mapped_column(String(255))
+    ip_address: Mapped[str | None] = mapped_column(String(45))
 
     # Session status
-    is_active = Column(Boolean, default=True, nullable=False)
-    last_activity = Column(DateTime, default=_utcnow, nullable=False, index=True)
-    expires_at = Column(DateTime, nullable=True, index=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    last_activity: Mapped[datetime] = mapped_column(DateTime, default=_utcnow, index=True)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime, index=True)
 
     # Relationships
     user = relationship("User", back_populates="sessions")

@@ -126,17 +126,17 @@ function SortableWidget({
   } = useSortable({ id: widget.id })
 
   const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.45 : 1,
-    zIndex: isDragging ? 50 : ('auto' as const),
+    transform: CSS.Translate.toString(transform),
+    transition: transition || (isDragging ? 'none' : 'all 0.3s ease'),
+    opacity: isDragging ? 0.7 : 1,
+    zIndex: isDragging ? 50 : 1,
   }
 
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className={`group relative transition-all duration-300 ${getColSpanClass(widget.w)}`}
+      className={`group relative ${getColSpanClass(widget.w)}`}
     >
       {/* Drag handle — visible on hover, sits above widget */}
       <div

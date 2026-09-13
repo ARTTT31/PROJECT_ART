@@ -461,7 +461,7 @@ export default function WeatherWidget({
       <div>
         {/* ── Header ──────────────────────────────────────────────────── */}
         <div className="flex items-start justify-between gap-3">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 min-w-0">
             {/* Icon badge */}
             <div
               className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] ${weatherMeta.bgClass} ${weatherMeta.colorClass}`}
@@ -470,9 +470,9 @@ export default function WeatherWidget({
             </div>
 
             {/* City Selector & Title */}
-            <div>
+            <div className="min-w-0">
               <div className="flex items-center gap-1.5">
-                <h2 id="weather-title" className="text-[16px] font-bold tracking-tight text-[#1d1d1f]">
+                <h2 id="weather-title" className="text-[16px] font-bold tracking-tight text-[#1d1d1f] truncate">
                   สภาพอากาศ &amp; PM 2.5
                 </h2>
               </div>

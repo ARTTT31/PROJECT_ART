@@ -185,7 +185,8 @@ async def upload_avatar_file(
     Upload user avatar and store as Base64 in Database (Serverless Friendly)
     """
     # 1. Check file extension
-    ext = os.path.splitext(file.filename)[1].lower()
+    filename = file.filename or ""
+    ext = os.path.splitext(filename)[1].lower()
     if ext not in [".jpg", ".jpeg", ".png", ".gif"]:
         raise HTTPException(
             status_code=400, detail="รองรับเฉพาะไฟล์รูปภาพ (jpg, jpeg, png, gif)"

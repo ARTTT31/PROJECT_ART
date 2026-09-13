@@ -2,8 +2,9 @@
 User Model
 """
 
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text
-from sqlalchemy.orm import relationship
+from datetime import datetime
+from sqlalchemy import Integer, String, Boolean, DateTime, Text
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin
 
@@ -13,38 +14,38 @@ class User(Base, TimestampMixin):
 
     __tablename__ = "users"
 
-    id = Column(Integer, primary_key=True, index=True)
-    email = Column(String(255), unique=True, index=True, nullable=True)
-    username = Column(String(255), unique=True, index=True, nullable=True)
-    display_name = Column(String(255), nullable=True)
-    hashed_password = Column(String(255), nullable=False)
-    name = Column(String(255), nullable=False)
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    email: Mapped[str | None] = mapped_column(String(255), unique=True, index=True)
+    username: Mapped[str | None] = mapped_column(String(255), unique=True, index=True)
+    display_name: Mapped[str | None] = mapped_column(String(255))
+    hashed_password: Mapped[str] = mapped_column(String(255))
+    name: Mapped[str] = mapped_column(String(255))
 
     # Profile fields
-    avatar = Column(Text, nullable=True)  # Base64 or URL
-    role = Column(String(50), default="user", nullable=False)  # user, admin
+    avatar: Mapped[str | None] = mapped_column(Text)  # Base64 or URL
+    role: Mapped[str] = mapped_column(String(50), default="user")  # user, admin
 
     # Quick links (JSON stored as text)
-    quick_links = Column(Text, nullable=True)
+    quick_links: Mapped[str | None] = mapped_column(Text)
 
     # Dashboard layout and widget preferences (JSON stored as text)
-    dashboard_layout = Column(Text, nullable=True)
+    dashboard_layout: Mapped[str | None] = mapped_column(Text)
 
     # Camera streams configuration (JSON stored as text)
-    camera_config = Column(Text, nullable=True)
+    camera_config: Mapped[str | None] = mapped_column(Text)
 
     # Account status
-    is_active = Column(Boolean, default=True, nullable=False)
-    is_locked = Column(Boolean, default=False, nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    is_locked: Mapped[bool] = mapped_column(Boolean, default=False)
 
     # Login tracking
-    last_login = Column(DateTime, nullable=True)
-    last_login_ip = Column(String(45), nullable=True)
-    last_login_device = Column(String(255), nullable=True)
+    last_login: Mapped[datetime | None] = mapped_column(DateTime)
+    last_login_ip: Mapped[str | None] = mapped_column(String(45))
+    last_login_device: Mapped[str | None] = mapped_column(String(255))
 
     # Failed login attempts
-    failed_login_attempts = Column(Integer, default=0, nullable=False)
-    locked_until = Column(DateTime, nullable=True)
+    failed_login_attempts: Mapped[int] = mapped_column(Integer, default=0)
+    locked_until: Mapped[datetime | None] = mapped_column(DateTime)
 
     # Relationships
     sessions = relationship(

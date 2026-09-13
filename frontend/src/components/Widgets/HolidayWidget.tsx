@@ -57,24 +57,24 @@ export default function HolidayWidget({
       <div>
         {/* ── Header ──────────────────────────────────────────────────── */}
         <div className="flex items-start justify-between gap-3">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 min-w-0">
             {/* Icon badge */}
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[#af52de]/10 text-[#af52de]">
               <Palmtree size={20} aria-hidden="true" />
             </div>
-            <div>
+            <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <h2
                   id="holiday-widget-title"
-                  className="text-[16px] font-bold tracking-tight text-[#1d1d1f]"
+                  className="text-[16px] font-bold tracking-tight text-[#1d1d1f] truncate"
                 >
                   วันหยุดนักขัตฤกษ์
                 </h2>
-                <span className="rounded-full bg-[#f2f2f7] px-2 py-0.5 text-[11px] font-bold text-[#6e6e73]">
+                <span className="shrink-0 rounded-full bg-[#f2f2f7] px-2 py-0.5 text-[11px] font-bold text-[#6e6e73]">
                   ปี {new Date().getFullYear() + 543}
                 </span>
               </div>
-              <p className="mt-0.5 text-[12px] text-[#86868b]">
+              <p className="mt-0.5 text-[12px] text-[#86868b] truncate">
                 ปฏิทินวันหยุดราชการและวันหยุดตามประเพณี
               </p>
             </div>

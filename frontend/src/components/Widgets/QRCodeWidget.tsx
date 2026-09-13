@@ -299,7 +299,7 @@ export default function QRCodeWidget({
       <div>
         {/* ── Header ──────────────────────────────────────────────────── */}
         <div className="flex items-start justify-between gap-3">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 min-w-0">
             {/* Icon badge */}
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[#0071e3]/10 text-[#0071e3]">
               {format === 'qrcode' ? (
@@ -308,11 +308,11 @@ export default function QRCodeWidget({
                 <Barcode size={20} aria-hidden="true" />
               )}
             </div>
-            <div>
-              <h2 id="qr-title" className="text-[16px] font-bold tracking-tight text-[#1d1d1f]">
+            <div className="min-w-0">
+              <h2 id="qr-title" className="text-[16px] font-bold tracking-tight text-[#1d1d1f] truncate">
                 {format === 'qrcode' ? 'สร้าง QR Code' : 'สร้างบาร์โค้ด Code 128'}
               </h2>
-              <p className="mt-0.5 text-[12px] text-[#86868b]">
+              <p className="mt-0.5 text-[12px] text-[#86868b] truncate">
                 {format === 'qrcode' ? 'แปลงข้อความ หรือ URL เป็น QR Code' : 'แปลงรหัสสินค้า/ตัวเลข เป็นบาร์โค้ดมาตรฐาน'}
               </p>
             </div>
