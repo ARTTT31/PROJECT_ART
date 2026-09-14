@@ -6,7 +6,6 @@ import { ArrowRight, AlertCircle, Check, Eye, EyeOff, Loader2, Lock, Mail } from
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/components/Toast/ToastProvider';
-import { GoogleOAuthProvider, GoogleLogin, useGoogleLogin } from '@react-oauth/google';
 
 const formatDate = (date: Date) =>
   new Intl.DateTimeFormat('th-TH', {
@@ -90,22 +89,19 @@ function LoginContent() {
     }
   }, [login, router, toast]);
 
-  const handleGoogleSignIn = useGoogleLogin({
-    onSuccess: (tokenResponse) => {
-      if (tokenResponse.access_token) {
-        toast.info("ได้รับข้อมูลจาก Google กำลังยืนยันตัวตน...");
-        // Fallback to sending access_token, wait backend expects id_token?
-        // Let's send access_token in the same field and update backend to handle it, OR wait, 
-        // the backend checks https://oauth2.googleapis.com/tokeninfo?id_token=...
-        // Google's tokeninfo endpoint actually accepts access_token via the same `id_token` param occasionally? No, it's `access_token=`.
-        // Let's send access_token to the backend as `access_token`.
-        verifyGoogleToken(tokenResponse.access_token, true);
-      }
-    },
-    onError: () => {
-      toast.error('การเข้าสู่ระบบด้วย Google ล้มเหลว');
+  const handleGoogleSignIn = () => {
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+    if (!clientId) {
+      toast.error('Google Sign-In ไม่ได้ตั้งค่า Client ID');
+      return;
     }
-  });
+    
+    toast.info("กำลังพับลิชไปยัง Google...");
+    const redirectUri = window.location.origin + window.location.pathname;
+    const scope = encodeURIComponent('email profile');
+    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=token&scope=${scope}`;
+    window.location.href = authUrl;
+  };
 
 
   useEffect(() => {
@@ -119,11 +115,20 @@ function LoginContent() {
       setTimeout(() => emailRef.current?.focus(), 100);
     }
 
-    // Web-based Google Sign In would be implemented here using @react-oauth/google
-    // Since we removed Capacitor, this needs to be refactored to standard web flow.
-    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
-    if (clientId) {
-      // Placeholder for standard web initialize
+    // Check for Google OAuth redirect hash
+    const hash = window.location.hash;
+    if (hash.includes('access_token=')) {
+      const params = new URLSearchParams(hash.replace('#', '?'));
+      const accessToken = params.get('access_token');
+      if (accessToken) {
+        toast.info("ได้รับข้อมูลจาก Google กำลังยืนยันตัวตน...");
+        // Clear hash to prevent resubmission
+        window.history.replaceState(null, '', window.location.pathname);
+        verifyGoogleToken(accessToken, true);
+      }
+    } else if (hash.includes('error=')) {
+      toast.error('การเข้าสู่ระบบด้วย Google ล้มเหลว');
+      window.history.replaceState(null, '', window.location.pathname);
     }
 
     const timer = window.setInterval(() => setNow(new Date()), 1000);
@@ -388,9 +393,5 @@ function LoginContent() {
 }
 
 export default function LoginPage() {
-  return (
-    <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ''}>
-      <LoginContent />
-    </GoogleOAuthProvider>
-  )
+  return <LoginContent />;
 }
