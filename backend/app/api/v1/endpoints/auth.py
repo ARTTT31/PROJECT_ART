@@ -432,12 +432,12 @@ async def google_verify_token(
         token_aud = verified_info.get("aud")
         if valid_client_ids and token_aud not in valid_client_ids:
             # Check azp as well for Google GIS web apps
-        token_azp = verified_info.get("azp")
-        if token_azp not in valid_client_ids:
-            print(
-                f"[GOOGLE_AUTH] Warning: Token audience '{token_aud}' (azp: '{token_azp}')"
-                f" not in configured client IDs: {valid_client_ids}"
-            )
+            token_azp = verified_info.get("azp")
+            if token_azp not in valid_client_ids:
+                print(
+                    f"[GOOGLE_AUTH] Warning: Token audience '{token_aud}' (azp: '{token_azp}')"
+                    f" not in configured client IDs: {valid_client_ids}"
+                )
 
     # Extract verified user info
     email = verified_info.get("email")
