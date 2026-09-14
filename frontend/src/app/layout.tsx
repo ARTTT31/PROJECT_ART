@@ -14,17 +14,28 @@ const anuphan = Anuphan({
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
+  themeColor: '#0071e3', // Apple Blue
 };
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://project-art-sigma.vercel.app'),
-  title: 'ART Workspace',
-  description: 'Modern workspace management system',
+  title: {
+    template: '%s | ART Workspace',
+    default: 'ART Workspace - จัดการวันทำงานของคุณให้ง่ายขึ้น',
+  },
+  description: 'แพลตฟอร์มจัดการงานส่วนตัวและเชื่อมต่อระบบภายใน (Dashboard) รวบรวมข้อมูลวันหยุด ราคาน้ำมัน และสภาพอากาศไว้ในที่เดียว',
+  keywords: ['workspace', 'dashboard', 'productivity', 'management', 'art workspace'],
+  authors: [{ name: 'ART Workspace Team' }],
+  icons: {
+    icon: '/favicon.ico',
+    apple: '/apple-touch-icon.png',
+  },
   openGraph: {
     title: 'ART Workspace',
-    description: 'Manage your dashboard efficiently',
+    description: 'แพลตฟอร์มจัดการงานส่วนตัวที่ออกแบบด้วย Apple HIG เรียบง่ายแต่ทรงพลัง',
     type: 'website',
     images: ['/og-image.png'],
+    siteName: 'ART Workspace',
   },
   alternates: {
     canonical: '/',

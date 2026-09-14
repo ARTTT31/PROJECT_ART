@@ -41,10 +41,12 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 
-import OilPriceWidget from '@/components/Widgets/OilPriceWidget'
-import QRCodeWidget from '@/components/Widgets/QRCodeWidget'
-import WeatherWidget from '@/components/Widgets/WeatherWidget'
-import HolidayWidget from '@/components/Widgets/HolidayWidget'
+import dynamic from 'next/dynamic'
+
+const OilPriceWidget = dynamic(() => import('@/components/Widgets/OilPriceWidget'), { ssr: false, loading: () => <div className="h-full w-full bg-slate-50 rounded-2xl animate-pulse min-h-[200px]" /> })
+const QRCodeWidget = dynamic(() => import('@/components/Widgets/QRCodeWidget'), { ssr: false, loading: () => <div className="h-full w-full bg-slate-50 rounded-2xl animate-pulse min-h-[200px]" /> })
+const WeatherWidget = dynamic(() => import('@/components/Widgets/WeatherWidget'), { ssr: false, loading: () => <div className="h-full w-full bg-slate-50 rounded-2xl animate-pulse min-h-[200px]" /> })
+const HolidayWidget = dynamic(() => import('@/components/Widgets/HolidayWidget'), { ssr: false, loading: () => <div className="h-full w-full bg-slate-50 rounded-2xl animate-pulse min-h-[200px]" /> })
 
 import { useDashboardLayout, widgetNames, widgetDescriptions } from '@/hooks/useDashboardLayout'
 

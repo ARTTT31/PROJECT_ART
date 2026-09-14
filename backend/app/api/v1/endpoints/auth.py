@@ -3,11 +3,15 @@ Authentication Endpoints
 """
 
 import json
+import logging
+import traceback
 import os
 import secrets
-import traceback
-from typing import List, Optional
+from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional
 from urllib.parse import urlencode
+
+logger = logging.getLogger(__name__)
 
 import requests
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -130,7 +134,7 @@ async def login(
         return response
 
     except HTTPException as e:
-        print(f"[LOGIN] HTTPException: {e.status_code} - {e.detail}")
+        logger.info(f"[LOGIN] HTTPException: {e.status_code} - {e.detail}")
         await audit_service.log_action(
             action="LOGIN_FAILED",
             details=f"Failed login attempt for {user_login.email}: {e.detail}",
@@ -140,7 +144,7 @@ async def login(
         await db.commit()
         raise e
     except Exception as e:
-        print(f"[LOGIN] Exception: {str(e)}")
+        logger.info(f"[LOGIN] Exception: {str(e)}")
         print(traceback.format_exc())
         await audit_service.log_action(
             action="LOGIN_FAILED",
@@ -396,7 +400,7 @@ async def google_verify_token(
                     clock_skew_in_seconds=30,
                 )
             except Exception as e:
-                print(f"[GOOGLE_AUTH] Local verification error, trying Google API fallback: {e}")
+                logger.info(f"[GOOGLE_AUTH] Local verification error, trying Google API fallback: {e}")
 
         # 2. Fallback: Verify directly with Google's official tokeninfo REST API
         if not verified_info:
@@ -1030,5 +1034,5 @@ async def logout(
         return response
 
     except Exception as e:
-        print(f"[LOGOUT] Error: {str(e)}")
+        logger.info(f"[LOGOUT] Error: {str(e)}")
         return response
