@@ -6,7 +6,6 @@ import { ArrowRight, AlertCircle, Check, Eye, EyeOff, Loader2, Lock, Mail } from
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/components/Toast/ToastProvider';
-import { GoogleSignIn } from '@capawesome/capacitor-google-sign-in';
 
 const formatDate = (date: Date) =>
   new Intl.DateTimeFormat('th-TH', {
@@ -91,31 +90,7 @@ export default function LoginPage() {
   }, [login, router, toast]);
 
   const handleGoogleSignIn = async () => {
-    if (isSubmitting || rateLimitSeconds > 0) return;
-
-    setIsSubmitting(true);
-    setError('');
-
-    try {
-      const result = await GoogleSignIn.signIn();
-
-      if (result && result.idToken) {
-        await verifyGoogleToken(result.idToken);
-      } else {
-        setError('ไม่สามารถรับข้อมูลจาก Google ได้');
-        setErrorKey(k => k + 1);
-        setIsSubmitting(false);
-      }
-    } catch (error: any) {
-      console.error('Google Sign-In error:', error);
-      if (error.message && error.message.includes('User canceled')) {
-        setError('ยกเลิกการเข้าสู่ระบบด้วย Google');
-      } else {
-        setError(`เกิดข้อผิดพลาดในการเข้าสู่ระบบด้วย Google: ${error.message || 'Unknown error'}`);
-      }
-      setErrorKey(k => k + 1);
-      setIsSubmitting(false);
-    }
+    toast.info('Google Sign-In สำหรับเว็บกำลังอยู่ระหว่างการพัฒนา');
   };
 
 
@@ -130,30 +105,11 @@ export default function LoginPage() {
       setTimeout(() => emailRef.current?.focus(), 100);
     }
 
+    // Web-based Google Sign In would be implemented here using @react-oauth/google
+    // Since we removed Capacitor, this needs to be refactored to standard web flow.
     const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
     if (clientId) {
-      GoogleSignIn.initialize({ 
-        clientId,
-        redirectUrl: window.location.origin + '/login'
-      }).then(() => {
-        const hasAuthParams =
-          window.location.hash.includes('id_token') ||
-          window.location.hash.includes('access_token') ||
-          window.location.search.includes('code=');
-
-        if (hasAuthParams) {
-          return GoogleSignIn.handleRedirectCallback();
-        }
-        return null;
-      }).then((result) => {
-        if (result && result.idToken) {
-          toast.info("ได้รับข้อมูลจาก Google กำลังยืนยันตัวตน...");
-          setIsSubmitting(true);
-          verifyGoogleToken(result.idToken);
-        }
-      }).catch((e) => {
-        console.warn("Google redirect callback check:", e);
-      });
+      // Placeholder for standard web initialize
     }
 
     const timer = window.setInterval(() => setNow(new Date()), 1000);

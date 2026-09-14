@@ -1,14 +1,14 @@
 # ART Workspace — Design System Master Document
 
-**Version:** 4.0 (Apple HIG & SF Symbols Standard)
-**Last Updated:** 2026-07-14
-**Philosophy:** Apple Human Interface Guidelines (HIG) — Clean typography, SF Symbols iconography, iOS/macOS materials & translucency, dynamic system colors, continuous squircle radii, and intuitive interactive states.
+**Version:** 4.1 (Apple HIG & SF Symbols Standard - Web/Desktop Focus)
+**Last Updated:** 2026-09-14
+**Philosophy:** Apple Human Interface Guidelines (HIG) — Clean typography, SF Symbols iconography, macOS materials & translucency, dynamic system colors, continuous squircle radii, and intuitive interactive states.
 
 ---
 
 ## 🎯 Global Source of Truth
 
-This document defines the strict rules for **ART Workspace**. All components, pages, and features MUST adhere to Apple HIG principles.
+This document defines the strict rules for **ART Workspace**. All components, pages, and features MUST adhere to Apple HIG principles for Web.
 
 ---
 
@@ -27,7 +27,7 @@ This document defines the strict rules for **ART Workspace**. All components, pa
   - Footnote / Caption: 13pt / 12pt (`text-apple-footnote` / `text-apple-caption1`)
 
 ### 2. Apple System Colors
-- **Interactive Blue:** `#0071e3` (Web CTA) / `#007aff` (iOS Accent)
+- **Interactive Blue:** `#0071e3` (Web CTA)
 - **Semantic Tints:**
   - Green: `#34c759`
   - Orange: `#ff9500`
@@ -48,7 +48,7 @@ This document defines the strict rules for **ART Workspace**. All components, pa
 - **Inputs & Small Controls:** `12px` – `14px` (`rounded-xl`)
 - **Pills, Badges & Segmented Controls:** `9999px` (`rounded-full`)
 
-### 4. SF Symbols Iconography Style
+### 4. Iconography Style
 - Consistent line weight (`strokeWidth={1.75}`)
 - Tinted squircle icon badge containers (`bg-[#0071e3]/10 text-[#0071e3]`, etc.)
 - Enclosed icon buttons with springy click feedback (`active:scale-[0.98]`)
@@ -71,44 +71,6 @@ This document defines the strict rules for **ART Workspace**. All components, pa
 
 ---
 
-## 📐 Border Radius Reference
-
-| Context | Value | Tailwind |
-|---|---|---|
-| UI Card / Widget | 8px | `rounded-lg` |
-| Dialog / Modal | 8px | `rounded-lg` |
-| Buttons / Inputs | 6px | `rounded-md` |
-| Badges / Tags | 4px | `rounded` |
-
----
-
-## 🧩 Layout & Component Rules
-
-### 1. Sidebar (Dark / Light Options)
-- Default: Dark mode style (`bg-[#001529]`).
-- Width: `w-64` (256px).
-- Navigation links use vertical listing with Lucide icons on the left, label on the right.
-- Active state uses a clear blue highlight background (`bg-[#1677ff]`) with white text, or soft blue tint background for light mode.
-
-### 2. Header
-- Solid white surface: `bg-white`.
-- Fixed height: `56px` (`h-14`).
-- Thin bottom border: `border-b border-[#f0f0f0]`.
-- Displays Page Breadcrumbs on the left and User Actions (profile, search, notification bell) on the right.
-
-### 3. Cards & Widgets
-- Background: `bg-white`.
-- Border: `border border-[#f0f0f0]`.
-- Border Radius: `rounded-lg` (8px).
-- Shadow: Subtle shadow `shadow-sm` or `shadow-[0_1px_2px_0_rgba(0,0,0,0.03)]`.
-- Internal Padding: `p-5` or `p-6` depending on content density.
-
-### 4. Buttons
-- **Primary:** `bg-[#1677ff] text-white hover:bg-[#4096ff] rounded-md transition-colors`.
-- **Default:** `border border-[#d9d9d9] bg-white text-[rgba(0,0,0,0.88)] hover:text-[#4096ff] hover:border-[#4096ff] rounded-md`.
-
----
-
 ## 🌍 Localization
 
 - **Primary language:** Thai throughout.
@@ -119,9 +81,8 @@ This document defines the strict rules for **ART Workspace**. All components, pa
 
 ## 📋 Pre-Delivery Checklist
 
-- [ ] NO floating glass headers or sidebar overlays (use solid backgrounds)
-- [ ] NO `gray-*` classes for borders/backgrounds (use `#f0f2f5` and `#f0f0f0`)
-- [ ] Corner radius values do not exceed 8px for containers/modals and 6px for buttons/inputs
-- [ ] Primary buttons use `#1677ff` and secondary states use `#4096ff`
-- [ ] Typography uses Anuphan for Thai, structured for data-dense layouts
-- [ ] ALL forms follow Ant Design alignment and validation spacing
+- [ ] UI consistently uses `#0071e3` for primary actions (Apple Blue).
+- [ ] UI consistently uses `#f5f5f7` for page backgrounds and `#ffffff` for cards.
+- [ ] Corner radius values follow the squircle radii (`24px` for large cards, `12px` for buttons).
+- [ ] Typography uses Anuphan for Thai, structured for clean layouts.
+- [ ] Layout is optimized for Web and Desktop experiences.

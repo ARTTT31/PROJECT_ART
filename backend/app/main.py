@@ -120,8 +120,6 @@ base_origins = [
     "http://localhost:3001",
     "http://localhost:8000",
     "http://localhost",
-    "capacitor://localhost",
-    "ionic://localhost",
     "null",
 ]
 
@@ -145,7 +143,7 @@ _CSP_CONNECT_TRUSTED = (
     "'self' "
     + " ".join(
         o for o in allowed_origins
-        if o.startswith(("https://", "http://", "capacitor://", "ionic://"))
+        if o.startswith(("https://", "http://"))
     )
     + " wss: https: data:"
 )

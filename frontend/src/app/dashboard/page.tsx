@@ -1,11 +1,10 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { Check, Eye, EyeOff, GripHorizontal, SlidersHorizontal } from 'lucide-react'
+import { useState } from 'react'
+import { GripHorizontal, SlidersHorizontal } from 'lucide-react'
 import { WidgetConfig } from '@/types'
 import DashboardLayout from '@/components/Layout/DashboardLayout'
 import ErrorBoundary from '@/components/ErrorBoundary'
-import { fetchWithAuth } from '@/lib/api/fetchWithAuth'
 
 function getGreeting(): string {
   const hour = new Date().getHours()
@@ -14,6 +13,7 @@ function getGreeting(): string {
   if (hour >= 17 && hour < 21) return 'สวัสดีตอนเย็น'
   return 'ราตรีสวัสดิ์'
 }
+
 import {
   Dialog,
   DialogBody,
@@ -23,12 +23,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/Dialog'
-import { useAuth } from '@/hooks/useAuth'
 import {
   DndContext,
   KeyboardSensor,
   PointerSensor,
-  TouchSensor,
   closestCenter,
   useSensor,
   useSensors,
@@ -48,28 +46,7 @@ import QRCodeWidget from '@/components/Widgets/QRCodeWidget'
 import WeatherWidget from '@/components/Widgets/WeatherWidget'
 import HolidayWidget from '@/components/Widgets/HolidayWidget'
 
-// ── Widget registry ──────────────────────────────────────────────────────────
-
-const defaultWidgets: WidgetConfig[] = [
-  { id: 'holidays', w: 1 },
-  { id: 'weather', w: 1 },
-  { id: 'oilprice', w: 1 },
-  { id: 'qrcode', w: 1 },
-]
-
-const widgetNames: Record<string, string> = {
-  holidays: 'วันหยุดนักขัตฤกษ์ (2569)',
-  weather: 'สภาพอากาศ & PM 2.5',
-  oilprice: 'ราคาน้ำมัน',
-  qrcode: 'สร้าง QR Code',
-}
-
-const widgetDescriptions: Record<string, string> = {
-  holidays: 'ปฏิทินวันหยุดนักขัตฤกษ์ประจำปี 2569 พร้อมระบบนับถอยหลัง',
-  weather: 'ตรวจสอบสภาพอากาศ อุณหภูมิ และดัชนีฝุ่น PM 2.5 รายวัน',
-  oilprice: 'ติดตามราคาน้ำมันล่าสุดในหน้าแดชบอร์ด',
-  qrcode: 'เปิดเครื่องมือสร้าง QR Code อย่างรวดเร็ว',
-}
+import { useDashboardLayout, widgetNames, widgetDescriptions } from '@/hooks/useDashboardLayout'
 
 // ── Col-span helper ──────────────────────────────────────────────────────────
 
@@ -128,8 +105,9 @@ function SortableWidget({
   const style = {
     transform: CSS.Translate.toString(transform),
     transition: transition || (isDragging ? 'none' : 'all 0.3s ease'),
-    opacity: isDragging ? 0.7 : 1,
+    opacity: isDragging ? 0.8 : 1,
     zIndex: isDragging ? 50 : 1,
+    scale: isDragging ? '0.98' : '1', // Add visual scale down on drag start
   }
 
   return (
@@ -179,120 +157,23 @@ function SortableWidget({
 // ── Dashboard page ───────────────────────────────────────────────────────────
 
 export default function DashboardPage() {
-  const { user, updateUser } = useAuth()
-  const [widgets, setWidgets] = useState<WidgetConfig[]>([])
-  const [visibleWidgetIds, setVisibleWidgetIds] = useState<string[]>([])
+  const {
+    widgets,
+    visibleWidgetIds,
+    isClient,
+    user,
+    defaultWidgets,
+    persistLayout,
+    handleResize,
+    toggleWidgetVisibility
+  } = useDashboardLayout()
+  
   const [showConfigModal, setShowConfigModal] = useState(false)
-  const [isClient, setIsClient] = useState(false)
-  const hasInitializedRef = useRef(false)
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   )
-
-  const saveLayoutDebouncedRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  // Cloud sync helper
-  const persistLayout = useCallback((newLayout: WidgetConfig[], newVisibleIds: string[]) => {
-    setWidgets(newLayout)
-    setVisibleWidgetIds(newVisibleIds)
-
-    const payload = JSON.stringify({
-      widgets: newLayout,
-      visibleWidgetIds: newVisibleIds,
-    })
-
-    // 1. Fast local cache
-    try {
-      localStorage.setItem('artWorkspaceLayoutV3', JSON.stringify(newLayout))
-      localStorage.setItem('artWorkspaceVisibleWidgets', JSON.stringify(newVisibleIds))
-    } catch {}
-
-    // 2. Debounced backend sync
-    if (saveLayoutDebouncedRef.current) clearTimeout(saveLayoutDebouncedRef.current)
-    saveLayoutDebouncedRef.current = setTimeout(async () => {
-      try {
-        await fetchWithAuth('/api/v1/profile/dashboard-layout', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ dashboard_layout: payload }),
-        })
-        updateUser({ dashboard_layout: payload })
-      } catch (err) {
-        console.error('Failed to sync dashboard layout to backend:', err)
-      }
-    }, 400)
-  }, [updateUser])
-
-  // Initialize layout from user profile (cloud) or local storage
-  useEffect(() => {
-    setIsClient(true)
-    if (hasInitializedRef.current && !user?.dashboard_layout) return
-
-    let loadedWidgets = defaultWidgets
-    let loadedVisible = defaultWidgets.map((w) => w.id)
-    let foundCloud = false
-
-    if (user?.dashboard_layout) {
-      try {
-        const parsed = JSON.parse(user.dashboard_layout)
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          loadedWidgets = parsed
-          loadedVisible = parsed.map((w: any) => w.id)
-          foundCloud = true
-        } else if (parsed && typeof parsed === 'object') {
-          if (Array.isArray(parsed.widgets) && parsed.widgets.length > 0) {
-            loadedWidgets = parsed.widgets
-            foundCloud = true
-          }
-          if (Array.isArray(parsed.visibleWidgetIds) && parsed.visibleWidgetIds.length > 0) {
-            loadedVisible = parsed.visibleWidgetIds
-          }
-        }
-      } catch {}
-    }
-
-    if (!foundCloud) {
-      const savedVisible = localStorage.getItem('artWorkspaceVisibleWidgets')
-      if (savedVisible) {
-        try {
-          loadedVisible = JSON.parse(savedVisible)
-        } catch {}
-      }
-
-      const savedLayout = localStorage.getItem('artWorkspaceLayoutV3')
-      if (savedLayout) {
-        try {
-          const parsed = JSON.parse(savedLayout)
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            loadedWidgets = parsed
-          }
-        } catch {}
-      }
-    }
-
-    // Ensure newly added default widgets exist in loadedWidgets
-    const existingWidgetIds = new Set(loadedWidgets.map((w: any) => w.id))
-    defaultWidgets.forEach((dw) => {
-      if (!existingWidgetIds.has(dw.id)) {
-        loadedWidgets = [dw, ...loadedWidgets]
-        if (!loadedVisible.includes(dw.id)) {
-          loadedVisible = [dw.id, ...loadedVisible]
-        }
-      }
-    })
-
-    setWidgets(loadedWidgets)
-    setVisibleWidgetIds(loadedVisible)
-    hasInitializedRef.current = true
-  }, [user?.dashboard_layout])
-
-  const handleResize = (id: string, newWidth: number) => {
-    const updated = widgets.map((w) => (w.id === id ? { ...w, w: newWidth } : w))
-    persistLayout(updated, visibleWidgetIds)
-  }
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event
@@ -302,23 +183,6 @@ export default function DashboardPage() {
     if (oldIndex === -1 || newIndex === -1) return
     const newLayout = arrayMove(widgets, oldIndex, newIndex)
     persistLayout(newLayout, visibleWidgetIds)
-  }
-
-  const toggleWidgetVisibility = (id: string) => {
-    let newVisible: string[]
-    let newWidgets = [...widgets]
-    if (!newWidgets.some((w) => w.id === id)) {
-      const defaultW = defaultWidgets.find((w) => w.id === id)
-      newWidgets.push(defaultW || { id, w: 1 })
-    }
-
-    if (visibleWidgetIds.includes(id)) {
-      if (visibleWidgetIds.length <= 1) return
-      newVisible = visibleWidgetIds.filter((vId) => vId !== id)
-    } else {
-      newVisible = [...visibleWidgetIds, id]
-    }
-    persistLayout(newWidgets, newVisible)
   }
 
   const visibleWidgets = widgets.filter((w) => visibleWidgetIds.includes(w.id))
@@ -354,7 +218,6 @@ export default function DashboardPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5">
-            {/* Manage widgets — Apple pill button */}
             <button
               type="button"
               onClick={() => setShowConfigModal(true)}
@@ -366,8 +229,6 @@ export default function DashboardPage() {
             </button>
           </div>
         </div>
-
-        {/* Ambient subtle glow */}
         <div
           aria-hidden="true"
           className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-[#0071e3]/10 blur-3xl"
@@ -402,79 +263,55 @@ export default function DashboardPage() {
           <DialogHeader>
             <DialogTitle>การแสดงผลวิดเจ็ต</DialogTitle>
             <DialogDescription>
-              ติ๊กถูกเพื่อแสดงหรือซ่อนวิดเจ็ตบนแดชบอร์ดหลักของคุณ
+              เปิดหรือปิดสวิตช์เพื่อจัดการวิดเจ็ตบนแดชบอร์ดหลักของคุณ
             </DialogDescription>
           </DialogHeader>
 
           <DialogBody>
-            <div className="rounded-2xl bg-[#f5f5f7] p-2">
+            <div className="rounded-2xl bg-[#f5f5f7] p-2 space-y-1.5">
               {defaultWidgets
                 .filter((widget) => widget.id !== 'syshealth' || user?.role === 'admin')
                 .map((widget) => {
                   const isVisible = visibleWidgetIds.includes(widget.id)
                   const isLocked = isVisible && visibleWidgetIds.length <= 1
                   return (
-                    <label
+                    <div
                       key={widget.id}
-                      className={`group relative mb-1.5 flex cursor-pointer items-center gap-3 rounded-xl p-3.5 transition-all duration-150 last:mb-0 ${
+                      className={`flex items-center gap-3 rounded-xl p-3.5 transition-all duration-150 ${
                         isVisible
                           ? 'bg-white shadow-sm ring-1 ring-black/[0.06]'
                           : 'hover:bg-white/70'
-                      } ${isLocked ? 'cursor-default' : ''}`}
+                      }`}
                     >
-                      <input
-                        type="checkbox"
-                        checked={isVisible}
-                        disabled={isLocked}
-                        onChange={() => toggleWidgetVisibility(widget.id)}
-                        className="peer sr-only"
-                      />
-
-                      {/* Icon */}
-                      <div
-                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] transition-colors duration-150 ${
-                          isVisible
-                            ? 'bg-[#0071e3]/10 text-[#0071e3]'
-                            : 'bg-slate-100 text-slate-400 group-hover:text-slate-600'
-                        }`}
-                      >
-                        {isVisible
-                          ? <Eye className="h-4 w-4" aria-hidden="true" />
-                          : <EyeOff className="h-4 w-4" aria-hidden="true" />}
-                      </div>
-
-                      {/* Labels */}
                       <div className="min-w-0 flex-1">
-                        <span className="block truncate text-[13px] font-semibold text-[#1d1d1f]">
+                        <span className="block truncate text-[14px] font-semibold text-[#1d1d1f]">
                           {widgetNames[widget.id]}
                         </span>
-                        <span className="mt-0.5 block text-[11px] leading-[1.4] text-[#6e6e73]">
+                        <span className="mt-0.5 block text-[12px] leading-[1.4] text-[#6e6e73]">
                           {widgetDescriptions[widget.id]}
                         </span>
                       </div>
-
-                      {/* Status + checkmark */}
-                      <div className="flex shrink-0 items-center gap-2">
+                      
+                      {/* Custom Apple-style Toggle Switch */}
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={isVisible}
+                        disabled={isLocked}
+                        onClick={() => toggleWidgetVisibility(widget.id)}
+                        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3] focus-visible:ring-offset-2 ${
+                          isLocked ? 'cursor-not-allowed opacity-50' : ''
+                        } ${isVisible ? 'bg-[#34c759]' : 'bg-slate-200'}`}
+                      >
+                        <span className="sr-only">สลับวิดเจ็ต {widgetNames[widget.id]}</span>
                         <span
-                          className={`hidden rounded-full px-2 py-0.5 text-[11px] font-semibold sm:inline-flex ${
-                            isVisible
-                              ? 'bg-[#0071e3]/10 text-[#0071e3]'
-                              : 'bg-slate-100 text-slate-400'
+                          aria-hidden="true"
+                          className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                            isVisible ? 'translate-x-5' : 'translate-x-0'
                           }`}
-                        >
-                          {isVisible ? 'แสดงอยู่' : 'ซ่อนอยู่'}
-                        </span>
-                        <div
-                          className={`flex h-5 w-5 items-center justify-center rounded-full transition-colors duration-150 ${
-                            isVisible
-                              ? 'bg-[#0071e3] text-white'
-                              : 'border border-slate-300 bg-white text-transparent'
-                          }`}
-                        >
-                          <Check className="h-3 w-3" aria-hidden="true" />
-                        </div>
-                      </div>
-                    </label>
+                        />
+                      </button>
+                    </div>
                   )
                 })}
             </div>
@@ -485,7 +322,7 @@ export default function DashboardPage() {
               onClick={() => setShowConfigModal(false)}
               className="inline-flex items-center justify-center rounded-full bg-[#0071e3] px-6 py-2.5 text-[15px] font-semibold text-white transition-all duration-150 hover:bg-[#0077ed] hover:shadow-[0_4px_12px_rgba(0,113,227,0.3)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3] focus-visible:ring-offset-2 active:scale-[0.98]"
             >
-              ตกลง
+              เสร็จสิ้น
             </button>
           </DialogFooter>
         </DialogContent>
