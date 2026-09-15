@@ -42,12 +42,19 @@ export default function HolidayWidget({
 
   // Filtered list
   const displayedHolidays = useMemo(() => {
+    let result = holidaysWithDiff
     if (filterMode === 'upcoming') {
       const upcomingList = holidaysWithDiff.filter((h) => h.daysLeft >= 0)
-      return upcomingList.length > 0 ? upcomingList : holidaysWithDiff
+      result = upcomingList.length > 0 ? upcomingList : holidaysWithDiff
     }
-    return holidaysWithDiff
-  }, [filterMode, holidaysWithDiff])
+    
+    // Limit to 3 upcoming when widget is small (width 1)
+    if (width === 1 && filterMode === 'upcoming') {
+      return result.slice(0, 3)
+    }
+    
+    return result
+  }, [filterMode, holidaysWithDiff, width])
 
   return (
     <section

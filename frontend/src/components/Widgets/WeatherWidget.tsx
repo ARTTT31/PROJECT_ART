@@ -216,9 +216,14 @@ export default function WeatherWidget({
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date())
   const [isCityDropdownOpen, setIsCityDropdownOpen] = useState(false)
   const [isLocating, setIsLocating] = useState(false)
+  const [unit, setUnit] = useState<'C' | 'F'>('C')
 
   const dropdownRef = useRef<HTMLDivElement>(null)
   const abortRef = useRef<AbortController | null>(null)
+  
+  const displayTemp = useCallback((celsius: number) => {
+    return unit === 'C' ? celsius : Math.round((celsius * 9) / 5 + 32)
+  }, [unit])
 
   // ── Fetch Weather & AQI from Open-Meteo ─────────────────────────────────────
   const fetchWeatherData = useCallback(
@@ -394,6 +399,8 @@ export default function WeatherWidget({
 
     const cachedLoc = safeJsonParse<CityLocation>(localStorage.getItem(LOCATION_KEY))
     const cachedData = safeJsonParse<CombinedWeatherCache>(localStorage.getItem(CACHE_KEY))
+    const savedUnit = localStorage.getItem('artWeatherUnit')
+    if (savedUnit === 'F' || savedUnit === 'C') setUnit(savedUnit)
 
     let initialCity = CITY_PRESETS[0]
 
@@ -550,6 +557,19 @@ export default function WeatherWidget({
           <div className="flex items-center gap-1.5 shrink-0">
             <button
               type="button"
+              onClick={() => {
+                const next = unit === 'C' ? 'F' : 'C'
+                setUnit(next)
+                localStorage.setItem('artWeatherUnit', next)
+              }}
+              className="flex h-8 w-8 items-center justify-center rounded-full text-[12px] font-bold text-[#6e6e73] hover:bg-black/[0.05] hover:text-[#1d1d1f] active:scale-[0.95] transition-all"
+              aria-label="สลับหน่วยอุณหภูมิ"
+              title="สลับ °C / °F"
+            >
+              °{unit}
+            </button>
+            <button
+              type="button"
               onClick={() => fetchWeatherData(selectedCity, true)}
               disabled={refreshing}
               className="flex h-8 w-8 items-center justify-center rounded-full text-[#6e6e73] hover:bg-black/[0.05] hover:text-[#1d1d1f] active:scale-[0.95] transition-all"
@@ -599,9 +619,9 @@ export default function WeatherWidget({
                 <div>
                   <div className="flex items-baseline gap-1">
                     <span className="text-3xl font-extrabold tracking-tight text-[#1d1d1f]">
-                      {weather.currentTemp}°
+                      {displayTemp(weather.currentTemp)}°
                     </span>
-                    <span className="text-xs font-bold text-[#86868b]">C</span>
+                    <span className="text-xs font-bold text-[#86868b]">{unit}</span>
                   </div>
                   <div className="mt-0.5 text-[13px] font-semibold text-[#1d1d1f]">
                     {weatherMeta.label}
@@ -610,10 +630,10 @@ export default function WeatherWidget({
 
                 <div className="text-right">
                   <span className="inline-block rounded-full bg-white px-2.5 py-0.5 text-[11px] font-semibold text-[#1d1d1f] shadow-2xs ring-1 ring-black/[0.04]">
-                    {weather.tempMax}° / {weather.tempMin}°
+                    {displayTemp(weather.tempMax)}° / {displayTemp(weather.tempMin)}°
                   </span>
                   <div className="mt-1 text-[11px] font-medium text-[#86868b]">
-                    รู้สึกเหมือน {weather.apparentTemp}°C
+                    รู้สึกเหมือน {displayTemp(weather.apparentTemp)}°{unit}
                   </div>
                 </div>
               </div>
@@ -703,7 +723,7 @@ export default function WeatherWidget({
                     </span>
                     <HourIcon size={18} className={`my-1.5 ${hourMeta.colorClass}`} />
                     <span className="text-xs font-extrabold text-[#1d1d1f]">
-                      {item.temp}°
+                      {displayTemp(item.temp)}°
                     </span>
                     {item.rainProb > 0 ? (
                       <span className="mt-0.5 text-[9px] font-semibold text-[#0071e3]">
