@@ -74,7 +74,7 @@ const withSerwist = require('@serwist/next').default({
   disable: process.env.NODE_ENV === 'development',
 });
 
-const { withSentryConfig } = require('@sentry/nextjs');
+const { withSentryConfig } = require('@sentry/nextjs/config');
 
 const sentryOptions = {
   silent: true,
