@@ -446,7 +446,7 @@ export default function ProfilePage() {
 
   return (
     <DashboardLayout>
-      <div className="mx-auto w-full max-w-[1600px] space-y-4 px-2 sm:px-3 md:px-4 lg:px-6">
+      <div className="space-y-4">
 
         {/* ══════════════════════════════════════════════════
             SECTION 1 — PROFILE HERO
