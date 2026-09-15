@@ -53,3 +53,10 @@ To be determined as the project evolves. Currently, the following specific anti-
 - Focus indicators are clearly visible
 - Form inputs have associated labels and error messages
 - Interactive elements have minimum 44×44px touch targets
+
+## Recently Added Features
+
+- **E2E Testing:** Playwright has been added for automated smoke testing.
+- **PWA Support:** Configured via @serwist/next for offline capabilities.
+- **Error Tracking:** @sentry/nextjs is integrated and ready for DSN configuration.
+- **Animations:** ramer-motion integrated for smooth page transitions.

@@ -36,17 +36,16 @@ The GitHub Actions pipeline (`ci.yml`) runs on every push and pull request to `m
 ## Tech Stack
 
 ### Frontend
-
-| Layer | Technology |
-|---|---|
-| Framework | Next.js 16 App Router, React 18, TypeScript 5 |
-| Styling | Tailwind CSS, custom design tokens |
-| UI Components | Radix UI (Dialog primitives), Lucide React icons |
-| Drag and Drop | `@dnd-kit/core`, `@dnd-kit/sortable` |
-| Data Fetching | TanStack Query v5 |
-| Auth Client | `AuthProvider` (centralized context) + `useAuth` hook |
-| Alerts | SweetAlert2 + custom `useToast` hook |
-| Mobile | `@capawesome/capacitor-google-sign-in` (Capacitor) |
+- **Framework:** Next.js 16 App Router, React 18, TypeScript 5
+- **Styling:** Tailwind CSS, custom design tokens
+- **UI Components:** Radix UI, Lucide React icons, Framer Motion
+- **Drag and Drop:** `@dnd-kit/core`, `@dnd-kit/sortable`
+- **PWA Support:** `@serwist/next`
+- **Error Tracking:** `@sentry/nextjs`
+- **E2E Testing:** Playwright
+- **Data Fetching:** TanStack Query v5
+- **Auth Client:** `AuthProvider` (centralized context) + `useAuth` hook
+- **Alerts:** SweetAlert2 + custom `useToast` hook
 
 ### Backend
 

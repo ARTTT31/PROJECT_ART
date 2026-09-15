@@ -30,6 +30,7 @@ export const metadata: Metadata = {
     icon: '/favicon.ico',
     apple: '/apple-touch-icon.png',
   },
+  manifest: '/manifest.json',
   openGraph: {
     title: 'ART Workspace',
     description: 'แพลตฟอร์มจัดการงานส่วนตัวที่ออกแบบด้วย Apple HIG เรียบง่ายแต่ทรงพลัง',

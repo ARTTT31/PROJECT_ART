@@ -42,6 +42,7 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 
 import dynamic from 'next/dynamic'
+import { motion, AnimatePresence } from 'framer-motion'
 
 const OilPriceWidget = dynamic(() => import('@/components/Widgets/OilPriceWidget'), { ssr: false, loading: () => <div className="h-full w-full bg-slate-50 rounded-2xl animate-pulse min-h-[200px]" /> })
 const QRCodeWidget = dynamic(() => import('@/components/Widgets/QRCodeWidget'), { ssr: false, loading: () => <div className="h-full w-full bg-slate-50 rounded-2xl animate-pulse min-h-[200px]" /> })

@@ -68,4 +68,29 @@ const nextConfig = {
   productionBrowserSourceMaps: false,
 };
 
-module.exports = nextConfig;
+const withSerwist = require('@serwist/next').default({
+  swSrc: 'src/app/sw.ts',
+  swDest: 'public/sw.js',
+  disable: process.env.NODE_ENV === 'development',
+});
+
+const { withSentryConfig } = require('@sentry/nextjs');
+
+const sentryOptions = {
+  silent: true,
+  org: "your-org",
+  project: "your-project",
+};
+
+const sentryWebpackOptions = {
+  widenClientFileUpload: true,
+  transpileClientSDK: true,
+  hideSourceMaps: true,
+  disableLogger: true,
+};
+
+module.exports = withSentryConfig(
+  withSerwist(nextConfig),
+  sentryOptions,
+  sentryWebpackOptions
+);
