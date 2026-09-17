@@ -461,23 +461,30 @@ async def google_verify_token(
         )
 
     # Find or create user
-    user_service = UserService(db)
-    user = await user_service.get_user_by_email(email)
-    if not user:
-        # Create with a random password
-        random_pwd = secrets.token_urlsafe(16)
-        user_create = UserCreate(
-            email=email, password=random_pwd, name=name, role="user"
-        )
-        try:
-            user = await user_service.create_user(user_create)
-        except Exception:
-            user = await user_service.get_user_by_email(email)
+    try:
+        user_service = UserService(db)
+        user = await user_service.get_user_by_email(email)
+        if not user:
+            # Create with a random password
+            random_pwd = secrets.token_urlsafe(16)
+            user_create = UserCreate(
+                email=email, password=random_pwd, name=name, role="user"
+            )
+            try:
+                user = await user_service.create_user(user_create)
+            except Exception:
+                user = await user_service.get_user_by_email(email)
 
-    if not user:
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to create or retrieve user",
+            )
+    except Exception as e:
+        logger.error(f"Error during Google token verify user fetch: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to create or retrieve user",
+            detail=f"Database error while retrieving user: {str(e)}"
         )
 
     # Issue tokens

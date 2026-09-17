@@ -71,6 +71,7 @@ def sync_db_columns(sync_conn):
             ("failed_login_attempts", "INTEGER DEFAULT 0"),
             ("locked_until", "TIMESTAMP"),
             ("is_locked", "BOOLEAN DEFAULT FALSE"),
+            ("push_subscriptions", "TEXT"),
         ]
         for col_name, col_type in columns_to_ensure:
             if col_name not in existing_cols:
@@ -97,16 +98,11 @@ async def lifespan(app: FastAPI):
                           "Prefer Alembic migrations in production.")
                 await conn.run_sync(base.Base.metadata.create_all)
 
-            if settings.AUTO_MIGRATE_COLUMNS:
-                if settings.DEBUG:
-                    print("[DB] AUTO_MIGRATE_COLUMNS=True: Syncing columns (dev-only convenience)")
-                else:
-                    print("[DB WARNING] AUTO_MIGRATE_COLUMNS=True in non-DEBUG mode! "
-                          "Prefer Alembic migrations in production — unsafe ALTER TABLE on live data.")
-                await conn.run_sync(sync_db_columns)
-            elif not settings.DEBUG:
-                print("[DB] Production mode: Column auto-sync DISABLED. "
-                      "Run `alembic upgrade head` to apply migrations.")
+            # Force run sync_db_columns to fix missing columns in production
+            # without requiring the user to SSH into Render and run Alembic
+            print("[DB] Running auto-migration to ensure all schema columns exist...")
+            await conn.run_sync(sync_db_columns)
+            
     except Exception as e:
         print(f"[STARTUP DB SYNC NOTICE] {e}")
     yield
@@ -284,6 +280,10 @@ async def health_check():
             "version": settings.APP_VERSION,
         },
     )
+
+@app.post("/crash")
+async def test_crash():
+    raise Exception("Test crash!")
 
 
 # NOTE: CSPMiddleware class is defined above (before app creation) so it can be
