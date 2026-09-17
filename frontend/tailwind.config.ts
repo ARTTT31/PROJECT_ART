@@ -130,6 +130,20 @@ const config: Config = {
         'apple-title1': ['1.75rem', { lineHeight: '2.125rem', letterSpacing: '-0.025em' }],   // 28px
         'apple-large-title': ['2.125rem', { lineHeight: '2.5rem', letterSpacing: '-0.03em' }], // 34px
       },
+      animation: {
+        shimmer: 'shimmer 1.5s infinite linear',
+        'slide-in-top': 'slideInTop 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+      },
+      keyframes: {
+        shimmer: {
+          '0%': { backgroundPosition: '-200% 0' },
+          '100%': { backgroundPosition: '200% 0' },
+        },
+        slideInTop: {
+          '0%': { transform: 'translateY(-100px)', opacity: '0' },
+          '100%': { transform: 'translateY(0)', opacity: '1' },
+        },
+      },
       fontFamily: {
         sans: [
           '-apple-system',

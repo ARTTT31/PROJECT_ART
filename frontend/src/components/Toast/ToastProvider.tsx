@@ -115,7 +115,7 @@ function ToastContainer({ toasts, onRemove }: { toasts: Toast[]; onRemove: (id: 
 
   return (
     <div
-      className="fixed bottom-6 right-6 z-[var(--z-toast,1100)] flex flex-col gap-3"
+      className="fixed left-1/2 top-6 z-[var(--z-toast,1100)] flex -translate-x-1/2 flex-col gap-3"
       aria-label="การแจ้งเตือน"
       role="region"
     >
@@ -131,25 +131,25 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: string) =
 
   return (
     <div
-      className={`alert art-toast-item w-80 items-start animate-slide-in-right ${config.alertClass}`}
+      className="flex w-[min(90vw,400px)] items-center gap-3 rounded-[24px] border border-white/40 bg-white/80 p-3.5 shadow-[0_16px_48px_rgba(15,23,42,0.15),0_8px_24px_rgba(15,23,42,0.08),inset_0_1px_0_rgba(255,255,255,0.7)] backdrop-blur-[24px] saturate-[180%] animate-slide-in-top"
       role="alert"
       aria-live="polite"
     >
-      <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${config.iconBg} ${config.iconColor}`}>
+      <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] ${config.iconBg} ${config.iconColor} shadow-[inset_0_1px_0_rgba(255,255,255,0.25)]`}>
         {config.icon}
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-bold text-slate-900">{toast.title}</p>
+        <p className="text-[15px] font-bold tracking-tight text-[#1d1d1f]">{toast.title}</p>
         {toast.message && (
-          <p className="mt-0.5 text-xs text-slate-600 line-clamp-2">{toast.message}</p>
+          <p className="mt-0.5 text-[13px] font-medium leading-snug text-[#6e6e73] line-clamp-2">{toast.message}</p>
         )}
       </div>
       <button
         onClick={() => onRemove(toast.id)}
-        className="art-icon-button small-control !h-8 !w-8 !rounded-lg !border-transparent !bg-transparent !shadow-none"
+        className="flex h-8 w-8 items-center justify-center rounded-full text-[#86868b] transition-colors hover:bg-black/5 hover:text-[#1d1d1f] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3]"
         aria-label="ปิดการแจ้งเตือน"
       >
-        <X size={14} aria-hidden="true" />
+        <X size={16} aria-hidden="true" />
       </button>
     </div>
   )

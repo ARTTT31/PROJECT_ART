@@ -41,6 +41,11 @@ export const metadata: Metadata = {
   alternates: {
     canonical: '/',
   },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'ART Workspace',
+  },
 };
 
 export default function RootLayout({
