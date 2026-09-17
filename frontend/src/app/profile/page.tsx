@@ -24,6 +24,7 @@ import {
   Palette,
   Bookmark,
   LayoutGrid,
+  Bell,
 } from 'lucide-react'
 import DashboardLayout from '@/components/Layout/DashboardLayout'
 import { showDeleteConfirm, showToast, showSuccess, showError } from '@/utils/sweetalert'
@@ -206,6 +207,10 @@ export default function ProfilePage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isSavingProfile, setIsSavingProfile] = useState(false)
   const [isChangingPassword, setIsChangingPassword] = useState(false)
+  
+  // Push Notifications
+  const [isPushEnabled, setIsPushEnabled] = useState(false)
+  const [isSubscribing, setIsSubscribing] = useState(false)
 
   // Quick Links
   const [quickLinks, setQuickLinks] = useState<QuickLink[]>([])
@@ -253,6 +258,102 @@ export default function ProfilePage() {
     ;[newList[idx], newList[target]] = [newList[target], newList[idx]]
     saveMainMenu(newList)
   }
+
+  // ── Push & Sentry Handlers ────────────────────────────────────
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window) {
+      navigator.serviceWorker.ready.then(registration => {
+        registration.pushManager.getSubscription().then(sub => {
+          if (sub) {
+            setIsPushEnabled(true)
+          }
+        })
+      })
+    }
+  }, [])
+
+  const urlB64ToUint8Array = (base64String: string) => {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4)
+    const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/')
+    const rawData = window.atob(base64)
+    const outputArray = new Uint8Array(rawData.length)
+    for (let i = 0; i < rawData.length; ++i) {
+      outputArray[i] = rawData.charCodeAt(i)
+    }
+    return outputArray
+  }
+
+  const handleSubscribePush = async () => {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+      showError('ไม่รองรับ', 'เบราว์เซอร์ของคุณไม่รองรับ Push Notifications')
+      return
+    }
+
+    setIsSubscribing(true)
+    try {
+      const permission = await Notification.requestPermission()
+      if (permission !== 'granted') {
+        showError('ถูกปฏิเสธ', 'คุณปฏิเสธการขอสิทธิ์การแจ้งเตือน')
+        setIsSubscribing(false)
+        return
+      }
+
+      const registration = await navigator.serviceWorker.ready
+      let subscription = await registration.pushManager.getSubscription()
+      
+      if (!subscription) {
+        const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
+        if (!vapidPublicKey) {
+          throw new Error('ยังไม่ได้ตั้งค่า VAPID Public Key')
+        }
+        
+        subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlB64ToUint8Array(vapidPublicKey)
+        })
+      }
+
+      // Send to backend
+      const res = await fetchWithAuth('/api/v1/push/subscribe', {
+        method: 'POST',
+        body: JSON.stringify(subscription)
+      })
+
+      if (res.ok) {
+        setIsPushEnabled(true)
+        showSuccess('สำเร็จ', 'เปิดรับการแจ้งเตือนแล้ว')
+      } else {
+        const err = await res.json()
+        showError('เกิดข้อผิดพลาด', err.detail || 'ไม่สามารถสมัครรับการแจ้งเตือนได้')
+      }
+    } catch (e: any) {
+      showError('ข้อผิดพลาด', e.message || 'เกิดข้อผิดพลาดในการขอสิทธิ์')
+    } finally {
+      setIsSubscribing(false)
+    }
+  }
+
+  const handleTestPush = async () => {
+    try {
+      const res = await fetchWithAuth('/api/v1/push/test', {
+        method: 'POST',
+        body: JSON.stringify({
+          title: 'ทดสอบระบบการแจ้งเตือน',
+          body: 'การตั้งค่าแจ้งเตือนของคุณสำเร็จแล้ว!'
+        })
+      })
+      if (res.ok) {
+        showToast('ส่งทดสอบแล้ว รอรับการแจ้งเตือนได้เลย', 'success')
+      } else {
+        const err = await res.json()
+        showError('ส่งไม่สำเร็จ', err.detail || 'เกิดข้อผิดพลาด')
+      }
+    } catch (e) {
+      showError('ข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้')
+    }
+  }
+
 
   // ── Init ──────────────────────────────────────────────────────
 
@@ -907,6 +1008,51 @@ export default function ProfilePage() {
             <Info size={11} aria-hidden="true" />
             รายการที่ปิดจะไม่แสดงในแถบเมนูด้านข้าง รายการ &quot;บังคับ&quot; ไม่สามารถปิดได้
           </p>
+        </SectionCard>
+
+        {/* ══════════════════════════════════════════════════
+            SECTION 5 — SYSTEM & NOTIFICATIONS
+            ══════════════════════════════════════════════════ */}
+        <SectionCard
+          icon={<Bell size={20} aria-hidden="true" />}
+          iconBg="bg-amber-50"
+          iconColor="text-amber-600"
+          iconRing="ring-amber-200/60"
+          title="การแจ้งเตือน & ระบบ"
+          subtitle="ตั้งค่าการรับการแจ้งเตือน Web Push และทดสอบระบบ"
+        >
+          <div className="grid grid-cols-1 gap-4">
+            <div className="rounded-2xl border border-black/[0.06] bg-[#f8fafc] p-4">
+              <h3 className="text-[14px] font-bold text-[#1d1d1f] mb-1">Web Push Notifications</h3>
+              <p className="text-[12px] text-[#6e6e73] mb-4">รับการแจ้งเตือนสำคัญบนเดสก์ท็อปหรือมือถือ เช่น วันหยุด หรือสภาพอากาศฉุกเฉิน</p>
+              
+              <div className="flex items-center gap-2">
+                {!isPushEnabled ? (
+                  <button
+                    type="button"
+                    onClick={handleSubscribePush}
+                    disabled={isSubscribing}
+                    className="inline-flex items-center gap-2 rounded-full bg-[#0071e3] px-4 py-2 text-[12px] font-bold text-white transition-all hover:bg-[#0077ed] disabled:opacity-50"
+                  >
+                    {isSubscribing ? 'กำลังขอสิทธิ์...' : 'เปิดรับการแจ้งเตือน'}
+                  </button>
+                ) : (
+                  <div className="flex flex-col items-start gap-2">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1 text-[12px] font-bold text-emerald-700 ring-1 ring-emerald-200">
+                      <Check size={14} /> เปิดรับการแจ้งเตือนแล้ว
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleTestPush}
+                      className="inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-1.5 text-[12px] font-bold text-[#1d1d1f] shadow-sm ring-1 ring-black/[0.06] transition-all hover:bg-slate-50"
+                    >
+                      <Bell size={14} /> ส่งทดสอบการแจ้งเตือน
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         </SectionCard>
 
       </div>
