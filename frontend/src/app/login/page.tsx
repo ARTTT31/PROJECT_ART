@@ -240,19 +240,7 @@ function LoginContent() {
         <div className="login-visual">
           <div aria-hidden="true" className="login-visual-sheen" />
           <div className="login-visual-content">
-            <div className="flex flex-wrap items-center gap-2.5">
-              <span className="login-kicker">ART Workspace</span>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1 text-xs font-semibold text-white/95 backdrop-blur-md">
-                ระบบพร้อมใช้งาน
-              </span>
-            </div>
 
-            <div>
-              <h1 className="login-title">พื้นที่ทำงานของคุณ พร้อมใช้งานแล้ว</h1>
-              <p className="login-subtitle">
-                จัดการงาน ติดตามข้อมูลสำคัญ และเข้าถึงเครื่องมือที่ใช้ประจำในที่เดียว
-              </p>
-            </div>
 
             <div className="login-datetime" aria-label={`${formatTime(now)} ${formatDate(now)}`}>
               <div className="login-time">{formatTime(now)}</div>
