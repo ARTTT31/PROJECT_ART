@@ -261,7 +261,7 @@ function LoginContent() {
                   type="text"
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
-                  placeholder="your.email@example.com หรือ ชื่อผู้ใช้"
+                  placeholder="อีเมล หรือ ชื่อผู้ใช้"
                   required
                   autoComplete="username"
                   disabled={isSubmitting}

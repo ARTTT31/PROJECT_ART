@@ -14,34 +14,43 @@
   justify-content: center;
   padding: clamp(12px, 2.4vh, 24px);
   font-family: inherit;
-  background:
-    radial-gradient(ellipse at top right, rgba(0, 113, 227, 0.10), transparent 50%),
-    radial-gradient(ellipse at bottom left, rgba(88, 86, 214, 0.06), transparent 50%),
-    linear-gradient(180deg, #f5f5f7 0%, #ebebf0 100%);
+  background-color: #f8fafc;
+  background-image: 
+    radial-gradient(at 10% 10%, rgba(219, 234, 254, 0.8) 0, transparent 50%),
+    radial-gradient(at 90% 20%, rgba(243, 232, 255, 0.8) 0, transparent 50%),
+    radial-gradient(at 50% 90%, rgba(224, 242, 254, 0.8) 0, transparent 50%),
+    radial-gradient(at 20% 80%, rgba(252, 231, 243, 0.8) 0, transparent 50%);
+  background-size: 150% 150%;
+  animation: bg-mesh 15s ease-in-out infinite alternate;
+}
+
+@keyframes bg-mesh {
+  0% { background-position: 0% 0%; }
+  100% { background-position: 100% 100%; }
 }
 
 .login-shell {
-  width: min(420px, 100%);
+  width: min(400px, 100%);
   max-height: none;
   overflow: visible;
   display: flex;
   flex-direction: column;
-  border-radius: 28px;
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(40px) saturate(200%);
-  -webkit-backdrop-filter: blur(40px) saturate(200%);
-  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 32px;
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(48px) saturate(200%);
+  -webkit-backdrop-filter: blur(48px) saturate(200%);
+  border: 1px solid rgba(255, 255, 255, 0.7);
   box-shadow:
-    0 32px 64px -16px rgba(0, 0, 0, 0.1),
+    0 40px 80px -20px rgba(0, 0, 0, 0.08),
     0 16px 32px -8px rgba(0, 0, 0, 0.04),
-    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    inset 0 1px 0 rgba(255, 255, 255, 1);
   transition: all 400ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .login-shell:hover {
   box-shadow:
-    0 40px 80px -20px rgba(0, 0, 0, 0.15),
-    0 20px 40px -10px rgba(0, 0, 0, 0.08),
+    0 48px 100px -24px rgba(0, 0, 0, 0.12),
+    0 20px 40px -10px rgba(0, 0, 0, 0.06),
     inset 0 1px 0 rgba(255, 255, 255, 1);
 }
 
