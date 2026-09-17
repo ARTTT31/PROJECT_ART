@@ -349,7 +349,7 @@ function LoginContent() {
 
             <div className="login-divider">หรือ</div>
 
-            <div className="google-auth-wrapper" style={{ display: 'flex', justifyContent: 'center', width: '100%', marginTop: '1rem' }}>
+            <div className="google-auth-wrapper" style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
               <button
                 type="button"
                 onClick={() => handleGoogleSignIn()}
