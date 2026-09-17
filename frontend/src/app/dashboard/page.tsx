@@ -65,11 +65,16 @@ const getColSpanClass = (w: number) => {
 function WidgetErrorFallback({ name, error, reset }: { name: string; error: Error; reset: () => void }) {
   const isChunkError = error?.name === 'ChunkLoadError' || error?.message?.includes('Failed to load chunk')
   return (
-    <div className="flex min-h-[220px] items-center justify-center rounded-2xl bg-[#fff0f0] p-6 ring-1 ring-red-100">
+    <div className="flex min-h-[220px] flex-col items-center justify-center rounded-[24px] border border-black/[0.06] bg-white/60 p-6 backdrop-blur-xl">
+      <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-red-100/50">
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+      </div>
       <div className="text-center">
-        <p className="text-sm font-bold text-red-700">วิดเจ็ต{name} โหลดไม่สำเร็จ</p>
-        <p className="mt-1 text-xs text-red-500/80">
-          {isChunkError ? 'มีการอัปเดตเวอร์ชันใหม่ กรุณารีเฟรชหน้าเว็บ' : error.message}
+        <p className="text-[15px] font-semibold text-[#1d1d1f]">วิดเจ็ต{name}ไม่พร้อมใช้งาน</p>
+        <p className="mt-1 text-[13px] text-[#6e6e73]">
+          {isChunkError ? 'มีการอัปเดตเวอร์ชันใหม่ กรุณารีเฟรชหน้าเว็บ' : 'ไม่สามารถโหลดข้อมูลวิดเจ็ตนี้ได้ในขณะนี้'}
         </p>
         <button
           onClick={() => {
@@ -79,9 +84,9 @@ function WidgetErrorFallback({ name, error, reset }: { name: string; error: Erro
               reset()
             }
           }}
-          className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-1.5 text-xs font-semibold text-red-700 shadow-sm ring-1 ring-red-200 transition-colors hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
+          className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-[#f2f2f7] px-4 py-2 text-[13px] font-semibold text-[#1d1d1f] transition-all duration-200 hover:bg-[#e5e5ea] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3]"
         >
-          {isChunkError ? 'รีเฟรชหน้าเว็บ' : 'ลองใหม่'}
+          {isChunkError ? 'รีเฟรชหน้าเว็บ' : 'ลองใหม่อีกครั้ง'}
         </button>
       </div>
     </div>

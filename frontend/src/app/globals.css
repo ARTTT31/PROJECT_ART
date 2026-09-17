@@ -1772,11 +1772,13 @@ input[type="radio"],
 
 .art-swal-popup {
   width: min(32rem, calc(100vw - 2rem)) !important;
-  border-radius: var(--art-radius-xl) !important;
-  border: 1px solid rgba(255, 255, 255, 0.5) !important;
-  background: rgba(255, 255, 255, 0.96) !important;
+  border-radius: 24px !important;
+  border: 1px solid rgba(0, 0, 0, 0.06) !important;
+  background: rgba(255, 255, 255, 0.82) !important;
+  backdrop-filter: blur(24px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
   color: var(--art-ink) !important;
-  box-shadow: var(--shadow-glass-lg) !important;
+  box-shadow: 0 32px 80px rgba(0,0,0,0.14), 0 8px 24px rgba(0,0,0,0.06) !important;
   padding: 1.5rem !important;
   font-family: inherit !important;
 }
@@ -1911,4 +1913,28 @@ input[type="radio"],
   .swal2-toast {
     animation: none !important;
   }
+}
+/ *   A p p l e   H I G   S c r o l l b a r   * / 
+ 
+ 
+/* ═══════════════════════════════════════════════════════
+   APPLE HIG SCROLLBAR
+   ═══════════════════════════════════════════════════════ */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
+  border: 2px solid transparent;
+  background-clip: padding-box;
 }
