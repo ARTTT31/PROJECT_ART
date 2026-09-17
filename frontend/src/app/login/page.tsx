@@ -237,22 +237,17 @@ function LoginContent() {
   return (
     <main className="login-page">
       <section aria-label="เข้าสู่ระบบ ART Workspace" className="login-shell">
-        <div className="login-visual">
-          <div aria-hidden="true" className="login-visual-sheen" />
-          <div className="login-visual-content">
-
-
-            <div className="login-datetime" aria-label={`${formatTime(now)} ${formatDate(now)}`}>
-              <div className="login-time">{formatTime(now)}</div>
-              <div className="login-date">{formatDate(now)}</div>
-            </div>
-          </div>
-        </div>
-
         <div className="login-panel">
-          <div className="login-form-header">
-            <h2>เข้าสู่ระบบ</h2>
-            <p>ยินดีต้อนรับกลับมา เข้าสู่ระบบเพื่อใช้งานแดชบอร์ดของคุณ</p>
+          <div className="flex flex-col items-center justify-center text-center mb-8">
+            <div className="w-16 h-16 bg-gradient-to-br from-[#0071e3] to-[#42a5f5] rounded-[20px] flex items-center justify-center shadow-lg shadow-blue-500/30 mb-4">
+              <span className="text-white text-2xl font-bold">A</span>
+            </div>
+            <h1 className="text-2xl font-bold text-[#1d1d1f] tracking-tight">ART Workspace</h1>
+            <p className="text-[#6e6e73] text-sm mt-1">{formatDate(now)} • {formatTime(now)}</p>
+          </div>
+
+          <div className="login-form-header text-center">
+            <p>เข้าสู่ระบบเพื่อใช้งานแดชบอร์ดของคุณ</p>
           </div>
 
           <form onSubmit={handleSubmit} className="login-form" aria-busy={isSubmitting}>
