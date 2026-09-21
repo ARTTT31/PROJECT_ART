@@ -658,14 +658,14 @@ export default function WeatherWidget({
             {/* Card 2: PM 2.5 & Air Quality */}
             <div className="flex flex-col justify-between rounded-[18px] bg-[#f5f5f7] p-4 ring-1 ring-black/[0.04]">
               <div className="flex items-start justify-between gap-2">
-                <div>
-                  <div className="flex items-baseline gap-1.5">
-                    <span className="text-3xl font-extrabold tracking-tight text-[#1d1d1f]">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-baseline gap-1.5 min-w-0">
+                    <span className="text-3xl font-extrabold tracking-tight text-[#1d1d1f] truncate">
                       {airQuality.pm25}
                     </span>
-                    <span className="text-[11px] font-bold text-[#86868b]">µg/m³</span>
+                    <span className="text-[11px] font-bold text-[#86868b] shrink-0">µg/m³</span>
                   </div>
-                  <div className="mt-0.5 text-[11px] font-semibold text-[#86868b]">
+                  <div className="mt-0.5 truncate text-[11px] font-semibold text-[#86868b]" title={`ดัชนีฝุ่น PM 2.5 (US AQI: ${airQuality.usAqi})`}>
                     ดัชนีฝุ่น PM 2.5 (US AQI: {airQuality.usAqi})
                   </div>
                 </div>
