@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from 'next';
 import { Anuphan } from 'next/font/google';
 import './globals.css';
 import { Providers } from './providers';
-import { SpeedInsights } from '@vercel/speed-insights/next';
 
 const anuphan = Anuphan({
   weight: 'variable',
@@ -59,7 +58,6 @@ export default function RootLayout({
           {/* Theme toggle removed */}
           <Providers>
             {children}
-            <SpeedInsights />
           </Providers>
       </body>
     </html>
