@@ -385,7 +385,11 @@ export default function QRCodeWidget({
           {generatedText && !error ? (
             <div className="flex w-full flex-col items-center gap-3.5 animate-in fade-in duration-200">
               {/* Render Canvas Wrapper */}
-              <div className="flex w-full items-center justify-center overflow-hidden rounded-[18px] bg-[#f5f5f7] p-4 ring-1 ring-black/[0.04]">
+              <div
+                className={`flex w-full items-center justify-center overflow-hidden rounded-[18px] bg-[#f5f5f7] p-4 ring-1 ring-black/[0.04] transition-all duration-200 ${
+                  width >= 3 ? 'min-h-[260px]' : width >= 2 ? 'min-h-[230px]' : 'min-h-[200px]'
+                }`}
+              >
                 {format === 'qrcode' ? (
                   <div ref={qrWrapRef} className="rounded-[14px] bg-white p-3 shadow-sm ring-1 ring-black/[0.05]">
                     <QRCodeCanvas
@@ -450,7 +454,9 @@ export default function QRCodeWidget({
             </div>
           ) : !generatedText ? (
             /* Empty state */
-            <div className="flex flex-1 flex-col items-center justify-center gap-2 py-6 text-center">
+            <div className={`flex w-full flex-col items-center justify-center gap-2 text-center transition-all duration-200 ${
+              width >= 3 ? 'min-h-[310px]' : width >= 2 ? 'min-h-[280px]' : 'min-h-[250px]'
+            }`}>
               <div className="flex h-14 w-14 items-center justify-center rounded-[16px] bg-[#f5f5f7] text-[#86868b]">
                 {format === 'qrcode' ? <QrCode size={28} /> : <Barcode size={28} />}
               </div>
