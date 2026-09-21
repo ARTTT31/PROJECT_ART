@@ -200,11 +200,11 @@ export default function DashboardPage() {
 
   if (!user || !isClient) {
     return (
-      <DashboardLayout>
+      <>
         <div className="flex min-h-[60vh] items-center justify-center">
           <div className="h-11 w-11 animate-spin rounded-full border-[3px] border-[#f5f5f7] border-t-[#0071e3]" />
         </div>
-      </DashboardLayout>
+      </>
     )
   }
 
@@ -213,7 +213,7 @@ export default function DashboardPage() {
   const greeting = getGreeting()
 
   return (
-    <DashboardLayout>
+    <>
       {/* ── Apple HIG Hero Welcome Banner ───────────────────────────────── */}
       <section
         aria-label="การทักทายและสถานะประจำวัน"
@@ -336,6 +336,6 @@ export default function DashboardPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </DashboardLayout>
+    </>
   )
 }

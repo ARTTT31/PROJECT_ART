@@ -331,11 +331,11 @@ export default function CameraPage() {
 
   if (!isClient) {
     return (
-      <DashboardLayout>
+      <>
         <div className="flex min-h-[400px] items-center justify-center">
           <div className="h-10 w-10 animate-spin rounded-full border-[3px] border-[#f5f5f7] border-t-[#0071e3]" />
         </div>
-      </DashboardLayout>
+      </>
     )
   }
 
@@ -346,7 +346,7 @@ export default function CameraPage() {
       : activeCamera?.url
 
   return (
-    <DashboardLayout>
+    <>
       <div className="flex flex-col gap-5">
         {/* ── Page header ────────────────────────────────────────────── */}
         <header className="flex flex-wrap items-center justify-between gap-4 border-b border-black/[0.06] pb-5">
@@ -790,6 +790,6 @@ export default function CameraPage() {
           </DialogContent>
         </Dialog>
       </div>
-    </DashboardLayout>
+    </>
   )
 }

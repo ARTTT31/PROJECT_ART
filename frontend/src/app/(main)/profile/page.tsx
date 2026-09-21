@@ -533,11 +533,11 @@ export default function ProfilePage() {
 
   if (!user) {
     return (
-      <DashboardLayout>
+      <>
         <div className="flex min-h-[80vh] items-center justify-center">
           <div className="h-11 w-11 animate-spin rounded-full border-[3px] border-[#f5f5f7] border-t-[#0071e3]" />
         </div>
-      </DashboardLayout>
+      </>
     )
   }
 
@@ -546,7 +546,7 @@ export default function ProfilePage() {
   // ── Render ────────────────────────────────────────────────────
 
   return (
-    <DashboardLayout>
+    <>
       <div className="space-y-4">
 
         {/* ══════════════════════════════════════════════════
@@ -1239,6 +1239,6 @@ export default function ProfilePage() {
           </form>
         </DialogContent>
       </Dialog>
-    </DashboardLayout>
+    </>
   )
 }
