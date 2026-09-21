@@ -5,19 +5,16 @@ import { useRouter } from 'next/navigation'
 import { fetchWithAuth, fetchWithAuthJson } from '@/lib/api/fetchWithAuth'
 import { AuthUserSchema, makeEnvelopeSchema } from '@/lib/api/schemas'
 import type { AuthUser, AuthRole } from '@/types'
-import { ZodError } from 'zod'
+import { z, ZodError } from 'zod'
 
 export type { AuthUser, AuthRole }
 
-// Auth envelope: backend always returns { result, message, data: { user, session_id? } }
+// Auth endpoints return { result, message, data: { user, session_id? } }.
 const AuthEnvelopeSchema = makeEnvelopeSchema(
-  AuthUserSchema.and(
-    // `data.user` is the canonical user object inside the envelope body:
-    //   { data: { user: {...}, session_id: "..." } }
-    // But /auth/session returns { data: { user: {...} } } (no session_id key).
-    // This schema accepts both via `.partial()` on extras.
-    AuthUserSchema.extend({ session_id: AuthUserSchema.shape.id.optional() }).partial().passthrough(),
-  ).nullable().optional(),
+  z.object({
+    user: AuthUserSchema,
+    session_id: z.string().optional(),
+  }),
 )
 
 type AuthStatus = 'loading' | 'authenticated' | 'anonymous'
@@ -134,7 +131,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               if ((e as Error & { status?: number }).status === 401) throw e
               return null
             }),
-          fetchWithAuthJson('/api/v1/profile/me', {}, makeEnvelopeSchema(AuthUserSchema))
+          // /profile/me returns the user object directly, not the standard envelope.
+          fetchWithAuthJson('/api/v1/profile/me', {}, AuthUserSchema)
             .catch(() => null),
         ])
 
@@ -148,7 +146,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         let profileData = null
         if (profileJson) {
-          const parsed = AuthUserSchema.safeParse(profileJson.data)
+          const parsed = AuthUserSchema.safeParse(profileJson)
           if (parsed.success) profileData = parsed.data
         }
 
@@ -315,4 +313,3 @@ export function useAuth() {
   }
   return ctx
 }
-

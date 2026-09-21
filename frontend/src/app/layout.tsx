@@ -27,8 +27,8 @@ export const metadata: Metadata = {
   keywords: ['workspace', 'dashboard', 'productivity', 'management', 'art workspace'],
   authors: [{ name: 'ART Workspace Team' }],
   icons: {
-    icon: '/favicon.ico',
-    apple: '/apple-touch-icon.png',
+    icon: '/art-workspace-mark.svg',
+    apple: '/art-workspace-mark.svg',
   },
   manifest: '/manifest.json',
   openGraph: {
