@@ -672,9 +672,9 @@ export default function WeatherWidget({
 
                 {/* Level badge */}
                 <div
-                  className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold ring-1 ${pm25Meta.badgeClass}`}
+                  className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold ring-1 whitespace-nowrap shrink-0 ${pm25Meta.badgeClass}`}
                 >
-                  <span className={`h-2 w-2 rounded-full ${pm25Meta.dotClass}`} />
+                  <span className={`h-2 w-2 rounded-full shrink-0 ${pm25Meta.dotClass}`} />
                   <span>{pm25Meta.level}</span>
                 </div>
               </div>
