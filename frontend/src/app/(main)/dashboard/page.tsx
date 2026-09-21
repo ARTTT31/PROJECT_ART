@@ -49,7 +49,6 @@ const OilPriceWidget = dynamic(() => import('@/components/Widgets/OilPriceWidget
 const QRCodeWidget = dynamic(() => import('@/components/Widgets/QRCodeWidget'), { ssr: false, loading: () => <QRCodeSkeleton /> })
 const WeatherWidget = dynamic(() => import('@/components/Widgets/WeatherWidget'), { ssr: false, loading: () => <WeatherSkeleton /> })
 const HolidayWidget = dynamic(() => import('@/components/Widgets/HolidayWidget'), { ssr: false, loading: () => <HolidaySkeleton /> })
-const TaskWidget = dynamic(() => import('@/components/Widgets/TaskWidget'), { ssr: false })
 
 import { useDashboardLayout, widgetNames, widgetDescriptions } from '@/hooks/useDashboardLayout'
 
@@ -143,11 +142,6 @@ function SortableWidget({
       {widget.id === 'holidays' && (
         <ErrorBoundary fallback={(err, reset) => <WidgetErrorFallback name="วันหยุดนักขัตฤกษ์" error={err} reset={reset} />}>
           <HolidayWidget width={widget.w} onResize={(newSize) => onResize(widget.id, newSize)} />
-        </ErrorBoundary>
-      )}
-      {widget.id === 'tasks' && (
-        <ErrorBoundary fallback={(err, reset) => <WidgetErrorFallback name="งานส่วนตัว" error={err} reset={reset} />}>
-          <TaskWidget width={widget.w} onResize={(newSize) => onResize(widget.id, newSize)} />
         </ErrorBoundary>
       )}
       {widget.id === 'weather' && (
