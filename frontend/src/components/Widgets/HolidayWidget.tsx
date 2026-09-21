@@ -34,6 +34,8 @@ export default function HolidayWidget({
   const holidaysWithDiff = useMemo(() => {
     return getHolidaysWithDiff(today)
   }, [today])
+  const calendarYear = today.getFullYear()
+  const hasCalendar = holidaysWithDiff.length > 0
 
   // Next upcoming holiday
   const nextHoliday = useMemo(() => {
@@ -78,7 +80,7 @@ export default function HolidayWidget({
                   วันหยุดนักขัตฤกษ์
                 </h2>
                 <span className="shrink-0 rounded-full bg-[#f2f2f7] px-2 py-0.5 text-[11px] font-bold text-[#6e6e73]">
-                  ปี {new Date().getFullYear() + 543}
+                  {hasCalendar ? `ปี ${calendarYear + 543}` : 'ยังไม่พร้อม'}
                 </span>
               </div>
               <p className="mt-0.5 text-[12px] text-[#86868b] truncate">
@@ -91,6 +93,14 @@ export default function HolidayWidget({
             <WidgetSizeToggle value={width} onChange={onResize} sizes={[1, 2, 3]} />
           )}
         </div>
+
+        {!hasCalendar && (
+          <div className="mt-4 rounded-[18px] border border-dashed border-[#af52de]/30 bg-[#af52de]/5 p-4 text-center">
+            <CalendarHeart className="mx-auto text-[#af52de]" size={22} aria-hidden="true" />
+            <p className="mt-2 text-[13px] font-bold text-[#1d1d1f]">ยังไม่มีปฏิทินวันหยุดปี {calendarYear + 543}</p>
+            <p className="mt-1 text-[11px] text-[#86868b]">จะแสดงข้อมูลเมื่อเพิ่มปฏิทินที่ยืนยันแล้ว</p>
+          </div>
+        )}
 
         {/* ── Upcoming Holiday Hero Card ───────────────────────────────── */}
         {nextHoliday && (
@@ -141,7 +151,7 @@ export default function HolidayWidget({
         )}
 
         {/* ── Filter Tabs ─────────────────────────────────────────────── */}
-        <div className="mt-4 flex items-center justify-between gap-2">
+        <div className={`mt-4 flex items-center justify-between gap-2 ${hasCalendar ? '' : 'hidden'}`}>
           <div
             className="inline-flex rounded-full bg-[#e5e5ea] p-0.5"
             role="group"
@@ -180,7 +190,7 @@ export default function HolidayWidget({
 
         {/* ── Holiday List ────────────────────────────────────────────── */}
         <div
-          className={`mt-3 divide-y divide-black/[0.04] overflow-y-auto ${
+          className={`mt-3 divide-y divide-black/[0.04] overflow-y-auto ${hasCalendar ? '' : 'hidden'} ${
             width >= 3 ? 'max-h-72 grid grid-cols-1 md:grid-cols-2 gap-2 divide-y-0' : width >= 2 ? 'max-h-64' : 'max-h-48'
           }`}
         >
@@ -249,8 +259,8 @@ export default function HolidayWidget({
 
       {/* ── Footer ─────────────────────────────────────────────────────────── */}
       <footer className="mt-3 flex items-center justify-between border-t border-black/[0.06] pt-2.5 text-[11px] text-[#86868b]">
-        <span>ข้อมูลวันหยุดราชการประจำปี {new Date().getFullYear() + 543}</span>
-        <span>รวมทั้งหมด {holidaysWithDiff.length} วัน</span>
+        <span>{hasCalendar ? `ข้อมูลวันหยุดราชการประจำปี ${calendarYear + 543}` : 'รออัปเดตปฏิทินที่ยืนยันแล้ว'}</span>
+        <span>{hasCalendar ? `รวมทั้งหมด ${holidaysWithDiff.length} วัน` : ''}</span>
       </footer>
     </section>
   )

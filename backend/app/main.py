@@ -71,7 +71,6 @@ def sync_db_columns(sync_conn):
             ("failed_login_attempts", "INTEGER DEFAULT 0"),
             ("locked_until", "TIMESTAMP"),
             ("is_locked", "BOOLEAN DEFAULT FALSE"),
-            ("push_subscriptions", "TEXT"),
         ]
         for col_name, col_type in columns_to_ensure:
             if col_name not in existing_cols:

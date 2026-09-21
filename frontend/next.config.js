@@ -28,23 +28,35 @@ const nextConfig = {
   },
 
   async rewrites() {
+    const apiBaseUrl = (process.env.API_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000').replace(/\/$/, '');
     return [
       {
         source: '/api/:path*',
-        destination: `${process.env.API_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL || 'https://project-art-c7eh.onrender.com'}/api/:path*`,
+        destination: `${apiBaseUrl}/api/:path*`,
       },
     ];
   },
 
   async headers() {
     const isDev = process.env.NODE_ENV !== 'production';
+    const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || process.env.API_INTERNAL_URL || '';
+    const apiOrigin = apiBaseUrl ? new URL(apiBaseUrl).origin : '';
+    const connectSources = [
+      "'self'",
+      ...(apiOrigin ? [apiOrigin] : []),
+      'https://www.eppo.go.th',
+      'https://vitals.vercel-insights.com',
+      'https://vercel.live',
+      'https://*.open-meteo.com',
+      'https://api.bigdatacloud.net',
+    ].join(' ');
     return [
       {
         source: '/:path*',
         headers: [
           {
             key: 'Content-Security-Policy',
-            value: `default-src 'self'; script-src 'self' 'unsafe-inline' ${isDev ? "'unsafe-eval'" : ""} https://apis.google.com https://accounts.google.com https://va.vercel-scripts.com https://vercel.live; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' https://fonts.gstatic.com https://vercel.live; connect-src 'self' http://localhost:8000 https://art-workspace-api.onrender.com https://project-art-c7eh.onrender.com https://www.eppo.go.th https://calendar.google.com https://vitals.vercel-insights.com https://vercel.live https://*.pusher.com wss://*.pusher.com https://*.open-meteo.com https://api.open-meteo.com https://air-quality-api.open-meteo.com https://api.bigdatacloud.net; frame-src 'self' https://accounts.google.com https://calendar.google.com https://vercel.live; object-src 'none'; base-uri 'self'; form-action 'self'`,
+            value: `default-src 'self'; script-src 'self' 'unsafe-inline' ${isDev ? "'unsafe-eval'" : ""} https://apis.google.com https://accounts.google.com https://va.vercel-scripts.com https://vercel.live; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' https://fonts.gstatic.com https://vercel.live; connect-src ${connectSources}; frame-src 'self' https://accounts.google.com https://vercel.live; object-src 'none'; base-uri 'self'; form-action 'self'`,
           },
           {
             key: 'X-Content-Type-Options',

@@ -24,7 +24,6 @@ import {
   Palette,
   Bookmark,
   LayoutGrid,
-  Bell,
 } from 'lucide-react'
 import DashboardLayout from '@/components/Layout/DashboardLayout'
 import { showDeleteConfirm, showToast, showSuccess, showError } from '@/utils/sweetalert'
@@ -208,10 +207,6 @@ export default function ProfilePage() {
   const [isSavingProfile, setIsSavingProfile] = useState(false)
   const [isChangingPassword, setIsChangingPassword] = useState(false)
   
-  // Push Notifications
-  const [isPushEnabled, setIsPushEnabled] = useState(false)
-  const [isSubscribing, setIsSubscribing] = useState(false)
-
   // Quick Links
   const [quickLinks, setQuickLinks] = useState<QuickLink[]>([])
   const [quickLinkDialogOpen, setQuickLinkDialogOpen] = useState(false)
@@ -258,102 +253,6 @@ export default function ProfilePage() {
     ;[newList[idx], newList[target]] = [newList[target], newList[idx]]
     saveMainMenu(newList)
   }
-
-  // ── Push & Sentry Handlers ────────────────────────────────────
-
-  useEffect(() => {
-    if (typeof window !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window) {
-      navigator.serviceWorker.ready.then(registration => {
-        registration.pushManager.getSubscription().then(sub => {
-          if (sub) {
-            setIsPushEnabled(true)
-          }
-        })
-      })
-    }
-  }, [])
-
-  const urlB64ToUint8Array = (base64String: string) => {
-    const padding = '='.repeat((4 - base64String.length % 4) % 4)
-    const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/')
-    const rawData = window.atob(base64)
-    const outputArray = new Uint8Array(rawData.length)
-    for (let i = 0; i < rawData.length; ++i) {
-      outputArray[i] = rawData.charCodeAt(i)
-    }
-    return outputArray
-  }
-
-  const handleSubscribePush = async () => {
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-      showError('ไม่รองรับ', 'เบราว์เซอร์ของคุณไม่รองรับ Push Notifications')
-      return
-    }
-
-    setIsSubscribing(true)
-    try {
-      const permission = await Notification.requestPermission()
-      if (permission !== 'granted') {
-        showError('ถูกปฏิเสธ', 'คุณปฏิเสธการขอสิทธิ์การแจ้งเตือน')
-        setIsSubscribing(false)
-        return
-      }
-
-      const registration = await navigator.serviceWorker.ready
-      let subscription = await registration.pushManager.getSubscription()
-      
-      if (!subscription) {
-        const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
-        if (!vapidPublicKey) {
-          throw new Error('ยังไม่ได้ตั้งค่า VAPID Public Key')
-        }
-        
-        subscription = await registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlB64ToUint8Array(vapidPublicKey)
-        })
-      }
-
-      // Send to backend
-      const res = await fetchWithAuth('/api/v1/push/subscribe', {
-        method: 'POST',
-        body: JSON.stringify(subscription)
-      })
-
-      if (res.ok) {
-        setIsPushEnabled(true)
-        showSuccess('สำเร็จ', 'เปิดรับการแจ้งเตือนแล้ว')
-      } else {
-        const err = await res.json()
-        showError('เกิดข้อผิดพลาด', err.detail || 'ไม่สามารถสมัครรับการแจ้งเตือนได้')
-      }
-    } catch (e: any) {
-      showError('ข้อผิดพลาด', e.message || 'เกิดข้อผิดพลาดในการขอสิทธิ์')
-    } finally {
-      setIsSubscribing(false)
-    }
-  }
-
-  const handleTestPush = async () => {
-    try {
-      const res = await fetchWithAuth('/api/v1/push/test', {
-        method: 'POST',
-        body: JSON.stringify({
-          title: 'ทดสอบระบบการแจ้งเตือน',
-          body: 'การตั้งค่าแจ้งเตือนของคุณสำเร็จแล้ว!'
-        })
-      })
-      if (res.ok) {
-        showToast('ส่งทดสอบแล้ว รอรับการแจ้งเตือนได้เลย', 'success')
-      } else {
-        const err = await res.json()
-        showError('ส่งไม่สำเร็จ', err.detail || 'เกิดข้อผิดพลาด')
-      }
-    } catch (e) {
-      showError('ข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้')
-    }
-  }
-
 
   // ── Init ──────────────────────────────────────────────────────
 

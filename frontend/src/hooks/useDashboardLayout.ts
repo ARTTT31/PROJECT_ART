@@ -11,14 +11,14 @@ const defaultWidgets: WidgetConfig[] = [
 ]
 
 export const widgetNames: Record<string, string> = {
-  holidays: 'วันหยุดนักขัตฤกษ์ (2569)',
+  holidays: 'วันหยุดนักขัตฤกษ์',
   weather: 'สภาพอากาศ & PM 2.5',
   oilprice: 'ราคาน้ำมัน',
   qrcode: 'สร้าง QR Code',
 }
 
 export const widgetDescriptions: Record<string, string> = {
-  holidays: 'ปฏิทินวันหยุดนักขัตฤกษ์ประจำปี 2569 พร้อมระบบนับถอยหลัง',
+  holidays: 'ปฏิทินวันหยุดนักขัตฤกษ์ พร้อมระบบนับถอยหลัง',
   weather: 'ตรวจสอบสภาพอากาศ อุณหภูมิ และดัชนีฝุ่น PM 2.5 รายวัน',
   oilprice: 'ติดตามราคาน้ำมันล่าสุดในหน้าแดชบอร์ด',
   qrcode: 'เปิดเครื่องมือสร้าง QR Code อย่างรวดเร็ว',

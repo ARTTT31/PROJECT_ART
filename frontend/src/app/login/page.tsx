@@ -23,7 +23,7 @@ const formatTime = (date: Date) =>
     hour12: false,
   }).format(date);
 
-const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://project-art-c7eh.onrender.com';
+const apiBaseUrl = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '');
 const LOGIN_ENDPOINT = `${apiBaseUrl}/api/v1/auth/login`;
 
 function LoginContent() {

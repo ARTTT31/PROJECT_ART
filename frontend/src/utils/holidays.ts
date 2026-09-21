@@ -1,4 +1,4 @@
-﻿export interface HolidayItem {
+export interface HolidayItem {
   id: string
   dayOfWeek: string
   day: number
@@ -9,25 +9,54 @@
   description?: string
 }
 
-export const THAI_HOLIDAYS_2026: HolidayItem[] = [
-  { id: 'h-1', dayOfWeek: 'วันพฤหัสบดี', day: 1, month: 1, monthName: 'มกราคม', year: 2026, title: 'วันขึ้นปีใหม่' },
-  { id: 'h-2', dayOfWeek: 'วันอังคาร', day: 3, month: 3, monthName: 'มีนาคม', year: 2026, title: 'วันมาฆบูชา' },
-  { id: 'h-3', dayOfWeek: 'วันจันทร์', day: 6, month: 4, monthName: 'เมษายน', year: 2026, title: 'วันจักรี' },
-  { id: 'h-4', dayOfWeek: 'วันจันทร์', day: 13, month: 4, monthName: 'เมษายน', year: 2026, title: 'วันสงกรานต์' },
-  { id: 'h-5', dayOfWeek: 'วันอังคาร', day: 14, month: 4, monthName: 'เมษายน', year: 2026, title: 'วันสงกรานต์' },
-  { id: 'h-6', dayOfWeek: 'วันพุธ', day: 15, month: 4, monthName: 'เมษายน', year: 2026, title: 'วันสงกรานต์' },
-  { id: 'h-7', dayOfWeek: 'วันศุกร์', day: 1, month: 5, monthName: 'พฤษภาคม', year: 2026, title: 'วันแรงงานแห่งชาติ' },
-  { id: 'h-8', dayOfWeek: 'วันจันทร์', day: 4, month: 5, monthName: 'พฤษภาคม', year: 2026, title: 'วันฉัตรมงคล' },
-  { id: 'h-9', dayOfWeek: 'วันพุธ', day: 3, month: 6, monthName: 'มิถุนายน', year: 2026, title: 'วันเฉลิมพระชนมพรรษาสมเด็จพระนางเจ้าฯ พระบรมราชินี' },
-  { id: 'h-10', dayOfWeek: 'วันอังคาร', day: 28, month: 7, monthName: 'กรกฎาคม', year: 2026, title: 'วันเฉลิมพระชนมพรรษาพระเจ้าอยู่หัว' },
-  { id: 'h-11', dayOfWeek: 'วันพุธ', day: 29, month: 7, monthName: 'กรกฎาคม', year: 2026, title: 'วันอาสาฬหบูชา' },
-  { id: 'h-12', dayOfWeek: 'วันพุธ', day: 12, month: 8, monthName: 'สิงหาคม', year: 2026, title: 'วันแม่แห่งชาติ', description: 'วันคล้ายวันพระราชสมภพ สมเด็จพระบรมราชินีนาถในรัชกาลที่ 9' },
-  { id: 'h-13', dayOfWeek: 'วันอังคาร', day: 13, month: 10, monthName: 'ตุลาคม', year: 2026, title: 'วันนวมินทรมหาราช', description: 'วันคล้ายวันสวรรคตพระบาทสมเด็จพระปรมินทรมหาภูมิพลอดุลยเดชมหาราช บรมนาถบพิตร' },
-  { id: 'h-14', dayOfWeek: 'วันศุกร์', day: 23, month: 10, monthName: 'ตุลาคม', year: 2026, title: 'วันปิยมหาราช' },
-  { id: 'h-15', dayOfWeek: 'วันจันทร์', day: 7, month: 12, monthName: 'ธันวาคม', year: 2026, title: 'ชดเชยวันพ่อแห่งชาติ' },
-  { id: 'h-16', dayOfWeek: 'วันพฤหัสบดี', day: 10, month: 12, monthName: 'ธันวาคม', year: 2026, title: 'วันรัฐธรรมนูญ' },
-  { id: 'h-17', dayOfWeek: 'วันพฤหัสบดี', day: 31, month: 12, monthName: 'ธันวาคม', year: 2026, title: 'วันสิ้นปี' },
-]
+type HolidayDefinition = Omit<HolidayItem, 'id' | 'dayOfWeek' | 'day' | 'month' | 'monthName' | 'year'> & { date: string }
+
+// Keep confirmed calendars explicit: moveable Buddhist holidays must not be guessed.
+const THAI_HOLIDAY_CALENDARS: Record<number, HolidayDefinition[]> = {
+  2026: [
+    { date: '2026-01-01', title: 'วันขึ้นปีใหม่' }, { date: '2026-03-03', title: 'วันมาฆบูชา' },
+    { date: '2026-04-06', title: 'วันจักรี' }, { date: '2026-04-13', title: 'วันสงกรานต์' },
+    { date: '2026-04-14', title: 'วันสงกรานต์' }, { date: '2026-04-15', title: 'วันสงกรานต์' },
+    { date: '2026-05-01', title: 'วันแรงงานแห่งชาติ' }, { date: '2026-05-04', title: 'วันฉัตรมงคล' },
+    { date: '2026-06-03', title: 'วันเฉลิมพระชนมพรรษาสมเด็จพระนางเจ้าฯ พระบรมราชินี' },
+    { date: '2026-07-28', title: 'วันเฉลิมพระชนมพรรษาพระเจ้าอยู่หัว' }, { date: '2026-07-29', title: 'วันอาสาฬหบูชา' },
+    { date: '2026-08-12', title: 'วันแม่แห่งชาติ', description: 'วันคล้ายวันพระราชสมภพ สมเด็จพระบรมราชินีนาถในรัชกาลที่ 9' },
+    { date: '2026-10-13', title: 'วันนวมินทรมหาราช', description: 'วันคล้ายวันสวรรคตพระบาทสมเด็จพระปรมินทรมหาภูมิพลอดุลยเดชมหาราช บรมนาถบพิตร' },
+    { date: '2026-10-23', title: 'วันปิยมหาราช' }, { date: '2026-12-07', title: 'ชดเชยวันพ่อแห่งชาติ' },
+    { date: '2026-12-10', title: 'วันรัฐธรรมนูญ' }, { date: '2026-12-31', title: 'วันสิ้นปี' },
+  ],
+  2027: [
+    { date: '2027-01-01', title: 'วันขึ้นปีใหม่' }, { date: '2027-02-22', title: 'ชดเชยวันมาฆบูชา' },
+    { date: '2027-04-06', title: 'วันจักรี' }, { date: '2027-04-13', title: 'วันสงกรานต์' },
+    { date: '2027-04-14', title: 'วันสงกรานต์' }, { date: '2027-04-15', title: 'วันสงกรานต์' },
+    { date: '2027-05-03', title: 'ชดเชยวันแรงงานแห่งชาติ' }, { date: '2027-05-04', title: 'วันฉัตรมงคล' },
+    { date: '2027-05-20', title: 'วันวิสาขบูชา' },
+    { date: '2027-06-03', title: 'วันเฉลิมพระชนมพรรษาสมเด็จพระนางเจ้าฯ พระบรมราชินี' },
+    { date: '2027-07-19', title: 'ชดเชยวันอาสาฬหบูชา' }, { date: '2027-07-28', title: 'วันเฉลิมพระชนมพรรษาพระเจ้าอยู่หัว' },
+    { date: '2027-08-12', title: 'วันแม่แห่งชาติ' }, { date: '2027-10-13', title: 'วันนวมินทรมหาราช' },
+    { date: '2027-10-25', title: 'ชดเชยวันปิยมหาราช' }, { date: '2027-12-06', title: 'ชดเชยวันพ่อแห่งชาติ' },
+    { date: '2027-12-10', title: 'วันรัฐธรรมนูญ' }, { date: '2027-12-31', title: 'วันสิ้นปี' },
+  ],
+}
+
+const thaiDateFormatter = new Intl.DateTimeFormat('th-TH', { weekday: 'long', month: 'long' })
+
+function toHolidayItem(definition: HolidayDefinition): HolidayItem {
+  const [year, month, day] = definition.date.split('-').map(Number)
+  const parts = thaiDateFormatter.formatToParts(new Date(year, month - 1, day))
+  return {
+    id: definition.date,
+    dayOfWeek: parts.find((part) => part.type === 'weekday')?.value ?? '',
+    day,
+    month,
+    monthName: parts.find((part) => part.type === 'month')?.value ?? '',
+    year,
+    title: definition.title,
+    description: definition.description,
+  }
+}
+
+export const THAI_HOLIDAYS_2026 = THAI_HOLIDAY_CALENDARS[2026].map(toHolidayItem)
 
 export interface HolidayWithDiff extends HolidayItem {
   dateObj: Date
@@ -39,17 +68,11 @@ export interface HolidayWithDiff extends HolidayItem {
 
 export function getHolidaysWithDiff(referenceDate: Date = new Date()): HolidayWithDiff[] {
   const today = new Date(referenceDate.getFullYear(), referenceDate.getMonth(), referenceDate.getDate())
-  return THAI_HOLIDAYS_2026.map((h) => {
-    const holidayDate = new Date(h.year, h.month - 1, h.day)
-    const diffTime = holidayDate.getTime() - today.getTime()
-    const daysLeft = Math.round(diffTime / (1000 * 60 * 60 * 24))
-    return {
-      ...h,
-      dateObj: holidayDate,
-      daysLeft,
-      isPast: daysLeft < 0,
-      isToday: daysLeft === 0,
-      isUpcoming: daysLeft > 0,
-    }
+  const definitions = THAI_HOLIDAY_CALENDARS[referenceDate.getFullYear()] ?? []
+
+  return definitions.map(toHolidayItem).map((holiday) => {
+    const holidayDate = new Date(holiday.year, holiday.month - 1, holiday.day)
+    const daysLeft = Math.round((holidayDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+    return { ...holiday, dateObj: holidayDate, daysLeft, isPast: daysLeft < 0, isToday: daysLeft === 0, isUpcoming: daysLeft > 0 }
   })
 }

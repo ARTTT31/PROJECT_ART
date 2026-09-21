@@ -33,9 +33,6 @@ class User(Base, TimestampMixin):
 
     # Camera streams configuration (JSON stored as text)
     camera_config: Mapped[str | None] = mapped_column(Text)
-    # Web Push Notifications Subscriptions (JSON stored as text)
-    push_subscriptions: Mapped[str | None] = mapped_column(Text)
-
     # Account status
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     is_locked: Mapped[bool] = mapped_column(Boolean, default=False)

@@ -195,8 +195,17 @@ PROJECT_ART/
 
 - Framework preset: Next.js
 - Root directory: `frontend`
-- Set `NEXT_PUBLIC_API_URL` to the Render backend URL.
+- Set `NEXT_PUBLIC_SITE_URL` to the canonical frontend URL.
+- Set `NEXT_PUBLIC_API_URL` to the public API URL, or leave it unset to route browser requests through `/api`.
+- When using the `/api` rewrite, set `API_INTERNAL_URL` to the backend URL. This server-only variable keeps the backend address out of browser bundles.
 - Set `NEXT_PUBLIC_GOOGLE_CLIENT_ID` for Google Sign-In support.
+
+### Release Checklist
+
+1. Run `alembic upgrade head` against the production database before deploying the backend.
+2. Confirm `DEBUG=False`, automatic schema flags are disabled, and `CORS_ORIGINS` contains only the deployed frontend origin.
+3. Set the frontend URLs above in the deployment environment; do not rely on a URL embedded in source code.
+4. Run the validation commands in this document and verify login, profile editing, dashboard widgets, and the production `/api` rewrite after deployment.
 
 ### Google OAuth
 

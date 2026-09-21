@@ -46,4 +46,3 @@ flake8==6.1.0
 mypy==1.9.0
 
 asyncpg==0.29.0
-pywebpush==1.14.0

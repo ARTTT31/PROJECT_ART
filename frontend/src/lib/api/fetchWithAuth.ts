@@ -5,7 +5,8 @@
 import { parseJsonWithSchema, type ResponseModelParsed } from './schemas';
 import type { z } from 'zod';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://project-art-c7eh.onrender.com';
+// Leave this empty in browser deployments to use the same-origin /api rewrite.
+const API_URL = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '');
 
 // ── Shared refresh state ─────────────────────────────────────
 let isRefreshing = false;
