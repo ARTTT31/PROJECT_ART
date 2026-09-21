@@ -7,11 +7,11 @@
    ═══════════════════════════════════════════════════════ */
 
 .login-page {
-  height: 100dvh;
-  overflow: hidden;
+  min-height: 100dvh;
+  overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
   padding: clamp(12px, 2.4vh, 24px);
   font-family: inherit;
   background-color: #f8fafc;
@@ -31,6 +31,7 @@
 
 .login-shell {
   width: min(400px, 100%);
+  margin: auto;
   max-height: none;
   overflow: visible;
   display: flex;
