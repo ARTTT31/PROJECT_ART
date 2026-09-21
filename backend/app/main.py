@@ -5,7 +5,7 @@ ART Workspace Backend
 
 import os
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Request, Response
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from slowapi import _rate_limit_exceeded_handler
@@ -98,32 +98,16 @@ async def lifespan(app: FastAPI):
                           "Prefer Alembic migrations in production.")
                 await conn.run_sync(base.Base.metadata.create_all)
 
-            # Force run sync_db_columns to fix missing columns in production
-            # without requiring the user to SSH into Render and run Alembic
-            print("[DB] Running auto-migration to ensure all schema columns exist...")
-            await conn.run_sync(sync_db_columns)
-            
+            if settings.AUTO_MIGRATE_COLUMNS:
+                print("[DB WARNING] Running legacy schema repair; use Alembic migrations in production.")
+                await conn.run_sync(sync_db_columns)
+
     except Exception as e:
         print(f"[STARTUP DB SYNC NOTICE] {e}")
     yield
-
-
-# CORS Origins — built early so the CSP connect-src directive can trust them.
-# allow_credentials=True requires explicit origins (no wildcard "*").
-base_origins = [
-    "https://project-art-sigma.vercel.app",
-    "http://localhost:3000",
-    "http://localhost:3001",
-    "http://localhost:8000",
-    "http://localhost",
-    "null",
-]
-
-allowed_origins = list(base_origins)
-for origin in settings.get_cors_origins():
-    cleaned = origin.rstrip("/")
-    if cleaned and cleaned not in allowed_origins:
-        allowed_origins.append(cleaned)
+# CORS is explicit because authenticated cookies must never be shared with
+# arbitrary preview deployments. Set CORS_ORIGINS in the production host.
+allowed_origins = [origin.rstrip("/") for origin in settings.get_cors_origins() if origin.strip()]
 
 
 # ── Content Security Policy (CSP) Middleware ──
@@ -248,7 +232,6 @@ app.add_middleware(CSPMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
-    allow_origin_regex=r"^https:\/\/.*\.vercel\.app$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -267,8 +250,6 @@ async def root():
     }
 
 
-
-
 @app.get("/health", tags=["Health"])
 async def health_check():
     """Health check endpoint"""
@@ -280,12 +261,6 @@ async def health_check():
             "version": settings.APP_VERSION,
         },
     )
-
-@app.post("/crash")
-async def test_crash():
-    raise Exception("Test crash!")
-
-
 # NOTE: CSPMiddleware class is defined above (before app creation) so it can be
 # referenced in the middleware registration block without a NameError.
 

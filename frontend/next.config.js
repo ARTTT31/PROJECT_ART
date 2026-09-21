@@ -1,4 +1,9 @@
 /** @type {import('next').NextConfig} */
+// The development script uses webpack, not Turbopack. Serwist still emits its
+// Turbopack advisory while loading Next 16's build config, so suppress that
+// false-positive without changing PWA behaviour.
+process.env.SERWIST_SUPPRESS_TURBOPACK_WARNING ??= '1'
+
 const nextConfig = {
   ...(process.env.EXPORT_STATIC === 'true' ? { output: 'export' } : {}),
   reactStrictMode: true,
@@ -71,7 +76,7 @@ const nextConfig = {
 const withSerwist = require('@serwist/next').default({
   swSrc: 'src/app/sw.ts',
   swDest: 'public/sw.js',
-  disable: process.env.NODE_ENV === 'development',
+  disable: process.env.NODE_ENV !== 'production',
 });
 
 const { withSentryConfig } = require('@sentry/nextjs/config');

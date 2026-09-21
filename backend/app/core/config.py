@@ -14,7 +14,8 @@ class Settings(BaseSettings):
     # Application
     APP_NAME: str = "ART Workspace API"
     APP_VERSION: str = "1.0.0"
-    DEBUG: bool = True
+    # Production must opt in to development behaviour explicitly.
+    DEBUG: bool = False
 
     # Database
     DATABASE_URL: str
@@ -83,12 +84,7 @@ class Settings(BaseSettings):
         return "none" if not self.DEBUG else "lax"
 
     # CORS — explicit origins required (no wildcards) because allow_credentials=True
-    CORS_ORIGINS: str = (
-        "http://localhost:3000,http://localhost:3001,http://localhost:80,"
-        "http://localhost:8000,https://project-art-sigma.vercel.app,"
-        "https://art-workspace-api.onrender.com,https://project-art-c7eh.onrender.com,"
-        "http://localhost,null"
-    )
+    CORS_ORIGINS: str = "http://localhost:3000,http://localhost:3001"
 
     def get_cors_origins(self) -> List[str]:
         """Parse CORS origins from string"""

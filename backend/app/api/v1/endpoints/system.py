@@ -10,9 +10,8 @@ from typing import Optional
 from sqlalchemy import text
 
 from app.core.database import get_db
-from app.api.dependencies import get_current_admin_user, get_current_user
+from app.api.dependencies import get_current_admin_user
 from sqlalchemy.ext.asyncio import AsyncSession
-
 router = APIRouter()
 
 START_TIME = time.time()
@@ -60,5 +59,3 @@ async def get_system_health(
         memory_total_mb=round(mem.total / 1024 / 1024, 1),
         disk_percent=disk.percent,
     )
-
-

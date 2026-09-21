@@ -2,7 +2,7 @@
 
 ART Workspace is a Thai-language personal productivity dashboard built with a serverless-friendly full-stack architecture.
 
-Production: [https://your-production-domain.vercel.app](https://your-production-domain.vercel.app)
+Production URL: configure this in your deployment environment; do not commit a personal deployment URL.
 
 ## CI Status
 
@@ -42,7 +42,7 @@ The GitHub Actions pipeline (`ci.yml`) runs on every push and pull request to `m
 - **Drag and Drop:** `@dnd-kit/core`, `@dnd-kit/sortable`
 - **PWA Support:** `@serwist/next`
 - **Error Tracking:** `@sentry/nextjs`
-- **E2E Testing:** Playwright
+- **E2E Testing:** Playwright smoke tests run in CI
 - **Data Fetching:** TanStack Query v5
 - **Auth Client:** `AuthProvider` (centralized context) + `useAuth` hook
 - **Alerts:** SweetAlert2 + custom `useToast` hook
@@ -141,6 +141,7 @@ cd frontend
 npm run type-check
 npm run lint
 npm run build
+npm run test:smoke
 ```
 
 Backend checks:
@@ -187,7 +188,8 @@ PROJECT_ART/
 - Root directory: `backend`
 - Build command: `pip install -r requirements.txt`
 - Start command: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
-- Set `DATABASE_URL`, `SECRET_KEY`, Google OAuth values, and `FRONTEND_URL` in Render environment variables.
+- Set `DATABASE_URL`, a long random `SECRET_KEY`, OAuth values, `FRONTEND_URL`, and the exact `CORS_ORIGINS` frontend URL in Render environment variables.
+- Keep `DEBUG=False`, `AUTO_CREATE_TABLES=False`, and `AUTO_MIGRATE_COLUMNS=False` in production. Run `alembic upgrade head` for every release instead.
 
 ### Vercel Frontend
 

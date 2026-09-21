@@ -7,11 +7,8 @@ import logging
 import traceback
 import os
 import secrets
-from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional
+from typing import Any, List, Optional
 from urllib.parse import urlencode
-
-logger = logging.getLogger(__name__)
 
 import requests
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -40,9 +37,8 @@ from app.services.auth_service import AuthService
 from app.services.audit_service import AuditService
 from app.services.user_service import UserService
 
-from typing import Any
-
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 COOKIE_OPTIONS: dict[str, Any] = {
     "secure": settings.COOKIE_SECURE,
@@ -431,7 +427,8 @@ async def google_verify_token(
             detail="Could not verify Google token",
         )
 
-    # 3. Verify audience if client IDs are explicitly configured in the environment (only for id_token, access_token doesn't usually have aud in userinfo, it has it in tokeninfo)
+    # Verify the audience when client IDs are configured. Userinfo responses
+    # obtained with an access token do not normally expose an audience.
     if not access_token:
         token_aud = verified_info.get("aud")
         if valid_client_ids and token_aud not in valid_client_ids:

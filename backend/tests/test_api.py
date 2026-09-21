@@ -78,6 +78,30 @@ class TestHealthCheck:
         assert data["status"] == "healthy"
 
 
+class TestPersonalTasksAPI:
+    async def test_create_complete_and_delete_task(self, client, logged_in_user):
+        created = await client.post(
+            "/api/v1/tasks/",
+            json={"title": "ยื่นเอกสาร", "priority": "high", "due_date": "2026-09-30"},
+        )
+        assert created.status_code == 201
+        task = created.json()
+        assert task["title"] == "ยื่นเอกสาร"
+        assert task["is_completed"] is False
+
+        listed = await client.get("/api/v1/tasks/")
+        assert listed.status_code == 200
+        assert [item["id"] for item in listed.json()] == [task["id"]]
+
+        completed = await client.patch(f"/api/v1/tasks/{task['id']}", json={"is_completed": True})
+        assert completed.status_code == 200
+        assert completed.json()["is_completed"] is True
+
+        deleted = await client.delete(f"/api/v1/tasks/{task['id']}")
+        assert deleted.status_code == 204
+        assert (await client.get("/api/v1/tasks/")).json() == []
+
+
 # ── Auth API Tests ────────────────────────────────────────
 
 class TestAuthAPI:

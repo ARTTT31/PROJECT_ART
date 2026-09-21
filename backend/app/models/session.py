@@ -3,7 +3,7 @@ Session Model for tracking user sessions
 """
 
 from datetime import datetime
-from sqlalchemy import Integer, String, DateTime, ForeignKey, Boolean
+from sqlalchemy import String, DateTime, ForeignKey, Boolean
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin, _utcnow

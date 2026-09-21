@@ -257,6 +257,7 @@ function LoginContent() {
                 <Mail size={18} aria-hidden="true" />
                 <input
                   id="login-email"
+                  name="username"
                   ref={emailRef}
                   type="text"
                   value={email}
@@ -276,6 +277,7 @@ function LoginContent() {
                 <Lock size={18} aria-hidden="true" />
                 <input
                   id="login-password"
+                  name="password"
                   ref={passwordRef}
                   type={showPassword ? 'text' : 'password'}
                   value={password}

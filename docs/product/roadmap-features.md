@@ -12,6 +12,14 @@ Personal productivity tool for individual use. The user works in a focused envir
 
 ART Workspace is a modern full-stack dashboard application that consolidates essential productivity tools and real-time information widgets into a single interface. Success means reducing context-switching, providing instant access to frequently-needed tools, and maintaining a clean, distraction-free workspace that adapts to the user's workflow.
 
+## Current personal workflow
+
+- **งานส่วนตัว:** บันทึกงาน กำหนดความสำคัญ และวันครบกำหนดจาก dashboard
+- **ข้อมูลประจำวัน:** อากาศ/PM 2.5, วันหยุด และราคาน้ำมัน
+- **เครื่องมือเร็ว:** สร้าง QR Code, Quick Links และกล้องที่ผู้ใช้กำหนดเอง
+
+ART Workspace is operated by one person. Every task is private to the signed-in account; there are no team assignments, shared task lists, or collaboration notifications.
+
 ## Brand Personality
 
 **Modern & Innovative** - Embraces contemporary design patterns, smooth animations, and forward-thinking UI choices. Not afraid to use gradients, glassmorphism, and premium visual effects when they enhance usability.

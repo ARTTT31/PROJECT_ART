@@ -4,6 +4,7 @@ import { fetchWithAuth } from '@/lib/api/fetchWithAuth'
 import { useAuth } from '@/hooks/useAuth'
 
 const defaultWidgets: WidgetConfig[] = [
+  { id: 'tasks', w: 1 },
   { id: 'holidays', w: 1 },
   { id: 'weather', w: 1 },
   { id: 'oilprice', w: 1 },
@@ -11,6 +12,7 @@ const defaultWidgets: WidgetConfig[] = [
 ]
 
 export const widgetNames: Record<string, string> = {
+  tasks: 'งานส่วนตัว',
   holidays: 'วันหยุดนักขัตฤกษ์ (2569)',
   weather: 'สภาพอากาศ & PM 2.5',
   oilprice: 'ราคาน้ำมัน',
@@ -18,6 +20,7 @@ export const widgetNames: Record<string, string> = {
 }
 
 export const widgetDescriptions: Record<string, string> = {
+  tasks: 'บันทึกงานส่วนตัว กำหนดความสำคัญ และวันครบกำหนด',
   holidays: 'ปฏิทินวันหยุดนักขัตฤกษ์ประจำปี 2569 พร้อมระบบนับถอยหลัง',
   weather: 'ตรวจสอบสภาพอากาศ อุณหภูมิ และดัชนีฝุ่น PM 2.5 รายวัน',
   oilprice: 'ติดตามราคาน้ำมันล่าสุดในหน้าแดชบอร์ด',
