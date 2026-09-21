@@ -238,12 +238,12 @@ function LoginContent() {
     <main className="login-page">
       <section aria-label="เข้าสู่ระบบ ART Workspace" className="login-shell">
         <div className="login-panel">
-          <div className="flex flex-col items-center justify-center text-center mb-8">
+          <div className="login-brand flex flex-col items-center justify-center text-center">
             <div className="w-16 h-16 bg-gradient-to-br from-[#0071e3] to-[#42a5f5] rounded-[20px] flex items-center justify-center shadow-lg shadow-blue-500/30 mb-4">
               <span className="text-white text-2xl font-bold">A</span>
             </div>
             <h1 className="text-2xl font-bold text-[#1d1d1f] tracking-tight">ART Workspace</h1>
-            <p className="text-[#6e6e73] text-sm mt-1">{formatDate(now)} • {formatTime(now)}</p>
+            <p className="login-timestamp text-sm mt-1">{formatDate(now)} • {formatTime(now)}</p>
           </div>
 
           <div className="login-form-header text-center">
@@ -320,7 +320,9 @@ function LoginContent() {
                   {rememberMe && <Check size={13} aria-hidden="true" />}
                 </span>
               </span>
-              <span className="login-remember-text">จดจำฉันไว้</span>
+              <span className="login-remember-text">
+                จดจำฉันไว้ <span className="login-remember-state">{rememberMe ? 'เปิดอยู่' : 'ปิดอยู่'}</span>
+              </span>
             </label>
 
             {error && (

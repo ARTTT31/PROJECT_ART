@@ -129,7 +129,7 @@ function SortableWidget({
       <div
         {...attributes}
         {...listeners}
-        className="absolute inset-x-0 top-0 z-10 flex h-10 cursor-grab items-center justify-center opacity-0 transition-opacity duration-200 group-hover:opacity-100 active:cursor-grabbing touch-none"
+        className="absolute inset-x-0 top-0 z-10 flex h-10 cursor-grab items-center justify-center opacity-100 transition-opacity duration-200 active:cursor-grabbing touch-none md:opacity-0 md:group-hover:opacity-100"
         aria-label={`ย้ายวิดเจ็ต ${widgetNames[widget.id]}`}
       >
         <span className="flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1 shadow-md ring-1 ring-black/[0.08] backdrop-blur-md">
@@ -224,6 +224,9 @@ export default function DashboardPage() {
             <h1 className="text-2xl font-bold tracking-tight text-[#1d1d1f] sm:text-3xl">
               {greeting}, <span className="text-[#0071e3]">{user.display_name || user.username}</span> 👋
             </h1>
+            <p className="text-[13px] font-medium text-[#6e6e73]">
+              ภาพรวมข้อมูลสำคัญของคุณสำหรับวันนี้
+            </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5">

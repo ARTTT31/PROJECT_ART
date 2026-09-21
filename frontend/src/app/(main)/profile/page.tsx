@@ -154,7 +154,7 @@ function InsetField({
 }: InsetFieldProps) {
   return (
     <div>
-      <label className="mb-1.5 ml-1 block text-[11px] font-bold tracking-wide uppercase text-[#6e6e73]">
+      <label className="mb-1.5 ml-1 block text-[12px] font-bold text-[#475569]">
         {label}
       </label>
       <div className="relative">
@@ -555,10 +555,10 @@ export default function ProfilePage() {
         <section className="overflow-hidden rounded-3xl bg-white ring-1 ring-black/[0.06] shadow-[0_10px_40px_rgba(15,23,42,0.07)]">
           {/* Banner */}
           {/* Identity — centered, white background */}
-          <div className="px-6 py-8 sm:px-8 sm:py-10">
+          <div className="px-6 py-6 sm:px-8 sm:py-7">
             <div className="flex flex-col items-center gap-3 text-center">
               {/* Avatar */}
-              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-[#0071e3] to-[#42a5f5] text-3xl font-black text-white ring-4 ring-white shadow-[0_8px_24px_rgba(0,113,227,0.20)]">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-[#0071e3] to-[#42a5f5] text-2xl font-black text-white ring-4 ring-white shadow-[0_8px_24px_rgba(0,113,227,0.20)]">
                 {user.name?.charAt(0).toUpperCase() || 'U'}
               </div>
 
@@ -966,7 +966,7 @@ export default function ProfilePage() {
                       onClick={() => moveMainMenuItem(item.id, 'up')}
                       disabled={idx === 0}
                       aria-label="ย้ายขึ้น"
-                      className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 transition-all hover:bg-slate-100 hover:text-slate-700 disabled:opacity-30 disabled:hover:bg-transparent"
+                      className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-400 transition-all hover:bg-slate-100 hover:text-slate-700 disabled:opacity-30 disabled:hover:bg-transparent sm:h-8 sm:w-8"
                     >
                       <ChevronUp size={14} aria-hidden="true" />
                     </button>
@@ -975,7 +975,7 @@ export default function ProfilePage() {
                       onClick={() => moveMainMenuItem(item.id, 'down')}
                       disabled={idx === mainMenuConfig.length - 1}
                       aria-label="ย้ายลง"
-                      className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 transition-all hover:bg-slate-100 hover:text-slate-700 disabled:opacity-30 disabled:hover:bg-transparent"
+                      className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-400 transition-all hover:bg-slate-100 hover:text-slate-700 disabled:opacity-30 disabled:hover:bg-transparent sm:h-8 sm:w-8"
                     >
                       <ChevronDown size={14} aria-hidden="true" />
                     </button>
@@ -988,13 +988,13 @@ export default function ProfilePage() {
                       aria-label={`${item.enabled ? 'ซ่อน' : 'แสดง'} ${item.name}`}
                       disabled={!!item.required}
                       onClick={() => toggleMainMenuItem(item.id)}
-                      style={{ width: '40px', height: '24px', minWidth: '40px', minHeight: '24px', padding: '2px', display: 'flex', alignItems: 'center', justifyContent: 'flex-start' }}
+                      style={{ width: '44px', height: '28px', minWidth: '44px', minHeight: '28px', padding: '2px', display: 'flex', alignItems: 'center', justifyContent: 'flex-start' }}
                       className={`relative ml-1 shrink-0 cursor-pointer rounded-full transition-colors duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3] focus-visible:ring-offset-2 disabled:cursor-not-allowed ${
                         item.enabled ? 'bg-[#0071e3]' : 'bg-[#e5e5ea]'
                       } ${item.required ? 'opacity-70' : ''}`}
                     >
                       <span
-                        style={{ width: '20px', height: '20px', transform: item.enabled ? 'translateX(16px)' : 'translateX(0px)' }}
+                        style={{ width: '24px', height: '24px', transform: item.enabled ? 'translateX(16px)' : 'translateX(0px)' }}
                         className={`pointer-events-none inline-block rounded-full bg-white shadow-[0_2px_4px_rgba(0,0,0,0.15),0_0_1px_rgba(0,0,0,0.1)] transition-transform duration-200 ease-in-out`}
                       />
                     </button>

@@ -67,6 +67,14 @@
   background: transparent;
 }
 
+.login-brand {
+  margin-bottom: clamp(20px, 3vh, 28px);
+}
+
+.login-timestamp {
+  color: #596779;
+}
+
 .login-form-header h2 {
   margin: 0;
   font-size: 32px;
@@ -86,10 +94,10 @@
 }
 
 .login-form {
-  margin-top: clamp(24px, 3vh, 32px);
+  margin-top: clamp(18px, 2.5vh, 24px);
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 16px;
 }
 
 .login-field {
@@ -287,6 +295,17 @@
   user-select: none;
 }
 
+.login-remember-state {
+  margin-left: 4px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.login-remember--checked .login-remember-state {
+  color: #0369a1;
+}
+
 .login-error {
   border-radius: 14px;
   border: 1px solid rgba(255, 59, 48, 0.2);
@@ -466,12 +485,49 @@
 
 /* Divider + Google button (moved from inline styles) */
 .login-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   text-align: center;
   font-size: 13px;
-  color: #94a3b8;
+  color: #64748b;
   margin: 0;
   letter-spacing: 0.02em;
   font-weight: 500;
+}
+
+.login-divider::before,
+.login-divider::after {
+  content: '';
+  height: 1px;
+  flex: 1;
+  background: rgba(100, 116, 139, 0.24);
+}
+
+@media (max-height: 720px) {
+  .login-page {
+    padding-block: 12px;
+  }
+
+  .login-panel {
+    padding-block: 24px;
+  }
+
+  .login-brand {
+    margin-bottom: 16px;
+  }
+
+  .login-brand > div {
+    width: 52px;
+    height: 52px;
+    margin-bottom: 10px;
+    border-radius: 16px;
+  }
+
+  .login-form {
+    margin-top: 14px;
+    gap: 12px;
+  }
 }
 
 .google-btn {
