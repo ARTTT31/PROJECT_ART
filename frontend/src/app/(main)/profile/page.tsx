@@ -1010,50 +1010,7 @@ export default function ProfilePage() {
           </p>
         </SectionCard>
 
-        {/* ══════════════════════════════════════════════════
-            SECTION 5 — SYSTEM & NOTIFICATIONS
-            ══════════════════════════════════════════════════ */}
-        <SectionCard
-          icon={<Bell size={20} aria-hidden="true" />}
-          iconBg="bg-amber-50"
-          iconColor="text-amber-600"
-          iconRing="ring-amber-200/60"
-          title="การแจ้งเตือน & ระบบ"
-          subtitle="ตั้งค่าการรับการแจ้งเตือน Web Push และทดสอบระบบ"
-        >
-          <div className="grid grid-cols-1 gap-4">
-            <div className="rounded-2xl border border-black/[0.06] bg-[#f8fafc] p-4">
-              <h3 className="text-[14px] font-bold text-[#1d1d1f] mb-1">Web Push Notifications</h3>
-              <p className="text-[12px] text-[#6e6e73] mb-4">รับการแจ้งเตือนสำคัญบนเดสก์ท็อปหรือมือถือ เช่น วันหยุด หรือสภาพอากาศฉุกเฉิน</p>
-              
-              <div className="flex items-center gap-2">
-                {!isPushEnabled ? (
-                  <button
-                    type="button"
-                    onClick={handleSubscribePush}
-                    disabled={isSubscribing}
-                    className="inline-flex items-center gap-2 rounded-full bg-[#0071e3] px-4 py-2 text-[12px] font-bold text-white transition-all hover:bg-[#0077ed] disabled:opacity-50"
-                  >
-                    {isSubscribing ? 'กำลังขอสิทธิ์...' : 'เปิดรับการแจ้งเตือน'}
-                  </button>
-                ) : (
-                  <div className="flex flex-col items-start gap-2">
-                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1 text-[12px] font-bold text-emerald-700 ring-1 ring-emerald-200">
-                      <Check size={14} /> เปิดรับการแจ้งเตือนแล้ว
-                    </span>
-                    <button
-                      type="button"
-                      onClick={handleTestPush}
-                      className="inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-1.5 text-[12px] font-bold text-[#1d1d1f] shadow-sm ring-1 ring-black/[0.06] transition-all hover:bg-slate-50"
-                    >
-                      <Bell size={14} /> ส่งทดสอบการแจ้งเตือน
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </SectionCard>
+
 
       </div>
 
