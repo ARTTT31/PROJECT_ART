@@ -1,9 +1,10 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { AlertCircle, Fuel } from 'lucide-react'
+import { AlertCircle, Fuel, TrendingUp, TrendingDown } from 'lucide-react'
 import WidgetSizeToggle from './WidgetSizeToggle'
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth'
+import { pushNotifications, type Notification } from '@/components/Layout/NotificationBell'
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -49,6 +50,96 @@ function saveOilCache(cache: OilCache) {
   try { localStorage.setItem(OIL_CACHE_KEY, JSON.stringify(cache)) } catch { /* ignore */ }
 }
 
+// ── Price change detection ────────────────────────────────────────────────────
+
+const OIL_PREV_KEY = 'artOilPricePrevV1'
+
+interface PriceChange {
+  key: string
+  name: string
+  oldPrice: number
+  newPrice: number
+  diff: number
+  direction: 'up' | 'down'
+}
+
+function loadPrevPrices(): Record<string, number> | null {
+  if (typeof window === 'undefined') return null
+  try {
+    const raw = localStorage.getItem(OIL_PREV_KEY)
+    return raw ? JSON.parse(raw) : null
+  } catch { return null }
+}
+
+function savePrevPrices(prices: OilPrice[]) {
+  try {
+    const map: Record<string, number> = {}
+    prices.forEach((p) => { map[p.key] = p.price })
+    localStorage.setItem(OIL_PREV_KEY, JSON.stringify(map))
+  } catch { /* ignore */ }
+}
+
+function detectPriceChanges(
+  oldMap: Record<string, number>,
+  newPrices: OilPrice[],
+): PriceChange[] {
+  const changes: PriceChange[] = []
+  for (const item of newPrices) {
+    const oldPrice = oldMap[item.key]
+    if (oldPrice == null) continue
+    const diff = +(item.price - oldPrice).toFixed(2)
+    if (diff !== 0) {
+      changes.push({
+        key: item.key,
+        name: shortName[item.key] ?? item.name,
+        oldPrice,
+        newPrice: item.price,
+        diff,
+        direction: diff > 0 ? 'up' : 'down',
+      })
+    }
+  }
+  return changes
+}
+
+function buildOilPriceNotification(changes: PriceChange[]): Notification | null {
+  if (changes.length === 0) return null
+  const today = new Date().toISOString().slice(0, 10)
+
+  const ups = changes.filter((c) => c.direction === 'up')
+  const downs = changes.filter((c) => c.direction === 'down')
+
+  const lines: string[] = []
+  if (ups.length > 0) {
+    lines.push(
+      '📈 ปรับขึ้น: ' +
+        ups.map((c) => `${c.name} +${c.diff.toFixed(2)}`).join(', '),
+    )
+  }
+  if (downs.length > 0) {
+    lines.push(
+      '📉 ปรับลง: ' +
+        downs.map((c) => `${c.name} ${c.diff.toFixed(2)}`).join(', '),
+    )
+  }
+
+  const hasUp = ups.length > 0
+  const hasDown = downs.length > 0
+
+  return {
+    id: `oilprice-change-${today}`,
+    type: 'oilprice',
+    level: hasUp && !hasDown ? 'warning' : 'info',
+    title: hasUp && hasDown
+      ? 'ราคาน้ำมันปรับตัว ⛽'
+      : hasUp
+      ? 'ราคาน้ำมันปรับขึ้น ⬆️'
+      : 'ราคาน้ำมันปรับลง ⬇️',
+    body: lines.join(' | '),
+    at: new Date(),
+  }
+}
+
 // ── Fuel display maps ─────────────────────────────────────────────────────────
 
 /** Tailwind dot color per fuel type */
@@ -88,6 +179,7 @@ export default function OilPriceWidget({
   const [error, setError]         = useState<string | null>(null)
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date())
   const [cacheNote, setCacheNote] = useState<string | null>(null)
+  const [priceChanges, setPriceChanges] = useState<Record<string, PriceChange>>({})
   const abortRef = useRef<AbortController | null>(null)
 
   const fetchPrices = async (opts?: { refresh?: boolean }) => {
@@ -120,9 +212,24 @@ export default function OilPriceWidget({
 
       const result = await res.json()
       if (result.success && (result.prices || result.oil_prices)) {
+        const newPrices: OilPrice[] = result.prices || result.oil_prices || []
         setData(result)
         setCacheNote(null)
         saveOilCache({ savedAt: Date.now(), data: result, lastUpdate: Date.now() })
+
+        // ── Price change detection & notification ──
+        const prevMap = loadPrevPrices()
+        if (prevMap) {
+          const changes = detectPriceChanges(prevMap, newPrices)
+          if (changes.length > 0) {
+            const changeMap: Record<string, PriceChange> = {}
+            changes.forEach((c) => { changeMap[c.key] = c })
+            setPriceChanges(changeMap)
+            const notif = buildOilPriceNotification(changes)
+            if (notif) pushNotifications([notif])
+          }
+        }
+        savePrevPrices(newPrices)
       } else {
         setError('ไม่สามารถดึงข้อมูลราคาน้ำมันได้')
       }
@@ -242,31 +349,53 @@ export default function OilPriceWidget({
         {/* ── Price cards ───────────────────────────────────────────────── */}
         {prices.length > 0 ? (
           <div className="grid flex-1 grid-cols-2 gap-2.5 sm:grid-cols-3">
-            {prices.map((item, idx) => (
-              <div
-                key={item.key || idx}
-                className="flex cursor-default flex-col items-center justify-center gap-1.5 rounded-[18px] bg-[#f5f5f7] px-3 py-3.5 transition-all duration-150 hover:bg-white hover:shadow-md hover:ring-1 hover:ring-black/[0.06]"
-              >
-                {/* Dot + name */}
-                <div className="flex items-center gap-1.5">
-                  <span
-                    className={`h-2.5 w-2.5 shrink-0 rounded-full ${fuelDotColor[item.key] ?? defaultDotColor}`}
-                    aria-hidden="true"
-                  />
-                  <span className="text-center text-xs font-bold leading-tight text-[#1d1d1f] sm:text-sm">
-                    {shortName[item.key] ?? item.name}
+            {prices.map((item, idx) => {
+              const change = priceChanges[item.key]
+              return (
+                <div
+                  key={item.key || idx}
+                  className="flex cursor-default flex-col items-center justify-center gap-1.5 rounded-[18px] bg-[#f5f5f7] px-3 py-3.5 transition-all duration-150 hover:bg-white hover:shadow-md hover:ring-1 hover:ring-black/[0.06]"
+                >
+                  {/* Dot + name */}
+                  <div className="flex items-center gap-1.5">
+                    <span
+                      className={`h-2.5 w-2.5 shrink-0 rounded-full ${fuelDotColor[item.key] ?? defaultDotColor}`}
+                      aria-hidden="true"
+                    />
+                    <span className="text-center text-xs font-bold leading-tight text-[#1d1d1f] sm:text-sm">
+                      {shortName[item.key] ?? item.name}
+                    </span>
+                  </div>
+
+                  {/* Price */}
+                  <span className="tabular-nums text-xl font-extrabold leading-none tracking-tight text-[#1d1d1f] sm:text-2xl lg:text-3xl">
+                    {item.price.toFixed(2)}
                   </span>
+
+                  {/* Trend indicator */}
+                  {change ? (
+                    <span
+                      className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
+                        change.direction === 'up'
+                          ? 'bg-red-100 text-red-600'
+                          : 'bg-emerald-100 text-emerald-600'
+                      }`}
+                      title={`เดิม ${change.oldPrice.toFixed(2)} → ${change.newPrice.toFixed(2)}`}
+                    >
+                      {change.direction === 'up' ? (
+                        <TrendingUp size={10} aria-hidden="true" />
+                      ) : (
+                        <TrendingDown size={10} aria-hidden="true" />
+                      )}
+                      {change.direction === 'up' ? '+' : ''}{change.diff.toFixed(2)}
+                    </span>
+                  ) : (
+                    /* Unit */
+                    <span className="text-[11px] font-medium text-[#475569]">{item.unit}</span>
+                  )}
                 </div>
-
-                {/* Price */}
-                <span className="tabular-nums text-xl font-extrabold leading-none tracking-tight text-[#1d1d1f] sm:text-2xl lg:text-3xl">
-                  {item.price.toFixed(2)}
-                </span>
-
-                {/* Unit */}
-                <span className="text-[11px] font-medium text-[#475569]">{item.unit}</span>
-              </div>
-            ))}
+              )
+            })}
           </div>
         ) : (
           !error && (
