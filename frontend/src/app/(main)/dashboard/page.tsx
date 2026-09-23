@@ -311,16 +311,16 @@ export default function DashboardPage() {
                         aria-checked={isVisible}
                         disabled={isLocked}
                         onClick={() => toggleWidgetVisibility(widget.id)}
-                        className={`relative inline-flex h-7 w-[52px] shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3] focus-visible:ring-offset-2 ${
+                        style={{ width: '56px', minWidth: '56px', height: '30px', borderRadius: '9999px', padding: '3px' }}
+                        className={`relative inline-flex shrink-0 cursor-pointer items-center justify-start border-0 transition-colors duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3] focus-visible:ring-offset-2 ${
                           isLocked ? 'cursor-not-allowed opacity-50' : ''
                         } ${isVisible ? 'bg-[#0071e3]' : 'bg-slate-200'}`}
                       >
                         <span className="sr-only">สลับวิดเจ็ต {widgetNames[widget.id]}</span>
                         <span
                           aria-hidden="true"
-                          className={`pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                            isVisible ? 'translate-x-6' : 'translate-x-0'
-                          }`}
+                          style={{ transform: isVisible ? 'translateX(26px)' : 'translateX(0)' }}
+                          className="pointer-events-none inline-block h-6 w-6 rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
                         />
                       </button>
                     </div>
