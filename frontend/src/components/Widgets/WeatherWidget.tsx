@@ -701,8 +701,8 @@ export default function WeatherWidget({
               <span className="text-[10px] font-medium text-[#86868b]">อุณหภูมิ / สภาพอากาศ</span>
             </div>
 
-            <div className={`grid gap-2 ${width >= 3 ? 'grid-cols-6' : width >= 2 ? 'grid-cols-5' : 'grid-cols-5'}`}>
-              {weather.hourlyForecast.slice(0, width >= 3 ? 6 : 5).map((item) => {
+            <div className={`grid gap-1 sm:gap-2 ${width >= 3 ? 'grid-cols-6' : width >= 2 ? 'grid-cols-5' : 'grid-cols-4 sm:grid-cols-5'}`}>
+              {weather.hourlyForecast.slice(0, width >= 3 ? 6 : 5).map((item, index) => {
                 const hourMeta = getWeatherMeta(item.weatherCode)
                 const HourIcon = hourMeta.icon
                 return (
@@ -712,7 +712,7 @@ export default function WeatherWidget({
                       item.isCurrent
                         ? 'bg-[#0071e3]/10 ring-1 ring-[#0071e3]/30 shadow-2xs'
                         : 'bg-white shadow-2xs ring-1 ring-black/[0.04] hover:-translate-y-0.5'
-                    }`}
+                    } ${width < 2 && index === 4 ? 'hidden sm:flex' : ''}`}
                   >
                     <span
                       className={`text-xs font-bold ${

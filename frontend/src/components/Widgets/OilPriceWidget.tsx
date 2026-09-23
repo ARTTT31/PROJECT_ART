@@ -340,15 +340,24 @@ export default function OilPriceWidget({
 
         {/* ── Error banner ──────────────────────────────────────────────── */}
         {error && (
-          <div className="flex items-center gap-2 rounded-[14px] bg-[#ff3b30]/10 px-3.5 py-2.5 text-[12px] font-medium text-[#ff3b30]">
-            <AlertCircle size={14} className="shrink-0" aria-hidden="true" />
-            {error}
+          <div className="flex items-center justify-between gap-2 rounded-[14px] bg-[#ff3b30]/10 px-3.5 py-2.5 text-[12px] font-medium text-[#ff3b30]">
+            <div className="flex items-center gap-2 min-w-0">
+              <AlertCircle size={14} className="shrink-0" aria-hidden="true" />
+              <span className="truncate">{error}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => fetchPrices({ refresh: true })}
+              className="shrink-0 font-bold underline hover:text-[#ff3b30]"
+            >
+              ลองใหม่
+            </button>
           </div>
         )}
 
         {/* ── Price cards ───────────────────────────────────────────────── */}
         {prices.length > 0 ? (
-          <div className="grid flex-1 grid-cols-2 gap-2.5 sm:grid-cols-3">
+          <div className="grid flex-1 grid-cols-2 gap-2.5 sm:grid-cols-2 md:grid-cols-3">
             {prices.map((item, idx) => {
               const change = priceChanges[item.key]
               return (
