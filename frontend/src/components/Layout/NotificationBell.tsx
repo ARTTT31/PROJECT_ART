@@ -224,12 +224,60 @@ export default function NotificationBell() {
     }
   }, [])
 
-  // Subscribe to store updates
+  // Subscribe to store updates & WebSocket
   useEffect(() => {
     const fn: Listener = (items) => setNotifications([...items])
     listeners.add(fn)
+
+    // Setup WebSocket connection
+    let ws: WebSocket | null = null
+    let reconnectTimer: any = null
+    const connectWs = () => {
+      if (typeof window === 'undefined') return
+      
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+      // Assuming backend is on the same host but port 8080 or proxied via next
+      // We can try to use standard API route path
+      const wsUrl = process.env.NEXT_PUBLIC_API_URL 
+        ? process.env.NEXT_PUBLIC_API_URL.replace('http', 'ws') + '/api/v1/ws/notifications'
+        : `${protocol}//${window.location.hostname}:8080/api/v1/ws/notifications`
+
+      try {
+        ws = new WebSocket(wsUrl)
+        ws.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data)
+            if (data && data.id && data.title && data.body) {
+              // Real-time broadcast received
+              pushNotifications([{
+                id: data.id,
+                type: data.type || 'system',
+                level: data.level || 'info',
+                title: data.title,
+                body: data.body,
+                at: new Date()
+              }])
+            }
+          } catch (e) {
+            console.error('Invalid WebSocket message:', e)
+          }
+        }
+        ws.onclose = () => {
+          // Auto-reconnect after 5 seconds
+          reconnectTimer = setTimeout(connectWs, 5000)
+        }
+      } catch (err) {
+        console.error('WebSocket connection failed:', err)
+        reconnectTimer = setTimeout(connectWs, 5000)
+      }
+    }
+    
+    connectWs()
+
     return () => {
       listeners.delete(fn)
+      if (ws) ws.close()
+      if (reconnectTimer) clearTimeout(reconnectTimer)
     }
   }, [])
 
