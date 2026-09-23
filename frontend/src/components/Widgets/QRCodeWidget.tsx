@@ -12,7 +12,7 @@ import { showToast } from '@/utils/sweetalert'
 type BarcodeFormat = 'code128' | 'qrcode'
 
 const formatOptions: { value: BarcodeFormat; label: string; icon: typeof QrCode }[] = [
-  { value: 'code128', label: 'Code 128 (บาร์โค้ด)', icon: Barcode },
+  { value: 'code128', label: 'Code 128 (Barcode)', icon: Barcode },
   { value: 'qrcode', label: 'QR Code', icon: QrCode },
 ]
 

@@ -233,10 +233,10 @@ export default function DashboardPage() {
             <button
               type="button"
               onClick={() => setShowConfigModal(true)}
-              className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-[13px] font-semibold text-[#1d1d1f] shadow-sm ring-1 ring-black/[0.08] transition-all duration-150 hover:bg-[#f5f5f7] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3] focus-visible:ring-offset-2 active:scale-[0.98]"
+              className="inline-flex items-center gap-2 rounded-full bg-[#0071e3] px-4 py-2 text-[13px] font-semibold text-white shadow-sm transition-all duration-150 hover:bg-[#0077ed] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3] focus-visible:ring-offset-2 active:scale-[0.98]"
               aria-label="จัดการวิดเจ็ต"
             >
-              <SlidersHorizontal className="h-3.5 w-3.5 text-[#475569]" aria-hidden="true" />
+              <SlidersHorizontal className="h-3.5 w-3.5 text-white" aria-hidden="true" />
               จัดการวิดเจ็ต
             </button>
           </div>
