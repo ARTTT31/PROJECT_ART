@@ -190,64 +190,67 @@ export default function HolidayWidget({
 
         {/* ── Holiday List ────────────────────────────────────────────── */}
         <div
-          className={`mt-3 divide-y divide-black/[0.04] overflow-y-auto ${hasCalendar ? '' : 'hidden'} ${
-            width >= 3 ? 'max-h-72 grid grid-cols-1 md:grid-cols-2 gap-2 divide-y-0' : width >= 2 ? 'max-h-64' : 'max-h-48'
+          className={`mt-4 flex flex-col gap-1.5 overflow-y-auto ${hasCalendar ? '' : 'hidden'} ${
+            width >= 3 ? 'max-h-72 grid grid-cols-1 md:grid-cols-2' : width >= 2 ? 'max-h-64' : 'max-h-48'
           }`}
         >
           {displayedHolidays.map((item) => (
             <div
               key={item.id}
-              className={`flex items-center justify-between gap-3 p-2.5 transition-colors rounded-[14px] ${
+              className={`flex items-center justify-between gap-3 p-2.5 transition-all rounded-[14px] border ${
                 item.id === nextHoliday?.id
-                  ? 'bg-[#0071e3]/10 ring-1 ring-[#0071e3]/30'
+                  ? 'bg-[#0071e3]/[0.03] border-[#0071e3]/20 shadow-[0_2px_8px_rgba(0,113,227,0.06)]'
                   : item.isPast
-                  ? 'opacity-60 hover:bg-[#f5f5f7]'
-                  : 'hover:bg-[#f5f5f7]'
+                  ? 'border-transparent opacity-60 hover:bg-[#f5f5f7]'
+                  : 'border-transparent hover:bg-[#f5f5f7]'
               }`}
             >
               <div className="flex items-center gap-3 min-w-0">
                 {/* Date bubble */}
                 <div
-                  className={`flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded-[10px] font-bold text-center ${
+                  className={`flex h-[42px] w-[42px] shrink-0 flex-col items-center justify-center rounded-[12px] font-bold text-center ${
                     item.id === nextHoliday?.id
                       ? 'bg-[#0071e3] text-white shadow-sm'
                       : item.isPast
-                      ? 'bg-[#f2f2f7] text-[#86868b]'
+                      ? 'bg-[#e5e5ea] text-[#8e8e93]'
                       : 'bg-[#f2f2f7] text-[#1d1d1f]'
                   }`}
                 >
-                  <span className="text-[10px] leading-tight opacity-80">
+                  <span className="text-[10px] leading-none opacity-90 mb-0.5 uppercase tracking-wider">
                     {item.monthName.slice(0, 3)}
                   </span>
-                  <span className="text-[13px] leading-tight">{item.day}</span>
+                  <span className="text-[14px] leading-none">{item.day}</span>
                 </div>
 
                 {/* Holiday details */}
                 <div className="min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <span className="truncate text-[13px] font-bold text-[#1d1d1f]">
-                      {item.title}
-                    </span>
-                  </div>
-                  <span className="text-[11px] text-[#86868b]">
-                    {item.dayOfWeek} {item.day} {item.monthName}
-                  </span>
+                  <p className={`truncate text-[13px] font-bold ${item.id === nextHoliday?.id ? 'text-[#0071e3]' : 'text-[#1d1d1f]'}`}>
+                    {item.title}
+                  </p>
+                  <p className="mt-0.5 text-[11px] text-[#86868b]">
+                    {item.dayOfWeek}, {item.day} {item.monthName}
+                  </p>
                 </div>
               </div>
 
               {/* Status indicator */}
               <div className="shrink-0 text-right">
                 {item.isPast ? (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-[#f2f2f7] px-2 py-0.5 text-[10px] font-semibold text-[#86868b]">
-                    <CheckCircle2 size={10} />
+                  <span className="inline-flex items-center gap-1 rounded-full bg-[#f2f2f7] px-2.5 py-1 text-[10px] font-medium text-[#86868b]">
+                    <CheckCircle2 size={12} />
                     <span>ผ่านแล้ว</span>
                   </span>
                 ) : item.isToday ? (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-[#34c759]/15 px-2 py-0.5 text-[10px] font-bold text-[#34c759]">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-[#34c759]/10 px-2.5 py-1 text-[10px] font-bold text-[#34c759]">
+                    <Sparkles size={12} />
                     <span>วันนี้</span>
                   </span>
                 ) : (
-                  <span className="inline-flex items-center rounded-full bg-[#0071e3]/10 px-2 py-0.5 text-[10px] font-bold text-[#0071e3]">
+                  <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-semibold ${
+                    item.id === nextHoliday?.id
+                      ? 'bg-[#0071e3]/10 text-[#0071e3]'
+                      : 'bg-[#f2f2f7] text-[#6e6e73]'
+                  }`}>
                     อีก {item.daysLeft} วัน
                   </span>
                 )}
