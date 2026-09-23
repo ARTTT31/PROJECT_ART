@@ -68,7 +68,7 @@ export default function HolidayWidget({
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-start gap-3 min-w-0">
             {/* Icon badge */}
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[#af52de]/10 text-[#af52de]">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[#ff9500]/10 text-[#ff9500]">
               <Palmtree size={20} aria-hidden="true" />
             </div>
             <div className="min-w-0">
@@ -95,8 +95,8 @@ export default function HolidayWidget({
         </div>
 
         {!hasCalendar && (
-          <div className="mt-4 rounded-[18px] border border-dashed border-[#af52de]/30 bg-[#af52de]/5 p-4 text-center">
-            <CalendarHeart className="mx-auto text-[#af52de]" size={22} aria-hidden="true" />
+          <div className="mt-4 rounded-[18px] border border-dashed border-[#ff9500]/30 bg-[#ff9500]/5 p-4 text-center">
+            <CalendarHeart className="mx-auto text-[#ff9500]" size={22} aria-hidden="true" />
             <p className="mt-2 text-[13px] font-bold text-[#1d1d1f]">ยังไม่มีปฏิทินวันหยุดปี {calendarYear + 543}</p>
             <p className="mt-1 text-[11px] text-[#86868b]">จะแสดงข้อมูลเมื่อเพิ่มปฏิทินที่ยืนยันแล้ว</p>
           </div>
@@ -104,10 +104,10 @@ export default function HolidayWidget({
 
         {/* ── Upcoming Holiday Hero Card ───────────────────────────────── */}
         {nextHoliday && (
-          <div className="mt-4 overflow-hidden rounded-[18px] bg-gradient-to-br from-[#af52de]/10 via-[#5856d6]/5 to-[#0071e3]/10 p-4 border border-[#af52de]/20">
+          <div className="mt-4 overflow-hidden rounded-[18px] bg-gradient-to-br from-[#ff9500]/15 via-[#ffcc00]/10 to-[#ff9500]/15 p-4 border border-[#ff9500]/20">
             <div className="flex items-start justify-between gap-2">
               <div>
-                <span className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-[#af52de]">
+                <span className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-[#ff9500]">
                   <Clock size={12} />
                   <span>วันหยุดรอบถัดไป</span>
                 </span>
@@ -131,7 +131,7 @@ export default function HolidayWidget({
                 ) : (
                   <div className="rounded-[12px] bg-white/95 px-3 py-1.5 text-center shadow-sm ring-1 ring-black/[0.06]">
                     <span className="block text-[10px] font-semibold text-[#86868b]">เหลืออีก</span>
-                    <span className="text-[15px] font-extrabold text-[#af52de] sm:text-[17px]">
+                    <span className="text-[15px] font-extrabold text-[#ff9500] sm:text-[17px]">
                       {nextHoliday.daysLeft} วัน
                     </span>
                   </div>
@@ -140,8 +140,8 @@ export default function HolidayWidget({
             </div>
 
             {/* Date bar */}
-            <div className="mt-3 flex items-center gap-2 border-t border-[#af52de]/15 pt-2 text-[12px] font-semibold text-[#1d1d1f]">
-              <span className="text-[#af52de]">{nextHoliday.dayOfWeek}</span>
+            <div className="mt-3 flex items-center gap-2 border-t border-[#ff9500]/15 pt-2 text-[12px] font-semibold text-[#1d1d1f]">
+              <span className="text-[#ff9500]">{nextHoliday.dayOfWeek}</span>
               <span className="text-black/20">•</span>
               <span>
                 {nextHoliday.day} {nextHoliday.monthName} {nextHoliday.year + 543}
@@ -199,7 +199,7 @@ export default function HolidayWidget({
               key={item.id}
               className={`flex items-center justify-between gap-3 p-2.5 transition-colors rounded-[14px] ${
                 item.id === nextHoliday?.id
-                  ? 'bg-[#af52de]/10 ring-1 ring-[#af52de]/30'
+                  ? 'bg-[#ff9500]/10 ring-1 ring-[#ff9500]/30'
                   : item.isPast
                   ? 'opacity-60 hover:bg-[#f5f5f7]'
                   : 'hover:bg-[#f5f5f7]'
@@ -210,7 +210,7 @@ export default function HolidayWidget({
                 <div
                   className={`flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded-[10px] font-bold text-center ${
                     item.id === nextHoliday?.id
-                      ? 'bg-[#af52de] text-white shadow-sm'
+                      ? 'bg-[#ff9500] text-white shadow-sm'
                       : item.isPast
                       ? 'bg-[#f2f2f7] text-[#86868b]'
                       : 'bg-[#f2f2f7] text-[#1d1d1f]'
