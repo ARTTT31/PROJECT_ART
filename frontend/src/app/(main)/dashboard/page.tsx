@@ -233,10 +233,10 @@ export default function DashboardPage() {
             <button
               type="button"
               onClick={() => setShowConfigModal(true)}
-              className="inline-flex items-center gap-2 rounded-full bg-[#0071e3] px-4 py-2 text-[13px] font-semibold text-white shadow-sm transition-all duration-150 hover:bg-[#0077ed] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3] focus-visible:ring-offset-2 active:scale-[0.98]"
+              className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-[13px] font-semibold text-[#1d1d1f] shadow-sm ring-1 ring-black/[0.08] transition-all duration-150 hover:bg-[#f5f5f7] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3] focus-visible:ring-offset-2 active:scale-[0.98]"
               aria-label="จัดการวิดเจ็ต"
             >
-              <SlidersHorizontal className="h-3.5 w-3.5 text-white" aria-hidden="true" />
+              <SlidersHorizontal className="h-3.5 w-3.5 text-[#475569]" aria-hidden="true" />
               จัดการวิดเจ็ต
             </button>
           </div>
@@ -311,15 +311,15 @@ export default function DashboardPage() {
                         aria-checked={isVisible}
                         disabled={isLocked}
                         onClick={() => toggleWidgetVisibility(widget.id)}
-                        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3] focus-visible:ring-offset-2 ${
+                        className={`relative inline-flex h-7 w-[52px] shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3] focus-visible:ring-offset-2 ${
                           isLocked ? 'cursor-not-allowed opacity-50' : ''
-                        } ${isVisible ? 'bg-[#34c759]' : 'bg-slate-200'}`}
+                        } ${isVisible ? 'bg-[#0071e3]' : 'bg-slate-200'}`}
                       >
                         <span className="sr-only">สลับวิดเจ็ต {widgetNames[widget.id]}</span>
                         <span
                           aria-hidden="true"
-                          className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                            isVisible ? 'translate-x-5' : 'translate-x-0'
+                          className={`pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                            isVisible ? 'translate-x-6' : 'translate-x-0'
                           }`}
                         />
                       </button>
