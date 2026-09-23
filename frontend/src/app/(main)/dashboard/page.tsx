@@ -311,16 +311,16 @@ export default function DashboardPage() {
                         aria-checked={isVisible}
                         disabled={isLocked}
                         onClick={() => toggleWidgetVisibility(widget.id)}
-                        style={{ width: '56px', minWidth: '56px', height: '30px', borderRadius: '9999px', padding: '3px' }}
-                        className={`relative inline-flex shrink-0 cursor-pointer items-center justify-start border-0 transition-colors duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3] focus-visible:ring-offset-2 ${
-                          isLocked ? 'cursor-not-allowed opacity-50' : ''
-                        } ${isVisible ? 'bg-[#0071e3]' : 'bg-slate-200'}`}
+                        style={{ width: '44px', height: '28px', minWidth: '44px', minHeight: '28px', padding: '2px', display: 'flex', alignItems: 'center', justifyContent: 'flex-start' }}
+                        className={`relative shrink-0 cursor-pointer rounded-full transition-colors duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3] focus-visible:ring-offset-2 disabled:cursor-not-allowed ${
+                          isLocked ? 'opacity-50' : ''
+                        } ${isVisible ? 'bg-[#0071e3]' : 'bg-[#e5e5ea]'}`}
                       >
                         <span className="sr-only">สลับวิดเจ็ต {widgetNames[widget.id]}</span>
                         <span
                           aria-hidden="true"
-                          style={{ transform: isVisible ? 'translateX(26px)' : 'translateX(0)' }}
-                          className="pointer-events-none inline-block h-6 w-6 rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
+                          style={{ width: '24px', height: '24px', transform: isVisible ? 'translateX(16px)' : 'translateX(0px)' }}
+                          className="pointer-events-none inline-block rounded-full bg-white shadow-[0_2px_4px_rgba(0,0,0,0.15),0_0_1px_rgba(0,0,0,0.1)] transition-transform duration-200 ease-in-out"
                         />
                       </button>
                     </div>
