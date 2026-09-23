@@ -104,18 +104,18 @@ export default function HolidayWidget({
 
         {/* ── Upcoming Holiday Hero Card ───────────────────────────────── */}
         {nextHoliday && (
-          <div className="mt-4 overflow-hidden rounded-[18px] bg-[#0071e3] p-4 text-white shadow-[0_8px_24px_rgba(0,113,227,0.24)]">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0 flex-1">
-                <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-white/80">
+          <div className="mt-4 overflow-hidden rounded-[18px] bg-gradient-to-br from-[#0071e3]/15 via-[#32ade6]/10 to-[#0071e3]/15 p-4 border border-[#0071e3]/20">
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <span className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-[#0071e3]">
                   <Clock size={12} />
                   <span>วันหยุดรอบถัดไป</span>
                 </span>
-                <h3 className="mt-1.5 text-[17px] font-bold leading-tight sm:text-[19px] truncate">
+                <h3 className="mt-1 text-[16px] font-extrabold text-[#1d1d1f] sm:text-[18px]">
                   {nextHoliday.title}
                 </h3>
                 {nextHoliday.description && (
-                  <p className="mt-0.5 text-[12px] text-white/80 truncate">
+                  <p className="mt-0.5 text-[12px] text-[#6e6e73] line-clamp-1">
                     {nextHoliday.description}
                   </p>
                 )}
@@ -124,15 +124,15 @@ export default function HolidayWidget({
               {/* Countdown badge */}
               <div className="shrink-0 text-right">
                 {nextHoliday.isToday ? (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-white px-3 py-1.5 text-xs font-bold text-[#0071e3] shadow-sm animate-pulse">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-[#34c759] px-3 py-1 text-xs font-bold text-white shadow-sm animate-pulse">
                     <Sparkles size={12} />
                     <span>วันนี้เป็นวันหยุด!</span>
                   </span>
                 ) : (
-                  <div className="flex min-w-[56px] flex-col items-center justify-center rounded-[14px] bg-white/15 px-3 py-1.5 backdrop-blur-md border border-white/20">
-                    <span className="text-[10px] font-medium text-white/80">เหลืออีก</span>
-                    <span className="text-[18px] font-extrabold leading-tight">
-                      {nextHoliday.daysLeft}
+                  <div className="rounded-[12px] bg-white/95 px-3 py-1.5 text-center shadow-sm ring-1 ring-black/[0.06]">
+                    <span className="block text-[10px] font-semibold text-[#86868b]">เหลืออีก</span>
+                    <span className="text-[15px] font-extrabold text-[#0071e3] sm:text-[17px]">
+                      {nextHoliday.daysLeft} วัน
                     </span>
                   </div>
                 )}
@@ -140,10 +140,11 @@ export default function HolidayWidget({
             </div>
 
             {/* Date bar */}
-            <div className="mt-4 flex items-center gap-2 border-t border-white/20 pt-3 text-[13px] font-medium">
-              <CalendarDays size={14} className="opacity-80" />
+            <div className="mt-3 flex items-center gap-2 border-t border-[#0071e3]/15 pt-2 text-[12px] font-semibold text-[#1d1d1f]">
+              <span className="text-[#0071e3]">{nextHoliday.dayOfWeek}</span>
+              <span className="text-black/20">•</span>
               <span>
-                {nextHoliday.dayOfWeek}, {nextHoliday.day} {nextHoliday.monthName} {nextHoliday.year + 543}
+                {nextHoliday.day} {nextHoliday.monthName} {nextHoliday.year + 543}
               </span>
             </div>
           </div>
@@ -196,60 +197,57 @@ export default function HolidayWidget({
           {displayedHolidays.map((item) => (
             <div
               key={item.id}
-              className={`group flex items-center justify-between gap-3 p-2.5 transition-all rounded-[14px] ${
+              className={`flex items-center justify-between gap-3 p-2.5 transition-colors rounded-[14px] ${
                 item.id === nextHoliday?.id
-                  ? 'bg-blue-50/50 ring-1 ring-blue-100'
+                  ? 'bg-[#0071e3]/10 ring-1 ring-[#0071e3]/30'
                   : item.isPast
-                  ? 'opacity-60 hover:bg-gray-50'
-                  : 'hover:bg-gray-50'
+                  ? 'opacity-60 hover:bg-[#f5f5f7]'
+                  : 'hover:bg-[#f5f5f7]'
               }`}
             >
               <div className="flex items-center gap-3 min-w-0">
                 {/* Date bubble */}
                 <div
-                  className={`flex h-[42px] w-[42px] shrink-0 flex-col items-center justify-center rounded-[12px] font-bold text-center transition-colors ${
+                  className={`flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded-[10px] font-bold text-center ${
                     item.id === nextHoliday?.id
-                      ? 'bg-[#0071e3] text-white shadow-md shadow-blue-500/20'
+                      ? 'bg-[#0071e3] text-white shadow-sm'
                       : item.isPast
-                      ? 'bg-gray-100 text-gray-500'
-                      : 'bg-gray-100/80 text-gray-800 group-hover:bg-gray-200/60'
+                      ? 'bg-[#f2f2f7] text-[#86868b]'
+                      : 'bg-[#f2f2f7] text-[#1d1d1f]'
                   }`}
                 >
-                  <span className="text-[10px] leading-none opacity-90 mb-0.5 uppercase tracking-wider">
+                  <span className="text-[10px] leading-tight opacity-80">
                     {item.monthName.slice(0, 3)}
                   </span>
-                  <span className="text-[14px] leading-none">{item.day}</span>
+                  <span className="text-[13px] leading-tight">{item.day}</span>
                 </div>
 
                 {/* Holiday details */}
                 <div className="min-w-0">
-                  <p className={`truncate text-[13px] font-semibold ${item.id === nextHoliday?.id ? 'text-[#0071e3]' : 'text-gray-900'}`}>
-                    {item.title}
-                  </p>
-                  <p className="mt-0.5 text-[11px] text-gray-500">
-                    {item.dayOfWeek}, {item.day} {item.monthName}
-                  </p>
+                  <div className="flex items-center gap-1.5">
+                    <span className="truncate text-[13px] font-bold text-[#1d1d1f]">
+                      {item.title}
+                    </span>
+                  </div>
+                  <span className="text-[11px] text-[#86868b]">
+                    {item.dayOfWeek} {item.day} {item.monthName}
+                  </span>
                 </div>
               </div>
 
               {/* Status indicator */}
               <div className="shrink-0 text-right">
                 {item.isPast ? (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-1 text-[10px] font-medium text-gray-500">
-                    <CheckCircle2 size={12} />
+                  <span className="inline-flex items-center gap-1 rounded-full bg-[#f2f2f7] px-2 py-0.5 text-[10px] font-semibold text-[#86868b]">
+                    <CheckCircle2 size={10} />
                     <span>ผ่านแล้ว</span>
                   </span>
                 ) : item.isToday ? (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-1 text-[10px] font-bold text-green-700">
-                    <Sparkles size={12} />
+                  <span className="inline-flex items-center gap-1 rounded-full bg-[#34c759]/15 px-2 py-0.5 text-[10px] font-bold text-[#34c759]">
                     <span>วันนี้</span>
                   </span>
                 ) : (
-                  <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-semibold ${
-                    item.id === nextHoliday?.id 
-                      ? 'bg-blue-100/80 text-[#0071e3]' 
-                      : 'bg-gray-100/80 text-gray-600'
-                  }`}>
+                  <span className="inline-flex items-center rounded-full bg-[#0071e3]/10 px-2 py-0.5 text-[10px] font-bold text-[#0071e3]">
                     อีก {item.daysLeft} วัน
                   </span>
                 )}
