@@ -921,13 +921,6 @@ button:disabled {
   }
 }
 
-/* Error state: 5:1+ contrast (dark red on light background) */
-.alert-error,
-[role="alert"]:not(.alert-success, .alert-warning, .alert-info) {
-  background: #fee2e2;
-  border: 1px solid #fecaca;
-  color: #991b1b;
-}
 
 /* Success state: 4.5:1 contrast */
 .alert-success {
