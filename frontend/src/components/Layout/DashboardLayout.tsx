@@ -64,11 +64,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
           {/* Page Content */}
           <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-[1600px] w-full mx-auto">
-            <AnimatePresence>
+            <AnimatePresence mode="wait">
               <motion.div
                 key={pathname}
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
                 transition={{ duration: 0.2, ease: 'easeOut' }}
                 className="h-full"
               >
