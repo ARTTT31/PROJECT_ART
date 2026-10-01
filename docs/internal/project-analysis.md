@@ -98,3 +98,7 @@ Result: passed (Compiled successfully, 9/9 static routes generated)
 
 3. **Enterprise Design Alignment:**
    - Dashboard layout unified with Enterprise Admin DNA (Ant Design inspired clean surfaces, structured layout, and standard tokens).
+
+4. **Admin Panel & Page Access Control:**
+   - Added ccessible_pages logic to users table allowing admins to grant/revoke access to specific dashboard pages (Dashboard, Profile, Camera) per user.
+   - Implemented an elegant 'Liquid Glass' User Management UI inside the Profile page for admin roles.

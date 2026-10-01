@@ -66,4 +66,5 @@ To be determined as the project evolves. Currently, the following specific anti-
 - **E2E Testing:** Playwright has been added for automated smoke testing.
 - **PWA Support:** Configured via @serwist/next for offline capabilities.
 - **Error Tracking:** @sentry/nextjs is integrated and ready for DSN configuration.
-- **Animations:** ramer-motion integrated for smooth page transitions.
+- **Animations:** framer-motion integrated for smooth page transitions.
+- **Admin & Permissions:** Granular page access control and Admin Panel in Profile page.
