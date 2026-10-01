@@ -282,7 +282,8 @@ async def refresh_token(
                     "name": user.name or "User",
                     "role": user.role,
                     "avatar": getattr(user, "avatar", None),
-                    "quick_links": getattr(user, "quick_links", None),`n        "accessible_pages": getattr(user, "accessible_pages", None),
+                    "quick_links": getattr(user, "quick_links", None),
+                    "accessible_pages": getattr(user, "accessible_pages", None),
                 }
                 response.set_cookie(
                     key="user",
@@ -495,7 +496,8 @@ async def google_verify_token(
         "name": name or user.name or "User",
         "role": user.role,
         "avatar": user.avatar,
-        "quick_links": user.quick_links,`n        "accessible_pages": getattr(user, "accessible_pages", None),
+        "quick_links": user.quick_links,
+                    "accessible_pages": getattr(user, "accessible_pages", None),
     }
 
     response = JSONResponse(content={"result": "success", "data": {"user": user_data}})
@@ -641,7 +643,8 @@ async def google_callback(
         "name": name or user.name or "User",
         "role": user.role,
         "avatar": user.avatar,
-        "quick_links": user.quick_links,`n        "accessible_pages": getattr(user, "accessible_pages", None),
+        "quick_links": user.quick_links,
+                    "accessible_pages": getattr(user, "accessible_pages", None),
     }
 
     redirect_url = f"{frontend_redirect}/login-success"
@@ -734,7 +737,8 @@ async def get_session(request: Request, db: AsyncSession = Depends(get_db)):
         "name": user.name or "User",
         "role": user.role,
         "avatar": getattr(user, "avatar", None),
-        "quick_links": getattr(user, "quick_links", None),`n        "accessible_pages": getattr(user, "accessible_pages", None),
+        "quick_links": getattr(user, "quick_links", None),
+                    "accessible_pages": getattr(user, "accessible_pages", None),
     }
 
     return ResponseModel(
