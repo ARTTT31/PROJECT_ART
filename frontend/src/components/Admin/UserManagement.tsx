@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth'
 import { useToast } from '@/components/Toast/ToastProvider'
 import {
-  Users, Shield, Settings, AlertCircle, Edit, Check, X, ShieldAlert
+  Users, Shield, Settings, Edit, Check, X, ShieldAlert, User, CheckCircle2, Circle
 } from 'lucide-react'
 
 // Define a simplified User type for admin management
@@ -107,144 +107,181 @@ export default function UserManagement() {
   }
 
   if (loading) {
-    return <div className="p-4 text-center text-sm text-slate-500">กำลังโหลดรายชื่อผู้ใช้...</div>
+    return (
+      <div className="flex h-32 items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-[3px] border-[#f5f5f7] border-t-[#0071e3]" />
+      </div>
+    )
   }
 
   return (
     <div className="space-y-4">
       {editingUser ? (
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex items-center justify-between mb-4 border-b border-slate-100 pb-3">
-            <div>
-              <h3 className="font-bold text-slate-800 flex items-center gap-2">
-                <Edit size={16} className="text-blue-500" />
-                แก้ไขผู้ใช้งาน: {editingUser.name}
-              </h3>
-              <p className="text-xs text-slate-500">{editingUser.email || editingUser.username}</p>
+        <div className="overflow-hidden rounded-3xl bg-white ring-1 ring-black/[0.06] shadow-[0_10px_40px_rgba(15,23,42,0.07)]">
+          
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-black/[0.04] bg-[#fbfbfc] px-6 py-5">
+            <div className="flex items-center gap-3 mb-3 sm:mb-0">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#0071e3]/10 text-[#0071e3]">
+                <Edit size={18} />
+              </div>
+              <div>
+                <h3 className="text-[15px] font-bold tracking-tight text-[#1d1d1f]">
+                  แก้ไขผู้ใช้งาน: {editingUser.name}
+                </h3>
+                <p className="text-[13px] text-[#6e6e73]">{editingUser.email || editingUser.username}</p>
+              </div>
             </div>
-            <button onClick={closeEdit} className="text-slate-400 hover:text-slate-600">
-              <X size={20} />
+            <button 
+              onClick={closeEdit} 
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-black/5 text-[#6e6e73] transition-colors hover:bg-black/10 self-end sm:self-auto"
+            >
+              <X size={16} />
             </button>
           </div>
 
-          <div className="space-y-4">
+          <div className="p-6 space-y-6">
+            {/* Status */}
             <div>
-              <label className="block text-xs font-bold text-slate-500 mb-1">สถานะการใช้งาน</label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  checked={editIsActive}
-                  onChange={(e) => setEditIsActive(e.target.checked)}
-                  className="rounded text-blue-500 focus:ring-blue-500"
-                />
-                <span className="text-sm">เปิดใช้งานบัญชี (Active)</span>
+              <label className="mb-2 block text-[12px] font-bold tracking-wide uppercase text-[#6e6e73]">
+                สถานะการใช้งาน
               </label>
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-slate-500 mb-1">สิทธิ์การใช้งาน (Role)</label>
-              <select 
-                value={editRole} 
-                onChange={(e) => setEditRole(e.target.value)}
-                className="w-full sm:w-64 rounded-lg border-slate-200 text-sm focus:border-blue-500 focus:ring-blue-500"
+              <div 
+                onClick={() => setEditIsActive(!editIsActive)}
+                className="group flex cursor-pointer items-center gap-3 rounded-2xl bg-[#f8fafc] p-4 ring-1 ring-black/[0.04] transition-all hover:bg-white hover:shadow-sm"
               >
-                <option value="user">ผู้ใช้งานทั่วไป (User)</option>
-                <option value="admin">ผู้ดูแลระบบ (Admin)</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-slate-500 mb-2">หน้าที่สามารถเข้าถึงได้ (Accessible Pages)</label>
-              <div className="space-y-2 bg-slate-50 p-3 rounded-lg border border-slate-100">
-                {AVAILABLE_PAGES.map(page => (
-                  <label key={page.id} className="flex items-center gap-2 cursor-pointer">
-                    <input 
-                      type="checkbox"
-                      checked={editPages.includes(page.id)}
-                      onChange={() => togglePage(page.id)}
-                      className="rounded text-blue-500 focus:ring-blue-500"
-                    />
-                    <span className="text-sm">{page.label}</span>
-                  </label>
-                ))}
+                {editIsActive ? (
+                  <CheckCircle2 size={22} className="text-[#0071e3]" />
+                ) : (
+                  <Circle size={22} className="text-slate-300 group-hover:text-slate-400" />
+                )}
+                <div>
+                  <span className="block text-[14px] font-semibold text-[#1d1d1f]">เปิดใช้งานบัญชี (Active)</span>
+                  <span className="block text-[12px] text-[#6e6e73]">ผู้ใช้สามารถเข้าสู่ระบบและใช้งานได้ตามปกติ</span>
+                </div>
               </div>
             </div>
 
-            <div className="pt-2 flex justify-end gap-2">
-              <button 
-                onClick={closeEdit}
-                className="px-4 py-2 text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
-              >
-                ยกเลิก
-              </button>
-              <button 
-                onClick={handleSave}
-                disabled={isSaving}
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50"
-              >
-                {isSaving ? 'กำลังบันทึก...' : <><Check size={16} /> บันทึกการแก้ไข</>}
-              </button>
+            {/* Role */}
+            <div>
+              <label className="mb-2 block text-[12px] font-bold tracking-wide uppercase text-[#6e6e73]">
+                สิทธิ์การใช้งาน (Role)
+              </label>
+              <div className="relative">
+                <select 
+                  value={editRole} 
+                  onChange={(e) => setEditRole(e.target.value)}
+                  className="w-full appearance-none rounded-2xl bg-[#f8fafc] px-4 py-3.5 text-[14px] font-semibold text-[#1d1d1f] ring-1 ring-black/[0.04] transition-all focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0071e3]"
+                >
+                  <option value="user">ผู้ใช้งานทั่วไป (User)</option>
+                  <option value="admin">ผู้ดูแลระบบ (Admin)</option>
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-slate-400">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                </div>
+              </div>
             </div>
+
+            {/* Accessible Pages */}
+            <div>
+              <label className="mb-2 block text-[12px] font-bold tracking-wide uppercase text-[#6e6e73]">
+                หน้าที่สามารถเข้าถึงได้ (Accessible Pages)
+              </label>
+              <div className="overflow-hidden rounded-2xl ring-1 ring-black/[0.04] bg-[#f8fafc] divide-y divide-black/[0.04]">
+                {AVAILABLE_PAGES.map(page => {
+                  const isActive = editPages.includes(page.id);
+                  return (
+                    <div 
+                      key={page.id}
+                      onClick={() => togglePage(page.id)}
+                      className="group flex cursor-pointer items-center gap-3 p-4 transition-all hover:bg-white"
+                    >
+                      {isActive ? (
+                        <CheckCircle2 size={20} className="text-[#0071e3]" />
+                      ) : (
+                        <Circle size={20} className="text-slate-300 group-hover:text-slate-400" />
+                      )}
+                      <span className={`text-[14px] ${isActive ? 'font-semibold text-[#1d1d1f]' : 'font-medium text-[#6e6e73]'}`}>
+                        {page.label}
+                      </span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+
+          <div className="border-t border-black/[0.04] bg-[#fbfbfc] px-6 py-4 flex flex-col-reverse sm:flex-row justify-end gap-3">
+            <button 
+              onClick={closeEdit}
+              className="w-full sm:w-auto rounded-full bg-[#f5f5f7] px-5 py-2.5 text-[13px] font-bold text-[#1d1d1f] transition-all hover:bg-[#e8e8ed] active:scale-[0.98]"
+            >
+              ยกเลิก
+            </button>
+            <button 
+              onClick={handleSave}
+              disabled={isSaving}
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-[#0071e3] px-6 py-2.5 text-[13px] font-bold text-white shadow-sm transition-all duration-150 hover:bg-[#0077ed] hover:shadow-[0_3px_12px_rgba(0,113,227,0.32)] active:scale-[0.98] disabled:opacity-50"
+            >
+              {isSaving ? 'กำลังบันทึก...' : <><Check size={14} /> บันทึกการแก้ไข</>}
+            </button>
           </div>
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-slate-50 text-slate-500">
-              <tr>
-                <th className="px-4 py-3 font-medium">ชื่อผู้ใช้</th>
-                <th className="px-4 py-3 font-medium">สิทธิ์</th>
-                <th className="px-4 py-3 font-medium">สถานะ</th>
-                <th className="px-4 py-3 font-medium text-right">จัดการ</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {users.map(u => (
-                <tr key={u.id} className="hover:bg-slate-50/50">
-                  <td className="px-4 py-3">
-                    <div className="font-medium text-slate-900">{u.name}</div>
-                    <div className="text-xs text-slate-500">{u.email || u.username}</div>
-                  </td>
-                  <td className="px-4 py-3">
-                    {u.role === 'admin' ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-purple-50 px-2 py-0.5 text-xs font-medium text-purple-700 ring-1 ring-inset ring-purple-600/20">
-                        <ShieldAlert size={12} /> Admin
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600 ring-1 ring-inset ring-slate-500/20">
-                        <User size={12} /> User
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3">
-                    {u.is_active ? (
-                      <span className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/20">
-                        ปกติ
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center rounded-full bg-rose-50 px-2 py-0.5 text-xs font-medium text-rose-700 ring-1 ring-inset ring-rose-600/20">
-                        ระงับ
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <button 
-                      onClick={() => openEdit(u)}
-                      className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 text-xs font-medium bg-blue-50 hover:bg-blue-100 px-2.5 py-1.5 rounded-lg transition-colors"
-                    >
-                      <Settings size={14} /> ตั้งค่า
-                    </button>
-                  </td>
+        <div className="overflow-hidden rounded-3xl border border-black/[0.06] bg-white shadow-sm">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm whitespace-nowrap">
+              <thead className="bg-[#fbfbfc] text-[#6e6e73] text-[12px] font-bold uppercase tracking-wider">
+                <tr>
+                  <th className="px-5 py-4 border-b border-black/[0.04]">ชื่อผู้ใช้</th>
+                  <th className="px-5 py-4 border-b border-black/[0.04]">สิทธิ์</th>
+                  <th className="px-5 py-4 border-b border-black/[0.04]">สถานะ</th>
+                  <th className="px-5 py-4 border-b border-black/[0.04] text-right">จัดการ</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-black/[0.04]">
+                {users.map(u => (
+                  <tr key={u.id} className="hover:bg-slate-50/50 transition-colors">
+                    <td className="px-5 py-4">
+                      <div className="font-semibold text-[#1d1d1f] text-[14px]">{u.name}</div>
+                      <div className="text-[12.5px] text-[#6e6e73] mt-0.5">{u.email || u.username}</div>
+                    </td>
+                    <td className="px-5 py-4">
+                      {u.role === 'admin' ? (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-purple-50 px-2.5 py-1 text-[11px] font-bold text-purple-700 ring-1 ring-inset ring-purple-600/20">
+                          <ShieldAlert size={11} /> Admin
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-bold text-slate-600 ring-1 ring-inset ring-slate-500/20">
+                          <User size={11} /> User
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-5 py-4">
+                      {u.is_active ? (
+                        <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-700 ring-1 ring-inset ring-emerald-600/20">
+                          ปกติ
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center rounded-full bg-rose-50 px-2.5 py-1 text-[11px] font-bold text-rose-700 ring-1 ring-inset ring-rose-600/20">
+                          ระงับบัญชี
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-5 py-4 text-right">
+                      <button 
+                        onClick={() => openEdit(u)}
+                        className="inline-flex items-center justify-center gap-1.5 rounded-full bg-[#f5f5f7] px-3.5 py-1.5 text-[12px] font-bold text-[#1d1d1f] transition-all hover:bg-[#e8e8ed] active:scale-95"
+                      >
+                        <Settings size={12} /> ตั้งค่า
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>
   )
 }
-
-const User = ({ size }: { size: number }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-)
