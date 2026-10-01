@@ -16,18 +16,15 @@ depends_on = None
 
 
 def upgrade() -> None:
-    import sqlalchemy.exc
-    try:
-        with op.batch_alter_table('users') as batch_op:
+    conn = op.get_bind()
+    inspector = sa.inspect(conn)
+    columns = [c['name'] for c in inspector.get_columns('users')]
+    
+    with op.batch_alter_table('users') as batch_op:
+        if 'dashboard_layout' not in columns:
             batch_op.add_column(sa.Column('dashboard_layout', sa.Text(), nullable=True))
-    except (sqlalchemy.exc.ProgrammingError, sqlalchemy.exc.OperationalError):
-        pass
-        
-    try:
-        with op.batch_alter_table('users') as batch_op:
+        if 'camera_config' not in columns:
             batch_op.add_column(sa.Column('camera_config', sa.Text(), nullable=True))
-    except (sqlalchemy.exc.ProgrammingError, sqlalchemy.exc.OperationalError):
-        pass
 
 
 def downgrade() -> None:
