@@ -43,7 +43,8 @@ const nextConfig = {
     const apiOrigin = apiBaseUrl ? new URL(apiBaseUrl).origin : '';
     const connectSources = [
       "'self'",
-      ...(apiOrigin ? [apiOrigin] : []),
+      ...(apiOrigin ? [apiOrigin, apiOrigin.replace('http', 'ws')] : []),
+      'wss://*.onrender.com',
       'https://www.eppo.go.th',
       'https://vitals.vercel-insights.com',
       'https://vercel.live',
