@@ -2,21 +2,17 @@
 Security utilities for authentication and authorization
 """
 
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from typing import Optional
 from jose import JWTError, jwt
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError, VerificationError, InvalidHashError
 
 from app.core.config import settings
+from app.core.utils import utcnow
 
 # Direct Argon2 password hasher (modern standard, avoids passlib deprecation warnings)
 _password_hasher = PasswordHasher()
-
-
-def _utcnow() -> datetime:
-    """Return current UTC time. Replaces deprecated datetime.utcnow()."""
-    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -48,11 +44,11 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
     to_encode = data.copy()
 
     if expires_delta:
-        expire = _utcnow() + expires_delta
+        expire = utcnow() + expires_delta
     else:
-        expire = _utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+        expire = utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
 
-    to_encode.update({"exp": expire, "iat": _utcnow()})
+    to_encode.update({"exp": expire, "iat": utcnow()})
     encoded_jwt = jwt.encode(
         to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM
     )
@@ -70,8 +66,8 @@ def create_refresh_token(data: dict) -> str:
         Encoded JWT refresh token
     """
     to_encode = data.copy()
-    expire = _utcnow() + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
-    to_encode.update({"exp": expire, "iat": _utcnow(), "type": "refresh"})
+    expire = utcnow() + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+    to_encode.update({"exp": expire, "iat": utcnow(), "type": "refresh"})
 
     encoded_jwt = jwt.encode(
         to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM

@@ -1,7 +1,8 @@
 from datetime import datetime
 from sqlalchemy import String, Text, DateTime, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from app.models.base import Base, _utcnow
+from app.models.base import Base
+from app.core.utils import utcnow
 
 
 class AuditLog(Base):
@@ -15,7 +16,7 @@ class AuditLog(Base):
     details: Mapped[str | None] = mapped_column(Text)
     ip_address: Mapped[str | None] = mapped_column(String(45))
     user_agent: Mapped[str | None] = mapped_column(String(255))
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, index=True)
 
     # Relationship to user
     user = relationship("User")

@@ -11,22 +11,18 @@ Usage:
 
 import os
 import sys
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
 from app.models.session import UserSession
+from app.core.utils import utcnow
 
 # Add parent directory to path for standalone execution
 sys.path.insert(
     0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 )
-
-
-def _utcnow() -> datetime:
-    """Return current UTC time without tzinfo (for SQLAlchemy DateTime fields)."""
-    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
 def cleanup_expired_sessions(db: Session, max_age_days: int = 7) -> int:
@@ -41,7 +37,7 @@ def cleanup_expired_sessions(db: Session, max_age_days: int = 7) -> int:
     Returns:
         Number of deleted session records
     """
-    now = _utcnow()
+    now = utcnow()
     cutoff_date = now - timedelta(days=max_age_days)
 
     # Delete expired sessions (those past their expires_at)

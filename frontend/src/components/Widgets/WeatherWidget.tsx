@@ -101,7 +101,7 @@ function safeJsonParse<T>(raw: string | null): T | null {
 async function resolveLocationName(lat: number, lon: number): Promise<string> {
   try {
     const res = await fetch(
-      `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=th`,
+      `/api/v1/weather/reverse-geocode?latitude=${lat}&longitude=${lon}&locality_language=th`,
     )
     if (res.ok) {
       const data = await res.json()
@@ -240,8 +240,8 @@ export default function WeatherWidget({
       setError(null)
 
       try {
-        const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${city.lat}&longitude=${city.lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m&hourly=temperature_2m,weather_code,precipitation_probability&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=Asia%2FBangkok&forecast_days=2`
-        const aqiUrl = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${city.lat}&longitude=${city.lon}&current=pm2_5,pm10,us_aqi&timezone=Asia%2FBangkok`
+        const weatherUrl = `/api/v1/weather/forecast?latitude=${city.lat}&longitude=${city.lon}&timezone=Asia%2FBangkok&forecast_days=2`
+        const aqiUrl = `/api/v1/weather/air-quality?latitude=${city.lat}&longitude=${city.lon}&timezone=Asia%2FBangkok`
 
         const [weatherRes, aqiRes] = await Promise.all([
           fetch(weatherUrl, { signal: controller.signal }),

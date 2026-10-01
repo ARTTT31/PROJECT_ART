@@ -6,16 +6,12 @@ from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.exc import IntegrityError
-from datetime import datetime, timezone
+from datetime import datetime
 
 from app.models.user import User
 from app.schemas.user import UserCreate, UserUpdate, UserAdminUpdate, UserAdminCreate
 from app.core.security import get_password_hash, verify_password
-
-
-def _utcnow() -> datetime:
-    """Return current UTC time without tzinfo (for SQLAlchemy DateTime fields)."""
-    return datetime.now(timezone.utc).replace(tzinfo=None)
+from app.core.utils import utcnow
 
 
 class UserService:
@@ -163,7 +159,7 @@ class UserService:
         if user_update.camera_config is not None:
             user.camera_config = user_update.camera_config
 
-        user.updated_at = _utcnow()
+        user.updated_at = utcnow()
 
         await self.db.commit()
         await self.db.refresh(user)
@@ -194,7 +190,7 @@ class UserService:
 
         # Update password
         user.hashed_password = get_password_hash(new_password)
-        user.updated_at = _utcnow()
+        user.updated_at = utcnow()
 
         await self.db.commit()
 
@@ -207,7 +203,7 @@ class UserService:
             raise ValueError("ไม่พบผู้ใช้")
 
         user.avatar = avatar_base64
-        user.updated_at = _utcnow()
+        user.updated_at = utcnow()
 
         await self.db.commit()
 
@@ -218,7 +214,7 @@ class UserService:
             raise ValueError("ไม่พบผู้ใช้")
 
         user.quick_links = quick_links
-        user.updated_at = _utcnow()
+        user.updated_at = utcnow()
 
         await self.db.commit()
 
@@ -229,7 +225,7 @@ class UserService:
             raise ValueError("ไม่พบผู้ใช้")
 
         user.dashboard_layout = dashboard_layout
-        user.updated_at = _utcnow()
+        user.updated_at = utcnow()
 
         await self.db.commit()
 
@@ -240,7 +236,7 @@ class UserService:
             raise ValueError("ไม่พบผู้ใช้")
 
         user.camera_config = camera_config
-        user.updated_at = _utcnow()
+        user.updated_at = utcnow()
 
         await self.db.commit()
 
@@ -272,7 +268,7 @@ class UserService:
         """Update user's last login timestamp and metadata"""
         user = await self.get_user_by_id(user_id)
         if user:
-            user.last_login = _utcnow()
+            user.last_login = utcnow()
             if ip_address:
                 user.last_login_ip = ip_address
             if device:
@@ -314,7 +310,7 @@ class UserService:
         if user_update.password is not None and user_update.password != "":
             user.hashed_password = get_password_hash(user_update.password)
 
-        user.updated_at = _utcnow()
+        user.updated_at = utcnow()
         await self.db.commit()
         await self.db.refresh(user)
         return user

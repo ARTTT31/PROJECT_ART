@@ -6,7 +6,8 @@ from datetime import datetime
 from sqlalchemy import String, DateTime, ForeignKey, Boolean
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import Base, TimestampMixin, _utcnow
+from app.models.base import Base, TimestampMixin
+from app.core.utils import utcnow
 
 
 class UserSession(Base, TimestampMixin):
@@ -25,7 +26,7 @@ class UserSession(Base, TimestampMixin):
 
     # Session status
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
-    last_activity: Mapped[datetime] = mapped_column(DateTime, default=_utcnow, index=True)
+    last_activity: Mapped[datetime] = mapped_column(DateTime, default=utcnow, index=True)
     expires_at: Mapped[datetime | None] = mapped_column(DateTime, index=True)
 
     # Relationships

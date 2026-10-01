@@ -17,13 +17,9 @@ class Base(DeclarativeBase):
 
 
 # Create database engine
+# NOTE: DATABASE_URL is already normalized by Pydantic validator check_db_url in config.py
+# (sqlite:// -> sqlite+aiosqlite://, postgres:///postgresql:// -> postgresql+asyncpg://)
 db_url = settings.DATABASE_URL
-if db_url.startswith("sqlite://"):
-    db_url = db_url.replace("sqlite://", "sqlite+aiosqlite://", 1)
-elif db_url.startswith("postgres://"):
-    db_url = db_url.replace("postgres://", "postgresql+asyncpg://", 1)
-elif db_url.startswith("postgresql://") and not db_url.startswith("postgresql+asyncpg://"):
-    db_url = db_url.replace("postgresql://", "postgresql+asyncpg://", 1)
 
 engine_kwargs: dict[str, Any] = {
     "pool_pre_ping": True,
