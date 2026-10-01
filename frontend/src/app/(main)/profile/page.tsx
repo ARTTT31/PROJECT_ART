@@ -823,7 +823,7 @@ export default function ProfilePage() {
                 (typeof user.accessible_pages === 'string' 
                   ? (() => { try { return JSON.parse(user.accessible_pages); } catch { return null; } })() 
                   : user.accessible_pages)
-              ) : null;
+              ) : ['dashboard', 'profile'];
               if (allowedPages && Array.isArray(allowedPages)) {
                 if (user?.role !== 'admin' && !allowedPages.includes(item.id)) return false;
               }
@@ -836,7 +836,7 @@ export default function ProfilePage() {
                 (typeof user.accessible_pages === 'string' 
                   ? (() => { try { return JSON.parse(user.accessible_pages); } catch { return null; } })() 
                   : user.accessible_pages)
-              ) : null;
+              ) : ['dashboard', 'profile'];
               if (allowedPages && Array.isArray(allowedPages)) {
                 if (user?.role !== 'admin' && !allowedPages.includes(item.id)) return false;
               }

@@ -83,7 +83,7 @@ export default function Sidebar({ isOpen, isCollapsed = false, onClose, user, on
     (typeof user.accessible_pages === 'string' 
       ? (() => { try { return JSON.parse(user.accessible_pages); } catch { return null; } })() 
       : user.accessible_pages)
-  ) : null;
+  ) : ['dashboard', 'profile'];
   const enabledMainItems = mainMenuConfig.filter((item) => {
     if (!item.enabled) return false;
     if (allowedPages && Array.isArray(allowedPages)) {
