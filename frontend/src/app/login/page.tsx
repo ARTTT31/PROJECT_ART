@@ -236,12 +236,7 @@ function LoginContent() {
   if (!isClient) return null;
 
   return (
-    <motion.main
-      initial={{ opacity: 0, scale: 0.98, y: 5 }}
-      animate={{ opacity: 1, scale: 1, y: 0 }}
-      transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-      className="login-page"
-    >
+    <main className="login-page">
       <section aria-label="เข้าสู่ระบบ ART Workspace" className="login-shell">
         <div className="login-panel">
           <div className="login-brand flex flex-col items-center justify-center text-center">
@@ -381,7 +376,7 @@ function LoginContent() {
           </form>
         </div>
       </section>
-    </motion.main>
+    </main>
   );
 }
 
