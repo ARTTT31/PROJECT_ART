@@ -6,7 +6,7 @@ product
 
 ## Users
 
-Personal productivity tool for individual use. The user works in a focused environment, managing tasks, monitoring information (weather, oil prices), and accessing quick utilities (calculator, barcode/QR generation) from a centralized dashboard. Context is self-directed work requiring efficiency and clarity.
+Personal productivity tool for individual use. The user works in a focused environment, managing tasks, monitoring information (weather, oil prices), and accessing quick utilities (barcode/QR generation) from a centralized dashboard. Context is self-directed work requiring efficiency and clarity.
 
 ## Product Purpose
 

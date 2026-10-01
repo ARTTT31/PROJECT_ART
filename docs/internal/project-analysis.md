@@ -23,7 +23,7 @@ The full stack has been verified locally and is in a clean, fully passing state:
 | Styling | Tailwind CSS, Enterprise Admin Design Tokens | Dashboard, login, profile, widgets |
 | UI libraries | Lucide React, Radix Dialog, SweetAlert2 | Icons, dialogs, notifications |
 | Backend | FastAPI, SQLAlchemy async, Alembic | REST API and database access |
-| Auth | JWT access/refresh tokens in HTTP-only cookies | Standard login, Google OAuth, and Microsoft Entra |
+| Auth | JWT access/refresh tokens in HTTP-only cookies | Standard login and Google OAuth |
 | Database | PostgreSQL target, SQLite for tests | Neon in production, in-memory SQLite in tests |
 | External data | Open-Meteo weather API, EPPO oil price page | Weather widget and oil price widget |
 
@@ -33,7 +33,7 @@ The full stack has been verified locally and is in a clean, fully passing state:
 
 Main pages:
 
-- `/login` - username/email login, Google OAuth, and Microsoft Entra login
+- `/login` - username/email login and Google OAuth
 - `/login-success` - OAuth callback completion flow
 - `/dashboard` - widget dashboard (Weather, Holiday, Oil price, QR Code)
 - `/profile` - profile, password, and quick-link management
@@ -52,7 +52,7 @@ Key frontend files:
 
 API router groups:
 
-- `/api/v1/auth` - Authentication, refresh tokens, Google/Microsoft OAuth
+- `/api/v1/auth` - Authentication, refresh tokens, Google OAuth
 - `/api/v1/users` - User management
 - `/api/v1/profile` - User profile, quick links, avatar
 - `/api/v1/audit` - Audit log retrieval
