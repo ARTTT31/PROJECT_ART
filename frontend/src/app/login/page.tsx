@@ -4,6 +4,7 @@ import '../../styles/pages/login.css';
 import { FormEvent, KeyboardEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { ArrowRight, AlertCircle, Check, Eye, EyeOff, Loader2, Lock, Mail } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { motion } from 'framer-motion';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/components/Toast/ToastProvider';
 
@@ -235,7 +236,12 @@ function LoginContent() {
   if (!isClient) return null;
 
   return (
-    <main className="login-page">
+    <motion.main
+      initial={{ opacity: 0, scale: 0.98, y: 5 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+      className="login-page"
+    >
       <section aria-label="เข้าสู่ระบบ ART Workspace" className="login-shell">
         <div className="login-panel">
           <div className="login-brand flex flex-col items-center justify-center text-center">
@@ -375,7 +381,7 @@ function LoginContent() {
           </form>
         </div>
       </section>
-    </main>
+    </motion.main>
   );
 }
 
