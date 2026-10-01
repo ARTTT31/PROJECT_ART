@@ -15,8 +15,16 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.drop_column("users", "push_subscriptions")
+    conn = op.get_bind()
+    inspector = sa.inspect(conn)
+    columns = [c['name'] for c in inspector.get_columns('users')]
+    if "push_subscriptions" in columns:
+        op.drop_column("users", "push_subscriptions")
 
 
 def downgrade() -> None:
-    op.add_column("users", sa.Column("push_subscriptions", sa.Text(), nullable=True))
+    conn = op.get_bind()
+    inspector = sa.inspect(conn)
+    columns = [c['name'] for c in inspector.get_columns('users')]
+    if "push_subscriptions" not in columns:
+        op.add_column("users", sa.Column("push_subscriptions", sa.Text(), nullable=True))
