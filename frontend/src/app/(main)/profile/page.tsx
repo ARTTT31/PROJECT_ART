@@ -818,10 +818,30 @@ export default function ProfilePage() {
           iconRing="ring-violet-200/60"
           title="เมนูหลัก"
           subtitle="เปิด/ปิด และจัดลำดับรายการในแถบเมนูด้านข้าง"
-          badge={`${mainMenuConfig.filter((i) => i.enabled).length} รายการ`}
+          badge={`${mainMenuConfig.filter((item) => {
+              const allowedPages = user?.accessible_pages ? (
+                (typeof user.accessible_pages === 'string' 
+                  ? (() => { try { return JSON.parse(user.accessible_pages); } catch { return null; } })() 
+                  : user.accessible_pages)
+              ) : null;
+              if (allowedPages && Array.isArray(allowedPages)) {
+                if (user?.role !== 'admin' && !allowedPages.includes(item.id)) return false;
+              }
+              return true;
+          }).filter((i) => i.enabled).length} รายการ`}
         >
           <div className="space-y-1.5">
-            {mainMenuConfig.map((item, idx) => {
+            {mainMenuConfig.filter((item) => {
+              const allowedPages = user?.accessible_pages ? (
+                (typeof user.accessible_pages === 'string' 
+                  ? (() => { try { return JSON.parse(user.accessible_pages); } catch { return null; } })() 
+                  : user.accessible_pages)
+              ) : null;
+              if (allowedPages && Array.isArray(allowedPages)) {
+                if (user?.role !== 'admin' && !allowedPages.includes(item.id)) return false;
+              }
+              return true;
+            }).map((item, idx, filteredArray) => {
               const Icon = MAIN_MENU_ICON_MAP[item.icon]
               return (
                 <div
@@ -873,7 +893,7 @@ export default function ProfilePage() {
                     <button
                       type="button"
                       onClick={() => moveMainMenuItem(item.id, 'down')}
-                      disabled={idx === mainMenuConfig.length - 1}
+                      disabled={idx === filteredArray.length - 1}
                       aria-label="ย้ายลง"
                       className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-400 transition-all hover:bg-slate-100 hover:text-slate-700 disabled:opacity-30 disabled:hover:bg-transparent sm:h-8 sm:w-8"
                     >
