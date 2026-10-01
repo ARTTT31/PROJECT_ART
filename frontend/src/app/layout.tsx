@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from 'next';
 import { Anuphan } from 'next/font/google';
 import './globals.css';
 import { Providers } from './providers';
-import NextTopLoader from 'nextjs-toploader';
 
 const anuphan = Anuphan({
   weight: 'variable',
@@ -57,7 +56,6 @@ export default function RootLayout({
     <html lang="th">
       <body className={anuphan.className}>
           {/* Theme toggle removed */}
-          <NextTopLoader color="#0071e3" showSpinner={false} />
           <Providers>
             {children}
           </Providers>
