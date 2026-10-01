@@ -78,7 +78,20 @@ export default function Sidebar({ isOpen, isCollapsed = false, onClose, user, on
       : null
 
   // Active Main Menu Items based on user configuration
-  const enabledMainItems = mainMenuConfig.filter((item) => item.enabled)
+
+  const allowedPages = user?.accessible_pages ? (
+    (typeof user.accessible_pages === 'string' 
+      ? (() => { try { return JSON.parse(user.accessible_pages); } catch { return null; } })() 
+      : user.accessible_pages)
+  ) : null;
+  const enabledMainItems = mainMenuConfig.filter((item) => {
+    if (!item.enabled) return false;
+    if (allowedPages && Array.isArray(allowedPages)) {
+      if (user?.role !== 'admin' && !allowedPages.includes(item.id)) return false;
+    }
+    return true;
+  });
+
 
   const mainMenuItemsSection: MenuSection = {
     title: 'เมนูหลัก',

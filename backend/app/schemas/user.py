@@ -47,6 +47,7 @@ class UserUpdate(BaseModel):
     quick_links: Optional[str] = None
     dashboard_layout: Optional[str] = None
     camera_config: Optional[str] = None
+    accessible_pages: Optional[str] = None
 
 
 class UserAdminUpdate(BaseModel):
@@ -57,6 +58,7 @@ class UserAdminUpdate(BaseModel):
     role: Optional[str] = None
     is_active: Optional[bool] = None
     is_locked: Optional[bool] = None
+    accessible_pages: Optional[str] = None
     password: Optional[str] = None
 
 
@@ -128,6 +130,7 @@ class UserResponse(BaseModel):
     quick_links: Optional[str] = None
     dashboard_layout: Optional[str] = None
     camera_config: Optional[str] = None
+    accessible_pages: Optional[str] = None
     is_active: bool
     last_login: Optional[datetime] = None
     created_at: datetime

@@ -302,6 +302,8 @@ class UserService:
             user.display_name = user_update.name  # Sync display_name with name
         if user_update.role is not None:
             user.role = user_update.role
+        if user_update.accessible_pages is not None:
+            user.accessible_pages = user_update.accessible_pages
         if user_update.is_active is not None:
             user.is_active = user_update.is_active
         if user_update.is_locked is not None:

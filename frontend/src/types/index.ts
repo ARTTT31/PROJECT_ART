@@ -19,6 +19,7 @@ export interface AuthUser {
   quick_links?: string | null
   dashboard_layout?: string | null
   camera_config?: string | null
+  accessible_pages?: string | null
 }
 
 /** @deprecated Use AuthUser instead */

@@ -28,6 +28,7 @@ import {
 import DashboardLayout from '@/components/Layout/DashboardLayout'
 import { showDeleteConfirm, showToast, showSuccess, showError } from '@/utils/sweetalert'
 import { useAuth } from '@/hooks/useAuth'
+import UserManagement from '@/components/Admin/UserManagement'
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth'
 import {
   Dialog,
@@ -911,6 +912,15 @@ export default function ProfilePage() {
 
 
 
+
+        {user?.role === 'admin' && (
+          <div className="mt-8">
+            <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+              การจัดการผู้ใช้งาน (Admin Panel)
+            </h2>
+            <UserManagement />
+          </div>
+        )}
       </div>
 
       {/* ══════════════════════════════════════════════════
