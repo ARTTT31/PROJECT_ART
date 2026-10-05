@@ -301,7 +301,7 @@ export default function QRCodeWidget({
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-start gap-3 min-w-0">
             {/* Icon badge */}
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[#0071e3]/10 text-[#0071e3]">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[#0066cc]/10 text-[#0066cc]">
               {format === 'qrcode' ? (
                 <QrCode size={20} aria-hidden="true" />
               ) : (
@@ -340,7 +340,7 @@ export default function QRCodeWidget({
                   setError(null)
                 }}
                 aria-pressed={isActive}
-                className={`flex flex-1 items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3] active:scale-[0.98] ${
+                className={`flex flex-1 items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0066cc] active:scale-[0.95] ${
                   isActive
                     ? 'bg-white text-[#1d1d1f] shadow-[0_1px_3px_rgba(0,0,0,0.12)]'
                     : 'text-[#6e6e73] hover:text-[#1d1d1f]'
@@ -367,7 +367,7 @@ export default function QRCodeWidget({
                 ? 'พิมพ์ข้อความ, URL, เบอร์โทร หรือ PromptPay...'
                 : 'พิมพ์รหัส เช่น ART-10023, 12345678 (ภาษาอังกฤษ/ตัวเลข)...'
             }
-            className="w-full rounded-[12px] bg-[#f2f2f7] px-3.5 py-2.5 text-[14px] text-[#1d1d1f] placeholder:text-[#86868b] transition-all duration-150 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0071e3]"
+            className="w-full rounded-[12px] bg-[#f2f2f7] px-3.5 py-2.5 text-[14px] text-[#1d1d1f] placeholder:text-[#86868b] transition-all duration-150 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0066cc]"
             aria-label="ข้อความสำหรับสร้างโค้ด"
           />
         </div>
@@ -414,7 +414,7 @@ export default function QRCodeWidget({
                   type="button"
                   onClick={copyImageToClipboard}
                   disabled={copyingImage}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-[#f2f2f7] px-4 py-2 text-[12px] font-semibold text-[#1d1d1f] transition-all duration-150 hover:bg-[#e5e5ea] active:scale-[0.98] disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-[#f2f2f7] px-4 py-2 text-[12px] font-semibold text-[#1d1d1f] transition-all duration-150 hover:bg-[#e5e5ea] active:scale-[0.95] disabled:opacity-50"
                   aria-label="คัดลอกรูปภาพลงคลิปบอร์ด"
                 >
                   {copiedSuccess ? (
@@ -433,7 +433,7 @@ export default function QRCodeWidget({
                 <button
                   type="button"
                   onClick={downloadImage}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-[#0071e3] px-4 py-2 text-[12px] font-semibold text-white transition-all duration-150 hover:bg-[#0077ed] active:scale-[0.98] shadow-sm"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-[#0066cc] px-4 py-2 text-[12px] font-semibold text-white transition-all duration-150 hover:bg-[#0071e3] active:scale-[0.95] shadow-sm"
                   aria-label="ดาวน์โหลดรูปภาพ PNG"
                 >
                   <Download size={13} />
@@ -444,7 +444,7 @@ export default function QRCodeWidget({
                   type="button"
                   onClick={printCode}
                   disabled={printing}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-[#f2f2f7] px-4 py-2 text-[12px] font-semibold text-[#1d1d1f] transition-all duration-150 hover:bg-[#e5e5ea] active:scale-[0.98] disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-[#f2f2f7] px-4 py-2 text-[12px] font-semibold text-[#1d1d1f] transition-all duration-150 hover:bg-[#e5e5ea] active:scale-[0.95] disabled:opacity-50"
                   aria-label="พิมพ์โค้ด"
                 >
                   <Printer size={13} />

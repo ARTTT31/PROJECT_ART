@@ -13,7 +13,7 @@ const anuphan = Anuphan({
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  themeColor: '#0071e3', // Apple Blue
+  themeColor: '#0066cc', // Apple Blue
 };
 
 export const metadata: Metadata = {
@@ -54,7 +54,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="th">
-      <body className={anuphan.className}>
+      <body className={anuphan.variable}>
           {/* Theme toggle removed */}
           <Providers>
             {children}

@@ -14,16 +14,16 @@
   --apple-muted: #6e6e73;        /* Body copy, descriptions */
   --apple-bg: #f5f5f7;           /* Section alternation background */
   --apple-surface: #ffffff;      /* White tile on gray section */
-  --apple-blue: #0071e3;         /* CTA primary button */
-  --apple-blue-hover: #0077ed;   /* CTA hover */
-  --apple-blue-shadow: rgba(0, 113, 227, 0.35); /* CTA button glow */
+  --apple-blue: #0066cc;         /* CTA primary button */
+  --apple-blue-hover: #0071e3;   /* CTA hover */
+  --apple-blue-shadow: rgba(0, 102, 204, 0.35); /* CTA button glow */
 
   /* Apple Bento Tile Radius */
-  --art-radius-tile: 32px;       /* Large bento tiles */
-  --art-radius-tile-sm: 28px;    /* Small bento tiles */
-  --art-radius-tile-icon: 18px;  /* Icon badge inside color tile */
-  --art-radius-tile-icon-sm: 14px; /* Icon badge inside white card */
-  --art-radius-dialog: 20px;     /* Dialogs/modals (updated from 16px) */
+  --art-radius-tile: 18px;       /* Large bento tiles */
+  --art-radius-tile-sm: 18px;    /* Small bento tiles */
+  --art-radius-tile-icon: 11px;  /* Icon badge inside color tile */
+  --art-radius-tile-icon-sm: 11px; /* Icon badge inside white card */
+  --art-radius-dialog: 18px;     /* Dialogs/modals (updated from 16px) */
 
   /* Apple Nav */
   --apple-nav-bg: rgba(255, 255, 255, 0.82);
@@ -31,10 +31,10 @@
   --apple-nav-height: 52px;
 
   /* ── ART UI Control Tokens (unchanged — for inputs, widgets, data) ─────── */
-  --art-primary: #0ea5e9;
-  --art-primary-dark: #0369a1;
-  --art-primary-light: #38bdf8;
-  --art-blue: #2563eb;
+  --art-primary: #0066cc;
+  --art-primary-dark: #004fa1;
+  --art-primary-light: #2997ff;
+  --art-blue: #0066cc;
   --art-ink: #0f172a;
   --art-muted: #475569;
   --art-shell: #f5f5f7;          /* Updated: aligned with --apple-bg */
@@ -43,17 +43,9 @@
   --art-border: rgba(255, 255, 255, 0.25);
   --art-border-strong: rgba(255, 255, 255, 0.45);
   
-  /* Premium Gradients */
-  --art-gradient:
-    radial-gradient(circle at 82% 10%, rgba(255, 255, 255, 0.36), transparent 28%),
-    radial-gradient(circle at 18% 12%, rgba(125, 211, 252, 0.5), transparent 34%),
-    linear-gradient(145deg, #0f4c81 0%, #1675b9 38%, #4f8edb 68%, #6aa7e8 100%);
-  
-  /* Liquid Glass Background — updated to Apple #f5f5f7 base */
-  --art-page-bg:
-    radial-gradient(ellipse at top right, rgba(14, 165, 233, 0.06), transparent 50%),
-    radial-gradient(ellipse at bottom left, rgba(99, 102, 241, 0.04), transparent 50%),
-    linear-gradient(180deg, #f5f5f7 0%, #f0f0f2 100%);
+  /* Flat Apple surfaces — decorative gradients removed per Apple spec */
+  --art-gradient: #0b63ce;
+  --art-page-bg: #f5f5f7;
   
   /* Semantic Colors */
   --art-success: #22c55e;
@@ -64,10 +56,10 @@
   /* Refined Radii - Apple Showcase DNA (v2.0)
      Tile radii live in --art-radius-tile* above.
      These govern UI controls: buttons, inputs, cards, widgets. */
-  --art-radius-xl: 16px;   /* UI cards / widgets (raised from 12px) */
-  --art-radius-lg: 16px;   /* UI cards / widgets */
-  --art-radius-md: 12px;   /* Buttons, inputs */
-  --art-radius-sm: 12px;   /* Buttons, inputs */
+  --art-radius-xl: 18px;   /* UI cards / widgets (raised from 12px) */
+  --art-radius-lg: 18px;   /* UI cards / widgets */
+  --art-radius-md: 11px;   /* Buttons, inputs */
+  --art-radius-sm: 11px;   /* Buttons, inputs */
 
   /* Spacing scale (use across pages/components) */
   --space-1: 4px;
@@ -136,15 +128,14 @@
 }
 
 .apple-tile:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--shadow-glass);
 }
 
 /* Display heading — hero h1 style */
 .apple-heading-hero {
-  font-family: Anuphan, 'SF Pro Display', Inter, system-ui, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', Anuphan, Inter, system-ui, sans-serif;
   font-size: clamp(3rem, 6vw + 1rem, 4.25rem); /* 48–68px */
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: -0.03em;
   line-height: 1.05;
   text-wrap: balance;
@@ -153,9 +144,9 @@
 
 /* Section display heading — h2 */
 .apple-heading-section {
-  font-family: Anuphan, 'SF Pro Display', Inter, system-ui, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', Anuphan, Inter, system-ui, sans-serif;
   font-size: clamp(2.5rem, 4vw + 1rem, 3rem); /* 40–48px */
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: -0.025em;
   line-height: 1.08;
   text-wrap: balance;
@@ -164,9 +155,9 @@
 
 /* Tile heading — inside bento tile */
 .apple-heading-tile {
-  font-family: Anuphan, 'SF Pro Display', Inter, system-ui, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', Anuphan, Inter, system-ui, sans-serif;
   font-size: clamp(1.75rem, 2vw + 1rem, 2rem); /* 28–32px */
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: -0.02em;
   line-height: 1.1;
   text-wrap: balance;
@@ -174,7 +165,7 @@
 
 /* Body copy for showcase pages */
 .apple-body {
-  font-family: Anuphan, Inter, system-ui, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', Anuphan, Inter, system-ui, sans-serif;
   font-size: clamp(1.0625rem, 0.5vw + 0.9rem, 1.1875rem); /* 17–19px */
   font-weight: 400;
   line-height: 1.6;
@@ -204,7 +195,6 @@
 
 .apple-btn-primary:hover:not(:disabled) {
   background: var(--apple-blue-hover);
-  box-shadow: 0 4px 20px var(--apple-blue-shadow);
 }
 
 .apple-btn-primary:active:not(:disabled) {
@@ -283,15 +273,14 @@
 /* ── Apple HIG Card Container ─────────────────────── */
 .apple-card {
   background: #ffffff;
-  border-radius: 24px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
+  border-radius: var(--art-radius-lg);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
   border: 1px solid rgba(0, 0, 0, 0.06);
   transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .apple-card-hover:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.03);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
 }
 
 /* ── Apple HIG Segmented Control ──────────────────── */
@@ -339,8 +328,8 @@
 
 .apple-input:focus {
   background-color: #ffffff;
-  border-color: #0071e3;
-  box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.20);
+  border-color: #0066cc;
+  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.20);
   outline: none;
 }
 
@@ -371,7 +360,8 @@ html {
 }
 
 body {
-  /* font-family managed by Tailwind config (Anuphan, Inter, system-ui) */
+  /* Apple-style stack: SF Pro / system for Latin, Anuphan for Thai fallback */
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'SF Pro', Inter, var(--font-anuphan), Anuphan, system-ui, sans-serif;
   font-feature-settings: 'kern' 1, 'liga' 1, 'calt' 1;
   letter-spacing: 0;
   line-height: var(--line-normal);
@@ -464,7 +454,6 @@ label {
 
 .premium-card:hover {
   box-shadow: var(--shadow-glass-lg);
-  transform: translateY(-2px);
 }
 
 /* Override hover for weather widget – keep static */
@@ -484,10 +473,10 @@ label {
   position: relative;
   min-height: 200px;
   overflow: hidden;
-  border-radius: 14px;
+  border-radius: var(--art-radius-lg);
   color: white;
   background: var(--art-gradient);
-  box-shadow: 0 18px 36px rgba(8, 47, 73, 0.22);
+  box-shadow: none;
 }
 
 .art-app-shell {
@@ -507,9 +496,7 @@ label {
   content: "";
   position: absolute;
   inset: 0;
-  background:
-    linear-gradient(120deg, rgba(255, 255, 255, 0.24), transparent 34%),
-    linear-gradient(180deg, transparent, rgba(8, 47, 73, 0.18));
+  background: none;
   pointer-events: none;
 }
 
@@ -572,7 +559,7 @@ label {
     outline: none;
     border-color: var(--art-primary);
     background: white;
-    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1), 0 0 0 1px var(--art-primary);
+    box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1), 0 0 0 1px var(--art-primary);
     border-radius: 12px; /* Preserve rounded corners */
   }
 
@@ -617,7 +604,7 @@ label {
   border-color: var(--art-primary);
   background: white;
   box-shadow: 
-    0 0 0 4px rgba(14, 165, 233, 0.12),
+    0 0 0 4px rgba(0, 102, 204, 0.12),
     var(--shadow-glass);
   outline: none;
 }
@@ -650,7 +637,7 @@ label {
 .art-color-input:focus-visible {
   outline: none;
   border-color: var(--art-primary);
-  box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.12);
+  box-shadow: 0 0 0 4px rgba(0, 102, 204, 0.12);
 }
 
 .art-color-input::-webkit-color-swatch-wrapper {
@@ -713,10 +700,10 @@ button:disabled {
 
 .art-primary-button,
 .action-btn.primary {
-  border: 1px solid rgba(14, 165, 233, 0.55);
-  background: linear-gradient(135deg, var(--art-primary) 0%, var(--art-blue) 100%);
+  border: 1px solid var(--art-primary);
+  background: var(--art-primary);
   color: white;
-  box-shadow: 0 6px 14px rgba(14, 165, 233, 0.22);
+  box-shadow: none;
 }
 
 .art-primary-button::before,
@@ -726,17 +713,16 @@ button:disabled {
   position: absolute;
   inset: 0;
   z-index: -1;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.22), transparent);
+  background: none;
   opacity: 0;
   transition: opacity 180ms ease;
 }
 
 .art-primary-button:hover:not(:disabled),
 .action-btn.primary:hover:not(:disabled) {
-  border-color: rgba(14, 165, 233, 0.7);
+  border-color: var(--apple-blue-hover);
+  background: var(--apple-blue-hover);
   color: white;
-  transform: translateY(-1px);
-  box-shadow: 0 10px 22px rgba(14, 165, 233, 0.28);
 }
 
 .art-primary-button:hover:not(:disabled)::before,
@@ -748,7 +734,7 @@ button:disabled {
 .art-primary-button:active:not(:disabled),
 .art-soft-button:active:not(:disabled),
 .action-btn:active:not(:disabled) {
-  transform: translateY(0);
+  transform: scale(0.95);
 }
 
 .art-primary-button:disabled {
@@ -770,16 +756,15 @@ button:disabled {
 
 .art-soft-button::before,
 .action-btn::before {
-  background: linear-gradient(135deg, rgba(14, 165, 233, 0.08), rgba(37, 99, 235, 0.04));
+  background: none;
 }
 
 .art-soft-button:hover:not(:disabled),
 .action-btn:hover:not(:disabled) {
-  border-color: rgba(14, 165, 233, 0.45);
+  border-color: rgba(0, 102, 204, 0.45);
   background: white;
   color: var(--art-primary-dark);
-  transform: translateY(-1px);
-  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
 }
 
 .art-soft-button:disabled {
@@ -815,7 +800,7 @@ button:disabled {
 .art-icon-button:hover:not(:disabled),
 .refresh-btn:hover:not(:disabled),
 .weather-refresh-btn:hover:not(:disabled) {
-  border-color: rgba(14, 165, 233, 0.45);
+  border-color: rgba(0, 102, 204, 0.45);
   background: white;
   color: var(--art-primary-dark);
   transform: translateY(-1px);
@@ -854,7 +839,7 @@ button:disabled {
 }
 
 .art-chip-button:hover:not(:disabled) {
-  border-color: rgba(14, 165, 233, 0.35);
+  border-color: rgba(0, 102, 204, 0.35);
   background: white;
   color: var(--art-primary-dark);
 }
@@ -1032,9 +1017,9 @@ button:disabled {
 }
 
 .widget-header-icon.primary {
-  background: linear-gradient(135deg, rgba(14, 165, 233, 0.2), rgba(37, 99, 235, 0.15));
+  background: linear-gradient(135deg, rgba(0, 102, 204, 0.2), rgba(0, 102, 204, 0.15));
   color: var(--art-primary);
-  border: 1px solid rgba(14, 165, 233, 0.2);
+  border: 1px solid rgba(0, 102, 204, 0.2);
 }
 
 .widget-header-icon.warning {
@@ -1079,7 +1064,7 @@ button:disabled {
   animation: spin 1s linear infinite;
   border-color: var(--art-primary);
   color: var(--art-primary);
-  background: rgba(14, 165, 233, 0.08);
+  background: rgba(0, 102, 204, 0.08);
 }
 
 .weather-refresh-btn {
@@ -1159,7 +1144,7 @@ button:disabled {
 
 .oil-price-item:hover {
   background: white;
-  border-color: rgba(14, 165, 233, 0.4);
+  border-color: rgba(0, 102, 204, 0.4);
   box-shadow: var(--shadow-glass);
   transform: translateY(-2px);
 }
@@ -1178,7 +1163,7 @@ button:disabled {
 
 .todo-item:hover {
   background: white;
-  border-color: rgba(14, 165, 233, 0.4);
+  border-color: rgba(0, 102, 204, 0.4);
   box-shadow: var(--shadow-glass);
   transform: translateY(-1px);
 }
@@ -1472,7 +1457,7 @@ button:active,
   position: absolute;
   top: -40px;
   left: 0;
-  background: var(--art-primary, #0ea5e9);
+  background: var(--art-primary, #0066cc);
   color: white;
   padding: 10px 20px;
   text-decoration: none;
@@ -1605,14 +1590,14 @@ input[type="radio"],
   border-color: var(--art-primary) !important;
   border-width: 2px !important;
   position: relative;
-  background: linear-gradient(135deg, rgba(14, 165, 233, 0.02), rgba(37, 99, 235, 0.03)) !important;
+  background: linear-gradient(135deg, rgba(0, 102, 204, 0.02), rgba(0, 102, 204, 0.03)) !important;
 }
 
 .widget-edit-mode::after {
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at 50% 50%, rgba(14, 165, 233, 0.08), transparent 70%);
+  background: radial-gradient(circle at 50% 50%, rgba(0, 102, 204, 0.08), transparent 70%);
   pointer-events: none;
   z-index: 5;
   border-radius: inherit;
@@ -1630,7 +1615,7 @@ input[type="radio"],
 
 .widget-drop-indicator {
   border: 2px dashed var(--art-primary);
-  background: linear-gradient(135deg, rgba(14, 165, 233, 0.06), rgba(37, 99, 235, 0.08));
+  background: linear-gradient(135deg, rgba(0, 102, 204, 0.06), rgba(0, 102, 204, 0.08));
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   border-radius: var(--art-radius-lg);
@@ -1672,9 +1657,9 @@ input[type="radio"],
 
 @media (max-width: 768px) {
   :root {
-    --art-radius-xl: 16px;
+    --art-radius-xl: 18px;
     --art-radius-lg: 12px;
-    --art-radius-md: 12px;
+    --art-radius-md: 11px;
     --art-radius-sm: 10px;
   }
 
@@ -1818,15 +1803,15 @@ input[type="radio"],
 }
 
 .art-swal-confirm {
-  border: 1px solid rgba(14, 165, 233, 0.55) !important;
-  background: linear-gradient(135deg, var(--art-primary) 0%, var(--art-blue) 100%) !important;
+  border: 1px solid var(--art-primary) !important;
+  background: var(--art-primary) !important;
   color: white !important;
-  box-shadow: 0 6px 14px rgba(14, 165, 233, 0.22) !important;
+  box-shadow: none !important;
 }
 
 .art-swal-confirm:hover {
-  transform: translateY(-1px) !important;
-  box-shadow: 0 10px 22px rgba(14, 165, 233, 0.28) !important;
+  background: var(--apple-blue-hover) !important;
+  box-shadow: none !important;
 }
 
 .art-swal-confirm.art-swal-danger {
@@ -1845,7 +1830,7 @@ input[type="radio"],
 
 .art-swal-cancel:hover,
 .art-swal-deny:hover {
-  border-color: rgba(14, 165, 233, 0.45) !important;
+  border-color: rgba(0, 102, 204, 0.45) !important;
   color: var(--art-primary-dark) !important;
   transform: translateY(-1px) !important;
   box-shadow: 0 6px 14px rgba(15, 23, 42, 0.08) !important;

@@ -19,9 +19,10 @@ const config: Config = {
       colors: {
         // Apple HIG System Colors (Light / Dark Adaptive)
         apple: {
-          blue: '#0071e3',          // Apple web signature CTA / iOS Accent
-          'blue-hover': '#0077ed',
-          'blue-active': '#0062c4',
+          blue: '#0066cc',          // Apple web signature CTA (Action Blue)
+          'blue-hover': '#0071e3',  // Apple focus blue
+          'blue-active': '#004fa1',
+          'blue-on-dark': '#2997ff', // Sky Link Blue for dark surfaces
           'blue-subtle': '#e8f2fe',
           teal: '#30b0c7',
           cyan: '#32ade6',
@@ -63,8 +64,8 @@ const config: Config = {
           200: '#bae0fd',
           300: '#7dc4fc',
           400: '#38a4f8',
-          500: '#0071e3',  // Apple Blue
-          600: '#0062c4',
+          500: '#0066cc',  // Apple Action Blue
+          600: '#004fa1',
           700: '#004fa1',
           800: '#003e82',
           900: '#00346e',
@@ -96,25 +97,25 @@ const config: Config = {
         info: {
           50: '#eff6ff',
           100: '#dbeafe',
-          500: '#0071e3',  // Apple System Blue
+          500: '#0066cc',  // Apple Action Blue
           600: '#005bb5',
           700: '#00448a',
         },
       },
+      // Apple rounded scale: none 0 / xs 5 / sm 8 / md 11 / lg 18 / pill 9999
       borderRadius: {
-        'apple-sm': '10px',
-        'apple-md': '14px',
+        'apple-xs': '5px',
+        'apple-sm': '8px',
+        'apple-md': '11px',
         'apple-lg': '18px',
-        'apple-xl': '22px',
-        'apple-2xl': '26px',
-        'apple-3xl': '32px',
       },
       boxShadow: {
-        'apple-sm': '0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02)',
-        'apple-md': '0 4px 14px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04)',
-        'apple-lg': '0 12px 32px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04)',
-        'apple-xl': '0 20px 48px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.06)',
-        'apple-glow': '0 0 20px rgba(0, 113, 227, 0.35)',
+        // Only soft, static elevation — no glow. The single product shadow is
+        // defined as 'apple-product'.
+        'apple-sm': '0 1px 3px rgba(0, 0, 0, 0.06)',
+        'apple-md': '0 4px 14px rgba(0, 0, 0, 0.06)',
+        'apple-lg': '0 12px 32px rgba(0, 0, 0, 0.08)',
+        'apple-product': '3px 5px 30px 0 rgba(0, 0, 0, 0.22)',
       },
       fontSize: {
         // Apple HIG Typography Scale
@@ -151,9 +152,9 @@ const config: Config = {
           '"SF Pro Display"',
           '"SF Pro Text"',
           '"SF Pro"',
-          '"Helvetica Neue"',
-          'Anuphan',
           'Inter',
+          'var(--font-anuphan)',
+          'Anuphan',
           'system-ui',
           'sans-serif',
         ],

@@ -82,7 +82,7 @@ function describeQuickLink(url: string) {
 }
 
 const QUICK_LINK_COLOR_PRESETS = [
-  '#0071e3', '#5856d6', '#af52de', '#ff2d55', '#ff3b30',
+  '#0066cc', '#5856d6', '#af52de', '#ff2d55', '#ff3b30',
   '#ff9500', '#ffcc00', '#34c759', '#00c7be', '#30b0c7',
   '#8e8e93',
 ]
@@ -173,7 +173,7 @@ function InsetField({
             'w-full rounded-[14px] py-3 text-[14px] font-medium text-[#1d1d1f] placeholder:text-[#86868b]',
             readOnly
               ? 'bg-[#f2f2f7]/60 cursor-default select-text'
-              : 'bg-[#f2f2f7] transition-all duration-150 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0071e3]',
+              : 'bg-[#f2f2f7] transition-all duration-150 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0066cc]',
             trailing ? '!pr-12' : '!pr-4',
           ].join(' ')}
           style={{ paddingLeft: '2.75rem' }}
@@ -215,7 +215,7 @@ export default function ProfilePage() {
   const [qlLabel, setQlLabel] = useState('')
   const [qlUrl, setQlUrl] = useState('')
   const [qlIcon, setQlIcon] = useState<QuickLinkIconKey>('link')
-  const [qlColor, setQlColor] = useState('#0ea5e9')
+  const [qlColor, setQlColor] = useState('#0066cc')
 
   // Main Menu Config
   const [mainMenuConfig, setMainMenuConfig] = useState<MainMenuItemConfig[]>(() => {
@@ -351,14 +351,14 @@ export default function ProfilePage() {
 
   const openCreateQuickLink = () => {
     setEditingQuickLinkId(null)
-    setQlLabel(''); setQlUrl(''); setQlIcon('link'); setQlColor('#0ea5e9')
+    setQlLabel(''); setQlUrl(''); setQlIcon('link'); setQlColor('#0066cc')
     setQuickLinkDialogOpen(true)
   }
 
   const openEditQuickLink = (link: QuickLink) => {
     setEditingQuickLinkId(link.id)
     setQlLabel(link.label); setQlUrl(link.url); setQlIcon(link.icon)
-    setQlColor(link.color || '#0ea5e9')
+    setQlColor(link.color || '#0066cc')
     setQuickLinkDialogOpen(true)
   }
 
@@ -435,7 +435,7 @@ export default function ProfilePage() {
     return (
       <>
         <div className="flex min-h-[80vh] items-center justify-center">
-          <div className="h-11 w-11 animate-spin rounded-full border-[3px] border-[#f5f5f7] border-t-[#0071e3]" />
+          <div className="h-11 w-11 animate-spin rounded-full border-[3px] border-[#f5f5f7] border-t-[#0066cc]" />
         </div>
       </>
     )
@@ -458,7 +458,7 @@ export default function ProfilePage() {
           <div className="px-6 py-6 sm:px-8 sm:py-7">
             <div className="flex flex-col items-center gap-3 text-center">
               {/* Avatar */}
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-[#0071e3] to-[#42a5f5] text-2xl font-black text-white ring-4 ring-white shadow-[0_8px_24px_rgba(0,113,227,0.20)]">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#0066cc] text-2xl font-semibold text-white">
                 {user.name?.charAt(0).toUpperCase() || 'U'}
               </div>
 
@@ -522,7 +522,7 @@ export default function ProfilePage() {
                 <button
                   type="submit"
                   disabled={isSavingProfile}
-                  className="inline-flex items-center gap-2 rounded-full bg-[#0071e3] px-5 py-2.5 text-[13px] font-bold text-white shadow-sm transition-all duration-150 hover:bg-[#0077ed] hover:shadow-[0_3px_12px_rgba(0,113,227,0.32)] disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3] focus-visible:ring-offset-2 active:scale-[0.98]"
+                  className="inline-flex items-center gap-2 rounded-full bg-[#0066cc] px-5 py-2.5 text-[13px] font-bold text-white shadow-sm transition-all duration-150 hover:bg-[#0071e3]  disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0066cc] focus-visible:ring-offset-2 active:scale-[0.95]"
                 >
                   {isSavingProfile ? (
                     <div className="h-3.5 w-3.5 animate-spin rounded-full border-[2px] border-white/30 border-t-white" />
@@ -656,7 +656,7 @@ export default function ProfilePage() {
                 <button
                   type="submit"
                   disabled={isChangingPassword}
-                  className="inline-flex items-center gap-2 rounded-full bg-[#0071e3] px-5 py-2.5 text-[13px] font-bold text-white shadow-sm transition-all duration-150 hover:bg-[#0077ed] hover:shadow-[0_3px_12px_rgba(0,113,227,0.32)] disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3] focus-visible:ring-offset-2 active:scale-[0.98]"
+                  className="inline-flex items-center gap-2 rounded-full bg-[#0066cc] px-5 py-2.5 text-[13px] font-bold text-white shadow-sm transition-all duration-150 hover:bg-[#0071e3]  disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0066cc] focus-visible:ring-offset-2 active:scale-[0.95]"
                 >
                   {isChangingPassword ? (
                     <div className="h-3.5 w-3.5 animate-spin rounded-full border-[2px] border-white/30 border-t-white" />
@@ -685,7 +685,7 @@ export default function ProfilePage() {
             <button
               type="button"
               onClick={openCreateQuickLink}
-              className="inline-flex items-center gap-1.5 rounded-full bg-[#0071e3] px-4 py-1.5 text-[11.5px] font-bold text-white shadow-sm transition-all duration-150 hover:bg-[#0077ed] hover:shadow-[0_3px_12px_rgba(0,113,227,0.32)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3] focus-visible:ring-offset-1 active:scale-[0.98]"
+              className="inline-flex items-center gap-1.5 rounded-full bg-[#0066cc] px-4 py-1.5 text-[11.5px] font-bold text-white shadow-sm transition-all duration-150 hover:bg-[#0071e3]  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0066cc] focus-visible:ring-offset-1 active:scale-[0.95]"
             >
               <Plus size={12} aria-hidden="true" />
               เพิ่มลิงก์
@@ -705,7 +705,7 @@ export default function ProfilePage() {
               <button
                 type="button"
                 onClick={openCreateQuickLink}
-                className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-[#0071e3] px-5 py-2 text-[12px] font-bold text-white shadow-sm transition-all hover:bg-[#0077ed] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3]"
+                className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-[#0066cc] px-5 py-2 text-[12px] font-bold text-white shadow-sm transition-all hover:bg-[#0071e3] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0066cc]"
               >
                 <Plus size={12} aria-hidden="true" />
                 สร้างลิงก์แรก
@@ -728,7 +728,7 @@ export default function ProfilePage() {
                       <div
                         className="flex h-10 w-10 items-center justify-center rounded-[14px] bg-white ring-1 ring-black/[0.06] shadow-[0_1px_2px_rgba(15,23,42,0.04)]"
                       >
-                        <Icon size={17} aria-hidden="true" style={{ color: link.color || '#0ea5e9' }} />
+                        <Icon size={17} aria-hidden="true" style={{ color: link.color || '#0066cc' }} />
                       </div>
 
                     </div>
@@ -855,7 +855,7 @@ export default function ProfilePage() {
                   {/* Icon */}
                   <div
                     className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] ${
-                      item.enabled ? 'bg-[#0071e3]/10 text-[#0071e3]' : 'bg-slate-100 text-slate-400'
+                      item.enabled ? 'bg-[#0066cc]/10 text-[#0066cc]' : 'bg-slate-100 text-slate-400'
                     }`}
                   >
                     <Icon size={18} aria-hidden="true" />
@@ -909,8 +909,8 @@ export default function ProfilePage() {
                       disabled={!!item.required}
                       onClick={() => toggleMainMenuItem(item.id)}
                       style={{ width: '44px', height: '28px', minWidth: '44px', minHeight: '28px', padding: '2px', display: 'flex', alignItems: 'center', justifyContent: 'flex-start' }}
-                      className={`relative ml-1 shrink-0 cursor-pointer rounded-full transition-colors duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3] focus-visible:ring-offset-2 disabled:cursor-not-allowed ${
-                        item.enabled ? 'bg-[#0071e3]' : 'bg-[#e5e5ea]'
+                      className={`relative ml-1 shrink-0 cursor-pointer rounded-full transition-colors duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0066cc] focus-visible:ring-offset-2 disabled:cursor-not-allowed ${
+                        item.enabled ? 'bg-[#0066cc]' : 'bg-[#e5e5ea]'
                       } ${item.required ? 'opacity-70' : ''}`}
                     >
                       <span
@@ -958,7 +958,7 @@ export default function ProfilePage() {
           <form onSubmit={handleSubmitQuickLink}>
             <DialogBody className="space-y-5">
               {/* Preview card */}
-              <div className="rounded-2xl bg-gradient-to-br from-slate-50 to-indigo-50/40 p-4 ring-1 ring-black/[0.04]">
+              <div className="rounded-[18px] bg-[#f5f5f7] p-4 ring-1 ring-black/[0.04]">
                 <div className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400 mb-2.5">ตัวอย่างการแสดงผล</div>
                 <div className="flex items-center gap-3 rounded-2xl bg-white p-3 ring-1 ring-black/[0.06] shadow-sm">
                   <div
@@ -1011,7 +1011,7 @@ export default function ProfilePage() {
               <div>
                 <div className="mb-2 ml-1 flex items-center justify-between">
                   <label className="text-[11px] font-bold tracking-wide uppercase text-[#6e6e73]">
-                    ไอคอน · <span className="text-[#0071e3] font-normal normal-case tracking-normal">{previewIconLabel}</span>
+                    ไอคอน · <span className="text-[#0066cc] font-normal normal-case tracking-normal">{previewIconLabel}</span>
                   </label>
                 </div>
                 <div className="rounded-2xl bg-[#f8fafc] p-2.5 ring-1 ring-black/[0.04]">
@@ -1029,14 +1029,14 @@ export default function ProfilePage() {
                           className={[
                             'relative flex h-9 w-9 items-center justify-center rounded-xl transition-all duration-150',
                             active
-                              ? 'bg-white shadow-sm ring-2 ring-[#0071e3]'
+                              ? 'bg-white shadow-sm ring-2 ring-[#0066cc]'
                               : 'bg-white/50 hover:bg-white ring-1 ring-black/[0.04] hover:ring-black/[0.08]',
                           ].join(' ')}
                         >
                           <OptIcon
                             size={15}
                             aria-hidden="true"
-                            className={active ? 'text-[#0071e3]' : 'text-slate-500'}
+                            className={active ? 'text-[#0066cc]' : 'text-slate-500'}
                           />
                         </button>
                       )
@@ -1099,8 +1099,8 @@ export default function ProfilePage() {
                 <div>
                   <strong className="font-bold text-[#475569]">รูปแบบที่ยอมรับ:</strong>
                   <ul className="mt-1 ml-4 space-y-0.5 list-disc">
-                    <li>ลิงก์ภายนอก: <code className="px-1 py-0.5 rounded bg-white text-[#0071e3] text-[10px] font-mono">https://...</code> หรือ <code className="px-1 py-0.5 rounded bg-white text-[#0071e3] text-[10px] font-mono">http://...</code></li>
-                    <li>ลิงก์ภายใน: <code className="px-1 py-0.5 rounded bg-white text-[#0071e3] text-[10px] font-mono">/dashboard</code> หรือ <code className="px-1 py-0.5 rounded bg-white text-[#0071e3] text-[10px] font-mono">/camera</code></li>
+                    <li>ลิงก์ภายนอก: <code className="px-1 py-0.5 rounded bg-white text-[#0066cc] text-[10px] font-mono">https://...</code> หรือ <code className="px-1 py-0.5 rounded bg-white text-[#0066cc] text-[10px] font-mono">http://...</code></li>
+                    <li>ลิงก์ภายใน: <code className="px-1 py-0.5 rounded bg-white text-[#0066cc] text-[10px] font-mono">/dashboard</code> หรือ <code className="px-1 py-0.5 rounded bg-white text-[#0066cc] text-[10px] font-mono">/camera</code></li>
                   </ul>
                 </div>
               </div>
@@ -1110,13 +1110,13 @@ export default function ProfilePage() {
               <button
                 type="button"
                 onClick={() => setQuickLinkDialogOpen(false)}
-                className="w-full rounded-full bg-[#f5f5f7] px-5 py-2.5 text-[13px] font-bold text-[#1d1d1f] transition-all hover:bg-[#e8e8ed] active:scale-[0.98] sm:w-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
+                className="w-full rounded-full bg-[#f5f5f7] px-5 py-2.5 text-[13px] font-bold text-[#1d1d1f] transition-all hover:bg-[#e8e8ed] active:scale-[0.95] sm:w-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
               >
                 ยกเลิก
               </button>
               <button
                 type="submit"
-                className="w-full inline-flex items-center justify-center gap-2 rounded-full bg-[#0071e3] px-6 py-2.5 text-[13px] font-bold text-white shadow-sm transition-all duration-150 hover:bg-[#0077ed] hover:shadow-[0_3px_12px_rgba(0,113,227,0.32)] active:scale-[0.98] sm:w-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3] focus-visible:ring-offset-2"
+                className="w-full inline-flex items-center justify-center gap-2 rounded-full bg-[#0066cc] px-6 py-2.5 text-[13px] font-bold text-white shadow-sm transition-all duration-150 hover:bg-[#0071e3]  active:scale-[0.95] sm:w-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0066cc] focus-visible:ring-offset-2"
               >
                 <Check size={14} aria-hidden="true" />
                 {editingQuickLinkId ? 'บันทึกการแก้ไข' : 'สร้างลิงก์'}

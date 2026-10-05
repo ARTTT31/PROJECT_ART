@@ -333,7 +333,7 @@ export default function CameraPage() {
     return (
       <>
         <div className="flex min-h-[400px] items-center justify-center">
-          <div className="h-10 w-10 animate-spin rounded-full border-[3px] border-[#f5f5f7] border-t-[#0071e3]" />
+          <div className="h-10 w-10 animate-spin rounded-full border-[3px] border-[#f5f5f7] border-t-[#0066cc]" />
         </div>
       </>
     )
@@ -359,7 +359,7 @@ export default function CameraPage() {
           <div className="flex items-center gap-2">
             <button
               onClick={openAddDialog}
-              className="inline-flex items-center gap-2 rounded-full bg-[#0071e3] px-4 py-2 text-[13px] font-semibold text-white shadow-[0_2px_8px_rgba(0,113,227,0.30)] transition-all duration-150 hover:bg-[#0077ed] hover:shadow-[0_4px_12px_rgba(0,113,227,0.40)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3] focus-visible:ring-offset-2 active:scale-[0.98]"
+              className="inline-flex items-center gap-2 rounded-full bg-[#0066cc] px-4 py-2 text-[13px] font-semibold text-white  transition-all duration-150 hover:bg-[#0071e3]  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0066cc] focus-visible:ring-offset-2 active:scale-[0.95]"
               aria-label="เพิ่มกล้องใหม่"
             >
               <Plus size={15} aria-hidden="true" />
@@ -369,12 +369,12 @@ export default function CameraPage() {
             <button
               onClick={handleRefresh}
               disabled={refreshing}
-              className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-[13px] font-semibold text-[#1d1d1f] ring-1 ring-black/[0.08] transition-all duration-150 hover:bg-[#f5f5f7] hover:shadow-sm disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3] focus-visible:ring-offset-2 active:scale-[0.98]"
+              className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-[13px] font-semibold text-[#1d1d1f] ring-1 ring-black/[0.08] transition-all duration-150 hover:bg-[#f5f5f7] hover:shadow-sm disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0066cc] focus-visible:ring-offset-2 active:scale-[0.95]"
               aria-label="รีเฟรชสถานะกล้อง"
             >
               <RefreshCw
                 size={13}
-                className={refreshing ? 'animate-spin text-[#0071e3]' : ''}
+                className={refreshing ? 'animate-spin text-[#0066cc]' : ''}
                 aria-hidden="true"
               />
               รีเฟรชสถานะ
@@ -510,7 +510,7 @@ export default function CameraPage() {
                     {activeCamera && (
                       <button
                         onClick={() => openEditDialog(activeCamera)}
-                        className="rounded-full bg-[#0071e3] px-4 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-[#0077ed]"
+                        className="rounded-full bg-[#0066cc] px-4 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-[#0071e3]"
                       >
                         แก้ไขการตั้งค่า
                       </button>
@@ -542,7 +542,7 @@ export default function CameraPage() {
                         className={[
                           'flex w-full items-center justify-between rounded-xl p-3 text-left transition-all duration-150',
                           isSelected
-                            ? 'bg-[#0071e3]/[0.07] ring-1 ring-[#0071e3]/25 shadow-[0_2px_8px_rgba(0,113,227,0.08)]'
+                            ? 'bg-[#0066cc]/[0.07] ring-1 ring-[#0066cc]/25 shadow-[0_2px_8px_rgba(0,102,204,0.08)]'
                             : 'bg-[#f5f5f7] hover:bg-white hover:ring-1 hover:ring-black/[0.06] hover:shadow-[0_2px_8px_rgba(15,23,42,0.05)]',
                         ].join(' ')}
                       >
@@ -645,7 +645,7 @@ export default function CameraPage() {
                     value={formName}
                     onChange={(e) => setFormName(e.target.value)}
                     placeholder="เช่น หน้าบ้าน (Front Entrance)"
-                    className="mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 transition-colors focus:border-[#0071e3] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0071e3]/20"
+                    className="mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 transition-colors focus:border-[#0066cc] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20"
                   />
                 </div>
 
@@ -658,7 +658,7 @@ export default function CameraPage() {
                     value={formLocation}
                     onChange={(e) => setFormLocation(e.target.value)}
                     placeholder="เช่น ภายนอก — ประตูหลัก"
-                    className="mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 transition-colors focus:border-[#0071e3] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0071e3]/20"
+                    className="mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 transition-colors focus:border-[#0066cc] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20"
                   />
                 </div>
 
@@ -683,11 +683,11 @@ export default function CameraPage() {
                           className={[
                             'flex items-center gap-2 rounded-xl p-2.5 text-left text-xs font-medium transition-all',
                             isChecked
-                              ? 'bg-[#0071e3]/10 font-semibold text-[#0071e3] ring-1 ring-[#0071e3]'
+                              ? 'bg-[#0066cc]/10 font-semibold text-[#0066cc] ring-1 ring-[#0066cc]'
                               : 'bg-slate-50 text-slate-700 hover:bg-slate-100',
                           ].join(' ')}
                         >
-                          <Icon size={14} className={isChecked ? 'text-[#0071e3]' : 'text-slate-400'} />
+                          <Icon size={14} className={isChecked ? 'text-[#0066cc]' : 'text-slate-400'} />
                           {opt.label}
                         </button>
                       )
@@ -712,7 +712,7 @@ export default function CameraPage() {
                           ? 'http://192.168.1.50:8080/video.mjpg'
                           : 'https://homeassistant.local/lovelace/cctv'
                       }
-                      className="mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 font-mono text-xs text-slate-900 transition-colors focus:border-[#0071e3] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0071e3]/20"
+                      className="mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 font-mono text-xs text-slate-900 transition-colors focus:border-[#0066cc] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20"
                     />
                   </div>
                 )}
@@ -725,7 +725,7 @@ export default function CameraPage() {
                     <select
                       value={formRefreshInterval}
                       onChange={(e) => setFormRefreshInterval(Number(e.target.value))}
-                      className="mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 transition-colors focus:border-[#0071e3] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0071e3]/20"
+                      className="mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 transition-colors focus:border-[#0066cc] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20"
                     >
                       <option value={1}>ทุก 1 วินาที (เร็ว)</option>
                       <option value={2}>ทุก 2 วินาที</option>
@@ -746,7 +746,7 @@ export default function CameraPage() {
                       value={formResolution}
                       onChange={(e) => setFormResolution(e.target.value)}
                       placeholder="1920x1080"
-                      className="mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 transition-colors focus:border-[#0071e3] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0071e3]/20"
+                      className="mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 transition-colors focus:border-[#0066cc] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20"
                     />
                   </div>
                   <div>
@@ -759,7 +759,7 @@ export default function CameraPage() {
                       max={60}
                       value={formFps}
                       onChange={(e) => setFormFps(Number(e.target.value))}
-                      className="mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 transition-colors focus:border-[#0071e3] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0071e3]/20"
+                      className="mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 transition-colors focus:border-[#0066cc] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20"
                     />
                   </div>
                 </div>
@@ -776,7 +776,7 @@ export default function CameraPage() {
                 <button
                   type="submit"
                   disabled={isSaving}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-[#0071e3] px-5 py-2 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-[#0077ed] disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-[#0066cc] px-5 py-2 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-[#0071e3] disabled:opacity-50"
                 >
                   {isSaving ? (
                     <RefreshCw size={13} className="animate-spin" />

@@ -50,7 +50,7 @@ export default function WidgetSizeToggle({
             title={description}
             className={clsx(
               'h-6 min-w-[26px] rounded-full px-2 text-[11px] font-bold transition-all duration-150 active:scale-[0.95]',
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3]',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0066cc]',
               isActive
                 ? 'bg-white text-[#1d1d1f] shadow-[0_1px_3px_rgba(0,0,0,0.12)]'
                 : 'bg-transparent text-[#6e6e73] hover:text-[#1d1d1f]',

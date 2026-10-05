@@ -27,7 +27,8 @@ This document defines the strict rules for **ART Workspace**. All components, pa
   - Footnote / Caption: 13pt / 12pt (`text-apple-footnote` / `text-apple-caption1`)
 
 ### 2. Apple System Colors
-- **Interactive Blue:** `#0071e3` (Web CTA)
+- **Interactive Blue:** `#0066cc` (Apple Action Blue — Web CTA). Focus/hover `#0071e3`; on dark surfaces use `#2997ff`.
+- **No decorative gradients** and **no shadows on cards/buttons/text** — the only drop-shadow is for product imagery.
 - **Semantic Tints:**
   - Green: `#34c759`
   - Orange: `#ff9500`
@@ -81,7 +82,7 @@ This document defines the strict rules for **ART Workspace**. All components, pa
 
 ## 📋 Pre-Delivery Checklist
 
-- [ ] UI consistently uses `#0071e3` for primary actions (Apple Blue).
+- [ ] UI consistently uses `#0066cc` for primary actions (Apple Action Blue).
 - [ ] UI consistently uses `#f5f5f7` for page backgrounds and `#ffffff` for cards.
 - [ ] Corner radius values follow the squircle radii (`24px` for large cards, `12px` for buttons).
 - [ ] Typography uses Anuphan for Thai, structured for clean layouts.

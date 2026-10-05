@@ -2,12 +2,13 @@
 
 ## Visual Direction
 
-ART Workspace uses a refined Web/Desktop UI based on Apple Human Interface Guidelines: light surfaces, soft depth, clear focus states, and the signature Apple blue accent for primary actions and selected states. All design decisions are governed by the single source of truth at `design-system/art-workspace/MASTER.md`.
+ART Workspace uses a refined Web/Desktop UI based on Apple Human Interface Guidelines: light surfaces, flat color fields, clear focus states, and the signature Apple blue accent for primary actions and selected states. All design decisions are governed by the single source of truth at `design-system/art-workspace/MASTER.md`.
 
 ## Color
 
-- Primary: `#0071e3` (Apple Blue) — primary actions, active states, focus rings.
-- Hover State: `#0077ed` — button hover.
+- Primary: `#0066cc` (Apple Action Blue) — primary actions, active states, focus rings.
+- Hover / Focus: `#0071e3` — button hover and keyboard focus.
+- On dark surfaces: `#2997ff` (Sky Link Blue) for inline links.
 - Ink: `#1d1d1f` — body text and headings (high contrast).
 - Muted: `#6e6e73` — secondary labels and metadata.
 - Surfaces: pure white `#ffffff` for cards and widgets; `#f5f5f7` for the page background.
@@ -18,6 +19,14 @@ ART Workspace uses a refined Web/Desktop UI based on Apple Human Interface Guide
 Font stack: **Anuphan** (primary, supports Thai script) + **Inter** (Latin fallback) + `-apple-system, BlinkMacSystemFont`.
 
 Rules: sentence case only; `text-wrap: balance` for headings; max 75ch line length for body.
+
+## Surfaces, Depth & Shape
+
+- No decorative gradients. Atmosphere comes from content, never CSS gradients.
+- Elevation comes from surface color and hairline borders — not from shadows on cards, buttons, or text.
+- Exactly one drop-shadow exists for product imagery: `3px 5px 30px 0 rgba(0, 0, 0, 0.22)` (`shadow-apple-product`).
+- Radius scale: `none` 0 / `apple-xs` 5px / `apple-sm` 8px / `apple-md` 11px / `apple-lg` 18px / `rounded-full` pill.
+- Active/press state is `scale(0.95)` on buttons — no hover lift.
 
 ## Buttons
 

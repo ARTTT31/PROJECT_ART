@@ -19,21 +19,20 @@ export default function NotFound() {
 
       <div id="main-content" className="flex min-h-[100dvh] items-center justify-center px-4 py-10">
         <section
-          className={`w-full max-w-5xl overflow-hidden rounded-[var(--art-radius-xl)] border border-white/30 bg-white/70 backdrop-blur-[24px] shadow-glass-xl transition-all duration-700 ease-out lg:grid lg:grid-cols-[0.92fr_1.08fr] ${
+          className={`w-full max-w-5xl overflow-hidden rounded-[var(--art-radius-xl)] border border-black/[0.08] bg-white shadow-glass transition-all duration-700 ease-out lg:grid lg:grid-cols-[0.92fr_1.08fr] ${
             mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
           }`}
           role="alert"
           aria-live="polite"
         >
           {/* Left: Visual Panel */}
-          <div className="relative min-h-[320px] overflow-hidden bg-[linear-gradient(145deg,#0f4c81_0%,#1675b9_38%,#4f8edb_68%,#6aa7e8_100%)] p-8 text-white sm:p-10">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_82%_10%,rgba(255,255,255,0.36),transparent_28%),radial-gradient(circle_at_18%_12%,rgba(125,211,252,0.5),transparent_34%),linear-gradient(180deg,transparent,rgba(8,47,73,0.18))]" aria-hidden="true" />
+          <div className="relative min-h-[320px] overflow-hidden bg-[#0b63ce] p-8 text-white sm:p-10">
             <div className="relative flex h-full min-h-[260px] flex-col justify-between">
-              <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl border border-white/24 bg-white/18">
+              <div className="inline-flex h-16 w-16 items-center justify-center rounded-[11px] border border-white/24 bg-white/18">
                 <SearchX size={32} aria-hidden="true" />
               </div>
               <div>
-                <p className="text-[clamp(4rem,10vw,6rem)] font-extrabold leading-none tracking-normal" aria-label="404">
+                <p className="text-[clamp(4rem,10vw,6rem)] font-semibold leading-none tracking-normal" aria-label="404">
                   404
                 </p>
                 <p className="mt-4 max-w-sm text-xl font-semibold leading-8 text-white/86">

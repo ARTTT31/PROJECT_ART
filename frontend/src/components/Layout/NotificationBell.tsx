@@ -351,7 +351,7 @@ export default function NotificationBell() {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="relative flex h-9 w-9 items-center justify-center rounded-full text-[#1d1d1f] transition-all duration-150 hover:bg-black/[0.05] active:scale-[0.95] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3]"
+        className="relative flex h-9 w-9 items-center justify-center rounded-full text-[#1d1d1f] transition-all duration-150 hover:bg-black/[0.05] active:scale-[0.95] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0066cc]"
         aria-label={`การแจ้งเตือน${unreadCount > 0 ? ` (${unreadCount} รายการใหม่)` : ''}`}
         aria-haspopup="true"
         aria-expanded={open}
@@ -390,7 +390,7 @@ export default function NotificationBell() {
                   <button
                     type="button"
                     onClick={markAllRead}
-                    className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-[12px] font-semibold text-[#0071e3] hover:bg-[#0071e3]/10 transition-colors"
+                    className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-[12px] font-semibold text-[#0066cc] hover:bg-[#0066cc]/10 transition-colors"
                     title="ทำเครื่องหมายว่าอ่านแล้วทั้งหมด"
                   >
                     <CheckCheck size={14} />
@@ -435,7 +435,7 @@ export default function NotificationBell() {
                   >
                     {!isRead && (
                       <span
-                        className="absolute right-3.5 top-3.5 h-2 w-2 rounded-full bg-[#0071e3]"
+                        className="absolute right-3.5 top-3.5 h-2 w-2 rounded-full bg-[#0066cc]"
                         aria-label="ยังไม่ได้อ่าน"
                       />
                     )}

@@ -65,7 +65,7 @@ const getColSpanClass = (w: number) => {
 function WidgetErrorFallback({ name, error, reset }: { name: string; error: Error; reset: () => void }) {
   const isChunkError = error?.name === 'ChunkLoadError' || error?.message?.includes('Failed to load chunk')
   return (
-    <div className="flex min-h-[220px] flex-col items-center justify-center rounded-[24px] border border-black/[0.06] bg-white/60 p-6 backdrop-blur-xl">
+    <div className="flex min-h-[220px] flex-col items-center justify-center rounded-[18px] border border-black/[0.06] bg-white p-6">
       <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-red-100/50">
         <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -84,7 +84,7 @@ function WidgetErrorFallback({ name, error, reset }: { name: string; error: Erro
               reset()
             }
           }}
-          className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-[#f2f2f7] px-4 py-2 text-[13px] font-semibold text-[#1d1d1f] transition-all duration-200 hover:bg-[#e5e5ea] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3]"
+          className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-[#f2f2f7] px-4 py-2 text-[13px] font-semibold text-[#1d1d1f] transition-all duration-200 hover:bg-[#e5e5ea] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0066cc]"
         >
           {isChunkError ? 'รีเฟรชหน้าเว็บ' : 'ลองใหม่อีกครั้ง'}
         </button>
@@ -202,7 +202,7 @@ export default function DashboardPage() {
     return (
       <>
         <div className="flex min-h-[60vh] items-center justify-center">
-          <div className="h-11 w-11 animate-spin rounded-full border-[3px] border-[#f5f5f7] border-t-[#0071e3]" />
+          <div className="h-11 w-11 animate-spin rounded-full border-[3px] border-[#f5f5f7] border-t-[#0066cc]" />
         </div>
       </>
     )
@@ -217,12 +217,12 @@ export default function DashboardPage() {
       {/* ── Apple HIG Hero Welcome Banner ───────────────────────────────── */}
       <section
         aria-label="การทักทายและสถานะประจำวัน"
-        className="relative mb-6 overflow-hidden rounded-[24px] border border-black/[0.06] bg-gradient-to-br from-white via-white to-[#e8f2fe]/50 p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)] sm:p-7"
+        className="relative mb-6 overflow-hidden rounded-[18px] border border-black/[0.06] bg-white p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04)] sm:p-7"
       >
         <div className="relative z-10 flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
           <div className="space-y-1.5">
-            <h1 className="text-2xl font-bold tracking-tight text-[#1d1d1f] sm:text-3xl">
-              {greeting}, <span className="text-[#0071e3]">{user.display_name || user.username}</span> 👋
+            <h1 className="text-2xl font-semibold tracking-tight text-[#1d1d1f] sm:text-3xl">
+              {greeting}, <span className="text-[#0066cc]">{user.display_name || user.username}</span> 👋
             </h1>
             <p className="text-[13px] font-medium text-[#6e6e73]">
               ภาพรวมข้อมูลสำคัญของคุณสำหรับวันนี้
@@ -233,7 +233,7 @@ export default function DashboardPage() {
             <button
               type="button"
               onClick={() => setShowConfigModal(true)}
-              className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-[13px] font-semibold text-[#1d1d1f] shadow-sm ring-1 ring-black/[0.08] transition-all duration-150 hover:bg-[#f5f5f7] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3] focus-visible:ring-offset-2 active:scale-[0.98]"
+              className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-[13px] font-semibold text-[#1d1d1f] shadow-sm ring-1 ring-black/[0.08] transition-all duration-150 hover:bg-[#f5f5f7] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0066cc] focus-visible:ring-offset-2 active:scale-[0.95]"
               aria-label="จัดการวิดเจ็ต"
             >
               <SlidersHorizontal className="h-3.5 w-3.5 text-[#475569]" aria-hidden="true" />
@@ -241,10 +241,6 @@ export default function DashboardPage() {
             </button>
           </div>
         </div>
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-[#0071e3]/10 blur-3xl"
-        />
       </section>
 
       {/* ── Widget grid ─────────────────────────────────────────────────── */}
@@ -312,9 +308,9 @@ export default function DashboardPage() {
                         disabled={isLocked}
                         onClick={() => toggleWidgetVisibility(widget.id)}
                         style={{ width: '44px', height: '28px', minWidth: '44px', minHeight: '28px', padding: '2px', display: 'flex', alignItems: 'center', justifyContent: 'flex-start' }}
-                        className={`relative shrink-0 cursor-pointer rounded-full transition-colors duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3] focus-visible:ring-offset-2 disabled:cursor-not-allowed ${
+                        className={`relative shrink-0 cursor-pointer rounded-full transition-colors duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0066cc] focus-visible:ring-offset-2 disabled:cursor-not-allowed ${
                           isLocked ? 'opacity-50' : ''
-                        } ${isVisible ? 'bg-[#0071e3]' : 'bg-[#e5e5ea]'}`}
+                        } ${isVisible ? 'bg-[#0066cc]' : 'bg-[#e5e5ea]'}`}
                       >
                         <span className="sr-only">สลับวิดเจ็ต {widgetNames[widget.id]}</span>
                         <span
@@ -332,7 +328,7 @@ export default function DashboardPage() {
           <DialogFooter>
             <button
               onClick={() => setShowConfigModal(false)}
-              className="inline-flex items-center justify-center rounded-full bg-[#0071e3] px-6 py-2.5 text-[15px] font-semibold text-white transition-all duration-150 hover:bg-[#0077ed] hover:shadow-[0_4px_12px_rgba(0,113,227,0.3)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3] focus-visible:ring-offset-2 active:scale-[0.98]"
+              className="inline-flex items-center justify-center rounded-full bg-[#0066cc] px-6 py-2.5 text-[15px] font-semibold text-white transition-all duration-150 hover:bg-[#0071e3]  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0066cc] focus-visible:ring-offset-2 active:scale-[0.95]"
             >
               เสร็จสิ้น
             </button>

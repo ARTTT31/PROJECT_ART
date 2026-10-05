@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth'
 import { useToast } from '@/components/Toast/ToastProvider'
 import {
-  Users, Shield, Settings, Edit, Check, X, ShieldAlert, User, CheckCircle2, Circle
+  Settings, Edit, Check, X, ShieldAlert, User, CheckCircle2, Circle
 } from 'lucide-react'
 
 // Define a simplified User type for admin management
@@ -25,7 +25,7 @@ const AVAILABLE_PAGES = [
 ]
 
 export default function UserManagement() {
-  const { success: showSuccess, error: showError, info: showToast } = useToast()
+  const { success: showSuccess, error: showError } = useToast()
   const [users, setUsers] = useState<AdminUser[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -36,7 +36,7 @@ export default function UserManagement() {
   const [editPages, setEditPages] = useState<string[]>([])
   const [isSaving, setIsSaving] = useState(false)
 
-  const loadUsers = async () => {
+  const loadUsers = useCallback(async () => {
     setLoading(true)
     try {
       const res = await fetchWithAuth('/api/v1/users')
@@ -51,11 +51,11 @@ export default function UserManagement() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [showError])
 
   useEffect(() => {
     loadUsers()
-  }, [])
+  }, [loadUsers])
 
   const openEdit = (user: AdminUser) => {
     setEditingUser(user)
@@ -109,7 +109,7 @@ export default function UserManagement() {
   if (loading) {
     return (
       <div className="flex h-32 items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-[3px] border-[#f5f5f7] border-t-[#0071e3]" />
+        <div className="h-8 w-8 animate-spin rounded-full border-[3px] border-[#f5f5f7] border-t-[#0066cc]" />
       </div>
     )
   }
@@ -121,7 +121,7 @@ export default function UserManagement() {
           
           <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-black/[0.04] bg-[#fbfbfc] px-6 py-5">
             <div className="flex items-center gap-3 mb-3 sm:mb-0">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#0071e3]/10 text-[#0071e3]">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#0066cc]/10 text-[#0066cc]">
                 <Edit size={18} />
               </div>
               <div>
@@ -150,7 +150,7 @@ export default function UserManagement() {
                 className="group flex cursor-pointer items-center gap-3 rounded-2xl bg-[#f8fafc] p-4 ring-1 ring-black/[0.04] transition-all hover:bg-white hover:shadow-sm"
               >
                 {editIsActive ? (
-                  <CheckCircle2 size={22} className="text-[#0071e3]" />
+                  <CheckCircle2 size={22} className="text-[#0066cc]" />
                 ) : (
                   <Circle size={22} className="text-slate-300 group-hover:text-slate-400" />
                 )}
@@ -172,23 +172,23 @@ export default function UserManagement() {
                   onClick={() => setEditRole('user')}
                   className={`group relative flex cursor-pointer items-start gap-3 rounded-2xl p-4 transition-all duration-200 ${
                     editRole === 'user' 
-                      ? 'bg-white ring-2 ring-[#0071e3] shadow-[0_4px_12px_rgba(0,113,227,0.12)]' 
+                      ? 'bg-white ring-2 ring-[#0066cc] shadow-[0_4px_12px_rgba(0,102,204,0.12)]' 
                       : 'bg-[#f8fafc] ring-1 ring-black/[0.04] hover:bg-white hover:shadow-sm'
                   }`}
                 >
                   <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-all duration-200 ${
-                    editRole === 'user' ? 'bg-[#0071e3] text-white scale-110' : 'bg-slate-100 text-slate-400 group-hover:text-slate-500'
+                    editRole === 'user' ? 'bg-[#0066cc] text-white scale-110' : 'bg-slate-100 text-slate-400 group-hover:text-slate-500'
                   }`}>
                     <User size={18} strokeWidth={2.5} />
                   </div>
                   <div>
                     <span className={`block text-[14px] font-semibold transition-colors ${
-                      editRole === 'user' ? 'text-[#0071e3]' : 'text-[#1d1d1f]'
+                      editRole === 'user' ? 'text-[#0066cc]' : 'text-[#1d1d1f]'
                     }`}>ผู้ใช้งานทั่วไป (User)</span>
                     <span className="block mt-0.5 text-[12px] text-[#6e6e73] leading-relaxed">เข้าถึงเฉพาะฟีเจอร์ที่ได้รับอนุญาต</span>
                   </div>
                   {editRole === 'user' && (
-                    <div className="absolute right-4 top-4 text-[#0071e3] animate-in zoom-in duration-200">
+                    <div className="absolute right-4 top-4 text-[#0066cc] animate-in zoom-in duration-200">
                       <CheckCircle2 size={20} />
                     </div>
                   )}
@@ -238,7 +238,7 @@ export default function UserManagement() {
                       className="group flex cursor-pointer items-center gap-3 p-4 transition-all hover:bg-white"
                     >
                       {isActive ? (
-                        <CheckCircle2 size={20} className="text-[#0071e3]" />
+                        <CheckCircle2 size={20} className="text-[#0066cc]" />
                       ) : (
                         <Circle size={20} className="text-slate-300 group-hover:text-slate-400" />
                       )}
@@ -255,14 +255,14 @@ export default function UserManagement() {
           <div className="border-t border-black/[0.04] bg-[#fbfbfc] px-6 py-4 flex flex-col-reverse sm:flex-row justify-end gap-3">
             <button 
               onClick={closeEdit}
-              className="w-full sm:w-auto rounded-full bg-[#f5f5f7] px-5 py-2.5 text-[13px] font-bold text-[#1d1d1f] transition-all hover:bg-[#e8e8ed] active:scale-[0.98]"
+              className="w-full sm:w-auto rounded-full bg-[#f5f5f7] px-5 py-2.5 text-[13px] font-bold text-[#1d1d1f] transition-all hover:bg-[#e8e8ed] active:scale-[0.95]"
             >
               ยกเลิก
             </button>
             <button 
               onClick={handleSave}
               disabled={isSaving}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-[#0071e3] px-6 py-2.5 text-[13px] font-bold text-white shadow-sm transition-all duration-150 hover:bg-[#0077ed] hover:shadow-[0_3px_12px_rgba(0,113,227,0.32)] active:scale-[0.98] disabled:opacity-50"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-[#0066cc] px-6 py-2.5 text-[13px] font-bold text-white shadow-sm transition-all duration-150 hover:bg-[#0071e3]  active:scale-[0.95] disabled:opacity-50"
             >
               {isSaving ? 'กำลังบันทึก...' : <><Check size={14} /> บันทึกการแก้ไข</>}
             </button>
