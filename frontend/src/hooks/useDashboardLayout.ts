@@ -154,12 +154,6 @@ export function useDashboardLayout() {
     }
     persistLayout(newWidgets, newVisible)
   }
-  
-  const reorderWidgets = (oldIndex: number, newIndex: number) => {
-    // Requires importing arrayMove from '@dnd-kit/sortable' if we move it here, 
-    // but easier to just do standard array manipulation or return setWidgets.
-    // We can export persistLayout and widgets to handle it in the component.
-  }
 
   return {
     widgets,

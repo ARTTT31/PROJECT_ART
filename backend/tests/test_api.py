@@ -251,3 +251,184 @@ class TestProfileAPI:
         me_resp = await client.get("/api/v1/profile/me")
         assert me_resp.status_code == 200
         assert me_resp.json()["camera_config"] == camera_data
+
+
+# ── WebSocket Broadcast Tests ─────────────────────────────
+
+BROADCAST_PAYLOAD = {
+    "id": "n-1",
+    "type": "system",
+    "level": "warning",
+    "title": "แจ้งเตือน",
+    "body": "ทดสอบ",
+}
+
+
+@pytest.fixture
+async def admin_client(client, db_session, registered_user):
+    """Promote the registered user to admin, then log in again."""
+    from app.services.user_service import UserService
+
+    user = await UserService(db_session).get_user_by_email("test@example.com")
+    assert user is not None
+    user.role = "admin"
+    await db_session.commit()
+
+    resp = await client.post("/api/v1/auth/login", json={
+        "email": "test@example.com",
+        "password": "SecretPass123",
+    })
+    assert resp.status_code == 200, resp.text
+    token = client.cookies.get("csrf_token")
+    if not token:
+        csrf_resp = await client.get("/api/v1/auth/csrf")
+        token = csrf_resp.json()["data"]["csrf_token"]
+    client.headers["X-CSRF-Token"] = token
+    return client
+
+
+class TestWebsocketBroadcast:
+    async def test_anonymous_broadcast_is_rejected(self, client):
+        """Regression: the broadcast endpoint must never be reachable anonymously."""
+        resp = await client.post("/api/v1/ws/broadcast", json=BROADCAST_PAYLOAD)
+        assert resp.status_code in (401, 403)
+        assert resp.status_code != 200
+
+    async def test_non_admin_broadcast_is_forbidden(self, client, logged_in_user):
+        """An authenticated but non-admin user must be rejected with 403."""
+        assert logged_in_user["data"]["user"]["role"] == "user"
+        resp = await client.post("/api/v1/ws/broadcast", json=BROADCAST_PAYLOAD)
+        assert resp.status_code == 403
+        assert resp.json()["detail"] == "Not enough permissions"
+
+    async def test_admin_broadcast_succeeds(self, admin_client):
+        resp = await admin_client.post("/api/v1/ws/broadcast", json=BROADCAST_PAYLOAD)
+        assert resp.status_code == 200, resp.text
+        assert resp.json()["message"] == "Broadcast sent"
+        assert resp.json()["payload"] == BROADCAST_PAYLOAD
+
+    async def test_admin_broadcast_rejects_malformed_payload(self, admin_client):
+        resp = await admin_client.post("/api/v1/ws/broadcast", json={"id": "n-1"})
+        assert resp.status_code == 422
+
+
+# ── Public proxy rate limiting ────────────────────────────
+# weather/ and oil-prices/ are unauthenticated by design (the login screen
+# renders the widgets), which makes them open relays to third-party providers.
+# These tests confirm the general rate limit now bounds that.
+
+@pytest.fixture
+def limited_client(client):
+    """Enable the limiter and shrink the stored limits for these routes.
+
+    SlowAPI resolves ``@limiter.limit("N/minute")`` at import time and stores a
+    Limit object per route, so mutating settings after import has no effect —
+    the registered Limit objects themselves must be patched.
+    """
+    from limits import parse_many
+    from app.core.rate_limit import limiter
+
+    limiter.enabled = True
+    limiter.reset()
+
+    shrunk = parse_many("5 per 1 minute")[0]
+    route_limits = limiter._route_limits
+    touched = []
+    for name, limits in route_limits.items():
+        for limit_obj in limits:
+            touched.append((limit_obj, limit_obj.limit))
+            limit_obj.limit = shrunk
+    try:
+        yield client
+    finally:
+        for limit_obj, original in touched:
+            limit_obj.limit = original
+        limiter.reset()
+        limiter.enabled = False
+
+
+class TestPublicProxyRateLimit:
+    async def test_weather_forecast_is_rate_limited(self, limited_client):
+        codes = []
+        for i in range(9):
+            resp = await limited_client.get(
+                "/api/v1/weather/forecast",
+                params={"latitude": 13.75 + i * 0.01, "longitude": 100.5},
+            )
+            codes.append(resp.status_code)
+        assert 429 in codes, f"rate limit never engaged: {codes}"
+
+    async def test_oil_prices_is_rate_limited(self, limited_client):
+        codes = []
+        for _ in range(9):
+            resp = await limited_client.get("/api/v1/oil-prices/oil-prices")
+            codes.append(resp.status_code)
+        assert 429 in codes, f"rate limit never engaged: {codes}"
+
+    async def test_limit_returns_429_not_500(self, limited_client):
+        """A throttled request must be a clean 429, never an unhandled error."""
+        for _ in range(9):
+            resp = await limited_client.get("/api/v1/oil-prices/oil-prices")
+        assert resp.status_code == 429
+        assert resp.status_code < 500
+
+
+class TestWeatherCacheBounds:
+    """The weather caches are keyed by user-supplied coordinates, so they need a
+    hard cap or a long-lived process grows them without bound."""
+
+    def test_cache_purges_and_caps_entries(self):
+        from app.api.v1.endpoints.weather import (
+            MAX_CACHE_ENTRIES, _WEATHER_CACHE, _cache_set,
+        )
+
+        _WEATHER_CACHE.clear()
+        try:
+            for i in range(MAX_CACHE_ENTRIES + 50):
+                _cache_set(_WEATHER_CACHE, (13.0 + i * 0.001, 100.0, 2), {"i": i})
+            assert len(_WEATHER_CACHE) <= MAX_CACHE_ENTRIES
+        finally:
+            _WEATHER_CACHE.clear()
+
+    def test_expired_entries_are_dropped_before_evicting_fresh_ones(self):
+        from app.api.v1.endpoints.weather import (
+            MAX_CACHE_ENTRIES, _WEATHER_CACHE, _cache_set,
+        )
+        from app.core.utils import utcnow
+
+        _WEATHER_CACHE.clear()
+        try:
+            import datetime as _dt
+
+            # Fill the cache entirely with entries whose TTL has already passed.
+            for i in range(MAX_CACHE_ENTRIES):
+                _WEATHER_CACHE[("stale", i, 1)] = {
+                    "ts": utcnow() - _dt.timedelta(days=2),
+                    "data": {"i": i},
+                }
+            assert len(_WEATHER_CACHE) == MAX_CACHE_ENTRIES
+
+            # One new insert must purge the expired rows rather than grow past
+            # the cap — and the fresh entry it stores must be readable.
+            _cache_set(_WEATHER_CACHE, ("fresh", 0.0, 1), {"fresh": True})
+
+            assert len(_WEATHER_CACHE) <= MAX_CACHE_ENTRIES
+            assert not [k for k in _WEATHER_CACHE if k[0] == "stale"]
+            assert _WEATHER_CACHE[("fresh", 0.0, 1)]["data"] == {"fresh": True}
+        finally:
+            _WEATHER_CACHE.clear()
+
+    def test_cache_get_respects_ttl(self):
+        from app.api.v1.endpoints.weather import _WEATHER_CACHE, _cache_get, _cache_set
+        from app.core.utils import utcnow
+        import datetime
+
+        _WEATHER_CACHE.clear()
+        try:
+            _cache_set(_WEATHER_CACHE, ("k", 0.0, 1), {"v": 1})
+            assert _cache_get(_WEATHER_CACHE, ("k", 0.0, 1), 600) == {"v": 1}
+
+            _WEATHER_CACHE[("k", 0.0, 1)]["ts"] = utcnow() - datetime.timedelta(hours=2)
+            assert _cache_get(_WEATHER_CACHE, ("k", 0.0, 1), 600) is None
+        finally:
+            _WEATHER_CACHE.clear()
