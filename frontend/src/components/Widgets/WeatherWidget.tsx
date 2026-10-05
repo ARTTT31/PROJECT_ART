@@ -460,6 +460,35 @@ export default function WeatherWidget({
   const WeatherIcon = weatherMeta.icon
   const ShieldIcon = pm25Meta.icon
 
+  // With no data at all the full card renders as a tall empty shell, which
+  // reads as a broken widget. Collapse it to a compact, actionable state.
+  if (error && !weather && !loading) {
+    return (
+      <section
+        className="flex h-full flex-col justify-center rounded-[18px] bg-white p-5 border border-black/[0.06] shadow-[0_1px_3px_rgba(0,0,0,0.05)]"
+        aria-labelledby="weather-title"
+      >
+        <div className="flex items-start gap-3">
+          <AlertCircle size={20} className="mt-0.5 shrink-0 text-[#ff3b30]" aria-hidden="true" />
+          <div className="min-w-0">
+            <h2 id="weather-title" className="text-[15px] font-bold text-[#1d1d1f]">
+              สภาพอากาศ &amp; PM 2.5
+            </h2>
+            <p className="mt-1 text-[12.5px] leading-relaxed text-[#6e6e73]">{error}</p>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => fetchWeatherData(selectedCity, true)}
+          className="mt-4 inline-flex items-center justify-center gap-1.5 rounded-full bg-[#0066cc] px-4 py-2 text-[13px] font-semibold text-white transition-all duration-150 hover:bg-[#0071e3] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0066cc] focus-visible:ring-offset-2"
+        >
+          <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} aria-hidden="true" />
+          {refreshing ? 'กำลังลองใหม่…' : 'ลองอีกครั้ง'}
+        </button>
+      </section>
+    )
+  }
+
   return (
     <section
       className="flex h-full flex-col justify-between rounded-[18px] bg-white p-5 border border-black/[0.06] shadow-[0_1px_3px_rgba(0,0,0,0.05)] transition-all duration-200"

@@ -432,3 +432,134 @@ class TestWeatherCacheBounds:
             assert _cache_get(_WEATHER_CACHE, ("k", 0.0, 1), 600) is None
         finally:
             _WEATHER_CACHE.clear()
+
+
+# ── Weather upstream resilience ───────────────────────────
+# Open-Meteo throttles per-IP and Render instances share egress IPs, so a 429
+# is routine. The proxy must retry, then fall back to stale cache rather than
+# returning a hard 502 and leaving an empty card in the dashboard.
+
+class _FakeResponse:
+    def __init__(self, status_code, payload=None, text=""):
+        self.status_code = status_code
+        self._payload = payload or {}
+        self.text = text
+
+    def json(self):
+        return self._payload
+
+
+class _FakeClient:
+    """httpx.AsyncClient stand-in returning a scripted sequence of responses.
+
+    `_upstream_get` builds a fresh client per attempt, so the call counter lives
+    on the shared `counter` dict rather than on the instance.
+    """
+
+    def __init__(self, responses, counter):
+        self._responses = list(responses)
+        self._counter = counter
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, *exc):
+        return False
+
+    async def get(self, url, params=None):
+        self._counter["calls"] += 1
+        idx = self._counter["calls"] - 1
+        return self._responses[min(idx, len(self._responses) - 1)]
+
+
+def _install_fake_http(monkeypatch, responses):
+    import app.api.v1.endpoints.weather as weather
+
+    counter = {"calls": 0}
+
+    def fake_async_client(**kwargs):
+        return _FakeClient(responses, counter)
+
+    monkeypatch.setattr(weather.httpx, "AsyncClient", fake_async_client)
+    monkeypatch.setattr(weather.asyncio, "sleep", _no_sleep)
+    return counter
+
+
+async def _no_sleep(_seconds):
+    return None
+
+
+class TestWeatherUpstreamResilience:
+    async def test_retries_then_succeeds_on_429(self, monkeypatch):
+        """A throttled 429 must be retried, not surfaced to the user."""
+        from app.api.v1.endpoints.weather import _upstream_get
+
+        holder = _install_fake_http(monkeypatch, [
+            _FakeResponse(429, text="rate limited"),
+            _FakeResponse(200, {"ok": True}),
+        ])
+
+        result = await _upstream_get("https://example.test", {"a": 1})
+
+        assert result == {"ok": True}
+        assert holder["calls"] == 2, "should have retried once"
+
+    async def test_gives_up_after_retries_exhausted(self, monkeypatch):
+        from fastapi import HTTPException
+        from app.api.v1.endpoints.weather import _upstream_get
+
+        holder = _install_fake_http(monkeypatch, [_FakeResponse(429, text="nope")])
+
+        with pytest.raises(HTTPException) as exc:
+            await _upstream_get("https://example.test", {}, retries=2)
+
+        assert exc.value.status_code == 502
+        assert holder["calls"] == 3  # initial + 2 retries
+
+    async def test_does_not_retry_client_errors(self, monkeypatch):
+        """404 means our request was wrong; retrying it is pure waste."""
+        from fastapi import HTTPException
+        from app.api.v1.endpoints.weather import _upstream_get
+
+        holder = _install_fake_http(monkeypatch, [_FakeResponse(404, text="nope")])
+
+        with pytest.raises(HTTPException):
+            await _upstream_get("https://example.test", {})
+
+        assert holder["calls"] == 1
+
+    async def test_forecast_serves_stale_cache_when_upstream_fails(self, monkeypatch, client):
+        """When the provider throttles, expired-but-present data beats none."""
+        from app.api.v1.endpoints import weather as w
+
+        w._WEATHER_CACHE.clear()
+        key = w._cache_key_forecast(13.7563, 100.5018, 2)
+        w._cache_set(w._WEATHER_CACHE, key, {"current": {"temperature_2m": 31}})
+        # Force the entry to look expired.
+        w._WEATHER_CACHE[key]["ts"] -= __import__("datetime").timedelta(seconds=10_000)
+
+        _install_fake_http(monkeypatch, [_FakeResponse(429, text="rate limited")])
+
+        resp = await client.get(
+            "/api/v1/weather/forecast",
+            params={"latitude": 13.7563, "longitude": 100.5018, "forecast_days": 2},
+        )
+
+        assert resp.status_code == 200, resp.text
+        body = resp.json()
+        assert body["current"]["temperature_2m"] == 31
+        assert body["_stale"] is True
+        assert body["_from_cache"] is True
+
+    async def test_forecast_still_502s_with_no_cached_data(self, monkeypatch, client):
+        from app.api.v1.endpoints import weather as w
+
+        w._WEATHER_CACHE.clear()
+        _install_fake_http(monkeypatch, [_FakeResponse(429, text="rate limited")])
+
+        resp = await client.get(
+            "/api/v1/weather/forecast",
+            params={"latitude": 1.2345, "longitude": 6.7890, "forecast_days": 2},
+        )
+
+        assert resp.status_code == 502

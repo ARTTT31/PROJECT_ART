@@ -9,6 +9,7 @@ Frontend widgets must never call weather / geocode providers directly from
 the browser — always go through these proxies.
 """
 
+import asyncio
 import logging
 from typing import Optional
 
@@ -65,6 +66,16 @@ def _cache_get(cache: dict, key: tuple, ttl: int) -> Optional[dict]:
     return entry["data"]
 
 
+def _cache_get_stale(cache: dict, key: tuple) -> Optional[dict]:
+    """Return an entry even if its TTL has passed.
+
+    Used as a last resort when the upstream provider is throttling: expired
+    weather beats no weather, and the caller flags it as stale.
+    """
+    entry = cache.get(key)
+    return entry["data"] if entry else None
+
+
 def _cache_set(cache: dict, key: tuple, data: dict) -> None:
     """Insert an entry, dropping expired rows and enforcing MAX_CACHE_ENTRIES.
 
@@ -101,20 +112,54 @@ def _cache_key_geocode(lat: float, lon: float, lang: str) -> tuple:
 # HTTP helpers
 # ═══════════════════════════════════════════════════════════════════════════════
 
-async def _upstream_get(url: str, params: dict, timeout_seconds: float = 10.0) -> dict:
-    """Thin wrapper around httpx async GET that raises 502 on upstream failure."""
-    try:
-        async with httpx.AsyncClient(
-            timeout=httpx.Timeout(timeout_seconds, connect=5.0),
-            follow_redirects=True,
-        ) as client:
-            response = await client.get(url, params=params)
-    except httpx.TimeoutException as exc:
-        logger.warning("Upstream %s timeout: %s", url, exc)
-        raise HTTPException(status_code=504, detail="Weather provider timed out")
-    except httpx.HTTPError as exc:
-        logger.warning("Upstream %s HTTP error: %s", url, exc)
-        raise HTTPException(status_code=502, detail="Weather provider unreachable")
+# Upstream providers throttle per-IP. Render instances share egress IPs, so a
+# 429 here is routine rather than exceptional — back off and retry before giving
+# up, and let the caller fall back to stale cache.
+RETRY_STATUSES = frozenset({429, 500, 502, 503, 504})
+RETRY_DELAYS = (0.6, 1.8)
+
+
+async def _upstream_get(
+    url: str,
+    params: dict,
+    timeout_seconds: float = 10.0,
+    retries: int = 2,
+) -> dict:
+    """GET an upstream provider, retrying throttled/transient failures.
+
+    Raises 502 (or 504 on timeout) once retries are exhausted.
+    """
+    last_response: httpx.Response | None = None
+
+    for attempt in range(retries + 1):
+        try:
+            async with httpx.AsyncClient(
+                timeout=httpx.Timeout(timeout_seconds, connect=5.0),
+                follow_redirects=True,
+            ) as client:
+                response = await client.get(url, params=params)
+        except httpx.TimeoutException as exc:
+            logger.warning("Upstream %s timeout: %s", url, exc)
+            raise HTTPException(status_code=504, detail="Weather provider timed out")
+        except httpx.HTTPError as exc:
+            logger.warning("Upstream %s HTTP error: %s", url, exc)
+            raise HTTPException(status_code=502, detail="Weather provider unreachable")
+
+        last_response = response
+        if response.status_code not in RETRY_STATUSES:
+            break
+
+        if attempt < retries:
+            delay = RETRY_DELAYS[min(attempt, len(RETRY_DELAYS) - 1)]
+            logger.warning(
+                "Upstream %s returned HTTP %s; retry %d/%d in %.1fs",
+                url, response.status_code, attempt + 1, retries, delay,
+            )
+            await asyncio.sleep(delay)
+
+    # `response` is bound by the loop above on every path that reaches here.
+    assert last_response is not None
+    response = last_response
 
     if response.status_code != 200:
         logger.warning(
@@ -166,7 +211,18 @@ async def get_forecast_proxy(
         "forecast_days": forecast_days,
     }
 
-    payload = await _upstream_get(OPEN_METEO_FORECAST_URL, params)
+    try:
+        payload = await _upstream_get(OPEN_METEO_FORECAST_URL, params)
+    except HTTPException:
+        stale = _cache_get_stale(_WEATHER_CACHE, cache_key)
+        if stale is not None:
+            logger.warning("Serving stale forecast for %s after upstream failure", cache_key)
+            stale = dict(stale)
+            stale["_from_cache"] = True
+            stale["_stale"] = True
+            return stale
+        raise
+
     _cache_set(_WEATHER_CACHE, cache_key, payload)
     return payload
 
@@ -197,7 +253,18 @@ async def get_air_quality_proxy(
         "timezone": timezone,
     }
 
-    payload = await _upstream_get(OPEN_METEO_AIR_QUALITY_URL, params)
+    try:
+        payload = await _upstream_get(OPEN_METEO_AIR_QUALITY_URL, params)
+    except HTTPException:
+        stale = _cache_get_stale(_AQI_CACHE, cache_key)
+        if stale is not None:
+            logger.warning("Serving stale air quality for %s after upstream failure", cache_key)
+            stale = dict(stale)
+            stale["_from_cache"] = True
+            stale["_stale"] = True
+            return stale
+        raise
+
     _cache_set(_AQI_CACHE, cache_key, payload)
     return payload
 
@@ -228,6 +295,17 @@ async def get_reverse_geocode_proxy(
         "localityLanguage": locality_language,
     }
 
-    payload = await _upstream_get(BIGDATACLOUD_REVERSE_URL, params)
+    try:
+        payload = await _upstream_get(BIGDATACLOUD_REVERSE_URL, params)
+    except HTTPException:
+        stale = _cache_get_stale(_GEOCODE_CACHE, cache_key)
+        if stale is not None:
+            logger.warning("Serving stale geocode for %s after upstream failure", cache_key)
+            stale = dict(stale)
+            stale["_from_cache"] = True
+            stale["_stale"] = True
+            return stale
+        raise
+
     _cache_set(_GEOCODE_CACHE, cache_key, payload)
     return payload
