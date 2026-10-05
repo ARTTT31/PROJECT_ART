@@ -16,7 +16,6 @@
   --apple-surface: #ffffff;      /* White tile on gray section */
   --apple-blue: #0066cc;         /* CTA primary button */
   --apple-blue-hover: #0071e3;   /* CTA hover */
-  --apple-blue-shadow: rgba(0, 102, 204, 0.35); /* CTA button glow */
 
   /* Apple Bento Tile Radius */
   --art-radius-tile: 18px;       /* Large bento tiles */
@@ -317,7 +316,7 @@
 /* ── Apple HIG Inputs ─────────────────────────────── */
 .apple-input {
   width: 100%;
-  border-radius: 12px;
+  border-radius: 11px;
   background-color: #f2f2f7;
   border: 1px solid transparent;
   padding: 10px 14px;
@@ -519,7 +518,7 @@ label {
   select {
     min-height: 48px;
     padding: 0.75rem 1rem;
-    border-radius: 12px;
+    border-radius: 11px;
     border: 1.5px solid #cbd5e1;
     background: white;
     color: var(--art-ink);
@@ -560,7 +559,7 @@ label {
     border-color: var(--art-primary);
     background: white;
     box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1), 0 0 0 1px var(--art-primary);
-    border-radius: 12px; /* Preserve rounded corners */
+    border-radius: 11px; /* Preserve rounded corners */
   }
 
   input[type="text"]:disabled,
@@ -642,17 +641,17 @@ label {
 
 .art-color-input::-webkit-color-swatch-wrapper {
   padding: 0;
-  border-radius: 12px;
+  border-radius: 11px;
 }
 
 .art-color-input::-webkit-color-swatch {
   border: none;
-  border-radius: 12px;
+  border-radius: 11px;
 }
 
 .art-color-input::-moz-color-swatch {
   border: none;
-  border-radius: 12px;
+  border-radius: 11px;
 }
 
 
@@ -684,7 +683,7 @@ button:disabled {
   gap: 0.5rem;
   min-height: 48px;
   padding: 0.75rem 1.5rem;
-  border-radius: 12px;
+  border-radius: 11px;
   font-weight: 650;
   font-size: var(--type-base);
   letter-spacing: 0;
@@ -785,7 +784,7 @@ button:disabled {
   flex: 0 0 auto;
   align-items: center;
   justify-content: center;
-  border-radius: 12px;
+  border-radius: 11px;
   border: 1px solid rgba(203, 213, 225, 0.75);
   background: rgba(255, 255, 255, 0.86);
   color: #475569;
@@ -878,7 +877,7 @@ button:disabled {
 [role="alert"],
 .alert {
   padding: 1rem 1.25rem;
-  border-radius: 12px;
+  border-radius: 11px;
   font-size: var(--type-sm);
   font-weight: 500;
   line-height: var(--line-snug);
@@ -1049,7 +1048,7 @@ button:disabled {
    ═══════════════════════════════════════════════════════ */
 
 .refresh-btn {
-  border-radius: 12px;
+  border-radius: 11px;
 }
 
 .refresh-btn:hover {
@@ -1209,7 +1208,7 @@ button:disabled {
 .code-canvas-wrapper {
   background: white;
   border: 2px dashed rgba(226, 232, 240, 0.8);
-  border-radius: 12px;
+  border-radius: 11px;
   padding: 2rem;
   display: flex;
   align-items: center;

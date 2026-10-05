@@ -1,8 +1,8 @@
 # Page Override: /apple-style (DEPRECATED)
 
 > [!WARNING]
-> This page guide is **DEPRECATED**. The project has transitioned to the **Ant Design Pro Enterprise Admin Style (v3.0)**. 
-> This document remains for historical reference or legacy display pages only. Do NOT use these rules for new dashboard widgets or system layouts.
+> This page guide is **DEPRECATED**. The project now follows **Apple Human Interface Guidelines (see MASTER.md v4.2)** across all pages.
+> This document remains for historical reference only. Do NOT use these rules for new pages, widgets, or system layouts.
 
 **Route:** `/apple-style`
 **File:** `frontend/src/app/apple-style/page.tsx`

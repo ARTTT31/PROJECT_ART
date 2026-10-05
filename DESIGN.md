@@ -16,7 +16,7 @@ ART Workspace uses a refined Web/Desktop UI based on Apple Human Interface Guide
 
 ## Typography
 
-Font stack: **Anuphan** (primary, supports Thai script) + **Inter** (Latin fallback) + `-apple-system, BlinkMacSystemFont`.
+Font stack: `-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", Inter` first for Latin, with **Anuphan** as the Thai fallback (SF Pro has no Thai glyphs). Anuphan stays primary for Thai script.
 
 Rules: sentence case only; `text-wrap: balance` for headings; max 75ch line length for body.
 
@@ -32,10 +32,10 @@ Rules: sentence case only; `text-wrap: balance` for headings; max 75ch line leng
 
 All product buttons follow the HIG specifications:
 
-- Radius: 12px for standard and icon buttons; `rounded-full` for pills and chips.
-- Hover: Subtle background shift or shadow.
-- Active: `active:scale-[0.98]` for a springy native feel.
-- Primary buttons use solid `#0071e3`.
+- Radius: 11px (`apple-md`) for standard and icon buttons; `rounded-full` for pills and chips.
+- Hover: Subtle background shift to `#0071e3` — no shadow or lift.
+- Active: `active:scale-[0.95]` for a springy native feel.
+- Primary buttons use solid `#0066cc`.
 - Icon-only controls must include an `aria-label` and a visible focus ring.
 
 ## Dialogs (Radix UI)
@@ -43,15 +43,15 @@ All product buttons follow the HIG specifications:
 All modal dialogs use `components/ui/Dialog.tsx`, wrapping Radix UI `@radix-ui/react-dialog` with HIG styles.
 
 Dialog rules:
-- Max border radius: `24px` (`rounded-[24px]`).
+- Border radius: `18px` (`rounded-[18px]`).
 - The close button (X) is built in.
-- Glassmorphism (backdrop blur) applies to the overlay only.
+- Only the overlay uses backdrop blur; the dialog surface is flat white with a hairline ring.
 
 ## Notifications, Alerts, Toasts, and Modals
 
 - In-app toasts: use the `useToast()` hook from `components/Toast/ToastProvider`.
 - Confirm / alert dialogs: use the wrappers in `frontend/src/utils/sweetalert.ts`.
-- Confirm buttons match primary button styling (`#0071e3`).
+- Confirm buttons match primary button styling (`#0066cc`).
 
 ## Drag and Drop (dnd-kit)
 

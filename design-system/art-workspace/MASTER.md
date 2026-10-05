@@ -1,7 +1,7 @@
 # ART Workspace — Design System Master Document
 
-**Version:** 4.1 (Apple HIG & SF Symbols Standard - Web/Desktop Focus)
-**Last Updated:** 2026-09-14
+**Version:** 4.2 (Apple HIG & SF Symbols Standard - Web/Desktop Focus)
+**Last Updated:** 2026-10-05
 **Philosophy:** Apple Human Interface Guidelines (HIG) — Clean typography, SF Symbols iconography, macOS materials & translucency, dynamic system colors, continuous squircle radii, and intuitive interactive states.
 
 ---
@@ -40,25 +40,26 @@ This document defines the strict rules for **ART Workspace**. All components, pa
   - Gray 1: `#8e8e93`, Gray 2: `#aeaeb2`, Gray 3: `#c7c7cc`, Gray 4: `#d1d1d6`, Gray 5: `#e5e5ea`, Gray 6: `#f2f2f7`
 - **Backgrounds:**
   - Primary Background: `#f5f5f7` (Grouped layout)
-  - Card Surfaces: `#ffffff` (Elevated with diffuse multi-layer shadow and 1px border `border-black/[0.06]`)
+  - Card Surfaces: `#ffffff` (Flat, 1px hairline border `border-black/[0.06]` — no card shadow)
   - Translucent Panels: `rgba(255, 255, 255, 0.82)` with `backdrop-blur-2xl`
 
 ### 3. Continuous Squircle Corner Radii
-- **Hero / Bento Cards / Widgets:** `24px` – `28px` (`rounded-3xl` / `rounded-[28px]`)
-- **Dialogs & Modals:** `24px` (`rounded-[24px]`)
-- **Inputs & Small Controls:** `12px` – `14px` (`rounded-xl`)
+- **Cards / Widgets:** `18px` (`rounded-[18px]`, `apple-lg`)
+- **Dialogs & Modals:** `18px` (`rounded-[18px]`)
+- **Inputs & Small Controls:** `11px` (`apple-md`)
 - **Pills, Badges & Segmented Controls:** `9999px` (`rounded-full`)
 
 ### 4. Iconography Style
 - Consistent line weight (`strokeWidth={1.75}`)
-- Tinted squircle icon badge containers (`bg-[#0071e3]/10 text-[#0071e3]`, etc.)
-- Enclosed icon buttons with springy click feedback (`active:scale-[0.98]`)
+- Tinted squircle icon badge containers (`bg-[#0066cc]/10 text-[#0066cc]`, etc.)
+- Enclosed icon buttons with springy click feedback (`active:scale-[0.95]`)
 
 ---
 
 ## 🔤 Typography
 
-**Font Stack:** `Anuphan, Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif`
+**Font Stack:** `-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'SF Pro', Inter, Anuphan, system-ui, sans-serif`  
+(SF Pro / system serve Latin; **Anuphan** is the Thai fallback and stays primary for Thai script.)
 
 ### Scale
 
@@ -84,6 +85,6 @@ This document defines the strict rules for **ART Workspace**. All components, pa
 
 - [ ] UI consistently uses `#0066cc` for primary actions (Apple Action Blue).
 - [ ] UI consistently uses `#f5f5f7` for page backgrounds and `#ffffff` for cards.
-- [ ] Corner radius values follow the squircle radii (`24px` for large cards, `12px` for buttons).
+- [ ] Corner radius values follow the scale (`18px` for cards/dialogs, `11px` for buttons/inputs, pill for CTAs).
 - [ ] Typography uses Anuphan for Thai, structured for clean layouts.
 - [ ] Layout is optimized for Web and Desktop experiences.
