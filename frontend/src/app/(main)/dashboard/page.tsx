@@ -233,6 +233,7 @@ export default function DashboardPage() {
             <button
               type="button"
               onClick={() => setShowConfigModal(true)}
+              data-testid="manage-widgets-button"
               className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-[13px] font-semibold text-[#1d1d1f] shadow-sm ring-1 ring-black/[0.08] transition-all duration-150 hover:bg-[#f5f5f7] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0066cc] focus-visible:ring-offset-2 active:scale-[0.95]"
               aria-label="จัดการวิดเจ็ต"
             >

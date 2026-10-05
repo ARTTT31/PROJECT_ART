@@ -52,6 +52,29 @@ _AUTH_LIMIT = f"{settings.RATE_LIMIT_AUTH_PER_MINUTE}/minute"
 _GENERAL_LIMIT = f"{settings.RATE_LIMIT_GENERAL_PER_MINUTE}/minute"
 
 
+@router.get("/csrf")
+async def get_csrf_token(request: Request):
+    """Issue (or echo) the CSRF token used for double-submit validation.
+
+    The token lives in a readable ``csrf_token`` cookie so the backend can compare
+    it against the ``X-CSRF-Token`` header. The cookie cannot always be read by
+    the browser (cross-site deployments), so the same value is returned in the
+    body and cached by the client.
+    """
+    token = request.cookies.get("csrf_token") or secrets.token_urlsafe(32)
+    response = JSONResponse(
+        content={"result": "success", "data": {"csrf_token": token}}
+    )
+    response.set_cookie(
+        key="csrf_token",
+        value=token,
+        max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
+        httponly=False,
+        **COOKIE_OPTIONS,
+    )
+    return response
+
+
 @router.post("/login", response_model=ResponseModel)
 @limiter.limit(_AUTH_LIMIT)
 async def login(
@@ -497,7 +520,7 @@ async def google_verify_token(
         "role": user.role,
         "avatar": user.avatar,
         "quick_links": user.quick_links,
-                    "accessible_pages": getattr(user, "accessible_pages", None),
+        "accessible_pages": getattr(user, "accessible_pages", None),
     }
 
     response = JSONResponse(content={"result": "success", "data": {"user": user_data}})
@@ -644,7 +667,7 @@ async def google_callback(
         "role": user.role,
         "avatar": user.avatar,
         "quick_links": user.quick_links,
-                    "accessible_pages": getattr(user, "accessible_pages", None),
+        "accessible_pages": getattr(user, "accessible_pages", None),
     }
 
     redirect_url = f"{frontend_redirect}/login-success"
@@ -738,7 +761,7 @@ async def get_session(request: Request, db: AsyncSession = Depends(get_db)):
         "role": user.role,
         "avatar": getattr(user, "avatar", None),
         "quick_links": getattr(user, "quick_links", None),
-                    "accessible_pages": getattr(user, "accessible_pages", None),
+        "accessible_pages": getattr(user, "accessible_pages", None),
     }
 
     return ResponseModel(
@@ -772,6 +795,8 @@ async def logout(
     response.delete_cookie("access_token", **COOKIE_OPTIONS)
     response.delete_cookie("refresh_token", **COOKIE_OPTIONS)
     response.delete_cookie("user", **COOKIE_OPTIONS)
+    # Drop the CSRF token too so the next login starts from a clean state.
+    response.delete_cookie("csrf_token", **COOKIE_OPTIONS)
 
     # Invalidate session in DB if session_id is provided
     try:

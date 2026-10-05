@@ -4,7 +4,7 @@ Application Configuration
 
 import os
 from typing import List
-from pydantic import field_validator
+from pydantic import ValidationInfo, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -39,6 +39,42 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     AUTO_CREATE_TABLES: bool = False
     AUTO_MIGRATE_COLUMNS: bool = False
+    # CSRF protection (double-submit cookie). Disable only for non-browser clients
+    # that cannot send the X-CSRF-Token header.
+    CSRF_PROTECTION_ENABLED: bool = True
+    # Interactive API docs (/docs, /redoc, /openapi.json). Off by default so
+    # production deployments do not expose the schema; enabled automatically in DEBUG.
+    ENABLE_API_DOCS: bool = False
+
+    @field_validator("SECRET_KEY")
+    @classmethod
+    def validate_secret_key(cls, v: str, info: ValidationInfo) -> str:
+        """Reject short or placeholder signing keys outside local development.
+
+        A weak SECRET_KEY lets anyone forge JWTs, so production (DEBUG=False)
+        refuses to boot with one. Local development stays permissive.
+        """
+        value = (v or "").strip()
+        if not value:
+            raise ValueError("SECRET_KEY must not be empty")
+        weak = {
+            "secret",
+            "secret-key",
+            "changeme",
+            "change-me",
+            "test",
+            "dev",
+            "your-secret-key",
+            "replace_with_a_long_random_secret",
+        }
+        is_debug = bool(info.data.get("DEBUG", False))
+        if not is_debug and (len(value) < 32 or value.lower() in weak):
+            raise ValueError(
+                "SECRET_KEY must be at least 32 characters and must not be a "
+                "placeholder when DEBUG is False. Generate one with:\n"
+                '  python -c "import secrets; print(secrets.token_urlsafe(48))"'
+            )
+        return value
 
     @field_validator("AUTO_MIGRATE_COLUMNS", mode="before")
     @classmethod
@@ -125,52 +161,6 @@ class Settings(BaseSettings):
             self.GOOGLE_REDIRECT_URI
             or os.getenv("BACKEND_GOOGLE_REDIRECT")
             or "http://localhost:8000/api/v1/auth/google/callback"
-        )
-
-    # ── Microsoft Entra ID ───────────────────────────────────────────────────
-    MICROSOFT_TENANT_ID: str = ""
-    MICROSOFT_CLIENT_ID: str = ""
-    MICROSOFT_CLIENT_SECRET: str = ""
-    MICROSOFT_REDIRECT_URI: str = ""
-
-    def require_microsoft_tenant_id(self) -> str:
-        """Return the configured Microsoft Tenant ID or raise a 500 error."""
-        val = (self.MICROSOFT_TENANT_ID or os.getenv("BACKEND_MICROSOFT_TENANT_ID") or "").strip()
-        if not val:
-            raise RuntimeError(
-                "Microsoft Tenant ID is not configured. Set MICROSOFT_TENANT_ID "
-                "(or BACKEND_MICROSOFT_TENANT_ID) in the environment."
-            )
-        return val
-
-    def require_microsoft_client_id(self) -> str:
-        """Return the configured Microsoft client ID or raise a 500 error."""
-        val = (self.MICROSOFT_CLIENT_ID or os.getenv("BACKEND_MICROSOFT_CLIENT_ID") or "").strip()
-        if not val:
-            raise RuntimeError(
-                "Microsoft Client ID is not configured. Set MICROSOFT_CLIENT_ID "
-                "(or BACKEND_MICROSOFT_CLIENT_ID) in the environment."
-            )
-        return val
-
-    def require_microsoft_client_secret(self) -> str:
-        """Return the configured Microsoft client secret or raise a 500 error."""
-        val = (
-            self.MICROSOFT_CLIENT_SECRET or os.getenv("BACKEND_MICROSOFT_CLIENT_SECRET") or ""
-        ).strip()
-        if not val:
-            raise RuntimeError(
-                "Microsoft Client Secret is not configured. Set MICROSOFT_CLIENT_SECRET "
-                "(or BACKEND_MICROSOFT_CLIENT_SECRET) in the environment."
-            )
-        return val
-
-    def get_microsoft_redirect_uri(self) -> str:
-        """Return the configured Microsoft redirect URI or a sensible default."""
-        return (
-            self.MICROSOFT_REDIRECT_URI
-            or os.getenv("BACKEND_MICROSOFT_REDIRECT")
-            or "http://localhost:8000/api/v1/auth/microsoft/callback"
         )
 
     model_config = SettingsConfigDict(

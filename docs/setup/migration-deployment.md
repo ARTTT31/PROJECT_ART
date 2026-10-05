@@ -29,7 +29,15 @@ To prevent Event Loop Blocked issues on FastAPI, we changed the database connect
 * Changed the session manager from `sessionmaker` to `async_sessionmaker` bound to `AsyncSession`
 * Upgraded the database driver in `requirements.txt` to use `asyncpg`
 
-### 2.3 Enabling SSL Security (Database Connection)
+### 2.3 Authentication Hardening (2026-10)
+The API now ships with several security defaults that deployments must be aware of:
+* `CSRF_PROTECTION_ENABLED` (default `True`): cookie-authenticated writes must send the `X-CSRF-Token` header echoing the readable `csrf_token` cookie. Login/register/refresh/Google endpoints stay exempt so a session can always be established or renewed.
+* `ENABLE_API_DOCS` (default `False`): `/docs`, `/redoc` and `/openapi.json` are only served when this is `True` (or when `DEBUG=True`).
+* `SECRET_KEY` must be at least 32 characters and must not be a placeholder when `DEBUG=False`, otherwise the API refuses to start.
+* Security headers: strict CSP with `connect-src` derived from `CORS_ORIGINS`, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy`, `Permissions-Policy`, and HSTS with `includeSubDomains; preload` outside `DEBUG`.
+* Google Sign-In uses the authorization-code flow (`/api/v1/auth/google` → `/api/v1/auth/google/callback`) instead of implicit tokens in the browser URL.
+
+### 2.4 Enabling SSL Security (Database Connection)
 Connecting to a Managed Database like Neon requires data transmission through an encrypted channel:
 * Embedded the `connect_args={"ssl": True}` parameter at the SQLAlchemy Engine level to force `asyncpg` to always operate via SSL Mode.
 
@@ -107,7 +115,7 @@ Developers can write code and test the system locally right away with native too
    ```
 5. Run the backend server:
    ```bash
-   uvicorn app.main:app --reload --port 8000
+   uvicorn app.main:app --reload --port 8080
    ```
 
 #### B. For Frontend (Next.js):

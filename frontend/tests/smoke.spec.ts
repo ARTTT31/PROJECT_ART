@@ -35,7 +35,9 @@ test.describe('Smoke — core page rendering', () => {
     // Without auth cookies, the dashboard must not expose the widget manager or
     // widget grid. Give it a moment to settle any redirect/loading.
     await page.waitForLoadState('networkidle')
-    const manageButton = page.getByRole('button', { name: /manage widgets/i })
+    // The Thai label is "จัดการวิดเจ็ต"; the test id keeps the assertion stable
+    // if the copy changes again.
+    const manageButton = page.getByTestId('manage-widgets-button')
     await expect(manageButton).toHaveCount(0)
   })
 })

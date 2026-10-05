@@ -11,7 +11,7 @@ Usage:
 
 import os
 import sys
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session

@@ -6,7 +6,6 @@ from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.exc import IntegrityError
-from datetime import datetime
 
 from app.models.user import User
 from app.schemas.user import UserCreate, UserUpdate, UserAdminUpdate, UserAdminCreate

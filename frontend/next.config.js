@@ -10,25 +10,13 @@ const nextConfig = {
   turbopack: {
     root: __dirname,
   },
-  images: {
-    remotePatterns: [
-      {
-        protocol: 'http',
-        hostname: 'localhost',
-      },
-      {
-        protocol: 'https',
-        hostname: '**',
-      },
-    ],
-  },
 
   experimental: {
-    optimizePackageImports: ['lucide-react', '@tanstack/react-query', 'date-fns'],
+    optimizePackageImports: ['lucide-react', '@tanstack/react-query'],
   },
 
   async rewrites() {
-    const apiBaseUrl = (process.env.API_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000').replace(/\/$/, '');
+    const apiBaseUrl = (process.env.API_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080').replace(/\/$/, '');
     return [
       {
         source: '/api/:path*',
@@ -68,10 +56,6 @@ const nextConfig = {
             value: 'DENY',
           },
           {
-            key: 'X-XSS-Protection',
-            value: '1; mode=block',
-          },
-          {
             key: 'Referrer-Policy',
             value: 'strict-origin-when-cross-origin',
           },
@@ -94,10 +78,18 @@ const withSerwist = require('@serwist/next').default({
 
 const { withSentryConfig } = require('@sentry/nextjs/config');
 
+// Source-map upload only runs when the Sentry org/project AND an auth token are
+// configured. Without them the plugin stays a no-op, so no placeholder values
+// are needed and CI builds never attempt an upload.
+const sentryUploadEnabled = Boolean(
+  process.env.SENTRY_AUTH_TOKEN && process.env.SENTRY_ORG && process.env.SENTRY_PROJECT,
+);
+
 const sentryOptions = {
   silent: true,
-  org: "your-org",
-  project: "your-project",
+  ...(process.env.SENTRY_ORG ? { org: process.env.SENTRY_ORG } : {}),
+  ...(process.env.SENTRY_PROJECT ? { project: process.env.SENTRY_PROJECT } : {}),
+  ...(sentryUploadEnabled ? {} : { sourcemaps: { disable: true } }),
 };
 
 const sentryWebpackOptions = {

@@ -53,12 +53,65 @@ async def registered_user(client):
 
 @pytest.fixture
 async def logged_in_user(client, registered_user):
-    """Login and return the response data with tokens."""
+    """Login, then echo the CSRF cookie so authenticated mutations pass.
+
+    Cookie-authenticated writes are protected by a double-submit token, so the
+    client has to send the same value the backend stored in `csrf_token`.
+    """
     resp = await client.post("/api/v1/auth/login", json={
         "email": "test@example.com",
         "password": "SecretPass123",
     })
+
+    token = client.cookies.get("csrf_token")
+    if not token:
+        csrf_resp = await client.get("/api/v1/auth/csrf")
+        token = csrf_resp.json()["data"]["csrf_token"]
+    client.headers["X-CSRF-Token"] = token
+
     return resp.json()
+
+
+# ── CSRF Protection Tests ─────────────────────────────────
+
+class TestCSRFProtection:
+    async def test_csrf_endpoint_issues_matching_cookie(self, client):
+        resp = await client.get("/api/v1/auth/csrf")
+        assert resp.status_code == 200
+        token = resp.json()["data"]["csrf_token"]
+        assert token
+        assert client.cookies.get("csrf_token") == token
+
+    async def test_authenticated_write_without_header_is_rejected(
+        self, client, logged_in_user
+    ):
+        del client.headers["X-CSRF-Token"]
+        resp = await client.post(
+            "/api/v1/profile/dashboard-layout",
+            json={"dashboard_layout": "[]"},
+        )
+        assert resp.status_code == 403
+        assert resp.json()["code"] == "csrf_failed"
+
+    async def test_authenticated_write_with_header_succeeds(
+        self, client, logged_in_user
+    ):
+        resp = await client.post(
+            "/api/v1/profile/dashboard-layout",
+            json={"dashboard_layout": "[]"},
+        )
+        assert resp.status_code == 200
+        assert resp.json()["result"] == "success"
+
+    async def test_anonymous_write_keeps_its_normal_auth_error(self, client):
+        """Anonymous writes must not be turned into CSRF failures."""
+        resp = await client.post(
+            "/api/v1/profile/dashboard-layout",
+            json={"dashboard_layout": "[]"},
+        )
+        assert resp.status_code in [401, 403]
+        if resp.status_code == 403:
+            assert resp.json().get("code") != "csrf_failed"
 
 
 # ── Health Check Tests ────────────────────────────────────

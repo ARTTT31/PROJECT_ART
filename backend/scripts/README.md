@@ -35,7 +35,7 @@ backend/scripts/
 
 | Script | What it tests | Prerequisites |
 |---|---|---|
-| `test_api.ps1` | API health + auth flow via PowerShell | Backend รันที่ `localhost:8000` |
+| `test_api.ps1` | API health + auth flow via PowerShell | Backend รันที่ `localhost:8080` |
 | `test_login.py` | Login endpoint + session creation | User อยู่แล้วในฐานข้อมูล |
 | `test_user_flow.py` | Register → Login → Profile refresh cycle | Fresh dev database |
 | `test_oil_prices.py` | `/api/v1/oil-prices/*` endpoints | Network to EPPO / cached data |

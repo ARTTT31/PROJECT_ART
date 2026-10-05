@@ -4,7 +4,6 @@ import '../../styles/pages/login.css';
 import { FormEvent, KeyboardEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { ArrowRight, AlertCircle, Check, Eye, EyeOff, Loader2, Lock, Mail } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/components/Toast/ToastProvider';
 
@@ -47,61 +46,20 @@ function LoginContent() {
   const passwordRef = useRef<HTMLInputElement>(null);
   const errorId = 'login-error-message';
 
-  const verifyGoogleToken = useCallback(async (token: string, isAccessToken: boolean = false) => {
+  /**
+   * Authorization-code flow: hand off to the backend, which builds the Google
+   * consent URL, exchanges the code server-side and then redirects back to
+   * /login-success with the session cookies already set. No OAuth tokens ever
+   * touch the browser URL or client-side code.
+   */
+  const handleGoogleSignIn = () => {
     setIsSubmitting(true);
     setError('');
-
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 45000);
-
-    try {
-      const response = await fetch(`${apiBaseUrl}/api/v1/auth/google/verify-token`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify(isAccessToken ? { access_token: token } : { id_token: token }),
-        signal: controller.signal,
-      });
-      clearTimeout(timeoutId);
-
-      const data = await response.json().catch(() => ({}));
-
-      if (response.ok && data.result === 'success') {
-        localStorage.setItem('user', JSON.stringify(data.data.user));
-        if (data.data.session_id) localStorage.setItem('session_id', data.data.session_id);
-        login(data.data.user);
-        toast.success('เข้าสู่ระบบสำเร็จ', `ยินดีต้อนรับกลับมา ${data.data.user.name || ''}!`);
-        setTimeout(() => router.push('/dashboard'), 300);
-      } else {
-        setError(data.detail || data.message || 'การยืนยันตัวตน Google ไม่สำเร็จ');
-        setErrorKey(k => k + 1);
-        setIsSubmitting(false);
-      }
-    } catch (err: any) {
-      clearTimeout(timeoutId);
-      console.error('Verify token error:', err);
-      if (err.name === 'AbortError') {
-        setError('การเชื่อมต่อเซิร์ฟเวอร์ใช้เวลานานเกินไป กรุณากดลองใหม่อีกครั้ง');
-      } else {
-        setError('เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง');
-      }
-      setErrorKey(k => k + 1);
-      setIsSubmitting(false);
-    }
-  }, [login, router, toast]);
-
-  const handleGoogleSignIn = () => {
-    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
-    if (!clientId) {
-      toast.error('Google Sign-In ไม่ได้ตั้งค่า Client ID');
-      return;
-    }
-    
-    toast.info("กำลังพับลิชไปยัง Google...");
-    const redirectUri = window.location.origin + window.location.pathname;
-    const scope = encodeURIComponent('email profile');
-    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=token&scope=${scope}`;
-    window.location.href = authUrl;
+    toast.info('กำลังนำคุณไปยัง Google...');
+    // Full-page navigation is required so the browser follows the backend's
+    // 302 redirect to Google; a router push would stay inside Next.js.
+    const googleAuthUrl = new URL(`${apiBaseUrl}/api/v1/auth/google`, window.location.origin);
+    window.location.href = googleAuthUrl.toString();
   };
 
 
@@ -116,25 +74,17 @@ function LoginContent() {
       setTimeout(() => emailRef.current?.focus(), 100);
     }
 
-    // Check for Google OAuth redirect hash
+    // Surface errors handed back by the OAuth provider / backend redirect.
     const hash = window.location.hash;
-    if (hash.includes('access_token=')) {
-      const params = new URLSearchParams(hash.replace('#', '?'));
-      const accessToken = params.get('access_token');
-      if (accessToken) {
-        toast.info("ได้รับข้อมูลจาก Google กำลังยืนยันตัวตน...");
-        // Clear hash to prevent resubmission
-        window.history.replaceState(null, '', window.location.pathname);
-        verifyGoogleToken(accessToken, true);
-      }
-    } else if (hash.includes('error=')) {
+    const search = window.location.search;
+    if (hash.includes('error=') || search.includes('error=')) {
       toast.error('การเข้าสู่ระบบด้วย Google ล้มเหลว');
       window.history.replaceState(null, '', window.location.pathname);
     }
 
     const timer = window.setInterval(() => setNow(new Date()), 1000);
     return () => window.clearInterval(timer);
-  }, [toast, verifyGoogleToken]);
+  }, [toast]);
 
   useEffect(() => {
     if (rateLimitSeconds <= 0) return;

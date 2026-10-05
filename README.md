@@ -8,8 +8,8 @@ Production URL: configure this in your deployment environment; do not commit a p
 
 The GitHub Actions pipeline (`ci.yml`) runs on every push and pull request to `main`:
 
-- **Backend:** Python 3.11 — flake8 lint (`--max-line-length=120`) + pytest
-- **Frontend:** Node 20 — ESLint + TypeScript type-check + Next.js production build
+- **Backend:** Python 3.11 — flake8 lint (`--max-line-length=120`) + mypy type check + pytest (coverage gate 40%)
+- **Frontend:** Node 20 — ESLint + TypeScript type-check + Next.js production build + Playwright smoke tests
 
 ## Documentation
 
@@ -21,11 +21,12 @@ The GitHub Actions pipeline (`ci.yml`) runs on every push and pull request to `m
 
 ### Architecture and Design
 
-- [Design Principles](docs/design/design-principles.md)
-- [Enterprise Admin UI Guidelines](docs/design/enterprise-admin-ui.md)
+- [Design System Summary](DESIGN.md) — the short version
+- [Design System Master](design-system/art-workspace/MASTER.md) — single source of truth (Apple HIG)
 - [Frontend Architecture Review](docs/design/frontend-arch-review.md)
-
 - [Accessibility Guide](docs/design/accessibility.md)
+
+> `docs/design/design-principles.md` and `docs/design/enterprise-admin-ui.md` are deprecated stubs that point at the master document.
 
 ### Product
 
@@ -54,7 +55,7 @@ The GitHub Actions pipeline (`ci.yml`) runs on every push and pull request to `m
 | Framework | FastAPI 0.111, Uvicorn |
 | ORM / DB | SQLAlchemy 2 async, Alembic migrations |
 | Database | PostgreSQL (Neon in production, SQLite for CI tests) |
-| Auth | JWT access + refresh tokens in HTTP-only cookies |
+| Auth | JWT access + refresh tokens in HTTP-only cookies + double-submit-cookie CSRF (`X-CSRF-Token`) |
 | Rate Limiting | SlowAPI |
 | Scraping | httpx (EPPO oil prices) |
 | Linting | flake8 6.1, mypy 1.9 |
@@ -111,11 +112,25 @@ The frontend will be available at [http://localhost:3000](http://localhost:3000)
 
 ## Environment Variables
 
-For security and proper environment isolation, environment variables are not stored directly in this document. Please reference the [.env.example](file:///.env.example) file at the root of the project to configure your environment variables:
+For security and proper environment isolation, environment variables are not stored directly in this document. Use the example files:
 
-1. Copy `.env.example` to create backend/frontend environment files (e.g. `.env` for backend, and `.env.local` for frontend).
+- [`.env.example`](.env.example) — combined reference for backend + frontend variables
+- [`backend/.env.example`](backend/.env.example) — backend `.env` template
+- [`frontend/.env.example`](frontend/.env.example) — frontend `.env.local` template
+
+1. Copy the relevant example file (`.env` for the backend, `.env.local` for the frontend).
 2. Replace the placeholders with your actual settings (secret keys, credentials, local API ports, and database urls).
 3. Do NOT commit the actual `.env` files to git repositories.
+
+Notable variables:
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `DEBUG` | `False` | Opt-in to development behaviour. Required `True` for local dev tooling such as `/docs`. |
+| `SECRET_KEY` | — | JWT signing key. When `DEBUG=False` it must be at least 32 characters and not a placeholder. |
+| `ENABLE_API_DOCS` | `False` | Serves `/docs`, `/redoc` and `/openapi.json`. Always on when `DEBUG=True`. |
+| `CSRF_PROTECTION_ENABLED` | `True` | Double-submit-cookie CSRF check for authenticated browser writes. Only disable for non-browser clients. |
+| `COOKIE_SECURE` / `COOKIE_SAMESITE` | derived | `True`/`none` on Render; `False`/`lax` for plain local HTTP. |
 
 ## Database Migrations
 
@@ -149,6 +164,7 @@ Backend checks:
 ```bash
 cd backend
 flake8 app --max-line-length=120 --exclude=__pycache__
+python -m mypy app
 python -m pytest -q --tb=short
 ```
 
@@ -198,7 +214,8 @@ PROJECT_ART/
 - Set `NEXT_PUBLIC_SITE_URL` to the canonical frontend URL.
 - Set `NEXT_PUBLIC_API_URL` to the public API URL, or leave it unset to route browser requests through `/api`.
 - When using the `/api` rewrite, set `API_INTERNAL_URL` to the backend URL. This server-only variable keeps the backend address out of browser bundles.
-- Set `NEXT_PUBLIC_GOOGLE_CLIENT_ID` for Google Sign-In support.
+- Google Sign-In is handled entirely by the backend authorization-code flow; no `NEXT_PUBLIC_GOOGLE_CLIENT_ID` is needed in the frontend.
+- Sentry source-map upload only runs when `SENTRY_AUTH_TOKEN`, `SENTRY_ORG` and `SENTRY_PROJECT` are all set.
 
 ### Release Checklist
 
@@ -209,10 +226,26 @@ PROJECT_ART/
 
 ### Google OAuth
 
+Sign-in uses the server-side authorization-code flow — no OAuth token ever reaches the browser URL:
+
+1. The login page sends the browser to `GET /api/v1/auth/google`.
+2. The backend builds the Google consent URL; Google redirects back to `GET /api/v1/auth/google/callback` with a `code`.
+3. The backend exchanges the code, verifies the `id_token` audience/signature, finds or creates the user, sets the session cookies and redirects to `${FRONTEND_URL}/login-success`.
+
 Configure these in Google Cloud Console:
 
 - Authorized JavaScript origins: the Vercel frontend URL
 - Authorized redirect URIs: the Render callback URL, ending with `/api/v1/auth/google/callback`
+
+Backend OAuth variables: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI` and `FRONTEND_URL` (the post-login redirect target).
+
+## Security
+
+- **CSRF (double-submit cookie).** Authenticated browser writes (`POST`/`PUT`/`PATCH`/`DELETE` under `/api/`) must echo the readable `csrf_token` cookie in the `X-CSRF-Token` header. Requests without any session cookie keep their normal 401, and `/login`, `/register`, `/refresh`, `/google*` and `/csrf` are exempt so a session can always be established or renewed. Failed checks return `403 {"code":"csrf_failed"}`.
+- **Frontend handling.** [`frontend/src/lib/api/fetchWithAuth.ts`](frontend/src/lib/api/fetchWithAuth.ts) reads the cookie (or bootstraps one from `GET /api/v1/auth/csrf`), attaches the header on mutating calls, and retries once on `csrf_failed`. Set `CSRF_PROTECTION_ENABLED=False` only for non-browser clients.
+- **API documentation.** `/docs`, `/redoc` and `/openapi.json` are served only when `DEBUG=True` or `ENABLE_API_DOCS=True`.
+- **Security headers.** The backend sends a strict CSP (`connect-src` is built from `CORS_ORIGINS`), `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy`, and HSTS (two years, `includeSubDomains; preload`) outside `DEBUG`.
+- **Signing keys.** With `DEBUG=False` the app refuses to start unless `SECRET_KEY` is at least 32 characters and not a known placeholder.
 
 ## Local Auth Cookie Note
 

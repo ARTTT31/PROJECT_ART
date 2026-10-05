@@ -1,5 +1,6 @@
 /**
- * Authenticated fetch helper with automatic cookie-based session/token refresh.
+ * Authenticated fetch helper with automatic cookie-based session/token refresh
+ * and double-submit-cookie CSRF protection.
  */
 
 import { parseJsonWithSchema, type ResponseModelParsed } from './schemas';
@@ -7,6 +8,57 @@ import type { z } from 'zod';
 
 // Leave this empty in browser deployments to use the same-origin /api rewrite.
 const API_URL = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '');
+
+// ── CSRF (double-submit cookie) ──────────────────────────────
+const CSRF_COOKIE = 'csrf_token';
+const CSRF_HEADER = 'X-CSRF-Token';
+const CSRF_ENDPOINT = '/api/v1/auth/csrf';
+const MUTATING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+
+// Fallback for deployments where the CSRF cookie lives on the API origin and
+// is therefore not readable from `document.cookie`.
+let csrfTokenCache: string | null = null;
+
+function readCsrfCookie(): string | null {
+  if (typeof document === 'undefined') return null;
+  const match = document.cookie
+    .split('; ')
+    .find((cookie) => cookie.startsWith(`${CSRF_COOKIE}=`));
+  if (!match) return null;
+  try {
+    return decodeURIComponent(match.slice(CSRF_COOKIE.length + 1));
+  } catch {
+    return null;
+  }
+}
+
+async function requestCsrfToken(): Promise<string | null> {
+  try {
+    const res = await fetch(`${API_URL}${CSRF_ENDPOINT}`, {
+      method: 'GET',
+      credentials: 'include',
+      headers: { Accept: 'application/json' },
+    });
+    if (!res.ok) return null;
+    const body = await res.json();
+    const token = body?.data?.csrf_token;
+    return typeof token === 'string' && token.length > 0 ? token : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Return the current CSRF token (cookie first, API fallback, then memory). */
+export async function getCsrfToken(): Promise<string | null> {
+  const fromCookie = readCsrfCookie();
+  if (fromCookie) {
+    csrfTokenCache = fromCookie;
+    return fromCookie;
+  }
+  if (csrfTokenCache) return csrfTokenCache;
+  csrfTokenCache = await requestCsrfToken();
+  return csrfTokenCache;
+}
 
 // ── Shared refresh state ─────────────────────────────────────
 let isRefreshing = false;
@@ -59,8 +111,10 @@ function clearAuth() {
 /**
  * Drop-in replacement for `fetch()` that:
  * 1. Automatically includes cookies with credentials: 'include'
- * 2. On 401, tries to refresh the token and retries once
- * 3. If refresh also fails with 401, clears auth state
+ * 2. Attaches the X-CSRF-Token header on mutating requests (double-submit cookie)
+ * 3. On 401, tries to refresh the token and retries once
+ * 4. On 403 `csrf_failed`, refreshes the CSRF token and retries once
+ * 5. If refresh also fails with 401, clears auth state
  */
 export async function fetchWithAuth(
   path: string,
@@ -77,6 +131,14 @@ export async function fetchWithAuth(
     headers.set('Content-Type', 'application/json');
   }
   fetchOptions.headers = headers;
+
+  const method = (fetchOptions.method || 'GET').toUpperCase();
+  const isMutating = MUTATING_METHODS.has(method);
+
+  if (isMutating && !headers.has(CSRF_HEADER)) {
+    const token = await getCsrfToken();
+    if (token) headers.set(CSRF_HEADER, token);
+  }
 
   const controller = new AbortController();
   // 45-second timeout for requests to survive backend cold starts
@@ -126,6 +188,35 @@ export async function fetchWithAuth(
       } else if (refreshResult?.isUnauthenticated) {
         // ONLY clear auth if backend confirmed the refresh token is genuinely expired/invalid
         clearAuth();
+      }
+    }
+
+    // ── Retry once when the CSRF token was missing/stale ─────
+    if (isMutating && response.status === 403) {
+      let csrfFailed = false;
+      try {
+        const body = await response.clone().json();
+        csrfFailed = body?.code === 'csrf_failed';
+      } catch {
+        // Non-JSON error body — nothing to recover from here.
+      }
+
+      if (csrfFailed) {
+        csrfTokenCache = null;
+        const freshToken = readCsrfCookie() ?? (await requestCsrfToken());
+        if (freshToken) {
+          csrfTokenCache = freshToken;
+          headers.set(CSRF_HEADER, freshToken);
+
+          const csrfRetryController = new AbortController();
+          const csrfRetryTimeoutId = setTimeout(() => csrfRetryController.abort(), 45000);
+          fetchOptions.signal = csrfRetryController.signal;
+          try {
+            response = await fetch(`${API_URL}${path}`, fetchOptions);
+          } finally {
+            clearTimeout(csrfRetryTimeoutId);
+          }
+        }
       }
     }
 

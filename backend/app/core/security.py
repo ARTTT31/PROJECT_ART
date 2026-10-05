@@ -2,7 +2,7 @@
 Security utilities for authentication and authorization
 """
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 from typing import Optional
 from jose import JWTError, jwt
 from argon2 import PasswordHasher

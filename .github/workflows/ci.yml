@@ -33,10 +33,15 @@ jobs:
           pip install flake8
           flake8 backend/app --max-line-length=120 --exclude=__pycache__
 
+      - name: Type check with mypy
+        working-directory: backend
+        run: mypy app
+
       - name: Run backend tests
         working-directory: backend
         env:
-          SECRET_KEY: ci-test-secret-key
+          # Must be >= 32 chars: config.py rejects weak keys when DEBUG=False.
+          SECRET_KEY: ci-test-secret-key-for-testing-only
           ALGORITHM: HS256
           ACCESS_TOKEN_EXPIRE_MINUTES: 30
           REFRESH_TOKEN_EXPIRE_DAYS: 7
@@ -68,6 +73,9 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
+
       - name: Lint
         run: npm run lint
 
@@ -77,7 +85,7 @@ jobs:
       - name: Build
         run: npm run build
         env:
-          NEXT_PUBLIC_API_URL: http://localhost:8000
+          NEXT_PUBLIC_API_URL: http://localhost:8080
 
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
