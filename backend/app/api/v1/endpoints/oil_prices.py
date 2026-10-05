@@ -8,11 +8,19 @@ Returns standardized retail prices as JSON for the frontend widget.
 import json
 import logging
 import datetime
-from fastapi import APIRouter
+from typing import Any
+from fastapi import APIRouter, Request
 import httpx
+
+from app.core.config import settings
+from app.core.rate_limit import limiter
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+
+# Unauthenticated by design so the widget renders on the login screen, but that
+# makes it an open relay to Bangchak/EPPO. Rate limiting bounds the abuse.
+_GENERAL_LIMIT = f"{settings.RATE_LIMIT_GENERAL_PER_MINUTE}/minute"
 
 BANGCHAK_OIL_URL = "https://oil-price.bangchak.co.th/ApiOilPrice2/en"
 EPPO_OIL_URL = (
@@ -96,7 +104,9 @@ def _parse_bangchak_data(data: list) -> list[dict]:
     return result
 
 
-_cache = {
+# Annotated explicitly: mypy infers dict[str, None] from bare None values and
+# then rejects every later assignment into it.
+_cache: dict[str, Any] = {
     "timestamp": None,
     "data": None,
 }
@@ -109,11 +119,12 @@ def _iso_now() -> str:
 
 
 @router.get("/health", response_model=dict)
-async def check_oil_prices_health():
+@limiter.limit(_GENERAL_LIMIT)
+async def check_oil_prices_health(request: Request):
     """
     Health check endpoint to verify oil price providers accessibility
     """
-    status = {
+    status: dict[str, Any] = {
         "service": "Oil Prices API",
         "bangchak_url": BANGCHAK_OIL_URL,
         "cache_age_seconds": None,
@@ -162,7 +173,8 @@ async def check_oil_prices_health():
 
 
 @router.get("/oil-prices", response_model=dict)
-async def get_oil_prices():
+@limiter.limit(_GENERAL_LIMIT)
+async def get_oil_prices(request: Request):
     """
     Fetch current retail fuel prices from Bangchak API (with fallback cache).
     """

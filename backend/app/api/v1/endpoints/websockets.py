@@ -1,15 +1,20 @@
 import json
 import logging
-from typing import List, Dict
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+
+from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
+from pydantic import BaseModel
+
+from app.api.dependencies import get_current_admin_user
+from app.models.user import User
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
+
 class ConnectionManager:
     def __init__(self):
-        self.active_connections: List[WebSocket] = []
+        self.active_connections: list[WebSocket] = []
 
     async def connect(self, websocket: WebSocket):
         await websocket.accept()
@@ -30,7 +35,9 @@ class ConnectionManager:
                 logger.error(f"Error sending message to client: {e}")
                 self.disconnect(connection)
 
+
 manager = ConnectionManager()
+
 
 @router.websocket("/notifications")
 async def websocket_notifications(websocket: WebSocket):
@@ -48,16 +55,21 @@ async def websocket_notifications(websocket: WebSocket):
         logger.error(f"WebSocket error: {e}")
         manager.disconnect(websocket)
 
-from pydantic import BaseModel
+
 class NotificationPayload(BaseModel):
     id: str
     type: str  # 'holiday' | 'weather' | 'oilprice' | 'system'
-    level: str # 'info' | 'warning' | 'danger'
+    level: str  # 'info' | 'warning' | 'danger'
     title: str
     body: str
 
+
 @router.post("/broadcast")
-async def broadcast_notification(payload: NotificationPayload):
-    """Admin endpoint to broadcast a notification to all connected WebSocket clients."""
-    await manager.broadcast(payload.dict())
-    return {"message": "Broadcast sent", "payload": payload.dict()}
+async def broadcast_notification(
+    payload: NotificationPayload,
+    current_user: User = Depends(get_current_admin_user),
+):
+    """Broadcast a notification to all connected WebSocket clients (admin only)."""
+    payload_data = payload.model_dump()
+    await manager.broadcast(payload_data)
+    return {"message": "Broadcast sent", "payload": payload_data}

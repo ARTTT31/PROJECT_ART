@@ -9,15 +9,24 @@ Frontend widgets must never call weather / geocode providers directly from
 the browser — always go through these proxies.
 """
 
-import datetime
 import logging
 from typing import Optional
 
 import httpx
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Request
+
+from app.core.config import settings
+from app.core.rate_limit import limiter
+from app.core.utils import utcnow
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+
+# These proxies are intentionally reachable without authentication so the login
+# page can still show weather, but that makes them a free relay to third-party
+# APIs for anyone who finds the URL. Rate limiting bounds that abuse without
+# breaking the unauthenticated widget.
+_GENERAL_LIMIT = f"{settings.RATE_LIMIT_GENERAL_PER_MINUTE}/minute"
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -40,19 +49,40 @@ FORECAST_CACHE_TTL = 600      # 10 minutes
 AIR_QUALITY_CACHE_TTL = 1800  # 30 minutes
 GEOCODE_CACHE_TTL = 86400     # 24 hours (geocoding is effectively static)
 
+# Upper bound per cache. Coordinates come from user input, so without a cap a
+# long-lived process (Render keeps instances warm between requests) would grow
+# these dicts without bound.
+MAX_CACHE_ENTRIES = 200
+
 
 def _cache_get(cache: dict, key: tuple, ttl: int) -> Optional[dict]:
     entry = cache.get(key)
     if not entry:
         return None
-    age = (datetime.datetime.utcnow() - entry["ts"]).total_seconds()
+    age = (utcnow() - entry["ts"]).total_seconds()
     if age > ttl:
         return None
     return entry["data"]
 
 
 def _cache_set(cache: dict, key: tuple, data: dict) -> None:
-    cache[key] = {"ts": datetime.datetime.utcnow(), "data": data}
+    """Insert an entry, dropping expired rows and enforcing MAX_CACHE_ENTRIES.
+
+    Expired entries are purged first because they are pure waste; if the cache is
+    still at the cap afterwards, the oldest inserted entry is evicted (dicts
+    preserve insertion order).
+    """
+    now = utcnow()
+
+    if len(cache) >= MAX_CACHE_ENTRIES:
+        stale = [k for k, v in cache.items() if (now - v["ts"]).total_seconds() > 0]
+        for k in stale:
+            del cache[k]
+        # Still full (all entries fresh) -> evict oldest first-in.
+        while len(cache) >= MAX_CACHE_ENTRIES:
+            del cache[next(iter(cache))]
+
+    cache[key] = {"ts": now, "data": data}
 
 
 def _cache_key_forecast(lat: float, lon: float, days: int) -> tuple:
@@ -110,7 +140,9 @@ async def _upstream_get(url: str, params: dict, timeout_seconds: float = 10.0) -
 # ═══════════════════════════════════════════════════════════════════════════════
 
 @router.get("/forecast")
+@limiter.limit(_GENERAL_LIMIT)
 async def get_forecast_proxy(
+    request: Request,
     latitude: float = Query(..., ge=-90.0, le=90.0, description="Latitude in decimal degrees"),
     longitude: float = Query(..., ge=-180.0, le=180.0, description="Longitude in decimal degrees"),
     timezone: str = Query("Asia/Bangkok", description="IANA timezone for response"),
@@ -144,7 +176,9 @@ async def get_forecast_proxy(
 # ═══════════════════════════════════════════════════════════════════════════════
 
 @router.get("/air-quality")
+@limiter.limit(_GENERAL_LIMIT)
 async def get_air_quality_proxy(
+    request: Request,
     latitude: float = Query(..., ge=-90.0, le=90.0),
     longitude: float = Query(..., ge=-180.0, le=180.0),
     timezone: str = Query("Asia/Bangkok"),
@@ -173,7 +207,9 @@ async def get_air_quality_proxy(
 # ═══════════════════════════════════════════════════════════════════════════════
 
 @router.get("/reverse-geocode")
+@limiter.limit(_GENERAL_LIMIT)
 async def get_reverse_geocode_proxy(
+    request: Request,
     latitude: float = Query(..., ge=-90.0, le=90.0),
     longitude: float = Query(..., ge=-180.0, le=180.0),
     locality_language: str = Query("th", description="ISO 639-1 language code for labels"),

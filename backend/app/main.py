@@ -101,7 +101,7 @@ async def lifespan(app: FastAPI):
                           "Prefer Alembic migrations in production.")
                 await conn.run_sync(base.Base.metadata.create_all)
 
-            if settings.AUTO_MIGRATE_COLUMNS:
+            if settings.AUTO_MIGRATE_COLUMNS_EFFECTIVE:
                 print("[DB WARNING] Running legacy schema repair; use Alembic migrations in production.")
                 await conn.run_sync(sync_db_columns)
 

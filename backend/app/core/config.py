@@ -111,6 +111,23 @@ class Settings(BaseSettings):
         return not self.DEBUG
 
     @property
+    def AUTO_MIGRATE_COLUMNS_EFFECTIVE(self) -> bool:
+        """Legacy schema repair is a development convenience only.
+
+        `sync_db_columns()` issues raw ALTER TABLE statements at startup, which
+        duplicates the authority of Alembic and can mask a genuinely missing
+        migration. Production (DEBUG=False) must therefore never run it, even if
+        the raw flag was explicitly set in the environment.
+        """
+        if not self.DEBUG and self.AUTO_MIGRATE_COLUMNS:
+            print(
+                "[CONFIG] AUTO_MIGRATE_COLUMNS is ignored when DEBUG=False; "
+                "use Alembic migrations in production."
+            )
+            return False
+        return self.AUTO_MIGRATE_COLUMNS
+
+    @property
     def COOKIE_SAMESITE(self) -> str:
         if "RENDER" in os.environ:
             return "none"
