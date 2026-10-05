@@ -118,238 +118,6 @@
    Do NOT apply these classes inside dense data widgets.
    ═══════════════════════════════════════════════════════ */
 
-/* Bento tile base — use as wrapper for all color-field tiles */
-.apple-tile {
-  overflow: hidden;
-  border-radius: var(--art-radius-tile);
-  transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1),
-              box-shadow 200ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.apple-tile:hover {
-  box-shadow: var(--shadow-glass);
-}
-
-/* Display heading — hero h1 style */
-.apple-heading-hero {
-  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', Anuphan, Inter, system-ui, sans-serif;
-  font-size: clamp(3rem, 6vw + 1rem, 4.25rem); /* 48–68px */
-  font-weight: 600;
-  letter-spacing: -0.03em;
-  line-height: 1.05;
-  text-wrap: balance;
-  color: var(--apple-ink);
-}
-
-/* Section display heading — h2 */
-.apple-heading-section {
-  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', Anuphan, Inter, system-ui, sans-serif;
-  font-size: clamp(2.5rem, 4vw + 1rem, 3rem); /* 40–48px */
-  font-weight: 600;
-  letter-spacing: -0.025em;
-  line-height: 1.08;
-  text-wrap: balance;
-  color: var(--apple-ink);
-}
-
-/* Tile heading — inside bento tile */
-.apple-heading-tile {
-  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', Anuphan, Inter, system-ui, sans-serif;
-  font-size: clamp(1.75rem, 2vw + 1rem, 2rem); /* 28–32px */
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  line-height: 1.1;
-  text-wrap: balance;
-}
-
-/* Body copy for showcase pages */
-.apple-body {
-  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', Anuphan, Inter, system-ui, sans-serif;
-  font-size: clamp(1.0625rem, 0.5vw + 0.9rem, 1.1875rem); /* 17–19px */
-  font-weight: 400;
-  line-height: 1.6;
-  color: var(--apple-muted);
-}
-
-/* CTA primary pill button */
-.apple-btn-primary {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  border-radius: 9999px;
-  background: var(--apple-blue);
-  color: white;
-  font-family: Anuphan, Inter, system-ui, sans-serif;
-  font-size: 1.0625rem; /* 17px */
-  font-weight: 600;
-  padding: 0.75rem 1.75rem;
-  min-height: 48px;
-  border: none;
-  cursor: pointer;
-  transition: background-color 200ms cubic-bezier(0.4, 0, 0.2, 1),
-              box-shadow 200ms cubic-bezier(0.4, 0, 0.2, 1),
-              transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.apple-btn-primary:hover:not(:disabled) {
-  background: var(--apple-blue-hover);
-}
-
-.apple-btn-primary:active:not(:disabled) {
-  transform: scale(0.98);
-}
-
-.apple-btn-primary:focus-visible {
-  outline: 2px solid var(--apple-blue);
-  outline-offset: 2px;
-}
-
-/* CTA ghost pill button */
-.apple-btn-ghost {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.375rem;
-  border-radius: 9999px;
-  background: transparent;
-  color: var(--apple-blue);
-  font-family: Anuphan, Inter, system-ui, sans-serif;
-  font-size: 1.0625rem;
-  font-weight: 600;
-  padding: 0.75rem 1.75rem;
-  min-height: 48px;
-  border: none;
-  cursor: pointer;
-  transition: background-color 200ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.apple-btn-ghost:hover:not(:disabled) {
-  background: var(--apple-bg);
-}
-
-.apple-btn-ghost:focus-visible {
-  outline: 2px solid var(--apple-blue);
-  outline-offset: 2px;
-}
-
-/* Apple nav — sticky translucent */
-.apple-nav {
-  position: sticky;
-  top: 0;
-  z-index: var(--z-sticky);
-  height: var(--apple-nav-height);
-  background: var(--apple-nav-bg);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border-bottom: 1px solid var(--apple-nav-border);
-}
-
-/* Icon badge inside a color tile */
-.apple-tile-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 48px;
-  height: 48px;
-  border-radius: var(--art-radius-tile-icon);
-  background: rgba(255, 255, 255, 0.20);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-}
-
-/* Icon badge inside a white card */
-.apple-card-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 48px;
-  height: 48px;
-  border-radius: var(--art-radius-tile-icon-sm);
-  background: var(--apple-bg);
-}
-
-/* ── Apple HIG Card Container ─────────────────────── */
-.apple-card {
-  background: #ffffff;
-  border-radius: var(--art-radius-lg);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.apple-card-hover:hover {
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
-}
-
-/* ── Apple HIG Segmented Control ──────────────────── */
-.apple-segmented-control {
-  display: inline-flex;
-  align-items: center;
-  padding: 3px;
-  border-radius: 9999px;
-  background-color: #e5e5ea;
-  border: none;
-}
-
-.apple-segmented-item {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 9999px;
-  padding: 4px 14px;
-  font-size: 13px;
-  font-weight: 600;
-  color: #6e6e73;
-  transition: all 180ms cubic-bezier(0.4, 0, 0.2, 1);
-  border: none;
-  cursor: pointer;
-  background: transparent;
-}
-
-.apple-segmented-item.active {
-  background-color: #ffffff;
-  color: #1d1d1f;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.06);
-}
-
-/* ── Apple HIG Inputs ─────────────────────────────── */
-.apple-input {
-  width: 100%;
-  border-radius: 11px;
-  background-color: #f2f2f7;
-  border: 1px solid transparent;
-  padding: 10px 14px;
-  font-size: 15px;
-  color: #1d1d1f;
-  transition: all 150ms ease-in-out;
-}
-
-.apple-input:focus {
-  background-color: #ffffff;
-  border-color: #0066cc;
-  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.20);
-  outline: none;
-}
-
-.apple-input::placeholder {
-  color: #86868b;
-}
-
-/* ── Apple HIG Glass Panel ────────────────────────── */
-.apple-glass-panel {
-  background: rgba(255, 255, 255, 0.82);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border: 1px solid rgba(0, 0, 0, 0.06);
-}
-
-/* Theme transition (applied via class, not globally) */
-.theme-transitioning html,
-.theme-transitioning body {
-  transition: background-color 0.3s, color 0.3s;
-}
-
 /* ── Global Typography Polish ────────────── */
 html {
   -webkit-font-smoothing: antialiased;
@@ -436,72 +204,10 @@ label {
   margin-bottom: 0.5rem;
 }
 
-/* Reduced motion support — comprehensive block lives below near accessibility utilities */
-
-/* ═══════════════════════════════════════════════════════
-   LIQUID GLASS CARD SYSTEM - iOS Style
-   ═══════════════════════════════════════════════════════ */
-
-.premium-card {
-  position: relative;
-  border-radius: var(--art-radius-lg);
-  background: #ffffff;
-  box-shadow: var(--shadow-glass);
-  transition: box-shadow 200ms cubic-bezier(0.4, 0, 0.2, 1), transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
-  overflow: hidden;
-}
-
-.premium-card:hover {
-  box-shadow: var(--shadow-glass-lg);
-}
-
-/* Override hover for weather widget – keep static */
-.premium-card.weather-widget-no-hover {
-  transform: none !important;
-  transition: none !important;
-  will-change: auto;
-  min-height: 200px;
-}
-
-.premium-card.weather-widget-no-hover:hover {
-  transform: none !important;
-  box-shadow: var(--shadow-glass) !important;
-}
-
-.ios-weather-card {
-  position: relative;
-  min-height: 200px;
-  overflow: hidden;
-  border-radius: var(--art-radius-lg);
-  color: white;
-  background: var(--art-gradient);
-  box-shadow: none;
-}
-
 .art-app-shell {
   min-height: 100vh;
   background: var(--art-page-bg);
   overflow-x: hidden;
-}
-
-.art-gradient-panel {
-  position: relative;
-  overflow: hidden;
-  color: white;
-  background: var(--art-gradient);
-}
-
-.art-gradient-panel::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: none;
-  pointer-events: none;
-}
-
-.art-gradient-panel > * {
-  position: relative;
-  z-index: 1;
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -575,85 +281,6 @@ label {
     border-color: #e2e8f0;
   }
 }
-
-.art-input {
-  min-height: 52px;
-  padding: 0.875rem 1.25rem;
-  border-radius: var(--art-radius-sm);
-  border: 1.5px solid rgba(203, 213, 225, 0.4);
-  background: var(--glass-white-80);
-  color: var(--art-ink);
-  font-weight: 500;
-  font-size: 0.9375rem;
-  box-shadow: var(--shadow-glass-sm);
-  transition: all 250ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.art-input::placeholder {
-  color: #6b7280;
-  font-weight: 500;
-}
-
-.art-input:hover {
-  border-color: rgba(148, 163, 184, 0.5);
-  background: var(--glass-white-90);
-}
-
-.art-input:focus {
-  border-color: var(--art-primary);
-  background: white;
-  box-shadow: 
-    0 0 0 4px rgba(0, 102, 204, 0.12),
-    var(--shadow-glass);
-  outline: none;
-}
-
-.art-input:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.art-color-input {
-  width: 56px;
-  min-width: 56px;
-  height: 52px;
-  padding: 4px;
-  border-radius: 16px;
-  border: 1.5px solid rgba(203, 213, 225, 0.8);
-  background: #ffffff;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
-  cursor: pointer;
-  overflow: hidden;
-  appearance: none;
-  -webkit-appearance: none;
-}
-
-.art-color-input:hover {
-  border-color: rgba(148, 163, 184, 0.9);
-  background: #f8fafc;
-}
-
-.art-color-input:focus-visible {
-  outline: none;
-  border-color: var(--art-primary);
-  box-shadow: 0 0 0 4px rgba(0, 102, 204, 0.12);
-}
-
-.art-color-input::-webkit-color-swatch-wrapper {
-  padding: 0;
-  border-radius: 11px;
-}
-
-.art-color-input::-webkit-color-swatch {
-  border: none;
-  border-radius: 11px;
-}
-
-.art-color-input::-moz-color-swatch {
-  border: none;
-  border-radius: 11px;
-}
-
 
 /* ═══════════════════════════════════════════════════════
    iOS-STYLE BUTTONS - Liquid Glass
@@ -775,101 +402,6 @@ button:disabled {
   outline-offset: 2px;
 }
 
-.art-icon-button,
-.refresh-btn,
-.weather-refresh-btn {
-  display: inline-flex;
-  width: 44px;
-  height: 44px;
-  flex: 0 0 auto;
-  align-items: center;
-  justify-content: center;
-  border-radius: 11px;
-  border: 1px solid rgba(203, 213, 225, 0.75);
-  background: rgba(255, 255, 255, 0.86);
-  color: #475569;
-  box-shadow: var(--shadow-glass-sm);
-  transition: background-color 180ms cubic-bezier(0.4, 0, 0.2, 1),
-    border-color 180ms cubic-bezier(0.4, 0, 0.2, 1),
-    color 180ms cubic-bezier(0.4, 0, 0.2, 1),
-    box-shadow 180ms cubic-bezier(0.4, 0, 0.2, 1),
-    transform 180ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.art-icon-button:hover:not(:disabled),
-.refresh-btn:hover:not(:disabled),
-.weather-refresh-btn:hover:not(:disabled) {
-  border-color: rgba(0, 102, 204, 0.45);
-  background: white;
-  color: var(--art-primary-dark);
-  transform: translateY(-1px);
-  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.08);
-}
-
-.art-icon-button:active:not(:disabled),
-.refresh-btn:active:not(:disabled),
-.weather-refresh-btn:active:not(:disabled) {
-  transform: translateY(0);
-}
-
-.art-icon-button:focus-visible,
-.refresh-btn:focus-visible,
-.weather-refresh-btn:focus-visible,
-.art-chip-button:focus-visible {
-  outline: var(--focus-ring-width) solid var(--focus-ring-color);
-  outline-offset: var(--focus-ring-offset);
-}
-
-.art-chip-button {
-  display: inline-flex;
-  min-height: 32px;
-  align-items: center;
-  justify-content: center;
-  gap: 0.35rem;
-  border-radius: 999px;
-  border: 1px solid rgba(203, 213, 225, 0.75);
-  background: rgba(255, 255, 255, 0.78);
-  padding: 0.35rem 0.75rem;
-  color: #475569;
-  font-size: 0.75rem;
-  font-weight: 700;
-  line-height: 1;
-  box-shadow: var(--shadow-glass-sm);
-}
-
-.art-chip-button:hover:not(:disabled) {
-  border-color: rgba(0, 102, 204, 0.35);
-  background: white;
-  color: var(--art-primary-dark);
-}
-
-.art-chip-button[aria-pressed="true"],
-.art-chip-button.is-active {
-  border-color: #0f172a;
-  background: #0f172a;
-  color: white;
-  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.16);
-}
-
-.art-toast-item {
-  width: min(20rem, calc(100vw - 2rem));
-  border-radius: var(--art-radius-lg);
-  box-shadow: var(--shadow-glass);
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-}
-
-.art-toast-item .art-icon-button {
-  color: currentColor;
-  opacity: 0.72;
-}
-
-.art-toast-item .art-icon-button:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.7) !important;
-  color: currentColor;
-  opacity: 1;
-}
-
 /* ═══════════════════════════════════════════════════════
    ALERT & STATE MESSAGES
    ═══════════════════════════════════════════════════════ */
@@ -928,166 +460,7 @@ button:disabled {
 }
 
 
-.ios-weather-sheen {
-  position: absolute;
-  inset: 0;
-  background:
-    linear-gradient(120deg, rgba(255, 255, 255, 0.24), transparent 34%),
-    linear-gradient(180deg, transparent, rgba(8, 47, 73, 0.18));
-  pointer-events: none;
-}
 
-/* ═══════════════════════════════════════════════════════
-   GLASS PANELS & SURFACES - iOS Style
-   ═══════════════════════════════════════════════════════ */
-
-.glass-panel {
-  background: var(--glass-white-20);
-  border: 1px solid var(--art-border);
-  border-radius: var(--art-radius-sm);
-  box-shadow: var(--shadow-glass-sm);
-  transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
-  overflow: hidden;
-}
-
-.glass-panel::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, transparent 100%);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 300ms ease;
-}
-
-.glass-panel:hover {
-  background: var(--glass-white-40);
-  border-color: var(--art-border-strong);
-  box-shadow: var(--shadow-glass);
-  transform: translateY(-2px);
-  will-change: transform;
-}
-
-.glass-panel:hover::before {
-  opacity: 1;
-}
-
-.art-surface {
-  border-radius: var(--art-radius-lg);
-  border: 1px solid var(--art-border);
-  background: var(--glass-white-90);
-  box-shadow: var(--shadow-glass);
-  transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.art-surface:hover {
-  box-shadow: var(--shadow-glass-lg);
-}
-
-/* ═══════════════════════════════════════════════════════
-   WIDGET COMPONENTS - Liquid Glass
-   ═══════════════════════════════════════════════════════ */
-
-.widget-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1.25rem 1.5rem;
-  background: linear-gradient(180deg, var(--glass-white-10) 0%, transparent 100%);
-  border-radius: var(--art-radius-lg) var(--art-radius-lg) 0 0;
-  transition: all 300ms ease;
-}
-
-.widget-header-icon {
-  width: 48px;
-  height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--art-radius-sm);
-  font-size: 1.25rem;
-  transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: var(--shadow-glass-sm);
-}
-
-.widget-header-icon:hover {
-  transform: scale(1.05) translateY(-1px);
-  box-shadow: var(--shadow-glass);
-}
-
-.widget-header-icon.primary {
-  background: linear-gradient(135deg, rgba(0, 102, 204, 0.2), rgba(0, 102, 204, 0.15));
-  color: var(--art-primary);
-  border: 1px solid rgba(0, 102, 204, 0.2);
-}
-
-.widget-header-icon.warning {
-  background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(217, 119, 6, 0.15));
-  color: #f59e0b;
-  border: 1px solid rgba(245, 158, 11, 0.2);
-}
-
-.widget-header-icon.success {
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.15));
-  color: #10b981;
-  border: 1px solid rgba(16, 185, 129, 0.2);
-}
-
-.widget-header-icon.info {
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(79, 70, 229, 0.15));
-  color: #6366f1;
-  border: 1px solid rgba(99, 102, 241, 0.2);
-}
-
-.widget-body {
-  padding: 0 1.75rem 1.75rem 1.75rem;
-}
-
-/* ═══════════════════════════════════════════════════════
-   INTERACTIVE BUTTONS - iOS Style
-   ═══════════════════════════════════════════════════════ */
-
-.refresh-btn {
-  border-radius: 11px;
-}
-
-.refresh-btn:hover {
-  color: var(--art-primary-dark);
-}
-
-.refresh-btn:active {
-  transform: translateY(0);
-}
-
-.refresh-btn.loading {
-  animation: spin 1s linear infinite;
-  border-color: var(--art-primary);
-  color: var(--art-primary);
-  background: rgba(0, 102, 204, 0.08);
-}
-
-.weather-refresh-btn {
-  background: var(--glass-white-20);
-  color: white;
-  border-color: var(--art-border);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-}
-
-.weather-refresh-btn:hover {
-  background: var(--glass-white-40);
-  border-color: var(--art-border-strong);
-  transform: translateY(-1px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-}
-
-.weather-refresh-btn:active {
-  transform: translateY(0);
-}
-
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
 
 /* Skeleton Loading */
 .skeleton {
@@ -1102,127 +475,6 @@ button:disabled {
   0% { background-position: 200% 0; }
   100% { background-position: -200% 0; }
 }
-
-/* ═══════════════════════════════════════════════════════
-   ACTION BUTTONS & ITEM STYLES - Liquid Glass
-   ═══════════════════════════════════════════════════════ */
-
-.action-btn {
-  gap: 0.625rem;
-  font-size: 0.875rem;
-}
-
-.action-btn:hover {
-  color: var(--art-primary-dark);
-}
-
-.action-btn:active {
-  transform: translateY(0);
-}
-
-.action-btn.primary {
-  color: #ffffff;
-}
-
-.action-btn.primary:hover {
-  color: white;
-}
-
-.oil-price-item {
-  background: var(--glass-white-90);
-  border: 1.5px solid rgba(226, 232, 240, 0.4);
-  border-radius: var(--art-radius-md);
-  padding: 1.5rem;
-  min-height: 130px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  box-shadow: var(--shadow-glass-sm);
-  transition: all 250ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.oil-price-item:hover {
-  background: white;
-  border-color: rgba(0, 102, 204, 0.4);
-  box-shadow: var(--shadow-glass);
-  transform: translateY(-2px);
-}
-
-.todo-item {
-  background: var(--glass-white-90);
-  border: 1.5px solid rgba(226, 232, 240, 0.4);
-  border-radius: var(--art-radius-md);
-  padding: 1rem 1.5rem;
-  min-height: 64px;
-  display: flex;
-  align-items: center;
-  box-shadow: var(--shadow-glass-sm);
-  transition: all 250ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.todo-item:hover {
-  background: white;
-  border-color: rgba(0, 102, 204, 0.4);
-  box-shadow: var(--shadow-glass);
-  transform: translateY(-1px);
-}
-
-.todo-item.completed {
-  opacity: 0.6;
-  background: var(--glass-white-60);
-}
-
-.todo-item.completed .todo-text {
-  text-decoration: line-through;
-  color: #94a3b8;
-}
-
-.oil-price-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 0.25rem 0.75rem;
-  border-radius: 999px;
-  font-size: 0.75rem;
-  font-weight: 600;
-}
-
-.oil-price-badge.up {
-  background: rgba(239, 68, 68, 0.1);
-  color: #ef4444;
-}
-
-.oil-price-badge.down {
-  background: rgba(34, 197, 94, 0.1);
-  color: #22c55e;
-}
-
-.oil-price-badge.same {
-  background: rgba(148, 163, 184, 0.1);
-  color: #64748b;
-}
-
-
-
-/* Barcode/QR Canvas */
-.code-canvas-wrapper {
-  background: white;
-  border: 2px dashed rgba(226, 232, 240, 0.8);
-  border-radius: 11px;
-  padding: 2rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 280px;
-}
-
-.code-canvas {
-  max-width: 100%;
-  height: auto;
-  border-radius: 8px;
-}
-
-
 
 /* ═══════════════════════════════════════════════════════
    SMOOTH ANIMATIONS - iOS Fluid Motion
@@ -1258,20 +510,7 @@ button:disabled {
   animation: slideIn 400ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-@keyframes scaleIn {
-  from {
-    opacity: 0;
-    transform: scale(0.92);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
 
-.animate-scale-in {
-  animation: scaleIn 350ms cubic-bezier(0.4, 0, 0.2, 1);
-}
 
 @keyframes pulse-slow {
   0%, 100% {
@@ -1282,11 +521,6 @@ button:disabled {
     opacity: 0.85;
     transform: scale(0.98);
   }
-}
-
-.animate-pulse-slow {
-  animation: pulse-slow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  will-change: opacity, transform;
 }
 
 @keyframes fade-in {
@@ -1300,10 +534,6 @@ button:disabled {
   }
 }
 
-.animate-fade-in {
-  animation: fade-in 350ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
 @keyframes shimmer {
   0% {
     background-position: -1000px 0;
@@ -1313,41 +543,9 @@ button:disabled {
   }
 }
 
-.animate-shimmer {
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
-  background-size: 1000px 100%;
-  animation: shimmer 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  will-change: background-position;
-}
 
-@keyframes soft-breathe {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.01); }
-  100% { transform: scale(1); }
-}
 
-.animate-wobble {
-  animation: soft-breathe 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-}
 
-/* Responsive */
-@media (max-width: 768px) {
-  .premium-card {
-    border-radius: var(--art-radius-md);
-  }
-  
-  .widget-header {
-    padding: 1rem;
-  }
-  
-  .widget-body {
-    padding: 1rem;
-  }
-  
-  .glass-panel {
-    border-radius: 10px;
-  }
-}
 
 /* ═══════════════════════════════════════════════════════
    CUSTOM SCROLLBAR - Liquid Glass Style
@@ -1388,50 +586,6 @@ button:disabled {
 
 button:focus-visible {
   outline-offset: 4px;
-}
-
-/* ═══════════════════════════════════════════════════════
-   SMOOTH TRANSITIONS - iOS Fluid Experience
-   ═══════════════════════════════════════════════════════ */
-
-/* NOTE: หลีกเลี่ยงการใส่ transition แบบครอบทุก element (*)
-   เพราะทำให้ UI หน่วง/ไม่คม และซ้อนกับ Tailwind utilities
-   จึงกำหนดเฉพาะองค์ประกอบที่ควรมี transition เท่านั้น */
-
-/* Only add will-change on hover/interaction — not by default */
-.premium-card:hover,
-.glass-panel:hover {
-  will-change: transform;
-}
-
-button,
-a,
-input[type="text"],
-input[type="email"],
-input[type="password"],
-input[type="search"],
-input[type="number"],
-textarea,
-select,
-.premium-card,
-.glass-panel,
-.art-surface,
-.refresh-btn,
-.action-btn {
-  transition-property: background-color, border-color, color, opacity, box-shadow, transform, filter;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  transition-duration: 200ms;
-}
-
-/* Disable transitions for immediate feedback elements */
-input[type="checkbox"],
-input[type="radio"],
-button:active,
-.no-transition,
-.premium-card.weather-widget-no-hover,
-.premium-card.weather-widget-no-hover * {
-  transition-duration: 0ms !important;
-  transition-property: none !important;
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -1503,44 +657,6 @@ input[type="radio"],
   justify-content: center;
 }
 
-/* ═══════════════════════════════════════════════════════
-   LIQUID GLASS UTILITY CLASSES
-   ═══════════════════════════════════════════════════════ */
-
-.glass-blur-sm {
-  background: rgba(255, 255, 255, 0.85);
-}
-
-.glass-blur-md {
-  background: rgba(255, 255, 255, 0.80);
-}
-
-.glass-blur-lg {
-  background: rgba(255, 255, 255, 0.70);
-}
-
-.glass-blur-xl {
-  background: rgba(255, 255, 255, 0.60);
-}
-
-.glass-surface {
-  background: var(--glass-white-90);
-  border: 1px solid var(--art-border);
-  box-shadow: var(--shadow-glass);
-}
-
-.glass-border {
-  border: 1px solid var(--art-border);
-}
-
-.glass-border-strong {
-  border: 1px solid var(--art-border-strong);
-}
-
-.shadow-glass-sm {
-  box-shadow: var(--shadow-glass-sm);
-}
-
 .shadow-glass {
   box-shadow: var(--shadow-glass);
 }
@@ -1567,41 +683,11 @@ input[type="radio"],
 
 /* High Contrast Mode Support */
 @media (prefers-contrast: high) {
-  .premium-card {
-    border: 2px solid currentColor;
-  }
-  
   button:not(:disabled) {
     border: 2px solid currentColor;
   }
   
-  .widget-header-icon {
-    border: 2px solid currentColor;
   }
-}
-
-/* ═══════════════════════════════════════════════════════
-   EDIT MODE WIDGET STYLES - Liquid Glass
-   ═══════════════════════════════════════════════════════ */
-
-.widget-edit-mode {
-  border-style: dashed !important;
-  border-color: var(--art-primary) !important;
-  border-width: 2px !important;
-  position: relative;
-  background: linear-gradient(135deg, rgba(0, 102, 204, 0.02), rgba(0, 102, 204, 0.03)) !important;
-}
-
-.widget-edit-mode::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(circle at 50% 50%, rgba(0, 102, 204, 0.08), transparent 70%);
-  pointer-events: none;
-  z-index: 5;
-  border-radius: inherit;
-  animation: pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
 
 @keyframes pulse-glow {
   0%, 100% {
@@ -1610,20 +696,6 @@ input[type="radio"],
   50% {
     opacity: 1;
   }
-}
-
-.widget-drop-indicator {
-  border: 2px dashed var(--art-primary);
-  background: linear-gradient(135deg, rgba(0, 102, 204, 0.06), rgba(0, 102, 204, 0.08));
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border-radius: var(--art-radius-lg);
-  min-height: 200px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: var(--shadow-glass-sm);
-  transition: all 250ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Weather styles moved to: src/styles/pages/weather.css */
@@ -1640,15 +712,7 @@ input[type="radio"],
   }
 }
 
-.animate-slide-in-right {
-  animation: slide-in-right 350ms cubic-bezier(0.4, 0, 0.2, 1);
-}
 
-@media (prefers-reduced-motion: reduce) {
-  .animate-slide-in-right {
-    animation: none;
-  }
-}
 
 /* ═══════════════════════════════════════════════════════
    RESPONSIVE & REDUCED MOTION - iOS Optimized
@@ -1669,32 +733,10 @@ input[type="radio"],
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .glass-shimmer,
-  .animate-wobble,
-  .animate-pulse-slow,
-  .premium-card::after {
-    animation: none !important;
-  }
-}
-
 /* ═══════════════════════════════════════════════════════
    TOUCH DEVICE HOVER OVERRIDES
    ═══════════════════════════════════════════════════════ */
 @media (pointer: coarse) {
-  .premium-card:hover,
-  .glass-panel:hover,
-  .art-surface:hover,
-  .oil-price-item:hover,
-  .todo-item:hover,
-  .widget-header-icon:hover {
-    transform: none !important;
-  }
-
-  .premium-card:hover {
-    box-shadow: var(--shadow-glass) !important;
-  }
-
   .art-primary-button:hover:not(:disabled),
   .action-btn.primary:hover:not(:disabled) {
     transform: none !important;
@@ -1705,15 +747,7 @@ input[type="radio"],
     transform: none !important;
   }
 
-  .art-icon-button:hover:not(:disabled),
-  .refresh-btn:hover:not(:disabled) {
-    transform: none !important;
   }
-
-  .art-chip-button:hover:not(:disabled) {
-    transform: none !important;
-  }
-}
 
 /* Page styles live in:
    - src/styles/pages/login.css
