@@ -15,6 +15,7 @@ The full stack has been verified locally and is in a clean, passing state:
 - **Frontend Linting:** ESLint passes with 0 errors.
 - **Frontend Production Build:** Next.js production build succeeds cleanly.
 - **Frontend Unit Tests:** 15 Vitest tests for `useDashboardLayout` (`npm test`).
+- **Frontend Smoke Tests:** 3 Playwright tests passing (`npm run test:smoke`).
 
 ## Current Stack
 
@@ -80,7 +81,7 @@ The full stack has been verified locally and is in a clean, passing state:
 6. **`quick-reference.md` Trim Verified Safe:**
    - The ~1000 deleted lines were entirely Docker Compose commands. Docker was removed from this project in commit `f4ad5d7` ("remove docker & fully migrate to serverless stack"), and no Dockerfile or compose file exists in the tree. No document links to a heading inside the trimmed file, so nothing is broken. The remaining "Docker" mentions in `migration-deployment.md` are deliberate roadmap prose about completing the Docker-less migration.
 
-Backend test count grew from 50 to 85 and total coverage from 54.98% to 65.22%. Frontend gains a working unit-test harness with 15 passing tests. `flake8 app`, `mypy app`, `tsc --noEmit`, `eslint .`, and `next build` all still pass.
+Backend test count grew from 50 to 90 and total coverage from 54.98% to 65.12%. Frontend gains a working unit-test harness with 19 passing tests (15 `useDashboardLayout` + 4 `WeatherWidget`). `flake8 app`, `mypy app`, `tsc --noEmit`, `eslint .`, and `next build` all still pass.
 
 7. **Public Proxy Abuse Bounded, Cache Capped, Deprecated Time API Removed:**
    - `weather/forecast`, `weather/air-quality`, `weather/reverse-geocode`, `oil-prices/oil-prices`, and `oil-prices/health` are unauthenticated by design (the login screen renders these widgets), but none of them carried a rate limit — verified anonymously returning `200`, which made the deployment a free relay to Open-Meteo / BigDataCloud / Bangchak / EPPO. Added `@limiter.limit(_GENERAL_LIMIT)` to all five, reusing the existing `RATE_LIMIT_GENERAL_PER_MINUTE` setting. Confirmed end-to-end that the limiter engages (`[200, 200, 200, 200, 200, 429, 429, ...]`) and that all five still return `200` for normal anonymous use.
@@ -88,7 +89,15 @@ Backend test count grew from 50 to 85 and total coverage from 54.98% to 65.22%. 
    - Replaced the two remaining deprecated `datetime.datetime.utcnow()` calls in `weather.py` with the project's `utcnow()` helper (which exists precisely for this), and dropped the now-unused `datetime` import.
    - Note: annotating the endpoints with `request: Request` (required by SlowAPI) made mypy start checking those function bodies, which surfaced a **pre-existing** latent error — `_cache = {"timestamp": None, "data": None}` inferred as `dict[str, None]`, so every later assignment into it was ill-typed. Fixed at the root by annotating `_cache: dict[str, Any]` and the health-check `status` dict, rather than suppressing the check.
 
+8. **Weather Proxy Degrades Gracefully Under Upstream Throttling:**
+   - Open-Meteo rate-limits by IP and Render egress is shared, so `weather/forecast` began returning `502 {"detail":"Upstream provider returned HTTP 429"}` in production. The proxy surfaced the upstream failure verbatim with no recovery path.
+   - Added a bounded retry with exponential backoff (0.6s, then 1.8s) that retries **only** 429 and 5xx and re-raises 4xx immediately, plus a last-known-good fallback: `_cache_get_stale` serves the most recent expired entry and flags the payload `_stale: true` instead of failing. All three weather endpoints use it.
+   - Verified on the live deployment that the retry path actually executes: `forecast` takes ~5.1s before returning 502, versus `air-quality` answering in 0.18s from a warm cache — the 2.4s of backoff accounts for the difference.
+   - `WeatherWidget` rendered a tall empty card whenever the request failed. It now has a compact error state with a retry button.
+
 ### Known Remaining Items
 
-- Frontend coverage is still thin beyond `useDashboardLayout`: the ~10k lines of components and widgets have no unit or component tests, and the Playwright smoke tests still run without a live backend.
+- `weather/forecast` still returns 502 on production while Open-Meteo throttles Render's shared egress IP. The retry and stale-cache fallback make the failure graceful but cannot manufacture data that the upstream refuses to serve. The real fix is a cache that survives instance restarts (Redis/Upstash or a hosted Postgres) or a second weather provider, which needs a decision from the project owner.
+
+- Frontend coverage is still thin beyond `useDashboardLayout`: the ~10k lines of components and widgets have no unit or component tests. The 3 Playwright smoke tests now pass locally (verified against a running dev server) but they assert only on structure and redirects — they still run without a live backend, so they would not catch a broken login against the real API.
 - `backend/scripts/tests/` holds three **manual** scripts, not unit tests: `test_oil_prices.py` documents itself as a pre-deploy connectivity check, and the other two drive a live server with `requests`. They are intentionally not part of the suite. Worth renaming the folder to `scripts/checks/` so nobody mistakes them for pytest tests — pytest collects `test_*.py` by name, so a bare `pytest` at the repo root would try to run them.
