@@ -224,7 +224,8 @@ npm cache clean --force
 ```
 
 ### Oil Prices Widget แสดง Stale Data
-- นี่เป็นเรื่องปกติเมื่อ EPPO ช้าหรือล่ม
+- นี่เป็นเรื่องปกติเมื่อผู้ให้บริการราคาน้ำมัน (Bangchak) ช้าหรือล่ม
+- แบ็กเอนด์จะเสิร์ฟข้อมูลเก่าจาก cache พร้อมธง `is_stale: true` แทนการปล่อยการ์ดว่าง
 - Widget จะ auto-refresh ทุก 5 นาที
 - ข้อมูล stale ดีกว่าไม่มีข้อมูล
 
@@ -330,7 +331,7 @@ curl http://localhost:8080/api/v1/oil-prices/health
 ## ✨ Key Features
 
 ✅ **Dashboard** - หน้าหลักพร้อมวิดเจ็ตที่ปรับแต่งและจัดเรียงได้
-✅ **Oil Prices Widget** - แสดงราคาน้ำมันจาก EPPO
+✅ **Oil Prices Widget** - แสดงราคาน้ำมันจาก Bangchak (ผ่าน backend, มี cache + fallback)
 ✅ **Weather & AQI Widget** - สภาพอากาศและค่าฝุ่น PM 2.5 แบบ real-time
 ✅ **Holiday Widget** - ปฏิทินวันหยุดนักขัตฤกษ์ไทย (ปีปัจจุบัน dynamic)
 ✅ **QR Code Widget** - สร้าง QR Code
@@ -362,7 +363,7 @@ curl http://localhost:8080/api/v1/oil-prices/health
 |--------|-------------|----------|
 | วันหยุดนักขัตฤกษ์ | S/M/L | ข้อมูลคงที่ (ไทย) |
 | สภาพอากาศ & PM 2.5 | S/M/L | open-meteo.com |
-| ราคาน้ำมัน | S/M/L | EPPO (ผ่าน backend) |
+| ราคาน้ำมัน | S/M/L | Bangchak API (ผ่าน backend) |
 | สร้าง QR Code | S/M/L | client-side |
 
 ---
@@ -393,4 +394,4 @@ curl http://localhost:8080/api/v1/oil-prices/health
 
 **พร้อมเริ่มพัฒนาแล้ว! 🚀**
 
-สำหรับข้อมูลเพิ่มเติม อ่าน `README_COMPLETE_FIX.md`
+สำหรับข้อมูลเพิ่มเติม อ่าน [`README.md`](README.md), [`docs/setup/quick-reference.md`](docs/setup/quick-reference.md) และ [`docs/internal/project-analysis.md`](docs/internal/project-analysis.md)

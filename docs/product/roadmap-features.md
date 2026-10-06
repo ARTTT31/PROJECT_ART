@@ -1,70 +1,85 @@
-# Product
+# Roadmap & Feature Inventory
 
-## Register
+**Last updated:** October 6, 2026
 
-product
+> **Sources of truth.** This file inventories what exists and what is planned. It must not
+> restate or contradict the documents that own those decisions:
+>
+> - Product brief, users, brand personality: [`PRODUCT.md`](../../PRODUCT.md)
+> - Design language, colour, typography, motion: [`DESIGN.md`](../../DESIGN.md) and
+>   [`design-system/art-workspace/MASTER.md`](../../design-system/art-workspace/MASTER.md)
+> - Architecture, verified test state, known gaps:
+>   [`docs/internal/project-analysis.md`](../internal/project-analysis.md)
+>
+> An earlier revision of this file declared gradients and glassmorphism part of the brand and
+> targeted WCAG AAA. Both contradicted the Apple-HIG design system ("no decorative gradients;
+> elevation comes from surface colour and hairline borders") and the AA target in `PRODUCT.md`.
+> Those claims were removed rather than left competing with the authority above.
 
-## Users
+---
 
-Personal productivity tool for individual use. The user works in a focused environment, managing tasks, monitoring information (weather, oil prices), and accessing quick utilities (barcode/QR generation) from a centralized dashboard. Context is self-directed work requiring efficiency and clarity.
+## Shipped
 
-## Product Purpose
+### Pages
 
-ART Workspace is a modern full-stack dashboard application that consolidates essential productivity tools and real-time information widgets into a single interface. Success means reducing context-switching, providing instant access to frequently-needed tools, and maintaining a clean, distraction-free workspace that adapts to the user's workflow.
+| Route | Purpose |
+|---|---|
+| `/login`, `/login-success` | Email/password and Google sign-in (authorization-code flow) |
+| `/dashboard` | Widget grid — rearrange, resize (S/M/L), show/hide |
+| `/profile` | Name/email/password, Quick Links, main-menu config, camera config, admin panel |
+| `/camera` | CCTV monitor — permission-gated per user |
 
-## Current personal workflow
+### Dashboard widgets
 
-- **ข้อมูลประจำวัน:** อากาศ/PM 2.5, วันหยุด และราคาน้ำมัน
-- **เครื่องมือเร็ว:** สร้าง QR Code, Quick Links และกล้องที่ผู้ใช้กำหนดเอง
+| Widget | Sizes | Data source |
+|---|---|---|
+| วันหยุดนักขัตฤกษ์ (holidays) | S/M/L | Confirmed Thai calendars bundled in the repo (2026, 2027) |
+| สภาพอากาศ & PM 2.5 (weather) | S/M/L | Open-Meteo + BigDataCloud, via the backend proxy |
+| ราคาน้ำมัน (oil price) | S/M/L | Bangchak Open Web API, via the backend proxy |
+| QR Code | S/M/L | Client-side |
 
-ART Workspace is operated by one person and focuses on a compact, configurable information dashboard.
+### Platform
 
-## Brand Personality
+- **Auth:** JWT access/refresh in HTTP-only cookies, CSRF double-submit token, account lockout
+  (5 attempts -> 30 min), session tracking (IP / user agent / device), Google OAuth.
+- **Authorisation:** `role` plus per-user `accessible_pages`; the sidebar and profile page hide
+  what a user cannot reach.
+- **Admin:** user management, page-permission editing, password reset/lockout reset, audit log.
+- **Notifications:** notification bell with derived alerts (holidays, weather, oil prices) plus
+  a live WebSocket feed. The socket authenticates during the handshake and the connection
+  registry is capped per user; broadcasts are admin-only.
+- **Resilience:** the weather/geocode proxies retry throttled upstreams, fall back to stale data
+  and persist the last known good payload in `weather_cache`. Oil prices fall back to a
+  process cache and then to maintained constants.
+- **Security:** CSP with a production/development split, HSTS, `nosniff`/`DENY` headers,
+  rate limiting, API docs off unless opted in, startup refusal on a weak `SECRET_KEY`.
+- **Operations:** Sentry (opt-in via `SENTRY_DSN`), health endpoints plus an admin-only system
+  health report, Alembic migrations as the only schema authority, GitHub Actions CI.
 
-**Modern & Innovative** - Embraces contemporary design patterns, smooth animations, and forward-thinking UI choices. Not afraid to use gradients, glassmorphism, and premium visual effects when they enhance usability.
+---
 
-**Efficient & Productive** - Every element serves a purpose. Information density is balanced with breathing room. Actions are quick, feedback is immediate, and the interface stays out of the way.
+## Constraints (accepted, documented)
 
-**Calm & Organized** - Despite rich functionality, the interface maintains visual hierarchy and rhythm. Color is purposeful, not decorative. Motion enhances understanding rather than distracting.
+| Constraint | Detail |
+|---|---|
+| Single instance | Rate limiting and the WebSocket registry are process-local; startup logs a `[SCALING]` notice. See README -> *Horizontal scaling*. |
+| One weather provider | No secondary source; degradation comes from cache + retry, not failover. |
+| Thai-only UI | All copy is hardcoded Thai; there is no i18n layer. |
+| Process cache for oil prices | Unlike weather, oil prices have no database-backed L2. |
 
-## Anti-references
+---
 
-To be determined as the project evolves. Currently, the following specific anti-patterns and restrictions are identified:
-- **No Dark Mode**: The system MUST NOT implement dark mode. The design system is strictly light mode (with a clean, premium "Liquid Glass" theme) to maintain high contrast and consistency for users. Any dark mode styles or media queries must be explicitly avoided or removed.
-- Avoid cluttered dashboards where widgets compete for attention
-- Avoid flat, lifeless interfaces that feel like spreadsheets
-- Avoid excessive decoration that doesn't serve the user's workflow
-- Avoid inconsistent interaction patterns across widgets
+## Next (candidates, not committed)
 
-## Design Principles
+Ordered by evidence, not by preference:
 
-1. **Clarity over cleverness** - Information should be instantly readable. Hierarchy guides the eye. Labels are specific, not clever.
-
-2. **Purposeful motion** - Animations reveal relationships, provide feedback, and guide attention. Never decorative for its own sake.
-
-3. **Consistent craft** - Every widget follows the same design language. Spacing, typography, color usage, and interaction patterns are predictable across the interface.
-
-4. **Accessible by default** - WCAG AAA compliance is not an afterthought. Contrast, keyboard navigation, screen reader support, and reduced motion preferences are built into every component.
-
-5. **Progressive disclosure** - Show what's needed now. Advanced features and settings are available but not in the way. The default view is clean and focused.
-
-## Accessibility & Inclusion
-
-**Target: WCAG AAA compliance**
-
-- All text meets AAA contrast ratios (≥7:1 for normal text, ≥4.5:1 for large text)
-- Full keyboard navigation support for all interactive elements
-- Screen reader compatibility with proper ARIA labels and semantic HTML
-- Respect `prefers-reduced-motion` for all animations
-- Color is never the only means of conveying information
-- Focus indicators are clearly visible
-- Form inputs have associated labels and error messages
-- Interactive elements have minimum 44×44px touch targets
-
-## Recently Added Features
-
-- **E2E Testing:** Playwright has been added for automated smoke testing.
-- **PWA Support:** Configured via @serwist/next for offline capabilities.
-- **Error Tracking:** @sentry/nextjs is integrated and ready for DSN configuration.
-- **Animations:** framer-motion integrated for smooth page transitions.
-- **Admin & Permissions:** Granular page access control and Admin Panel in Profile page.
+1. **A second weather provider or a longer retention window** — Open-Meteo throttles the shared
+   deployment egress, and no cache can serve data that was never fetched.
+2. **CI checks the migration chain** — the test suite creates tables from the models, so a
+   broken Alembic revision currently passes CI and fails in production.
+3. **Shared state before scaling out** — Redis for the rate limiter and a pub/sub fan-out for
+   WebSocket broadcasts.
+4. **Frontend coverage and one live-backend E2E** — the unit suites cover pure logic; nothing
+   currently catches a broken login against the real API.
+5. **Oil prices: persistent cache + delete the dead `EPPO_OIL_URL`** — brings it in line with
+   the weather path.

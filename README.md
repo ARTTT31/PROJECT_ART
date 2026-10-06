@@ -53,11 +53,12 @@ The GitHub Actions pipeline (`ci.yml`) runs on every push and pull request to `m
 | Layer | Technology |
 |---|---|
 | Framework | FastAPI 0.111, Uvicorn |
+| Real-time | WebSocket notifications (authenticated handshake, connection caps) |
 | ORM / DB | SQLAlchemy 2 async, Alembic migrations |
 | Database | PostgreSQL (Neon in production, SQLite for CI tests) |
 | Auth | JWT access + refresh tokens in HTTP-only cookies + double-submit-cookie CSRF (`X-CSRF-Token`) |
 | Rate Limiting | SlowAPI |
-| Scraping | httpx (EPPO oil prices) |
+| Upstream data | httpx (Bangchak oil prices, Open-Meteo weather, BigDataCloud geocode) |
 | Linting | flake8 6.1, mypy 1.9 |
 
 ### Infrastructure
@@ -155,6 +156,7 @@ Frontend checks:
 cd frontend
 npm run type-check
 npm run lint
+npm test
 npm run build
 npm run test:smoke
 ```
@@ -245,6 +247,8 @@ Backend OAuth variables: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_RED
 - **Frontend handling.** [`frontend/src/lib/api/fetchWithAuth.ts`](frontend/src/lib/api/fetchWithAuth.ts) reads the cookie (or bootstraps one from `GET /api/v1/auth/csrf`), attaches the header on mutating calls, and retries once on `csrf_failed`. Set `CSRF_PROTECTION_ENABLED=False` only for non-browser clients.
 - **API documentation.** `/docs`, `/redoc` and `/openapi.json` are served only when `DEBUG=True` or `ENABLE_API_DOCS=True`.
 - **Security headers.** The backend sends a strict CSP (`connect-src` is built from `CORS_ORIGINS`), `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy`, and HSTS (two years, `includeSubDomains; preload`) outside `DEBUG`.
+- **WebSocket notifications require a session.** The subscribe endpoint (`/api/v1/ws/notifications`) authenticates during the handshake and closes with `1008` before accepting when the token is missing, expired, belongs to a deleted/inactive/locked account, or does not exist. The token is read from the HTTP-only `access_token` cookie (sent automatically with the upgrade request) or an `Authorization: Bearer` header — never from the query string, which would write credentials into access logs. A rejected handshake is a failed connection, so an anonymous visitor cannot hold a socket or receive admin broadcasts.
+- **Connection caps.** `WS_MAX_CONNECTIONS` (default 200) and `WS_MAX_CONNECTIONS_PER_USER` (default 3) bound the in-process registry. Over-capacity handshakes are closed with `1013`. Without them, one account — or a client stuck in a reconnect loop — could grow the registry without bound. The frontend treats `1008` as terminal (no retry) and backs off progressively for any other close.
 - **Signing keys.** With `DEBUG=False` the app refuses to start unless `SECRET_KEY` is at least 32 characters and not a known placeholder.
 
 ## Horizontal Scaling
@@ -255,6 +259,8 @@ The current deployment is a **single instance**, and two pieces of state assume 
 |---|---|---|
 | Rate limiting (`SLOWAPI_STORAGE_URI`) | In-process counters | Each instance enforces its own limit, so the effective limit multiplies |
 | WebSocket notifications | In-process connection registry | `POST /api/v1/ws/broadcast` only reaches clients on the instance that served it |
+
+The WebSocket registry is also *capped per process* (`WS_MAX_CONNECTIONS`, `WS_MAX_CONNECTIONS_PER_USER`), so scaling out raises the total socket ceiling rather than the per-user one.
 
 Both surface a `[SCALING]` notice in the startup log so the assumption is never silent. Before adding a second instance, point `SLOWAPI_STORAGE_URI` at a shared Redis (`redis://…`) and give the WebSocket manager a pub/sub fan-out through the same broker.
 

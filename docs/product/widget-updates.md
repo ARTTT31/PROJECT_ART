@@ -4,7 +4,7 @@
 > **Current Dashboard Active Widgets:**
 > - 🌤️ `WeatherWidget` - Real-time weather, forecast & GPS
 > - 🇹🇭 `HolidayWidget` - Thai official holidays for the current year
-> - ⛽ `OilPriceWidget` - Fuel prices from EPPO with cached fallback
+> - ⛽ `OilPriceWidget` - Fuel prices from Bangchak with cached fallback
 > - 📱 `QRCodeWidget` - Dynamic QR code & barcode generator
 > 
 > *Note: Legacy Calendar and SharePoint-based TaskList widgets have been removed.*
@@ -32,13 +32,19 @@
 
 ---
 
-## 📋 TaskList Widget
+## 📋 TaskList Widget — REMOVED
+
+> ❌ **This widget no longer exists.** Personal tasks were dropped (Alembic
+> `20260921_2300_remove_personal_tasks`), the component is gone from
+> `frontend/src/components/Widgets/`, and `useDashboardLayout` filters the retired
+> `tasks` id out of any saved layout. Everything below is kept as history.
+
 ### Changes:
 - ✅ **Kept Refresh button**
 - ✅ **Kept Filter badges**
 - ⚠️ **No S/M/L buttons** - Removed in a previous update
 
-### Features Retained:
+### Features (as they were before removal):
 - ✅ Refresh button
 - ✅ Filter (All, IMACD, Thanyapong)
 - ✅ Search functionality
@@ -77,7 +83,7 @@
 |--------|-------------------|----------------------|------------------------|
 | Calendar | ❌ Removed | ✅ Kept | ✅ Has hover |
 | Weather | N/A | ✅ Kept (smaller) | ❌ No hover |
-| TaskList | N/A | ❌ Removed | N/A |
+| ~~TaskList~~ | N/A | ❌ Widget removed from the app | N/A |
 
 ---
 
@@ -92,5 +98,5 @@
 
 ---
 
-**Last Updated**: June 5, 2026  
-**Version**: 2.0
+**Last Updated**: October 6, 2026 (TaskList marked as removed)  
+**Version**: 2.1

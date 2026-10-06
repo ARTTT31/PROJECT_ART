@@ -82,9 +82,9 @@ During the cloud migration, the main issues encountered and successfully resolve
 
 ---
 
-## 5. Future Roadmap: Transitioning to Docker-less & Fully Cloud-Managed
+## 5. Docker-less & Fully Cloud-Managed (Completed)
 
-To reduce the workload on developers' local machines and migrate all processing and execution fully to the cloud (Fully Cloud-Managed), this project plans to **eliminate the use of Docker for development and setup**, with the following approach and steps:
+**Status: done.** Docker was removed in commit `f4ad5d7` ("remove docker & fully migrate to serverless stack") — there is no `Dockerfile` or `docker-compose.yml` in the tree, and the schema is owned by Alembic rather than by startup repairs. What follows is the resulting setup, kept as the developer reference.
 
 ### 5.1 Target Architecture
 * **No need to install Docker/Docker Desktop** on the developer's machine.
@@ -129,7 +129,9 @@ Developers can write code and test the system locally right away with native too
    npm run dev
    ```
 
-### 5.3 Benefits
-1. **Reduce machine resource usage:** No RAM and CPU consumption from running computer simulations via Docker Desktop.
-2. **Development Speed:** The Hot-Reload system works at maximum efficiency directly via the OS File System.
-3. **Reduce Complexity:** No longer need to maintain `Dockerfile` and `docker-compose.yml` files after the complete transition.
+### 5.3 Benefits (realised)
+1. **Reduced machine resource usage:** no RAM and CPU consumed by Docker Desktop.
+2. **Development Speed:** hot reload runs directly against the OS file system.
+3. **Reduced Complexity:** no `Dockerfile` or `docker-compose.yml` to maintain.
+
+> Schema note: because there is no container-side startup hook, `alembic upgrade head` is the only way the production schema changes. Run it before deploying the backend.

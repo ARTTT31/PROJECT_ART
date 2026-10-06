@@ -45,7 +45,7 @@ yarn dev
 - **Frontend:** http://localhost:3000
 - **Backend API:** http://localhost:8080
 - **API Docs:** http://localhost:8080/docs (only when `DEBUG=True` or `ENABLE_API_DOCS=True`)
-- **Docker:** port 8000 (used by Docker Desktop, which is why the project defaults to 8080)
+- **Port 8000** is avoided by default because other local tooling commonly occupies it; the project uses 8080 for the API.
 
 ## Create Additional Test User
 
@@ -141,8 +141,10 @@ CORS_ORIGINS=http://localhost:3000
 ## Architecture
 
 ```
-Frontend (Next.js)          Backend (FastAPI)           Database (SQLite)
-Port 3000                   Port 8080                   art_workspace.db
+Frontend (Next.js)          Backend (FastAPI)           Database
+Port 3000                   Port 8080                   PostgreSQL (Neon) in
+                                                        production; SQLite for
+                                                        local dev and tests
     |                           |                             |
     |-- POST /login ----------->|                             |
     |                           |-- Query User -------------->|
@@ -162,6 +164,7 @@ Port 3000                   Port 8080                   art_workspace.db
 5. **Session Tracking:** IP, User Agent, Device Label
 6. **Rate Limiting:** SlowAPI (`RATE_LIMIT_AUTH_PER_MINUTE`, default 10/min)
 7. **API Docs:** disabled unless `DEBUG=True` or `ENABLE_API_DOCS=True`
+8. **WebSocket Auth:** the notification socket authenticates during the handshake using the same session and the same account-state rules as the REST API; unauthenticated handshakes close with `1008`, and the connection registry is capped (`WS_MAX_CONNECTIONS_PER_USER`, default 3 per user).
 
 ## API Endpoints
 
@@ -173,5 +176,7 @@ Port 3000                   Port 8080                   art_workspace.db
 - `GET  /api/v1/auth/session` - Current session/user
 - `GET  /api/v1/auth/google` - Start Google OAuth (redirect)
 - `GET  /api/v1/auth/google/callback` - Google OAuth callback
+- `GET  /api/v1/ws/notifications` - WebSocket: live notifications (**requires a session**; `1008` when unauthenticated, `1013` when the instance is at capacity)
+- `POST /api/v1/ws/broadcast` - Admin-only broadcast to every connected client
 - `GET  /health` - Health check
 - `GET  /` - API info

@@ -1,21 +1,23 @@
 # ART Workspace Project Analysis
 
-**Last updated:** October 5, 2026  
-**Scope:** Full-stack repository review, local validation, system-wide refresh, and the broadcast-auth security fix  
+**Last updated:** October 6, 2026  
+**Scope:** Full-stack repository review, local validation, hardening of the WebSocket subscribe path, and the maintainability/resilience pass  
 **Repository path:** `D:\Program\Project\PROJECT_ART`
 
 ## Executive Summary
 
-ART Workspace is a Thai-language personal productivity dashboard built as a modern full-stack web application. The architecture consists of a Next.js 16 frontend (App Router + Turbopack), a FastAPI backend, and a PostgreSQL database target (Neon in production, in-memory SQLite for tests).
+ART Workspace is a Thai-language personal productivity dashboard built as a modern full-stack web application. The architecture consists of a Next.js 16 frontend (App Router, webpack dev server), a FastAPI backend, and a PostgreSQL database target (Neon in production, in-memory SQLite for tests).
 
-The full stack has been verified locally and is in a clean, passing state:
-- **Backend Tests:** 85/85 pytest tests passing (coverage 54.98% → 65.22%).
-- **Backend Linting:** Flake8 passes with 0 errors across all app modules.
-- **Frontend Type Check:** TypeScript type check passes with 0 errors.
-- **Frontend Linting:** ESLint passes with 0 errors.
-- **Frontend Production Build:** Next.js production build succeeds cleanly.
-- **Frontend Unit Tests:** 15 Vitest tests for `useDashboardLayout` (`npm test`).
-- **Frontend Smoke Tests:** 3 Playwright tests passing (`npm run test:smoke`).
+Current verified state (all commands run from the repository on October 6, 2026):
+- **Backend Tests:** 115/115 pytest tests passing, coverage **69.49%** (gate 40%).
+- **Backend Linting / Typing:** `flake8 app` 0 errors; `mypy app` clean across 38 modules.
+- **Database Migrations:** the full Alembic chain applies to an empty database (verified, including the `weather_cache` revision).
+- **Frontend Type Check / Lint:** `tsc --noEmit` and `eslint .` both clean.
+- **Frontend Production Build:** `next build` succeeds.
+- **Frontend Unit Tests:** 70 Vitest tests (`npm test`), previously 19.
+- **Frontend Smoke Tests:** 3 Playwright tests passing (`npm run test:smoke`; needs `PORT=3000` if `PORT` is set to `0` in the shell).
+
+Two security gaps found in the previous pass were closed here; the newest section (see *WebSocket Subscriptions Are Authenticated*) documents them.
 
 ## Current Stack
 
@@ -27,7 +29,7 @@ The full stack has been verified locally and is in a clean, passing state:
 | Backend | FastAPI, SQLAlchemy async, Alembic | REST API and database access |
 | Auth | JWT access/refresh tokens in HTTP-only cookies | Standard login and Google OAuth |
 | Database | PostgreSQL target, SQLite for tests | Neon serverless PostgreSQL in production |
-| External data | Open-Meteo weather API, EPPO oil price page | Weather widget and oil price widget |
+| External data | Open-Meteo weather API, Bangchak oil price JSON API | Weather widget and oil price widget |
 
 ## System Improvements Applied (October 1, 2026)
 
@@ -84,7 +86,7 @@ The full stack has been verified locally and is in a clean, passing state:
 Backend test count grew from 50 to 90 and total coverage from 54.98% to 65.12%. Frontend gains a working unit-test harness with 19 passing tests (15 `useDashboardLayout` + 4 `WeatherWidget`). `flake8 app`, `mypy app`, `tsc --noEmit`, `eslint .`, and `next build` all still pass.
 
 7. **Public Proxy Abuse Bounded, Cache Capped, Deprecated Time API Removed:**
-   - `weather/forecast`, `weather/air-quality`, `weather/reverse-geocode`, `oil-prices/oil-prices`, and `oil-prices/health` are unauthenticated by design (the login screen renders these widgets), but none of them carried a rate limit — verified anonymously returning `200`, which made the deployment a free relay to Open-Meteo / BigDataCloud / Bangchak / EPPO. Added `@limiter.limit(_GENERAL_LIMIT)` to all five, reusing the existing `RATE_LIMIT_GENERAL_PER_MINUTE` setting. Confirmed end-to-end that the limiter engages (`[200, 200, 200, 200, 200, 429, 429, ...]`) and that all five still return `200` for normal anonymous use.
+   - `weather/forecast`, `weather/air-quality`, `weather/reverse-geocode`, `oil-prices/oil-prices`, and `oil-prices/health` are unauthenticated by design (the login screen renders these widgets), but none of them carried a rate limit — verified anonymously returning `200`, which made the deployment a free relay to Open-Meteo / BigDataCloud / Bangchak. Added `@limiter.limit(_GENERAL_LIMIT)` to all five, reusing the existing `RATE_LIMIT_GENERAL_PER_MINUTE` setting. Confirmed end-to-end that the limiter engages (`[200, 200, 200, 200, 200, 429, 429, ...]`) and that all five still return `200` for normal anonymous use.
    - The three weather caches are keyed by user-supplied coordinates and had no eviction, so a long-lived Render instance could grow them without bound. Added `MAX_CACHE_ENTRIES = 200`; `_cache_set` now purges already-expired entries first and only then evicts oldest-first.
    - Replaced the two remaining deprecated `datetime.datetime.utcnow()` calls in `weather.py` with the project's `utcnow()` helper (which exists precisely for this), and dropped the now-unused `datetime` import.
    - Note: annotating the endpoints with `request: Request` (required by SlowAPI) made mypy start checking those function bodies, which surfaced a **pre-existing** latent error — `_cache = {"timestamp": None, "data": None}` inferred as `dict[str, None]`, so every later assignment into it was ill-typed. Fixed at the root by annotating `_cache: dict[str, Any]` and the health-check `status` dict, rather than suppressing the check.
@@ -124,6 +126,37 @@ Backend test count grew from 50 to 90 and total coverage from 54.98% to 65.12%. 
 
 8. **`WeatherWidget` Tests Are Warning-Free.**
    - The suite emitted `An update to WeatherWidget inside a test was not wrapped in act(...)`. The mount effect resolves a rejected request after the last assertion, so its state updates landed outside `act`; the retry test also used a bare `.click()`. Tests now flush inside `act()`, use `fireEvent.click`, and the "still loading" case asserts both halves (no affordance before the request settles, affordance after). A React warning stream is not a passing signal — it hides real failures.
+
+## WebSocket Subscriptions Are Authenticated (October 6, 2026)
+
+1. **The subscribe path was open to anyone.**
+   - `GET /api/v1/ws/notifications` declared no auth dependency, so any client that knew the URL could complete a handshake, hold a socket open, and receive every admin broadcast. The frontend connects from the notification bell without attaching any credential, so a visitor who never signed in still got a live feed of system announcements. The earlier pass locked down `POST /api/v1/ws/broadcast` but left the receiving end open — the same feature, one direction later.
+   - Verified against the real ASGI app: before the change an anonymous handshake was **accepted**; it is now closed with `1008` *before* `accept()`, so a rejected client sees a failed connection rather than an open socket.
+
+2. **Handshake authentication reuses the HTTP account rules.**
+   - Browsers cannot attach headers to a WebSocket handshake, so the HTTP-only `access_token` cookie is the primary source (it rides along with the upgrade request); an `Authorization: Bearer` header is accepted for non-browser clients.
+   - The token is deliberately **not** read from the query string: query strings land in proxy and access logs, which would turn a 30-minute credential into a long-lived one sitting in plaintext. A test asserts the query-string path stays rejected.
+   - The decode-and-validate core was extracted into `resolve_user_from_token()`, now shared by `get_current_user` and the socket handshake, so expired tokens, deleted users, inactive accounts and lockouts are enforced identically on both transports instead of being re-implemented.
+
+3. **The connection registry is capped.**
+   - `WS_MAX_CONNECTIONS` (200) and `WS_MAX_CONNECTIONS_PER_USER` (3) bound the process-local list. Over-capacity handshakes close with `1013`. Authentication alone was not enough: every signed-in account can open sockets and the frontend reconnects automatically, so one account or a reconnect loop could still grow the registry without bound.
+   - `disconnect()` is idempotent (a double call used to be able to push the per-user counter negative, which would have permanently denied that user a connection) and a failed broadcast send now releases that socket's slot.
+
+4. **The pooled database connection is released before the long-lived loop.**
+   - A WebSocket handler stays alive for minutes or hours. Keeping the `get_db` session for its whole lifetime would have held one pooled connection per open dashboard tab, and the pool is only five connections wide — a handful of open tabs would have starved the REST API. The session is closed right after the handshake, before the receive loop.
+
+5. **The client no longer fights the server.**
+   - `NotificationBell` treated every close as "retry in 5 seconds", so a rejected handshake would have produced an infinite 5-second reconnect loop. It now treats `1008` as terminal (signing in again remounts the component and opens a fresh socket) and backs off progressively for every other close.
+   - The fallback URL was `${window.location.hostname}:8080`, which cannot work in the `/api`-rewrite deployment (that host serves the frontend, not the API). It now stays on the current origin so the rewrite and the session cookie both apply.
+   - The unmount path detaches `onclose` before closing, so tearing the component down cannot schedule a reconnect after it is gone.
+
+6. **Coverage.**
+   - 19 new backend tests: handshake authentication (anonymous, valid cookie, `Bearer`-prefixed cookie, header auth, invalid token, deleted/inactive/locked account, query-string rejection), registry caps and idempotent disconnect, and four end-to-end handshakes driven through Starlette's `TestClient` against a real SQLite file database.
+   - The redundant module-level `pytestmark = pytest.mark.asyncio` was dropped: `pytest.ini` already runs `asyncio_mode = auto`, and the blanket mark stamped the synchronous `TestClient` tests with an asyncio mark they cannot use.
+   - Suite grew from 96 to 115 tests and coverage from 67.34% to 69.49%.
+
+7. **Caveat that still needs a deployed check.**
+   - The same-origin WebSocket URL relies on the Next.js `/api` rewrite forwarding the upgrade. Vercel rewrites are HTTP-oriented, so if the production socket never connects, set `NEXT_PUBLIC_API_URL` so the browser opens the socket against the backend origin directly (cookies are already `SameSite=None; Secure` for that cross-site case). This could not be verified from a local checkout.
 
 ### Known Remaining Items
 
