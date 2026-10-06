@@ -162,7 +162,7 @@ Port 3000                   Port 8080                   PostgreSQL (Neon) in
 3. **CSRF:** Double-submit cookie + `X-CSRF-Token` header on mutating requests
 4. **Account Lockout:** 5 failed attempts = 30 min lock
 5. **Session Tracking:** IP, User Agent, Device Label
-6. **Rate Limiting:** SlowAPI (`RATE_LIMIT_AUTH_PER_MINUTE`, default 10/min)
+6. **Rate Limiting:** SlowAPI (`RATE_LIMIT_AUTH_PER_MINUTE`, default 10/min). The key is derived from the client address, and `X-Forwarded-For` is only believed when the direct peer is a trusted proxy (`TRUSTED_PROXY_IPS`; loopback/RFC1918 by default), so a caller cannot rotate a header to escape the limit.
 7. **API Docs:** disabled unless `DEBUG=True` or `ENABLE_API_DOCS=True`
 8. **WebSocket Auth:** the notification socket authenticates during the handshake using the same session and the same account-state rules as the REST API; unauthenticated handshakes close with `1008`, and the connection registry is capped (`WS_MAX_CONNECTIONS_PER_USER`, default 3 per user).
 

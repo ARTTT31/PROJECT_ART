@@ -1,7 +1,7 @@
 # ART Workspace Project Analysis
 
 **Last updated:** October 6, 2026  
-**Scope:** Full-stack repository review, local validation, hardening of the WebSocket subscribe path, and the maintainability/resilience pass  
+**Scope:** Full-stack repository review, local validation, hardening of the WebSocket subscribe path, the maintainability/resilience pass, and the sweep that closed the previously documented remaining items  
 **Repository path:** `D:\Program\Project\PROJECT_ART`
 
 ## Executive Summary
@@ -9,12 +9,12 @@
 ART Workspace is a Thai-language personal productivity dashboard built as a modern full-stack web application. The architecture consists of a Next.js 16 frontend (App Router, webpack dev server), a FastAPI backend, and a PostgreSQL database target (Neon in production, in-memory SQLite for tests).
 
 Current verified state (all commands run from the repository on October 6, 2026):
-- **Backend Tests:** 115/115 pytest tests passing, coverage **69.49%** (gate 40%).
-- **Backend Linting / Typing:** `flake8 app` 0 errors; `mypy app` clean across 38 modules.
-- **Database Migrations:** the full Alembic chain applies to an empty database (verified, including the `weather_cache` revision).
+- **Backend Tests:** 148/148 pytest tests passing, coverage **73.05%** (gate 40%).
+- **Backend Linting / Typing:** `flake8 app` 0 errors; `mypy app` clean across 40 modules.
+- **Database Migrations:** the full Alembic chain applies to an empty database, and `alembic check` reports no drift from the models (both steps now run in CI).
 - **Frontend Type Check / Lint:** `tsc --noEmit` and `eslint .` both clean.
 - **Frontend Production Build:** `next build` succeeds.
-- **Frontend Unit Tests:** 70 Vitest tests (`npm test`), previously 19.
+- **Frontend Unit Tests:** 79 Vitest tests (`npm test`).
 - **Frontend Smoke Tests:** 3 Playwright tests passing (`npm run test:smoke`; needs `PORT=3000` if `PORT` is set to `0` in the shell).
 
 Two security gaps found in the previous pass were closed here; the newest section (see *WebSocket Subscriptions Are Authenticated*) documents them.
@@ -131,7 +131,7 @@ Backend test count grew from 50 to 90 and total coverage from 54.98% to 65.12%. 
 
 1. **The subscribe path was open to anyone.**
    - `GET /api/v1/ws/notifications` declared no auth dependency, so any client that knew the URL could complete a handshake, hold a socket open, and receive every admin broadcast. The frontend connects from the notification bell without attaching any credential, so a visitor who never signed in still got a live feed of system announcements. The earlier pass locked down `POST /api/v1/ws/broadcast` but left the receiving end open — the same feature, one direction later.
-   - Verified against the real ASGI app: before the change an anonymous handshake was **accepted**; it is now closed with `1008` *before* `accept()`, so a rejected client sees a failed connection rather than an open socket.
+   - Verified against the real ASGI app: before the change an anonymous handshake was **accepted** and could sit there receiving broadcasts; it is now immediately closed with `1008` and never enters the registry (see item 11 in the sweep section for why the close is sent after `accept()`).
 
 2. **Handshake authentication reuses the HTTP account rules.**
    - Browsers cannot attach headers to a WebSocket handshake, so the HTTP-only `access_token` cookie is the primary source (it rides along with the upgrade request); an `Authorization: Bearer` header is accepted for non-browser clients.
@@ -158,9 +158,38 @@ Backend test count grew from 50 to 90 and total coverage from 54.98% to 65.12%. 
 7. **Caveat that still needs a deployed check.**
    - The same-origin WebSocket URL relies on the Next.js `/api` rewrite forwarding the upgrade. Vercel rewrites are HTTP-oriented, so if the production socket never connects, set `NEXT_PUBLIC_API_URL` so the browser opens the socket against the backend origin directly (cookies are already `SameSite=None; Secure` for that cross-site case). This could not be verified from a local checkout.
 
+## Remaining-Items Sweep (October 6, 2026)
+
+Every item the previous sections listed as outstanding was either fixed here or
+narrowed to something that genuinely needs a deployment or a product decision.
+
+1. **`/health` no longer lies.** It reported a hardcoded `"healthy"` string and never touched the database, so a deployment with an unreachable database looked perfect to every monitor. It now runs `SELECT 1` behind a 2-second timeout and reports `status: healthy|degraded` plus `database.status` / `database.latency_ms`, staying `200` so existing uptime monitors keep working. A new `GET /health/ready` answers `503` when the database is down, which is what a platform health check should point at. The admin-only `/api/v1/system/health` report is unchanged.
+
+2. **Requests are traceable.** Added `app/core/observability.py`: a request-id ASGI middleware (outermost, so an id exists even for a request CSRF rejects) that echoes `X-Request-ID` and a log filter that stamps `rid=…` on every record, plus `configure_logging()` so application logs get timestamps, levels and a name instead of the bare `WARNING:root:` default. The 20 remaining `print()` calls in `app/` were converted to logger calls — including the Sentry bootstrap notices, the `[SCALING]` warnings, cookie/posture notices, the `get_current_user` catch-all and `logger.exception` for unhandled login errors (a raw `traceback.format_exc()` was invisible to log aggregation).
+
+3. **Client addresses can no longer be spoofed.** `get_real_client_ip()` believed the leftmost `X-Forwarded-For` entry from anyone, so a caller could rotate a header and get a fresh rate-limit bucket per request; the same header was written to the audit log as the user's IP (avatar uploads). `X-Forwarded-For` is now only honoured when the direct peer is a trusted proxy, and the chain is walked right-to-left so a prepended entry is skipped. Default trust is loopback + RFC1918/ULA (`TRUSTED_PROXY_IPS` overrides it); the check is an explicit network list rather than `address.is_private`, because Python also calls documentation ranges such as `203.0.113.0/24` private — a shortcut that would have trusted a genuinely public address. The avatar-upload audit path now uses the same helper.
+
+4. **Session housekeeping actually runs.** The module docstring still told operators to run it `via docker exec` although Docker was removed in `f4ad5d7`, and nothing called the job. Added an async twin of the cleanup (`cleanup_expired_sessions_async`) with both rules expressed once, and an in-app scheduler (`SESSION_CLEANUP_INTERVAL_HOURS`, default 6, `0` disables) that runs it from the lifespan and survives a failed pass. The first pass runs one interval after startup, so short-lived processes never touch the table; the standalone script remains for cron-based deployments and no longer mangles the async driver suffix out of `DATABASE_URL` incorrectly.
+
+5. **Oil prices gained the persistent layer and lost the dead constant.** The endpoint now uses the shared `weather_cache` table under the `oil-prices` namespace: a fresh row avoids the upstream call entirely, a successful fetch is persisted, and a failed fetch falls back L1 → L2 → maintained constants, flagging `is_stale` and suffixing `source` with `" (cache)"`. `EPPO_OIL_URL` — declared but never read since the Bangchak migration — was deleted, as were the doc paragraphs that treated it as a working fallback path. Verified live against a migrated database: a cold restart served the persisted row and the provider was not called at all.
+
+6. **The stale fallback can no longer be pruned away.** `weather_cache` retention went from 7 to 30 days, and pruning now always keeps the newest row of every namespace: that single row is the only thing a cold instance can serve while the provider throttles it, so deleting it turned a degraded widget into a hard 502. (Retention is the product decision the earlier list asked for; a second weather provider stays open.)
+
+7. **WebSocket broadcasts can now fan out across instances.** New `app/services/ws_bus.py` publishes through Redis pub/sub when `WS_BROADCAST_REDIS_URL` is set, and every instance delivers to its own clients; with the variable unset behaviour is unchanged (process-local, logged at startup). Redis is imported lazily and every failure — missing package, unreachable broker, publish error — degrades to local delivery instead of dropping the notification. `redis` was added to `requirements.txt`.
+
+8. **CI now checks what production checks.** The backend job applies the Alembic chain to a throwaway SQLite file and runs `alembic check`, so a broken revision or model drift fails the build instead of production; that gap was explicitly listed before. Added a `pip-audit` job (advisory, `continue-on-error`) and `.github/dependabot.yml` for weekly pip / npm / GitHub Actions updates. The audit is advisory because the pinned set currently reports advisories (starlette via fastapi 0.111, python-jose) and a permanently red required check gets ignored — and because `pip-audit -r requirements.txt` could not be verified on Windows (no `psycopg2-binary` wheel for the local interpreter).
+
+9. **The frontend socket origin is configurable, and the bell is tested.** `resolveNotificationsWsUrl()` resolves `NEXT_PUBLIC_WS_URL` → `NEXT_PUBLIC_API_URL` → this origin, which turns the "Vercel rewrites may not forward the upgrade" caveat into an environment variable instead of a code change. Nine Vitest tests cover the resolution rules, broadcast handling, malformed frames, the `1008` stop, backoff reconnection and unmount cleanup (frontend suite: 70 → 79).
+
+10. **Verification after the changes:** backend 148 tests passing (from 115) at **73.05%** coverage (from 69.49%), `flake8 app` and `mypy app` clean across 40 modules, the Alembic chain applies and `alembic check` is clean, `tsc --noEmit`/`eslint .` clean, 79 frontend tests passing, plus live checks against a running server (`/health` 200 with `database.status: ok`, `/health/ready` 200, live Bangchak prices, anonymous WebSocket closed with `1008`).
+
+11. **The socket rejection is now observable by the client.** Live testing showed the pre-`accept()` close left the wire as `HTTP 403`, which browsers report as the generic abnormal closure `1006` — so the frontend's "stop on `1008`" rule never fired and the bell would retry an expired session forever (bounded by the backoff, but wrong). A rejected handshake is now accepted and immediately closed with the RFC 6455 code (`1008` unauthenticated, `1013` at capacity); nothing is read, sent or registered on that socket. The three handshake tests were updated to assert the code the client actually receives rather than an exception at connect time.
+
 ### Known Remaining Items
 
-- `weather/forecast` can still 502 when Open-Meteo throttles Render's shared egress IP **and** the persisted entry has been pruned or never existed. The retry, the L1 cache and the L2 `weather_cache` table now cover restarts and cold starts, but no cache can manufacture data the upstream refuses to serve — the remaining fixes are a second weather provider or a longer retention window, both needing a product decision.
-
-- Frontend coverage improved but is still partial: the ~10k lines of components and widgets remain mostly untested, and the 3 Playwright smoke tests still run without a live backend, so they would not catch a broken login against the real API.
-- **Scaling remains unimplemented by design.** The `[SCALING]` notices and README describe the limitation; actually supporting more than one instance requires a shared Redis for rate limiting and a pub/sub fan-out for WebSocket broadcasts.
+- **The production WebSocket origin still needs one deployed check.** The client prefers `NEXT_PUBLIC_WS_URL`, then `NEXT_PUBLIC_API_URL`, then its own origin. If the Vercel rewrite forwards plain requests but drops the upgrade, the socket never connects — set `NEXT_PUBLIC_WS_URL` to the backend origin. This cannot be verified from a local checkout.
+- **Weather has one provider.** Retention and per-namespace protection now cover restarts, cold starts and pruning, but a location that has never been fetched successfully still gets a `502` while Open-Meteo throttles Render's shared egress. Serving data the provider refuses to give requires a second provider — a product decision, not a code change.
+- **Backend dependency advisories are visible, not fixed.** `pip-audit` reports advisories against `starlette` (pinned by fastapi 0.111) and `python-jose`. The CI job is advisory until the pins move; Dependabot opens the upgrade PRs.
+- **Rate limiting is still process-local by default.** The WebSocket fan-out now has a supported path (`WS_BROADCAST_REDIS_URL`), but a horizontally scaled deployment also needs `SLOWAPI_STORAGE_URI` pointed at Redis.
+- **Frontend coverage is still partial.** 79 unit tests cover pure logic plus the notification bell; most components and widgets remain untested, and the 3 Playwright smoke tests still run without a live backend, so they would not catch a broken login against the real API.
+- **Thai-only UI.** All copy is hardcoded Thai; there is no i18n layer.

@@ -13,35 +13,40 @@ The oil prices endpoint returns Thai retail fuel prices as JSON for the dashboar
 | **Auth** | None by design (the login screen renders the widget), bounded by the general rate limit |
 
 > **Historical note.** An earlier version scraped the EPPO website (`eppo.go.th`) and parsed
-> its HTML. The endpoint no longer calls EPPO: `EPPO_OIL_URL` is still declared in the module
-> but nothing reads it, and the old HTML parser is gone. Troubleshooting advice that mentions
-> EPPO HTML structure, fuel-name image mapping, or `oil_name2.png` no longer applies — if you
-> find such a section in an older copy of this document, it is obsolete.
+> its HTML. The endpoint no longer calls EPPO, and the leftover `EPPO_OIL_URL` constant has
+> since been deleted along with the HTML parser. Troubleshooting advice that mentions EPPO HTML
+> structure, fuel-name image mapping, or `oil_name2.png` no longer applies — if you find such a
+> section in an older copy of this document, it is obsolete.
 
 ---
 
 ## ⚙️ How It Works
 
-Prices resolve in three layers. Each response says which one answered via `source`.
+Prices resolve in layers. Each response says which one answered via `source`.
 
 ```
 GET /api/v1/oil-prices/oil-prices
         │
-        ├─ 0. In-process cache younger than CACHE_TTL (30 min) ──► return cached payload
+        ├─ 0. L1 in-process cache younger than CACHE_TTL (30 min) ──► return cached payload
         │
-        ├─ 1. Bangchak API
-        │        HTTP 200 + at least one parsed price ──► cache it
+        ├─ 1. L2 `weather_cache` row (namespace "oil-prices") within the same TTL ──► return it
+        │
+        ├─ 2. Bangchak API
+        │        HTTP 200 + at least one parsed price ──► cache in L1 *and* L2
         │        (source: "Bangchak / Retail Station", is_stale: false)
         │
-        ├─ 2. Stale cache (any age) ──► is_stale: true, source gets a " (cache)" suffix
+        ├─ 3. Stale L1 entry (any age) ──► is_stale: true, source gets a " (cache)" suffix
         │
-        └─ 3. Hardcoded `_fallback_prices()` ──► is_stale: true,
+        ├─ 4. Stale L2 row (any age) ──► same flags
+        │
+        └─ 5. Hardcoded `_fallback_prices()` ──► is_stale: true,
                                                  fetched_at: null,
                                                  source: "Market Base Rate"
 ```
 
-The cache is a module-level dict: it lives in the process and is lost on restart or redeploy
-(unlike the weather proxies, oil prices have **no** database-backed L2).
+L1 is a module-level dict and dies with the process. L2 is the shared `weather_cache` table
+(the same one the weather proxies use), so a restart, redeploy or scale event no longer comes
+up empty while the provider is unreachable. A successful fetch writes both layers.
 
 Fuel keys are normalised in this order: `benzene_95`, `gasohol_95`, `gasohol_91`,
 `gasohol_e20`, `gasohol_e85`, `diesel`. Bangchak does not sell Benzene 95 directly, so its
@@ -116,17 +121,20 @@ so a green run means the integration still works end to end.
 data beats an empty card. This is **expected behaviour**, not a bug.
 
 **What to do:**
-1. Confirm with `source`: `"… (cache)"` means layer 2, `"Market Base Rate"` means layer 3.
+1. Confirm with `source`: `"… (cache)"` means a stale cache layer answered, `"Market Base Rate"`
+   means the maintained constants did.
 2. If it persists, the provider is failing — work through Issue 1.
-3. A restart clears the in-process cache; if the provider is still failing, the widget drops
-   straight to the hardcoded layer.
+3. A restart clears L1 only; the L2 row keeps answering with the last known good prices, so the
+   widget degrades to stale data rather than to constants.
 
 ### Issue 3: Prices come from the hardcoded fallback
 
 **Symptoms:** `source` is `"Market Base Rate"`, `fetched_at` is `null`, prices look frozen.
 
-**Meaning:** the provider failed **and** nothing was cached in this process — the usual reason
-is a cold start after a restart or redeploy while the provider is unavailable.
+**Meaning:** the provider failed **and** neither cache layer had anything — which now means the
+endpoint has never completed a successful fetch (a brand-new deployment, or a database that was
+unreachable when it did). Since every successful fetch is written to the shared table, a plain
+restart is no longer enough to reach this layer.
 
 **If the fallback figures themselves are wrong:** update `_fallback_prices()` in
 `backend/app/api/v1/endpoints/oil_prices.py`. They are intentionally explicit constants
@@ -162,7 +170,8 @@ stale payload. Wait out `CACHE_TTL`, or restart the backend to drop the in-proce
 | Setting | Location | Current value |
 |---|---|---|
 | `BANGCHAK_OIL_URL` | `oil_prices.py` | `https://oil-price.bangchak.co.th/ApiOilPrice2/en` |
-| `CACHE_TTL` | `oil_prices.py` | `1800` seconds (30 minutes) |
+| `CACHE_TTL` | `oil_prices.py` | `1800` seconds (30 minutes) — applies to L1 and L2 |
+| `NS_OIL_PRICES` / `_L2_KEY` | `oil_prices.py` | `"oil-prices"` / `("latest",)` in the shared `weather_cache` table |
 | `ORDERED_KEYS` | `oil_prices.py` | display order of the six fuel types |
 | Request timeout | `oil_prices.py` | 10s total / 5s connect (health check: 5s / 3s) |
 | `User-Agent` | `oil_prices.py` | `Mozilla/5.0 (Windows NT 10.0; Win64; x64)` |
@@ -212,15 +221,18 @@ in `message` and `is_accessible: false`.
 Log lines worth alerting on (`logger.warning` / `logger.error` in `oil_prices.py`):
 
 ```
-⚠️ Returning stale cache due to fetch failure
-⚠️ Returning hardcoded fallback prices
-❌ Bangchak API fetch failed: HTTP <code>
-⏱️ Bangchak fetch timeout: <error>
-⚠️ Bangchak API payload parsed but no prices extracted
+Returning stale process cache due to fetch failure
+Returning stale persistent cache due to fetch failure
+Returning hardcoded fallback prices
+Bangchak API fetch failed: HTTP <code>
+Bangchak fetch timeout: <error>
+Bangchak API payload parsed but no prices extracted
+Serving oil prices from the persistent cache
 ```
 
 `"Returning hardcoded fallback prices"` is the strongest signal: it means the dashboard is
-showing numbers that are no longer live.
+showing numbers that are no longer live. `"Returning stale persistent cache…"` is the milder
+one — the numbers are the last real ones, served from the database.
 
 ---
 
@@ -228,11 +240,13 @@ showing numbers that are no longer live.
 
 1. **One provider.** There is no secondary source: when Bangchak is unavailable the endpoint
    degrades to cache, then to hand-maintained constants.
-2. **No persistent cache.** The cache is process-local, so a restart during a provider outage
-   jumps straight to the hardcoded layer (the weather proxies solved this with the
-   `weather_cache` table; oil prices have not been migrated).
-3. **Dead constant.** `EPPO_OIL_URL` is declared but never read — harmless, but it makes the
-   module look like it still talks to EPPO.
+2. **Cache rows are pruned.** `weather_cache` deletes rows older than 30 days, keeping the
+   newest row of each namespace. If the provider has been failing for longer than that, the
+   stale layer is the maintained constants.
+3. **The health endpoint reads L1 only.** `GET /api/v1/oil-prices/health` reports
+   `cache_available` / `cache_age_seconds` from the process cache, so it can say “no cache”
+   immediately after a restart even when a fresh L2 row exists. The main endpoint is what
+   decides what users see.
 4. **Key-name coupling.** Parsing depends on Bangchak's product names
    (`Gasohol 95`, `Hi Diesel S`, …). A rename silently drops a fuel type; the health endpoint
    and the manual check script are the fastest way to notice.

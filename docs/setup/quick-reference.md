@@ -8,7 +8,8 @@
 - Profile: `http://localhost:3000/profile`
 - Backend API: `http://localhost:8080`
 - Swagger: `http://localhost:8080/docs`
-- Health: `http://localhost:8080/health`
+- Health (liveness + database status): `http://localhost:8080/health`
+- Readiness (`503` when the database is down): `http://localhost:8080/health/ready`
 
 ## Local Run
 
@@ -63,11 +64,36 @@ cd backend
 alembic upgrade head
 ```
 
+### Check that the models and the migration chain agree
+
+```powershell
+cd backend
+alembic check          # "No new upgrade operations detected." = clean
+```
+
+CI runs `alembic upgrade head` + `alembic check` on every push, so drift fails the build.
+
 ### Create a new migration
 
 ```powershell
 cd backend
 alembic revision --autogenerate -m "describe change"
+```
+
+### Run the expired-session cleanup by hand
+
+```powershell
+cd backend
+.\venv\Scripts\python.exe -m app.services.session_cleanup
+```
+
+The same job runs in-app every `SESSION_CLEANUP_INTERVAL_HOURS` (default 6, `0` disables it).
+
+### Audit backend dependencies
+
+```powershell
+cd backend
+.\venv\Scripts\python.exe -m pip_audit -r requirements.txt
 ```
 
 ### Test oil prices endpoint
@@ -80,6 +106,16 @@ cd backend
 `backend/scripts/checks/` holds manual connectivity checks. They are deliberately
 named `check_*` and `pytest.ini` pins `testpaths = tests`, so a bare `pytest` run
 never collects them.
+
+## Settings worth knowing
+
+| Variable | Default | Why you would set it |
+|---|---|---|
+| `TRUSTED_PROXY_IPS` | empty | Comma-separated IPs/CIDRs allowed to assert `X-Forwarded-For`. Empty trusts loopback/RFC1918 peers only, so public callers cannot pick their own rate-limit bucket. |
+| `SESSION_CLEANUP_INTERVAL_HOURS` | `6` | Interval of the in-app expired-session cleanup; `0` turns it off. |
+| `WS_BROADCAST_REDIS_URL` | empty | Fan WebSocket broadcasts out to every instance via Redis pub/sub. Empty = process-local. |
+| `WS_MAX_CONNECTIONS` / `WS_MAX_CONNECTIONS_PER_USER` | `200` / `3` | Per-process socket caps. |
+| `NEXT_PUBLIC_WS_URL` (frontend) | empty | Override the notification socket origin when a hosting rewrite does not forward WebSocket upgrades. |
 
 ## Notes
 

@@ -22,6 +22,11 @@ For the code on Render to communicate with external services correctly, importan
 * `BACKEND_GOOGLE_REDIRECT`: URL to receive callbacks from Google, must point to Render's domain (e.g., `https://<render-domain>/api/v1/auth/google/callback`)
 * `DATABASE_URL`: Connection String to connect to Neon.tech database
 * `FRONTEND_URL`: URL of the frontend running on Vercel, used to redirect back with data after a successful login
+* `CORS_ORIGINS`: Comma-separated frontend origins; required because cookies cannot be combined with wildcards
+* `TRUSTED_PROXY_IPS`: Optional. Leave empty on Render — the platform load balancer is a private address, which is trusted by default. Set it explicitly only when the proxy is not loopback/RFC1918, otherwise every request looks like it comes from that proxy and one client can exhaust the shared rate-limit budget.
+* `SESSION_CLEANUP_INTERVAL_HOURS`: Optional (default `6`, `0` disables). Expired sessions are deleted by an in-app scheduler instead of needing a cron job.
+* `WS_BROADCAST_REDIS_URL`: Optional. Set it to the same Redis used by `SLOWAPI_STORAGE_URI` when running more than one instance, so a broadcast reaches the clients of every instance.
+* `NEXT_PUBLIC_WS_URL` (Vercel): Optional. Set it to the backend origin when the `/api` rewrite forwards plain requests but drops the WebSocket upgrade.
 
 ### 2.2 Migrating Database Connection Architecture to Asynchronous System
 To prevent Event Loop Blocked issues on FastAPI, we changed the database connection architecture from Synchronous to fully Asynchronous:
@@ -37,7 +42,16 @@ The API now ships with several security defaults that deployments must be aware 
 * Security headers: strict CSP with `connect-src` derived from `CORS_ORIGINS`, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy`, `Permissions-Policy`, and HSTS with `includeSubDomains; preload` outside `DEBUG`.
 * Google Sign-In uses the authorization-code flow (`/api/v1/auth/google` → `/api/v1/auth/google/callback`) instead of implicit tokens in the browser URL.
 
-### 2.4 Enabling SSL Security (Database Connection)
+### 2.4 Health Checks and Release Verification
+The backend answers two probes; which one a platform points at changes what a database outage does to traffic:
+* `GET /health` — liveness plus a real `SELECT 1` (2s timeout). Always `200`, with `status: healthy|degraded` and a `database` object.
+* `GET /health/ready` — readiness. `503` while the database is unreachable, so a platform health check or load balancer stops routing to an instance that cannot serve.
+
+Every response also carries `X-Request-ID` and the same value appears as `rid=…` in the logs, so a reported failure can be traced to the exact request.
+
+Alembic remains the only schema authority, and CI now applies the chain (`alembic upgrade head`) and checks for model drift (`alembic check`) on every push — a broken revision fails the build instead of the deployment.
+
+### 2.5 Enabling SSL Security (Database Connection)
 Connecting to a Managed Database like Neon requires data transmission through an encrypted channel:
 * Embedded the `connect_args={"ssl": True}` parameter at the SQLAlchemy Engine level to force `asyncpg` to always operate via SSL Mode.
 

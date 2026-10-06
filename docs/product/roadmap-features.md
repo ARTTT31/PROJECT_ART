@@ -47,14 +47,20 @@
 - **Admin:** user management, page-permission editing, password reset/lockout reset, audit log.
 - **Notifications:** notification bell with derived alerts (holidays, weather, oil prices) plus
   a live WebSocket feed. The socket authenticates during the handshake and the connection
-  registry is capped per user; broadcasts are admin-only.
+  registry is capped per user; broadcasts are admin-only and fan out through Redis pub/sub
+  when `WS_BROADCAST_REDIS_URL` is set.
 - **Resilience:** the weather/geocode proxies retry throttled upstreams, fall back to stale data
-  and persist the last known good payload in `weather_cache`. Oil prices fall back to a
-  process cache and then to maintained constants.
+  and persist the last known good payload in `weather_cache`; oil prices use the same table
+  before dropping to maintained constants. Each namespace keeps its newest row past the
+  30-day retention window, so the fallback survives a cold start.
 - **Security:** CSP with a production/development split, HSTS, `nosniff`/`DENY` headers,
-  rate limiting, API docs off unless opted in, startup refusal on a weak `SECRET_KEY`.
-- **Operations:** Sentry (opt-in via `SENTRY_DSN`), health endpoints plus an admin-only system
-  health report, Alembic migrations as the only schema authority, GitHub Actions CI.
+  rate limiting keyed on a client address that only a trusted proxy may assert, API docs off
+  unless opted in, startup refusal on a weak `SECRET_KEY`.
+- **Operations:** Sentry (opt-in via `SENTRY_DSN`), `/health` (liveness + database status) and
+  `/health/ready` (503 when the database is down) plus an admin-only system health report,
+  `X-Request-ID` on every response and on every log line, scheduled session cleanup, Alembic
+  migrations as the only schema authority (`alembic check` runs in CI), GitHub Actions CI,
+  Dependabot updates.
 
 ---
 
@@ -62,10 +68,10 @@
 
 | Constraint | Detail |
 |---|---|
-| Single instance | Rate limiting and the WebSocket registry are process-local; startup logs a `[SCALING]` notice. See README -> *Horizontal scaling*. |
-| One weather provider | No secondary source; degradation comes from cache + retry, not failover. |
+| Single instance by default | The WebSocket registry can fan out through Redis (`WS_BROADCAST_REDIS_URL`) and the rate limiter can use Redis (`SLOWAPI_STORAGE_URI`), but both default to process-local and startup logs a `[SCALING]` notice. See README -> *Horizontal scaling*. |
+| One weather provider | No secondary source; degradation comes from cache + retry, not failover. A location that was never fetched successfully still ends in `502`. |
 | Thai-only UI | All copy is hardcoded Thai; there is no i18n layer. |
-| Process cache for oil prices | Unlike weather, oil prices have no database-backed L2. |
+| Advisory dependency audit | `pip-audit` reports `starlette` (via fastapi 0.111) and `python-jose` advisories; the CI job reports them without blocking until the pins move. |
 
 ---
 
@@ -73,13 +79,18 @@
 
 Ordered by evidence, not by preference:
 
-1. **A second weather provider or a longer retention window** — Open-Meteo throttles the shared
-   deployment egress, and no cache can serve data that was never fetched.
-2. **CI checks the migration chain** — the test suite creates tables from the models, so a
-   broken Alembic revision currently passes CI and fails in production.
-3. **Shared state before scaling out** — Redis for the rate limiter and a pub/sub fan-out for
-   WebSocket broadcasts.
-4. **Frontend coverage and one live-backend E2E** — the unit suites cover pure logic; nothing
-   currently catches a broken login against the real API.
-5. **Oil prices: persistent cache + delete the dead `EPPO_OIL_URL`** — brings it in line with
-   the weather path.
+1. **A second weather provider** — retention (30 days, newest row of every namespace kept) and
+   per-namespace protection now cover pruning and cold starts, but no cache can serve data that
+   was never fetched. This is the last remaining cause of a `502` on the forecast proxy, and it
+   is a product decision.
+2. **Redis for the rate limiter before scaling out** — the WebSocket fan-out already has a
+   supported path (`WS_BROADCAST_REDIS_URL`); the limiter still needs
+   `SLOWAPI_STORAGE_URI=redis://…` for a second instance to be safe.
+3. **Frontend coverage and one live-backend E2E** — 79 unit tests cover pure logic and the
+   notification bell; most components are still untested, and nothing currently catches a
+   broken login against the real API.
+4. **Move the dependency pins** — `starlette` (via fastapi 0.111) and `python-jose` carry open
+   advisories; turning the advisory `pip-audit` job into a required check needs the upgrades
+   first.
+5. **i18n** — the UI is Thai-only by design today; a second language needs a real message
+   layer, not string replacement.
