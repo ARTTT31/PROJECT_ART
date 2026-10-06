@@ -95,9 +95,39 @@ Backend test count grew from 50 to 90 and total coverage from 54.98% to 65.12%. 
    - Verified on the live deployment that the retry path actually executes: `forecast` takes ~5.1s before returning 502, versus `air-quality` answering in 0.18s from a warm cache — the 2.4s of backoff accounts for the difference.
    - `WeatherWidget` rendered a tall empty card whenever the request failed. It now has a compact error state with a retry button.
 
+## Maintainability and Resilience Pass (October 6, 2026)
+
+1. **Alembic Is Now the Only Schema Authority.**
+   - Deleted `sync_db_columns()` (raw `ALTER TABLE` at startup) along with the `AUTO_MIGRATE_COLUMNS` setting, its never-firing `default_migrate_from_debug` validator, and the `AUTO_MIGRATE_COLUMNS_EFFECTIVE` property that existed only to disable it. Two owners of the schema is one too many: a startup repair could mask a genuinely missing migration. `AUTO_CREATE_TABLES` stays as the explicit local-development convenience. The four `TestAutoMigrateColumnsGuard` tests were removed with the code they covered.
+
+2. **Weather Fallback Now Survives Restarts.**
+   - The in-process cache dies with the process, which is precisely when a throttled provider hurts most — a cold instance returned a hard 502. Added `weather_cache` (model + Alembic revision `c4e8a91b7d20`) as an L2 behind the existing L1 dict, wired into `forecast`, `air-quality` and `reverse-geocode`.
+   - Reads prefer L1, then a still-fresh L2 row (which also warms L1); an upstream failure falls back to L1-stale, then L2-stale, and flags `_stale: true`. Successful fetches are persisted. Rows older than 7 days are pruned opportunistically on write, which bounds the table without a scheduled job.
+   - The layer is deliberately best-effort: every helper swallows and logs database errors, because these proxies are unauthenticated so the login page can render them — a database outage must not take the widget down too.
+   - Verified by migrating a fresh SQLite database through the full chain (table + index created) and by six new tests, including a simulated restart (empty L1 + `429` upstream) that still answers `200` from the database, and an expired-row case that must re-fetch rather than serve.
+
+3. **Single-Instance Assumptions Are Now Explicit, Not Silent.**
+   - Rate limiting (`SLOWAPI_STORAGE_URI=memory://`) and the WebSocket connection registry are both process-local. On one instance that is correct; on two it silently multiplies the effective rate limit and halves broadcast reach. `app.main.log_shared_state_limitations()` now prints a `[SCALING]` notice at startup for each, and README documents the shared-Redis upgrade path. No new service was introduced.
+
+4. **Cookie Configuration Can No Longer Lock Out Local Dev.**
+   - `SameSite=None` is only honoured together with `Secure`; over plain HTTP the browser drops the cookie, which presents as "login succeeded but the session never persists". Added `Settings.COOKIE_SAMESITE_EFFECTIVE`, which downgrades `none` to `lax` when the cookie is not secure and logs a `[CONFIG]` notice. `auth.py` and the CSRF middleware now both use it, so copying production values into a local environment cannot break login silently. Covered by `TestCookieSameSiteGuard` (3 tests).
+
+5. **Manual Scripts No Longer Run as Tests.**
+   - `backend/scripts/tests/` → `backend/scripts/checks/`, and the files renamed to `check_*.py` / `check_*.ps1` / `check_db.js`. These five scripts *were* being collected by a bare `pytest` run (95 collected = 90 real + 5 scripts), and `check_login.py` attempted a real HTTP request to `localhost:8888` during the suite while quietly passing whether or not the server existed. `pytest.ini` now pins `testpaths = tests` with `norecursedirs = scripts venv .git __pycache__ htmlcov`, so collection is 96 real tests.
+
+6. **Frontend Test Harness Grew From 19 to 70 Tests.**
+   - New suites for `quickLinks` (15), `userAgent` (11), `mainMenu` (12), `holidays` (8) and `cn` (5) — all pure logic that user-editable JSON and the session list depend on, previously unverified.
+
+7. **Two Real Bugs Found and Fixed by Those Tests.**
+   - `parseUserAgent` matched its (lowercase) version regexes against the original, mixed-case agent string, so every version lookup silently failed: the profile session list showed "Chrome" instead of "Chrome 120", "macOS" instead of "macOS 10.15", and so on. All lookups now run against the lowercased string.
+   - The OS branch tested `mac os x` before `iphone`/`ipad`, and iOS agents contain "like Mac OS X" — so every iPhone and iPad was reported as a Mac. The mobile branch is now checked first.
+
+8. **`WeatherWidget` Tests Are Warning-Free.**
+   - The suite emitted `An update to WeatherWidget inside a test was not wrapped in act(...)`. The mount effect resolves a rejected request after the last assertion, so its state updates landed outside `act`; the retry test also used a bare `.click()`. Tests now flush inside `act()`, use `fireEvent.click`, and the "still loading" case asserts both halves (no affordance before the request settles, affordance after). A React warning stream is not a passing signal — it hides real failures.
+
 ### Known Remaining Items
 
-- `weather/forecast` still returns 502 on production while Open-Meteo throttles Render's shared egress IP. The retry and stale-cache fallback make the failure graceful but cannot manufacture data that the upstream refuses to serve. The real fix is a cache that survives instance restarts (Redis/Upstash or a hosted Postgres) or a second weather provider, which needs a decision from the project owner.
+- `weather/forecast` can still 502 when Open-Meteo throttles Render's shared egress IP **and** the persisted entry has been pruned or never existed. The retry, the L1 cache and the L2 `weather_cache` table now cover restarts and cold starts, but no cache can manufacture data the upstream refuses to serve — the remaining fixes are a second weather provider or a longer retention window, both needing a product decision.
 
-- Frontend coverage is still thin beyond `useDashboardLayout`: the ~10k lines of components and widgets have no unit or component tests. The 3 Playwright smoke tests now pass locally (verified against a running dev server) but they assert only on structure and redirects — they still run without a live backend, so they would not catch a broken login against the real API.
-- `backend/scripts/tests/` holds three **manual** scripts, not unit tests: `test_oil_prices.py` documents itself as a pre-deploy connectivity check, and the other two drive a live server with `requests`. They are intentionally not part of the suite. Worth renaming the folder to `scripts/checks/` so nobody mistakes them for pytest tests — pytest collects `test_*.py` by name, so a bare `pytest` at the repo root would try to run them.
+- Frontend coverage improved but is still partial: the ~10k lines of components and widgets remain mostly untested, and the 3 Playwright smoke tests still run without a live backend, so they would not catch a broken login against the real API.
+- **Scaling remains unimplemented by design.** The `[SCALING]` notices and README describe the limitation; actually supporting more than one instance requires a shared Redis for rate limiting and a pub/sub fan-out for WebSocket broadcasts.
