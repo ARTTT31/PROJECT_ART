@@ -563,3 +563,183 @@ class TestWeatherUpstreamResilience:
         )
 
         assert resp.status_code == 502
+
+
+# ── Persistent (database) weather cache ───────────────────
+# The in-process cache dies with the process, which is exactly when a cold
+# instance has nothing to fall back on. These tests cover the L2 layer that
+# keeps the stale fallback alive across restarts and redeploys.
+
+class TestWeatherPersistentCache:
+    async def _forecast(self, client, **overrides):
+        params = {"latitude": 13.7563, "longitude": 100.5018, "forecast_days": 2}
+        params.update(overrides)
+        return await client.get("/api/v1/weather/forecast", params=params)
+
+    async def test_successful_fetch_is_persisted(self, monkeypatch, client, db_session):
+        from sqlalchemy import select
+        from app.api.v1.endpoints import weather as w
+        from app.models.weather_cache import WeatherCacheEntry
+
+        w._WEATHER_CACHE.clear()
+        _install_fake_http(monkeypatch, [_FakeResponse(200, {"current": {"temperature_2m": 30}})])
+
+        assert (await self._forecast(client)).status_code == 200
+
+        rows = (await db_session.execute(select(WeatherCacheEntry))).scalars().all()
+        assert [r.key for r in rows] == ["forecast:13.7563:100.5018:2"]
+
+    async def test_restart_serves_the_persisted_entry(self, monkeypatch, client):
+        """After a restart the persisted payload answers, without touching the provider."""
+        from app.api.v1.endpoints import weather as w
+
+        w._WEATHER_CACHE.clear()
+        _install_fake_http(monkeypatch, [_FakeResponse(200, {"current": {"temperature_2m": 30}})])
+        assert (await self._forecast(client)).status_code == 200
+
+        # Process restarts here — L1 is empty — and the provider now refuses.
+        w._WEATHER_CACHE.clear()
+        holder = _install_fake_http(monkeypatch, [_FakeResponse(429, text="rate limited")])
+
+        resp = await self._forecast(client)
+
+        assert resp.status_code == 200, resp.text
+        body = resp.json()
+        assert body["current"]["temperature_2m"] == 30
+        assert body["_from_cache"] is True
+        assert holder["calls"] == 0, "the provider must not be consulted while L2 is fresh"
+
+    async def test_restart_with_expired_entry_serves_stale_instead_of_502(
+        self, monkeypatch, client, db_session
+    ):
+        """The exact production symptom: cold process + throttled provider."""
+        from datetime import timedelta
+
+        from sqlalchemy import select
+        from app.api.v1.endpoints import weather as w
+        from app.core.utils import utcnow
+        from app.models.weather_cache import WeatherCacheEntry
+        from app.services import weather_cache
+
+        key = w._cache_key_forecast(13.7563, 100.5018, 2)
+        w._WEATHER_CACHE.clear()
+        await weather_cache.store(
+            db_session, w.NS_FORECAST, key, {"current": {"temperature_2m": 30}}
+        )
+        row = (await db_session.execute(select(WeatherCacheEntry).where(
+            WeatherCacheEntry.key == weather_cache.build_key(w.NS_FORECAST, key)
+        ))).scalar_one()
+        row.updated_at = utcnow() - timedelta(seconds=w.FORECAST_CACHE_TTL + 60)
+        await db_session.commit()
+
+        _install_fake_http(monkeypatch, [_FakeResponse(429, text="rate limited")])
+
+        resp = await self._forecast(client)
+
+        assert resp.status_code == 200, resp.text
+        body = resp.json()
+        assert body["current"]["temperature_2m"] == 30
+        assert body["_stale"] is True
+        assert body["_from_cache"] is True
+
+    async def test_fresh_database_entry_avoids_the_upstream_call(
+        self, monkeypatch, client, db_session
+    ):
+        from app.api.v1.endpoints import weather as w
+        from app.services import weather_cache
+
+        w._WEATHER_CACHE.clear()
+        await weather_cache.store(
+            db_session, w.NS_FORECAST, w._cache_key_forecast(13.7563, 100.5018, 2),
+            {"current": {"temperature_2m": 28}},
+        )
+        holder = _install_fake_http(monkeypatch, [_FakeResponse(200, {"current": {}})])
+
+        resp = await self._forecast(client)
+
+        assert resp.status_code == 200
+        assert resp.json()["current"]["temperature_2m"] == 28
+        assert holder["calls"] == 0, "a warm database entry must not hit the provider"
+
+    async def test_expired_database_entry_is_refetched(
+        self, monkeypatch, client, db_session
+    ):
+        """A row past its TTL must be refreshed, not served as if it were current."""
+        from datetime import timedelta
+
+        from sqlalchemy import select
+        from app.api.v1.endpoints import weather as w
+        from app.core.utils import utcnow
+        from app.models.weather_cache import WeatherCacheEntry
+        from app.services import weather_cache
+
+        w._WEATHER_CACHE.clear()
+        key = w._cache_key_forecast(13.7563, 100.5018, 2)
+        await weather_cache.store(
+            db_session, w.NS_FORECAST, key, {"current": {"temperature_2m": 21}}
+        )
+
+        row = (await db_session.execute(select(WeatherCacheEntry).where(
+            WeatherCacheEntry.key == weather_cache.build_key(w.NS_FORECAST, key)
+        ))).scalar_one()
+        row.updated_at = utcnow() - timedelta(seconds=w.FORECAST_CACHE_TTL + 60)
+        await db_session.commit()
+
+        holder = _install_fake_http(
+            monkeypatch, [_FakeResponse(200, {"current": {"temperature_2m": 33}})]
+        )
+
+        resp = await self._forecast(client)
+
+        assert resp.status_code == 200
+        assert resp.json()["current"]["temperature_2m"] == 33
+        assert holder["calls"] == 1, "an expired entry must be re-fetched, not served"
+
+    async def test_store_prunes_rows_past_the_retention_window(self, db_session):
+        from datetime import timedelta
+
+        from sqlalchemy import select
+        from app.core.utils import utcnow
+        from app.models.weather_cache import WeatherCacheEntry
+        from app.services import weather_cache
+
+        db_session.add(WeatherCacheEntry(
+            key="forecast:1.0:2.0:1",
+            payload="{}",
+            updated_at=utcnow() - timedelta(days=30),
+        ))
+        await db_session.commit()
+
+        await weather_cache.store(db_session, "forecast", (3.0, 4.0, 1), {"ok": True})
+
+        keys = [r.key for r in (await db_session.execute(select(WeatherCacheEntry))).scalars().all()]
+        assert "forecast:1.0:2.0:1" not in keys
+        assert "forecast:3.0:4.0:1" in keys
+
+    async def test_cache_errors_do_not_break_the_proxy(self):
+        """The cache is best-effort: database failures must be swallowed, not raised.
+
+        The weather proxies are reachable without authentication so the login page
+        can render them, which means a database outage must not be able to take the
+        widget down as well.
+        """
+        from app.services import weather_cache
+
+        class BrokenSession:
+            """Stands in for a session whose database just went away."""
+
+            async def execute(self, *args, **kwargs):
+                raise RuntimeError("database unavailable")
+
+            async def get(self, *args, **kwargs):
+                raise RuntimeError("database unavailable")
+
+            async def rollback(self):
+                raise RuntimeError("database unavailable")
+
+        broken = BrokenSession()
+        key = (13.7563, 100.5018, 2)
+
+        assert await weather_cache.get_fresh(broken, "forecast", key, 600) is None
+        assert await weather_cache.get_stale(broken, "forecast", key) is None
+        await weather_cache.store(broken, "forecast", key, {"ok": True})  # must not raise

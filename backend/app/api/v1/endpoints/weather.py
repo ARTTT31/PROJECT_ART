@@ -14,11 +14,14 @@ import logging
 from typing import Optional
 
 import httpx
-from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
+from app.core.database import get_db
 from app.core.rate_limit import limiter
 from app.core.utils import utcnow
+from app.services import weather_cache
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -108,6 +111,54 @@ def _cache_key_geocode(lat: float, lon: float, lang: str) -> tuple:
     return (round(lat, 4), round(lon, 4), lang)
 
 
+# L2 namespaces — keep them stable, they are part of the stored key.
+NS_FORECAST = "forecast"
+NS_AIR_QUALITY = "air-quality"
+NS_GEOCODE = "geocode"
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# L1 + L2 cache access
+# ═══════════════════════════════════════════════════════════════════════════════
+
+async def _cached_payload(
+    db: AsyncSession, cache: dict, namespace: str, key: tuple, ttl: int
+) -> Optional[dict]:
+    """Return a fresh payload from the process cache or, failing that, the database.
+
+    The database layer is what makes the fallback survive a restart: a cold
+    instance would otherwise have no data at all when the provider throttles.
+    """
+    cached = _cache_get(cache, key, ttl)
+    if cached is not None:
+        cached["_from_cache"] = True
+        return cached
+
+    persisted = await weather_cache.get_fresh(db, namespace, key, ttl)
+    if persisted is None:
+        return None
+
+    _cache_set(cache, key, persisted)  # warm the process cache
+    payload = dict(persisted)
+    payload["_from_cache"] = True
+    return payload
+
+
+async def _stale_payload(
+    db: AsyncSession, cache: dict, namespace: str, key: tuple
+) -> Optional[dict]:
+    """Last-resort payload after an upstream failure: expired data beats no data."""
+    stale = _cache_get_stale(cache, key)
+    if stale is None:
+        stale = await weather_cache.get_stale(db, namespace, key)
+    if stale is None:
+        return None
+    payload = dict(stale)
+    payload["_from_cache"] = True
+    payload["_stale"] = True
+    return payload
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # HTTP helpers
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -188,6 +239,7 @@ async def _upstream_get(
 @limiter.limit(_GENERAL_LIMIT)
 async def get_forecast_proxy(
     request: Request,
+    db: AsyncSession = Depends(get_db),
     latitude: float = Query(..., ge=-90.0, le=90.0, description="Latitude in decimal degrees"),
     longitude: float = Query(..., ge=-180.0, le=180.0, description="Longitude in decimal degrees"),
     timezone: str = Query("Asia/Bangkok", description="IANA timezone for response"),
@@ -196,9 +248,10 @@ async def get_forecast_proxy(
     """Proxy to Open-Meteo /forecast. Returns the exact upstream JSON shape
     so the existing frontend widget can drop in without re-parsing."""
     cache_key = _cache_key_forecast(latitude, longitude, forecast_days)
-    cached = _cache_get(_WEATHER_CACHE, cache_key, FORECAST_CACHE_TTL)
+    cached = await _cached_payload(
+        db, _WEATHER_CACHE, NS_FORECAST, cache_key, FORECAST_CACHE_TTL
+    )
     if cached is not None:
-        cached["_from_cache"] = True
         return cached
 
     params = {
@@ -214,16 +267,14 @@ async def get_forecast_proxy(
     try:
         payload = await _upstream_get(OPEN_METEO_FORECAST_URL, params)
     except HTTPException:
-        stale = _cache_get_stale(_WEATHER_CACHE, cache_key)
+        stale = await _stale_payload(db, _WEATHER_CACHE, NS_FORECAST, cache_key)
         if stale is not None:
             logger.warning("Serving stale forecast for %s after upstream failure", cache_key)
-            stale = dict(stale)
-            stale["_from_cache"] = True
-            stale["_stale"] = True
             return stale
         raise
 
     _cache_set(_WEATHER_CACHE, cache_key, payload)
+    await weather_cache.store(db, NS_FORECAST, cache_key, payload)
     return payload
 
 
@@ -235,15 +286,17 @@ async def get_forecast_proxy(
 @limiter.limit(_GENERAL_LIMIT)
 async def get_air_quality_proxy(
     request: Request,
+    db: AsyncSession = Depends(get_db),
     latitude: float = Query(..., ge=-90.0, le=90.0),
     longitude: float = Query(..., ge=-180.0, le=180.0),
     timezone: str = Query("Asia/Bangkok"),
 ):
     """Proxy to Open-Meteo air-quality API (PM2.5 / PM10 / US AQI)."""
     cache_key = _cache_key_aqi(latitude, longitude)
-    cached = _cache_get(_AQI_CACHE, cache_key, AIR_QUALITY_CACHE_TTL)
+    cached = await _cached_payload(
+        db, _AQI_CACHE, NS_AIR_QUALITY, cache_key, AIR_QUALITY_CACHE_TTL
+    )
     if cached is not None:
-        cached["_from_cache"] = True
         return cached
 
     params = {
@@ -256,16 +309,14 @@ async def get_air_quality_proxy(
     try:
         payload = await _upstream_get(OPEN_METEO_AIR_QUALITY_URL, params)
     except HTTPException:
-        stale = _cache_get_stale(_AQI_CACHE, cache_key)
+        stale = await _stale_payload(db, _AQI_CACHE, NS_AIR_QUALITY, cache_key)
         if stale is not None:
             logger.warning("Serving stale air quality for %s after upstream failure", cache_key)
-            stale = dict(stale)
-            stale["_from_cache"] = True
-            stale["_stale"] = True
             return stale
         raise
 
     _cache_set(_AQI_CACHE, cache_key, payload)
+    await weather_cache.store(db, NS_AIR_QUALITY, cache_key, payload)
     return payload
 
 
@@ -277,6 +328,7 @@ async def get_air_quality_proxy(
 @limiter.limit(_GENERAL_LIMIT)
 async def get_reverse_geocode_proxy(
     request: Request,
+    db: AsyncSession = Depends(get_db),
     latitude: float = Query(..., ge=-90.0, le=90.0),
     longitude: float = Query(..., ge=-180.0, le=180.0),
     locality_language: str = Query("th", description="ISO 639-1 language code for labels"),
@@ -284,9 +336,10 @@ async def get_reverse_geocode_proxy(
     """Proxy to BigDataCloud reverse-geocode. Returns locality/city names
     in the requested language. Safe default: Thai (th)."""
     cache_key = _cache_key_geocode(latitude, longitude, locality_language)
-    cached = _cache_get(_GEOCODE_CACHE, cache_key, GEOCODE_CACHE_TTL)
+    cached = await _cached_payload(
+        db, _GEOCODE_CACHE, NS_GEOCODE, cache_key, GEOCODE_CACHE_TTL
+    )
     if cached is not None:
-        cached["_from_cache"] = True
         return cached
 
     params = {
@@ -298,14 +351,12 @@ async def get_reverse_geocode_proxy(
     try:
         payload = await _upstream_get(BIGDATACLOUD_REVERSE_URL, params)
     except HTTPException:
-        stale = _cache_get_stale(_GEOCODE_CACHE, cache_key)
+        stale = await _stale_payload(db, _GEOCODE_CACHE, NS_GEOCODE, cache_key)
         if stale is not None:
             logger.warning("Serving stale geocode for %s after upstream failure", cache_key)
-            stale = dict(stale)
-            stale["_from_cache"] = True
-            stale["_stale"] = True
             return stale
         raise
 
     _cache_set(_GEOCODE_CACHE, cache_key, payload)
+    await weather_cache.store(db, NS_GEOCODE, cache_key, payload)
     return payload
