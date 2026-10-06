@@ -46,6 +46,6 @@ redis>=5.0.0
 
 # Development / Linting
 flake8==6.1.0
-mypy==1.9.0
+mypy==2.4.0
 
 asyncpg==0.29.0
