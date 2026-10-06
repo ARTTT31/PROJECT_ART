@@ -588,15 +588,26 @@ class TestWebsocketHandshake:
         finally:
             app.dependency_overrides.clear()
 
-    def test_anonymous_handshake_never_opens(self, tmp_path, reset_ws_manager):
+    def test_anonymous_handshake_is_closed_with_1008_and_never_registered(
+        self, tmp_path, reset_ws_manager
+    ):
+        """Regression: the subscribe path was open to anyone who knew the URL.
+
+        The rejection has to arrive as a WebSocket close frame with `1008`: closing
+        before ``accept()`` makes the server answer the HTTP upgrade with `403`,
+        which browsers report as the generic abnormal closure `1006` — a code
+        `NotificationBell` cannot tell apart from a dropped connection, so it would
+        keep retrying instead of stopping.
+        """
         db_path = tmp_path / "ws.db"
         self._seed(db_path)
 
         with self._client(db_path) as client:
-            with pytest.raises(WebSocketDisconnect):
-                with client.websocket_connect("/api/v1/ws/notifications"):
-                    pass  # pragma: no cover - reaching this means the socket opened
+            with client.websocket_connect("/api/v1/ws/notifications") as ws:
+                with pytest.raises(WebSocketDisconnect) as excinfo:
+                    ws.receive_text()
 
+        assert excinfo.value.code == 1008
         assert reset_ws_manager.active_connections == []
 
     def test_authenticated_handshake_connects_and_answers_ping(
@@ -646,13 +657,14 @@ class TestWebsocketHandshake:
         asyncio.run(deactivate())
 
         with self._client(db_path) as client:
-            with pytest.raises(WebSocketDisconnect):
-                with client.websocket_connect(
-                    "/api/v1/ws/notifications",
-                    headers={"cookie": f"access_token={token}"},
-                ):
-                    pass  # pragma: no cover - reaching this means the socket opened
+            with client.websocket_connect(
+                "/api/v1/ws/notifications",
+                headers={"cookie": f"access_token={token}"},
+            ) as ws:
+                with pytest.raises(WebSocketDisconnect) as excinfo:
+                    ws.receive_text()
 
+        assert excinfo.value.code == 1008
         assert reset_ws_manager.active_connections == []
 
     def test_handshake_rejects_when_the_instance_is_at_capacity(
@@ -663,13 +675,14 @@ class TestWebsocketHandshake:
         reset_ws_manager.max_total = 0  # already full
 
         with self._client(db_path) as client:
-            with pytest.raises(WebSocketDisconnect):
-                with client.websocket_connect(
-                    "/api/v1/ws/notifications",
-                    headers={"cookie": f"access_token={token}"},
-                ):
-                    pass  # pragma: no cover - reaching this means the socket opened
+            with client.websocket_connect(
+                "/api/v1/ws/notifications",
+                headers={"cookie": f"access_token={token}"},
+            ) as ws:
+                with pytest.raises(WebSocketDisconnect) as excinfo:
+                    ws.receive_text()
 
+        assert excinfo.value.code == 1013, "the client backs off on 1013"
         assert reset_ws_manager.active_connections == []
 
 
@@ -1057,6 +1070,7 @@ class TestWeatherPersistentCache:
         assert holder["calls"] == 1, "an expired entry must be re-fetched, not served"
 
     async def test_store_prunes_rows_past_the_retention_window(self, db_session):
+        """Rows beyond MAX_AGE go — except the one row each namespace keeps."""
         from datetime import timedelta
 
         from sqlalchemy import select
@@ -1064,18 +1078,47 @@ class TestWeatherPersistentCache:
         from app.models.weather_cache import WeatherCacheEntry
         from app.services import weather_cache
 
-        db_session.add(WeatherCacheEntry(
-            key="forecast:1.0:2.0:1",
-            payload="{}",
-            updated_at=utcnow() - timedelta(days=30),
-        ))
+        newest_stale = utcnow() - weather_cache.MAX_AGE - timedelta(days=1)
+        older_stale = utcnow() - weather_cache.MAX_AGE - timedelta(days=9)
+        db_session.add_all([
+            WeatherCacheEntry(key="forecast:1.0:2.0:1", payload="{}", updated_at=older_stale),
+            WeatherCacheEntry(key="forecast:5.0:6.0:1", payload="{}", updated_at=newest_stale),
+        ])
         await db_session.commit()
 
-        await weather_cache.store(db_session, "forecast", (3.0, 4.0, 1), {"ok": True})
+        await weather_cache.store(db_session, "geocode", (3.0, 4.0, "th"), {"ok": True})
 
         keys = [r.key for r in (await db_session.execute(select(WeatherCacheEntry))).scalars().all()]
-        assert "forecast:1.0:2.0:1" not in keys
-        assert "forecast:3.0:4.0:1" in keys
+        assert "forecast:1.0:2.0:1" not in keys, "not the namespace's newest row -> prunable"
+        assert "forecast:5.0:6.0:1" in keys, "the last fallback of a namespace must survive"
+        assert "geocode:3.0:4.0:th" in keys
+
+    async def test_pruning_keeps_one_row_per_namespace(self, db_session):
+        """A cold instance with one ancient row can still answer; without it, 502."""
+        from datetime import timedelta
+
+        from sqlalchemy import select
+        from app.core.utils import utcnow
+        from app.models.weather_cache import WeatherCacheEntry
+        from app.services import weather_cache
+
+        ancient = utcnow() - timedelta(days=400)
+        db_session.add_all([
+            WeatherCacheEntry(key="forecast:1.0:2.0:1", payload="{}", updated_at=ancient),
+            WeatherCacheEntry(key="air-quality:1.0:2.0", payload="{}", updated_at=ancient),
+            WeatherCacheEntry(key="oil-prices:latest", payload="{}", updated_at=ancient),
+        ])
+        await db_session.commit()
+
+        await weather_cache.store(db_session, "geocode", (9.0, 9.0, "th"), {"ok": True})
+
+        keys = {r.key for r in (await db_session.execute(select(WeatherCacheEntry))).scalars().all()}
+        assert keys == {
+            "forecast:1.0:2.0:1",
+            "air-quality:1.0:2.0",
+            "oil-prices:latest",
+            "geocode:9.0:9.0:th",
+        }
 
     async def test_cache_errors_do_not_break_the_proxy(self):
         """The cache is best-effort: database failures must be swallowed, not raised.
@@ -1104,3 +1147,476 @@ class TestWeatherPersistentCache:
         assert await weather_cache.get_fresh(broken, "forecast", key, 600) is None
         assert await weather_cache.get_stale(broken, "forecast", key) is None
         await weather_cache.store(broken, "forecast", key, {"ok": True})  # must not raise
+
+
+# ── Health probes ─────────────────────────────────────────
+# /health was a hardcoded "healthy" string, so a deployment whose database was
+# unreachable looked perfect to every monitor that watched it.
+
+class _BrokenEngine:
+    """Stands in for an engine whose database just went away."""
+
+    def connect(self):
+        raise RuntimeError("database unavailable")
+
+
+class TestHealthProbes:
+    async def test_health_reports_a_reachable_database(self, client):
+        resp = await client.get("/health")
+
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["status"] == "healthy"
+        assert body["database"]["status"] == "ok"
+        assert isinstance(body["database"]["latency_ms"], float)
+
+    async def test_health_stays_200_but_reports_degraded_without_a_database(
+        self, client, monkeypatch
+    ):
+        """Liveness keeps answering 200 so existing uptime monitors keep working."""
+        from app import main
+
+        monkeypatch.setattr(main, "engine", _BrokenEngine())
+
+        resp = await client.get("/health")
+
+        assert resp.status_code == 200
+        assert resp.json()["status"] == "degraded"
+        assert resp.json()["database"] == {"status": "down", "latency_ms": None}
+
+    async def test_readiness_reports_ready_with_a_database(self, client):
+        resp = await client.get("/health/ready")
+
+        assert resp.status_code == 200
+        assert resp.json()["status"] == "ready"
+
+    async def test_readiness_fails_without_a_database(self, client, monkeypatch):
+        from app import main
+
+        monkeypatch.setattr(main, "engine", _BrokenEngine())
+
+        resp = await client.get("/health/ready")
+
+        assert resp.status_code == 503
+        assert resp.json()["status"] == "not_ready"
+        assert resp.json()["database"]["status"] == "down"
+
+
+# ── Request correlation ───────────────────────────────────
+# Every response used to be untraceable: no id in the logs, no id in the
+# headers, so a report of "the request failed" could not be followed up.
+
+class TestRequestIdMiddleware:
+    async def test_every_response_carries_a_request_id(self, client):
+        resp = await client.get("/")
+
+        assert resp.headers.get("X-Request-ID")
+
+    async def test_a_safe_caller_supplied_id_is_echoed(self, client):
+        """An inbound trace id must survive, or nothing lines up across services."""
+        resp = await client.get("/", headers={"X-Request-ID": "trace-4f2a"})
+
+        assert resp.headers["X-Request-ID"] == "trace-4f2a"
+
+    async def test_an_id_with_unsafe_characters_is_replaced(self, client):
+        """The id is echoed into a header and into the logs, so it is validated."""
+        resp = await client.get("/", headers={"X-Request-ID": "not a valid id!"})
+
+        assert resp.headers["X-Request-ID"]
+        assert resp.headers["X-Request-ID"] != "not a valid id!"
+
+    def test_the_log_filter_stamps_the_current_id(self):
+        import logging
+
+        from app.core.observability import _RequestIdFilter, _request_id
+
+        record = logging.LogRecord("test", logging.INFO, __file__, 1, "hello", None, None)
+        token = _request_id.set("abc123")
+        try:
+            assert _RequestIdFilter().filter(record) is True
+        finally:
+            _request_id.reset(token)
+
+        assert record.request_id == "abc123"
+
+
+# ── Client address resolution ─────────────────────────────
+# The rate limiter keyed on the leftmost X-Forwarded-For entry, which any client
+# could invent; a rotating header meant a fresh bucket per request.
+
+def _request_from(peer, headers):
+    from starlette.requests import Request
+
+    scope = {
+        "type": "http",
+        "method": "GET",
+        "path": "/",
+        "query_string": b"",
+        "headers": [(k.lower().encode(), v.encode()) for k, v in headers.items()],
+    }
+    if peer is not None:
+        scope["client"] = (peer, 51234)
+    return Request(scope)
+
+
+class TestClientIpResolution:
+    @pytest.fixture(autouse=True)
+    def _no_explicit_proxies(self, monkeypatch):
+        from app.core import rate_limit
+
+        monkeypatch.setattr(rate_limit.settings, "TRUSTED_PROXY_IPS", "")
+        yield
+
+    def test_a_public_peer_cannot_choose_its_own_address(self):
+        from app.core.rate_limit import get_real_client_ip
+
+        request = _request_from("203.0.113.7", {"X-Forwarded-For": "1.2.3.4"})
+
+        assert get_real_client_ip(request) == "203.0.113.7"
+
+    def test_the_spoofed_leftmost_entry_is_skipped_behind_a_proxy(self):
+        from app.core.rate_limit import get_real_client_ip
+
+        request = _request_from("10.0.0.5", {"X-Forwarded-For": "1.2.3.4, 203.0.113.7"})
+
+        assert get_real_client_ip(request) == "203.0.113.7"
+
+    def test_an_all_proxy_chain_falls_back_to_its_first_entry(self):
+        from app.core.rate_limit import get_real_client_ip
+
+        request = _request_from("10.0.0.5", {"X-Forwarded-For": "10.0.0.9, 10.0.0.8"})
+
+        assert get_real_client_ip(request) == "10.0.0.9"
+
+    def test_x_real_ip_is_honoured_when_xff_is_absent(self):
+        from app.core.rate_limit import get_real_client_ip
+
+        request = _request_from("10.0.0.5", {"X-Real-IP": "8.8.8.8"})
+
+        assert get_real_client_ip(request) == "8.8.8.8"
+
+    def test_the_peer_is_used_when_no_header_is_present(self):
+        from app.core.rate_limit import get_real_client_ip
+
+        assert get_real_client_ip(_request_from("203.0.113.7", {})) == "203.0.113.7"
+
+    def test_an_unparseable_peer_is_never_trusted(self):
+        """Starlette's TestClient reports the peer as "testclient"."""
+        from app.core.rate_limit import get_real_client_ip
+
+        request = _request_from("testclient", {"X-Forwarded-For": "9.9.9.9"})
+
+        assert get_real_client_ip(request) == "testclient"
+
+    def test_ipv4_mapped_ipv6_peers_are_unwrapped(self):
+        from app.core.rate_limit import get_real_client_ip
+
+        request = _request_from("::ffff:10.0.0.5", {"X-Forwarded-For": "8.8.8.8"})
+
+        assert get_real_client_ip(request) == "8.8.8.8"
+
+    def test_explicit_proxies_replace_the_private_range_default(self, monkeypatch):
+        from app.core import rate_limit
+
+        monkeypatch.setattr(rate_limit.settings, "TRUSTED_PROXY_IPS", "198.51.100.0/24")
+
+        assert rate_limit.get_real_client_ip(
+            _request_from("198.51.100.10", {"X-Forwarded-For": "8.8.8.8"})
+        ) == "8.8.8.8"
+        # A private peer is no longer trusted merely for being private.
+        assert rate_limit.get_real_client_ip(
+            _request_from("10.0.0.5", {"X-Forwarded-For": "8.8.8.8"})
+        ) == "10.0.0.5"
+
+    def test_malformed_entries_are_ignored(self, monkeypatch):
+        from app.core import rate_limit
+
+        monkeypatch.setattr(
+            rate_limit.settings, "TRUSTED_PROXY_IPS", "10.0.0.0/8, not-an-ip"
+        )
+
+        assert len(rate_limit.trusted_networks()) == 1
+
+
+# ── Oil price caching ─────────────────────────────────────
+# The widget is unauthenticated and Bangchak is the only provider, so a restart
+# used to come up with nothing to serve while the upstream was unreachable.
+
+class _FakeOilClient(_FakeClient):
+    """httpx stand-in for the oil endpoint, which passes `headers=`."""
+
+    async def get(self, url, headers=None):
+        return await super().get(url)
+
+
+def _bangchak_payload(price_95=40.69):
+    return [
+        {
+            "OilList": [
+                {"OilName": "Gasohol 95", "PriceToday": price_95},
+                {"OilName": "Gasohol 91", "PriceToday": 40.32},
+                {"OilName": "Hi Diesel S", "PriceToday": 42.19},
+            ]
+        }
+    ]
+
+
+def _install_oil_http(monkeypatch, responses):
+    from app.api.v1.endpoints import oil_prices as oil
+
+    counter = {"calls": 0}
+    monkeypatch.setattr(
+        oil.httpx, "AsyncClient", lambda **kwargs: _FakeOilClient(responses, counter)
+    )
+    return counter
+
+
+class TestOilPriceCacheLayers:
+    OIL_URL = "/api/v1/oil-prices/oil-prices"
+
+    @pytest.fixture(autouse=True)
+    def _clean_process_cache(self):
+        from app.api.v1.endpoints import oil_prices as oil
+
+        def reset():
+            oil._cache["data"] = None
+            oil._cache["timestamp"] = None
+
+        reset()
+        yield
+        reset()
+
+    async def test_a_successful_fetch_is_persisted(self, client, db_session, monkeypatch):
+        from app.api.v1.endpoints import oil_prices as oil
+        from app.services import weather_cache
+
+        _install_oil_http(monkeypatch, [_FakeResponse(200, _bangchak_payload())])
+
+        resp = await client.get(self.OIL_URL)
+
+        assert resp.status_code == 200
+        assert resp.json()["is_stale"] is False
+        persisted = await weather_cache.get_stale(db_session, oil.NS_OIL_PRICES, oil._L2_KEY)
+        assert persisted is not None
+        assert persisted["prices"], "the parsed price list is what a restart needs"
+
+    async def test_a_restart_serves_the_persisted_row_without_calling_out(
+        self, client, db_session, monkeypatch
+    ):
+        from app.api.v1.endpoints import oil_prices as oil
+        from app.services import weather_cache
+
+        await weather_cache.store(
+            db_session,
+            oil.NS_OIL_PRICES,
+            oil._L2_KEY,
+            {
+                "success": True,
+                "prices": [{"key": "diesel", "name": "ดีเซล", "price": 42.19, "unit": "บาท/ลิตร"}],
+                "update_date": "06/10/2026",
+                "fetched_at": "2026-10-06T06:00:00Z",
+                "is_stale": False,
+                "source": "Bangchak / Retail Station",
+            },
+        )
+        counter = _install_oil_http(monkeypatch, [_FakeResponse(500, text="boom")])
+
+        resp = await client.get(self.OIL_URL)
+
+        assert resp.status_code == 200
+        assert resp.json()["prices"][0]["price"] == 42.19
+        assert resp.json()["is_stale"] is False
+        assert counter["calls"] == 0, "a warm persistent row must not hit the provider"
+
+    async def test_an_expired_row_is_served_stale_when_the_provider_fails(
+        self, client, db_session, monkeypatch
+    ):
+        from datetime import timedelta
+
+        from sqlalchemy import select
+
+        from app.api.v1.endpoints import oil_prices as oil
+        from app.core.utils import utcnow
+        from app.models.weather_cache import WeatherCacheEntry
+        from app.services import weather_cache
+
+        await weather_cache.store(
+            db_session, oil.NS_OIL_PRICES, oil._L2_KEY, {"prices": [], "source": "Bangchak"}
+        )
+        row = (
+            await db_session.execute(
+                select(WeatherCacheEntry).where(
+                    WeatherCacheEntry.key
+                    == weather_cache.build_key(oil.NS_OIL_PRICES, oil._L2_KEY)
+                )
+            )
+        ).scalar_one()
+        row.updated_at = utcnow() - timedelta(seconds=oil.CACHE_TTL + 60)
+        await db_session.commit()
+
+        _install_oil_http(monkeypatch, [_FakeResponse(503, text="maintenance")])
+
+        resp = await client.get(self.OIL_URL)
+
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["is_stale"] is True
+        assert "(cache)" in body["source"]
+
+    async def test_without_any_cache_the_maintained_constants_are_served(
+        self, client, monkeypatch
+    ):
+        _install_oil_http(monkeypatch, [_FakeResponse(500, text="boom")])
+
+        resp = await client.get(self.OIL_URL)
+
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["is_stale"] is True
+        assert body["source"] == "Market Base Rate"
+        assert body["fetched_at"] is None
+        assert len(body["prices"]) == 6
+
+    def test_the_dead_eppo_provider_constant_is_gone(self):
+        """It was declared but never read; the docs pointed at it as if it worked."""
+        from app.api.v1.endpoints import oil_prices as oil
+
+        assert not hasattr(oil, "EPPO_OIL_URL")
+
+
+# ── WebSocket broadcast fan-out ───────────────────────────
+# Broadcasts are process-local by default; WS_BROADCAST_REDIS_URL is what makes
+# them reach the clients of other instances instead of only this one's.
+
+class TestBroadcastBus:
+    async def test_a_local_publish_reaches_the_handler(self):
+        from app.services.ws_bus import BroadcastBus
+
+        received = []
+
+        async def handler(message):
+            received.append(message)
+
+        bus = BroadcastBus(url="")
+        await bus.start(handler)
+        try:
+            assert bus.shared is False
+            await bus.publish({"id": "n-1"})
+        finally:
+            await bus.stop()
+
+        assert received == [{"id": "n-1"}]
+
+    async def test_a_shared_publish_goes_to_redis_only(self):
+        import json
+
+        from app.services.ws_bus import BroadcastBus
+
+        published = []
+        received = []
+
+        class _Client:
+            async def publish(self, channel, payload):
+                published.append((channel, payload))
+
+        async def handler(message):
+            received.append(message)
+
+        bus = BroadcastBus(url="redis://example.invalid:6379/0", channel="art:test")
+        bus._handler = handler
+        bus._client = _Client()  # as if start() had connected
+
+        await bus.publish({"id": "n-2"})
+
+        assert published and published[0][0] == "art:test"
+        assert json.loads(published[0][1]) == {"id": "n-2"}
+        assert received == [], "the subscriber delivers, not the publisher"
+
+    async def test_a_broken_broker_still_delivers_locally(self):
+        from app.services.ws_bus import BroadcastBus
+
+        received = []
+
+        class _Client:
+            async def publish(self, channel, payload):
+                raise RuntimeError("redis is down")
+
+        async def handler(message):
+            received.append(message)
+
+        bus = BroadcastBus(url="redis://example.invalid:6379/0")
+        bus._handler = handler
+        bus._client = _Client()
+
+        await bus.publish({"id": "n-3"})
+
+        assert received == [{"id": "n-3"}]
+
+    async def test_subscription_messages_are_delivered_and_junk_is_ignored(self):
+        import asyncio
+
+        from app.services.ws_bus import BroadcastBus
+
+        received = []
+
+        async def handler(message):
+            received.append(message)
+
+        bus = BroadcastBus(url="redis://example.invalid:6379/0")
+        bus._handler = handler
+
+        bus._handle_message({"type": "message", "data": '{"id": "n-4"}'})
+        bus._handle_message({"type": "subscribe", "data": 1})
+        bus._handle_message({"type": "message", "data": "not json"})
+        bus._handle_message({"type": "message", "data": "[1, 2]"})
+        await asyncio.sleep(0)
+
+        assert received == [{"id": "n-4"}]
+
+    async def test_a_missing_redis_package_degrades_to_local_delivery(self, monkeypatch):
+        """A configured broker that cannot be imported must not drop messages."""
+        import builtins
+
+        from app.services.ws_bus import BroadcastBus
+
+        real_import = builtins.__import__
+
+        def fake_import(name, *args, **kwargs):
+            if name == "redis.asyncio" or name.startswith("redis"):
+                raise ImportError("no module named redis")
+            return real_import(name, *args, **kwargs)
+
+        monkeypatch.setattr(builtins, "__import__", fake_import)
+
+        received = []
+
+        async def handler(message):
+            received.append(message)
+
+        bus = BroadcastBus(url="redis://example.invalid:6379/0")
+        await bus.start(handler)
+        try:
+            await bus.publish({"id": "n-5"})
+        finally:
+            await bus.stop()
+
+        assert received == [{"id": "n-5"}]
+
+
+class TestLifespanWiring:
+    def test_startup_registers_the_handler_and_shutdown_releases_it(self, monkeypatch):
+        """Without this wiring a broadcast would be published into nothing."""
+        from app.core.config import settings
+        from app.main import app
+        from app.services.ws_bus import broadcast_bus
+
+        # No schema work at startup: the subject here is the bus wiring, and
+        # touching the app engine would leave a pooled connection bound to this
+        # test's event loop for the next test to trip over.
+        monkeypatch.setattr(settings, "AUTO_CREATE_TABLES", False)
+
+        with TestClient(app) as test_client:
+            assert broadcast_bus._handler is not None
+            assert test_client.get("/").status_code == 200
+
+        assert broadcast_bus._handler is None, "shutdown must release the registry"

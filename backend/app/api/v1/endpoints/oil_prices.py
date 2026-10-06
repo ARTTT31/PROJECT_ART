@@ -3,20 +3,26 @@
 Oil Prices API Endpoint
 
 Fetches retail fuel prices from the Bangchak Open Web API and returns
-standardised retail prices as JSON for the frontend widget. An earlier version
-scraped EPPO's HTML instead; `EPPO_OIL_URL` below is a leftover constant that
-nothing reads.
+standardised retail prices as JSON for the frontend widget.
+
+The price is cached twice: a process dict (L1) for the common case, and the
+shared ``weather_cache`` table (L2) so a restart, redeploy or scale event does
+not come up empty while Bangchak is unreachable. An earlier version of this
+module scraped EPPO's HTML; that provider and its dead URL constant are gone.
 """
 
 import json
 import logging
 import datetime
-from typing import Any
-from fastapi import APIRouter, Request
+from typing import Any, Optional
+from fastapi import APIRouter, Depends, Request
 import httpx
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
+from app.core.database import get_db
 from app.core.rate_limit import limiter
+from app.services import weather_cache
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -26,9 +32,6 @@ router = APIRouter()
 _GENERAL_LIMIT = f"{settings.RATE_LIMIT_GENERAL_PER_MINUTE}/minute"
 
 BANGCHAK_OIL_URL = "https://oil-price.bangchak.co.th/ApiOilPrice2/en"
-EPPO_OIL_URL = (
-    "https://www.eppo.go.th/templates/eppo_v15_mixed/eppo_oil/eppo_oil_gen_new.php"
-)
 
 ORDERED_KEYS = [
     "benzene_95",
@@ -115,10 +118,31 @@ _cache: dict[str, Any] = {
 }
 CACHE_TTL = 1800  # 30 minutes in seconds
 
+# Namespace in the shared persistent cache. The single key is intentional: the
+# response is a snapshot of "today's retail prices", not a per-user value.
+NS_OIL_PRICES = "oil-prices"
+_L2_KEY: tuple = ("latest",)
+
 
 def _iso_now() -> str:
     """ISO-8601 timestamp of the current UTC time, for client staleness checks."""
     return datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def _mark_stale(payload: dict) -> dict:
+    """Copy a cached payload and flag it as no longer current."""
+    stale = dict(payload)
+    stale["is_stale"] = True
+    source = str(stale.get("source") or "Bangchak")
+    if "(cache)" not in source:
+        stale["source"] = f"{source} (cache)"
+    return stale
+
+
+async def _stale_from_l2(db: AsyncSession) -> Optional[dict]:
+    """Last known good prices from the database, however old they are."""
+    persisted = await weather_cache.get_stale(db, NS_OIL_PRICES, _L2_KEY)
+    return _mark_stale(persisted) if persisted else None
 
 
 @router.get("/health", response_model=dict)
@@ -179,20 +203,33 @@ async def check_oil_prices_health(request: Request):
 
 @router.get("/oil-prices", response_model=dict)
 @limiter.limit(_GENERAL_LIMIT)
-async def get_oil_prices(request: Request):
+async def get_oil_prices(request: Request, db: AsyncSession = Depends(get_db)):
     """
     Fetch current retail fuel prices from Bangchak API (with fallback cache).
+
+    Resolution order: fresh L1 → fresh L2 → Bangchak → stale L1 → stale L2 →
+    maintained constants. Only the last of those is not an observed price, and it
+    is still flagged ``is_stale`` so the widget can say so.
     """
     now = datetime.datetime.now()
 
-    # Serve fresh cache if available
+    # 1. Fresh process cache
     if _cache["data"] and _cache["timestamp"] and (now - _cache["timestamp"]).total_seconds() < CACHE_TTL:
-        logger.info("✅ Serving oil prices from fresh cache")
+        logger.info("Serving oil prices from the fresh process cache")
         return _cache["data"]
 
-    # 1. Primary: Attempt to fetch fresh data from Bangchak Web Service
+    # 2. Fresh persistent cache: covers a restart, a redeploy or a sibling
+    #    instance that already paid for the upstream request.
+    persisted = await weather_cache.get_fresh(db, NS_OIL_PRICES, _L2_KEY, CACHE_TTL)
+    if persisted:
+        logger.info("Serving oil prices from the persistent cache")
+        _cache["data"] = persisted
+        _cache["timestamp"] = now
+        return persisted
+
+    # 3. Primary: fetch fresh data from the Bangchak web service
     try:
-        logger.info(f"🔄 Fetching fresh oil prices from Bangchak API: {BANGCHAK_OIL_URL}")
+        logger.info("Fetching fresh oil prices from Bangchak API: %s", BANGCHAK_OIL_URL)
 
         async with httpx.AsyncClient(
             timeout=httpx.Timeout(10.0, connect=5.0),
@@ -218,28 +255,32 @@ async def get_oil_prices(request: Request):
                 }
                 _cache["data"] = data
                 _cache["timestamp"] = now
-                logger.info(f"✅ Successfully fetched {len(prices)} oil prices from Bangchak API")
+                await weather_cache.store(db, NS_OIL_PRICES, _L2_KEY, data)
+                logger.info("Fetched %d oil prices from Bangchak API", len(prices))
                 return data
             else:
-                logger.warning("⚠️ Bangchak API payload parsed but no prices extracted")
+                logger.warning("Bangchak API payload parsed but no prices extracted")
         else:
-            logger.error(f"❌ Bangchak API fetch failed: HTTP {response.status_code}")
+            logger.error("Bangchak API fetch failed: HTTP %s", response.status_code)
 
     except httpx.TimeoutException as e:
-        logger.error(f"⏱️ Bangchak fetch timeout: {str(e)}")
+        logger.error("Bangchak fetch timeout: %s", e)
     except Exception as e:
-        logger.error(f"❌ Bangchak fetch error: {str(e)}")
+        logger.error("Bangchak fetch error: %s", e)
 
-    # 2. Fallback to stale cache if available
+    # 4. Fallback to the stale process cache
     if _cache["data"]:
-        logger.warning("⚠️ Returning stale cache due to fetch failure")
-        stale = dict(_cache["data"])
-        stale["is_stale"] = True
-        stale["source"] = stale.get("source", "Bangchak") + " (cache)"
+        logger.warning("Returning stale process cache due to fetch failure")
+        return _mark_stale(_cache["data"])
+
+    # 5. Not in this process at all: the last good prices from the database
+    stale = await _stale_from_l2(db)
+    if stale is not None:
+        logger.warning("Returning stale persistent cache due to fetch failure")
         return stale
 
-    # 3. Last resort: return accurate updated fallback prices
-    logger.warning("⚠️ Returning hardcoded fallback prices")
+    # 6. Never fetched anything successfully: maintained constants
+    logger.warning("Returning hardcoded fallback prices")
     return _fallback_prices()
 
 

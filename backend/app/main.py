@@ -3,8 +3,11 @@ FastAPI Main Application
 ART Workspace Backend
 """
 
+import asyncio
+import logging
 import os
 import secrets
+import time
 from contextlib import asynccontextmanager
 from http.cookies import SimpleCookie
 
@@ -13,14 +16,25 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
+from sqlalchemy import text
 from starlette.datastructures import Headers
 
 from app.core.config import settings
+from app.core.database import SessionLocal, engine
+from app.core.observability import RequestIDMiddleware, configure_logging
 from app.core.rate_limit import limiter
 from app.api.v1.router import api_router
-from app.core.database import engine
+from app.api.v1.endpoints.websockets import manager as ws_manager
 from app.models import base  # Import all models
+from app.services.session_cleanup import cleanup_expired_sessions_async
+from app.services.ws_bus import broadcast_bus
 from fastapi.staticfiles import StaticFiles
+
+logger = logging.getLogger(__name__)
+
+# Configure logging before anything else can log: the bootstrap notices below are
+# emitted through this logger rather than through print().
+configure_logging(settings.DEBUG)
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Optional: Sentry Error Monitoring (only activates when SENTRY_DSN is set)
@@ -46,15 +60,17 @@ try:
             ],
         )
         _SENTRY_INITIALIZED = True
-        print(f"[MONITOR] Sentry initialized (env={settings.SENTRY_ENVIRONMENT})")
+        logger.info("Sentry initialized (env=%s)", settings.SENTRY_ENVIRONMENT)
     else:
-        print("[MONITOR] Sentry disabled — set SENTRY_DSN to enable error monitoring.")
+        logger.info("Sentry disabled — set SENTRY_DSN to enable error monitoring.")
 except ImportError:  # pragma: no cover
     if settings.SENTRY_DSN:
-        print("[MONITOR] WARNING: SENTRY_DSN is set but sentry-sdk is not installed. "
-              "Run `pip install 'sentry-sdk[fastapi]'` to enable.")
+        logger.warning(
+            "SENTRY_DSN is set but sentry-sdk is not installed. "
+            "Run `pip install 'sentry-sdk[fastapi]'` to enable."
+        )
 except Exception as exc:  # pragma: no cover
-    print(f"[MONITOR] WARNING: Sentry init failed ({exc}). Continuing without monitoring.")
+    logger.warning("Sentry init failed (%s). Continuing without monitoring.", exc)
 
 
 SHARED_STATE_NOTICE = (
@@ -75,11 +91,40 @@ def log_shared_state_limitations() -> None:
     assumption at startup turns a silent scaling bug into an explicit one.
     """
     if settings.SLOWAPI_STORAGE_URI == "memory://":
-        print(SHARED_STATE_NOTICE.format(component="Rate limiting (SLOWAPI_STORAGE_URI=memory://)"))
+        logger.warning(
+            SHARED_STATE_NOTICE.format(
+                component="Rate limiting (SLOWAPI_STORAGE_URI=memory://)"
+            )
+        )
     else:
-        print(f"[SCALING] Rate limiting uses shared storage: {settings.SLOWAPI_STORAGE_URI}")
+        logger.info("Rate limiting uses shared storage: %s", settings.SLOWAPI_STORAGE_URI)
 
-    print(SHARED_STATE_NOTICE.format(component="WebSocket notifications"))
+    if broadcast_bus.shared:
+        logger.info(
+            "WebSocket broadcasts fan out across instances via Redis (channel %s)",
+            settings.WS_BROADCAST_CHANNEL,
+        )
+    else:
+        logger.warning(SHARED_STATE_NOTICE.format(component="WebSocket notifications"))
+
+
+async def _session_cleanup_loop(interval_hours: int) -> None:
+    """Delete expired sessions every ``interval_hours`` until cancelled.
+
+    The first pass runs one interval after startup rather than immediately, so a
+    short-lived process (the test suite, a rolling deploy) never touches the
+    table. ``python -m app.services.session_cleanup`` remains available for
+    deployments that would rather run this from cron.
+    """
+    while True:
+        await asyncio.sleep(interval_hours * 3600)
+        try:
+            async with SessionLocal() as db:
+                await cleanup_expired_sessions_async(db)
+        except asyncio.CancelledError:
+            raise
+        except Exception as exc:
+            logger.warning("Scheduled session cleanup failed: %s", exc)
 
 
 @asynccontextmanager
@@ -90,17 +135,42 @@ async def lifespan(app: FastAPI):
         async with engine.begin() as conn:
             if settings.AUTO_CREATE_TABLES:
                 if settings.DEBUG:
-                    print("[DB] AUTO_CREATE_TABLES=True: Creating tables (dev-only convenience)")
+                    logger.info("AUTO_CREATE_TABLES=True: creating tables (dev convenience)")
                 else:
-                    print("[DB WARNING] AUTO_CREATE_TABLES=True in non-DEBUG mode! "
-                          "Prefer Alembic migrations in production.")
+                    logger.warning(
+                        "AUTO_CREATE_TABLES=True in non-DEBUG mode! Prefer Alembic "
+                        "migrations in production."
+                    )
                 await conn.run_sync(base.Base.metadata.create_all)
 
     except Exception as e:
-        print(f"[STARTUP DB SYNC NOTICE] {e}")
+        logger.warning("Startup schema check failed: %s", e)
 
+    # Subscribe to the broadcast fan-out (a no-op unless WS_BROADCAST_REDIS_URL
+    # is set), then report which single-instance assumptions still apply.
+    await broadcast_bus.start(ws_manager.broadcast)
     log_shared_state_limitations()
-    yield
+
+    cleanup_task: "asyncio.Task[None] | None" = None
+    if settings.SESSION_CLEANUP_INTERVAL_HOURS > 0:
+        cleanup_task = asyncio.create_task(
+            _session_cleanup_loop(settings.SESSION_CLEANUP_INTERVAL_HOURS)
+        )
+        logger.info(
+            "Session cleanup scheduled every %d h", settings.SESSION_CLEANUP_INTERVAL_HOURS
+        )
+    else:
+        logger.info(
+            "Session cleanup scheduler disabled (SESSION_CLEANUP_INTERVAL_HOURS=0)"
+        )
+
+    try:
+        yield
+    finally:
+        if cleanup_task is not None:
+            cleanup_task.cancel()
+            await asyncio.gather(cleanup_task, return_exceptions=True)
+        await broadcast_bus.stop()
 # CORS is explicit because authenticated cookies must never be shared with
 # arbitrary preview deployments. Set CORS_ORIGINS in the production host.
 allowed_origins = [origin.rstrip("/") for origin in settings.get_cors_origins() if origin.strip()]
@@ -355,7 +425,9 @@ class CSRFMiddleware:
 
 # Middleware registration order is REVERSED by Starlette: the LAST middleware
 # added is the OUTERMOST. CSRF is added first so a rejected request still travels
-# back out through CSP (security headers) and CORS (browser-readable 403).
+# back out through CSP (security headers) and CORS (browser-readable 403);
+# RequestID is added last so every request — including one CSRF rejects — already
+# carries a correlation id.
 app.add_middleware(CSRFMiddleware)
 app.add_middleware(CSPMiddleware)
 
@@ -367,6 +439,9 @@ app.add_middleware(
     allow_headers=["*"],
     expose_headers=["*"],
 )
+# Outermost: the correlation id exists before any other middleware can reject the
+# request, and the header is added on the way out to every response.
+app.add_middleware(RequestIDMiddleware)
 
 
 @app.get("/", tags=["Root"])
@@ -380,15 +455,67 @@ async def root():
     }
 
 
+# Long enough for a healthy database round-trip, short enough that a hung
+# database cannot make the liveness probe itself hang (a probe that never answers
+# looks exactly like a crashed process to most platforms).
+HEALTH_DB_TIMEOUT_SECONDS = 2.0
+
+
+async def _ping_database() -> tuple[bool, float | None]:
+    """Run ``SELECT 1`` with a timeout; return (ok, latency_ms)."""
+    async def _ping() -> None:
+        async with engine.connect() as conn:
+            await conn.execute(text("SELECT 1"))
+
+    started = time.perf_counter()
+    try:
+        # wait_for (not asyncio.timeout) keeps the 3.10 floor declared in the docs.
+        await asyncio.wait_for(_ping(), timeout=HEALTH_DB_TIMEOUT_SECONDS)
+    except Exception as exc:
+        logger.warning("Health-check database ping failed: %s", exc)
+        return False, None
+    return True, round((time.perf_counter() - started) * 1000, 2)
+
+
 @app.get("/health", tags=["Health"])
 async def health_check():
-    """Health check endpoint"""
+    """Liveness probe: the process is up, and reports whether the database is reachable.
+
+    Always answers ``200`` so an existing uptime monitor keeps working; the
+    ``database`` field and ``status`` carry the detail. Use ``/health/ready`` to
+    gate traffic: it answers ``503`` when the database is down. This used to be a
+    hardcoded `"healthy"` string, so a deployment with an unreachable database
+    still reported perfect health.
+    """
+    db_ok, latency_ms = await _ping_database()
     return JSONResponse(
         status_code=200,
         content={
-            "status": "healthy",
+            "status": "healthy" if db_ok else "degraded",
             "service": settings.APP_NAME,
             "version": settings.APP_VERSION,
+            "database": {
+                "status": "ok" if db_ok else "down",
+                "latency_ms": latency_ms,
+            },
+        },
+    )
+
+
+@app.get("/health/ready", tags=["Health"])
+async def readiness_check():
+    """Readiness probe: ``200`` only when the database answers."""
+    db_ok, latency_ms = await _ping_database()
+    return JSONResponse(
+        status_code=200 if db_ok else 503,
+        content={
+            "status": "ready" if db_ok else "not_ready",
+            "service": settings.APP_NAME,
+            "version": settings.APP_VERSION,
+            "database": {
+                "status": "ok" if db_ok else "down",
+                "latency_ms": latency_ms,
+            },
         },
     )
 # NOTE: CSPMiddleware class is defined above (before app creation) so it can be

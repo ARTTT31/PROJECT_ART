@@ -83,6 +83,32 @@ const typeLabel = {
 const READ_STORAGE_KEY = 'artNotificationReadV2'
 const DISMISSED_STORAGE_KEY = 'artNotificationDismissedV2'
 
+const WS_PATH = '/api/v1/ws/notifications'
+
+/**
+ * WebSocket endpoint for the notification feed.
+ *
+ * Priority: an explicit `NEXT_PUBLIC_WS_URL`, then the API origin derived from
+ * `NEXT_PUBLIC_API_URL`, then this origin (the Next.js `/api` rewrite forwards
+ * the upgrade). The socket authenticates during the handshake, so it has to be
+ * an origin that sends the session cookie — guessing `hostname:8080` (the old
+ * behaviour) or the query string cannot work.
+ *
+ * `NEXT_PUBLIC_API_URL` is the documented escape hatch when the Vercel rewrite
+ * does not forward WebSocket upgrades; `NEXT_PUBLIC_WS_URL` exists for the case
+ * where the socket lives somewhere the HTTP API does not.
+ */
+export function resolveNotificationsWsUrl(location: { protocol: string; host: string }) {
+  const explicit = process.env.NEXT_PUBLIC_WS_URL?.trim()
+  if (explicit) return `${explicit.replace(/\/+$/, '')}${WS_PATH}`
+
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL?.trim()
+  if (apiUrl) return `${apiUrl.replace(/\/+$/, '').replace(/^http/, 'ws')}${WS_PATH}`
+
+  const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:'
+  return `${protocol}//${location.host}${WS_PATH}`
+}
+
 export default function NotificationBell() {
   const [notifications, setNotifications] = useState<Notification[]>([...store])
   const [open, setOpen] = useState(false)
@@ -246,18 +272,8 @@ export default function NotificationBell() {
 
     const connectWs = () => {
       if (typeof window === 'undefined' || stopped) return
-      
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-      // Assuming backend is on the same host but port 8080 or proxied via next
-      // We can try to use standard API route path
-      // Prefer the explicit API origin; otherwise stay on this origin, which the
-      // Next.js `/api` rewrite forwards to the backend. The socket endpoint
-      // requires authentication now, so the handshake has to carry the session
-      // cookie — which rules out guessing `hostname:8080` or passing the token in
-      // the query string.
-      const wsUrl = process.env.NEXT_PUBLIC_API_URL
-        ? process.env.NEXT_PUBLIC_API_URL.replace(/^http/, 'ws') + '/api/v1/ws/notifications'
-        : `${protocol}//${window.location.host}/api/v1/ws/notifications`
+
+      const wsUrl = resolveNotificationsWsUrl(window.location)
 
       try {
         ws = new WebSocket(wsUrl)

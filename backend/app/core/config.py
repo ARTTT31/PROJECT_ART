@@ -2,10 +2,13 @@
 Application Configuration
 """
 
+import logging
 import os
 from typing import List
 from pydantic import ValidationInfo, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+logger = logging.getLogger(__name__)
 
 
 class Settings(BaseSettings):
@@ -93,6 +96,26 @@ class Settings(BaseSettings):
     RATE_LIMIT_AUTH_PER_MINUTE: int = 10  # login / token verify / refresh attempts per IP
     RATE_LIMIT_GENERAL_PER_MINUTE: int = 120  # general profile/oil endpoints per IP
 
+    # ── Trusted proxies ─────────────────────────────────────────────────────
+    # Comma-separated IPs / CIDRs whose X-Forwarded-For header may be believed.
+    # Empty (the default) trusts only loopback and RFC1918 peers, which is what a
+    # platform load balancer looks like from inside the container. Anything that
+    # arrives from the public internet is never trusted, so a caller cannot pick
+    # its own rate-limit bucket by inventing a header.
+    TRUSTED_PROXY_IPS: str = ""
+
+    # ── Session housekeeping ────────────────────────────────────────────────
+    # In-app scheduler that deletes expired/inactive sessions. Set to 0 to turn
+    # it off (then run `python -m app.services.session_cleanup` from cron).
+    SESSION_CLEANUP_INTERVAL_HOURS: int = 6
+
+    # ── Horizontal scaling ─────────────────────────────────────────────────
+    # Redis pub/sub channel used to fan WebSocket broadcasts out to every
+    # instance. Empty (the default) keeps broadcasts process-local, which is
+    # correct for the current single-instance deployment.
+    WS_BROADCAST_REDIS_URL: str = ""
+    WS_BROADCAST_CHANNEL: str = "art:ws:notifications"
+
     # Error Monitoring — Sentry (optional, disabled if DSN is empty)
     # Get a DSN from https://sentry.io/ or your self-hosted Sentry instance.
     SENTRY_DSN: str = ""
@@ -130,10 +153,10 @@ class Settings(BaseSettings):
         instead of failing silently.
         """
         if self.COOKIE_SAMESITE == "none" and not self.COOKIE_SECURE:
-            print(
-                "[CONFIG] COOKIE_SAMESITE=None requires a Secure (HTTPS) cookie; "
-                "falling back to 'lax' for this non-HTTPS environment. "
-                "Set COOKIE_SAMESITE=lax locally to silence this notice."
+            logger.warning(
+                "COOKIE_SAMESITE=None requires a Secure (HTTPS) cookie; falling "
+                "back to 'lax' for this non-HTTPS environment. Set "
+                "COOKIE_SAMESITE=lax locally to silence this notice."
             )
             return "lax"
         return self.COOKIE_SAMESITE

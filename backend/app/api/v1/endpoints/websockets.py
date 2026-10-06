@@ -6,9 +6,9 @@ SCALING NOTE — the connection registry is process-local.
 ``manager`` lives in this module's memory, so a broadcast reaches only the
 clients connected to the instance that served the request. That is correct for
 the current single-instance deployment; running more than one instance requires
-a shared broker (the same Redis instance used for ``SLOWAPI_STORAGE_URI``) with
-pub/sub fan-out. ``app.main.log_shared_state_limitations()`` logs this at
-startup so it cannot fail silently.
+setting ``WS_BROADCAST_REDIS_URL`` so ``app.services.ws_bus`` fans the payload
+out over Redis pub/sub. ``app.main.log_shared_state_limitations()`` logs which
+mode is active at startup so it cannot fail silently.
 """
 
 import json
@@ -22,6 +22,7 @@ from app.api.dependencies import authenticate_websocket, get_current_admin_user
 from app.core.config import settings
 from app.core.database import get_db
 from app.models.user import User
+from app.services.ws_bus import broadcast_bus
 
 logger = logging.getLogger(__name__)
 
@@ -112,11 +113,16 @@ async def websocket_notifications(
 ):
     """Live notifications for signed-in users.
 
-    Authentication happens before ``accept()``: an unauthenticated handshake is
-    closed with 1008, which the browser surfaces as a failed connection rather
-    than an open socket. Without this the socket was reachable by anyone who
-    knew the URL — including visitors who never logged in — and every broadcast
-    would be delivered to them.
+    Without the authentication check the socket was reachable by anyone who knew
+    the URL — including visitors who never logged in — and every broadcast would
+    be delivered to them.
+
+    A rejected handshake is *accepted and then closed* with the RFC 6455 code.
+    Closing before ``accept()`` makes the ASGI server reject the HTTP upgrade
+    with ``403``, which arrives in the browser as the generic abnormal-closure
+    code ``1006``: indistinguishable from a network blip, so `NotificationBell`
+    would keep retrying instead of stopping on ``1008``. Nothing is read, sent or
+    registered on that socket, so no broadcast can reach it.
     """
     user = await authenticate_websocket(websocket, db)
 
@@ -127,6 +133,7 @@ async def websocket_notifications(
 
     if user is None:
         logger.info("Rejected unauthenticated WebSocket handshake")
+        await websocket.accept()
         await websocket.close(code=WS_CLOSE_UNAUTHORIZED)
         return
 
@@ -136,6 +143,7 @@ async def websocket_notifications(
             user.id,
             len(manager.active_connections),
         )
+        await websocket.accept()
         await websocket.close(code=WS_CLOSE_CAPACITY)
         return
 
@@ -167,7 +175,11 @@ async def broadcast_notification(
     payload: NotificationPayload,
     current_user: User = Depends(get_current_admin_user),
 ):
-    """Broadcast a notification to all connected WebSocket clients (admin only)."""
+    """Broadcast a notification to all connected WebSocket clients (admin only).
+
+    Delivery goes through the bus so the message also reaches the clients of
+    every other instance when ``WS_BROADCAST_REDIS_URL`` is configured.
+    """
     payload_data = payload.model_dump()
-    await manager.broadcast(payload_data)
+    await broadcast_bus.publish(payload_data)
     return {"message": "Broadcast sent", "payload": payload_data}

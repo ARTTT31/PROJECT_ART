@@ -39,6 +39,11 @@ sentry-sdk[fastapi]>=2.0.0
 # System Monitoring
 psutil==5.9.8
 
+# Horizontal scaling (optional). Redis backs the SlowAPI rate-limit storage
+# (SLOWAPI_STORAGE_URI) and the WebSocket broadcast fan-out
+# (WS_BROADCAST_REDIS_URL); the process-local defaults need neither.
+redis>=5.0.0
+
 # Development / Linting
 flake8==6.1.0
 mypy==1.9.0

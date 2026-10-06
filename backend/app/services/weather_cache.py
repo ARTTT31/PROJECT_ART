@@ -1,12 +1,16 @@
 # -*- coding: utf-8 -*-
 """
-Database-backed (L2) cache for the weather / geocode proxies.
+Database-backed (L2) cache shared by the upstream-dependent endpoints.
 
-The proxies already keep a per-process L1 dict, but that cache is lost on every
-restart, redeploy or scale event. Open-Meteo throttles per IP and the deployment
-egress is shared, so the moment an instance starts cold it has nothing to serve
-when the provider answers 429. This layer stores the last known good payload in
-the existing database, so the stale fallback survives a restart.
+The weather / geocode proxies and the oil-price endpoint already keep a
+per-process L1 dict, but that cache is lost on every restart, redeploy or scale
+event. Upstream providers throttle per IP and the deployment egress is shared,
+so the moment an instance starts cold it has nothing to serve when the provider
+answers 429. This layer stores the last known good payload in the existing
+database, so the stale fallback survives a restart.
+
+The table is named ``weather_cache`` for historical reasons; namespaces keep the
+payloads apart (``forecast``, ``air-quality``, ``geocode``, ``oil-prices``).
 
 It is strictly best-effort: every helper swallows (and logs) database errors so
 a database problem degrades the proxy to its previous L1-only behaviour instead
@@ -15,7 +19,7 @@ of taking the unauthenticated login-page widget down with it.
 
 import json
 import logging
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import Any, Optional
 
 from sqlalchemy import delete, select
@@ -28,8 +32,11 @@ logger = logging.getLogger(__name__)
 
 # Coordinates come from user input, so the key space is effectively unbounded.
 # Rows older than this are pruned opportunistically on write, which bounds the
-# table without needing a scheduled job.
-MAX_AGE = timedelta(days=7)
+# table without needing a scheduled job. The window is deliberately generous: the
+# oldest row of a namespace is the only thing a cold instance can serve while the
+# provider is throttling it, and retail prices / today's forecast do not change
+# fast enough for a month-old fallback to be worse than a 502.
+MAX_AGE = timedelta(days=30)
 
 
 def build_key(namespace: str, key: tuple) -> str:
@@ -75,6 +82,35 @@ async def get_stale(db: AsyncSession, namespace: str, key: tuple) -> Optional[di
     return _decode(row.payload) if row is not None else None
 
 
+async def _prune(db: AsyncSession) -> None:
+    """Delete rows past ``MAX_AGE``, keeping each namespace's newest row.
+
+    Serving an old forecast beats serving an error, so the newest row of every
+    namespace survives pruning no matter how old it is — that row is exactly the
+    fallback a cold instance needs when the provider throttles it.
+    """
+    cutoff = utcnow() - MAX_AGE
+    result = await db.execute(
+        select(WeatherCacheEntry.key, WeatherCacheEntry.updated_at).where(
+            WeatherCacheEntry.updated_at < cutoff
+        )
+    )
+    rows = result.all()
+
+    newest_per_namespace: dict[str, tuple[datetime, str]] = {}
+    for key, updated_at in rows:
+        namespace = key.split(":", 1)[0]
+        current = newest_per_namespace.get(namespace)
+        if current is None or updated_at > current[0]:
+            newest_per_namespace[namespace] = (updated_at, key)
+
+    keep = {key for _, key in newest_per_namespace.values()}
+    statement = delete(WeatherCacheEntry).where(WeatherCacheEntry.updated_at < cutoff)
+    if keep:
+        statement = statement.where(WeatherCacheEntry.key.notin_(keep))
+    await db.execute(statement)
+
+
 async def store(db: AsyncSession, namespace: str, key: tuple, data: dict) -> None:
     """Persist a payload, pruning entries that have outlived ``MAX_AGE``.
 
@@ -97,11 +133,7 @@ async def store(db: AsyncSession, namespace: str, key: tuple, data: dict) -> Non
             row.payload = payload
             row.updated_at = utcnow()
 
-        await db.execute(
-            delete(WeatherCacheEntry).where(
-                WeatherCacheEntry.updated_at < utcnow() - MAX_AGE
-            )
-        )
+        await _prune(db)
         await db.commit()
     except Exception as exc:
         logger.warning("Weather cache write failed (%s); serving from L1 only", exc)

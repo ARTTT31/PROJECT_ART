@@ -2,6 +2,7 @@
 API Dependencies
 """
 
+import logging
 from typing import Optional
 from fastapi import Depends, HTTPException, status, Request, WebSocket
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -11,6 +12,8 @@ from app.core.database import get_db
 from app.core.security import decode_token
 from app.models.user import User
 from app.services.user_service import UserService
+
+logger = logging.getLogger(__name__)
 
 # Security scheme (auto_error=False to allow checking cookies manually)
 security = HTTPBearer(auto_error=False)
@@ -102,7 +105,7 @@ async def get_current_user(
         raise
     except Exception as exc:
         # Catch-all: log and return 401 instead of leaking a 500
-        print(f"[get_current_user] Unexpected error: {exc}")
+        logger.warning("get_current_user: unexpected error: %s", exc)
         raise _unauthorized("Could not validate credentials")
 
 
@@ -137,7 +140,7 @@ async def authenticate_websocket(websocket: WebSocket, db: AsyncSession) -> Opti
     except HTTPException:
         return None
     except Exception as exc:
-        print(f"[authenticate_websocket] Unexpected error: {exc}")
+        logger.warning("authenticate_websocket: unexpected error: %s", exc)
         return None
 
 

@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from app.core.database import get_db
+from app.core.rate_limit import get_real_client_ip
 from app.schemas.user import (
     UserResponse,
     UserUpdate,
@@ -207,9 +208,10 @@ async def upload_avatar_file(
         await user_service.update_avatar(current_user.id, avatar_base64)
 
         # 5. Log audit trail (Sync Service Call)
-        client_ip = request.headers.get("X-Forwarded-For", "").split(",")[
-            0
-        ].strip() or (request.client.host if request.client else None)
+        # get_real_client_ip only believes X-Forwarded-For behind a trusted proxy;
+        # reading the header directly let any caller write a forged IP into the
+        # audit log.
+        client_ip = get_real_client_ip(request)
         user_agent = request.headers.get("user-agent")
 
         audit_service = AuditService(db)

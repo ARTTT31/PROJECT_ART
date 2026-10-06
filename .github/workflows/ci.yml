@@ -37,6 +37,20 @@ jobs:
         working-directory: backend
         run: mypy app
 
+      # The test suite builds its schema from the models, so a broken or forgotten
+      # Alembic revision used to pass CI and only fail against the production
+      # database. Apply the chain to a throwaway SQLite file, then let `alembic
+      # check` compare the resulting schema with the models (drift = non-zero exit).
+      - name: Check the Alembic migration chain
+        working-directory: backend
+        env:
+          # Must be >= 32 chars: config.py rejects weak keys when DEBUG=False.
+          SECRET_KEY: ci-test-secret-key-for-testing-only
+          DATABASE_URL: "sqlite:///./ci-migrations.db"
+        run: |
+          alembic upgrade head
+          alembic check
+
       - name: Run backend tests
         working-directory: backend
         env:
@@ -48,6 +62,29 @@ jobs:
           DATABASE_URL: "sqlite:///:memory:"
         run: |
           pytest -q --tb=short
+
+  # ── Dependency advisories ─────────────────────────────
+  # Advisory, not a merge gate: the pinned set currently reports advisories
+  # (starlette via fastapi 0.111, python-jose), and a red build nobody can fix
+  # would just get ignored. Dependabot opens the upgrade PRs; this job makes the
+  # advisories visible in the meantime. Flip `continue-on-error` to false once
+  # the pinned set is clean.
+  dependency-audit:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Audit backend dependencies
+        run: |
+          python -m pip install --upgrade pip pip-audit
+          pip-audit -r backend/requirements.txt
 
   # ── Frontend: Lint + Type-Check + Build ───────────────
   frontend:

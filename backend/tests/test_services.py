@@ -434,6 +434,120 @@ class TestSessionCleanup:
 
         session_cleanup.run_cleanup()  # must not raise
 
+    def test_the_docstring_no_longer_points_at_docker(self):
+        """Docker was removed from the project; the usage block still said `docker exec`."""
+        from app.services import session_cleanup
+
+        doc = (session_cleanup.__doc__ or "").lower()
+        assert "docker exec" not in doc
+        assert "docker-compose" not in doc
+
+
+# ── Scheduled session cleanup ─────────────────────────────
+# The cleanup job used to be a script nobody called. It now also runs on an
+# interval inside the app, so the async twin and the loop behaviour are covered
+# here as well as the sync script above.
+
+class TestSessionCleanupScheduler:
+    @staticmethod
+    async def _user(db_session):
+        from app.models.user import User
+
+        user = User(
+            username="scheduler-user",
+            name="Scheduler User",
+            email="scheduler@example.com",
+            hashed_password="x",
+            role="user",
+        )
+        db_session.add(user)
+        await db_session.commit()
+        assert user.id is not None
+        return user
+
+    async def test_removes_expired_rows(self, db_session):
+        from app.core.utils import utcnow
+        from app.services.session_cleanup import cleanup_expired_sessions_async
+
+        user = await self._user(db_session)
+        db_session.add_all([
+            UserSession(
+                session_id="sid-expired",
+                user_id=user.id,
+                is_active=True,
+                last_activity=utcnow(),
+                expires_at=utcnow() - timedelta(days=1),
+            ),
+            UserSession(
+                session_id="sid-live",
+                user_id=user.id,
+                is_active=True,
+                last_activity=utcnow(),
+                expires_at=utcnow() + timedelta(days=7),
+            ),
+        ])
+        await db_session.commit()
+
+        removed = await cleanup_expired_sessions_async(db_session)
+
+        assert removed == 1
+        remaining = (await db_session.execute(select(UserSession))).scalars().all()
+        assert [row.session_id for row in remaining] == ["sid-live"]
+
+    async def test_keeps_a_recent_inactive_row(self, db_session):
+        from app.core.utils import utcnow
+        from app.services.session_cleanup import cleanup_expired_sessions_async
+
+        user = await self._user(db_session)
+        db_session.add(
+            UserSession(
+                session_id="sid-recent",
+                user_id=user.id,
+                is_active=False,
+                last_activity=utcnow(),
+                expires_at=utcnow() + timedelta(days=7),
+            )
+        )
+        await db_session.commit()
+
+        assert await cleanup_expired_sessions_async(db_session) == 0
+
+    async def test_the_scheduled_loop_keeps_going_after_a_failed_pass(self, monkeypatch):
+        """A transient database error must not kill the scheduler task."""
+        import asyncio
+
+        from app import main as main_module
+
+        calls = {"count": 0}
+
+        async def fake_cleanup(db):
+            calls["count"] += 1
+            if calls["count"] == 1:
+                raise RuntimeError("database unavailable")
+
+        class _FakeSession:
+            async def __aenter__(self):
+                return object()
+
+            async def __aexit__(self, *exc):
+                return False
+
+        sleeps = {"count": 0}
+
+        async def fake_sleep(seconds):
+            sleeps["count"] += 1
+            if sleeps["count"] >= 3:
+                raise asyncio.CancelledError
+
+        monkeypatch.setattr(main_module, "SessionLocal", lambda: _FakeSession())
+        monkeypatch.setattr(main_module, "cleanup_expired_sessions_async", fake_cleanup)
+        monkeypatch.setattr(main_module.asyncio, "sleep", fake_sleep)
+
+        with pytest.raises(asyncio.CancelledError):
+            await main_module._session_cleanup_loop(6)
+
+        assert calls["count"] == 2, "the second pass must still run"
+
 
 # ── UserService admin / edge-path tests ───────────────────
 # These cover the branches that the API tests do not reach: duplicate-email
