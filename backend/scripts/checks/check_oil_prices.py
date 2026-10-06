@@ -1,182 +1,191 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
-EPPO Oil Prices Connectivity Check
+Oil Prices Connectivity Check
 
-This script tests if the EPPO website is accessible and oil prices can be scraped.
-Run this before deploying to catch EPPO connectivity issues early.
+Manual pre-deploy check for the fuel-price integration. It fetches the live
+provider the API actually uses (Bangchak) and parses the response with the
+*application's own* parser, so a green run means the integration still works —
+rather than that some parallel copy of the parser still works.
 
-This is a manual check, NOT part of the pytest suite (see `backend/tests/`).
+This is a manual check, NOT part of the pytest suite: `pytest.ini` pins
+`testpaths = tests`. The offline parser checks below can still be driven
+explicitly:
 
-Usage:
+    pytest scripts/checks/check_oil_prices.py
+
+Usage (from the backend directory):
     python scripts/checks/check_oil_prices.py
 """
 
+import os
 import sys
-import re
-from unittest.mock import MagicMock, patch
-import httpx
 
+# This file prints emoji and Thai text. A Windows console defaults to a legacy
+# code page (cp874 here), where that raises UnicodeEncodeError before the check
+# can even start — so force UTF-8 on the stream first.
+try:
+    sys.stdout.reconfigure(encoding="utf-8")  # type: ignore[union-attr]
+except Exception:  # pragma: no cover - non-reconfigurable stream
+    pass
 
-EPPO_OIL_URL = (
-    "https://www.eppo.go.th/templates/eppo_v15_mixed/eppo_oil/eppo_oil_gen_new.php"
+# The application imports settings at module load, so provide harmless defaults
+# before importing anything from `app`. SECRET_KEY must be >= 32 characters
+# because DEBUG defaults to False.
+os.environ.setdefault("SECRET_KEY", "dev-only-secret-key-for-manual-checks")
+os.environ.setdefault("DATABASE_URL", "sqlite+aiosqlite:///:memory:")
+
+from pathlib import Path  # noqa: E402
+
+# Make `import app...` work when this file is run directly from `backend/`.
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
+import httpx  # noqa: E402
+
+from app.api.v1.endpoints.oil_prices import (  # noqa: E402
+    BANGCHAK_OIL_URL,
+    ORDERED_KEYS,
+    _parse_bangchak_data,
 )
 
-IMAGE_MAP = [
-    ("oil_name2.png", "gasohol_95", "\u0e41\u0e01\u0e4a\u0e2a\u0e42\u0e0b\u0e2e\u0e2d\u0e25\u0e4c 95"),
-    ("oil_name3.png", "gasohol_91", "\u0e41\u0e01\u0e4a\u0e2a\u0e42\u0e0b\u0e2e\u0e2d\u0e25\u0e4c 91"),
-    ("oil_name4.png", "gasohol_e20", "\u0e41\u0e01\u0e4a\u0e2a\u0e42\u0e0b\u0e2e\u0e2d\u0e25\u0e4c E20"),
-    ("oil_name5.png", "gasohol_e85", "\u0e41\u0e01\u0e4a\u0e2a\u0e42\u0e0b\u0e2e\u0e2d\u0e25\u0e4c E85"),
-    ("oil_name10.png", "benzene_95", "\u0e40\u0e1a\u0e19\u0e0b\u0e34\u0e19 95"),
-    ("oil_name6v2.png", "diesel", "\u0e14\u0e35\u0e40\u0e0b\u0e25"),
-]
-
-# ---------------------------------------------------------------------------
-# Minimal mock HTML payload that satisfies parse_eppo_html's regex
-# ---------------------------------------------------------------------------
-MOCK_EPPO_HTML = (
-    "<div class='oil_price_colum_name'>"
-    "<img src='/images/oil_name2.png'/></div>"
-    "<div class='oil_price_colum'>40.00</div>"
-    "<div class='oil_price_colum_name'>"
-    "<img src='/images/oil_name3.png'/></div>"
-    "<div class='oil_price_colum'>35.50</div>"
-    "<div style='clear:both'></div>"
-)
+REQUEST_HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+TIMEOUT = 10.0
 
 
-# ---------------------------------------------------------------------------
-# Core parsing / connectivity helpers
-# ---------------------------------------------------------------------------
-
-def parse_eppo_html(html: str) -> list[dict]:
-    """Parse EPPO oil price HTML, return PTT (first) price for each oil type."""
-    rows = re.findall(
-        r"oil_price_colum_name'>\s*<img[^>]+src='[^']*/([^'/]+)'[^<]*</div>(.*?)"
-        r"(?=<div class='oil_price_colum_name_|<div style='clear:both)",
-        html,
-        re.DOTALL,
-    )
-    row_map = {}
-    for img_file, rest in rows:
-        prices = re.findall(r"oil_price_colum'>([\d.]+)<", rest)
-        if prices:
-            try:
-                row_map[img_file] = float(prices[0])
-            except ValueError:
-                pass
-
-    result = []
-    for img_file, key, name in IMAGE_MAP:
-        if img_file in row_map:
-            result.append(
-                {
-                    "key": key,
-                    "name": name,
-                    "price": row_map[img_file],
-                    "unit": "\u0e1a\u0e32\u0e17/\u0e25\u0e34\u0e15\u0e23",
-                }
-            )
-    return result
-
-
-def fetch_eppo() -> httpx.Response:
-    """Fetch the EPPO oil-price page."""
+def fetch_prices(verify: bool = True) -> httpx.Response:
+    """Fetch the provider payload, optionally without TLS verification."""
     return httpx.get(
-        EPPO_OIL_URL,
-        timeout=10.0,
+        BANGCHAK_OIL_URL,
+        timeout=TIMEOUT,
         follow_redirects=True,
-        headers={"User-Agent": "Mozilla/5.0 (compatible; ART-Workspace/1.0)"},
+        headers=REQUEST_HEADERS,
+        verify=verify,
     )
 
 
-def check_eppo_response(response: httpx.Response) -> list[dict]:
-    """
-    Inspect an HTTP response from EPPO and parse prices.
-    Returns a list of price dicts on success.
-    Raises AssertionError with a descriptive message on failure.
-    """
-    if response.status_code == 200:
-        prices = parse_eppo_html(response.text)
-        if not prices:
-            raise AssertionError(
-                "No oil prices found in EPPO HTML. "
-                "The page structure may have changed."
-            )
-        return prices
+def check_response(response: httpx.Response) -> list[dict]:
+    """Validate a provider response and return the parsed prices.
 
+    Raises AssertionError with an actionable message on failure.
+    """
     if response.status_code == 403:
         raise AssertionError(
-            "Access denied (HTTP 403). EPPO may be blocking the request."
+            "Access denied (HTTP 403). The provider is blocking this egress IP or "
+            "rejecting the User-Agent."
         )
     if response.status_code == 404:
+        raise AssertionError("Page not found (HTTP 404). The provider URL has changed.")
+    if response.status_code != 200:
+        raise AssertionError(f"Unexpected HTTP status: {response.status_code}")
+
+    try:
+        payload = response.json()
+    except ValueError as exc:
+        raise AssertionError(f"Response was not JSON: {exc}")
+
+    prices = _parse_bangchak_data(payload)
+    if not prices:
         raise AssertionError(
-            "Page not found (HTTP 404). The EPPO URL may have changed."
+            "The provider answered 200 but no prices were parsed. Product names have "
+            "probably changed — update the matching branches in `_parse_bangchak_data`."
         )
-    raise AssertionError(f"Unexpected HTTP status: {response.status_code}")
+    return prices
 
 
 # ---------------------------------------------------------------------------
-# Offline self-checks of the parser (no live network calls). Kept as plain
-# functions so the file can also be driven by pytest when run explicitly:
-#     pytest scripts/checks/check_oil_prices.py
+# Offline self-checks of the application's parser (no network)
 # ---------------------------------------------------------------------------
 
-def test_eppo_connection() -> None:
+def _keys(prices: list) -> set:
+    return {price["key"] for price in prices}
+
+
+def test_parses_a_json_string_oil_list() -> None:
+    """Bangchak ships `OilList` as an embedded JSON string."""
+    import json
+
+    raw = json.dumps([
+        {"OilName": "Gasohol 95", "PriceToday": "37.69"},
+        {"OilName": "Hi Diesel S", "PriceToday": "38.39"},
+    ])
+
+    prices = _parse_bangchak_data([{"OilList": raw}])
+
+    assert {"gasohol_95", "diesel"} <= _keys(prices)
+    assert next(p for p in prices if p["key"] == "gasohol_95")["price"] == 37.69
+
+
+def test_parses_an_object_list() -> None:
+    prices = _parse_bangchak_data([{"OilList": [
+        {"OilName": "Gasohol 91", "PriceToday": 37.32},
+        {"OilName": "Gasohol E20", "PriceToday": 32.69},
+        {"OilName": "Gasohol E85", "PriceToday": 28.63},
+    ]}])
+
+    assert {"gasohol_91", "gasohol_e20", "gasohol_e85"} <= _keys(prices)
+
+
+def test_premium_95_does_not_overwrite_standard_95() -> None:
+    """A premium grade must not win the `gasohol_95` slot."""
+    prices = _parse_bangchak_data([{"OilList": [
+        {"OilName": "Gasohol 95", "PriceToday": 37.69},
+        {"OilName": "Gasohol 95 Premium", "PriceToday": 44.00},
+    ]}])
+
+    standard = next(price for price in prices if price["key"] == "gasohol_95")
+    assert standard["price"] == 37.69
+
+
+def test_b20_diesel_is_not_treated_as_standard_diesel() -> None:
+    prices = _parse_bangchak_data([{"OilList": [
+        {"OilName": "Hi Diesel S", "PriceToday": 38.39},
+        {"OilName": "DIESEL B20", "PriceToday": 30.00},
+    ]}])
+
+    diesel = next(price for price in prices if price["key"] == "diesel")
+    assert diesel["price"] == 38.39
+
+
+def test_unparseable_prices_are_skipped_instead_of_crashing() -> None:
+    prices = _parse_bangchak_data([{"OilList": [
+        {"OilName": "Gasohol 95", "PriceToday": "not-a-number"},
+        {"OilName": "Gasohol 91", "PriceToday": None},
+    ]}])
+
+    assert "gasohol_95" not in _keys(prices)
+    assert "gasohol_91" not in _keys(prices)
+
+
+def test_benzene_95_is_derived_from_gasohol_95() -> None:
+    """Bangchak does not sell Benzene 95, so the price is derived."""
+    prices = _parse_bangchak_data([{"OilList": [
+        {"OilName": "Gasohol 95", "PriceToday": 37.69},
+    ]}])
+
+    benzene = next(p for p in prices if p["key"] == "benzene_95")
+    assert benzene["price"] == round(37.69 + 8.99, 2)
+
+
+def test_a_payload_with_no_usable_prices_still_returns_the_benzene_slot() -> None:
+    """Documents real behaviour: the parser always fills `benzene_95`.
+
+    So an empty result from the provider must be detected from the *other* fuel
+    keys (or by the caller), never by assuming the list is empty.
     """
-    Unit test: mocks httpx.get to return HTTP 200 with valid mock HTML.
-    Validates that check_eppo_response correctly parses at least one fuel type.
-    """
-    mock_response = MagicMock()
-    mock_response.status_code = 200
-    mock_response.text = MOCK_EPPO_HTML
-
-    with patch.object(httpx, "get", return_value=mock_response):
-        fetch_eppo()
-
-    prices = check_eppo_response(mock_response)
-    assert isinstance(prices, list), "Expected a list of price dicts"
-    assert len(prices) > 0, "Expected at least one parsed fuel price"
-    for item in prices:
-        assert "key" in item
-        assert "price" in item
-        assert isinstance(item["price"], float)
+    assert _parse_bangchak_data([]) == []
+    assert _parse_bangchak_data(None) == []
+    assert [p["key"] for p in _parse_bangchak_data([{"OilList": "{{not json"}])] == ["benzene_95"]
 
 
-def test_eppo_403_raises() -> None:
-    """
-    Unit test: mocks a HTTP 403 and confirms AssertionError is raised.
-    """
-    mock_response = MagicMock()
-    mock_response.status_code = 403
+def test_display_order_follows_ordered_keys() -> None:
+    prices = _parse_bangchak_data([{"OilList": [
+        {"OilName": "Hi Diesel S", "PriceToday": 38.39},
+        {"OilName": "Gasohol 95", "PriceToday": 37.69},
+        {"OilName": "Gasohol 91", "PriceToday": 37.32},
+    ]}])
 
-    try:
-        check_eppo_response(mock_response)
-        assert False, "Expected AssertionError for HTTP 403"
-    except AssertionError as exc:
-        assert "403" in str(exc)
-
-
-def test_eppo_404_raises() -> None:
-    """
-    Unit test: mocks a HTTP 404 and confirms AssertionError is raised.
-    """
-    mock_response = MagicMock()
-    mock_response.status_code = 404
-
-    try:
-        check_eppo_response(mock_response)
-        assert False, "Expected AssertionError for HTTP 404"
-    except AssertionError as exc:
-        assert "404" in str(exc)
-
-
-def test_parse_eppo_html_mock_data() -> None:
-    """
-    Unit test: validates that parse_eppo_html correctly extracts prices
-    from MOCK_EPPO_HTML without any network call.
-    """
-    prices = parse_eppo_html(MOCK_EPPO_HTML)
-    assert isinstance(prices, list)
+    emitted = [price["key"] for price in prices]
+    assert emitted == [key for key in ORDERED_KEYS if key in emitted]
 
 
 # ---------------------------------------------------------------------------
@@ -184,31 +193,46 @@ def test_parse_eppo_html_mock_data() -> None:
 # ---------------------------------------------------------------------------
 
 def main() -> None:
-    """Main entry point for running as a standalone script."""
     print("\n" + "=" * 80)
-    print("\U0001f9ea EPPO Oil Prices Connection Test")
+    print("\U0001f9ea Oil Prices Connectivity Check (Bangchak)")
     print("=" * 80 + "\n")
-    print(f"\U0001f517 URL: {EPPO_OIL_URL}")
+    print(f"\U0001f517 URL: {BANGCHAK_OIL_URL}")
     print("-" * 80)
 
     try:
-        response = fetch_eppo()
-        print(f"\U0001f4e1 HTTP Status: {response.status_code}")
-        prices = check_eppo_response(response)
-        print(f"\u2705 Parsed {len(prices)} fuel type(s) successfully.")
-        for item in prices:
-            print(f"  \u2022 {item['name']:<20} {item['price']:>6.2f} {item['unit']}")
-        print("\n\U0001f389 SUCCESS!")
-        sys.exit(0)
+        response = fetch_prices(verify=True)
+    except httpx.HTTPError as exc:
+        # Triage aid only: distinguish "the provider is down" from "the certificate
+        # chain is the problem". The endpoint itself always validates TLS.
+        print(f"\u26a0\ufe0f  Verified request failed: {exc}")
+        print("\U0001f512 Retrying without TLS verification to isolate the cause...")
+        try:
+            response = fetch_prices(verify=False)
+        except Exception as retry_exc:
+            print(f"\u26a0\ufe0f  FAILED: provider unreachable — {retry_exc}")
+            sys.exit(1)
+        print("\u26a0\ufe0f  NOTE: the provider only answered with verification disabled.")
+        print("    The endpoint keeps verify=True, so the widget would fail here too —")
+        print("    investigate the provider's certificate chain instead of weakening the client.")
+
+    print(f"\U0001f4e1 HTTP Status: {response.status_code}")
+
+    try:
+        prices = check_response(response)
     except AssertionError as exc:
         print(f"\u26a0\ufe0f  FAILED: {exc}")
         sys.exit(1)
-    except httpx.TimeoutException:
-        print("\u26a0\ufe0f  FAILED: Connection timeout")
-        sys.exit(1)
-    except Exception as exc:
-        print(f"\u26a0\ufe0f  FAILED: Unexpected error \u2014 {exc}")
-        sys.exit(1)
+
+    print(f"\u2705 Parsed {len(prices)} fuel type(s) successfully.")
+    for item in prices:
+        print(f"  \u2022 {item['name']:<20} {item['price']:>6.2f} {item['unit']}")
+
+    missing = [key for key in ORDERED_KEYS if key not in {p["key"] for p in prices}]
+    if missing:
+        print(f"\n\u26a0\ufe0f  Missing fuel types: {', '.join(missing)}")
+
+    print("\n\U0001f389 SUCCESS!")
+    sys.exit(0)
 
 
 if __name__ == "__main__":

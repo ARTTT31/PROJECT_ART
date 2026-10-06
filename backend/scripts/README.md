@@ -6,7 +6,6 @@
 backend/scripts/
 ├── README.md           (This file)
 ├── admin/              🔐 User / Auth management (dev & ops only)
-├── data/               🗓️ Data ingestion & external integrations
 ├── checks/             🧪 Manual connectivity / smoke checks (NOT pytest)
 └── ops/                🛠️ DB migration, server restart, schema ops
 ```
@@ -23,12 +22,6 @@ backend/scripts/
 | `reset_user.py` | `py scripts/admin/reset_user.py <email> [new_password]` | รีเซ็ตรหัสผ่านลืม / unlock user ที่ล็อก |
 | `check_password.py` | `py scripts/admin/check_password.py <email> <password>` | Debug ว่าที่ user บอก password นั้นตรงกับใน DB หรือไม่ |
 
-## 🗓️ `data/` — Data / Integrations
-
-| Script | Usage | Output / Side effect |
-|---|---|---|
-| `parse_oil.py` | `py scripts/data/parse_oil.py` | ดึงราคาน้ำมันล่าสุดจาก eppo.go.th → print JSON |
-
 ## 🧪 `checks/` — Manual check scripts
 
 > 💡 สำหรับ CI ให้ใช้ `cd backend && pytest -q` แทน (ดู `backend/tests/`)
@@ -41,7 +34,7 @@ backend/scripts/
 | `check_api.ps1` | API health + auth flow via PowerShell | Backend รันที่ `localhost:8080` |
 | `check_login.py` | Login endpoint + session creation | User อยู่แล้วในฐานข้อมูล |
 | `check_user_flow.py` | Admin create → Login → Profile cycle | Fresh dev database |
-| `check_oil_prices.py` | EPPO connectivity + parser (`/api/v1/oil-prices/*`) | Network to EPPO / cached data |
+| `check_oil_prices.py` | Bangchak connectivity + parser (`/api/v1/oil-prices/*`) | Network ไปยัง API ของ Bangchak / cached data |
 | `check_db.js` | DB connectivity + schema existence (Node.js) | Postgres / SQLite รันแล้ว |
 
 ## 🛠️ `ops/` — Migration & Ops
@@ -59,5 +52,5 @@ backend/scripts/
 - ✅ **Do**: ใช้ `create_admin_auto.py` สำหรับ bootstrap production ครั้งแรก
 - ✅ **Do**: ใช้ `reset_user.py` เมื่อ user ล็อกบัญชีจาก login ผิด 5 ครั้ง
 - ❌ **Don't**: commit test output หรือ passwords จาก script เหล่านี้
-- ❌ **Don't**: Run `parse_oil.py` แล้ว hardcode ผลลัพธ์ใน source — ใช้ `/api/v1/oil-prices` endpoint ที่มี cache อยู่แล้ว
+- ❌ **Don't**: hardcode ราคาน้ำมันลงใน source — ใช้ `/api/v1/oil-prices` endpoint ที่มี cache อยู่แล้ว (สคริปต์ scraper ตัวเก่าที่อ่าน `/tmp/oil.html` ถูกถอดออกแล้ว เพราะ endpoint ใช้ JSON API ของ Bangchak โดยตรง)
 - ❌ **Don't**: ใส่ `test_*.py` ลงใน `scripts/` — สำหรับ CI ให้เขียนใน `backend/tests/` (pytest)

@@ -199,11 +199,11 @@ export default function OilPriceWidget({
         const msg = detail?.detail || res.statusText
         let userMessage = 'ไม่สามารถโหลดข้อมูลราคาน้ำมันได้'
         if (res.status === 502 || res.status === 504) {
-          userMessage = 'เชื่อมต่อ EPPO ไม่สำเร็จ — กำลังแสดงข้อมูลสำรอง'
-          console.warn('🌐 EPPO connection error:', msg)
+          userMessage = 'เชื่อมต่อแหล่งข้อมูลน้ำมันไม่สำเร็จ — กำลังแสดงข้อมูลสำรอง'
+          console.warn('🌐 Oil price source connection error:', msg)
         } else if (res.status === 503) {
-          userMessage = 'บริการ EPPO ไม่พร้อมใช้งานชั่วคราว'
-          console.error('⚠️ EPPO service unavailable:', msg)
+          userMessage = 'บริการราคาน้ำมันไม่พร้อมใช้งานชั่วคราว'
+          console.error('⚠️ Oil price service unavailable:', msg)
         } else {
           console.error('❌ Oil price API error:', msg)
         }
@@ -416,7 +416,7 @@ export default function OilPriceWidget({
 
         {/* ── Footer ────────────────────────────────────────────────────── */}
         <div className="border-t border-black/[0.05] pt-2">
-          <span className="text-[10px] text-[#475569]">แหล่งข้อมูล: EPPO</span>
+          <span className="text-[10px] text-[#475569]">แหล่งข้อมูล: Bangchak</span>
         </div>
       </div>
     </section>

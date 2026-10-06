@@ -336,7 +336,7 @@ nano docs/setup/quick-reference.md
 nano backend/app/api/v1/endpoints/oil_prices.py
 
 # 2. Quick commit and push
-./scripts/auto-commit-docs.sh "hotfix: fix EPPO scraping timeout"
+./scripts/auto-commit-docs.sh "hotfix: fix Bangchak oil-price timeout"
 # Press 'y' to push immediately
 ```
 

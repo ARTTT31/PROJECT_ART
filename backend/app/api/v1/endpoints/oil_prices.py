@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
 """
 Oil Prices API Endpoint
-Fetches retail fuel prices from Bangchak Open Web API and EPPO.
-Returns standardized retail prices as JSON for the frontend widget.
+
+Fetches retail fuel prices from the Bangchak Open Web API and returns
+standardised retail prices as JSON for the frontend widget. An earlier version
+scraped EPPO's HTML instead; `EPPO_OIL_URL` below is a leftover constant that
+nothing reads.
 """
 
 import json
@@ -19,7 +22,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 # Unauthenticated by design so the widget renders on the login screen, but that
-# makes it an open relay to Bangchak/EPPO. Rate limiting bounds the abuse.
+# makes it an open relay to Bangchak. Rate limiting bounds the abuse.
 _GENERAL_LIMIT = f"{settings.RATE_LIMIT_GENERAL_PER_MINUTE}/minute"
 
 BANGCHAK_OIL_URL = "https://oil-price.bangchak.co.th/ApiOilPrice2/en"
@@ -139,10 +142,12 @@ async def check_oil_prices_health(request: Request):
         status["cache_is_fresh"] = age < CACHE_TTL
 
     try:
+        # TLS verification stays on: `scripts/checks/check_oil_prices.py` fetches
+        # the same URL with verification enabled and succeeds, so there is no
+        # reason to accept an unvalidated certificate here.
         async with httpx.AsyncClient(
             timeout=httpx.Timeout(5.0, connect=3.0),
             follow_redirects=True,
-            verify=False,
         ) as client:
             response = await client.get(
                 BANGCHAK_OIL_URL,
@@ -192,7 +197,6 @@ async def get_oil_prices(request: Request):
         async with httpx.AsyncClient(
             timeout=httpx.Timeout(10.0, connect=5.0),
             follow_redirects=True,
-            verify=False,
         ) as client:
             response = await client.get(
                 BANGCHAK_OIL_URL,

@@ -33,7 +33,6 @@ const nextConfig = {
       "'self'",
       ...(apiOrigin ? [apiOrigin, apiOrigin.replace('http', 'ws')] : []),
       'wss://*.onrender.com',
-      'https://www.eppo.go.th',
       'https://vitals.vercel-insights.com',
       'https://vercel.live',
       'https://*.open-meteo.com',

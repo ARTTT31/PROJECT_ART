@@ -1,450 +1,238 @@
-# ⛽ Oil Prices API Troubleshooting Guide
+# ⛽ Oil Prices API — Guide & Troubleshooting
 
 ## 🔍 Overview
 
-Oil Prices API scrapes retail fuel prices from the **EPPO (Energy Policy and Planning Office)** website and displays them in the frontend widget.
+The oil prices endpoint returns Thai retail fuel prices as JSON for the dashboard widget.
 
-**Data Source:** https://www.eppo.go.th/templates/eppo_v15_mixed/eppo_oil/eppo_oil_gen_new.php
+| Item | Value |
+|---|---|
+| **Provider** | Bangchak Open Web API — `https://oil-price.bangchak.co.th/ApiOilPrice2/en` |
+| **Payload** | JSON (`OilList` array of `{OilName, PriceToday}`) |
+| **Backend file** | `backend/app/api/v1/endpoints/oil_prices.py` |
+| **Frontend widget** | `frontend/src/components/Widgets/OilPriceWidget.tsx` |
+| **Auth** | None by design (the login screen renders the widget), bounded by the general rate limit |
+
+> **Historical note.** An earlier version scraped the EPPO website (`eppo.go.th`) and parsed
+> its HTML. The endpoint no longer calls EPPO: `EPPO_OIL_URL` is still declared in the module
+> but nothing reads it, and the old HTML parser is gone. Troubleshooting advice that mentions
+> EPPO HTML structure, fuel-name image mapping, or `oil_name2.png` no longer applies — if you
+> find such a section in an older copy of this document, it is obsolete.
 
 ---
 
-## ✅ How It Works
+## ⚙️ How It Works
 
-1. **Backend** scrapes EPPO website HTML
-2. **Parses** PTT column prices for each fuel type
-3. **Caches** data for 1 hour to reduce load
-4. **Falls back** to stale cache or hardcoded prices if EPPO is down
-5. **Frontend** displays prices with automatic refresh every 5 minutes
+Prices resolve in three layers. Each response says which one answered via `source`.
+
+```
+GET /api/v1/oil-prices/oil-prices
+        │
+        ├─ 0. In-process cache younger than CACHE_TTL (30 min) ──► return cached payload
+        │
+        ├─ 1. Bangchak API
+        │        HTTP 200 + at least one parsed price ──► cache it
+        │        (source: "Bangchak / Retail Station", is_stale: false)
+        │
+        ├─ 2. Stale cache (any age) ──► is_stale: true, source gets a " (cache)" suffix
+        │
+        └─ 3. Hardcoded `_fallback_prices()` ──► is_stale: true,
+                                                 fetched_at: null,
+                                                 source: "Market Base Rate"
+```
+
+The cache is a module-level dict: it lives in the process and is lost on restart or redeploy
+(unlike the weather proxies, oil prices have **no** database-backed L2).
+
+Fuel keys are normalised in this order: `benzene_95`, `gasohol_95`, `gasohol_91`,
+`gasohol_e20`, `gasohol_e85`, `diesel`. Bangchak does not sell Benzene 95 directly, so its
+price is derived as `gasohol_95 + 8.99` and falls back to a constant if gasohol is missing.
 
 ---
 
 ## 🧪 Testing
 
-### Test 1: EPPO Health Check
+### Test 1: Provider health
 
 ```bash
-curl "https://project-art-c7eh.onrender.com/api/v1/oil-prices/health"
+curl "http://localhost:8080/api/v1/oil-prices/health"
 ```
 
-**Expected Success Response:**
-```json
-{
-  "service": "Oil Prices API",
-  "eppo_url": "https://www.eppo.go.th/...",
-  "cache_age_seconds": 300,
-  "cache_available": true,
-  "cache_is_fresh": true,
-  "is_accessible": true,
-  "message": "✅ EPPO is accessible and returning 6 prices",
-  "last_fetch_success": true
-}
-```
+Key fields: `is_accessible`, `message`, `cache_available`, `cache_age_seconds`,
+`cache_is_fresh`, `last_fetch_success`.
 
-### Test 2: Get Oil Prices
+### Test 2: Current prices
 
 ```bash
-curl "https://project-art-c7eh.onrender.com/api/v1/oil-prices/oil-prices"
+curl "http://localhost:8080/api/v1/oil-prices/oil-prices"
 ```
 
-**Expected Success Response:**
 ```json
 {
   "success": true,
   "prices": [
-    {
-      "key": "gasohol_95",
-      "name": "แก๊สโซฮอล์ 95",
-      "price": 43.10,
-      "unit": "บาท/ลิตร"
-    },
-    ...
+    { "key": "gasohol_95", "name": "แก๊สโซฮอล์ 95", "price": 37.69, "unit": "บาท/ลิตร" }
   ],
-  "update_date": "01/07/2026",
-  "fetched_at": "2026-07-01T10:00:00Z",
+  "update_date": "06/10/2026",
+  "fetched_at": "2026-10-06T02:15:00Z",
   "is_stale": false,
-  "source": "EPPO"
+  "source": "Bangchak / Retail Station"
 }
 ```
 
-### Test 3: Python Test Script
+### Test 3: Manual connectivity check
 
 ```bash
-python backend/scripts/test_oil_prices.py
+cd backend
+python scripts/checks/check_oil_prices.py
 ```
 
-**Expected Output:**
-```
-🧪 EPPO Oil Prices Connection Test
-🔗 URL: https://www.eppo.go.th/...
-📡 HTTP Status: 200
-✅ EPPO website is accessible!
-✅ Oil prices parsed successfully!
-📊 Found 6 fuel types
-
-📋 Current Oil Prices:
-  • แก๊สโซฮอล์ 95       43.10 บาท/ลิตร
-  • แก๊สโซฮอล์ 91       42.73 บาท/ลิตร
-  ...
-🎉 SUCCESS! EPPO oil prices are accessible and valid.
-```
+This is a **manual** check, not part of the pytest suite (`pytest.ini` pins `testpaths = tests`).
+It fetches the live provider and parses the response with the *same* parser the endpoint uses,
+so a green run means the integration still works end to end.
 
 ---
 
 ## 🐛 Common Issues
 
-### Issue 1: "เชื่อมต่อ EPPO ไม่สำเร็จ"
+### Issue 1: Widget shows an error / nothing at all
 
-**Symptoms:**
-- Frontend shows error message
-- Widget displays hardcoded fallback prices
-- `is_stale: true` in API response
+**Symptoms:** no prices rendered, or the card reports a failure.
 
-**Causes:**
-1. EPPO website is down or slow
-2. EPPO is blocking the request
-3. Network connectivity issues
-4. Backend is sleeping (free tier Render)
+**Checks:**
+1. `curl ".../oil-prices/health"` — is `is_accessible` true?
+2. Backend log for the real cause:
+   - `⏱️ Bangchak fetch timeout: …` — provider is slow (10s timeout, 5s connect).
+   - `❌ Bangchak API fetch failed: HTTP 403` — provider is blocking the egress IP or the
+     User-Agent.
+   - `❌ Bangchak fetch error: …` — DNS/TLS/connection problem.
+3. Rate limit: the endpoint shares `RATE_LIMIT_GENERAL_PER_MINUTE`. A `429` means the caller
+   (or a shared IP) exhausted it, not that the provider is down.
 
-**Solutions:**
+### Issue 2: "ข้อมูลอาจไม่เป็นปัจจุบัน" is displayed
 
-**A. Check if EPPO is accessible:**
-```bash
-curl -I "https://www.eppo.go.th/templates/eppo_v15_mixed/eppo_oil/eppo_oil_gen_new.php"
-```
-Should return `HTTP/2 200`
+**Symptoms:** the widget renders a warning badge; the response has `is_stale: true`.
 
-**B. Test health check:**
-```bash
-curl "https://project-art-c7eh.onrender.com/api/v1/oil-prices/health"
-```
+**Meaning:** the provider fetch failed and the widget is showing older data on purpose — stale
+data beats an empty card. This is **expected behaviour**, not a bug.
 
-**C. Check backend logs (Render):**
-- Look for "EPPO scrape failed" or "EPPO fetch timeout"
-- May show specific HTTP error codes
+**What to do:**
+1. Confirm with `source`: `"… (cache)"` means layer 2, `"Market Base Rate"` means layer 3.
+2. If it persists, the provider is failing — work through Issue 1.
+3. A restart clears the in-process cache; if the provider is still failing, the widget drops
+   straight to the hardcoded layer.
 
-**D. Wake up backend if sleeping:**
-```bash
-curl https://project-art-c7eh.onrender.com/health
-# Wait 30 seconds, then retry
-```
+### Issue 3: Prices come from the hardcoded fallback
 
----
+**Symptoms:** `source` is `"Market Base Rate"`, `fetched_at` is `null`, prices look frozen.
 
-### Issue 2: Stale Cache Warning
+**Meaning:** the provider failed **and** nothing was cached in this process — the usual reason
+is a cold start after a restart or redeploy while the provider is unavailable.
 
-**Symptoms:**
-- Widget shows: "ข้อมูลอาจไม่เป็นปัจจุบัน"
-- `is_stale: true` in response
-- Source shows "(cache)" suffix
+**If the fallback figures themselves are wrong:** update `_fallback_prices()` in
+`backend/app/api/v1/endpoints/oil_prices.py`. They are intentionally explicit constants
+(Bangkok & perimeter) rather than a formula, so they must be maintained by hand.
 
-**Causes:**
-- EPPO fetch failed, serving old cached data
-- Cache is older than 1 hour but better than nothing
+### Issue 4: The provider replies but no prices are parsed
 
-**Solution:**
-This is **expected behavior** when EPPO is temporarily unavailable. The widget automatically:
-1. Shows a warning indicator
-2. Displays cached data (better than no data)
-3. Continues trying to fetch fresh data every 5 minutes
+**Symptoms:** `⚠️ Bangchak API payload parsed but no prices extracted` in the log.
 
-**Manual refresh:**
-1. Click refresh button in widget (if available)
-2. Wait for next auto-refresh (5 minutes)
-3. Hard refresh page (Ctrl+Shift+R)
+**Cause:** `_parse_bangchak_data()` matches on `OilName` substrings
+(`"Gasohol 95"`, `"Gasohol 91"`, `"E20"`, `"E85"`, `"Hi Diesel S"`, …). If Bangchak renames a
+product, that entry silently disappears and the response simply contains fewer fuel types.
 
----
+**Fix:** add the new name to the matching branch. Be careful with two traps:
+- `Gasohol 95` must exclude `Super`/`Premium` variants, otherwise the premium grade overwrites
+  the standard price.
+- Diesel must exclude `B20`, which is a different product.
 
-### Issue 3: Hardcoded Fallback Prices
+### Issue 5: Fuel prices appear in the wrong cells
 
-**Symptoms:**
-- Source shows: "Hardcoded fallback"
-- Prices look outdated
-- `fetched_at: null` in response
+**Cause:** the order of the returned list is fixed by `ORDERED_KEYS`, **not** by the provider
+payload. Reordering that constant reorders the widget.
 
-**Causes:**
-- EPPO is completely unreachable
-- No cache available
-- Both live fetch and cache failed
+### Issue 6: A hard refresh does not change anything
 
-**Solution:**
-1. **Check EPPO status:** Visit https://www.eppo.go.th directly
-2. **Wait for EPPO to recover:** Fallback ensures widget still works
-3. **Monitor backend logs:** Check if scraping errors persist
-4. **Update fallback prices:** Edit `backend/app/api/v1/endpoints/oil_prices.py` → `_fallback_prices()`
-
----
-
-### Issue 4: HTML Parsing Failed
-
-**Symptoms:**
-- Backend logs show: "EPPO HTML parsed but no prices found"
-- Health check shows: `last_fetch_success: false`
-- Widget shows error or fallback
-
-**Causes:**
-- **EPPO changed their HTML structure** (most common)
-- Scraping regex patterns are outdated
-- EPPO showing maintenance page
-
-**Solution:**
-**This requires code update!**
-
-1. **Check EPPO page manually:**
-   Visit the EPPO URL and inspect the HTML structure
-
-2. **Update regex patterns:**
-   Edit `backend/app/api/v1/endpoints/oil_prices.py` → `_parse_eppo_html()`
-
-3. **Test locally:**
-   ```bash
-   python backend/scripts/test_oil_prices.py
-   ```
-
-4. **Deploy update:**
-   ```bash
-   git add backend/app/api/v1/endpoints/oil_prices.py
-   git commit -m "fix: update EPPO scraping patterns"
-   git push
-   ```
-
----
-
-### Issue 5: Wrong Fuel Prices Order
-
-**Symptoms:**
-- Fuel types display in wrong order
-- Some fuels missing
-
-**Solution:**
-Check `IMAGE_MAP` order in `backend/app/api/v1/endpoints/oil_prices.py`:
-```python
-IMAGE_MAP: list[tuple[str, str, str]] = [
-    ("oil_name2.png", "gasohol_95", "แก๊สโซฮอล์ 95"),
-    ("oil_name3.png", "gasohol_91", "แก๊สโซฮอล์ 91"),
-    # ... order determines display order
-]
-```
+The backend caches for 30 minutes, so the browser and the API can both be serving the same
+stale payload. Wait out `CACHE_TTL`, or restart the backend to drop the in-process cache.
 
 ---
 
 ## 🔧 Backend Configuration
 
-### Cache Settings
+| Setting | Location | Current value |
+|---|---|---|
+| `BANGCHAK_OIL_URL` | `oil_prices.py` | `https://oil-price.bangchak.co.th/ApiOilPrice2/en` |
+| `CACHE_TTL` | `oil_prices.py` | `1800` seconds (30 minutes) |
+| `ORDERED_KEYS` | `oil_prices.py` | display order of the six fuel types |
+| Request timeout | `oil_prices.py` | 10s total / 5s connect (health check: 5s / 3s) |
+| `User-Agent` | `oil_prices.py` | `Mozilla/5.0 (Windows NT 10.0; Win64; x64)` |
 
-```python
-CACHE_TTL = 3600  # 1 hour in seconds
-```
-
-**Modify this** in `backend/app/api/v1/endpoints/oil_prices.py` if needed.
-
-### EPPO URL
-
-```python
-EPPO_OIL_URL = "https://www.eppo.go.th/templates/eppo_v15_mixed/eppo_oil/eppo_oil_gen_new.php"
-```
-
-**Update this** if EPPO changes the URL.
-
-### User-Agent
-
-```python
-headers={"User-Agent": "Mozilla/5.0 (compatible; ART-Workspace/1.0)"}
-```
-
-Some websites require a realistic User-Agent to avoid blocking.
+> ✅ TLS certificate validation is enabled on both `httpx.AsyncClient` calls. It used to be
+> disabled with `verify=False`; `scripts/checks/check_oil_prices.py` fetches the same URL with
+> verification on and succeeds, so the unvalidated path was removed rather than kept.
 
 ---
 
 ## 🎯 Frontend Configuration
 
-### Auto-Refresh Interval
-
 In `frontend/src/components/Widgets/OilPriceWidget.tsx`:
-```typescript
-const interval = setInterval(() => fetchPrices({ refresh: true }), 300000) // 5 minutes
-```
-
-**Change `300000`** (milliseconds) to adjust refresh frequency.
-
-### Cache TTL
 
 ```typescript
-const OIL_CACHE_TTL_MS = 30 * 60_000 // 30 minutes
+const OIL_CACHE_TTL_MS = 30 * 60_000                       // localStorage cache: 30 min
+const interval = setInterval(() => fetchPrices({ refresh: true }), 300_000) // 5 min
 ```
 
-Frontend caches prices in localStorage to reduce load.
+The widget reads `is_stale` (to show the warning badge) and `update_date`. `source` and
+`fetched_at` are part of the payload type but are **not** rendered anywhere in the widget.
 
 ---
 
-## 📊 API Endpoints Reference
+## 📊 API Reference
 
-### Health Check
-```
-GET /api/v1/oil-prices/health
-```
-Returns EPPO connectivity status and cache state.
+### `GET /api/v1/oil-prices/health`
 
-### Get Oil Prices
-```
-GET /api/v1/oil-prices/oil-prices
-```
-Returns current oil prices (from EPPO, cache, or fallback).
+Returns provider reachability plus cache state. Never fails hard: provider errors are reported
+in `message` and `is_accessible: false`.
+
+### `GET /api/v1/oil-prices/oil-prices`
+
+| Field | Meaning |
+|---|---|
+| `success` | Always `true`; failures are reported through `is_stale` / `source` |
+| `prices[]` | `key`, `name` (Thai), `price`, `unit` = `บาท/ลิตร` |
+| `update_date` | `DD/MM/YYYY` (provider day, or today for the fallback layer) |
+| `fetched_at` | ISO-8601 UTC of the successful fetch, or `null` for the fallback layer |
+| `is_stale` | `true` when layer 2 or 3 answered |
+| `source` | `"Bangchak / Retail Station"`, `"… (cache)"`, or `"Market Base Rate"` |
 
 ---
 
-## 🔍 Monitoring & Debugging
+## 🔍 Monitoring
 
-### Check Backend Logs (Render)
+Log lines worth alerting on (`logger.warning` / `logger.error` in `oil_prices.py`):
 
-Look for these log messages:
-
-✅ **Success:**
 ```
-✅ Serving oil prices from fresh cache
-✅ Successfully fetched 6 oil prices from EPPO
-```
-
-⚠️ **Warnings:**
-```
-⚠️ EPPO HTML parsed but no prices found
 ⚠️ Returning stale cache due to fetch failure
 ⚠️ Returning hardcoded fallback prices
+❌ Bangchak API fetch failed: HTTP <code>
+⏱️ Bangchak fetch timeout: <error>
+⚠️ Bangchak API payload parsed but no prices extracted
 ```
 
-❌ **Errors:**
-```
-❌ EPPO scrape failed: HTTP 403
-⏱️ EPPO fetch timeout: ...
-🌐 EPPO HTTP error: ...
-```
-
-### Check Frontend Console
-
-Open DevTools (F12) → Console:
-
-✅ **Success:**
-- No errors related to oil prices
-
-⚠️ **Warnings:**
-```
-🌐 EPPO connection error, using fallback data: ...
-```
-
-❌ **Errors:**
-```
-❌ Oil price fetch error: ...
-```
-
-### Network Tab Analysis
-
-1. Open DevTools (F12) → Network
-2. Filter: `/oil-prices`
-3. Check:
-   - Status code (should be 200)
-   - Response time
-   - Response data structure
+`"Returning hardcoded fallback prices"` is the strongest signal: it means the dashboard is
+showing numbers that are no longer live.
 
 ---
 
-## 🆘 Emergency Procedures
+## ⚠️ Known Limitations
 
-### EPPO is Completely Down
-
-1. **Verify downtime:**
-   ```bash
-   curl -I https://www.eppo.go.th
-   ```
-
-2. **Check status:**
-   - Widget will show hardcoded fallback prices
-   - Warning indicator appears
-   - Source shows "Hardcoded fallback"
-
-3. **No action needed:**
-   - System automatically falls back
-   - Users see outdated but reasonable prices
-   - Auto-recovery when EPPO returns
-
-### Update Fallback Prices
-
-If fallback prices become too outdated:
-
-1. **Edit `backend/app/api/v1/endpoints/oil_prices.py`**
-2. **Update `_fallback_prices()` function:**
-   ```python
-   def _fallback_prices():
-       return {
-           "success": True,
-           "prices": [
-               {"key": "gasohol_95", "name": "แก๊สโซฮอล์ 95", "price": 43.10, ...},
-               # Update prices here
-           ],
-           ...
-       }
-   ```
-3. **Deploy:**
-   ```bash
-   git add backend/app/api/v1/endpoints/oil_prices.py
-   git commit -m "chore: update fallback oil prices"
-   git push
-   ```
-
----
-
-## 💡 Best Practices
-
-1. ✅ **Monitor EPPO health** regularly using health check endpoint
-2. ✅ **Test before deployment** using `test_oil_prices.py`
-3. ✅ **Keep fallback prices updated** (manually every 3-6 months)
-4. ✅ **Check backend logs** if users report wrong prices
-5. ✅ **Accept stale cache gracefully** - better than no data
-6. ✅ **Don't rely solely on EPPO** - always have fallback strategy
-
----
-
-## 🎓 Understanding the Fallback Strategy
-
-The API uses a **3-tier fallback** system:
-
-```
-1. Fresh EPPO data (best)
-     ↓ (if fails)
-2. Stale cache (good enough)
-     ↓ (if no cache)
-3. Hardcoded fallback (last resort)
-```
-
-This ensures:
-- ✅ Widget never completely fails
-- ✅ Users always see some price data
-- ✅ Graceful degradation when EPPO is down
-- ✅ Automatic recovery when EPPO returns
-
----
-
-## 📞 Support
-
-If issues persist:
-
-1. **Run health check:** `/api/v1/oil-prices/health`
-2. **Run test script:** `python backend/scripts/test_oil_prices.py`
-3. **Check backend logs:** Render Dashboard → Logs
-4. **Verify EPPO status:** Visit https://www.eppo.go.th
-5. **Check frontend console:** Browser DevTools → Console
-
----
-
-## 🔗 Quick Reference
-
-| Item | Value |
-|------|-------|
-| EPPO URL | https://www.eppo.go.th/templates/eppo_v15_mixed/eppo_oil/eppo_oil_gen_new.php |
-| Health Check | https://project-art-c7eh.onrender.com/api/v1/oil-prices/health |
-| Get Prices | https://project-art-c7eh.onrender.com/api/v1/oil-prices/oil-prices |
-| Cache TTL | 1 hour (backend), 30 minutes (frontend) |
-| Auto-refresh | Every 5 minutes |
-| Test Script | `backend/scripts/test_oil_prices.py` |
-
----
-
-**Built with resilience in mind! ⛽**
+1. **One provider.** There is no secondary source: when Bangchak is unavailable the endpoint
+   degrades to cache, then to hand-maintained constants.
+2. **No persistent cache.** The cache is process-local, so a restart during a provider outage
+   jumps straight to the hardcoded layer (the weather proxies solved this with the
+   `weather_cache` table; oil prices have not been migrated).
+3. **Dead constant.** `EPPO_OIL_URL` is declared but never read — harmless, but it makes the
+   module look like it still talks to EPPO.
+4. **Key-name coupling.** Parsing depends on Bangchak's product names
+   (`Gasohol 95`, `Hi Diesel S`, …). A rename silently drops a fuel type; the health endpoint
+   and the manual check script are the fastest way to notice.
