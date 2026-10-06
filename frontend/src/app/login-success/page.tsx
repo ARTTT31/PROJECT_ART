@@ -3,6 +3,8 @@
 import { useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
+import { AuthUserSchema } from '@/lib/api/schemas';
+import { readUserCookie } from '@/lib/api/userCookie';
 
 export default function LoginSuccessPage() {
   const router = useRouter();
@@ -14,19 +16,11 @@ export default function LoginSuccessPage() {
 
     const processLogin = async () => {
       try {
-        // Step 1: Read user data from non-httpOnly cookie for speed (fast-path)
-        let user = null;
-        const userCookie = document.cookie
-          .split('; ')
-          .find((c) => c.startsWith('user='));
-        
-        if (userCookie) {
-          try {
-            user = JSON.parse(decodeURIComponent(userCookie.split('=')[1]));
-          } catch {
-            // ignore parse error
-          }
-        }
+        // Step 1: Read user data from the non-httpOnly cookie for speed (fast-path).
+        // The backend percent-encodes the JSON so it survives document.cookie;
+        // validate the shape because the cookie is client-readable.
+        const parsedCookieUser = AuthUserSchema.safeParse(readUserCookie());
+        const user = parsedCookieUser.success ? parsedCookieUser.data : null;
 
         // If user already exists in cookie, redirect immediately to improve LCP/FCP
         if (user) {

@@ -70,6 +70,12 @@ async def update_my_profile(
             user_agent=user_agent,
         )
 
+        # AuditService.log_action() only adds to the session — the endpoint owns
+        # the commit. Without it the audit INSERT is rolled back with the
+        # request-scoped session (the profile fields above are committed inside
+        # user_service.update_user, but the audit row added afterwards is not).
+        await db.commit()
+
         return ResponseModel(
             result="success",
             message="อัปเดตโปรไฟล์สำเร็จ",
@@ -124,6 +130,9 @@ async def change_password(
             user_agent=user_agent,
         )
 
+        # Commit the audit row (log_action only adds — see AuditService).
+        await db.commit()
+
         return ResponseModel(
             result="success",
             message="เปลี่ยนรหัสผ่านสำเร็จ",
@@ -162,6 +171,9 @@ async def update_avatar(
             ip_address=client_ip,
             user_agent=user_agent,
         )
+
+        # Commit the audit row (log_action only adds — see AuditService).
+        await db.commit()
 
         return ResponseModel(
             result="success",

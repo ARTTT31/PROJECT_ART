@@ -1,14 +1,19 @@
 """API endpoint tests for ART Workspace backend."""
+import json
 from contextlib import contextmanager
+from urllib.parse import unquote
 
 import pytest
 from httpx import AsyncClient, ASGITransport
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from starlette.testclient import TestClient
 from starlette.websockets import WebSocketDisconnect
 
 from app.core.database import Base, get_db
+from app.core.utils import decode_user_cookie, encode_user_cookie
 from app.main import app
+from app.models.audit_log import AuditLog
 
 # No module-level asyncio mark: `pytest.ini` sets `asyncio_mode = auto`, so async
 # tests are collected without one — and marking the whole module would also stamp
@@ -1620,3 +1625,147 @@ class TestLifespanWiring:
             assert test_client.get("/").status_code == 200
 
         assert broadcast_bus._handler is None, "shutdown must release the registry"
+
+
+# ── High-severity regressions: audit persistence + user cookie encoding ──
+
+
+class TestAuditTrailPersistence:
+    """Successful actions must leave their audit row behind.
+
+    AuditService.log_action() only adds to the session — the endpoint owns the
+    commit. These endpoints used to return success while the audit INSERT was
+    rolled back with the request session, so a password change or an
+    admin-created account left no trace.
+    """
+
+    async def test_profile_update_persists_audit_row(
+        self, client, logged_in_user, db_session
+    ):
+        resp = await client.put("/api/v1/profile/me", json={"name": "Renamed"})
+        assert resp.status_code == 200, resp.text
+        # Discard whatever the request left uncommitted — exactly what the real
+        # request-scoped session teardown does. Only committed rows survive.
+        await db_session.rollback()
+        rows = (
+            await db_session.execute(
+                select(AuditLog).where(AuditLog.action == "PROFILE_UPDATE")
+            )
+        ).scalars().all()
+        assert rows, "PROFILE_UPDATE succeeded but its audit row was rolled back"
+
+    async def test_password_change_persists_audit_row(
+        self, client, logged_in_user, db_session
+    ):
+        resp = await client.post(
+            "/api/v1/profile/change-password",
+            json={"old_password": "SecretPass123", "new_password": "NewSecret456"},
+        )
+        assert resp.status_code == 200, resp.text
+        await db_session.rollback()
+        rows = (
+            await db_session.execute(
+                select(AuditLog).where(AuditLog.action == "PASSWORD_CHANGE")
+            )
+        ).scalars().all()
+        assert rows, "PASSWORD_CHANGE succeeded but its audit row was rolled back"
+
+    async def test_avatar_update_persists_audit_row(
+        self, client, logged_in_user, db_session
+    ):
+        resp = await client.post(
+            "/api/v1/profile/avatar",
+            json={"avatar_base64": "data:image/png;base64,AAAA"},
+        )
+        assert resp.status_code == 200, resp.text
+        await db_session.rollback()
+        rows = (
+            await db_session.execute(
+                select(AuditLog).where(AuditLog.action == "AVATAR_UPDATE")
+            )
+        ).scalars().all()
+        assert rows, "AVATAR_UPDATE succeeded but its audit row was rolled back"
+
+    async def test_admin_create_persists_audit_row(self, admin_client, db_session):
+        resp = await admin_client.post(
+            "/api/v1/users/admin-create",
+            json={
+                "username": "audituser",
+                "display_name": "Audit User",
+                "password": "SecretPass123",
+            },
+        )
+        assert resp.status_code == 201, resp.text
+        await db_session.rollback()
+        rows = (
+            await db_session.execute(
+                select(AuditLog).where(AuditLog.action == "ADMIN_USER_CREATE_HYBRID")
+            )
+        ).scalars().all()
+        assert rows, "admin-create succeeded but its audit row was rolled back"
+
+
+class TestUserCookieFormat:
+    """The readable `user` cookie must survive a document.cookie-style read.
+
+    Starlette quotes and octal-escapes a raw json.dumps value (commas become
+    `\\054`), and the browser stores that escaped form verbatim — every
+    frontend JSON.parse on it failed. The backend now percent-encodes the
+    payload itself, so the stored value is exactly what the frontend decodes.
+    """
+
+    async def test_login_user_cookie_is_plain_percent_encoded_json(
+        self, client, registered_user
+    ):
+        resp = await client.post(
+            "/api/v1/auth/login",
+            json={"email": "test@example.com", "password": "SecretPass123"},
+        )
+        assert resp.status_code == 200, resp.text
+
+        raw_header = next(
+            (
+                header
+                for header in resp.headers.get_list("set-cookie")
+                if header.startswith("user=")
+            ),
+            None,
+        )
+        assert raw_header is not None, "login must set the readable user cookie"
+
+        value = raw_header.split(";", 1)[0][len("user="):]
+        # The old failure mode: `user="{\"id\": 1\054 ...}"` — quoted + octal escapes.
+        assert not value.startswith('"'), f"cookie value is quoted: {value[:60]}"
+        assert "\\" not in value, "cookie value must not contain backslash escapes"
+        assert " " not in value, "cookie value must not contain raw spaces"
+
+        decoded = json.loads(unquote(value))
+        assert decoded["email"] == "test@example.com"
+        assert decoded["role"] == "user"
+
+    async def test_session_fast_path_reads_the_encoded_cookie(
+        self, client, logged_in_user
+    ):
+        """Prove the fast-path consumes the cookie instead of the DB fallback."""
+        override = {
+            "id": 999,
+            "email": "test@example.com",
+            "name": "Cookie Override",
+            "role": "user",
+        }
+        client.cookies.set("user", encode_user_cookie(override))
+
+        resp = await client.get("/api/v1/auth/session")
+        assert resp.status_code == 200, resp.text
+        assert resp.json()["data"]["user"]["name"] == "Cookie Override"
+
+    async def test_cookie_helpers_round_trip(self):
+        payload = {"id": 7, "name": "สมชาย, Jr.", "role": "admin", "avatar": None}
+        encoded = encode_user_cookie(payload)
+
+        # Only cookie-legal characters, so the serialiser has nothing to escape.
+        assert '"' not in encoded and "," not in encoded and " " not in encoded
+        assert decode_user_cookie(encoded) == payload
+        assert decode_user_cookie("not-json") is None
+        # A stale legacy value from before this fix decodes to None, not garbage.
+        assert decode_user_cookie('"{\\"id\\": 1\\054 \\"role\\": \\"admin\\"}"') is None

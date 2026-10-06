@@ -2,7 +2,6 @@
 Authentication Endpoints
 """
 
-import json
 import logging
 import os
 import secrets
@@ -28,6 +27,7 @@ except ImportError:
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.rate_limit import limiter
+from app.core.utils import decode_user_cookie, encode_user_cookie
 from app.core.security import create_access_token, create_refresh_token, decode_token
 from app.models.session import UserSession
 from app.schemas.response import ResponseModel
@@ -143,10 +143,12 @@ async def login(
             httponly=True,
             **COOKIE_OPTIONS,
         )
-        # Non-httpOnly user data cookie (read by frontend for quick display/hydration)
+        # Non-httpOnly user data cookie (read by frontend for quick display/hydration).
+        # Percent-encoded: a raw json.dumps value gets quoted/escaped by the cookie
+        # serialiser into a shape document.cookie readers cannot parse.
         response.set_cookie(
             key="user",
-            value=json.dumps(response_data["user"]),
+            value=encode_user_cookie(response_data["user"]),
             max_age=7 * 24 * 60 * 60,
             httponly=False,
             **COOKIE_OPTIONS,
@@ -313,7 +315,7 @@ async def refresh_token(
                 }
                 response.set_cookie(
                     key="user",
-                    value=json.dumps(user_data),
+                    value=encode_user_cookie(user_data),
                     max_age=7 * 24 * 60 * 60,
                     httponly=False,
                     **COOKIE_OPTIONS,
@@ -547,7 +549,7 @@ async def google_verify_token(
     )
     response.set_cookie(
         key="user",
-        value=json.dumps(user_data),
+        value=encode_user_cookie(user_data),
         max_age=7 * 24 * 60 * 60,
         httponly=False,
         **COOKIE_OPTIONS,
@@ -695,7 +697,7 @@ async def google_callback(
     )
     response.set_cookie(
         key="user",
-        value=json.dumps(user_data),
+        value=encode_user_cookie(user_data),
         max_age=7 * 24 * 60 * 60,
         httponly=False,
         **COOKIE_OPTIONS,
@@ -728,20 +730,20 @@ async def get_session(request: Request, db: AsyncSession = Depends(get_db)):
             detail="Token หมดอายุหรือไม่ถูกต้อง",
         )
 
-    # Try fast-path: use user cookie if available
+    # Try fast-path: use the encoded user cookie if available. The value is
+    # percent-encoded JSON (see encode_user_cookie); a stale raw-JSON cookie from
+    # an older deployment simply fails to decode and falls through to the DB.
     user_cookie = request.cookies.get("user")
     if user_cookie:
-        try:
-            user_data = json.loads(user_cookie)
+        cookie_user = decode_user_cookie(user_cookie)
+        if cookie_user is not None:
             return ResponseModel(
                 result="success",
                 message="พบ session ปัจจุบัน",
                 data={
-                    "user": user_data,
+                    "user": cookie_user,
                 },
-            )
-        except (json.JSONDecodeError, TypeError):
-            pass  # Fall through to DB lookup
+            )  # Fall through to DB lookup otherwise
 
     # Fallback: decode JWT and fetch user from DB
     user_id = payload.get("user_id")

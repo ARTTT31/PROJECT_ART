@@ -80,6 +80,9 @@ async def create_user(
             ip_address=client_ip,
             user_agent=user_agent,
         )
+        # user_service.create_user() already committed the user; this commit is
+        # what persists the audit row (log_action only adds to the session).
+        await db.commit()
 
         return ResponseModel(
             result="success",

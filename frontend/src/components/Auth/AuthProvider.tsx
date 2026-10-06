@@ -4,6 +4,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useS
 import { useRouter } from 'next/navigation'
 import { fetchWithAuth, fetchWithAuthJson } from '@/lib/api/fetchWithAuth'
 import { AuthUserSchema, makeEnvelopeSchema } from '@/lib/api/schemas'
+import { readUserCookie } from '@/lib/api/userCookie'
 import type { AuthUser, AuthRole } from '@/types'
 import { z, ZodError } from 'zod'
 
@@ -99,17 +100,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const initializeAuth = async () => {
       // ── Fast-path: use localStorage/cookie for instant display ──
-      const userCookie = document.cookie
-        .split('; ')
-        .find((row) => row.startsWith('user='));
-
       let localUser = safeParseUser(localStorage.getItem('user'));
 
-      if (userCookie) {
-        try {
-          const parsedCookie = JSON.parse(decodeURIComponent(userCookie.split('=')[1]));
-          localUser = parsedCookie;
-        } catch (e) {}
+      // The cookie wins when present: login/refresh just wrote it, while
+      // localStorage can hold a stale copy. Validate it like localStorage data —
+      // the cookie is client-readable, so never trust its shape.
+      const cookieUser = readUserCookie();
+      if (cookieUser) {
+        const parsedCookie = AuthUserSchema.safeParse(cookieUser);
+        if (parsedCookie.success) localUser = parsedCookie.data;
       }
 
       if (localUser) {
