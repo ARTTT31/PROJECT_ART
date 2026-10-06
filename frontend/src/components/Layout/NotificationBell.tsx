@@ -231,19 +231,39 @@ export default function NotificationBell() {
 
     // Setup WebSocket connection
     let ws: WebSocket | null = null
-    let reconnectTimer: any = null
+    let reconnectTimer: ReturnType<typeof setTimeout> | null = null
+    let attempts = 0
+    let stopped = false
+
+    // Back off progressively instead of hammering every five seconds: a backend
+    // restart or a capacity rejection (1013) must not turn every open tab into a
+    // reconnect storm.
+    const scheduleReconnect = () => {
+      if (stopped) return
+      attempts += 1
+      reconnectTimer = setTimeout(connectWs, Math.min(5000 * 2 ** (attempts - 1), 60000))
+    }
+
     const connectWs = () => {
-      if (typeof window === 'undefined') return
+      if (typeof window === 'undefined' || stopped) return
       
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
       // Assuming backend is on the same host but port 8080 or proxied via next
       // We can try to use standard API route path
-      const wsUrl = process.env.NEXT_PUBLIC_API_URL 
-        ? process.env.NEXT_PUBLIC_API_URL.replace('http', 'ws') + '/api/v1/ws/notifications'
-        : `${protocol}//${window.location.hostname}:8080/api/v1/ws/notifications`
+      // Prefer the explicit API origin; otherwise stay on this origin, which the
+      // Next.js `/api` rewrite forwards to the backend. The socket endpoint
+      // requires authentication now, so the handshake has to carry the session
+      // cookie — which rules out guessing `hostname:8080` or passing the token in
+      // the query string.
+      const wsUrl = process.env.NEXT_PUBLIC_API_URL
+        ? process.env.NEXT_PUBLIC_API_URL.replace(/^http/, 'ws') + '/api/v1/ws/notifications'
+        : `${protocol}//${window.location.host}/api/v1/ws/notifications`
 
       try {
         ws = new WebSocket(wsUrl)
+        ws.onopen = () => {
+          attempts = 0
+        }
         ws.onmessage = (event) => {
           try {
             const data = JSON.parse(event.data)
@@ -262,21 +282,33 @@ export default function NotificationBell() {
             console.error('Invalid WebSocket message:', e)
           }
         }
-        ws.onclose = () => {
-          // Auto-reconnect after 5 seconds
-          reconnectTimer = setTimeout(connectWs, 5000)
+        ws.onclose = (event) => {
+          // 1008 is the backend's "your session is not valid" code. Retrying it
+          // would loop forever against a closed door, so stop: signing in again
+          // remounts this component and opens a fresh, authenticated socket.
+          if (event.code === 1008) {
+            stopped = true
+            return
+          }
+          scheduleReconnect()
         }
       } catch (err) {
         console.error('WebSocket connection failed:', err)
-        reconnectTimer = setTimeout(connectWs, 5000)
+        scheduleReconnect()
       }
     }
     
     connectWs()
 
     return () => {
+      stopped = true
       listeners.delete(fn)
-      if (ws) ws.close()
+      if (ws) {
+        // Detach the handler first so an intentional close cannot schedule a
+        // reconnect after unmount.
+        ws.onclose = null
+        ws.close()
+      }
       if (reconnectTimer) clearTimeout(reconnectTimer)
     }
   }, [])

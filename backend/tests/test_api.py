@@ -1,13 +1,18 @@
 """API endpoint tests for ART Workspace backend."""
+from contextlib import contextmanager
+
 import pytest
 from httpx import AsyncClient, ASGITransport
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
+from starlette.testclient import TestClient
+from starlette.websockets import WebSocketDisconnect
 
 from app.core.database import Base, get_db
 from app.main import app
 
-# Mark all tests in this file as asyncio tests
-pytestmark = pytest.mark.asyncio
+# No module-level asyncio mark: `pytest.ini` sets `asyncio_mode = auto`, so async
+# tests are collected without one — and marking the whole module would also stamp
+# the sync Starlette TestClient tests below with an asyncio mark they cannot use.
 
 # ── Fixtures ──────────────────────────────────────────────
 
@@ -310,6 +315,362 @@ class TestWebsocketBroadcast:
     async def test_admin_broadcast_rejects_malformed_payload(self, admin_client):
         resp = await admin_client.post("/api/v1/ws/broadcast", json={"id": "n-1"})
         assert resp.status_code == 422
+
+
+# ── WebSocket subscribe authentication ────────────────────
+# The broadcast POST was locked down earlier, but the subscribe side stayed open:
+# anyone who knew the URL could hold a socket and receive every broadcast. These
+# tests cover the handshake check, the process-level caps, and the real ASGI
+# handshake so the regression cannot come back silently.
+
+class _StubWebSocket:
+    """Minimal stand-in for the handshake attributes the auth helper reads."""
+
+    def __init__(self, cookies=None, headers=None):
+        self.cookies = cookies or {}
+        self.headers = headers or {}
+
+
+@pytest.fixture(autouse=False)
+def reset_ws_manager():
+    """Keep the module-level connection registry from leaking between tests."""
+    from app.api.v1.endpoints.websockets import manager
+
+    yield manager
+    manager.active_connections.clear()
+    manager._owner.clear()
+    manager._per_user.clear()
+
+
+@pytest.fixture
+async def ws_user(db_session):
+    """An ordinary active account to authenticate the socket with."""
+    from app.schemas.user import UserCreate
+    from app.services.user_service import UserService
+
+    return await UserService(db_session).create_user(UserCreate(
+        email="ws@example.com", password="SecretPass123", name="WS User"))
+
+
+def _token_for(user) -> str:
+    from app.core.security import create_access_token
+
+    return create_access_token(data={"sub": user.email, "user_id": user.id})
+
+
+class TestWebsocketAuthentication:
+    async def test_anonymous_handshake_is_rejected(self, db_session):
+        from app.api.dependencies import authenticate_websocket
+
+        assert await authenticate_websocket(_StubWebSocket(), db_session) is None
+
+    async def test_valid_access_token_cookie_authenticates(self, db_session, ws_user):
+        from app.api.dependencies import authenticate_websocket
+
+        socket = _StubWebSocket(cookies={"access_token": _token_for(ws_user)})
+        user = await authenticate_websocket(socket, db_session)
+
+        assert user is not None
+        assert user.id == ws_user.id
+
+    async def test_bearer_prefix_in_the_cookie_is_tolerated(self, db_session, ws_user):
+        from app.api.dependencies import authenticate_websocket
+
+        socket = _StubWebSocket(cookies={"access_token": f"Bearer {_token_for(ws_user)}"})
+
+        assert (await authenticate_websocket(socket, db_session)) is not None
+
+    async def test_bearer_header_authenticates_non_browser_clients(self, db_session, ws_user):
+        from app.api.dependencies import authenticate_websocket
+
+        socket = _StubWebSocket(headers={"authorization": f"Bearer {_token_for(ws_user)}"})
+
+        assert (await authenticate_websocket(socket, db_session)) is not None
+
+    async def test_invalid_token_is_rejected(self, db_session):
+        from app.api.dependencies import authenticate_websocket
+
+        socket = _StubWebSocket(cookies={"access_token": "not.a.jwt"})
+
+        assert await authenticate_websocket(socket, db_session) is None
+
+    async def test_token_for_a_deleted_user_is_rejected(self, db_session, ws_user):
+        from app.api.dependencies import authenticate_websocket
+
+        token = _token_for(ws_user)
+        await db_session.delete(ws_user)
+        await db_session.commit()
+
+        socket = _StubWebSocket(cookies={"access_token": token})
+        assert await authenticate_websocket(socket, db_session) is None
+
+    async def test_inactive_account_is_rejected(self, db_session, ws_user):
+        from app.api.dependencies import authenticate_websocket
+
+        token = _token_for(ws_user)
+        ws_user.is_active = False
+        await db_session.commit()
+
+        assert await authenticate_websocket(_StubWebSocket(cookies={"access_token": token}), db_session) is None
+
+    async def test_locked_account_is_rejected(self, db_session, ws_user):
+        from app.api.dependencies import authenticate_websocket
+
+        token = _token_for(ws_user)
+        ws_user.is_locked = True
+        await db_session.commit()
+
+        assert await authenticate_websocket(_StubWebSocket(cookies={"access_token": token}), db_session) is None
+
+    async def test_query_string_token_is_not_accepted(self, db_session, ws_user):
+        """Tokens must not travel in the query string, which lands in access logs."""
+        from app.api.dependencies import authenticate_websocket
+
+        socket = _StubWebSocket(headers={"query_string": f"access_token={_token_for(ws_user)}"})
+
+        assert await authenticate_websocket(socket, db_session) is None
+
+
+class _StubSocket:
+    def __init__(self, fail_send=False):
+        self.accepted = False
+        self.sent: list[str] = []
+        self.fail_send = fail_send
+
+    async def accept(self):
+        self.accepted = True
+
+    async def send_text(self, payload):
+        if self.fail_send:
+            raise RuntimeError("socket is gone")
+        self.sent.append(payload)
+
+
+class TestWebsocketConnectionLimits:
+    async def test_per_user_cap_blocks_the_next_socket(self, reset_ws_manager):
+        from app.api.v1.endpoints.websockets import ConnectionManager
+
+        manager = ConnectionManager(max_total=10, max_per_user=2)
+        assert manager.can_accept(1) is True
+
+        await manager.connect(_StubSocket(), 1)
+        await manager.connect(_StubSocket(), 1)
+
+        assert manager.can_accept(1) is False
+        assert manager.can_accept(2) is True, "another user must be unaffected"
+
+    async def test_total_cap_blocks_everyone_once_reached(self):
+        from app.api.v1.endpoints.websockets import ConnectionManager
+
+        manager = ConnectionManager(max_total=2, max_per_user=10)
+        await manager.connect(_StubSocket(), 1)
+        await manager.connect(_StubSocket(), 2)
+
+        assert manager.can_accept(3) is False
+
+    async def test_disconnect_frees_both_the_slot_and_the_count(self):
+        from app.api.v1.endpoints.websockets import ConnectionManager
+
+        manager = ConnectionManager(max_total=10, max_per_user=1)
+        socket = _StubSocket()
+        await manager.connect(socket, 1)
+        assert manager.can_accept(1) is False
+
+        manager.disconnect(socket)
+
+        assert manager.can_accept(1) is True
+        assert manager.active_connections == []
+
+    async def test_disconnect_is_idempotent(self):
+        from app.api.v1.endpoints.websockets import ConnectionManager
+
+        manager = ConnectionManager(max_total=10, max_per_user=2)
+        socket = _StubSocket()
+        await manager.connect(socket, 1)
+
+        manager.disconnect(socket)
+        manager.disconnect(socket)  # must not double-decrement
+
+        # A leaked negative count would wrongly deny the user a new connection.
+        assert manager._per_user.get(1) is None
+        await manager.connect(_StubSocket(), 1)
+        assert manager.can_accept(1) is True
+
+    async def test_connect_accepts_the_socket(self):
+        from app.api.v1.endpoints.websockets import ConnectionManager
+
+        socket = _StubSocket()
+        await ConnectionManager(max_total=1, max_per_user=1).connect(socket, 1)
+
+        assert socket.accepted is True
+
+    async def test_broadcast_drops_a_dead_connection_and_frees_its_slot(self):
+        from app.api.v1.endpoints.websockets import ConnectionManager
+
+        manager = ConnectionManager(max_total=10, max_per_user=1)
+        dead = _StubSocket(fail_send=True)
+        alive = _StubSocket()
+        await manager.connect(dead, 1)
+        await manager.connect(alive, 2)
+
+        await manager.broadcast({"id": "n-1"})
+
+        assert manager.active_connections == [alive]
+        assert manager.can_accept(1) is True, "the dead user's slot must be released"
+        assert alive.sent and "n-1" in alive.sent[0]
+
+
+# ── Real ASGI WebSocket handshake ─────────────────────────
+# The unit tests above stub the handshake attributes; these drive the actual
+# ASGI app so a future refactor of the endpoint cannot quietly reopen the socket
+# to anonymous clients.
+
+class TestWebsocketHandshake:
+    """End-to-end handshake through the app (sync, like Starlette's TestClient)."""
+
+    @staticmethod
+    def _seed(db_path) -> tuple:
+        """Create the schema plus one active user; return (user_id, token)."""
+        import asyncio
+
+        from app.core.security import create_access_token
+        from app.models.user import User
+
+        async def seed():
+            engine = create_async_engine(f"sqlite+aiosqlite:///{db_path}")
+            try:
+                async with engine.begin() as conn:
+                    await conn.run_sync(Base.metadata.create_all)
+                Session = async_sessionmaker(
+                    bind=engine, class_=AsyncSession, expire_on_commit=False
+                )
+                async with Session() as session:
+                    user = User(
+                        email="handshake@example.com",
+                        name="Handshake User",
+                        hashed_password="x",
+                        role="user",
+                        is_active=True,
+                    )
+                    session.add(user)
+                    await session.commit()
+                    return user.id
+            finally:
+                await engine.dispose()
+
+        user_id = asyncio.run(seed())
+        return user_id, create_access_token(
+            data={"sub": "handshake@example.com", "user_id": user_id}
+        )
+
+    @staticmethod
+    @contextmanager
+    def _client(db_path):
+        """Yield a TestClient whose get_db points at the temp database.
+
+        The engine is built inside the dependency so it belongs to the event loop
+        the app actually runs in (a TestClient drives its own loop).
+        """
+        async def override_get_db():
+            engine = create_async_engine(f"sqlite+aiosqlite:///{db_path}")
+            Session = async_sessionmaker(
+                bind=engine, class_=AsyncSession, expire_on_commit=False
+            )
+            try:
+                async with Session() as session:
+                    yield session
+            finally:
+                await engine.dispose()
+
+        app.dependency_overrides[get_db] = override_get_db
+        try:
+            yield TestClient(app, base_url="https://testserver.local")
+        finally:
+            app.dependency_overrides.clear()
+
+    def test_anonymous_handshake_never_opens(self, tmp_path, reset_ws_manager):
+        db_path = tmp_path / "ws.db"
+        self._seed(db_path)
+
+        with self._client(db_path) as client:
+            with pytest.raises(WebSocketDisconnect):
+                with client.websocket_connect("/api/v1/ws/notifications"):
+                    pass  # pragma: no cover - reaching this means the socket opened
+
+        assert reset_ws_manager.active_connections == []
+
+    def test_authenticated_handshake_connects_and_answers_ping(
+        self, tmp_path, reset_ws_manager
+    ):
+        db_path = tmp_path / "ws.db"
+        _, token = self._seed(db_path)
+
+        with self._client(db_path) as client:
+            client.cookies.set("access_token", token)
+            with client.websocket_connect(
+                "/api/v1/ws/notifications",
+                headers={"cookie": f"access_token={token}"},
+            ) as ws:
+                ws.send_text("ping")
+                assert ws.receive_text() == "pong"
+                assert len(reset_ws_manager.active_connections) == 1
+
+        # The handler must release the socket when the client goes away.
+        assert reset_ws_manager.active_connections == []
+
+    def test_handshake_rejects_a_token_for_an_inactive_account(self, tmp_path, reset_ws_manager):
+        db_path = tmp_path / "ws.db"
+
+        import asyncio
+
+        _, token = self._seed(db_path)
+
+        async def deactivate():
+            from sqlalchemy import select
+            from app.models.user import User
+
+            engine = create_async_engine(f"sqlite+aiosqlite:///{db_path}")
+            try:
+                Session = async_sessionmaker(
+                    bind=engine, class_=AsyncSession, expire_on_commit=False
+                )
+                async with Session() as session:
+                    user = (await session.execute(
+                        select(User).where(User.email == "handshake@example.com")
+                    )).scalar_one()
+                    user.is_active = False
+                    await session.commit()
+            finally:
+                await engine.dispose()
+
+        asyncio.run(deactivate())
+
+        with self._client(db_path) as client:
+            with pytest.raises(WebSocketDisconnect):
+                with client.websocket_connect(
+                    "/api/v1/ws/notifications",
+                    headers={"cookie": f"access_token={token}"},
+                ):
+                    pass  # pragma: no cover - reaching this means the socket opened
+
+        assert reset_ws_manager.active_connections == []
+
+    def test_handshake_rejects_when_the_instance_is_at_capacity(
+        self, tmp_path, reset_ws_manager
+    ):
+        db_path = tmp_path / "ws.db"
+        _, token = self._seed(db_path)
+        reset_ws_manager.max_total = 0  # already full
+
+        with self._client(db_path) as client:
+            with pytest.raises(WebSocketDisconnect):
+                with client.websocket_connect(
+                    "/api/v1/ws/notifications",
+                    headers={"cookie": f"access_token={token}"},
+                ):
+                    pass  # pragma: no cover - reaching this means the socket opened
+
+        assert reset_ws_manager.active_connections == []
 
 
 # ── Public proxy rate limiting ────────────────────────────

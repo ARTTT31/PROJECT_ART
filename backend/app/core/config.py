@@ -75,6 +75,14 @@ class Settings(BaseSettings):
             )
         return value
 
+    # ── WebSocket notifications ─────────────────────────────────────────────
+    # The registry is process-local (see README, "Horizontal scaling"). The
+    # endpoint now requires authentication, but every signed-in account can still
+    # open sockets and the frontend reconnects automatically, so these caps keep
+    # one account (or a reconnect loop) from pinning unbounded memory.
+    WS_MAX_CONNECTIONS: int = 200
+    WS_MAX_CONNECTIONS_PER_USER: int = 3
+
     # Rate Limiting — SlowAPI backend
     # Memory backend is local-only and resets on restart (ok for single-pod deploys).
     # For multi-pod / production horizontal scaling set to a Redis URI:
