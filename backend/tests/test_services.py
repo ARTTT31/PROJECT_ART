@@ -589,34 +589,40 @@ class TestUserServiceAdminPaths:
         await user_service.update_last_login(99999, ip_address="10.0.0.9")
 
 
-# ── Settings guard tests ─────────────────────────────────
-# The legacy schema repair issues raw ALTER TABLE at startup, duplicating Alembic.
-# Production must never run it, so AUTO_MIGRATE_COLUMNS_EFFECTIVE forces it off
-# whenever DEBUG=False — even if the raw flag was explicitly set in the env.
+# ── Cookie configuration guard tests ─────────────────────
+# `SameSite=None` is only honoured together with `Secure`; over plain HTTP the
+# browser drops the cookie and login silently fails to persist. The effective
+# value must therefore never be `none` on a non-secure (local HTTP) setup.
 
-class TestAutoMigrateColumnsGuard:
-    @staticmethod
-    def _settings(debug: str, flag: str):
+
+class TestCookieSameSiteGuard:
+    """`COOKIE_SECURE` / `COOKIE_SAMESITE` are resolved from `os.environ` at access
+    time (so a deployed RENDER flag always wins), therefore the environment patch
+    has to stay active while the assertions run — not just while Settings is built.
+    """
+
+    def test_none_is_downgraded_when_cookie_is_not_secure(self):
         from app.core.config import Settings
 
-        env = {"DEBUG": debug, "AUTO_MIGRATE_COLUMNS": flag}
+        env = {"DEBUG": "true", "COOKIE_SECURE": "false", "COOKIE_SAMESITE": "none"}
         with patch.dict(os.environ, env):
-            return Settings()
+            s = Settings()
+            assert s.COOKIE_SECURE is False
+            assert s.COOKIE_SAMESITE == "none"           # raw value is kept
+            assert s.COOKIE_SAMESITE_EFFECTIVE == "lax"  # ...but never sent to the browser
 
-    def test_production_refuses_schema_repair(self):
-        s = self._settings("false", "true")
-        assert s.DEBUG is False
-        assert s.AUTO_MIGRATE_COLUMNS is True  # raw flag is still set...
-        assert s.AUTO_MIGRATE_COLUMNS_EFFECTIVE is False  # ...but is ignored
+    def test_none_is_honoured_when_cookie_is_secure(self):
+        from app.core.config import Settings
 
-    def test_development_keeps_schema_repair(self):
-        s = self._settings("true", "true")
-        assert s.AUTO_MIGRATE_COLUMNS_EFFECTIVE is True
+        env = {"DEBUG": "false", "COOKIE_SECURE": "true", "COOKIE_SAMESITE": "none"}
+        with patch.dict(os.environ, env):
+            assert Settings().COOKIE_SAMESITE_EFFECTIVE == "none"
 
-    def test_explicit_opt_out_is_honored_in_dev(self):
-        s = self._settings("true", "false")
-        assert s.AUTO_MIGRATE_COLUMNS_EFFECTIVE is False
+    def test_lax_passes_through_unchanged(self):
+        from app.core.config import Settings
 
-    def test_production_without_flag_stays_off(self):
-        s = self._settings("false", "false")
-        assert s.AUTO_MIGRATE_COLUMNS_EFFECTIVE is False
+        env = {"DEBUG": "true", "COOKIE_SECURE": "false", "COOKIE_SAMESITE": "lax"}
+        with patch.dict(os.environ, env):
+            s = Settings()
+            assert s.COOKIE_SECURE is False
+            assert s.COOKIE_SAMESITE_EFFECTIVE == "lax"

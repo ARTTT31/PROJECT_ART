@@ -42,7 +42,9 @@ logger = logging.getLogger(__name__)
 
 COOKIE_OPTIONS: dict[str, Any] = {
     "secure": settings.COOKIE_SECURE,
-    "samesite": settings.COOKIE_SAMESITE,
+    # Effective value: browsers reject `SameSite=None` without `Secure`, so a
+    # non-HTTPS environment is downgraded to `lax` instead of losing the cookie.
+    "samesite": settings.COOKIE_SAMESITE_EFFECTIVE,
     "path": "/",
 }
 

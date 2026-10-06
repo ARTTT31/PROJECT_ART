@@ -38,7 +38,6 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     AUTO_CREATE_TABLES: bool = False
-    AUTO_MIGRATE_COLUMNS: bool = False
     # CSRF protection (double-submit cookie). Disable only for non-browser clients
     # that cannot send the X-CSRF-Token header.
     CSRF_PROTECTION_ENABLED: bool = True
@@ -76,14 +75,6 @@ class Settings(BaseSettings):
             )
         return value
 
-    @field_validator("AUTO_MIGRATE_COLUMNS", mode="before")
-    @classmethod
-    def default_migrate_from_debug(cls, v, info):
-        if v is None or (isinstance(v, str) and v == ""):
-            debug_val = info.data.get("DEBUG", True)
-            return bool(debug_val)
-        return v
-
     # Rate Limiting — SlowAPI backend
     # Memory backend is local-only and resets on restart (ok for single-pod deploys).
     # For multi-pod / production horizontal scaling set to a Redis URI:
@@ -111,23 +102,6 @@ class Settings(BaseSettings):
         return not self.DEBUG
 
     @property
-    def AUTO_MIGRATE_COLUMNS_EFFECTIVE(self) -> bool:
-        """Legacy schema repair is a development convenience only.
-
-        `sync_db_columns()` issues raw ALTER TABLE statements at startup, which
-        duplicates the authority of Alembic and can mask a genuinely missing
-        migration. Production (DEBUG=False) must therefore never run it, even if
-        the raw flag was explicitly set in the environment.
-        """
-        if not self.DEBUG and self.AUTO_MIGRATE_COLUMNS:
-            print(
-                "[CONFIG] AUTO_MIGRATE_COLUMNS is ignored when DEBUG=False; "
-                "use Alembic migrations in production."
-            )
-            return False
-        return self.AUTO_MIGRATE_COLUMNS
-
-    @property
     def COOKIE_SAMESITE(self) -> str:
         if "RENDER" in os.environ:
             return "none"
@@ -135,6 +109,26 @@ class Settings(BaseSettings):
         if env_val is not None:
             return env_val.lower()
         return "none" if not self.DEBUG else "lax"
+
+    @property
+    def COOKIE_SAMESITE_EFFECTIVE(self) -> str:
+        """SameSite value that browsers will actually accept.
+
+        `SameSite=None` is only valid together with `Secure`; over plain HTTP the
+        browser silently drops the cookie, which looks exactly like "login did not
+        persist". Copying production values (``none``) into a local, non-HTTPS
+        environment is a common way to hit this, so the value is downgraded to
+        ``lax`` — which is correct for same-site local development — and logged
+        instead of failing silently.
+        """
+        if self.COOKIE_SAMESITE == "none" and not self.COOKIE_SECURE:
+            print(
+                "[CONFIG] COOKIE_SAMESITE=None requires a Secure (HTTPS) cookie; "
+                "falling back to 'lax' for this non-HTTPS environment. "
+                "Set COOKIE_SAMESITE=lax locally to silence this notice."
+            )
+            return "lax"
+        return self.COOKIE_SAMESITE
 
     # CORS — explicit origins required (no wildcards) because allow_credentials=True
     CORS_ORIGINS: str = "http://localhost:3000,http://localhost:3001"

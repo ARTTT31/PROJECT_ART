@@ -205,7 +205,7 @@ PROJECT_ART/
 - Build command: `pip install -r requirements.txt`
 - Start command: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
 - Set `DATABASE_URL`, a long random `SECRET_KEY`, OAuth values, `FRONTEND_URL`, and the exact `CORS_ORIGINS` frontend URL in Render environment variables.
-- Keep `DEBUG=False`, `AUTO_CREATE_TABLES=False`, and `AUTO_MIGRATE_COLUMNS=False` in production. Run `alembic upgrade head` for every release instead.
+- Keep `DEBUG=False` and `AUTO_CREATE_TABLES=False` in production. Alembic is the only owner of the schema: run `alembic upgrade head` for every release.
 
 ### Vercel Frontend
 
@@ -247,8 +247,21 @@ Backend OAuth variables: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_RED
 - **Security headers.** The backend sends a strict CSP (`connect-src` is built from `CORS_ORIGINS`), `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy`, and HSTS (two years, `includeSubDomains; preload`) outside `DEBUG`.
 - **Signing keys.** With `DEBUG=False` the app refuses to start unless `SECRET_KEY` is at least 32 characters and not a known placeholder.
 
+## Horizontal Scaling
+
+The current deployment is a **single instance**, and two pieces of state assume that:
+
+| Component | State | Consequence of running >1 instance |
+|---|---|---|
+| Rate limiting (`SLOWAPI_STORAGE_URI`) | In-process counters | Each instance enforces its own limit, so the effective limit multiplies |
+| WebSocket notifications | In-process connection registry | `POST /api/v1/ws/broadcast` only reaches clients on the instance that served it |
+
+Both surface a `[SCALING]` notice in the startup log so the assumption is never silent. Before adding a second instance, point `SLOWAPI_STORAGE_URI` at a shared Redis (`redis://…`) and give the WebSocket manager a pub/sub fan-out through the same broker.
+
+The weather/geocode proxies are the exception: they keep an L1 in-process cache **and** persist the last known good payload in the `weather_cache` table, so the stale fallback (and therefore a degraded-but-working widget) survives restarts, redeploys and cold starts.
+
 ## Local Auth Cookie Note
 
-Production auth uses cross-site HTTP-only cookies with `SameSite=None` and `Secure`. This is correct for Vercel and Render, but browser behavior can differ on plain local HTTP. If local login cookies do not persist, test with HTTPS locally or add an explicit development cookie configuration.
+Production auth uses cross-site HTTP-only cookies with `SameSite=None` and `Secure`. That combination is required for Vercel ↔ Render, but `SameSite=None` is only accepted by browsers together with `Secure` — over plain local HTTP the cookie is silently dropped, which presents as "login succeeds but the session never persists".
 
-For plain local HTTP development, use `COOKIE_SECURE=False` and `COOKIE_SAMESITE=lax`. Keep production deployments on `COOKIE_SECURE=True` and `COOKIE_SAMESITE=none`. Use Alembic migrations in production; `AUTO_CREATE_TABLES=True` is only for local development convenience.
+The backend therefore exposes `COOKIE_SAMESITE_EFFECTIVE`: when `COOKIE_SAMESITE=none` is configured without `COOKIE_SECURE`, the value is downgraded to `lax` and a `[CONFIG]` notice is logged, so copying production values into a local environment cannot lock you out. Use `COOKIE_SECURE=False` + `COOKIE_SAMESITE=lax` locally and keep `True`/`none` in production.

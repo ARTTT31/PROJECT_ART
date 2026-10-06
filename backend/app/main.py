@@ -57,40 +57,35 @@ except Exception as exc:  # pragma: no cover
     print(f"[MONITOR] WARNING: Sentry init failed ({exc}). Continuing without monitoring.")
 
 
-def sync_db_columns(sync_conn):
-    from sqlalchemy import inspect, text
-    inspector = inspect(sync_conn)
-    tables = inspector.get_table_names()
-    if "users" in tables:
-        existing_cols = {c["name"] for c in inspector.get_columns("users")}
-        columns_to_ensure = [
-            ("dashboard_layout", "TEXT"),
-            ("camera_config", "TEXT"),
-            ("quick_links", "TEXT"),
-            ("display_name", "VARCHAR(255)"),
-            ("username", "VARCHAR(255)"),
-            ("avatar", "TEXT"),
-            ("last_login_ip", "VARCHAR(45)"),
-            ("last_login_device", "VARCHAR(255)"),
-            ("failed_login_attempts", "INTEGER DEFAULT 0"),
-            ("locked_until", "TIMESTAMP"),
-            ("is_locked", "BOOLEAN DEFAULT FALSE"),
-        ]
-        for col_name, col_type in columns_to_ensure:
-            if col_name not in existing_cols:
-                try:
-                    sync_conn.execute(text(f"ALTER TABLE users ADD COLUMN IF NOT EXISTS {col_name} {col_type}"))
-                    print(f"[DB AUTO-MIGRATE] Added column {col_name} to users table")
-                except Exception:
-                    try:
-                        sync_conn.execute(text(f"ALTER TABLE users ADD COLUMN {col_name} {col_type}"))
-                        print(f"[DB AUTO-MIGRATE] Added column {col_name} to users table (fallback)")
-                    except Exception as e:
-                        print(f"[DB AUTO-MIGRATE] Notice adding column {col_name}: {e}")
+SHARED_STATE_NOTICE = (
+    "[SCALING] {component} keeps its state in this process only. "
+    "It is correct for the current single-instance deployment, but running more "
+    "than one instance requires a shared backend (see README, "
+    "\"Horizontal scaling\")."
+)
+
+
+def log_shared_state_limitations() -> None:
+    """Surface the single-instance assumptions instead of failing silently.
+
+    Both the rate limiter and the WebSocket connection registry are process-local,
+    so horizontal scaling changes behaviour without any error being raised:
+    per-instance limits would multiply, and a broadcast would only reach the
+    clients connected to the instance that served the request. Logging the
+    assumption at startup turns a silent scaling bug into an explicit one.
+    """
+    if settings.SLOWAPI_STORAGE_URI == "memory://":
+        print(SHARED_STATE_NOTICE.format(component="Rate limiting (SLOWAPI_STORAGE_URI=memory://)"))
+    else:
+        print(f"[SCALING] Rate limiting uses shared storage: {settings.SLOWAPI_STORAGE_URI}")
+
+    print(SHARED_STATE_NOTICE.format(component="WebSocket notifications"))
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Schema is owned by Alembic (`alembic upgrade head`). AUTO_CREATE_TABLES is a
+    # local-development convenience only; nothing else touches the schema at startup.
     try:
         async with engine.begin() as conn:
             if settings.AUTO_CREATE_TABLES:
@@ -101,12 +96,10 @@ async def lifespan(app: FastAPI):
                           "Prefer Alembic migrations in production.")
                 await conn.run_sync(base.Base.metadata.create_all)
 
-            if settings.AUTO_MIGRATE_COLUMNS_EFFECTIVE:
-                print("[DB WARNING] Running legacy schema repair; use Alembic migrations in production.")
-                await conn.run_sync(sync_db_columns)
-
     except Exception as e:
         print(f"[STARTUP DB SYNC NOTICE] {e}")
+
+    log_shared_state_limitations()
     yield
 # CORS is explicit because authenticated cookies must never be shared with
 # arbitrary preview deployments. Set CORS_ORIGINS in the production host.
@@ -281,7 +274,7 @@ class CSRFMiddleware:
             f"{cls.COOKIE_NAME}={token}",
             "Path=/",
             f"Max-Age={max_age}",
-            f"SameSite={str(settings.COOKIE_SAMESITE).lower()}",
+            f"SameSite={str(settings.COOKIE_SAMESITE_EFFECTIVE).lower()}",
         ]
         if settings.COOKIE_SECURE:
             parts.append("Secure")

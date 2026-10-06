@@ -1,3 +1,15 @@
+"""
+WebSocket notifications + the admin broadcast endpoint.
+
+SCALING NOTE — the connection registry is process-local.
+``manager`` lives in this module's memory, so a broadcast reaches only the
+clients connected to the instance that served the request. That is correct for
+the current single-instance deployment; running more than one instance requires
+a shared broker (the same Redis instance used for ``SLOWAPI_STORAGE_URI``) with
+pub/sub fan-out. ``app.main.log_shared_state_limitations()`` logs this at
+startup so it cannot fail silently.
+"""
+
 import json
 import logging
 
@@ -13,6 +25,8 @@ router = APIRouter()
 
 
 class ConnectionManager:
+    """Tracks the WebSockets connected to *this* process (see module docstring)."""
+
     def __init__(self):
         self.active_connections: list[WebSocket] = []
 
