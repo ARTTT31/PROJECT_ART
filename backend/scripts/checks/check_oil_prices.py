@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """
-EPPO Oil Prices Connectivity Test Script
+EPPO Oil Prices Connectivity Check
 
 This script tests if the EPPO website is accessible and oil prices can be scraped.
 Run this before deploying to catch EPPO connectivity issues early.
 
+This is a manual check, NOT part of the pytest suite (see `backend/tests/`).
+
 Usage:
-    python scripts/test_oil_prices.py
+    python scripts/checks/check_oil_prices.py
 """
 
 import sys
@@ -114,7 +116,9 @@ def check_eppo_response(response: httpx.Response) -> list[dict]:
 
 
 # ---------------------------------------------------------------------------
-# Pytest-compatible unit tests (no live network calls)
+# Offline self-checks of the parser (no live network calls). Kept as plain
+# functions so the file can also be driven by pytest when run explicitly:
+#     pytest scripts/checks/check_oil_prices.py
 # ---------------------------------------------------------------------------
 
 def test_eppo_connection() -> None:

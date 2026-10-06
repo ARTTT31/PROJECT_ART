@@ -15,6 +15,10 @@ export function parseUserAgent(ua: string | null | undefined): ParsedUA {
 
   const lower = ua.toLowerCase()
 
+  // Version lookups run against the lowercased string on purpose: user agents
+  // spell tokens with inconsistent capitalisation ("Mac OS X", "Android 14",
+  // "Chrome/120"), so matching the original would silently drop every version.
+
   // ── OS ───────────────────────────────────────────────
   let os = 'ไม่ระบุ'
   if (lower.includes('windows')) {
@@ -23,15 +27,17 @@ export function parseUserAgent(ua: string | null | undefined): ParsedUA {
     else if (lower.includes('windows nt 6.2')) os = 'Windows 8'
     else if (lower.includes('windows nt 6.1')) os = 'Windows 7'
     else os = 'Windows'
-  } else if (lower.includes('mac os x')) {
-    const ver = ua.match(/mac os x (\d+[._]\d+)/)
-    os = ver ? `macOS ${ver[1].replace('_', '.')}` : 'macOS'
-  } else if (lower.includes('android')) {
-    const ver = ua.match(/android (\d+(\.\d+)?)/)
-    os = ver ? `Android ${ver[1]}` : 'Android'
-  } else if (lower.includes('iphone') || lower.includes('ipad')) {
-    const ver = ua.match(/os (\d+[._]\d+)/)
+  } else if (lower.includes('iphone') || lower.includes('ipad') || lower.includes('ipod')) {
+    // Must be checked before 'mac os x': iOS agents contain "like Mac OS X",
+    // so ordering these the other way round reports every iPhone as a Mac.
+    const ver = lower.match(/os (\d+[._]\d+)/)
     os = ver ? `iOS ${ver[1].replace('_', '.')}` : 'iOS'
+  } else if (lower.includes('android')) {
+    const ver = lower.match(/android (\d+(\.\d+)?)/)
+    os = ver ? `Android ${ver[1]}` : 'Android'
+  } else if (lower.includes('mac os x')) {
+    const ver = lower.match(/mac os x (\d+[._]\d+)/)
+    os = ver ? `macOS ${ver[1].replace('_', '.')}` : 'macOS'
   } else if (lower.includes('linux')) {
     os = 'Linux'
   } else if (lower.includes('cros')) {
@@ -41,19 +47,19 @@ export function parseUserAgent(ua: string | null | undefined): ParsedUA {
   // ── Browser ──────────────────────────────────────────
   let browser = 'ไม่ระบุ'
   if (lower.includes('edg/')) {
-    const ver = ua.match(/edg\/(\d+)/)
+    const ver = lower.match(/edg\/(\d+)/)
     browser = ver ? `Edge ${ver[1]}` : 'Edge'
   } else if (lower.includes('opr/') || lower.includes('opera')) {
-    const ver = ua.match(/opr\/(\d+)/)
+    const ver = lower.match(/opr\/(\d+)/)
     browser = ver ? `Opera ${ver[1]}` : 'Opera'
   } else if (lower.includes('firefox/')) {
-    const ver = ua.match(/firefox\/(\d+)/)
+    const ver = lower.match(/firefox\/(\d+)/)
     browser = ver ? `Firefox ${ver[1]}` : 'Firefox'
   } else if (lower.includes('chrome/') && !lower.includes('edg/')) {
-    const ver = ua.match(/chrome\/(\d+)/)
+    const ver = lower.match(/chrome\/(\d+)/)
     browser = ver ? `Chrome ${ver[1]}` : 'Chrome'
   } else if (lower.includes('safari/') && !lower.includes('chrome')) {
-    const ver = ua.match(/version\/(\d+(\.\d+)?)/)
+    const ver = lower.match(/version\/(\d+(\.\d+)?)/)
     browser = ver ? `Safari ${ver[1]}` : 'Safari'
   }
 

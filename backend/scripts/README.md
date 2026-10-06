@@ -7,7 +7,7 @@ backend/scripts/
 ├── README.md           (This file)
 ├── admin/              🔐 User / Auth management (dev & ops only)
 ├── data/               🗓️ Data ingestion & external integrations
-├── tests/              🧪 Manual one-off test scripts (NOT pytest)
+├── checks/             🧪 Manual connectivity / smoke checks (NOT pytest)
 └── ops/                🛠️ DB migration, server restart, schema ops
 ```
 
@@ -29,17 +29,20 @@ backend/scripts/
 |---|---|---|
 | `parse_oil.py` | `py scripts/data/parse_oil.py` | ดึงราคาน้ำมันล่าสุดจาก eppo.go.th → print JSON |
 
-## 🧪 `tests/` — Manual Test scripts
+## 🧪 `checks/` — Manual check scripts
 
 > 💡 สำหรับ CI ให้ใช้ `cd backend && pytest -q` แทน (ดู `backend/tests/`)
+>
+> 📌 โฟลเดอร์นี้ชื่อ `checks/` และไฟล์ขึ้นต้นด้วย `check_` โดยเจตนา: `pytest.ini`
+> กำหนด `testpaths = tests` ไว้ ทำให้สคริปต์ที่ยิง network จริงไม่ถูกเก็บเป็น test
 
-| Script | What it tests | Prerequisites |
+| Script | What it checks | Prerequisites |
 |---|---|---|
-| `test_api.ps1` | API health + auth flow via PowerShell | Backend รันที่ `localhost:8080` |
-| `test_login.py` | Login endpoint + session creation | User อยู่แล้วในฐานข้อมูล |
-| `test_user_flow.py` | Register → Login → Profile refresh cycle | Fresh dev database |
-| `test_oil_prices.py` | `/api/v1/oil-prices/*` endpoints | Network to EPPO / cached data |
-| `test_db.js` | DB connectivity + schema existence (Node.js) | Postgres / SQLite รันแล้ว |
+| `check_api.ps1` | API health + auth flow via PowerShell | Backend รันที่ `localhost:8080` |
+| `check_login.py` | Login endpoint + session creation | User อยู่แล้วในฐานข้อมูล |
+| `check_user_flow.py` | Admin create → Login → Profile cycle | Fresh dev database |
+| `check_oil_prices.py` | EPPO connectivity + parser (`/api/v1/oil-prices/*`) | Network to EPPO / cached data |
+| `check_db.js` | DB connectivity + schema existence (Node.js) | Postgres / SQLite รันแล้ว |
 
 ## 🛠️ `ops/` — Migration & Ops
 
@@ -57,4 +60,4 @@ backend/scripts/
 - ✅ **Do**: ใช้ `reset_user.py` เมื่อ user ล็อกบัญชีจาก login ผิด 5 ครั้ง
 - ❌ **Don't**: commit test output หรือ passwords จาก script เหล่านี้
 - ❌ **Don't**: Run `parse_oil.py` แล้ว hardcode ผลลัพธ์ใน source — ใช้ `/api/v1/oil-prices` endpoint ที่มี cache อยู่แล้ว
-- ❌ **Don't**: พึ่งพา `tests/test_*.py` ใน scripts/ — สำหรับ CI ให้เขียนใน `backend/tests/` (pytest)
+- ❌ **Don't**: ใส่ `test_*.py` ลงใน `scripts/` — สำหรับ CI ให้เขียนใน `backend/tests/` (pytest)

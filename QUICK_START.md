@@ -67,7 +67,7 @@ Frontend จะรันที่: http://localhost:3000
 ### Test Oil Prices API
 ```bash
 # ใช้ Python script
-python backend/scripts/tests/test_oil_prices.py
+python backend/scripts/checks/check_oil_prices.py
 
 # หรือใช้ curl
 curl "http://localhost:8080/api/v1/oil-prices/health"
@@ -116,7 +116,7 @@ NEXT_PUBLIC_GOOGLE_CLIENT_ID=your-google-client-id
 .\scripts\auto-commit-docs.ps1
 
 # Custom message
-.\scripts\auto-commit-docs.ps1 "fix: update calendar widget"
+.\scripts\auto-commit-docs.ps1 "fix: update dashboard widgets"
 ```
 
 **Windows CMD:**
@@ -248,8 +248,8 @@ npm cache clean --force
 | **Backend (Local)** | http://localhost:8080 |
 | **Frontend (Local)** | http://localhost:3000 |
 | **Backend API Docs** | http://localhost:8080/docs |
-| **Backend (Production)** | https://project-art-c7eh.onrender.com |
-| **Frontend (Production)** | https://project-art-sigma.vercel.app |
+| **Backend (Production)** | ตั้งค่าจาก deployment environment ของคุณ |
+| **Frontend (Production)** | ตั้งค่าจาก deployment environment ของคุณ |
 | **Render Dashboard** | https://dashboard.render.com |
 | **Vercel Dashboard** | https://vercel.com/dashboard |
 | **GitHub Repo** | https://github.com/ARTTT31/PROJECT_ART |
@@ -299,8 +299,7 @@ git push origin main
 ### Tip 2: Test Before Deploy
 รัน test scripts ก่อน push เสมอ:
 ```bash
-python backend/scripts/tests/test_calendar.py
-python backend/scripts/tests/test_oil_prices.py
+python backend/scripts/checks/check_oil_prices.py
 ```
 
 ### Tip 3: Monitor Logs
@@ -310,7 +309,6 @@ python backend/scripts/tests/test_oil_prices.py
 เช็ค health endpoints ก่อนรัน frontend:
 ```bash
 curl http://localhost:8080/health
-curl http://localhost:8080/api/v1/calendar/health?calendar_id=YOUR_ID
 curl http://localhost:8080/api/v1/oil-prices/health
 ```
 
@@ -332,7 +330,6 @@ curl http://localhost:8080/api/v1/oil-prices/health
 ## ✨ Key Features
 
 ✅ **Dashboard** - หน้าหลักพร้อมวิดเจ็ตที่ปรับแต่งและจัดเรียงได้
-✅ **Calendar Widget** - แสดง events จาก Google Calendar
 ✅ **Oil Prices Widget** - แสดงราคาน้ำมันจาก EPPO
 ✅ **Weather & AQI Widget** - สภาพอากาศและค่าฝุ่น PM 2.5 แบบ real-time
 ✅ **Holiday Widget** - ปฏิทินวันหยุดนักขัตฤกษ์ไทย (ปีปัจจุบัน dynamic)

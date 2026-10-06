@@ -1,3 +1,9 @@
+"""
+Manual end-to-end user-flow check (admin create user → login → profile).
+
+Not part of the pytest suite (see `backend/tests/`).
+Usage: python scripts/checks/check_user_flow.py
+"""
 import os
 import sys
 

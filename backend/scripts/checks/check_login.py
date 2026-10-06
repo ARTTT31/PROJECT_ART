@@ -1,11 +1,16 @@
 """
-Test login API
+Manual login check against a running backend.
+
+Not part of the pytest suite (see `backend/tests/`).
+Usage: python scripts/checks/check_login.py
 """
-import requests
 import json
 
+import requests
+
+
 def test_login():
-    """Test login endpoint"""
+    """Exercise the login endpoint of a running dev server."""
     url = "http://localhost:8888/api/v1/auth/login"
     
     payload = {
