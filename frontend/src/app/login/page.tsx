@@ -2,10 +2,22 @@
 
 import '../../styles/pages/login.css';
 import { FormEvent, KeyboardEvent, useCallback, useEffect, useRef, useState } from 'react';
-import { ArrowRight, AlertCircle, Check, Eye, EyeOff, Loader2, Lock, Mail } from 'lucide-react';
+import { ArrowRight, AlertCircle, Eye, EyeOff, Loader2, Lock, Mail, LifeBuoy } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/components/Toast/ToastProvider';
+import {
+  Dialog,
+  DialogBody,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/Dialog';
 
 const formatDate = (date: Date) =>
   new Intl.DateTimeFormat('th-TH', {
@@ -27,7 +39,7 @@ const apiBaseUrl = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '');
 const LOGIN_ENDPOINT = `${apiBaseUrl}/api/v1/auth/login`;
 
 function LoginContent() {
-  const { login } = useAuth();
+  const { login, status } = useAuth();
   const toast = useToast();
   const router = useRouter();
   const [email, setEmail] = useState('');
@@ -45,6 +57,14 @@ function LoginContent() {
   const emailRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
   const errorId = 'login-error-message';
+
+  // Already signed in? The login page has nothing to offer — go to the dashboard.
+  // (Logout clears auth state before replacing to /login, so this never loops.)
+  useEffect(() => {
+    if (status === 'authenticated') {
+      router.replace('/dashboard');
+    }
+  }, [status, router]);
 
   /**
    * Authorization-code flow: hand off to the backend, which builds the Google
@@ -91,14 +111,14 @@ function LoginContent() {
     rateLimitTimer.current = setInterval(() => {
       setRateLimitSeconds(s => {
         if (s <= 1) {
-          clearInterval(rateLimitTimer.current!)
-          return 0
+          clearInterval(rateLimitTimer.current!);
+          return 0;
         }
-        return s - 1
-      })
-    }, 1000)
-    return () => clearInterval(rateLimitTimer.current!)
-  }, [rateLimitSeconds])
+        return s - 1;
+      });
+    }, 1000);
+    return () => clearInterval(rateLimitTimer.current!);
+  }, [rateLimitSeconds]);
 
   const handleCapsLock = useCallback((event: KeyboardEvent<HTMLInputElement>) => {
     if (event.getModifierState) {
@@ -153,8 +173,9 @@ function LoginContent() {
       const result = await response.json().catch(() => ({}));
 
       if (response.ok && result.result === 'success') {
-        localStorage.setItem('user', JSON.stringify(result.data.user));
-        if (result.data.session_id) localStorage.setItem('session_id', result.data.session_id);
+        // login() persists the user + session_id and flips status to
+        // 'authenticated', which triggers the redirect effect above.
+        login(result.data.user, result.data.session_id);
 
         if (rememberMe) {
           localStorage.setItem('remembered_email', email);
@@ -162,9 +183,7 @@ function LoginContent() {
           localStorage.removeItem('remembered_email');
         }
 
-        login(result.data.user);
         toast.success('เข้าสู่ระบบสำเร็จ', `ยินดีต้อนรับกลับมา ${result.data.user.name || ''}!`);
-        setTimeout(() => router.push('/dashboard'), 300);
       } else {
         setError(result.detail || result.message || 'เข้าสู่ระบบไม่สำเร็จ กรุณาตรวจสอบอีเมลและรหัสผ่าน');
         setErrorKey(k => k + 1);
@@ -190,10 +209,16 @@ function LoginContent() {
       <section aria-label="เข้าสู่ระบบ ART Workspace" className="login-shell">
         <div className="login-panel">
           <div className="login-brand flex flex-col items-center justify-center text-center">
-            <div className="w-16 h-16 bg-[#0066cc] rounded-[18px] flex items-center justify-center mb-4">
-              <span className="text-white text-2xl font-semibold">A</span>
-            </div>
-            <h1 className="text-2xl font-semibold text-[#1d1d1f] tracking-tight">ART Workspace</h1>
+            <Image
+              src="/art-workspace-mark.svg"
+              alt=""
+              width={64}
+              height={64}
+              priority
+              draggable={false}
+              className="login-mark"
+            />
+            <h1 className="text-xl font-semibold text-[#1d1d1f] tracking-tight">ART Workspace</h1>
             <p className="login-timestamp text-sm mt-1">{formatDate(now)} • {formatTime(now)}</p>
           </div>
 
@@ -255,26 +280,59 @@ function LoginContent() {
               </div>
             </label>
 
-            <label
-              htmlFor="login-remember"
-              className={`login-remember ${rememberMe ? 'login-remember--checked' : ''}`}
-            >
-              <input
-                id="login-remember"
-                type="checkbox"
-                checked={rememberMe}
-                onChange={(event) => setRememberMe(event.target.checked)}
-                disabled={isSubmitting}
-              />
-              <span aria-hidden="true" className="login-remember-switch">
-                <span className="login-remember-knob">
-                  {rememberMe && <Check size={13} aria-hidden="true" />}
+            <div className="login-row">
+              <label
+                htmlFor="login-remember"
+                className={`login-remember ${rememberMe ? 'login-remember--checked' : ''}`}
+              >
+                <input
+                  id="login-remember"
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(event) => setRememberMe(event.target.checked)}
+                  disabled={isSubmitting}
+                />
+                <span aria-hidden="true" className="login-remember-switch">
+                  <span className="login-remember-knob" />
                 </span>
-              </span>
-              <span className="login-remember-text">
-                จดจำฉันไว้ <span className="login-remember-state">{rememberMe ? 'เปิดอยู่' : 'ปิดอยู่'}</span>
-              </span>
-            </label>
+                <span className="login-remember-text">จดจำฉันไว้</span>
+              </label>
+
+              <Dialog>
+                <DialogTrigger asChild>
+                  <button type="button" className="login-forgot">
+                    ลืมรหัสผ่าน?
+                  </button>
+                </DialogTrigger>
+                <DialogContent className="max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>ลืมรหัสผ่าน?</DialogTitle>
+                    <DialogDescription>
+                      ระบบนี้ใช้งานภายในองค์กร ไม่มีการรีเซ็ตรหัสผ่านด้วยตนเอง
+                    </DialogDescription>
+                  </DialogHeader>
+                  <DialogBody>
+                    <div className="login-dialog-body">
+                      <span className="login-dialog-icon" aria-hidden="true">
+                        <LifeBuoy size={22} />
+                      </span>
+                      <p className="login-dialog-text">
+                        หากลืมรหัสผ่านหรือต้องการสิทธิ์การเข้าถึงเพิ่มเติม
+                        กรุณา<strong>ติดต่อผู้ดูแลระบบ (Admin)</strong> ผ่านช่องทางภายในองค์กร
+                        แล้วลองเข้าสู่ระบบอีกครั้ง
+                      </p>
+                    </div>
+                  </DialogBody>
+                  <DialogFooter>
+                    <DialogClose asChild>
+                      <button type="button" className="login-dialog-close">
+                        รับทราบ
+                      </button>
+                    </DialogClose>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </div>
 
             {error && (
               <div key={errorKey} id={errorId} role="alert" aria-live="polite" className="login-error">
@@ -304,7 +362,7 @@ function LoginContent() {
 
             <div className="login-divider">หรือ</div>
 
-            <div className="google-auth-wrapper" style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
+            <div className="google-auth-wrapper">
               <button
                 type="button"
                 onClick={() => handleGoogleSignIn()}
@@ -326,6 +384,10 @@ function LoginContent() {
           </form>
         </div>
       </section>
+
+      <footer className="login-footer">
+        <p>ระบบใช้งานภายในองค์กร • ต้องการสิทธิ์เข้าถึง กรุณาติดต่อผู้ดูแลระบบ</p>
+      </footer>
     </main>
   );
 }
