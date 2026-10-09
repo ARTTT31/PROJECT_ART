@@ -2,7 +2,7 @@
 
 import '../../styles/pages/login.css';
 import { FormEvent, KeyboardEvent, useCallback, useEffect, useRef, useState } from 'react';
-import { ArrowRight, AlertCircle, Eye, EyeOff, Loader2, Lock, Mail, LifeBuoy } from 'lucide-react';
+import { ArrowRight, AlertCircle, Clock, Eye, EyeOff, Loader2, Lock, Mail, LifeBuoy } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useAuth } from '@/hooks/useAuth';
@@ -19,21 +19,23 @@ import {
   DialogTrigger,
 } from '@/components/ui/Dialog';
 
-const formatDate = (date: Date) =>
-  new Intl.DateTimeFormat('th-TH', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  }).format(date);
+/** Thai date, short month (e.g. "วันพฤหัสบดีที่ 9 ต.ค. 2569") — fits one line. */
+const dateFormatter = new Intl.DateTimeFormat('th-TH', {
+  weekday: 'long',
+  day: 'numeric',
+  month: 'short',
+  year: 'numeric',
+});
 
-const formatTime = (date: Date) =>
-  new Intl.DateTimeFormat('th-TH', {
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false,
-  }).format(date);
+/** Hour + minute only (e.g. "14:23") — seconds are noise on a login screen. */
+const timeFormatter = new Intl.DateTimeFormat('th-TH', {
+  hour: '2-digit',
+  minute: '2-digit',
+  hour12: false,
+});
+
+const formatDate = (date: Date) => dateFormatter.format(date);
+const formatTime = (date: Date) => timeFormatter.format(date);
 
 const apiBaseUrl = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '');
 const LOGIN_ENDPOINT = `${apiBaseUrl}/api/v1/auth/login`;
@@ -102,7 +104,15 @@ function LoginContent() {
       window.history.replaceState(null, '', window.location.pathname);
     }
 
-    const timer = window.setInterval(() => setNow(new Date()), 1000);
+    // Tick every second but only store a new Date when the displayed minute
+    // actually changes, so the clock stays accurate without re-rendering the
+    // form 60 times a minute.
+    const timer = window.setInterval(() => {
+      setNow((previous) => {
+        const next = new Date();
+        return formatTime(next) === formatTime(previous) ? previous : next;
+      });
+    }, 1000);
     return () => window.clearInterval(timer);
   }, [toast]);
 
@@ -208,23 +218,25 @@ function LoginContent() {
     <main className="login-page">
       <section aria-label="เข้าสู่ระบบ ART Workspace" className="login-shell">
         <div className="login-panel">
-          <div className="login-brand flex flex-col items-center justify-center text-center">
+          <header className="login-brand">
             <Image
               src="/art-workspace-mark.svg"
               alt=""
-              width={64}
-              height={64}
+              width={72}
+              height={72}
               priority
               draggable={false}
               className="login-mark"
             />
-            <h1 className="text-xl font-semibold text-[#1d1d1f] tracking-tight">ART Workspace</h1>
-            <p className="login-timestamp text-sm mt-1">{formatDate(now)} • {formatTime(now)}</p>
-          </div>
-
-          <div className="login-form-header text-center">
-            <p>เข้าสู่ระบบเพื่อใช้งานแดชบอร์ดของคุณ</p>
-          </div>
+            <h1 className="login-title">ART Workspace</h1>
+            <p className="login-tagline">เข้าสู่ระบบเพื่อใช้งานแดชบอร์ดของคุณ</p>
+            <p className="login-clock">
+              <Clock size={15} strokeWidth={2} aria-hidden="true" className="login-clock-icon" />
+              <time className="login-clock-time" dateTime={now.toISOString()}>{formatTime(now)} น.</time>
+              <span aria-hidden="true" className="login-clock-sep">•</span>
+              <span className="login-clock-date">{formatDate(now)}</span>
+            </p>
+          </header>
 
           <form onSubmit={handleSubmit} className="login-form" aria-busy={isSubmitting}>
             <label htmlFor="login-email" className="login-field">
@@ -384,10 +396,6 @@ function LoginContent() {
           </form>
         </div>
       </section>
-
-      <footer className="login-footer">
-        <p>ระบบใช้งานภายในองค์กร • ต้องการสิทธิ์เข้าถึง กรุณาติดต่อผู้ดูแลระบบ</p>
-      </footer>
     </main>
   );
 }

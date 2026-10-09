@@ -1,6 +1,6 @@
 /* =============================================
    LOGIN PAGE STYLES — Apple HIG (design-system/art-workspace/MASTER.md)
-   Flat surfaces + hairline borders (no shadows), Apple ink/muted colors,
+   Flat surfaces + hairline borders (no card shadows), Apple ink/muted colors,
    press feedback via scale(0.95), visible focus rings for keyboard users.
    ============================================= */
 
@@ -9,57 +9,116 @@
   overflow-x: hidden;
   display: flex;
   flex-direction: column;
-  padding: clamp(16px, 3vh, 32px);
+  padding: clamp(16px, 3vh, 40px);
   font-family: inherit;
   background-color: #f5f5f7;
 }
 
 .login-shell {
-  width: min(400px, 100%);
+  width: min(420px, 100%);
   margin: auto;
   display: flex;
   flex-direction: column;
   border-radius: 18px;
   background: #ffffff;
   border: 1px solid rgba(0, 0, 0, 0.06);
+  animation: login-rise 520ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+@keyframes login-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .login-panel {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: clamp(28px, 4.5vw, 40px);
+  padding: clamp(28px, 4.5vw, 40px) clamp(24px, 5vw, 34px);
 }
 
+/* ── Brand header: mark, title, tagline, live clock ── */
 .login-brand {
-  margin-bottom: clamp(18px, 2.5vh, 24px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
 }
 
 .login-mark {
-  width: 64px;
-  height: 64px;
+  width: 72px;
+  height: 72px;
   display: block;
-  margin: 0 auto 16px;
-  border-radius: 18px;
+  border-radius: 20px;
   user-select: none;
   -webkit-user-drag: none;
+  /* Brand imagery only — the one place a soft shadow is allowed. */
+  box-shadow: 0 10px 24px rgba(0, 102, 204, 0.16);
 }
 
-.login-timestamp {
+.login-title {
+  margin: 16px 0 0;
+  color: #1d1d1f;
+  font-size: 23px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+}
+
+.login-tagline {
+  margin: 6px 0 0;
   color: #6e6e73;
+  font-size: 14.5px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+/* Live clock — the time leads, the date supports it */
+.login-clock {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 18px 0 0;
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: #f5f5f7;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  color: #6e6e73;
+  font-size: 13px;
+  line-height: 1.3;
+}
+
+.login-clock-icon {
+  flex: 0 0 auto;
+  color: #0066cc;
+}
+
+.login-clock-time {
+  color: #1d1d1f;
+  font-size: 14.5px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
   font-variant-numeric: tabular-nums;
 }
 
-.login-form-header p {
-  margin: 10px 0 0;
-  color: #6e6e73;
-  font-size: 15px;
-  line-height: 1.6;
-  font-weight: 400;
+.login-clock-sep {
+  color: #c7c7cc;
+}
+
+.login-clock-date {
+  font-variant-numeric: tabular-nums;
 }
 
 .login-form {
-  margin-top: clamp(20px, 2.5vh, 24px);
+  margin-top: clamp(22px, 3vh, 26px);
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -68,10 +127,12 @@
 .login-field {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 7px;
+  margin-bottom: 0;
   color: #1d1d1f;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
+  letter-spacing: 0;
 }
 
 .login-input-wrap {
@@ -79,16 +140,20 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  min-height: 52px;
+  min-height: 54px;
   border-radius: 11px;
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(0, 0, 0, 0.08);
   background: #f5f5f7;
   padding: 0 8px 0 14px;
-  color: #6e6e73;
+  color: #86868b;
   transition:
     border-color 180ms cubic-bezier(0.4, 0, 0.2, 1),
     background-color 180ms cubic-bezier(0.4, 0, 0.2, 1),
     box-shadow 180ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.login-input-wrap:hover {
+  border-color: rgba(0, 0, 0, 0.16);
 }
 
 .login-input-wrap:focus-within {
@@ -115,7 +180,7 @@
 }
 
 .login-input-wrap input::placeholder {
-  color: #6e6e73;
+  color: #86868b;
 }
 
 .login-input-wrap input:disabled {
@@ -198,6 +263,7 @@
   align-items: center;
   gap: 10px;
   min-height: 44px;
+  margin-bottom: 0;
   color: #1d1d1f;
   font-size: 14px;
   font-weight: 500;
@@ -304,7 +370,7 @@
 }
 
 .login-submit {
-  min-height: 52px;
+  min-height: 54px;
   border: none;
   border-radius: 9999px;
   background: #0066cc;
@@ -357,7 +423,7 @@
   gap: 10px;
   text-align: center;
   font-size: 13px;
-  color: #6e6e73;
+  color: #86868b;
   margin: 0;
   letter-spacing: 0.02em;
   font-weight: 400;
@@ -384,7 +450,7 @@
   justify-content: center;
   gap: 12px;
   width: 100%;
-  min-height: 52px;
+  min-height: 54px;
   padding: 8px 18px;
   border-radius: 9999px;
   border: 1px solid rgba(0, 0, 0, 0.12);
@@ -447,20 +513,6 @@
   font-size: 15.5px;
   line-height: 1.35;
   text-align: center;
-}
-
-/* Footer — internal-system notice */
-.login-footer {
-  width: min(400px, 100%);
-  margin: 16px auto 0;
-  text-align: center;
-  color: #6e6e73;
-  font-size: 12.5px;
-  line-height: 1.6;
-}
-
-.login-footer p {
-  margin: 0;
 }
 
 /* ── Forgot-password dialog ── */
@@ -532,6 +584,21 @@
   .login-panel {
     padding: 28px 20px;
   }
+
+  .login-mark {
+    width: 64px;
+    height: 64px;
+    border-radius: 18px;
+  }
+
+  .login-clock {
+    padding: 7px 13px;
+    font-size: 12.5px;
+  }
+
+  .login-clock-time {
+    font-size: 14px;
+  }
 }
 
 @media (max-height: 720px) {
@@ -543,24 +610,29 @@
     padding-block: 24px;
   }
 
-  .login-brand {
-    margin-bottom: 16px;
+  .login-mark {
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
   }
 
-  .login-mark {
-    width: 52px;
-    height: 52px;
-    margin-bottom: 10px;
-    border-radius: 15px;
+  .login-title {
+    margin-top: 12px;
+    font-size: 20px;
+  }
+
+  .login-clock {
+    margin-top: 12px;
   }
 
   .login-form {
-    margin-top: 14px;
-    gap: 12px;
+    margin-top: 18px;
+    gap: 13px;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .login-shell,
   .login-error {
     animation: none;
   }
