@@ -30,8 +30,12 @@ export default defineConfig({
     },
   ],
 
+  // `next dev` honours an ambient PORT variable, and some shells export PORT=0.
+  // Next then binds a random port while Playwright keeps polling the url below,
+  // so the smoke run died on a 120s timeout instead of a real failure. Pin the
+  // port so the command behaves the same regardless of the caller's shell.
   webServer: {
-    command: 'npm run dev',
+    command: 'npm run dev -- -p 3000',
     url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
