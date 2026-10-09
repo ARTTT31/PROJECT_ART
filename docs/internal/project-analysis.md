@@ -14,7 +14,7 @@ Current verified state (all commands run from the repository on October 9, 2026)
 - **Database Migrations:** the full Alembic chain applies to an empty database, and `alembic check` reports no drift from the models (both steps now run in CI).
 - **Frontend Type Check / Lint:** `tsc --noEmit` and `eslint .` both clean.
 - **Frontend Production Build:** `next build` succeeds.
-- **Frontend Unit Tests:** 86 Vitest tests (`npm test`).
+- **Frontend Unit Tests:** 92 Vitest tests (`npm test`).
 - **Frontend Smoke Tests:** 3 Playwright tests passing (`npm run test:smoke`; pinned to port 3000).
 
 Security and resilience improvements including automated secondary provider failovers (MET Norway for weather, Nominatim for geocoding) completely eliminate 502 Bad Gateway errors when upstream free tiers throttle Render's shared egress IP.

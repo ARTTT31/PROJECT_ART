@@ -1,18 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { GripHorizontal, SlidersHorizontal } from 'lucide-react'
 import { WidgetConfig } from '@/types'
 import DashboardLayout from '@/components/Layout/DashboardLayout'
 import ErrorBoundary from '@/components/ErrorBoundary'
-
-function getGreeting(): string {
-  const hour = new Date().getHours()
-  if (hour >= 5 && hour < 12) return 'สวัสดีตอนเช้า'
-  if (hour >= 12 && hour < 17) return 'สวัสดีตอนบ่าย'
-  if (hour >= 17 && hour < 21) return 'สวัสดีตอนเย็น'
-  return 'ราตรีสวัสดิ์'
-}
+import { getGreeting } from '@/utils/greeting'
 
 import {
   Dialog,
@@ -178,6 +171,15 @@ export default function DashboardPage() {
   } = useDashboardLayout()
   
   const [showConfigModal, setShowConfigModal] = useState(false)
+  const [greeting, setGreeting] = useState<string>(getGreeting)
+
+  useEffect(() => {
+    setGreeting(getGreeting())
+    const timer = setInterval(() => {
+      setGreeting(getGreeting())
+    }, 60_000)
+    return () => clearInterval(timer)
+  }, [])
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -209,8 +211,6 @@ export default function DashboardPage() {
   }
 
   // ── Render ───────────────────────────────────────────────────────────────
-
-  const greeting = getGreeting()
 
   return (
     <>
