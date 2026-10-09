@@ -4,7 +4,8 @@ Security utilities for authentication and authorization
 
 from datetime import timedelta
 from typing import Optional
-from jose import JWTError, jwt
+import jwt
+from jwt import InvalidTokenError
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError, VerificationError, InvalidHashError
 
@@ -90,5 +91,6 @@ def decode_token(token: str) -> Optional[dict]:
             token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
         )
         return payload
-    except JWTError:
+    except InvalidTokenError:
+        # Expired, tampered, wrong algorithm or malformed — all map to "no user".
         return None
