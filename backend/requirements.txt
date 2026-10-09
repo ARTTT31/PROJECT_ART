@@ -17,7 +17,7 @@ alembic==1.18.5
 # release, and its ecdsa/pyasn1 chain added advisories of their own. Tokens are
 # HS256 in the same wire format, so sessions issued before the swap keep working.
 pyjwt==2.15.1
-argon2-cffi>=23.1.0
+argon2-cffi>=25.1.0
 pydantic[email]==2.14.0
 pydantic-settings==2.15.0
 
