@@ -8,8 +8,8 @@ Production URL: configure this in your deployment environment; do not commit a p
 
 The GitHub Actions pipeline (`ci.yml`) runs on every push and pull request to `main`:
 
-- **Backend:** Python 3.11 — flake8 lint (`--max-line-length=120`) + mypy type check + `alembic upgrade head` and `alembic check` against a throwaway SQLite database + pytest (coverage gate 40%)
-- **Frontend:** Node 20 — ESLint + TypeScript type-check + Next.js production build + Playwright smoke tests
+- **Backend:** Python 3.11 — flake8 7.4 lint (`--max-line-length=120`) + mypy 2.4 type check + `alembic upgrade head` and `alembic check` against a throwaway SQLite database + pytest (162 tests, coverage 76.57%, gate 40%)
+- **Frontend:** Node 20 — ESLint + TypeScript type-check + 86 Vitest unit tests + Next.js production build + Playwright smoke tests
 - **Dependency audit (advisory):** `pip-audit` reports backend advisories without failing the build; Dependabot opens the upgrade pull requests (see `.github/dependabot.yml`).
 
 The migration step matters: the test suite builds its schema from the models, so a broken or forgotten Alembic revision used to pass CI and only fail against production. `alembic check` additionally fails when the models drift from the migration head.
@@ -55,14 +55,14 @@ The migration step matters: the test suite builds its schema from the models, so
 
 | Layer | Technology |
 |---|---|
-| Framework | FastAPI 0.111, Uvicorn |
-| Real-time | WebSocket notifications (authenticated handshake, connection caps) |
+| Framework | FastAPI 0.143, Starlette 1.7, Uvicorn |
+| Real-time | WebSocket notifications (authenticated handshake, connection caps, optional Redis fan-out) |
 | ORM / DB | SQLAlchemy 2 async, Alembic migrations |
 | Database | PostgreSQL (Neon in production, SQLite for CI tests) |
-| Auth | JWT access + refresh tokens in HTTP-only cookies + double-submit-cookie CSRF (`X-CSRF-Token`) |
+| Auth | PyJWT access + refresh tokens in HTTP-only cookies + double-submit-cookie CSRF (`X-CSRF-Token`) |
 | Rate Limiting | SlowAPI |
-| Upstream data | httpx (Bangchak oil prices, Open-Meteo weather, BigDataCloud geocode) |
-| Linting | flake8 6.1, mypy 1.9 |
+| Upstream data | httpx (Bangchak oil prices, Open-Meteo & MET Norway weather forecast, Open-Meteo air quality, BigDataCloud & OpenStreetMap Nominatim reverse geocode) |
+| Linting | flake8 7.4, mypy 2.4 |
 
 ### Infrastructure
 

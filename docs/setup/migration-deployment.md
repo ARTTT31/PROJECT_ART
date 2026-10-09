@@ -85,6 +85,13 @@ During the cloud migration, the main issues encountered and successfully resolve
 * **Cause:** The OAuth project on Google Cloud was still restricted to Testing mode.
 * **Solution:** Changed the Publishing Status within the OAuth Consent Screen menu from **Testing** to **In Production** to unlock access for general Google accounts.
 
+### 🔴 Issue 7: `HTTP 502 Bad Gateway` on Weather Forecast and GPS Reverse-Geocode
+* **Cause:** Render shared egress IPs are rate-limited / throttled by external free API tiers (Open-Meteo for weather forecast, BigDataCloud for reverse geocoding), resulting in 429/502 errors when querying uncached coordinates.
+* **Solution:**
+  * Added automated failover to **MET Norway (`api.met.no`)** Locationforecast 2.0 when Open-Meteo fails.
+  * Added automated failover to **OpenStreetMap Nominatim** when BigDataCloud fails, plus a graceful coordinates-only 200 OK fallback.
+  * Persisted both responses into L1 memory and L2 Neon database (`weather_cache`) to protect future requests.
+
 ---
 
 ## 4. Current System Status

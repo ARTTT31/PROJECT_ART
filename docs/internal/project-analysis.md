@@ -1,35 +1,35 @@
 # ART Workspace Project Analysis
 
-**Last updated:** October 6, 2026  
-**Scope:** Full-stack repository review, local validation, hardening of the WebSocket subscribe path, the maintainability/resilience pass, and the sweep that closed the previously documented remaining items  
+**Last updated:** October 9, 2026  
+**Scope:** Full-stack repository review, local validation, dependency hardening pass, Pydantic v2 modernization, and automated secondary providers for weather forecast (MET Norway) and reverse-geocoding (OpenStreetMap Nominatim)  
 **Repository path:** `D:\Program\Project\PROJECT_ART`
 
 ## Executive Summary
 
 ART Workspace is a Thai-language personal productivity dashboard built as a modern full-stack web application. The architecture consists of a Next.js 16 frontend (App Router, webpack dev server), a FastAPI backend, and a PostgreSQL database target (Neon in production, in-memory SQLite for tests).
 
-Current verified state (all commands run from the repository on October 6, 2026):
-- **Backend Tests:** 148/148 pytest tests passing, coverage **73.05%** (gate 40%).
+Current verified state (all commands run from the repository on October 9, 2026):
+- **Backend Tests:** 162/162 pytest tests passing, coverage **76.57%** (gate 40%).
 - **Backend Linting / Typing:** `flake8 app` 0 errors; `mypy app` clean across 40 modules.
 - **Database Migrations:** the full Alembic chain applies to an empty database, and `alembic check` reports no drift from the models (both steps now run in CI).
 - **Frontend Type Check / Lint:** `tsc --noEmit` and `eslint .` both clean.
 - **Frontend Production Build:** `next build` succeeds.
-- **Frontend Unit Tests:** 79 Vitest tests (`npm test`).
-- **Frontend Smoke Tests:** 3 Playwright tests passing (`npm run test:smoke`; needs `PORT=3000` if `PORT` is set to `0` in the shell).
+- **Frontend Unit Tests:** 86 Vitest tests (`npm test`).
+- **Frontend Smoke Tests:** 3 Playwright tests passing (`npm run test:smoke`; pinned to port 3000).
 
-Two security gaps found in the previous pass were closed here; the newest section (see *WebSocket Subscriptions Are Authenticated*) documents them.
+Security and resilience improvements including automated secondary provider failovers (MET Norway for weather, Nominatim for geocoding) completely eliminate 502 Bad Gateway errors when upstream free tiers throttle Render's shared egress IP.
 
 ## Current Stack
 
 | Layer | Technology | Current Use |
 | --- | --- | --- |
 | Frontend | Next.js 16 App Router, React 18, TypeScript 5 | Main web application |
-| Styling | Tailwind CSS, Liquid Glass Design Tokens | Dashboard, login, profile, widgets |
+| Styling | Tailwind CSS, Apple HIG Design Tokens | Dashboard, login, profile, widgets |
 | UI libraries | Lucide React, Radix Dialog, SweetAlert2 | Icons, dialogs, notifications |
-| Backend | FastAPI, SQLAlchemy async, Alembic | REST API and database access |
-| Auth | JWT access/refresh tokens in HTTP-only cookies | Standard login and Google OAuth |
+| Backend | FastAPI 0.143, SQLAlchemy async, Alembic | REST API and database access |
+| Auth | PyJWT access/refresh tokens in HTTP-only cookies | Standard login and Google OAuth |
 | Database | PostgreSQL target, SQLite for tests | Neon serverless PostgreSQL in production |
-| External data | Open-Meteo weather API, Bangchak oil price JSON API | Weather widget and oil price widget |
+| External data | Open-Meteo & MET Norway (weather), Open-Meteo (air quality), Bangchak (oil price), BigDataCloud & OpenStreetMap Nominatim (geocode) | Dashboard widgets and GPS reverse-geocoding |
 
 ## System Improvements Applied (October 1, 2026)
 

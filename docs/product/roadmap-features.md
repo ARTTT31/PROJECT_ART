@@ -34,13 +34,13 @@
 | Widget | Sizes | Data source |
 |---|---|---|
 | วันหยุดนักขัตฤกษ์ (holidays) | S/M/L | Confirmed Thai calendars bundled in the repo (2026, 2027) |
-| สภาพอากาศ & PM 2.5 (weather) | S/M/L | Open-Meteo + BigDataCloud, via the backend proxy |
+| สภาพอากาศ & PM 2.5 (weather) | S/M/L | Open-Meteo + MET Norway (weather), Open-Meteo (AQI), BigDataCloud + OSM Nominatim (geocode), via backend proxy |
 | ราคาน้ำมัน (oil price) | S/M/L | Bangchak Open Web API, via the backend proxy |
 | QR Code | S/M/L | Client-side |
 
 ### Platform
 
-- **Auth:** JWT access/refresh in HTTP-only cookies, CSRF double-submit token, account lockout
+- **Auth:** PyJWT access/refresh in HTTP-only cookies, CSRF double-submit token, account lockout
   (5 attempts -> 30 min), session tracking (IP / user agent / device), Google OAuth.
 - **Authorisation:** `role` plus per-user `accessible_pages`; the sidebar and profile page hide
   what a user cannot reach.
@@ -49,9 +49,10 @@
   a live WebSocket feed. The socket authenticates during the handshake and the connection
   registry is capped per user; broadcasts are admin-only and fan out through Redis pub/sub
   when `WS_BROADCAST_REDIS_URL` is set.
-- **Resilience:** the weather/geocode proxies retry throttled upstreams, fall back to stale data
-  and persist the last known good payload in `weather_cache`; oil prices use the same table
-  before dropping to maintained constants. Each namespace keeps its newest row past the
+- **Resilience:** the weather/geocode proxies retry throttled upstreams and automatically fail over
+  to secondary providers (MET Norway for weather forecast, OpenStreetMap Nominatim for GPS address lookup);
+  fall back to stale data and persist the last known good payload in `weather_cache`; oil prices use the
+  same table before dropping to maintained constants. Each namespace keeps its newest row past the
   30-day retention window, so the fallback survives a cold start.
 - **Security:** CSP with a production/development split, HSTS, `nosniff`/`DENY` headers,
   rate limiting keyed on a client address that only a trusted proxy may assert, API docs off

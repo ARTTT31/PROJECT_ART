@@ -38,13 +38,12 @@ npm run dev
 cd frontend
 npm run type-check
 npm run lint
-npm test                              # Vitest unit/component tests
+npm test                              # Vitest unit/component tests (86 tests)
 npm run build
-npm run test:smoke                    # Playwright; needs port 3000 free
+npm run test:smoke                    # Playwright; runs on port 3000
 ```
 
-> If `PORT` is set to `0` in your shell, `next dev` binds a random port and the
-> Playwright web server times out — run `PORT=3000 npm run test:smoke`.
+> The smoke-test script pins `-p 3000` automatically so random port binding does not break Playwright.
 
 ### Backend
 
@@ -52,7 +51,7 @@ npm run test:smoke                    # Playwright; needs port 3000 free
 cd backend
 .\venv\Scripts\python.exe -m flake8 app --max-line-length=120 --exclude=__pycache__
 .\venv\Scripts\python.exe -m mypy app
-.\venv\Scripts\python.exe -m pytest -q --tb=short
+.\venv\Scripts\python.exe -m pytest -q --tb=short      # Pytest (162 tests, 76.57% coverage)
 ```
 
 ## Common Tasks

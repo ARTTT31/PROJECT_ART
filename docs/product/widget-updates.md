@@ -30,6 +30,12 @@
 - ✅ Weather animations
 - ✅ Forecast display
 
+### Resilience & Upstream Failover (October 2026):
+- ✅ **Automated Secondary Forecast Provider**: Seamless failover to MET Norway (`api.met.no`) Locationforecast 2.0 whenever Open-Meteo throttles Render's shared egress IP (`HTTP 429`) or returns `5xx`.
+- ✅ **Automated Secondary Geocoding Provider**: Seamless failover to OpenStreetMap (Nominatim) whenever BigDataCloud throttles or fails, resolving accurate Thai district and city names (e.g. `เขตลาดพร้าว, กรุงเทพมหานคร`).
+- ✅ **Graceful Coordinate Fallback**: Never returns HTTP 502 to the browser even if external geocoding providers are unreachable.
+- ✅ **Multi-Tier Caching**: In-memory L1 cache and PostgreSQL L2 database cache (`weather_cache`).
+
 ---
 
 ## 📋 TaskList Widget — REMOVED
