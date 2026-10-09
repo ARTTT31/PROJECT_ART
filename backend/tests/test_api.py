@@ -847,7 +847,7 @@ class _FakeClient:
     async def __aexit__(self, *exc):
         return False
 
-    async def get(self, url, params=None):
+    async def get(self, url, params=None, **kwargs):
         self._counter["calls"] += 1
         idx = self._counter["calls"] - 1
         return self._responses[min(idx, len(self._responses) - 1)]
@@ -986,6 +986,54 @@ class TestWeatherUpstreamResilience:
         )
 
         assert resp.status_code == 502
+
+    async def test_forecast_fails_over_to_secondary_provider(self, monkeypatch, client):
+        """When Open-Meteo fails with 429, it must try secondary provider (MET Norway) and succeed."""
+        from app.api.v1.endpoints import weather as w
+
+        w._WEATHER_CACHE.clear()
+        met_sample = {
+            "properties": {
+                "timeseries": [
+                    {
+                        "time": "2026-10-09T09:00:00Z",
+                        "data": {
+                            "instant": {
+                                "details": {
+                                    "air_temperature": 29.5,
+                                    "relative_humidity": 65.0,
+                                    "wind_speed": 4.0,
+                                }
+                            },
+                            "next_1_hours": {
+                                "summary": {"symbol_code": "partlycloudy_day"},
+                                "details": {"precipitation_amount": 0.0},
+                            },
+                        },
+                    }
+                ]
+            }
+        }
+        # Open-Meteo initial + 2 retries = 3 calls (429), then MET Norway initial = 4th call (200)
+        _install_fake_http(
+            monkeypatch,
+            [
+                _FakeResponse(429, text="open-meteo throttled"),
+                _FakeResponse(429, text="open-meteo throttled"),
+                _FakeResponse(429, text="open-meteo throttled"),
+                _FakeResponse(200, met_sample),
+            ],
+        )
+
+        resp = await client.get(
+            "/api/v1/weather/forecast",
+            params={"latitude": 13.84, "longitude": 100.61, "forecast_days": 2},
+        )
+
+        assert resp.status_code == 200, resp.text
+        body = resp.json()
+        assert body["current"]["temperature_2m"] == 29.5
+        assert body["_provider"] == "met_norway"
 
 
 # ── Persistent (database) weather cache ───────────────────

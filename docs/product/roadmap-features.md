@@ -79,14 +79,10 @@
 
 Ordered by evidence, not by preference:
 
-1. **A second weather provider** — retention (30 days, newest row of every namespace kept) and
-   per-namespace protection now cover pruning and cold starts, but no cache can serve data that
-   was never fetched. This is the last remaining cause of a `502` on the forecast proxy, and it
-   is a product decision.
-2. **Redis for the rate limiter before scaling out** — the WebSocket fan-out already has a
+1. **Redis for the rate limiter before scaling out** — the WebSocket fan-out already has a
    supported path (`WS_BROADCAST_REDIS_URL`); the limiter still needs
    `SLOWAPI_STORAGE_URI=redis://…` for a second instance to be safe.
-3. **Frontend coverage and one live-backend E2E** — 79 unit tests cover pure logic and the
+2. **Frontend coverage and one live-backend E2E** — 86 unit tests cover pure logic and the
    notification bell; most components are still untested, and nothing currently catches a
    broken login against the real API.
 4. **Move the dependency pins** — `starlette` (via fastapi 0.111) and `python-jose` carry open

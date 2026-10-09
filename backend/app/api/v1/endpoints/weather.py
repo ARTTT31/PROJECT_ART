@@ -10,8 +10,11 @@ the browser — always go through these proxies.
 """
 
 import asyncio
+import datetime
 import logging
+import math
 from typing import Optional
+from zoneinfo import ZoneInfo
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
@@ -39,6 +42,13 @@ _GENERAL_LIMIT = f"{settings.RATE_LIMIT_GENERAL_PER_MINUTE}/minute"
 OPEN_METEO_FORECAST_URL = "https://api.open-meteo.com/v1/forecast"
 OPEN_METEO_AIR_QUALITY_URL = "https://air-quality-api.open-meteo.com/v1/air-quality"
 BIGDATACLOUD_REVERSE_URL = "https://api.bigdatacloud.net/data/reverse-geocode-client"
+
+# Secondary forecast provider (MET Norway / api.met.no)
+# Free, open, global forecast used when Open-Meteo throttles Render's shared IP.
+MET_NORWAY_FORECAST_URL = "https://api.met.no/weatherapi/locationforecast/2.0/compact"
+MET_NORWAY_HEADERS = {
+    "User-Agent": "ARTWorkspace/1.0 (https://github.com/project-art)",
+}
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -205,6 +215,7 @@ async def _upstream_get(
     params: dict,
     timeout_seconds: float = 10.0,
     retries: int = 2,
+    headers: Optional[dict] = None,
 ) -> dict:
     """GET an upstream provider, retrying throttled/transient failures.
 
@@ -218,7 +229,10 @@ async def _upstream_get(
                 timeout=httpx.Timeout(timeout_seconds, connect=5.0),
                 follow_redirects=True,
             ) as client:
-                response = await client.get(url, params=params)
+                get_kwargs: dict = {}
+                if headers:
+                    get_kwargs["headers"] = headers
+                response = await client.get(url, params=params, **get_kwargs)
         except httpx.TimeoutException as exc:
             logger.warning("Upstream %s timeout: %s", url, exc)
             raise HTTPException(status_code=504, detail="Weather provider timed out")
@@ -273,6 +287,215 @@ async def _upstream_get(
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# Secondary Provider (MET Norway) Helpers
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def _symbol_to_wmo(symbol: str) -> int:
+    """Map MET Norway symbol_code string to standard WMO code."""
+    base = symbol.split("_")[0]
+    mapping = {
+        "clearsky": 0,
+        "fair": 1,
+        "partlycloudy": 2,
+        "cloudy": 3,
+        "fog": 45,
+        "lightrain": 51,
+        "lightrainshowers": 51,
+        "rain": 61,
+        "rainshowers": 61,
+        "heavyrain": 81,
+        "heavyrainshowers": 81,
+        "lightsleet": 68,
+        "lightsleetshowers": 68,
+        "sleet": 68,
+        "sleetshowers": 68,
+        "heavysleet": 68,
+        "heavysleetshowers": 68,
+        "lightsnow": 71,
+        "lightsnowshowers": 71,
+        "snow": 71,
+        "snowshowers": 71,
+        "heavysnow": 85,
+        "heavysnowshowers": 85,
+        "lightrainandthunder": 95,
+        "rainandthunder": 95,
+        "heavyrainandthunder": 95,
+        "lightrainshowersandthunder": 95,
+        "rainshowersandthunder": 95,
+        "heavyrainshowersandthunder": 95,
+        "lightsleetandthunder": 95,
+        "sleetandthunder": 95,
+        "heavysleetandthunder": 95,
+        "lightsnowandthunder": 95,
+        "snowandthunder": 95,
+        "heavysnowandthunder": 95,
+    }
+    return mapping.get(base, 2)
+
+
+def _calc_apparent_temp(temp: float, rh: float, wind_speed_kmh: float) -> float:
+    """Steadman apparent temperature / heat index approximation."""
+    try:
+        e = (rh / 100.0) * 6.105 * math.exp((17.27 * temp) / (237.7 + temp))
+        ws_ms = wind_speed_kmh / 3.6
+        return round(temp + 0.33 * e - 0.70 * ws_ms - 4.0, 1)
+    except Exception:
+        return temp
+
+
+def _calc_rain_prob(precip_mm: float, symbol: str) -> int:
+    """Derive estimated rain probability % from precipitation amount or symbol."""
+    if precip_mm >= 5.0:
+        return 85
+    elif precip_mm >= 2.0:
+        return 70
+    elif precip_mm >= 0.5:
+        return 50
+    elif precip_mm > 0.0:
+        return 30
+    elif "rain" in symbol:
+        return 40
+    elif "drizzle" in symbol:
+        return 25
+    return 0
+
+
+def _convert_met_norway_to_open_meteo(
+    data: dict,
+    latitude: float,
+    longitude: float,
+    timezone_str: str = "Asia/Bangkok",
+    forecast_days: int = 2,
+) -> dict:
+    """Convert MET Norway GeoJSON timeseries into the Open-Meteo response shape."""
+    timeseries = data.get("properties", {}).get("timeseries", [])
+    if not timeseries:
+        raise ValueError("MET Norway returned empty timeseries")
+
+    try:
+        tz = ZoneInfo(timezone_str)
+    except Exception:
+        tz = ZoneInfo("Asia/Bangkok")
+
+    now_local = datetime.datetime.now(tz)
+    first = timeseries[0]
+    instant = first.get("data", {}).get("instant", {}).get("details", {})
+    n1 = first.get("data", {}).get("next_1_hours", {})
+    symbol = n1.get("summary", {}).get("symbol_code", "partlycloudy_day")
+    w_code = _symbol_to_wmo(symbol)
+    temp = instant.get("air_temperature", 28.0)
+    rh = instant.get("relative_humidity", 60.0)
+    ws_kmh = round(instant.get("wind_speed", 0.0) * 3.6, 1)
+    app_temp = _calc_apparent_temp(temp, rh, ws_kmh)
+
+    hourly_time: list[str] = []
+    hourly_temp: list[float] = []
+    hourly_code: list[int] = []
+    hourly_rain: list[int] = []
+    daily_temps: dict[str, list[float]] = {}
+    daily_rains: dict[str, list[int]] = {}
+
+    max_hours = forecast_days * 24
+
+    for item in timeseries:
+        utc_raw = item.get("time", "")
+        if not utc_raw:
+            continue
+        try:
+            utc_str = utc_raw.replace("Z", "+00:00")
+            dt_local = datetime.datetime.fromisoformat(utc_str).astimezone(tz)
+        except Exception:
+            continue
+
+        date_key = dt_local.strftime("%Y-%m-%d")
+        time_key = dt_local.strftime("%Y-%m-%dT%H:00")
+
+        dtl = item.get("data", {}).get("instant", {}).get("details", {})
+        t_val = dtl.get("air_temperature")
+        if t_val is None:
+            continue
+
+        n_1 = item.get("data", {}).get("next_1_hours", {})
+        n_6 = item.get("data", {}).get("next_6_hours", {})
+        sym = (
+            n_1.get("summary", {}).get("symbol_code")
+            or n_6.get("summary", {}).get("symbol_code")
+            or "partlycloudy_day"
+        )
+        code = _symbol_to_wmo(sym)
+        precip = (
+            n_1.get("details", {}).get("precipitation_amount")
+            or n_6.get("details", {}).get("precipitation_amount")
+            or 0.0
+        )
+        r_prob = _calc_rain_prob(precip, sym)
+
+        if len(hourly_time) < max_hours:
+            hourly_time.append(time_key)
+            hourly_temp.append(t_val)
+            hourly_code.append(code)
+            hourly_rain.append(r_prob)
+
+        daily_temps.setdefault(date_key, []).append(t_val)
+        daily_rains.setdefault(date_key, []).append(r_prob)
+
+    sorted_dates = sorted(daily_temps.keys())[:forecast_days]
+    daily_max = [max(daily_temps[d]) for d in sorted_dates]
+    daily_min = [min(daily_temps[d]) for d in sorted_dates]
+    daily_rain_max = [max(daily_rains[d]) for d in sorted_dates]
+
+    return {
+        "_provider": "met_norway",
+        "latitude": latitude,
+        "longitude": longitude,
+        "timezone": timezone_str,
+        "current": {
+            "time": now_local.strftime("%Y-%m-%dT%H:%M"),
+            "temperature_2m": temp,
+            "relative_humidity_2m": rh,
+            "apparent_temperature": app_temp,
+            "weather_code": w_code,
+            "wind_speed_10m": ws_kmh,
+        },
+        "hourly": {
+            "time": hourly_time,
+            "temperature_2m": hourly_temp,
+            "weather_code": hourly_code,
+            "precipitation_probability": hourly_rain,
+        },
+        "daily": {
+            "time": sorted_dates,
+            "temperature_2m_max": daily_max,
+            "temperature_2m_min": daily_min,
+            "precipitation_probability_max": daily_rain_max,
+        },
+    }
+
+
+async def _fetch_secondary_forecast(
+    latitude: float,
+    longitude: float,
+    timezone: str = "Asia/Bangkok",
+    forecast_days: int = 2,
+) -> dict:
+    """Fetch forecast from MET Norway (api.met.no) and adapt to the Open-Meteo response shape."""
+    params = {"lat": round(latitude, 4), "lon": round(longitude, 4)}
+    raw_data = await _upstream_get(
+        MET_NORWAY_FORECAST_URL,
+        params=params,
+        headers=MET_NORWAY_HEADERS,
+        retries=1,
+    )
+    return _convert_met_norway_to_open_meteo(
+        raw_data,
+        latitude=latitude,
+        longitude=longitude,
+        timezone_str=timezone,
+        forecast_days=forecast_days,
+    )
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # Forecast endpoint
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -286,8 +509,10 @@ async def get_forecast_proxy(
     timezone: str = Query("Asia/Bangkok", description="IANA timezone for response"),
     forecast_days: int = Query(2, ge=1, le=7, description="Number of forecast days"),
 ):
-    """Proxy to Open-Meteo /forecast. Returns the exact upstream JSON shape
-    so the existing frontend widget can drop in without re-parsing."""
+    """Proxy to Open-Meteo /forecast with automated failover to MET Norway.
+
+    Returns the standard forecast JSON shape so frontend widgets need no re-parsing.
+    """
     cache_key = _cache_key_forecast(latitude, longitude, forecast_days)
     cached = await _cached_payload(
         db, _WEATHER_CACHE, NS_FORECAST, cache_key, FORECAST_CACHE_TTL
@@ -307,12 +532,23 @@ async def get_forecast_proxy(
 
     try:
         payload = await _upstream_get(OPEN_METEO_FORECAST_URL, params)
-    except HTTPException:
-        stale = await _stale_payload(db, _WEATHER_CACHE, NS_FORECAST, cache_key)
-        if stale is not None:
-            logger.warning("Serving stale forecast for %s after upstream failure", cache_key)
-            return stale
-        raise
+    except HTTPException as exc:
+        logger.warning(
+            "Primary weather provider (Open-Meteo) failed with HTTP %s; falling back to secondary provider",
+            exc.status_code,
+        )
+        try:
+            payload = await _fetch_secondary_forecast(
+                latitude, longitude, timezone=timezone, forecast_days=forecast_days
+            )
+            logger.info("Successfully fetched weather forecast from secondary provider (MET Norway)")
+        except Exception as sec_exc:
+            logger.warning("Secondary weather provider (MET Norway) also failed: %s", sec_exc)
+            stale = await _stale_payload(db, _WEATHER_CACHE, NS_FORECAST, cache_key)
+            if stale is not None:
+                logger.warning("Serving stale forecast for %s after all upstream failures", cache_key)
+                return stale
+            raise
 
     _cache_set(_WEATHER_CACHE, cache_key, payload)
     await weather_cache.store(db, NS_FORECAST, cache_key, payload)

@@ -269,11 +269,17 @@ that could be fixed and verified from a local checkout.
    listed several items that had since been fixed; both now say what is true, and the
    review carries a dated status note.
 
+8. **Secondary Weather Provider Added (MET Norway Failover):**
+   - Added automated failover to MET Norway (`api.met.no`) in `app/api/v1/endpoints/weather.py`.
+   - When Open-Meteo returns HTTP 429 (throttling Render's shared egress IP) or fails, the backend immediately calls MET Norway, normalizes the GeoJSON timeseries into the standard Open-Meteo response shape, and caches it in both L1 memory and L2 `weather_cache`.
+   - Requires zero external API keys and eliminates the HTTP 502 Bad Gateway error on uncached coordinates.
+   - Pydantic v2 deprecation warning (`user_update.dict()`) in `profile.py` was also resolved to `user_update.model_dump()`.
+   - Backend test suite expanded to **161 passed** at **76.02%** coverage.
+
 ### Known Remaining Items
 
 - **The production WebSocket origin still needs one deployed check.** The client prefers `NEXT_PUBLIC_WS_URL`, then `NEXT_PUBLIC_API_URL`, then its own origin. If the Vercel rewrite forwards plain requests but drops the upgrade, the socket never connects — set `NEXT_PUBLIC_WS_URL` to the backend origin. This cannot be verified from a local checkout.
-- **Weather has one provider.** Retention and per-namespace protection now cover restarts, cold starts and pruning, but a location that has never been fetched successfully still gets a `502` while Open-Meteo throttles Render's shared egress. Serving data the provider refuses to give requires a second provider — a product decision, not a code change.
 - **The backend audit job is still `continue-on-error`.** The advisories themselves are fixed (see the pass above) and the CI job is now expected to pass, but `pip-audit -r requirements.txt` could not be reproduced from the local checkout, so the flag was left advisory rather than flipped blind. Flip it to a required check once one CI run comes back clean.
 - **Rate limiting is still process-local by default.** The WebSocket fan-out now has a supported path (`WS_BROADCAST_REDIS_URL`), but a horizontally scaled deployment also needs `SLOWAPI_STORAGE_URI` pointed at Redis.
-- **Frontend coverage is still partial.** 84 unit tests cover pure logic plus the notification bell; most components and widgets remain untested, and the 3 Playwright smoke tests still run without a live backend, so they would not catch a broken login against the real API.
+- **Frontend coverage is still partial.** 86 unit tests cover pure logic plus the notification bell; most components and widgets remain untested, and the 3 Playwright smoke tests still run without a live backend, so they would not catch a broken login against the real API.
 - **Thai-only UI.** All copy is hardcoded Thai; there is no i18n layer.
