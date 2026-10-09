@@ -2,6 +2,19 @@
 
 Scope reviewed: `frontend/src/app/*`, `frontend/src/components/*`, `frontend/src/styles/*`, `frontend/src/lib/*`
 
+> **Status note (2026-10-09).** This document is the original review and is kept for
+> history — the findings below were written against a much earlier tree. Re-checked
+> against today's code: `dangerouslySetInnerHTML` is gone from `TaskListWidget` (§2.5,
+> §3.3), `axios` no longer appears anywhere and the API layer is the single
+> `lib/api/fetchWithAuth.ts` wrapper whose `API_URL` is a bare origin, so the
+> `/api/v1/api/v1/...` double-prefix bug of §3.2 is not reproducible, the
+> `AuthProvider` + `AuthGuard` pair the review asked for in §3.1 now exists,
+> `login.module.css` was deleted, the widget-manager dialog has an entrypoint
+> (`dashboard/page.tsx`), and the DnD layer is `@dnd-kit`. Still open as of that
+> date: React Query is installed and provided but no component calls
+> `useQuery`/`useMutation` (§3.5), and the component-primitive work of §3.4 remains
+> partial. Items not listed here were not re-verified.
+
 ---
 
 # 1) Executive Summary

@@ -185,11 +185,95 @@ narrowed to something that genuinely needs a deployment or a product decision.
 
 11. **The socket rejection is now observable by the client.** Live testing showed the pre-`accept()` close left the wire as `HTTP 403`, which browsers report as the generic abnormal closure `1006` — so the frontend's "stop on `1008`" rule never fired and the bell would retry an expired session forever (bounded by the backoff, but wrong). A rejected handshake is now accepted and immediately closed with the RFC 6455 code (`1008` unauthenticated, `1013` at capacity); nothing is read, sent or registered on that socket. The three handshake tests were updated to assert the code the client actually receives rather than an exception at connect time.
 
+## Dependency and Tooling Pass (October 9, 2026)
+
+Started from the audited question "what else needs fixing?" and closed every finding
+that could be fixed and verified from a local checkout.
+
+1. **The frontend production audit was failing CI, not merely advisory.**
+   - The `npm audit --omit=dev --audit-level=high` step in the frontend job has no
+     `continue-on-error`, and it exited `1` on the committed lockfile: `sharp`
+     0.35.4 (needs ≥0.35.5) and `source-map-js` 1.2.1 (needs ≥1.2.2), both
+     transitive (`next → sharp`, `postcss → source-map-js`).
+   - Proven from the lockfile alone (`npm audit --package-lock-only` → exit `1`), so
+     no local `node_modules` state was involved: every push, including the two made
+     during this session, failed that job.
+   - `npm audit fix` (no `--force`) moved them to 0.35.5 / 1.2.2 and the same command
+     now reports **0 vulnerabilities** (exit `0`). `package.json` is untouched — only
+     `package-lock.json` moved. The 9 remaining advisories are dev-only
+     (tailwind/postcss chain) and pre-date this pass.
+
+2. **python-jose was replaced by PyJWT.**
+   - `app/core/security.py` was the only importer. python-jose 3.5.0 — the version
+     the venv actually had — still carries `CVE-2026-85394` **with no fixed release**,
+     and the pin was the older 3.3.0, which carries two more. Swapping to PyJWT
+     2.15.1 removed `python-jose`, `ecdsa` and `pyasn1` from the tree.
+   - Wire compatibility was verified rather than assumed: a hand-built HS256 token in
+     jose's exact format (base64url, unpadded, HMAC-SHA256) still decodes through the
+     new `decode_token`, so sessions issued before the deploy survive it. Tampered,
+     malformed and expired tokens all return `None`; `create_access_token` still
+     yields `exp` = +1800s.
+
+3. **FastAPI/Starlette moved past their advisories.**
+   - `fastapi==0.111.0` pinned `starlette` 0.37.2, which carried 8 open advisories
+     whose fixes run as far as starlette 1.3.1. Now `fastapi==0.143.0` → starlette
+     1.7.0.
+
+4. **`requirements.txt` now pins the stack that was actually exercised.**
+   - Real drift was found: the venv had python-jose 3.5.0 / pytest 9.1.1 /
+     pytest-asyncio 1.4.0 / pydantic 2.13.4 while the file pinned 3.3.0 / 7.4.4 /
+     0.23.3 / 2.5.3 — CI was installing a stack nobody had run.
+   - Also bumped: requests 2.31.0 → 2.34.2, httpx 0.26.0 → 0.28.1, pydantic-settings
+     2.1.0 → 2.15.0, python-dotenv 1.0.0 → 1.2.4, psutil 5.9.8 → 7.2.2, slowapi
+     0.1.9 → 0.1.10, aiosqlite 0.20.0 → 0.22.1, pytest-cov 4.1.0 → 7.1.0, flake8
+     6.1.0 → 7.4.1, mypy 1.9.0 → 2.4.0.
+   - Added a labelled **security floors** block for four transitive dependencies
+     (`starlette`, `cryptography`, `anyio`, `urllib3`) whose resolvers would
+     otherwise accept vulnerable versions.
+   - Verified after the change: **155 passed**, coverage **75.52%**, `flake8 app`
+     clean, `mypy app` clean across 40 modules, the Alembic chain applies and
+     `alembic check` is clean, and `pip-audit` on the environment reports **no known
+     vulnerabilities** (down from 33 findings across 8 packages). Test warnings fell
+     from 273 to 11 as a side effect of the newer stack.
+   - Caveat: `pip-audit -r requirements.txt` still cannot run on the maintainer's
+     machine — `psycopg2-binary` 2.9.9 has no wheel for the local Python 3.14 and its
+     source build needs `pg_config`. CI runs it on 3.11, where the wheel exists. The
+     file was instead validated with `pip install --dry-run --ignore-installed` over
+     the same file minus the two Postgres drivers, which resolved the full graph with
+     no conflicts.
+
+5. **The Playwright smoke run no longer depends on the caller's shell.**
+   - `npm run test:smoke` died with a 120s `webServer` timeout: the ambient `PORT=0`
+     made `next dev` bind a random port (40851 was observed) while the config polls
+     `localhost:3000`. Pinning the port in the command (`npm run dev -- -p 3000`) fixed
+     it — **3/3 passed** with no server pre-started. The previous document recorded this
+     as a manual workaround; it is now structural.
+
+6. **The App Router has a global error boundary.**
+   - Sentry warned at startup that no global handler existed. `error.tsx` only covers
+     errors *below* the root layout, so a render failure in the layout itself produced
+     a blank page nobody would ever see in Sentry. Added `src/app/global-error.tsx` and
+     `src/styles/global-error.css` (imported by the boundary itself, because it replaces
+     the layout and cannot rely on `globals.css`).
+   - Verified by temporarily throwing inside `RootLayout`: the fallback rendered with
+     the Thai copy, `<html lang="th">`, `#f5f5f7` body, 18px card and the `#0066cc` pill
+     button. In dev the Next overlay covers the screen, so the assertions were made
+     against the DOM. The throw was then reverted and `/login` returned `200` again.
+   - Worth recording: the first version of that file had the wrong relative import
+     (`../../styles/...`, one level too high). `tsc`, `eslint` and `next build` all
+     stayed green — only this browser-level check caught it, which is the argument for
+     exercising fallback paths instead of trusting the build.
+
+7. **Documentation drift corrected.** `globals.css` pointed twice at a
+   `src/styles/pages/weather.css` that does not exist, and `frontend-arch-review.md`
+   listed several items that had since been fixed; both now say what is true, and the
+   review carries a dated status note.
+
 ### Known Remaining Items
 
 - **The production WebSocket origin still needs one deployed check.** The client prefers `NEXT_PUBLIC_WS_URL`, then `NEXT_PUBLIC_API_URL`, then its own origin. If the Vercel rewrite forwards plain requests but drops the upgrade, the socket never connects — set `NEXT_PUBLIC_WS_URL` to the backend origin. This cannot be verified from a local checkout.
 - **Weather has one provider.** Retention and per-namespace protection now cover restarts, cold starts and pruning, but a location that has never been fetched successfully still gets a `502` while Open-Meteo throttles Render's shared egress. Serving data the provider refuses to give requires a second provider — a product decision, not a code change.
-- **Backend dependency advisories are visible, not fixed.** `pip-audit` reports advisories against `starlette` (pinned by fastapi 0.111) and `python-jose`. The CI job is advisory until the pins move; Dependabot opens the upgrade PRs.
+- **The backend audit job is still `continue-on-error`.** The advisories themselves are fixed (see the pass above) and the CI job is now expected to pass, but `pip-audit -r requirements.txt` could not be reproduced from the local checkout, so the flag was left advisory rather than flipped blind. Flip it to a required check once one CI run comes back clean.
 - **Rate limiting is still process-local by default.** The WebSocket fan-out now has a supported path (`WS_BROADCAST_REDIS_URL`), but a horizontally scaled deployment also needs `SLOWAPI_STORAGE_URI` pointed at Redis.
-- **Frontend coverage is still partial.** 79 unit tests cover pure logic plus the notification bell; most components and widgets remain untested, and the 3 Playwright smoke tests still run without a live backend, so they would not catch a broken login against the real API.
+- **Frontend coverage is still partial.** 84 unit tests cover pure logic plus the notification bell; most components and widgets remain untested, and the 3 Playwright smoke tests still run without a live backend, so they would not catch a broken login against the real API.
 - **Thai-only UI.** All copy is hardcoded Thai; there is no i18n layer.

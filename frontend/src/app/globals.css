@@ -698,7 +698,8 @@ input[type="radio"],
   }
 }
 
-/* Weather styles moved to: src/styles/pages/weather.css */
+/* Weather widget styling lives with the component (Tailwind utilities) — there is
+   no separate weather.css. */
 
 /* ── Toast Animation ───────────────────────────────────── */
 @keyframes slide-in-right {
@@ -750,8 +751,8 @@ input[type="radio"],
   }
 
 /* Page styles live in:
-   - src/styles/pages/login.css
-   - src/styles/pages/weather.css */
+   - src/styles/pages/login.css   (sign-in screen)
+   - src/styles/global-error.css  (App Router global error boundary) */
 
 /* SweetAlert2 follows the shared alert, modal, and button system. */
 .swal2-container {
