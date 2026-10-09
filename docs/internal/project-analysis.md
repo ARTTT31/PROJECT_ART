@@ -269,12 +269,11 @@ that could be fixed and verified from a local checkout.
    listed several items that had since been fixed; both now say what is true, and the
    review carries a dated status note.
 
-8. **Secondary Weather Provider Added (MET Norway Failover):**
-   - Added automated failover to MET Norway (`api.met.no`) in `app/api/v1/endpoints/weather.py`.
-   - When Open-Meteo returns HTTP 429 (throttling Render's shared egress IP) or fails, the backend immediately calls MET Norway, normalizes the GeoJSON timeseries into the standard Open-Meteo response shape, and caches it in both L1 memory and L2 `weather_cache`.
-   - Requires zero external API keys and eliminates the HTTP 502 Bad Gateway error on uncached coordinates.
+8. **Secondary Weather & Geocode Providers Added (MET Norway & Nominatim Failovers):**
+   - Added automated failover to MET Norway (`api.met.no`) in `app/api/v1/endpoints/weather.py`. When Open-Meteo returns HTTP 429 or fails, the backend seamlessly calls MET Norway, normalizes the GeoJSON timeseries into the standard Open-Meteo response shape, and caches it in both L1 memory and L2 `weather_cache`.
+   - Added automated failover to OpenStreetMap Nominatim for `/reverse-geocode`. When BigDataCloud is rate-limited or unavailable, the backend fetches district/suburb and city in Thai from Nominatim, with a graceful coordinate fallback to eliminate 502 Bad Gateway completely.
    - Pydantic v2 deprecation warning (`user_update.dict()`) in `profile.py` was also resolved to `user_update.model_dump()`.
-   - Backend test suite expanded to **161 passed** at **76.02%** coverage.
+   - Backend test suite expanded to **162 passed** at **76.57%** coverage.
 
 ### Known Remaining Items
 

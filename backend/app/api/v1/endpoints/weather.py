@@ -50,6 +50,13 @@ MET_NORWAY_HEADERS = {
     "User-Agent": "ARTWorkspace/1.0 (https://github.com/project-art)",
 }
 
+# Secondary reverse-geocode provider (OpenStreetMap Nominatim)
+# Open, accurate address lookup used when BigDataCloud throttles or fails.
+NOMINATIM_REVERSE_URL = "https://nominatim.openstreetmap.org/reverse"
+NOMINATIM_HEADERS = {
+    "User-Agent": "ARTWorkspace/1.0 (https://github.com/project-art)",
+}
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Shared in-process cache — Open-Meteo free tier tolerates this well enough
@@ -597,6 +604,48 @@ async def get_air_quality_proxy(
     return payload
 
 
+async def _fetch_secondary_geocode(
+    latitude: float,
+    longitude: float,
+    locality_language: str = "th",
+) -> dict:
+    """Fetch reverse geocoding from OpenStreetMap Nominatim when BigDataCloud fails."""
+    params = {
+        "lat": round(latitude, 4),
+        "lon": round(longitude, 4),
+        "format": "json",
+        "accept-language": locality_language,
+    }
+    raw = await _upstream_get(
+        NOMINATIM_REVERSE_URL,
+        params=params,
+        headers=NOMINATIM_HEADERS,
+        retries=1,
+    )
+    addr = raw.get("address", {})
+    locality = (
+        addr.get("suburb")
+        or addr.get("city_district")
+        or addr.get("district")
+        or addr.get("county")
+        or addr.get("town")
+        or ""
+    )
+    city = addr.get("city") or addr.get("province") or addr.get("state") or ""
+    province = addr.get("province") or addr.get("state") or ""
+    country = addr.get("country") or "ประเทศไทย"
+
+    return {
+        "_provider": "nominatim",
+        "latitude": latitude,
+        "longitude": longitude,
+        "locality": locality,
+        "city": city,
+        "principalSubdivision": province,
+        "countryName": country,
+    }
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # Reverse Geocode endpoint
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -610,8 +659,10 @@ async def get_reverse_geocode_proxy(
     longitude: float = Query(..., ge=-180.0, le=180.0),
     locality_language: str = Query("th", description="ISO 639-1 language code for labels"),
 ):
-    """Proxy to BigDataCloud reverse-geocode. Returns locality/city names
-    in the requested language. Safe default: Thai (th)."""
+    """Proxy to BigDataCloud reverse-geocode with automated failover to OpenStreetMap Nominatim.
+
+    Returns locality/city names in the requested language. Safe default: Thai (th).
+    """
     cache_key = _cache_key_geocode(latitude, longitude, locality_language)
     cached = await _cached_payload(
         db, _GEOCODE_CACHE, NS_GEOCODE, cache_key, GEOCODE_CACHE_TTL
@@ -627,12 +678,29 @@ async def get_reverse_geocode_proxy(
 
     try:
         payload = await _upstream_get(BIGDATACLOUD_REVERSE_URL, params)
-    except HTTPException:
-        stale = await _stale_payload(db, _GEOCODE_CACHE, NS_GEOCODE, cache_key)
-        if stale is not None:
-            logger.warning("Serving stale geocode for %s after upstream failure", cache_key)
-            return stale
-        raise
+    except HTTPException as exc:
+        logger.warning(
+            "Primary geocode provider (BigDataCloud) failed with HTTP %s; falling back to OpenStreetMap Nominatim",
+            exc.status_code,
+        )
+        try:
+            payload = await _fetch_secondary_geocode(latitude, longitude, locality_language)
+            logger.info("Successfully fetched geocode from secondary provider (Nominatim)")
+        except Exception as sec_exc:
+            logger.warning("Secondary geocode provider (Nominatim) failed: %s", sec_exc)
+            stale = await _stale_payload(db, _GEOCODE_CACHE, NS_GEOCODE, cache_key)
+            if stale is not None:
+                logger.warning("Serving stale geocode for %s after upstream failures", cache_key)
+                return stale
+            return {
+                "_provider": "coordinates_fallback",
+                "latitude": latitude,
+                "longitude": longitude,
+                "locality": f"พิกัด {latitude:.2f}",
+                "city": f"{longitude:.2f}",
+                "principalSubdivision": "",
+                "countryName": "ประเทศไทย",
+            }
 
     _cache_set(_GEOCODE_CACHE, cache_key, payload)
     await weather_cache.store(db, NS_GEOCODE, cache_key, payload)

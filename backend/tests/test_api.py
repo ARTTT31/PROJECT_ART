@@ -1035,6 +1035,40 @@ class TestWeatherUpstreamResilience:
         assert body["current"]["temperature_2m"] == 29.5
         assert body["_provider"] == "met_norway"
 
+    async def test_reverse_geocode_fails_over_to_nominatim(self, monkeypatch, client):
+        """When BigDataCloud fails, reverse-geocode must fall back to OpenStreetMap Nominatim."""
+        from app.api.v1.endpoints import weather as w
+
+        w._GEOCODE_CACHE.clear()
+        nominatim_sample = {
+            "address": {
+                "suburb": "เขตลาดพร้าว",
+                "city": "กรุงเทพมหานคร",
+                "country": "ประเทศไทย",
+            }
+        }
+        # BigDataCloud initial + 2 retries = 3 calls (502), then Nominatim initial = 4th call (200)
+        _install_fake_http(
+            monkeypatch,
+            [
+                _FakeResponse(502, text="bigdatacloud down"),
+                _FakeResponse(502, text="bigdatacloud down"),
+                _FakeResponse(502, text="bigdatacloud down"),
+                _FakeResponse(200, nominatim_sample),
+            ],
+        )
+
+        resp = await client.get(
+            "/api/v1/weather/reverse-geocode",
+            params={"latitude": 13.83, "longitude": 100.63, "locality_language": "th"},
+        )
+
+        assert resp.status_code == 200, resp.text
+        body = resp.json()
+        assert body["locality"] == "เขตลาดพร้าว"
+        assert body["city"] == "กรุงเทพมหานคร"
+        assert body["_provider"] == "nominatim"
+
 
 # ── Persistent (database) weather cache ───────────────────
 # The in-process cache dies with the process, which is exactly when a cold
