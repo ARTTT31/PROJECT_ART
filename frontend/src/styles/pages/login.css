@@ -248,11 +248,10 @@
   letter-spacing: 0.01em;
 }
 
-/* Remember-me + forgot-password share one row */
+/* Remember-me row */
 .login-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 8px 12px;
   flex-wrap: wrap;
 }
@@ -316,32 +315,6 @@
 
 .login-remember-text {
   user-select: none;
-}
-
-.login-forgot {
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
-  padding: 0 4px;
-  border: 0;
-  border-radius: 8px;
-  background: transparent;
-  color: #0066cc;
-  font: inherit;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: color 180ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.login-forgot:hover {
-  color: #0071e3;
-  text-decoration: underline;
-}
-
-.login-forgot:focus-visible {
-  outline: 2.5px solid #0066cc;
-  outline-offset: 1px;
 }
 
 .login-error {
@@ -515,66 +488,6 @@
   text-align: center;
 }
 
-/* ── Forgot-password dialog ── */
-.login-dialog-body {
-  display: flex;
-  gap: 14px;
-  align-items: flex-start;
-}
-
-.login-dialog-icon {
-  flex: 0 0 auto;
-  width: 44px;
-  height: 44px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 11px;
-  background: rgba(0, 102, 204, 0.1);
-  color: #0066cc;
-}
-
-.login-dialog-text {
-  margin: 0;
-  color: #6e6e73;
-  font-size: 14px;
-  line-height: 1.6;
-}
-
-.login-dialog-text strong {
-  color: #1d1d1f;
-  font-weight: 600;
-}
-
-.login-dialog-close {
-  min-height: 44px;
-  padding: 0 22px;
-  border: 0;
-  border-radius: 9999px;
-  background: #0066cc;
-  color: #ffffff;
-  font: inherit;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  transition:
-    background-color 180ms cubic-bezier(0.4, 0, 0.2, 1),
-    transform 120ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.login-dialog-close:hover {
-  background: #0071e3;
-}
-
-.login-dialog-close:active {
-  transform: scale(0.95);
-}
-
-.login-dialog-close:focus-visible {
-  outline: 3px solid rgba(0, 102, 204, 0.45);
-  outline-offset: 2px;
-}
-
 /* ── Responsive ── */
 @media (max-width: 420px) {
   .login-page {
@@ -639,8 +552,7 @@
 
   .login-submit:active:not(:disabled),
   .google-btn:active:not(:disabled),
-  .login-eye:active:not(:disabled),
-  .login-dialog-close:active {
+  .login-eye:active:not(:disabled) {
     transform: none;
   }
 

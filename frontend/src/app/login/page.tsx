@@ -2,22 +2,11 @@
 
 import '../../styles/pages/login.css';
 import { FormEvent, KeyboardEvent, useCallback, useEffect, useRef, useState } from 'react';
-import { ArrowRight, AlertCircle, Clock, Eye, EyeOff, Loader2, Lock, Mail, LifeBuoy } from 'lucide-react';
+import { ArrowRight, AlertCircle, Clock, Eye, EyeOff, Loader2, Lock, Mail } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/components/Toast/ToastProvider';
-import {
-  Dialog,
-  DialogBody,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/Dialog';
 
 /** Thai date, short month (e.g. "วันพฤหัสบดีที่ 9 ต.ค. 2569") — fits one line. */
 const dateFormatter = new Intl.DateTimeFormat('th-TH', {
@@ -309,41 +298,6 @@ function LoginContent() {
                 </span>
                 <span className="login-remember-text">จดจำฉันไว้</span>
               </label>
-
-              <Dialog>
-                <DialogTrigger asChild>
-                  <button type="button" className="login-forgot">
-                    ลืมรหัสผ่าน?
-                  </button>
-                </DialogTrigger>
-                <DialogContent className="max-w-md">
-                  <DialogHeader>
-                    <DialogTitle>ลืมรหัสผ่าน?</DialogTitle>
-                    <DialogDescription>
-                      ระบบนี้ใช้งานภายในองค์กร ไม่มีการรีเซ็ตรหัสผ่านด้วยตนเอง
-                    </DialogDescription>
-                  </DialogHeader>
-                  <DialogBody>
-                    <div className="login-dialog-body">
-                      <span className="login-dialog-icon" aria-hidden="true">
-                        <LifeBuoy size={22} />
-                      </span>
-                      <p className="login-dialog-text">
-                        หากลืมรหัสผ่านหรือต้องการสิทธิ์การเข้าถึงเพิ่มเติม
-                        กรุณา<strong>ติดต่อผู้ดูแลระบบ (Admin)</strong> ผ่านช่องทางภายในองค์กร
-                        แล้วลองเข้าสู่ระบบอีกครั้ง
-                      </p>
-                    </div>
-                  </DialogBody>
-                  <DialogFooter>
-                    <DialogClose asChild>
-                      <button type="button" className="login-dialog-close">
-                        รับทราบ
-                      </button>
-                    </DialogClose>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
             </div>
 
             {error && (
