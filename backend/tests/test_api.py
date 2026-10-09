@@ -819,10 +819,12 @@ class TestWeatherCacheBounds:
 # returning a hard 502 and leaving an empty card in the dashboard.
 
 class _FakeResponse:
-    def __init__(self, status_code, payload=None, text=""):
+    def __init__(self, status_code, payload=None, text="", headers=None):
         self.status_code = status_code
         self._payload = payload or {}
         self.text = text
+        # `_retry_delay` reads Retry-After, so the double has to model it.
+        self.headers = dict(headers or {})
 
     def json(self):
         return self._payload
@@ -862,6 +864,48 @@ def _install_fake_http(monkeypatch, responses):
     monkeypatch.setattr(weather.httpx, "AsyncClient", fake_async_client)
     monkeypatch.setattr(weather.asyncio, "sleep", _no_sleep)
     return counter
+
+
+class TestUpstreamRetryDelay:
+    """A 429 carries the provider's own Retry-After.
+
+    Ignoring it and retrying on our own schedule spends another request inside
+    the same throttle window, which is how a single throttle turns into a cascade.
+    """
+
+    def test_prefers_retry_after_header(self):
+        from app.api.v1.endpoints.weather import _retry_delay
+
+        response = _FakeResponse(429, headers={"Retry-After": "2"})
+        assert _retry_delay(0, response) == 2.0
+
+    def test_stops_retrying_when_the_window_is_too_long(self):
+        from app.api.v1.endpoints.weather import _retry_delay
+
+        # A window we cannot wait out means "don't come back yet", not "come
+        # back sooner": the caller must stop and fall back to stale cache.
+        response = _FakeResponse(429, headers={"Retry-After": "120"})
+        assert _retry_delay(0, response) is None
+
+    def test_waits_out_a_short_retry_after(self):
+        from app.api.v1.endpoints.weather import _retry_delay
+
+        response = _FakeResponse(429, headers={"Retry-After": "4"})
+        assert _retry_delay(0, response) == 4.0
+
+    def test_falls_back_to_the_fixed_schedule(self):
+        from app.api.v1.endpoints.weather import RETRY_DELAYS, _retry_delay
+
+        assert _retry_delay(0, _FakeResponse(429)) == RETRY_DELAYS[0]
+        assert _retry_delay(1, _FakeResponse(429)) == RETRY_DELAYS[1]
+
+    def test_rejects_unusable_retry_after_values(self):
+        from app.api.v1.endpoints.weather import RETRY_DELAYS, _retry_delay
+
+        # HTTP-date form and negative values must not blow up the retry path.
+        http_date = _FakeResponse(429, headers={"Retry-After": "Wed, 21 Oct 2026 07:28:00 GMT"})
+        assert _retry_delay(0, http_date) == RETRY_DELAYS[0]
+        assert _retry_delay(0, _FakeResponse(429, headers={"Retry-After": "-5"})) == RETRY_DELAYS[0]
 
 
 async def _no_sleep(_seconds):

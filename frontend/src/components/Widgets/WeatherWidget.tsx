@@ -213,6 +213,7 @@ export default function WeatherWidget({
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [staleNotice, setStaleNotice] = useState<string | null>(null)
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date())
   const [isCityDropdownOpen, setIsCityDropdownOpen] = useState(false)
   const [isLocating, setIsLocating] = useState(false)
@@ -220,6 +221,12 @@ export default function WeatherWidget({
 
   const dropdownRef = useRef<HTMLDivElement>(null)
   const abortRef = useRef<AbortController | null>(null)
+  // `fetchWeatherData` is a `useCallback([])` and never sees fresh state, so the
+  // data actually on screen is mirrored here for the fallback decisions below.
+  const dataRef = useRef<{ weather: WeatherData | null; airQuality: AirQualityData | null }>({
+    weather: null,
+    airQuality: null,
+  })
   
   const displayTemp = useCallback((celsius: number) => {
     return unit === 'C' ? celsius : Math.round((celsius * 9) / 5 + 32)
@@ -238,6 +245,7 @@ export default function WeatherWidget({
         setLoading(true)
       }
       setError(null)
+      setStaleNotice(null)
 
       try {
         const weatherUrl = `/api/v1/weather/forecast?latitude=${city.lat}&longitude=${city.lon}&timezone=Asia%2FBangkok&forecast_days=2`
@@ -248,94 +256,129 @@ export default function WeatherWidget({
           fetch(aqiUrl, { signal: controller.signal }),
         ])
 
-        if (!weatherRes.ok || !aqiRes.ok) {
+        // The two endpoints fail independently — the forecast call is the one
+        // Open-Meteo throttles — so each half is optional. Throwing because one
+        // of them 502'd used to discard the other half along with it.
+        const weatherJson = weatherRes.ok ? await weatherRes.json().catch(() => null) : null
+        const aqiJson = aqiRes.ok ? await aqiRes.json().catch(() => null) : null
+
+        if (!weatherJson && !aqiJson) {
           throw new Error('ไม่สามารถดึงข้อมูลสภาพอากาศได้ในขณะนี้')
         }
 
-        const [weatherJson, aqiJson] = await Promise.all([weatherRes.json(), aqiRes.json()])
+        let mappedWeather: WeatherData | null = null
+        if (weatherJson?.current) {
+          const dailyMax: number[] = weatherJson.daily?.temperature_2m_max || []
+          const dailyMin: number[] = weatherJson.daily?.temperature_2m_min || []
+          const dailyRain: number[] = weatherJson.daily?.precipitation_probability_max || []
 
-        const dailyMax: number[] = weatherJson.daily?.temperature_2m_max || []
-        const dailyMin: number[] = weatherJson.daily?.temperature_2m_min || []
-        const dailyRain: number[] = weatherJson.daily?.precipitation_probability_max || []
+          // Hourly forecast extraction
+          const hourlyTimes: string[] = weatherJson.hourly?.time || []
+          const hourlyTemps: number[] = weatherJson.hourly?.temperature_2m || []
+          const hourlyCodes: number[] = weatherJson.hourly?.weather_code || []
+          const hourlyRains: number[] = weatherJson.hourly?.precipitation_probability || []
 
-        // Hourly forecast extraction
-        const hourlyTimes: string[] = weatherJson.hourly?.time || []
-        const hourlyTemps: number[] = weatherJson.hourly?.temperature_2m || []
-        const hourlyCodes: number[] = weatherJson.hourly?.weather_code || []
-        const hourlyRains: number[] = weatherJson.hourly?.precipitation_probability || []
+          const now = new Date()
+          const currentHour = now.getHours()
+          const todayIsoDate = now.toISOString().slice(0, 10)
 
-        const now = new Date()
-        const currentHour = now.getHours()
-        const todayIsoDate = now.toISOString().slice(0, 10)
-
-        // Find matching current hour index
-        let startIndex = hourlyTimes.findIndex((tStr) => {
-          const d = new Date(tStr)
-          return d.getHours() === currentHour && tStr.startsWith(todayIsoDate)
-        })
-
-        if (startIndex === -1) {
-          startIndex = 0
-        }
-
-        const hourlyList: HourlyForecastItem[] = []
-        const totalHoursToExtract = 8
-
-        for (let i = startIndex; i < Math.min(hourlyTimes.length, startIndex + totalHoursToExtract); i++) {
-          const d = new Date(hourlyTimes[i])
-          const hour = d.getHours()
-          const isNow = i === startIndex
-          const formattedHour = `${String(hour).padStart(2, '0')}:00`
-
-          hourlyList.push({
-            time: isNow ? 'ตอนนี้' : formattedHour,
-            rawTime: hourlyTimes[i],
-            weatherCode: hourlyCodes[i] ?? 0,
-            temp: Math.round(hourlyTemps[i] ?? 0),
-            rainProb: hourlyRains[i] ?? 0,
-            isCurrent: isNow,
+          // Find matching current hour index
+          let startIndex = hourlyTimes.findIndex((tStr) => {
+            const d = new Date(tStr)
+            return d.getHours() === currentHour && tStr.startsWith(todayIsoDate)
           })
+
+          if (startIndex === -1) {
+            startIndex = 0
+          }
+
+          const hourlyList: HourlyForecastItem[] = []
+          const totalHoursToExtract = 8
+
+          for (let i = startIndex; i < Math.min(hourlyTimes.length, startIndex + totalHoursToExtract); i++) {
+            const d = new Date(hourlyTimes[i])
+            const hour = d.getHours()
+            const isNow = i === startIndex
+            const formattedHour = `${String(hour).padStart(2, '0')}:00`
+
+            hourlyList.push({
+              time: isNow ? 'ตอนนี้' : formattedHour,
+              rawTime: hourlyTimes[i],
+              weatherCode: hourlyCodes[i] ?? 0,
+              temp: Math.round(hourlyTemps[i] ?? 0),
+              rainProb: hourlyRains[i] ?? 0,
+              isCurrent: isNow,
+            })
+          }
+
+          mappedWeather = {
+            currentTemp: Math.round(weatherJson.current?.temperature_2m ?? 0),
+            apparentTemp: Math.round(weatherJson.current?.apparent_temperature ?? 0),
+            humidity: Math.round(weatherJson.current?.relative_humidity_2m ?? 0),
+            windSpeed: Math.round(weatherJson.current?.wind_speed_10m ?? 0),
+            weatherCode: weatherJson.current?.weather_code ?? 0,
+            tempMax: Math.round(dailyMax[0] ?? 0),
+            tempMin: Math.round(dailyMin[0] ?? 0),
+            rainProb: Math.round(dailyRain[0] ?? 0),
+            hourlyForecast: hourlyList,
+          }
         }
 
-        const mappedWeather: WeatherData = {
-          currentTemp: Math.round(weatherJson.current?.temperature_2m ?? 0),
-          apparentTemp: Math.round(weatherJson.current?.apparent_temperature ?? 0),
-          humidity: Math.round(weatherJson.current?.relative_humidity_2m ?? 0),
-          windSpeed: Math.round(weatherJson.current?.wind_speed_10m ?? 0),
-          weatherCode: weatherJson.current?.weather_code ?? 0,
-          tempMax: Math.round(dailyMax[0] ?? 0),
-          tempMin: Math.round(dailyMin[0] ?? 0),
-          rainProb: Math.round(dailyRain[0] ?? 0),
-          hourlyForecast: hourlyList,
+        let mappedAqi: AirQualityData | null = null
+        if (aqiJson?.current) {
+          mappedAqi = {
+            pm25: Math.round((aqiJson.current.pm2_5 ?? 0) * 10) / 10,
+            pm10: Math.round((aqiJson.current.pm10 ?? 0) * 10) / 10,
+            usAqi: Math.round(aqiJson.current.us_aqi ?? 0),
+          }
         }
 
-        const mappedAqi: AirQualityData = {
-          pm25: Math.round((aqiJson.current?.pm2_5 ?? 0) * 10) / 10,
-          pm10: Math.round((aqiJson.current?.pm10 ?? 0) * 10) / 10,
-          usAqi: Math.round(aqiJson.current?.us_aqi ?? 0),
+        // Half a response is enough to keep rendering: the cached half stands in
+        // for the part the provider refused this time round.
+        const nextWeather = mappedWeather ?? dataRef.current.weather
+        const nextAirQuality = mappedAqi ?? dataRef.current.airQuality
+
+        if (!nextWeather || !nextAirQuality) {
+          // Both halves are needed for the card and nothing is cached to fall
+          // back on — this is the genuine "no data" case.
+          throw new Error('ไม่สามารถดึงข้อมูลสภาพอากาศได้ในขณะนี้')
         }
 
-        setWeather(mappedWeather)
-        setAirQuality(mappedAqi)
+        setWeather(nextWeather)
+        setAirQuality(nextAirQuality)
         setLastUpdated(new Date())
+        dataRef.current = { weather: nextWeather, airQuality: nextAirQuality }
 
-        // Save Cache
-        if (typeof window !== 'undefined') {
+        if (!weatherRes.ok || !aqiRes.ok) {
+          console.warn('Weather refresh returned partial data:', {
+            forecast: weatherRes.status,
+            airQuality: aqiRes.status,
+          })
+          setStaleNotice('ผู้ให้บริการข้อมูลตอบกลับไม่ครบ — แสดงข้อมูลล่าสุดที่มีอยู่')
+        } else if (typeof window !== 'undefined') {
+          // Only a fully fresh response may claim `savedAt`: marking a cached half
+          // as new would stop the widget from retrying it for another TTL.
           const cacheData: CombinedWeatherCache = {
             savedAt: Date.now(),
             cityId: city.id,
             cityName: city.name,
             lat: city.lat,
             lon: city.lon,
-            weather: mappedWeather,
-            airQuality: mappedAqi,
+            weather: nextWeather,
+            airQuality: nextAirQuality,
           }
           localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData))
         }
       } catch (err: any) {
         if (err.name === 'AbortError') return
         console.error('Weather fetch error:', err)
-        setError('เกิดข้อผิดพลาดในการโหลดข้อมูลสภาพอากาศ')
+        if (dataRef.current.weather && dataRef.current.airQuality) {
+          // Something is already on screen. Raising an alarm over a failed refresh
+          // reads as a broken widget, so keep the data and say what happened.
+          setStaleNotice('อัปเดตล่าสุดไม่สำเร็จ — กำลังแสดงข้อมูลเดิม')
+        } else {
+          setError('เกิดข้อผิดพลาดในการโหลดข้อมูลสภาพอากาศ')
+        }
       } finally {
         setLoading(false)
         setRefreshing(false)
@@ -413,6 +456,7 @@ export default function WeatherWidget({
       const isFresh = Date.now() - cachedData.savedAt < CACHE_TTL_MS
       setWeather(cachedData.weather)
       setAirQuality(cachedData.airQuality)
+      dataRef.current = { weather: cachedData.weather, airQuality: cachedData.airQuality }
       setLastUpdated(new Date(cachedData.savedAt))
       setLoading(false)
 
@@ -633,6 +677,23 @@ export default function WeatherWidget({
               type="button"
               onClick={() => fetchWeatherData(selectedCity, true)}
               className="shrink-0 font-bold underline hover:text-[#ff3b30]"
+            >
+              ลองใหม่
+            </button>
+          </div>
+        )}
+
+        {/* ── Stale-data notice (data is on screen, only the update failed) ── */}
+        {!error && staleNotice && (
+          <div className="mt-3 flex items-center justify-between gap-2 rounded-[11px] bg-[#ff9500]/10 px-3.5 py-2.5 text-[12px] font-medium text-[#8a4b00]">
+            <div className="flex items-center gap-2 min-w-0">
+              <AlertCircle size={14} className="shrink-0 text-[#ff9500]" />
+              <span className="truncate">{staleNotice}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => fetchWeatherData(selectedCity, true)}
+              className="shrink-0 font-bold underline hover:text-[#8a4b00]"
             >
               ลองใหม่
             </button>

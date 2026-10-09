@@ -168,6 +168,36 @@ async def _stale_payload(
 # up, and let the caller fall back to stale cache.
 RETRY_STATUSES = frozenset({429, 500, 502, 503, 504})
 RETRY_DELAYS = (0.6, 1.8)
+MAX_RETRY_AFTER_SECONDS = 5.0
+
+
+def _retry_delay(attempt: int, response: httpx.Response | None) -> Optional[float]:
+    """Seconds to wait before the next attempt, or ``None`` to stop retrying.
+
+    A provider that answers 429 knows how long its window lasts; ignoring
+    ``Retry-After`` and retrying on our own schedule just spends another request
+    inside the same window, which is what turns a throttle into a cascade. If the
+    window is longer than this request can afford to wait, we stop rather than
+    fire a request we already know will be refused — the caller then falls back to
+    stale cache instead of a hard 502.
+    """
+    fallback = RETRY_DELAYS[min(attempt, len(RETRY_DELAYS) - 1)]
+    if response is None:
+        return fallback
+
+    raw = response.headers.get("Retry-After")
+    if raw is None:
+        return fallback
+    try:
+        seconds = float(raw)
+    except ValueError:
+        # HTTP-date form: cannot be honoured inside this request, keep our own schedule.
+        return fallback
+    if seconds > MAX_RETRY_AFTER_SECONDS:
+        return None
+    if seconds < 0:
+        return fallback
+    return seconds
 
 
 async def _upstream_get(
@@ -201,10 +231,21 @@ async def _upstream_get(
             break
 
         if attempt < retries:
-            delay = RETRY_DELAYS[min(attempt, len(RETRY_DELAYS) - 1)]
+            delay = _retry_delay(attempt, response)
+            if delay is None:
+                logger.warning(
+                    "Upstream %s Retry-After exceeds %.0fs; not retrying a request we know will be refused",
+                    url,
+                    MAX_RETRY_AFTER_SECONDS,
+                )
+                break
             logger.warning(
                 "Upstream %s returned HTTP %s; retry %d/%d in %.1fs",
-                url, response.status_code, attempt + 1, retries, delay,
+                url,
+                response.status_code,
+                attempt + 1,
+                retries,
+                delay,
             )
             await asyncio.sleep(delay)
 
