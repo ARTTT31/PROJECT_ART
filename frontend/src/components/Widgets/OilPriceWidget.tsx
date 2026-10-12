@@ -239,7 +239,15 @@ export default function OilPriceWidget({
       setLastUpdate(new Date())
     } catch (err: any) {
       if (err?.name === 'AbortError') return
-      console.error('❌ Oil price fetch error:', err)
+      if (err?.message === 'Request timeout') {
+        // Built-in 45s fetch cap (Render cold start tolerance). Expected in a
+        // free-tier deployment when the upstream oil-price provider is slow;
+        // the widget shows its error banner with a retry, and the 5-minute
+        // interval retries anyway. Warn, not error — this is not a logic fault.
+        console.warn('⏱️ Oil price request timed out (backend/upstream slow):', err)
+      } else {
+        console.error('❌ Oil price fetch error:', err)
+      }
       setError(err?.cause || 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์')
     } finally {
       setLoading(false)
