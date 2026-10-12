@@ -39,6 +39,21 @@ export function pushNotifications(items: Notification[]) {
 
 import { getHolidaysWithDiff } from '@/utils/holidays'
 
+/*
+ * Late-subscriber guarantee: when a second <NotificationBell/> (e.g. soft
+ * navigation remount) subscribes AFTER the smart alerts and WebSocket pushes
+ * were generated, the module-level store already holds those events. The mount
+ * effect below re-subscribes — but only for FUTURE pushes; without the replay
+ * below it would render an EMPTY list until the next unrelated push, which
+ * makes the bell badge "disappear" on first app open.
+ */
+function subscribe(listener: Listener): () => void {
+  listeners.add(listener)
+  // Replay the current store upsream so the subscriber's first render matches.
+  listener([...store])
+  return () => listeners.delete(listener)
+}
+
 const levelIcon = {
   info: <Info size={14} className="text-sky-500 shrink-0 mt-0.5" />,
   warning: <AlertTriangle size={14} className="text-amber-500 shrink-0 mt-0.5" />,
@@ -253,7 +268,9 @@ export default function NotificationBell() {
   // Subscribe to store updates & WebSocket
   useEffect(() => {
     const fn: Listener = (items) => setNotifications([...items])
-    listeners.add(fn)
+    // subscribe() (not `listeners.add`) → replays the store so a bell that
+    // mounts after the initial alerts were pushed is not stuck empty.
+    const unsubscribe = subscribe(fn)
 
     // Setup WebSocket connection
     let ws: WebSocket | null = null
@@ -318,7 +335,7 @@ export default function NotificationBell() {
 
     return () => {
       stopped = true
-      listeners.delete(fn)
+      unsubscribe()
       if (ws) {
         // Detach the handler first so an intentional close cannot schedule a
         // reconnect after unmount.

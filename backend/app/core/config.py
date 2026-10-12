@@ -165,10 +165,46 @@ class Settings(BaseSettings):
     CORS_ORIGINS: str = "http://localhost:3000,http://localhost:3001"
 
     def get_cors_origins(self) -> List[str]:
-        """Parse CORS origins from string"""
+        """Parse CORS origins from string.
+
+        Each entry must be an absolute origin (scheme://host[:port]) — no
+        paths, wildcards or ``*``. A malformed list raises immediately: with
+        ``allow_credentials=True`` a silently misconfigured CORS list would
+        either block the production frontend or (``*``) be rejected by Starlette
+        at request time, so failing fast at boot is the safer behaviour.
+        """
+        from urllib.parse import urlsplit
+
         if isinstance(self.CORS_ORIGINS, str):
-            return [origin.strip() for origin in self.CORS_ORIGINS.split(",")]
-        return self.CORS_ORIGINS
+            raw_list = [origin.strip() for origin in self.CORS_ORIGINS.split(",")]
+        else:
+            raw_list = list(self.CORS_ORIGINS)
+
+        parsed: List[str] = []
+        for origin in raw_list:
+            if not origin:
+                continue
+            if origin == "*":
+                raise ValueError(
+                    "CORS_ORIGINS must not contain '*': credentials-cookies "
+                    "cannot be shared with a wildcard origin. List the exact "
+                    "frontend origins instead."
+                )
+            parts = urlsplit(origin)
+            if (
+                parts.scheme not in ("http", "https")
+                or not parts.netloc
+                or parts.path not in ("", "/")
+                or parts.query
+                or parts.fragment
+            ):
+                raise ValueError(
+                    f"CORS_ORIGINS contains an invalid origin: '{origin}'. "
+                    "Each entry must be scheme://host[:port] with no path or "
+                    "query (e.g. https://app.example.com)."
+                )
+            parsed.append(origin.rstrip("/"))
+        return parsed
 
     # ── Google OAuth ────────────────────────────────────────────────────────
     GOOGLE_CLIENT_ID: str = ""

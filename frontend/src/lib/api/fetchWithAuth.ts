@@ -109,6 +109,33 @@ function clearAuth() {
 }
 
 /**
+ * Proactively refresh the access token (single-flight — concurrent callers
+ * share one refresh request). Call this BEFORE endpoints that would otherwise
+ * 401 on an expired access token, so the browser console stays clean.
+ *
+ * Returns the raw refresh result: `success` and `isUnauthenticated`
+ * (true = backend confirmed the refresh token is expired/invalid/revoked;
+ * false = transient failure such as network error or server cold-start).
+ */
+export async function refreshSessionToken(): Promise<{
+  success: boolean;
+  isUnauthenticated: boolean;
+}> {
+  if (!isRefreshing || !refreshPromise) {
+    isRefreshing = true;
+    refreshPromise = refreshAccessToken().finally(() => {
+      isRefreshing = false;
+      refreshPromise = null;
+    });
+  }
+  const result = await refreshPromise;
+  return {
+    success: result?.success ?? false,
+    isUnauthenticated: result?.isUnauthenticated ?? false,
+  };
+}
+
+/**
  * Drop-in replacement for `fetch()` that:
  * 1. Automatically includes cookies with credentials: 'include'
  * 2. Attaches the X-CSRF-Token header on mutating requests (double-submit cookie)

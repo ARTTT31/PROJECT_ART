@@ -8,7 +8,7 @@ import secrets
 from typing import Any, List, Optional
 from urllib.parse import urlencode
 
-import requests
+import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import RedirectResponse, JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -166,20 +166,22 @@ async def login(
         await db.commit()
         raise e
     except Exception as e:
-        logger.info(f"[LOGIN] Exception: {str(e)}")
         # logger.exception keeps the traceback (the previous print() bypassed the
         # logging configuration entirely, so this never reached log aggregation).
         logger.exception("Unhandled error during login for %s", user_login.email)
         await audit_service.log_action(
             action="LOGIN_FAILED",
-            details=f"System error during login for {user_login.email}: {str(e)}",
+            details=f"System error during login for {user_login.email}: {type(e).__name__}",
             ip_address=client_ip,
             user_agent=user_agent,
         )
         await db.commit()
+        # A generic 500 body: the exception text can carry internal details
+        # (DB URLs, library paths) which must not reach the client. The full
+        # context stays in the server log above.
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e),
+            detail="เกิดข้อผิดพลาดภายในระบบ กรุณาลองอีกครั้งภายหลัง",
         )
 
 
@@ -226,10 +228,11 @@ async def register(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e),
         )
-    except Exception as e:
+    except Exception:
+        logger.exception("Unhandled error during registration")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e),
+            detail="เกิดข้อผิดพลาดภายในระบบ กรุณาลองอีกครั้งภายหลัง",
         )
 
 
@@ -327,10 +330,11 @@ async def refresh_token(
 
     except HTTPException as e:
         raise e
-    except Exception as e:
+    except Exception:
+        logger.exception("Unhandled error during token refresh")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e),
+            detail="เกิดข้อผิดพลาดภายในระบบ กรุณาลองอีกครั้งภายหลัง",
         )
 
 
@@ -394,12 +398,14 @@ async def google_verify_token(
     verified_info = None
 
     if access_token:
-        # Verify access token by getting userinfo
+        # Verify access token by getting userinfo (httpx keeps the event loop
+        # free — a sync `requests` call blocked a worker for the full timeout).
         try:
-            userinfo_resp = requests.get(
-                f"https://www.googleapis.com/oauth2/v3/userinfo?access_token={access_token}",
-                timeout=10,
-            )
+            async with httpx.AsyncClient(timeout=10) as client:
+                userinfo_resp = await client.get(
+                    "https://www.googleapis.com/oauth2/v3/userinfo",
+                    params={"access_token": access_token},
+                )
             if userinfo_resp.status_code == 200:
                 verified_info = userinfo_resp.json()
             else:
@@ -412,7 +418,7 @@ async def google_verify_token(
         except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail=f"Google token verification network error: {str(e)}",
+                detail=f"Google token verification network error: {type(e).__name__}",
             )
     else:
         # 1. Try local verification via google-auth library
@@ -430,14 +436,18 @@ async def google_verify_token(
         # 2. Fallback: Verify directly with Google's official tokeninfo REST API
         if not verified_info:
             try:
-                tokeninfo_resp = requests.get(
-                    f"https://oauth2.googleapis.com/tokeninfo?id_token={id_token_jwt}",
-                    timeout=10,
-                )
+                async with httpx.AsyncClient(timeout=10) as client:
+                    tokeninfo_resp = await client.get(
+                        "https://oauth2.googleapis.com/tokeninfo",
+                        params={"id_token": id_token_jwt},
+                    )
                 if tokeninfo_resp.status_code == 200:
                     verified_info = tokeninfo_resp.json()
                 else:
-                    error_detail = tokeninfo_resp.json().get("error_description", "Invalid ID token")
+                    try:
+                        error_detail = tokeninfo_resp.json().get("error_description", "Invalid ID token")
+                    except Exception:
+                        error_detail = "Invalid ID token"
                     raise HTTPException(
                         status_code=status.HTTP_401_UNAUTHORIZED,
                         detail=f"Google token verification failed: {error_detail}",
@@ -447,7 +457,7 @@ async def google_verify_token(
             except Exception as e:
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail=f"Google token verification network error: {str(e)}",
+                    detail=f"Google token verification network error: {type(e).__name__}",
                 )
 
     if not verified_info:
@@ -509,11 +519,11 @@ async def google_verify_token(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to create or retrieve user",
             )
-    except Exception as e:
-        logger.error(f"Error during Google token verify user fetch: {e}")
+    except Exception:
+        logger.exception("Error during Google token verify user fetch")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Database error while retrieving user: {str(e)}"
+            detail="เกิดข้อผิดพลาดภายในระบบ กรุณาลองอีกครั้งภายหลัง",
         )
 
     # Issue tokens
@@ -594,8 +604,16 @@ async def google_callback(
         "grant_type": "authorization_code",
     }
 
-    token_resp = requests.post(token_url, data=data, timeout=10)
+    # httpx (async) instead of sync `requests`: this endpoint runs inside the
+    # event loop, and a blocking call would stall every concurrent request.
+    async with httpx.AsyncClient(timeout=10) as client:
+        token_resp = await client.post(token_url, data=data)
     if token_resp.status_code != 200:
+        logger.warning(
+            "Google token exchange failed: status=%s body=%s",
+            token_resp.status_code,
+            token_resp.text[:200],
+        )
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail="Failed to exchange code for token",

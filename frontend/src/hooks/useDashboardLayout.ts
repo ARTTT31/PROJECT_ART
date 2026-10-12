@@ -32,10 +32,28 @@ export function useDashboardLayout() {
   const hasInitializedRef = useRef(false)
   const saveLayoutDebouncedRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  // Track the latest layout string the USER (not the cloud echo) wrote, so
+  // the init effect below can tell "cloud was just updated by me" apart from
+  // "cloud was updated on another device".
+  const localLayoutRef = useRef<string | null>(null)
+
+  // Track the layout state in a ref so drag/resize handlers mutate the CURRENT
+  // layout even when React has not re-rendered between rapid interactions.
+  // Handlers now read from the ref (source of truth at call time) and write
+  // back to both — eliminating the stale-state race during rapid drags/resizes.
+  const widgetsRef = useRef<WidgetConfig[]>([])
+  const visibleIdsRef = useRef<string[]>([])
+
+  const applyLayout = useCallback((nextWidgets: WidgetConfig[], nextVisible: string[]) => {
+    widgetsRef.current = nextWidgets
+    visibleIdsRef.current = nextVisible
+    setWidgets(nextWidgets)
+    setVisibleWidgetIds(nextVisible)
+  }, [])
+
   // Cloud sync helper
   const persistLayout = useCallback((newLayout: WidgetConfig[], newVisibleIds: string[]) => {
-    setWidgets(newLayout)
-    setVisibleWidgetIds(newVisibleIds)
+    applyLayout(newLayout, newVisibleIds)
 
     const payload = JSON.stringify({
       widgets: newLayout,
@@ -57,17 +75,29 @@ export function useDashboardLayout() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ dashboard_layout: payload }),
         })
+        localLayoutRef.current = payload
         updateUser({ dashboard_layout: payload })
       } catch (err) {
         console.error('Failed to sync dashboard layout to backend:', err)
       }
     }, 400)
-  }, [updateUser])
+  }, [updateUser, applyLayout])
 
   // Initialize layout from user profile (cloud) or local storage
   useEffect(() => {
     setIsClient(true)
-    if (hasInitializedRef.current && !user?.dashboard_layout) return
+    if (hasInitializedRef.current) {
+      // After the first init: only re-run when the cloud value is genuinely NEW
+      // (i.e. another device changed the layout). The echo of our own save
+      // (identical string) must NOT reset state — it used to wipe an in-flight
+      // drag/resize that happened during the 400ms debounce window.
+      if (
+        !user?.dashboard_layout ||
+        user.dashboard_layout === localLayoutRef.current
+      ) {
+        return
+      }
+    }
 
     let loadedWidgets = defaultWidgets
     let loadedVisible = defaultWidgets.map((w) => w.id)
@@ -128,29 +158,31 @@ export function useDashboardLayout() {
       }
     })
 
-    setWidgets(loadedWidgets)
-    setVisibleWidgetIds(loadedVisible)
+    applyLayout(loadedWidgets, loadedVisible)
     hasInitializedRef.current = true
-  }, [user?.dashboard_layout])
+  }, [user?.dashboard_layout, applyLayout])
 
   const handleResize = (id: string, newWidth: number) => {
-    const updated = widgets.map((w) => (w.id === id ? { ...w, w: newWidth } : w))
-    persistLayout(updated, visibleWidgetIds)
+    // Read the ref, not React state: rapid successive resizes within one render
+    // batch would otherwise each start from the same stale array and lose the
+    // earlier writes.
+    const updated = widgetsRef.current.map((w) => (w.id === id ? { ...w, w: newWidth } : w))
+    persistLayout(updated, visibleIdsRef.current)
   }
 
   const toggleWidgetVisibility = (id: string) => {
     let newVisible: string[]
-    let newWidgets = [...widgets]
+    let newWidgets = [...widgetsRef.current]
     if (!newWidgets.some((w) => w.id === id)) {
       const defaultW = defaultWidgets.find((w) => w.id === id)
       newWidgets.push(defaultW || { id, w: 1 })
     }
 
-    if (visibleWidgetIds.includes(id)) {
-      if (visibleWidgetIds.length <= 1) return
-      newVisible = visibleWidgetIds.filter((vId) => vId !== id)
+    if (visibleIdsRef.current.includes(id)) {
+      if (visibleIdsRef.current.length <= 1) return
+      newVisible = visibleIdsRef.current.filter((vId) => vId !== id)
     } else {
-      newVisible = [...visibleWidgetIds, id]
+      newVisible = [...visibleIdsRef.current, id]
     }
     persistLayout(newWidgets, newVisible)
   }

@@ -2,7 +2,7 @@
 
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { fetchWithAuth, fetchWithAuthJson } from '@/lib/api/fetchWithAuth'
+import { fetchWithAuth, fetchWithAuthJson, refreshSessionToken } from '@/lib/api/fetchWithAuth'
 import { AuthUserSchema, makeEnvelopeSchema } from '@/lib/api/schemas'
 import { readUserCookie } from '@/lib/api/userCookie'
 import type { AuthUser, AuthRole } from '@/types'
@@ -58,7 +58,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null)
 
   // ── Validate session helper ──
+  // Refresh the token first so an expired access token doesn't 401 (and thus
+  // log 'Failed to load resource' noise in the browser console).
   const validateSession = useCallback(async (): Promise<boolean> => {
+    const refreshResult = await refreshSessionToken()
+    if (!refreshResult.success && refreshResult.isUnauthenticated) return false
+    if (!refreshResult.success) return true // transient failure — keep session
     try {
       const json = await fetchWithAuthJson('/api/v1/auth/session', {}, AuthEnvelopeSchema)
       const sessionData = json?.data as unknown as Record<string, unknown> | undefined
@@ -124,6 +129,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       try {
+        // Refresh the access token first, so the verification calls below don't
+        // start with a guaranteed 401 when the token has expired (keeps the
+        // browser console free of 'Failed to load resource: 401' noise).
+        const refreshResult = await refreshSessionToken()
+        if (!refreshResult.success && refreshResult.isUnauthenticated) {
+          // Backend rejected the refresh token — session is genuinely invalid.
+          setUser(null)
+          localStorage.removeItem('user')
+          localStorage.removeItem('session_id')
+          setStatus('anonymous')
+          return
+        }
+
         const [sessionJson, profileJson] = await Promise.all([
           fetchWithAuthJson('/api/v1/auth/session', {}, AuthEnvelopeSchema)
             .catch((e) => {
@@ -203,11 +221,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     window.addEventListener('auth-logout', onLogout)
     window.addEventListener('auth-login', onLogin)
 
-    // ── Proactive Keep-Alive: Refresh token every 15 mins while app is active ──
+    // ── Proactive Keep-Alive: Refresh token + verify session every 15 mins ──
     const keepAliveInterval = setInterval(async () => {
       const u = safeParseUser(localStorage.getItem('user'))
       if (!u) return
       try {
+        // Refresh first so the keep-alive session ping doesn't log a 401 in
+        // the browser console when the access token has expired.
+        const refreshResult = await refreshSessionToken()
+        if (!refreshResult.success && refreshResult.isUnauthenticated) {
+          window.dispatchEvent(new Event('auth-logout'))
+          return
+        }
         await fetchWithAuth('/api/v1/auth/session')
       } catch (e) {
         console.warn('Background session keep-alive ping:', e)
@@ -220,6 +245,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const u = safeParseUser(localStorage.getItem('user'))
         if (u) {
           try {
+            // Same as keep-alive: refresh before the session ping so an expired
+            // token doesn't surface a 401 in the browser console.
+            const refreshResult = await refreshSessionToken()
+            if (!refreshResult.success && refreshResult.isUnauthenticated) {
+              window.dispatchEvent(new Event('auth-logout'))
+              return
+            }
             await fetchWithAuth('/api/v1/auth/session')
           } catch (e) {
             console.warn('Visibility session check:', e)

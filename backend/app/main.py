@@ -28,7 +28,6 @@ from app.api.v1.endpoints.websockets import manager as ws_manager
 from app.models import base  # Import all models
 from app.services.session_cleanup import cleanup_expired_sessions_async
 from app.services.ws_bus import broadcast_bus
-from fastapi.staticfiles import StaticFiles
 
 logger = logging.getLogger(__name__)
 
@@ -226,14 +225,20 @@ CSP_HEADER_VALUE_PROD = (
 )
 
 CSP_HEADER_VALUE_DEV = (
-    # Dev-only: allow 'unsafe-eval' + looser defaults for Next.js HMR / Fast Refresh
-    f"default-src 'self' https: data: blob: 'unsafe-inline' 'unsafe-eval'; "
+    # Dev-only: 'unsafe-eval' is required for Next.js HMR / Fast Refresh, but the
+    # default fallback stays 'self'-anchored. Third-party dev hosts dance through
+    # the specific directives below instead of a blanket https: wildcard in
+    # default-src, so a careless DEBUG=True on production cannot regress the CSP
+    # posture to "allow everything over TLS".
+    f"default-src 'self' data: blob:; "
     f"script-src 'self' 'unsafe-inline' 'unsafe-eval' {_CSP_SCRIPT_GOOGLE}; "
     f"style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
-    f"img-src 'self' data: https: blob:; "
+    f"img-src 'self' data: https: http: blob:; "
     f"font-src 'self' https://fonts.gstatic.com data:; "
     f"connect-src 'self' https: wss: http: ws:; "
     f"frame-src 'self' https://accounts.google.com; "
+    f"worker-src 'self' blob:; "
+    f"manifest-src 'self'; "
     f"object-src 'none'; "
     f"base-uri 'self'; "
     f"form-action 'self'; "
@@ -523,10 +528,6 @@ async def readiness_check():
 
 # Include API router
 app.include_router(api_router, prefix="/api/v1")
-
-# Mount uploads static folder
-os.makedirs("uploads", exist_ok=True)
-app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 
 if __name__ == "__main__":

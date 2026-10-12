@@ -2,6 +2,8 @@
 User Profile Endpoints
 """
 
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException, status, Request, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -28,6 +30,61 @@ from app.services.audit_service import AuditService
 from app.models.session import UserSession
 
 router = APIRouter()
+
+profile_logger = logging.getLogger(__name__)
+
+
+# ── Avatar content validation ────────────────────────────────────────────────
+# The extension check alone can be lied to (an attacker renames payload.html to
+# payload.png), and the DB stores whatever arrives. Browsers rely on the CSP —
+# fixing that here means we defence-in-depth: the sniffed bytes must match the
+# declared type. This is deliberately a "first 12 bytes" check so it also catches
+# polyglot files whose real payload begins with HTML/script text.
+_AVATAR_MAGIC: dict[str, bytes] = {
+    "image/jpeg": b"\xff\xd8\xff",          # JPEG — byte 3 varies per marker
+    "image/png": b"\x89PNG\r\n\x1a\n",       # full signature
+    "image/gif": b"GIF87a",                   # GIF87a
+    "image/gif_alt": b"GIF89a",               # GIF89a
+}
+_ALLOWED_AVATAR_MIMES = {"image/jpeg", "image/png", "image/gif"}
+
+
+def _validate_avatar_content(data: bytes, declared_mime: str) -> str:
+    """Sniff the real content type from magic bytes; return the sniffed MIME.
+
+    Raises ``HTTPException(400)`` when the bytes do not belong to an allowed
+    image format or disagree with the declared content type.
+    """
+    sniffed: str | None = None
+    if data.startswith(_AVATAR_MAGIC["image/jpeg"]):
+        sniffed = "image/jpeg"
+    elif data.startswith(_AVATAR_MAGIC["image/png"]):
+        sniffed = "image/png"
+    elif data.startswith(_AVATAR_MAGIC["image/gif"]) or data.startswith(
+        _AVATAR_MAGIC["image/gif_alt"]
+    ):
+        sniffed = "image/gif"
+
+    if sniffed is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="รองรับเฉพาะไฟล์รูปภาพ JPEG, PNG หรือ GIF เท่านั้น",
+        )
+
+    if declared_mime and declared_mime not in _ALLOWED_AVATAR_MIMES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Content-Type ของไฟล์ไม่อยู่ในประเภทที่รองรับ",
+        )
+
+    # A declared type is a client-supplied hint; the sniffed value wins. When
+    # both exist but disagree (e.g. text/html named .png), refuse.
+    if declared_mime and sniffed != declared_mime and declared_mime in _ALLOWED_AVATAR_MIMES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="เนื้อหาไฟล์ไม่ตรงกับประเภทที่ประกาศ",
+        )
+    return sniffed
 
 
 @router.get("/me", response_model=UserResponse)
@@ -180,10 +237,13 @@ async def update_avatar(
             message="อัปเดตรูปโปรไฟล์สำเร็จ",
         )
 
-    except Exception as e:
+    except Exception:
+        # Generic body: exception text may leak internals. Full context is
+        # logged in the traceback.
+        profile_logger.exception("avatar update failed")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e),
+            detail="เกิดข้อผิดพลาดภายในระบบ กรุณาลองอีกครั้งภายหลัง",
         )
 
 
@@ -211,15 +271,18 @@ async def upload_avatar_file(
         if len(contents) > 1 * 1024 * 1024:
             raise HTTPException(status_code=400, detail="ขนาดไฟล์รูปภาพห้ามเกิน 1MB")
 
-        # 3. Convert image to Base64 Data URL string
-        base64_data = base64.b64encode(contents).decode("utf-8")
-        avatar_base64 = f"data:{file.content_type};base64,{base64_data}"
+        # 3. Sniff magic bytes — never trust the client filename/content-type
+        sniffed_mime = _validate_avatar_content(contents, (file.content_type or "").split(";")[0].strip().lower())
 
-        # 4. Save to Database (Async Service Call)
+        # 4. Convert image to Base64 Data URL string with the SNIFFED type
+        base64_data = base64.b64encode(contents).decode("utf-8")
+        avatar_base64 = f"data:{sniffed_mime};base64,{base64_data}"
+
+        # 5. Save to Database (Async Service Call)
         user_service = UserService(db)
         await user_service.update_avatar(current_user.id, avatar_base64)
 
-        # 5. Log audit trail (Sync Service Call)
+        # 6. Log audit trail (Sync Service Call)
         # get_real_client_ip only believes X-Forwarded-For behind a trusted proxy;
         # reading the header directly let any caller write a forged IP into the
         # audit log.
@@ -242,10 +305,11 @@ async def upload_avatar_file(
         )
     except HTTPException as he:
         raise he
-    except Exception as e:
+    except Exception:
+        profile_logger.exception("avatar upload failed")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"ไม่สามารถอัปโหลดไฟล์ได้: {str(e)}",
+            detail="ไม่สามารถอัปโหลดไฟล์ได้ กรุณาลองอีกครั้งภายหลัง",
         )
 
 

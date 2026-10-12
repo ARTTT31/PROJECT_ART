@@ -18,6 +18,21 @@ const formatOptions: { value: BarcodeFormat; label: string; icon: typeof QrCode 
 
 const STORAGE_KEY = 'artQrWidgetV2'
 
+/**
+ * Escape a plain-text string for safe interpolation into an HTML *text*
+ * context. The print window below writes a full HTML document via
+ * `document.write`, so any `<`, `&` or quote character in the user-typed code
+ * text would otherwise be interpreted as markup (XSS in the app's own origin).
+ */
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
 function readStorage<T>(key: keyof T, fallback: any, validator?: (v: any) => boolean): any {
   if (typeof window === 'undefined') return fallback
   try {
@@ -276,7 +291,7 @@ export default function QRCodeWidget({
           <body>
             <div class="card">
               <img src="${dataUrl}" onload="window.print(); setTimeout(() => window.close(), 800);" />
-              <div class="label">${generatedText}</div>
+              <div class="label">${escapeHtml(generatedText)}</div>
             </div>
           </body>
         </html>
