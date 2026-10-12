@@ -1,6 +1,6 @@
 # ART Workspace Project Analysis
 
-**Last updated:** October 9, 2026  
+**Last updated:** October 12, 2026  
 **Scope:** Full-stack repository review, local validation, dependency hardening pass, Pydantic v2 modernization, and automated secondary providers for weather forecast (MET Norway) and reverse-geocoding (OpenStreetMap Nominatim)  
 **Repository path:** `D:\Program\Project\PROJECT_ART`
 
@@ -275,10 +275,92 @@ that could be fixed and verified from a local checkout.
    - Pydantic v2 deprecation warning (`user_update.dict()`) in `profile.py` was also resolved to `user_update.model_dump()`.
    - Backend test suite expanded to **162 passed** at **76.57%** coverage.
 
+## Security Hardening & UX Pass (October 12, 2026)
+
+All findings below were fixed, verified locally, and pushed as commits `4f21596`
+(security + bug fixes) and `835f6af` (design-system sweep).
+
+### Backend hardening
+
+1. **CORS origins are validated at boot.** `Settings.get_cors_origins()` now
+   rejects `*` and any entry that is not a complete `scheme://host[:port]`
+   origin (no paths, query or fragment). With `allow_credentials=True` a
+   silently misconfigured list either blocked the production frontend or was
+   rejected by Starlette at request time; failing fast at startup turns that
+   into a visible boot error instead.
+2. **Dev CSP default-src de-wildcarded.** `CSP_HEADER_VALUE_DEV` used
+   `default-src 'self' https:` — a full TLS wildcard as the fallback directive.
+   `unsafe-eval` (needed for Next.js HMR) stays, but only inside `script-src`,
+   and the default anchor is back to `'self'`, so a careless `DEBUG=True` on
+   production cannot silently downgrade the CSP posture.
+3. **The unused `/uploads` StaticFiles mount was removed.** Avatars are stored
+   as base64 in the database, nothing writes to `uploads/` any more, and the
+   mount served whatever landed in that directory with no authentication.
+4. **Avatar upload sniffs content.** The extension check alone trusts a
+   client-supplied filename; the endpoint now verifies the leading bytes
+   against JPEG/PNG/GIF magic numbers, refuses declared types outside the
+   allow-list, and rejects files whose declared MIME disagrees with the sniffed
+   one. The stored data URL uses the *sniffed* MIME, not the client's claim.
+5. **Google OAuth calls are async.** `auth.py` used blocking `requests` calls
+   (10s timeout) inside the event loop for the userinfo, tokeninfo and token
+   exchange endpoints; all three now use `httpx.AsyncClient`, which no longer
+   stalls every concurrent request for the full timeout.
+6. **500 responses no longer echo exception text.** Several handlers returned
+   `detail=str(e)`, which can leak internals (library paths, DB messages). All
+   of them now log the traceback server-side via `logger.exception` and return
+   a generic Thai message to the client.
+
+### Frontend fixes (console noise & UX bugs)
+
+1. **Proactive token refresh.** `AuthProvider` mounted used to fire
+   `/auth/session` and `/profile/me` first and let `fetchWithAuth` recover on
+   the 401 — leaving two red `Failed to load resource: 401` entries in every
+   browser console after an access-token expiry. A shared single-flight
+   `refreshSessionToken()` in `fetchWithAuth.ts` is now awaited *before* those
+   verification calls (mount, 15-minute keep-alive, tab re-focus), so the
+   token is renewed before it can expire. A backend-confirmed refresh
+   rejection still logs the user out.
+2. **XSS in the QR/barcode print window closed.** `printWindow.document.write`
+   interpolated the raw user-typed code text into the HTML document; text such
+   as `<img onerror=…>` executed in the app's own origin. The text is now
+   HTML-escaped before it is written.
+3. **Late notification subscribers replay the store.** A remounted
+   `NotificationBell` subscribed only for future pushes; the alerts generated
+   at startup (holidays, PM 2.5, welcome) stayed invisible and the unread
+   badge appeared empty. The subscription helper now replays the current store
+   to each new subscriber.
+4. **Dashboard layout race conditions removed.** Resize/toggle handlers read
+   React state that a rapid second interaction could overtake, and the init
+   effect treated our own debounced cloud-save echo as an external change.
+   Handlers now read ref-based state, and the echo of a layout we saved
+   ourselves no longer resets in-flight edits.
+5. **CSP img-src allows `http:` and `blob:`.** LAN/IP camera snapshot and
+   MJPEG URLs (`http://192.168.x.x`) were blocked by the Vercel CSP as soon as
+   the site was served over HTTPS, making the camera page unusable with the
+   exact URLs its own form suggests.
+
+### Design-system sweep
+
+- Card radius unified on the 18px squircle scale from `MASTER.md` v4.2
+  (widgets and skeletons were 24px; profile and user-management sections used
+  `rounded-3xl`).
+- Card drop-shadows removed per the "no shadows on cards" rule — hairline
+  borders only.
+- Oil-price dot colors moved from raw Tailwind shades to the Apple semantic
+  tints defined in `MASTER.md` (`#34c759`, `#ff3b30`, etc.).
+
+### Verified state after this pass
+
+Backend: flake8 clean, mypy clean (40 modules), 162/162 pytest at 75.78%
+coverage. Frontend: eslint clean, `tsc --noEmit` clean, 92/92 Vitest, `next
+build` succeeds. All changes pushed to `origin/main`.
+
 ### Known Remaining Items
 
 - **The production WebSocket origin still needs one deployed check.** The client prefers `NEXT_PUBLIC_WS_URL`, then `NEXT_PUBLIC_API_URL`, then its own origin. If the Vercel rewrite forwards plain requests but drops the upgrade, the socket never connects — set `NEXT_PUBLIC_WS_URL` to the backend origin. This cannot be verified from a local checkout.
+- **A deployed check of the October 12 CSP/CORS changes is pending.** If Render's `CORS_ORIGINS` env value is not a strict origin list, the new validator will refuse to boot (intended); verify the Render startup log after the next deploy. The camera page should be re-checked on the HTTPS deployment now that `http:` images are allowed.
 - **The backend audit job is still `continue-on-error`.** The advisories themselves are fixed (see the pass above) and the CI job is now expected to pass, but `pip-audit -r requirements.txt` could not be reproduced from the local checkout, so the flag was left advisory rather than flipped blind. Flip it to a required check once one CI run comes back clean.
 - **Rate limiting is still process-local by default.** The WebSocket fan-out now has a supported path (`WS_BROADCAST_REDIS_URL`), but a horizontally scaled deployment also needs `SLOWAPI_STORAGE_URI` pointed at Redis.
-- **Frontend coverage is still partial.** 86 unit tests cover pure logic plus the notification bell; most components and widgets remain untested, and the 3 Playwright smoke tests still run without a live backend, so they would not catch a broken login against the real API.
+- **Frontend coverage is still partial.** 92 unit tests cover pure logic plus the notification bell; most components and widgets remain untested, and the 3 Playwright smoke tests still run without a live backend, so they would not catch a broken login against the real API.
 - **Thai-only UI.** All copy is hardcoded Thai; there is no i18n layer.
+- **The `user` cookie is unsigned.** It is readable and editable client-side by design (fast-path hydration); the frontend already Zod-validates its shape, but nothing binds its value to the backend — a persisted user would need to re-verify against `/auth/session`. An HMAC signature (or dropping user-editable fields from the cookie entirely) would be the defence-in-depth next step.
