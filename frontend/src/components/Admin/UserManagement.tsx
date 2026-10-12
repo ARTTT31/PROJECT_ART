@@ -117,7 +117,7 @@ export default function UserManagement() {
   return (
     <div className="space-y-4">
       {editingUser ? (
-        <div className="overflow-hidden rounded-3xl bg-white ring-1 ring-black/[0.06] shadow-[0_10px_40px_rgba(15,23,42,0.07)]">
+        <div className="overflow-hidden rounded-[18px] bg-white ring-1 ring-black/[0.06]">
           
           <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-black/[0.04] bg-[#fbfbfc] px-6 py-5">
             <div className="flex items-center gap-3 mb-3 sm:mb-0">
@@ -269,7 +269,7 @@ export default function UserManagement() {
           </div>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-3xl border border-black/[0.06] bg-white shadow-sm">
+        <div className="overflow-hidden rounded-[18px] border border-black/[0.06] bg-white">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm whitespace-nowrap">
               <thead className="bg-[#fbfbfc] text-[#6e6e73] text-[12px] font-bold uppercase tracking-wider">

@@ -2,7 +2,7 @@
 
 export function WeatherSkeleton() {
   return (
-    <div className="flex h-full min-h-[300px] flex-col justify-between rounded-[24px] bg-white p-5 border border-black/[0.06] shadow-[0_2px_12px_rgba(0,0,0,0.04)]">
+    <div className="flex h-full min-h-[300px] flex-col justify-between rounded-[18px] bg-white p-5 border border-black/[0.06]">
       <div>
         <div className="flex items-start justify-between gap-3 mb-4">
           <div className="flex items-start gap-3">
@@ -42,7 +42,7 @@ export function WeatherSkeleton() {
 
 export function HolidaySkeleton() {
   return (
-    <div className="flex h-full min-h-[300px] flex-col justify-between rounded-[24px] bg-white p-5 border border-black/[0.06] shadow-[0_2px_12px_rgba(0,0,0,0.04)]">
+    <div className="flex h-full min-h-[300px] flex-col justify-between rounded-[18px] bg-white p-5 border border-black/[0.06]">
       <div>
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-start gap-3">
@@ -82,7 +82,7 @@ export function HolidaySkeleton() {
 
 export function OilPriceSkeleton() {
   return (
-    <div className="flex h-full min-h-[300px] flex-col justify-between rounded-[24px] bg-white p-5 border border-black/[0.06] shadow-[0_2px_12px_rgba(0,0,0,0.04)]">
+    <div className="flex h-full min-h-[300px] flex-col justify-between rounded-[18px] bg-white p-5 border border-black/[0.06]">
       <div className="flex items-start justify-between gap-3 mb-6">
         <div className="flex items-start gap-3">
           <div className="h-10 w-10 shrink-0 rounded-[12px] skeleton-shimmer" />
@@ -108,7 +108,7 @@ export function OilPriceSkeleton() {
 
 export function QRCodeSkeleton() {
   return (
-    <div className="flex h-full min-h-[300px] flex-col justify-between rounded-[24px] bg-white p-5 border border-black/[0.06] shadow-[0_2px_12px_rgba(0,0,0,0.04)]">
+    <div className="flex h-full min-h-[300px] flex-col justify-between rounded-[18px] bg-white p-5 border border-black/[0.06]">
       <div className="flex items-start justify-between gap-3 mb-4">
         <div className="flex items-start gap-3">
           <div className="h-10 w-10 shrink-0 rounded-[12px] skeleton-shimmer" />

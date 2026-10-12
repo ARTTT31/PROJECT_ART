@@ -143,13 +143,16 @@ function buildOilPriceNotification(changes: PriceChange[]): Notification | null 
 // ── Fuel display maps ─────────────────────────────────────────────────────────
 
 /** Tailwind dot color per fuel type */
+// Dot colours follow the Apple HIG semantic tints (MASTER.md): green #34c759,
+// red #ff3b30, orange #ff9500, and Apple blue for diesel — arbitrary raw
+// Tailwind shades used to disagree with the rest of the dashboard.
 const fuelDotColor: Record<string, string> = {
-  benzene_95:  'bg-red-500',
-  gasohol_95:  'bg-orange-500',
-  gasohol_91:  'bg-yellow-500',
-  gasohol_e20: 'bg-green-500',
-  gasohol_e85: 'bg-green-500',
-  diesel:      'bg-blue-500',
+  benzene_95:  'bg-[#ff3b30]',
+  gasohol_95:  'bg-[#ff9500]',
+  gasohol_91:  'bg-[#ffcc00]',
+  gasohol_e20: 'bg-[#34c759]',
+  gasohol_e85: 'bg-[#34c759]',
+  diesel:      'bg-[#0066cc]',
 }
 const defaultDotColor = 'bg-slate-400'
 
@@ -293,7 +296,7 @@ export default function OilPriceWidget({
 
   return (
     <section
-      className="flex h-full flex-col justify-between rounded-[24px] bg-white p-5 border border-black/[0.06] shadow-[0_2px_12px_rgba(0,0,0,0.04)] transition-all duration-200"
+      className="flex h-full flex-col justify-between rounded-[18px] bg-white p-5 border border-black/[0.06] transition-all duration-200"
       aria-labelledby="oil-price-title"
     >
       <div className="flex flex-1 flex-col gap-4">

@@ -308,7 +308,7 @@ export default function QRCodeWidget({
   // ── Render ───────────────────────────────────────────────────────────────────
   return (
     <section
-      className="flex h-full flex-col justify-between rounded-[24px] bg-white p-5 border border-black/[0.06] shadow-[0_2px_12px_rgba(0,0,0,0.04)] transition-all duration-200"
+      className="flex h-full flex-col justify-between rounded-[18px] bg-white p-5 border border-black/[0.06] transition-all duration-200"
       aria-labelledby="qr-title"
     >
       <div>

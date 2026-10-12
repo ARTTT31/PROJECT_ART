@@ -107,7 +107,7 @@ function SectionCard({
   icon, iconBg, iconColor, iconRing, title, subtitle, badge, action, children,
 }: SectionCardProps) {
   return (
-    <section className="overflow-hidden rounded-3xl bg-white border border-black/[0.06] shadow-[0_2px_12px_rgba(0,0,0,0.04)]">
+    <section className="overflow-hidden rounded-[18px] bg-white border border-black/[0.06]">
       <div className="flex flex-wrap items-start justify-between gap-3 border-b border-black/[0.06] px-5 sm:px-6 py-5">
         <div className="flex items-start gap-3 min-w-0">
           <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-[12px] ${iconBg} ${iconColor} ring-1 ${iconRing}`}>
@@ -452,7 +452,7 @@ export default function ProfilePage() {
         {/* ══════════════════════════════════════════════════
             SECTION 1 — PROFILE HERO
             ══════════════════════════════════════════════════ */}
-        <section className="overflow-hidden rounded-3xl bg-white ring-1 ring-black/[0.06] shadow-[0_10px_40px_rgba(15,23,42,0.07)]">
+        <section className="overflow-hidden rounded-[18px] bg-white ring-1 ring-black/[0.06]">
           {/* Banner */}
           {/* Identity — centered, white background */}
           <div className="px-6 py-6 sm:px-8 sm:py-7">
