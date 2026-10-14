@@ -2,6 +2,7 @@
 System Health API - Admin only
 """
 
+import logging
 import time
 import psutil
 from fastapi import APIRouter, Depends
@@ -13,6 +14,7 @@ from app.core.database import get_db
 from app.api.dependencies import get_current_admin_user
 from sqlalchemy.ext.asyncio import AsyncSession
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 START_TIME = time.time()
 
@@ -44,8 +46,14 @@ async def get_system_health(
         t0 = time.perf_counter()
         await db.execute(text("SELECT 1"))
         db_status.latency_ms = round((time.perf_counter() - t0) * 1000, 2)
-    except Exception as e:
-        db_status = ServiceStatus(status="down", detail=str(e))
+    except Exception:
+        # Generic body: the driver message may carry the DSN/credentials. The
+        # full context is in the server log below (T15).
+        logger.exception("system health database probe failed")
+        db_status = ServiceStatus(
+            status="down",
+            detail="เกิดข้อผิดพลาดภายในระบบ กรุณาลองอีกครั้งภายหลัง",
+        )
 
     mem = psutil.virtual_memory()
     disk = psutil.disk_usage("/")

@@ -288,10 +288,13 @@ async def update_quick_links(
             message="อัปเดต Quick Links สำเร็จ",
         )
 
-    except Exception as e:
+    except Exception:
+        # Generic body: exception text may leak internals (connection strings,
+        # library paths) — the full context is in the server log below (T15).
+        profile_logger.exception("profile persistence error")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e),
+            detail="เกิดข้อผิดพลาดภายในระบบ กรุณาลองอีกครั้งภายหลัง",
         )
 
 
@@ -316,10 +319,13 @@ async def update_dashboard_layout(
             message="บันทึกการจัดวางหน้าแดชบอร์ดสำเร็จ",
         )
 
-    except Exception as e:
+    except Exception:
+        # Generic body: exception text may leak internals (connection strings,
+        # library paths) — the full context is in the server log below (T15).
+        profile_logger.exception("profile persistence error")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e),
+            detail="เกิดข้อผิดพลาดภายในระบบ กรุณาลองอีกครั้งภายหลัง",
         )
 
 
@@ -344,10 +350,13 @@ async def update_camera_config(
             message="บันทึกการตั้งค่ากล้องวงจรปิดสำเร็จ",
         )
 
-    except Exception as e:
+    except Exception:
+        # Generic body: exception text may leak internals (connection strings,
+        # library paths) — the full context is in the server log below (T15).
+        profile_logger.exception("profile persistence error")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e),
+            detail="เกิดข้อผิดพลาดภายในระบบ กรุณาลองอีกครั้งภายหลัง",
         )
 
 
@@ -390,10 +399,13 @@ async def get_my_sessions(
             message="ดึงประวัติการเข้าใช้งานสำเร็จ",
             data=session_data,
         )
-    except Exception as e:
+    except Exception:
+        # Generic body: exception text may leak internals (connection strings,
+        # library paths) — the full context is in the server log below (T15).
+        profile_logger.exception("profile persistence error")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e),
+            detail="เกิดข้อผิดพลาดภายในระบบ กรุณาลองอีกครั้งภายหลัง",
         )
 
 
@@ -427,8 +439,11 @@ async def revoke_session(
         return ResponseModel(result="success", message="ออกจากระบบจากอุปกรณ์ที่เลือกสำเร็จ")
     except HTTPException as he:
         raise he
-    except Exception as e:
+    except Exception:
+        # Generic body: exception text may leak internals (connection strings,
+        # library paths) — the full context is in the server log below (T15).
+        profile_logger.exception("profile persistence error")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e),
+            detail="เกิดข้อผิดพลาดภายในระบบ กรุณาลองอีกครั้งภายหลัง",
         )

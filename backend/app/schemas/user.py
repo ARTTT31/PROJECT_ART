@@ -86,19 +86,19 @@ class UserAdminUpdate(BaseModel):
 class UserQuickLinksUpdate(BaseModel):
     """Schema for updating user quick links"""
 
-    quick_links: str = Field(..., min_length=0)
+    quick_links: str = Field(..., min_length=0, max_length=100_000)
 
 
 class UserDashboardLayoutUpdate(BaseModel):
     """Schema for updating user dashboard layout"""
 
-    dashboard_layout: str = Field(..., min_length=0)
+    dashboard_layout: str = Field(..., min_length=0, max_length=100_000)
 
 
 class UserCameraConfigUpdate(BaseModel):
     """Schema for updating user camera configuration"""
 
-    camera_config: str = Field(..., min_length=0)
+    camera_config: str = Field(..., min_length=0, max_length=100_000)
 
 
 class UserPasswordChange(BaseModel):
