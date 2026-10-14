@@ -2,11 +2,12 @@
 Authentication Service - Business logic for authentication
 """
 
-from typing import Optional, Dict, Union
+from typing import Dict, Optional, Tuple, Union
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from fastapi import HTTPException, status
 from datetime import datetime, timedelta, timezone
+import time
 import uuid
 
 from app.models.user import User
@@ -15,11 +16,49 @@ from app.schemas.user import UserCreate, UserRegister
 from app.schemas.token import Token
 from app.core.security import (
     verify_password,
+    get_password_hash,
     create_access_token,
     create_refresh_token,
     decode_token,
 )
 from app.services.user_service import UserService
+
+
+# ── Login brute-force backoff (T12) ──────────────────────────────────────
+# Failures are tracked per (lowercased identifier, source IP) in process
+# memory. It deliberately does NOT set user.is_locked: a purely per-user
+# counter lets anyone lock any victim out of their account just by entering
+# wrong passwords from another machine. Backoff expires on its own and is
+# cleared by a successful verification.
+_BACKOFF_MAX_FAILURES = 5
+_BACKOFF_SECONDS = 300.0
+_login_backoff: Dict[Tuple[str, Optional[str]], Tuple[float, float]] = {}
+
+# Verified once instead of a account lookup when the user does not exist so
+# the "unknown user" path costs the same Argon2 work as the real one and the
+# response times cannot be used to enumerate accounts.
+_DUMMY_PASSWORD_HASH = get_password_hash("!n0-such-user-dummy-hash-" + uuid.uuid4().hex)
+
+
+def _backoff_failures(key: Tuple[str, Optional[str]]) -> float:
+    entry = _login_backoff.get(key)
+    if entry is None:
+        return 0
+    count, until = entry
+    if time.time() >= until:
+        _login_backoff.pop(key, None)
+        return 0
+    return count
+
+
+def _backoff_record_failure(key: Tuple[str, Optional[str]]) -> None:
+    count, _until = _login_backoff.get(key, (0, 0.0))
+    count = min(count + 1, _BACKOFF_MAX_FAILURES)
+    if count >= _BACKOFF_MAX_FAILURES:
+        until = time.time() + _BACKOFF_SECONDS
+    else:
+        until = 0.0
+    _login_backoff[key] = (count, until)
 
 
 class AuthService:
@@ -55,16 +94,38 @@ class AuthService:
         Raises:
             HTTPException: If authentication fails
         """
+        # Brute-force backoff is checked FIRST and keyed per (identifier, IP)
+        _T12_generic_failure = "ชื่อผู้ใช้งานหรือรหัสผ่านไม่ถูกต้อง"
+        backoff_key = ((email or "").lower(), ip_address)
+        if _backoff_failures(backoff_key) >= _BACKOFF_MAX_FAILURES:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="พยายามเข้าสู่ระบบผิดหลายครั้งเกินไป กรุณาลองใหม่ภายหลัง",
+            )
+
         # Get user (by email or username)
         user = await self.user_service.get_user_by_email_or_username(email)
 
         if not user:
+            # Same Argon2 work as a real verification: response time cannot be
+            # used to distinguish unknown users from bad passwords.
+            verify_password(password, _DUMMY_PASSWORD_HASH)
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="ชื่อผู้ใช้งานหรือรหัสผ่านไม่ถูกต้อง",
+                detail=_T12_generic_failure,
             )
 
-        # Check if account is locked.
+        # 🔒 Check the password BEFORE revealing any account state: with a
+        # wrong password the answer is always the same generic 401 (an
+        # attacker must not learn is_locked / is_active from messages).
+        if not verify_password(password, user.hashed_password):
+            _backoff_record_failure(backoff_key)
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=_T12_generic_failure,
+            )
+
+        # Credential holder reached — NOW act on / reveal the account state.
         # A lock with NO expiry is a manual ADMIN lock: it only clears when an
         # admin unlocks it — it must not be silently lifted by the next login.
         if user.is_locked:
@@ -76,7 +137,7 @@ class AuthService:
                     detail="บัญชีถูกล็อก กรุณาลองใหม่ภายหลัง",
                 )
             else:
-                # Automatic lock whose expiry has passed: unlock it now
+                # Legacy automatic lock whose expiry has passed: unlock it now
                 user.is_locked = False
                 user.locked_until = None
                 user.failed_login_attempts = 0
@@ -88,30 +149,8 @@ class AuthService:
                 detail="บัญชีถูกปิดการใช้งาน",
             )
 
-        # Verify password
-        if not verify_password(password, user.hashed_password):
-            # Increment failed login attempts
-            user.failed_login_attempts += 1
-
-            # Lock account after 5 failed attempts
-            if user.failed_login_attempts >= 5:
-                user.is_locked = True
-                user.locked_until = datetime.now(timezone.utc).replace(
-                    tzinfo=None
-                ) + timedelta(minutes=30)
-                await self.db.commit()
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="บัญชีถูกล็อกเนื่องจากพยายามเข้าสู่ระบบผิดหลายครั้ง",
-                )
-
-            await self.db.commit()
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="ชื่อผู้ใช้งานหรือรหัสผ่านไม่ถูกต้อง",
-            )
-
-        # Reset failed login attempts
+        # Reset failure bookkeeping on a successful verification
+        _login_backoff.pop(backoff_key, None)
         user.failed_login_attempts = 0
 
         # Update last login
