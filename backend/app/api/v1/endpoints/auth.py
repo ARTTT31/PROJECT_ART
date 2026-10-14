@@ -5,6 +5,8 @@ Authentication Endpoints
 import logging
 import os
 import secrets
+import uuid
+from datetime import timedelta
 from typing import Any, List, Optional
 from urllib.parse import urlencode
 
@@ -27,8 +29,9 @@ except ImportError:
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.rate_limit import limiter
-from app.core.utils import decode_user_cookie, encode_user_cookie
+from app.core.utils import encode_user_cookie, utcnow as utils_utcnow
 from app.core.security import create_access_token, create_refresh_token, decode_token
+from app.api.dependencies import resolve_user_from_token
 from app.models.session import UserSession
 from app.schemas.response import ResponseModel
 from app.schemas.user import UserCreate, UserLogin, UserRegister
@@ -38,6 +41,30 @@ from app.services.user_service import UserService
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+
+
+async def _create_user_session(
+    db: AsyncSession, user: Any, ip_address: Optional[str], user_agent: Optional[str]
+) -> str:
+    """Create an active UserSession row and return its id.
+
+    Google logins previously skipped session creation entirely, so their
+    refresh tokens had no ``sid`` and logout could not revoke them. Normal
+    password logins do the same via AuthService.login.
+    """
+    session_id = str(uuid.uuid4())
+    db.add(
+        UserSession(
+            session_id=session_id,
+            user_id=user.id,
+            user_agent=user_agent,
+            ip_address=ip_address,
+            expires_at=utils_utcnow() + timedelta(days=7),
+        )
+    )
+    await db.commit()
+    return session_id
+
 
 COOKIE_OPTIONS: dict[str, Any] = {
     "secure": settings.COOKIE_SECURE,
@@ -521,9 +548,16 @@ async def google_verify_token(
             detail="เกิดข้อผิดพลาดภายในระบบ กรุณาลองอีกครั้งภายหลัง",
         )
 
-    # Issue tokens
+    # Issue tokens — with a real UserSession row + sid so logout/revoke works.
+    client_ip_tok = request.client.host if request.client else None
+    user_agent_tok = request.headers.get("user-agent")
+    session_id = await _create_user_session(
+        db, user, client_ip_tok, user_agent_tok
+    )
     access_jwt = create_access_token(data={"sub": user.email, "user_id": user.id})
-    refresh_jwt = create_refresh_token(data={"sub": user.email, "user_id": user.id})
+    refresh_jwt = create_refresh_token(
+        data={"sub": user.email, "user_id": user.id, "sid": session_id}
+    )
 
     # Create response
     user_data = {
@@ -677,9 +711,16 @@ async def google_callback(
             detail="Failed to create or retrieve user",
         )
 
-    # Issue tokens
+    # Issue tokens — with a real UserSession row + sid so logout/revoke works.
+    session_id = await _create_user_session(
+        db, user,
+        request.client.host if request.client else None,
+        request.headers.get("user-agent"),
+    )
     access_jwt = create_access_token(data={"sub": user.email, "user_id": user.id})
-    refresh_jwt = create_refresh_token(data={"sub": user.email, "user_id": user.id})
+    refresh_jwt = create_refresh_token(
+        data={"sub": user.email, "user_id": user.id, "sid": session_id}
+    )
 
     user_data = {
         "id": user.id,
@@ -724,9 +765,10 @@ async def get_session(request: Request, db: AsyncSession = Depends(get_db)):
     Get current user session from HTTP-only cookies.
     Used by frontend after OAuth redirect to read tokens securely.
 
-    Supports two modes:
-    1. Fast-path: If both access_token and user cookie exist, return user from cookie
-    2. Fallback: If only access_token exists, decode JWT and fetch user from DB
+    The answer is ALWAYS derived from the signed JWT plus the DB — never from
+    the client-writable ``user`` cookie — so an attacker cannot forge a role,
+    and revoked / locked / disabled accounts are re-checked on every call
+    (resolve_user_from_token also rejects refresh tokens).
     """
     access_token = request.cookies.get("access_token")
 
@@ -736,44 +778,10 @@ async def get_session(request: Request, db: AsyncSession = Depends(get_db)):
             detail="ไม่พบ session กรุณาเข้าสู่ระบบใหม่",
         )
 
-    payload = decode_token(access_token)
-    if not payload:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token หมดอายุหรือไม่ถูกต้อง",
-        )
-
-    # Try fast-path: use the encoded user cookie if available. The value is
-    # percent-encoded JSON (see encode_user_cookie); a stale raw-JSON cookie from
-    # an older deployment simply fails to decode and falls through to the DB.
-    user_cookie = request.cookies.get("user")
-    if user_cookie:
-        cookie_user = decode_user_cookie(user_cookie)
-        if cookie_user is not None:
-            return ResponseModel(
-                result="success",
-                message="พบ session ปัจจุบัน",
-                data={
-                    "user": cookie_user,
-                },
-            )  # Fall through to DB lookup otherwise
-
-    # Fallback: decode JWT and fetch user from DB
-    user_id = payload.get("user_id")
-    email = payload.get("sub")
-
-    user_service = UserService(db)
-    user = None
-    if user_id is not None:
-        user = await user_service.get_user_by_id(user_id)
-    elif email is not None:
-        user = await user_service.get_user_by_email(email)
-
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="ไม่พบข้อมูลผู้ใช้",
-        )
+    try:
+        user = await resolve_user_from_token(access_token, db)
+    except HTTPException:
+        raise
 
     user_data = {
         "id": user.id,

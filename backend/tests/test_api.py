@@ -1843,7 +1843,9 @@ class TestUserCookieFormat:
     async def test_session_fast_path_reads_the_encoded_cookie(
         self, client, logged_in_user
     ):
-        """Prove the fast-path consumes the cookie instead of the DB fallback."""
+        """The ``user`` cookie is a display cache only: /session must ignore it
+        and answer from the JWT + DB (it is client-writable, so trusting it
+        would let an attacker forge their own role)."""
         override = {
             "id": 999,
             "email": "test@example.com",
@@ -1854,7 +1856,7 @@ class TestUserCookieFormat:
 
         resp = await client.get("/api/v1/auth/session")
         assert resp.status_code == 200, resp.text
-        assert resp.json()["data"]["user"]["name"] == "Cookie Override"
+        assert resp.json()["data"]["user"]["name"] == "Test User"
 
     async def test_cookie_helpers_round_trip(self):
         payload = {"id": 7, "name": "สมชาย, Jr.", "role": "admin", "avatar": None}

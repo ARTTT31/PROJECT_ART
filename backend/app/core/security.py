@@ -49,7 +49,9 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
     else:
         expire = utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
 
-    to_encode.update({"exp": expire, "iat": utcnow()})
+    # "type": "access" marks this token as usable ONLY for API auth — refresh
+    # tokens carry "refresh" and are rejected by resolve_user_from_token.
+    to_encode.update({"exp": expire, "iat": utcnow(), "type": "access"})
     encoded_jwt = jwt.encode(
         to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM
     )

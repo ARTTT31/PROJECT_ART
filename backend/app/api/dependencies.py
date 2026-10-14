@@ -38,6 +38,12 @@ async def resolve_user_from_token(token: str, db: AsyncSession) -> User:
     if payload is None:
         raise _unauthorized("Token expired or invalid")
 
+    # 🔒 Only access tokens authenticate API calls. A refresh token presented
+    # as a Bearer/access token is refused so it cannot survive a logout: the
+    # refresh token's own revocation check lives in auth_service.refresh_access_token.
+    if payload.get("type") != "access":
+        raise _unauthorized("Invalid token type")
+
     user_id: Optional[int] = payload.get("user_id")
     email: Optional[str] = payload.get("sub")
 
