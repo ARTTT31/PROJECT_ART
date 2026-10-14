@@ -123,7 +123,29 @@ async def websocket_notifications(
     code ``1006``: indistinguishable from a network blip, so `NotificationBell`
     would keep retrying instead of stopping on ``1008``. Nothing is read, sent or
     registered on that socket, so no broadcast can reach it.
+
+    The Origin is checked first: a handshake from a foreign origin (CSWSH
+    attempt) is closed with 1008 without ever authenticating. A MISSING Origin
+    is allowed — browsers always send one on the upgrade request, so an absent
+    Origin identifies a non-browser client (typically carrying a Bearer
+    header), which cannot be a cross-site request.
     """
+    # SECURITY (CSWSH): browsers always send an Origin header on the WebSocket
+    # upgrade request. A handshake whose Origin is not one of our CORS origins
+    # (i.e. one of our frontends) could be a malicious page opening a socket
+    # through the victim's ambient cookies — reject it before authenticating,
+    # using the same accept-then-close pattern as the auth rejection so client
+    # reconnect logic sees the identical RFC 6455 close code.
+    origin = (websocket.headers.get("origin") or "").rstrip("/")
+    allowed_origins = settings.get_cors_origins()
+    if origin and origin not in [o for o in allowed_origins]:
+        logger.warning(
+            "Rejected WebSocket handshake from foreign origin: %s", origin
+        )
+        await websocket.accept()
+        await websocket.close(code=WS_CLOSE_UNAUTHORIZED)
+        return
+
     user = await authenticate_websocket(websocket, db)
 
     # The session is only needed for the handshake. Release it now: a socket can

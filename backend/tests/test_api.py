@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, Asyn
 from starlette.testclient import TestClient
 from starlette.websockets import WebSocketDisconnect
 
+from app.core.config import settings
 from app.core.database import Base, get_db
 from app.core.utils import decode_user_cookie, encode_user_cookie
 from app.main import app
@@ -316,6 +317,9 @@ def reset_ws_manager():
     manager.active_connections.clear()
     manager._owner.clear()
     manager._per_user.clear()
+    # Tests that shrink the caps must not leak their values into later tests.
+    manager.max_total = settings.WS_MAX_CONNECTIONS
+    manager.max_per_user = settings.WS_MAX_CONNECTIONS_PER_USER
 
 
 @pytest.fixture
@@ -659,6 +663,54 @@ class TestWebsocketHandshake:
                     ws.receive_text()
 
         assert excinfo.value.code == 1013, "the client backs off on 1013"
+        assert reset_ws_manager.active_connections == []
+
+    def test_cross_site_origin_is_closed_with_1008(
+        self, tmp_path, reset_ws_manager, monkeypatch
+    ):
+        """T5: a foreign Origin must not complete the WebSocket handshake.
+
+        Browsers always send an Origin header on the upgrade request; without
+        an origin check, a malicious page could open a socket and receive the
+        victim's broadcasts via its ambient cookies (CSWSH).
+        """
+        # Pin the origin list so the test does not depend on the local .env.
+        monkeypatch.setattr(settings, "CORS_ORIGINS", "http://localhost:3000")
+        db_path = tmp_path / "ws.db"
+        _, token = self._seed(db_path)
+
+        with self._client(db_path) as client:
+            with client.websocket_connect(
+                "/api/v1/ws/notifications",
+                headers={
+                    "cookie": f"access_token={token}",
+                    "origin": "https://evil.example",
+                },
+            ) as ws:
+                with pytest.raises(WebSocketDisconnect) as excinfo:
+                    ws.receive_text()
+
+        assert excinfo.value.code == 1008
+        assert reset_ws_manager.active_connections == []
+
+    def test_allowed_origin_connects(
+        self, tmp_path, reset_ws_manager, monkeypatch
+    ):
+        monkeypatch.setattr(settings, "CORS_ORIGINS", "http://localhost:3000")
+        db_path = tmp_path / "ws.db"
+        _, token = self._seed(db_path)
+
+        with self._client(db_path) as client:
+            with client.websocket_connect(
+                "/api/v1/ws/notifications",
+                headers={
+                    "cookie": f"access_token={token}",
+                    "origin": "http://localhost:3000",  # in settings.CORS_ORIGINS
+                },
+            ) as ws:
+                ws.send_text("ping")
+                assert ws.receive_text() == "pong"
+
         assert reset_ws_manager.active_connections == []
 
 
