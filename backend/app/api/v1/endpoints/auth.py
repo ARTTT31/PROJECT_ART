@@ -422,6 +422,47 @@ def _get_valid_client_ids() -> List[str]:
     return ids
 
 
+def _get_allowed_google_domains() -> List[str]:
+    """Domains allowed for Google AUTO-PROVISIONING (owner policy, T13).
+
+    Read at call time from ``GOOGLE_ALLOWED_DOMAINS`` (comma-separated). An
+    empty list keeps the historic behaviour (any verified Google email may be
+    provisioned) — production MUST configure it per the owner's decision.
+    """
+    multi = os.getenv("GOOGLE_ALLOWED_DOMAINS", "").strip()
+    return [d.strip().lower() for d in multi.split(",") if d.strip()]
+
+
+def _check_google_provisioning_domain(
+    email: str, verified_info: dict, allowed_domains: List[str]
+) -> None:
+    """Reject provisioning for emails outside the allowed hosted domains.
+
+    The email domain must be in the allow-list, and when the token carries an
+    ``hd`` claim (Workspace accounts) that claim must agree with the list too,
+    so a Workspace user cannot claim an address whose domain merely LOOKS allowed.
+    Empty ``allowed_domains`` keeps the historic open policy.
+    """
+    if not allowed_domains:
+        return
+    email_domain = email.rsplit("@", 1)[-1].lower()
+    token_hd = (verified_info.get("hd") or "").lower()
+    if token_hd and token_hd not in allowed_domains:
+        logger.warning("GOOGLE_AUTH: provisioning refused (hd %s not allowed)", token_hd)
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="อีเมลของคุณไม่อยู่ในโดเมนที่อนุญาตให้ลงทะเบียนผ่าน Google",
+        )
+    if email_domain not in allowed_domains:
+        logger.warning(
+            "GOOGLE_AUTH: provisioning refused (domain %s not allowed)", email_domain
+        )
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="อีเมลของคุณไม่อยู่ในโดเมนที่อนุญาตให้ลงทะเบียนผ่าน Google",
+        )
+
+
 @router.post("/google/verify-token")
 @limiter.limit(_AUTH_LIMIT)
 async def google_verify_token(
@@ -533,7 +574,10 @@ async def google_verify_token(
             status_code=status.HTTP_403_FORBIDDEN, detail="Google email not verified"
         )
 
-    # Find or create user
+    # Find or create user — provisioning is domain-restricted (owner policy, T13)
+    _check_google_provisioning_domain(
+        email, verified_info, _get_allowed_google_domains()
+    )
     try:
         user_service = UserService(db)
         user = await user_service.get_user_by_email(email)
@@ -722,7 +766,10 @@ async def google_callback(
             status_code=status.HTTP_403_FORBIDDEN, detail="Google email not verified"
         )
 
-    # Find or create user
+    # Find or create user — provisioning is domain-restricted (owner policy, T13)
+    _check_google_provisioning_domain(
+        email, verified_info, _get_allowed_google_domains()
+    )
     user_service = UserService(db)
     user = await user_service.get_user_by_email(email)
     if not user:
