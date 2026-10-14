@@ -301,6 +301,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setStatus('anonymous')
     window.dispatchEvent(new Event('auth-logout'))
 
+    // T11: purge Cache Storage after logout so no cached (session-scoped)
+    // response survives for the next signed-in account.
+    try {
+      const { clearServiceWorkerCaches } = await import('@/utils/swCacheRules')
+      await clearServiceWorkerCaches()
+    } catch (e) {
+      console.warn('Logout cache purge:', e)
+    }
+
     // 2. Notify backend in background to invalidate session & clear httpOnly cookies
     try {
       await fetchWithAuth(`/api/v1/auth/logout${sessionId ? `?session_id=${sessionId}` : ''}`, {
