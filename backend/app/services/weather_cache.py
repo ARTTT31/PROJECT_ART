@@ -38,6 +38,17 @@ logger = logging.getLogger(__name__)
 # fast enough for a month-old fallback to be worse than a 502.
 MAX_AGE = timedelta(days=30)
 
+# Full-table prune scans are throttled: they used to run on EVERY write, so a
+# burst of cache misses meant a full scan per request. A few minutes of delay
+# is invisible to callers (worst case: a few expired rows linger).
+PRUNE_INTERVAL = timedelta(minutes=10)
+_last_prune_at: Optional[datetime] = None
+
+# Cap rows per namespace. Keys derive from user input, so without a cap an
+# attacker crawling coordinates could grow the table unboundedly (one row per
+# distinct 4-decimal coordinate, kept for MAX_AGE).
+MAX_ROWS_PER_NAMESPACE = 5000
+
 
 def build_key(namespace: str, key: tuple) -> str:
     """Build a stable, human-readable storage key for a cache tuple."""
@@ -111,6 +122,41 @@ async def _prune(db: AsyncSession) -> None:
     await db.execute(statement)
 
 
+async def _maybe_prune(db: AsyncSession, *, force: bool = False) -> None:
+    """Run ``_prune`` but at most once per ``PRUNE_INTERVAL``."""
+    global _last_prune_at
+    now = utcnow()
+    if (
+        not force
+        and _last_prune_at is not None
+        and now - _last_prune_at < PRUNE_INTERVAL
+    ):
+        return
+    _last_prune_at = now
+    await _prune(db)
+
+
+async def _enforce_namespace_row_cap(db: AsyncSession, namespace: str) -> None:
+    """Keep at most ``MAX_ROWS_PER_NAMESPACE`` rows in ``namespace``.
+
+    Deletes the OLDEST rows of that namespace first. Runs on every write to the
+    namespace with a single indexed query, so a runaway key space is bounded
+    without waiting for the age-based prune.
+    """
+    result = await db.execute(
+        select(WeatherCacheEntry.key)
+        .where(WeatherCacheEntry.key.like(f"{namespace}:%"))
+        .order_by(WeatherCacheEntry.updated_at.asc())
+    )
+    keys = [key for (key,) in result.all()]
+    if len(keys) <= MAX_ROWS_PER_NAMESPACE:
+        return
+    oldest = keys[: len(keys) - MAX_ROWS_PER_NAMESPACE]
+    await db.execute(
+        delete(WeatherCacheEntry).where(WeatherCacheEntry.key.in_(oldest))
+    )
+
+
 async def store(db: AsyncSession, namespace: str, key: tuple, data: dict) -> None:
     """Persist a payload, pruning entries that have outlived ``MAX_AGE``.
 
@@ -133,7 +179,8 @@ async def store(db: AsyncSession, namespace: str, key: tuple, data: dict) -> Non
             row.payload = payload
             row.updated_at = utcnow()
 
-        await _prune(db)
+        await _maybe_prune(db)
+        await _enforce_namespace_row_cap(db, namespace)
         await db.commit()
     except Exception as exc:
         logger.warning("Weather cache write failed (%s); serving from L1 only", exc)

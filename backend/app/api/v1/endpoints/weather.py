@@ -34,6 +34,9 @@ router = APIRouter()
 # APIs for anyone who finds the URL. Rate limiting bounds that abuse without
 # breaking the unauthenticated widget.
 _GENERAL_LIMIT = f"{settings.RATE_LIMIT_GENERAL_PER_MINUTE}/minute"
+# The weather proxies are unauthenticated and keyed by unbounded coordinates;
+# their tight limit is separate from the general one.
+_WEATHER_LIMIT = f"{settings.RATE_LIMIT_WEATHER_PER_MINUTE}/minute"
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -116,16 +119,20 @@ def _cache_set(cache: dict, key: tuple, data: dict) -> None:
     cache[key] = {"ts": now, "data": data}
 
 
+# Coordinates are bundled into cache keys, so the key space must be small:
+# ~0.01° resolution is fine-grained enough for weather while bounding distinct
+# L1/L2 rows (the previous 4-decimal rounding made every tiny coordinate change
+# a brand-new cache row kept for weeks).
 def _cache_key_forecast(lat: float, lon: float, days: int) -> tuple:
-    return (round(lat, 4), round(lon, 4), days)
+    return (round(lat, 2), round(lon, 2), days)
 
 
 def _cache_key_aqi(lat: float, lon: float) -> tuple:
-    return (round(lat, 4), round(lon, 4))
+    return (round(lat, 2), round(lon, 2))
 
 
 def _cache_key_geocode(lat: float, lon: float, lang: str) -> tuple:
-    return (round(lat, 4), round(lon, 4), lang)
+    return (round(lat, 2), round(lon, 2), lang)
 
 
 # L2 namespaces — keep them stable, they are part of the stored key.
@@ -486,7 +493,7 @@ async def _fetch_secondary_forecast(
     forecast_days: int = 2,
 ) -> dict:
     """Fetch forecast from MET Norway (api.met.no) and adapt to the Open-Meteo response shape."""
-    params = {"lat": round(latitude, 4), "lon": round(longitude, 4)}
+    params = {"lat": round(latitude, 2), "lon": round(longitude, 2)}
     raw_data = await _upstream_get(
         MET_NORWAY_FORECAST_URL,
         params=params,
@@ -507,7 +514,7 @@ async def _fetch_secondary_forecast(
 # ═══════════════════════════════════════════════════════════════════════════════
 
 @router.get("/forecast")
-@limiter.limit(_GENERAL_LIMIT)
+@limiter.limit(_WEATHER_LIMIT)
 async def get_forecast_proxy(
     request: Request,
     db: AsyncSession = Depends(get_db),
@@ -528,8 +535,10 @@ async def get_forecast_proxy(
         return cached
 
     params = {
-        "latitude": latitude,
-        "longitude": longitude,
+        # Rounded like the cache key so a nearby request can reuse one row AND
+        # the upstream param set stays identical to the stored payload.
+        "latitude": round(latitude, 2),
+        "longitude": round(longitude, 2),
         "current": "temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m",
         "hourly": "temperature_2m,weather_code,precipitation_probability",
         "daily": "temperature_2m_max,temperature_2m_min,precipitation_probability_max",
@@ -567,7 +576,7 @@ async def get_forecast_proxy(
 # ═══════════════════════════════════════════════════════════════════════════════
 
 @router.get("/air-quality")
-@limiter.limit(_GENERAL_LIMIT)
+@limiter.limit(_WEATHER_LIMIT)
 async def get_air_quality_proxy(
     request: Request,
     db: AsyncSession = Depends(get_db),
@@ -584,8 +593,8 @@ async def get_air_quality_proxy(
         return cached
 
     params = {
-        "latitude": latitude,
-        "longitude": longitude,
+        "latitude": round(latitude, 2),
+        "longitude": round(longitude, 2),
         "current": "pm2_5,pm10,us_aqi",
         "timezone": timezone,
     }
@@ -611,8 +620,8 @@ async def _fetch_secondary_geocode(
 ) -> dict:
     """Fetch reverse geocoding from OpenStreetMap Nominatim when BigDataCloud fails."""
     params = {
-        "lat": round(latitude, 4),
-        "lon": round(longitude, 4),
+        "lat": round(latitude, 2),
+        "lon": round(longitude, 2),
         "format": "json",
         "accept-language": locality_language,
     }
@@ -651,7 +660,7 @@ async def _fetch_secondary_geocode(
 # ═══════════════════════════════════════════════════════════════════════════════
 
 @router.get("/reverse-geocode")
-@limiter.limit(_GENERAL_LIMIT)
+@limiter.limit(_WEATHER_LIMIT)
 async def get_reverse_geocode_proxy(
     request: Request,
     db: AsyncSession = Depends(get_db),
@@ -671,8 +680,8 @@ async def get_reverse_geocode_proxy(
         return cached
 
     params = {
-        "latitude": latitude,
-        "longitude": longitude,
+        "latitude": round(latitude, 2),
+        "longitude": round(longitude, 2),
         "localityLanguage": locality_language,
     }
 

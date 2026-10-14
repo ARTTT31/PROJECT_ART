@@ -1115,7 +1115,8 @@ class TestWeatherPersistentCache:
         assert (await self._forecast(client)).status_code == 200
 
         rows = (await db_session.execute(select(WeatherCacheEntry))).scalars().all()
-        assert [r.key for r in rows] == ["forecast:13.7563:100.5018:2"]
+        # T7: cache keys / upstream params now round coordinates to 2 decimals.
+        assert [r.key for r in rows] == ["forecast:13.76:100.5:2"]
 
     async def test_restart_serves_the_persisted_entry(self, monkeypatch, client):
         """After a restart the persisted payload answers, without touching the provider."""
@@ -1234,6 +1235,7 @@ class TestWeatherPersistentCache:
 
         newest_stale = utcnow() - weather_cache.MAX_AGE - timedelta(days=1)
         older_stale = utcnow() - weather_cache.MAX_AGE - timedelta(days=9)
+        weather_cache._last_prune_at = None  # the throttle must not skip this prune
         db_session.add_all([
             WeatherCacheEntry(key="forecast:1.0:2.0:1", payload="{}", updated_at=older_stale),
             WeatherCacheEntry(key="forecast:5.0:6.0:1", payload="{}", updated_at=newest_stale),
@@ -1257,6 +1259,7 @@ class TestWeatherPersistentCache:
         from app.services import weather_cache
 
         ancient = utcnow() - timedelta(days=400)
+        weather_cache._last_prune_at = None  # the throttle must not skip this prune
         db_session.add_all([
             WeatherCacheEntry(key="forecast:1.0:2.0:1", payload="{}", updated_at=ancient),
             WeatherCacheEntry(key="air-quality:1.0:2.0", payload="{}", updated_at=ancient),

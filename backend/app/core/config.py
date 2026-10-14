@@ -95,6 +95,7 @@ class Settings(BaseSettings):
     # Sensible defaults — auth endpoints get stricter limits than general API.
     RATE_LIMIT_AUTH_PER_MINUTE: int = 10  # login / token verify / refresh attempts per IP
     RATE_LIMIT_GENERAL_PER_MINUTE: int = 120  # general profile/oil endpoints per IP
+    RATE_LIMIT_WEATHER_PER_MINUTE: int = 30  # unauthenticated weather geocode proxies
 
     # ── Trusted proxies ─────────────────────────────────────────────────────
     # Comma-separated IPs / CIDRs whose X-Forwarded-For header may be believed.
