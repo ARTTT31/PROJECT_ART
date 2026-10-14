@@ -186,7 +186,10 @@ async def login(
         logger.info(f"[LOGIN] HTTPException: {e.status_code} - {e.detail}")
         await audit_service.log_action(
             action="LOGIN_FAILED",
-            details=f"Failed login attempt for {user_login.email}: {e.detail}",
+            details=(
+                f"Failed login attempt for {_mask_identifier(user_login.email)}: "
+                f"{e.detail}"
+            ),
             ip_address=client_ip,
             user_agent=user_agent,
         )
@@ -198,7 +201,10 @@ async def login(
         logger.exception("Unhandled error during login for %s", user_login.email)
         await audit_service.log_action(
             action="LOGIN_FAILED",
-            details=f"System error during login for {user_login.email}: {type(e).__name__}",
+            details=(
+                f"System error during login for {_mask_identifier(user_login.email)}: "
+                f"{type(e).__name__}"
+            ),
             ip_address=client_ip,
             user_agent=user_agent,
         )
@@ -420,6 +426,23 @@ def _get_valid_client_ids() -> List[str]:
         except RuntimeError:
             ids = []
     return ids
+
+
+def _mask_identifier(value: Optional[str]) -> str:
+    """Mask a user-supplied login identifier for the audit log (T14).
+
+    Emails keep their domain but hide the local part ("au***@domain"); other
+    strings are trimmed to a small prefix/suffix. Prevents PII leakage and
+    unbounded text injection into audit_logs.details.
+    """
+    value = value or ""
+    if "@" in value:
+        local, _, domain = value.partition("@")
+        shown = local[:2]
+        return f"{shown}***@{domain[:100]}"
+    if len(value) > 6:
+        return value[:3] + "***" + value[-2:]
+    return "***"
 
 
 def _get_allowed_google_domains() -> List[str]:

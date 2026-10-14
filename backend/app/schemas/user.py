@@ -52,11 +52,11 @@ class UserCreate(UserBase):
 class UserLogin(BaseModel):
     """Schema for user login"""
 
-    email: str  # Changed from EmailStr to str to support email/username hybrid login
-    password: str
-    session_id: Optional[str] = None
-    user_agent: Optional[str] = None
-    device_label: Optional[str] = None
+    email: str = Field(..., max_length=254)  # RFC max + length-bound log/audit use
+    password: str = Field(..., min_length=1, max_length=100)
+    session_id: Optional[str] = Field(None, max_length=64)
+    user_agent: Optional[str] = Field(None, max_length=500)  # matches DB column
+    device_label: Optional[str] = Field(None, max_length=255)  # matches DB column
 
 
 class UserUpdate(BaseModel):
