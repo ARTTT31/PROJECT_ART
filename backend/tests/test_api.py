@@ -18,40 +18,9 @@ from app.models.audit_log import AuditLog
 
 # No module-level asyncio mark: `pytest.ini` sets `asyncio_mode = auto`, so async
 # tests are collected without one — and marking the whole module would also stamp
-# the sync Starlette TestClient tests below with an asyncio mark they cannot use.
+# the sync Starlette TestClient tests below with an asyncio mark they cannot use.# NOTE: the shared `db_session` / `client` / `registered_user` /
+# `logged_in_user` fixtures live in tests/conftest.py
 
-# NOTE: the shared `db_session` / `client` fixtures live in tests/conftest.py
-
-@pytest.fixture
-async def registered_user(client):
-    """Register a user and return the response data."""
-    resp = await client.post("/api/v1/auth/register", json={
-        "email": "test@example.com",
-        "password": "SecretPass123",
-        "name": "Test User",
-    })
-    return resp.json()
-
-
-@pytest.fixture
-async def logged_in_user(client, registered_user):
-    """Login, then echo the CSRF cookie so authenticated mutations pass.
-
-    Cookie-authenticated writes are protected by a double-submit token, so the
-    client has to send the same value the backend stored in `csrf_token`.
-    """
-    resp = await client.post("/api/v1/auth/login", json={
-        "email": "test@example.com",
-        "password": "SecretPass123",
-    })
-
-    token = client.cookies.get("csrf_token")
-    if not token:
-        csrf_resp = await client.get("/api/v1/auth/csrf")
-        token = csrf_resp.json()["data"]["csrf_token"]
-    client.headers["X-CSRF-Token"] = token
-
-    return resp.json()
 
 
 # ── CSRF Protection Tests ─────────────────────────────────
@@ -1825,18 +1794,25 @@ class TestAuditTrailPersistence:
     async def test_avatar_update_persists_audit_row(
         self, client, logged_in_user, db_session
     ):
+        # T8 removed the raw-base64 /profile/avatar endpoint; the audited path
+        # is now the byte-sniffing /profile/upload-avatar.
+        png = (
+            b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x08"
+            b"\x08\x06\x00\x00\x00\xcc/\xa1\x18\x00\x00\x00\x0cIDATx\x9c\x02\x8c"
+            b"\x9b\xe3\xe4\x00\x00\x00\x00IEND\xaeB`\x82"
+        )
         resp = await client.post(
-            "/api/v1/profile/avatar",
-            json={"avatar_base64": "data:image/png;base64,AAAA"},
+            "/api/v1/profile/upload-avatar",
+            files={"file": ("tiny.png", png, "image/png")},
         )
         assert resp.status_code == 200, resp.text
         await db_session.rollback()
         rows = (
             await db_session.execute(
-                select(AuditLog).where(AuditLog.action == "AVATAR_UPDATE")
+                select(AuditLog).where(AuditLog.action == "AVATAR_UPLOAD")
             )
         ).scalars().all()
-        assert rows, "AVATAR_UPDATE succeeded but its audit row was rolled back"
+        assert rows, "AVATAR_UPLOAD succeeded but its audit row was rolled back"
 
     async def test_admin_create_persists_audit_row(self, admin_client, db_session):
         resp = await admin_client.post(

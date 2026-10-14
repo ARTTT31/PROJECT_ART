@@ -83,12 +83,6 @@ class UserAdminUpdate(BaseModel):
     password: Optional[str] = None
 
 
-class UserAvatarUpdate(BaseModel):
-    """Schema for updating user avatar"""
-
-    avatar_base64: str = Field(..., min_length=1)
-
-
 class UserQuickLinksUpdate(BaseModel):
     """Schema for updating user quick links"""
 

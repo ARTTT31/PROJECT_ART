@@ -14,7 +14,6 @@ from app.schemas.user import (
     UserResponse,
     UserUpdate,
     UserPasswordChange,
-    UserAvatarUpdate,
     UserQuickLinksUpdate,
     UserDashboardLayoutUpdate,
     UserCameraConfigUpdate,
@@ -199,51 +198,6 @@ async def change_password(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e),
-        )
-
-
-@router.post("/avatar", response_model=ResponseModel)
-async def update_avatar(
-    avatar_update: UserAvatarUpdate,
-    request: Request,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    """
-    Update user avatar (base64 encoded image)
-    """
-    user_service = UserService(db)
-
-    audit_service = AuditService(db)
-    client_ip = request.client.host if request.client else None
-    user_agent = request.headers.get("user-agent")
-
-    try:
-        await user_service.update_avatar(current_user.id, avatar_update.avatar_base64)
-
-        await audit_service.log_action(
-            action="AVATAR_UPDATE",
-            user_id=current_user.id,
-            details="User successfully updated avatar image",
-            ip_address=client_ip,
-            user_agent=user_agent,
-        )
-
-        # Commit the audit row (log_action only adds — see AuditService).
-        await db.commit()
-
-        return ResponseModel(
-            result="success",
-            message="อัปเดตรูปโปรไฟล์สำเร็จ",
-        )
-
-    except Exception:
-        # Generic body: exception text may leak internals. Full context is
-        # logged in the traceback.
-        profile_logger.exception("avatar update failed")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="เกิดข้อผิดพลาดภายในระบบ กรุณาลองอีกครั้งภายหลัง",
         )
 
 

@@ -52,3 +52,35 @@ async def client(db_session):
     async with AsyncClient(transport=transport, base_url="https://testserver.local") as ac:
         yield ac
     app.dependency_overrides.clear()
+
+
+@pytest.fixture
+async def registered_user(client):
+    """Register a user and return the response data."""
+    resp = await client.post("/api/v1/auth/register", json={
+        "email": "test@example.com",
+        "password": "SecretPass123",
+        "name": "Test User",
+    })
+    return resp.json()
+
+
+@pytest.fixture
+async def logged_in_user(client, registered_user):
+    """Login, then echo the CSRF cookie so authenticated mutations pass.
+
+    Cookie-authenticated writes are protected by a double-submit token, so the
+    client has to send the same value the backend stored in `csrf_token`.
+    """
+    resp = await client.post("/api/v1/auth/login", json={
+        "email": "test@example.com",
+        "password": "SecretPass123",
+    })
+
+    token = client.cookies.get("csrf_token")
+    if not token:
+        csrf_resp = await client.get("/api/v1/auth/csrf")
+        token = csrf_resp.json()["data"]["csrf_token"]
+    client.headers["X-CSRF-Token"] = token
+
+    return resp.json()
