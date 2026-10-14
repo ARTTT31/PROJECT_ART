@@ -388,33 +388,64 @@ def _get_valid_client_ids() -> List[str]:
 async def google_verify_token(
     token_request: dict, request: Request, db: AsyncSession = Depends(get_db)
 ):
-    """Verify Google token (id_token or access_token) from web and issue JWT via HTTP-only cookies"""
-    id_token_jwt = token_request.get("id_token")
-    access_token = token_request.get("access_token")
+    """Verify a Google id_token and issue JWT via HTTP-only cookies.
 
-    if not id_token_jwt and not access_token:
+    🔒 SECURITY: the token *audience* must be one of the configured
+    GOOGLE_VALID_CLIENT_IDS — a token issued to any other OAuth client is
+    rejected with 401 even when its signature and email are valid.
+    The legacy ``access_token``/userinfo login path was removed: userinfo
+    responses carry no verifiable audience, so any client's token could be
+    replayed here to sign in as the token's owner.
+    """
+    id_token_jwt = token_request.get("id_token")
+
+    if not id_token_jwt:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Missing id_token or access_token from request"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Missing id_token from request"
         )
 
     valid_client_ids = _get_valid_client_ids()
+    if not valid_client_ids:
+        # Fail closed: without an allow-list we cannot validate the audience,
+        # so Google login is intentionally disabled instead of accepting any.
+        logger.error("GOOGLE_AUTH: GOOGLE_VALID_CLIENT_IDS not configured")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Google login is not configured",
+        )
+
     verified_info = None
 
-    if access_token:
-        # Verify access token by getting userinfo (httpx keeps the event loop
-        # free — a sync `requests` call blocked a worker for the full timeout).
+    # 1. Try local verification via google-auth library
+    if _GOOGLE_AUTH_AVAILABLE:
+        try:
+            request_adapter = google_requests.Request()
+            verified_info = google_id_token.verify_oauth2_token(
+                id_token_jwt,
+                request_adapter,
+                clock_skew_in_seconds=30,
+            )
+        except Exception as e:
+            logger.info(f"[GOOGLE_AUTH] Local verification error, trying Google API fallback: {e}")
+
+    # 2. Fallback: Verify directly with Google's official tokeninfo REST API
+    if not verified_info:
         try:
             async with httpx.AsyncClient(timeout=10) as client:
-                userinfo_resp = await client.get(
-                    "https://www.googleapis.com/oauth2/v3/userinfo",
-                    params={"access_token": access_token},
+                tokeninfo_resp = await client.get(
+                    "https://oauth2.googleapis.com/tokeninfo",
+                    params={"id_token": id_token_jwt},
                 )
-            if userinfo_resp.status_code == 200:
-                verified_info = userinfo_resp.json()
+            if tokeninfo_resp.status_code == 200:
+                verified_info = tokeninfo_resp.json()
             else:
+                try:
+                    error_detail = tokeninfo_resp.json().get("error_description", "Invalid ID token")
+                except Exception:
+                    error_detail = "Invalid ID token"
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Google access token verification failed",
+                    detail=f"Google token verification failed: {error_detail}",
                 )
         except HTTPException:
             raise
@@ -423,45 +454,6 @@ async def google_verify_token(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail=f"Google token verification network error: {type(e).__name__}",
             )
-    else:
-        # 1. Try local verification via google-auth library
-        if _GOOGLE_AUTH_AVAILABLE:
-            try:
-                request_adapter = google_requests.Request()
-                verified_info = google_id_token.verify_oauth2_token(
-                    id_token_jwt,
-                    request_adapter,
-                    clock_skew_in_seconds=30,
-                )
-            except Exception as e:
-                logger.info(f"[GOOGLE_AUTH] Local verification error, trying Google API fallback: {e}")
-
-        # 2. Fallback: Verify directly with Google's official tokeninfo REST API
-        if not verified_info:
-            try:
-                async with httpx.AsyncClient(timeout=10) as client:
-                    tokeninfo_resp = await client.get(
-                        "https://oauth2.googleapis.com/tokeninfo",
-                        params={"id_token": id_token_jwt},
-                    )
-                if tokeninfo_resp.status_code == 200:
-                    verified_info = tokeninfo_resp.json()
-                else:
-                    try:
-                        error_detail = tokeninfo_resp.json().get("error_description", "Invalid ID token")
-                    except Exception:
-                        error_detail = "Invalid ID token"
-                    raise HTTPException(
-                        status_code=status.HTTP_401_UNAUTHORIZED,
-                        detail=f"Google token verification failed: {error_detail}",
-                    )
-            except HTTPException:
-                raise
-            except Exception as e:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail=f"Google token verification network error: {type(e).__name__}",
-                )
 
     if not verified_info:
         raise HTTPException(
@@ -469,21 +461,21 @@ async def google_verify_token(
             detail="Could not verify Google token",
         )
 
-    # Verify the audience when client IDs are configured. Userinfo responses
-    # obtained with an access token do not normally expose an audience.
-    if not access_token:
-        token_aud = verified_info.get("aud")
-        if valid_client_ids and token_aud not in valid_client_ids:
-            # Check azp as well for Google GIS web apps
-            token_azp = verified_info.get("azp")
-            if token_azp not in valid_client_ids:
-                logger.warning(
-                    "GOOGLE_AUTH: token audience '%s' (azp: '%s') not in configured "
-                    "client IDs: %s",
-                    token_aud,
-                    token_azp,
-                    valid_client_ids,
-                )
+    # 🔒 SECURITY: mandatory audience check — fail closed, always.
+    token_aud = verified_info.get("aud")
+    token_azp = verified_info.get("azp")
+    if token_aud not in valid_client_ids and token_azp not in valid_client_ids:
+        logger.warning(
+            "GOOGLE_AUTH: token audience '%s' (azp: '%s') not in configured "
+            "client IDs: %s",
+            token_aud,
+            token_azp,
+            valid_client_ids,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token audience mismatch",
+        )
 
     # Extract verified user info
     email = verified_info.get("email")
