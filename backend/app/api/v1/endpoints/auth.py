@@ -387,10 +387,22 @@ async def google_login(request: Request):
         "scope": "openid email profile",
         "access_type": "offline",
         "prompt": "select_account",
+        # OAuth CSRF protection: verified in /google/callback via compare_digest.
+        "state": secrets.token_urlsafe(32),
     }
 
     url = f"https://accounts.google.com/o/oauth2/v2/auth?{urlencode(params)}"
-    return RedirectResponse(url)
+    response = RedirectResponse(url)
+    response.set_cookie(
+        key="oauth_state",
+        value=params["state"],
+        max_age=600,  # state is single-use for ~the login round-trip (10 min)
+        httponly=True,
+        samesite="lax",
+        secure=settings.COOKIE_SECURE,
+        path="/",
+    )
+    return response
 
 
 def _get_valid_client_ids() -> List[str]:
@@ -599,7 +611,10 @@ async def google_verify_token(
 
 @router.get("/google/callback")
 async def google_callback(
-    request: Request, code: str | None = None, db: AsyncSession = Depends(get_db)
+    request: Request,
+    code: str | None = None,
+    state: str | None = None,
+    db: AsyncSession = Depends(get_db),
 ):
     """Handle callback from Google with id_token verification, then issue JWT via HTTP-only cookies"""
     if not _GOOGLE_AUTH_AVAILABLE:
@@ -621,6 +636,21 @@ async def google_callback(
     if not code:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Missing code from Google"
+        )
+
+    # 🔒 OAuth CSRF protection: the state must match the one we issued in
+    # /google and stored in the oauth_state cookie. Reject BEFORE exchanging
+    # the code, so an attacker-supplied code is never redeemed.
+    cookie_state = request.cookies.get("oauth_state") or ""
+    query_state = state or ""
+    if (
+        not cookie_state
+        or not query_state
+        or not secrets.compare_digest(cookie_state, query_state)
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Missing or invalid OAuth state",
         )
 
     # Exchange code for tokens
@@ -734,6 +764,10 @@ async def google_callback(
 
     redirect_url = f"{frontend_redirect}/login-success"
     response = RedirectResponse(url=redirect_url)
+    # The single-use state cookie is consumed on success.
+    response.delete_cookie(
+        "oauth_state", samesite="lax", secure=settings.COOKIE_SECURE, path="/"
+    )
 
     response.set_cookie(
         key="access_token",
