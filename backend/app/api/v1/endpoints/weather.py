@@ -123,12 +123,21 @@ def _cache_set(cache: dict, key: tuple, data: dict) -> None:
 # ~0.01° resolution is fine-grained enough for weather while bounding distinct
 # L1/L2 rows (the previous 4-decimal rounding made every tiny coordinate change
 # a brand-new cache row kept for weeks).
-def _cache_key_forecast(lat: float, lon: float, days: int) -> tuple:
-    return (round(lat, 2), round(lon, 2), days)
+def _validate_timezone(tz: str) -> str:
+    """Reject timezones that zoneinfo cannot load (user-controlled input)."""
+    try:
+        ZoneInfo(tz)
+    except Exception:
+        raise HTTPException(status_code=422, detail="Invalid IANA timezone")
+    return tz
 
 
-def _cache_key_aqi(lat: float, lon: float) -> tuple:
-    return (round(lat, 2), round(lon, 2))
+def _cache_key_forecast(lat: float, lon: float, days: int, tz: str) -> tuple:
+    return (round(lat, 2), round(lon, 2), days, tz)
+
+
+def _cache_key_aqi(lat: float, lon: float, tz: str) -> tuple:
+    return (round(lat, 2), round(lon, 2), tz)
 
 
 def _cache_key_geocode(lat: float, lon: float, lang: str) -> tuple:
@@ -527,7 +536,9 @@ async def get_forecast_proxy(
 
     Returns the standard forecast JSON shape so frontend widgets need no re-parsing.
     """
-    cache_key = _cache_key_forecast(latitude, longitude, forecast_days)
+    cache_key = _cache_key_forecast(
+        latitude, longitude, forecast_days, _validate_timezone(timezone)
+    )
     cached = await _cached_payload(
         db, _WEATHER_CACHE, NS_FORECAST, cache_key, FORECAST_CACHE_TTL
     )
@@ -585,7 +596,7 @@ async def get_air_quality_proxy(
     timezone: str = Query("Asia/Bangkok"),
 ):
     """Proxy to Open-Meteo air-quality API (PM2.5 / PM10 / US AQI)."""
-    cache_key = _cache_key_aqi(latitude, longitude)
+    cache_key = _cache_key_aqi(latitude, longitude, _validate_timezone(timezone))
     cached = await _cached_payload(
         db, _AQI_CACHE, NS_AIR_QUALITY, cache_key, AIR_QUALITY_CACHE_TTL
     )

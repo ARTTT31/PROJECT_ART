@@ -948,7 +948,7 @@ class TestWeatherUpstreamResilience:
         from app.api.v1.endpoints import weather as w
 
         w._WEATHER_CACHE.clear()
-        key = w._cache_key_forecast(13.7563, 100.5018, 2)
+        key = w._cache_key_forecast(13.7563, 100.5018, 2, "Asia/Bangkok")
         w._cache_set(w._WEATHER_CACHE, key, {"current": {"temperature_2m": 31}})
         # Force the entry to look expired.
         w._WEATHER_CACHE[key]["ts"] -= __import__("datetime").timedelta(seconds=10_000)
@@ -1084,8 +1084,8 @@ class TestWeatherPersistentCache:
         assert (await self._forecast(client)).status_code == 200
 
         rows = (await db_session.execute(select(WeatherCacheEntry))).scalars().all()
-        # T7: cache keys / upstream params now round coordinates to 2 decimals.
-        assert [r.key for r in rows] == ["forecast:13.76:100.5:2"]
+        # T7: cache keys round coordinates to 2 decimals; T10 appends timezone.
+        assert [r.key for r in rows] == ["forecast:13.76:100.5:2:Asia/Bangkok"]
 
     async def test_restart_serves_the_persisted_entry(self, monkeypatch, client):
         """After a restart the persisted payload answers, without touching the provider."""
@@ -1119,7 +1119,7 @@ class TestWeatherPersistentCache:
         from app.models.weather_cache import WeatherCacheEntry
         from app.services import weather_cache
 
-        key = w._cache_key_forecast(13.7563, 100.5018, 2)
+        key = w._cache_key_forecast(13.7563, 100.5018, 2, "Asia/Bangkok")
         w._WEATHER_CACHE.clear()
         await weather_cache.store(
             db_session, w.NS_FORECAST, key, {"current": {"temperature_2m": 30}}
@@ -1148,7 +1148,7 @@ class TestWeatherPersistentCache:
 
         w._WEATHER_CACHE.clear()
         await weather_cache.store(
-            db_session, w.NS_FORECAST, w._cache_key_forecast(13.7563, 100.5018, 2),
+            db_session, w.NS_FORECAST, w._cache_key_forecast(13.7563, 100.5018, 2, "Asia/Bangkok"),
             {"current": {"temperature_2m": 28}},
         )
         holder = _install_fake_http(monkeypatch, [_FakeResponse(200, {"current": {}})])
@@ -1172,7 +1172,7 @@ class TestWeatherPersistentCache:
         from app.services import weather_cache
 
         w._WEATHER_CACHE.clear()
-        key = w._cache_key_forecast(13.7563, 100.5018, 2)
+        key = w._cache_key_forecast(13.7563, 100.5018, 2, "Asia/Bangkok")
         await weather_cache.store(
             db_session, w.NS_FORECAST, key, {"current": {"temperature_2m": 21}}
         )
