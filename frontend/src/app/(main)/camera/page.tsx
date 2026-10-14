@@ -13,7 +13,6 @@ import {
   Trash2,
   Pencil,
   Video,
-  Globe,
   Radio,
   Image as ImageIcon,
   Check,
@@ -21,6 +20,7 @@ import {
 import { useAuth } from '@/hooks/useAuth'
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth'
 import { CameraStreamConfig, CameraStreamType } from '@/types'
+import { sanitizeCameraStreams, stripCameraCredentials } from '@/utils/cameraUrl'
 import { showToast, showDeleteConfirm } from '@/utils/sweetalert'
 import {
   Dialog,
@@ -103,7 +103,8 @@ export default function CameraPage() {
       try {
         const parsed = JSON.parse(user.camera_config)
         if (Array.isArray(parsed) && parsed.length > 0) {
-          loaded = parsed
+          // T16: migrate the removed iframe type and never resurrect stored credentials.
+          loaded = sanitizeCameraStreams(parsed) as CameraStreamConfig[]
         }
       } catch (e) {
         console.error('Failed to parse camera_config:', e)
@@ -114,7 +115,7 @@ export default function CameraPage() {
         try {
           const parsed = JSON.parse(saved)
           if (Array.isArray(parsed) && parsed.length > 0) {
-            loaded = parsed
+            loaded = sanitizeCameraStreams(parsed) as CameraStreamConfig[]
           }
         } catch {}
       }
@@ -130,7 +131,9 @@ export default function CameraPage() {
   const persistStreams = useCallback(
     async (nextStreams: CameraStreamConfig[]) => {
       setStreams(nextStreams)
-      const payload = JSON.stringify(nextStreams)
+      // T16: credentials typed into a camera URL are stripped before they are
+      // ever written to localStorage or the users table.
+      const payload = JSON.stringify(sanitizeCameraStreams(nextStreams))
 
       try {
         localStorage.setItem('artWorkspaceCameraConfig', payload)
@@ -670,7 +673,6 @@ export default function CameraPage() {
                     {[
                       { type: 'snapshot' as const, label: 'Snapshot ภาพนิ่ง', icon: ImageIcon },
                       { type: 'mjpeg' as const, label: 'MJPEG สตรีม', icon: Video },
-                      { type: 'iframe' as const, label: 'Web Embed / NVR', icon: Globe },
                       { type: 'simulated' as const, label: 'โหมดจำลอง', icon: Radio },
                     ].map((opt) => {
                       const Icon = opt.icon
