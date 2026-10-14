@@ -31,7 +31,7 @@ from app.core.utils import decode_user_cookie, encode_user_cookie
 from app.core.security import create_access_token, create_refresh_token, decode_token
 from app.models.session import UserSession
 from app.schemas.response import ResponseModel
-from app.schemas.user import UserCreate, UserLogin
+from app.schemas.user import UserCreate, UserLogin, UserRegister
 from app.services.auth_service import AuthService
 from app.services.audit_service import AuditService
 from app.services.user_service import UserService
@@ -190,12 +190,15 @@ async def login(
 )
 @limiter.limit(_AUTH_LIMIT)
 async def register(
-    user_create: UserCreate,
+    user_register: UserRegister,
     request: Request,
     db: AsyncSession = Depends(get_db),
 ):
     """
     Register new user
+
+    Accepts ``UserRegister`` — no ``role`` field — so an anonymous caller can
+    never create an admin account. The server assigns role="user".
 
     Note: In production, you may want to restrict this endpoint
     or add email verification
@@ -206,7 +209,7 @@ async def register(
     user_agent = request.headers.get("user-agent")
 
     try:
-        user = await auth_service.register(user_create)
+        user = await auth_service.register(user_register, role="user")
 
         await audit_service.log_action(
             action="USER_REGISTER",

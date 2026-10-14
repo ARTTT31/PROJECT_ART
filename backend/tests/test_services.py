@@ -90,8 +90,13 @@ class TestUserServiceCreate:
         assert user.email == "upper@example.com"
 
     async def test_create_user_with_admin_role(self, user_service, admin_user_data):
-        user = await user_service.create_user(admin_user_data)
+        user = await user_service.create_user(admin_user_data, role="admin")
         assert user.role == "admin"
+
+    async def test_create_user_default_role_is_user_regardless_of_payload(self, user_service, admin_user_data):
+        """role must be chosen by the server, not whatever the payload carries."""
+        user = await user_service.create_user(admin_user_data)
+        assert user.role == "user"
 
 
 class TestUserServiceRead:

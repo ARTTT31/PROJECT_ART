@@ -2,7 +2,7 @@
 User Schemas
 """
 
-from typing import Optional
+from typing import Literal, Optional
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
@@ -14,11 +14,32 @@ class UserBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
 
 
-class UserCreate(UserBase):
-    """Schema for creating a new user"""
+class UserRegister(UserBase):
+    """Schema for SELF-registration via the unauthenticated /auth/register endpoint.
+
+    Same fields as ``UserCreate`` but WITHOUT a role — server code always assigns
+    the "user" role, so an anonymous caller cannot create an admin.
+    """
 
     password: str = Field(..., min_length=8, max_length=100)
-    role: Optional[str] = "user"
+
+    @field_validator("password")
+    @classmethod
+    def validate_password(cls, v):
+        if len(v) < 8:
+            raise ValueError("Password must be at least 8 characters")
+        return v
+
+
+class UserCreate(UserBase):
+    """Schema for creating a new user (admin-only endpoints only).
+
+    Do NOT use this schema for the public /auth/register route — use
+    ``UserRegister`` there, so the caller cannot choose their own role.
+    """
+
+    password: str = Field(..., min_length=8, max_length=100)
+    role: Literal["user", "admin"] = "user"
 
     @field_validator("password")
     @classmethod

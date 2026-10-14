@@ -2,7 +2,7 @@
 Authentication Service - Business logic for authentication
 """
 
-from typing import Optional, Dict
+from typing import Optional, Dict, Union
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from fastapi import HTTPException, status
@@ -11,7 +11,7 @@ import uuid
 
 from app.models.user import User
 from app.models.session import UserSession
-from app.schemas.user import UserCreate
+from app.schemas.user import UserCreate, UserRegister
 from app.schemas.token import Token
 from app.core.security import (
     verify_password,
@@ -180,17 +180,23 @@ class AuthService:
             },
         }
 
-    async def register(self, user_create: UserCreate) -> User:
+    async def register(
+        self, user_create: Union[UserCreate, UserRegister], *, role: str = "user"
+    ) -> User:
         """
         Register new user
 
+        The role is a server-side argument — request payloads cannot choose it
+        (self-registration always ends up with role="user").
+
         Args:
             user_create: User creation data
+            role: Role assigned by the server (caller cannot choose it)
 
         Returns:
             Created user
         """
-        return await self.user_service.create_user(user_create)
+        return await self.user_service.create_user(user_create, role=role)
 
     async def refresh_access_token(self, refresh_token: str) -> Token:
         """

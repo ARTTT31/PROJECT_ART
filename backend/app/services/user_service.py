@@ -2,13 +2,13 @@
 User Service - Business logic for user management
 """
 
-from typing import List, Optional
+from typing import List, Optional, Union
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.exc import IntegrityError
 
 from app.models.user import User
-from app.schemas.user import UserCreate, UserUpdate, UserAdminUpdate, UserAdminCreate
+from app.schemas.user import UserCreate, UserRegister, UserUpdate, UserAdminUpdate, UserAdminCreate
 from app.core.security import get_password_hash, verify_password
 from app.core.utils import utcnow
 
@@ -51,12 +51,16 @@ class UserService:
         result = await self.db.execute(select(User).offset(skip).limit(limit))
         return list(result.scalars().all())
 
-    async def create_user(self, user_create: UserCreate) -> User:
+    async def create_user(
+        self, user_create: Union[UserCreate, UserRegister], role: str = "user"
+    ) -> User:
         """
         Create new user
 
         Args:
             user_create: User creation data
+            role: Role assigned by the SERVER — callers must not be able to
+                choose it from unauthenticated endpoints (defaults to "user")
 
         Returns:
             Created user
@@ -76,7 +80,7 @@ class UserService:
             email=user_create.email.lower(),
             hashed_password=hashed_password,
             name=user_create.name,
-            role=user_create.role or "user",
+            role=role,
         )
 
         self.db.add(db_user)

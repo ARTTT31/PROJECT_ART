@@ -19,36 +19,7 @@ from app.models.audit_log import AuditLog
 # tests are collected without one — and marking the whole module would also stamp
 # the sync Starlette TestClient tests below with an asyncio mark they cannot use.
 
-# ── Fixtures ──────────────────────────────────────────────
-
-@pytest.fixture
-async def db_session():
-    """Create a fresh in-memory SQLite database for each test."""
-    engine = create_async_engine(
-        "sqlite+aiosqlite:///:memory:", connect_args={"check_same_thread": False}
-    )
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    
-    Session = async_sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=False)
-    async with Session() as session:
-        yield session
-    
-    await engine.dispose()
-
-
-@pytest.fixture
-async def client(db_session):
-    """Create an AsyncClient with overridden DB dependency."""
-    async def override_get_db():
-        yield db_session
-
-    app.dependency_overrides[get_db] = override_get_db
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="https://testserver.local") as ac:
-        yield ac
-    app.dependency_overrides.clear()
-
+# NOTE: the shared `db_session` / `client` fixtures live in tests/conftest.py
 
 @pytest.fixture
 async def registered_user(client):

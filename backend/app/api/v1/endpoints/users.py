@@ -71,7 +71,9 @@ async def create_user(
     user_agent = request.headers.get("user-agent")
 
     try:
-        user = await user_service.create_user(user_create)
+        user = await user_service.create_user(
+            user_create, role=user_create.role
+        )
 
         await audit_service.log_action(
             action="ADMIN_USER_CREATE",
