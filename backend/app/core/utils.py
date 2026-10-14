@@ -16,6 +16,18 @@ def utcnow() -> datetime:
     return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
+# The readable ``user`` cookie is a display cache for the frontend. Carrying
+# the avatar / quick_links blobs made a single Set-Cookie header exceed header
+# ceilings (a 1MB avatar  ~1.4MB when base64+percent-encoded); anything beyond
+# the keys below is fetched from the API instead.
+USER_COOKIE_FIELDS = ("id", "role", "name", "email")
+
+
+def user_cookie_payload(data: dict) -> dict:
+    """Minified payload for the readable ``user`` cookie."""
+    return {key: data.get(key) for key in USER_COOKIE_FIELDS if key in data}
+
+
 def encode_user_cookie(data: dict) -> str:
     """Percent-encode the JSON payload for the readable ``user`` cookie.
 

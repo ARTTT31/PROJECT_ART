@@ -29,7 +29,7 @@ except ImportError:
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.rate_limit import limiter
-from app.core.utils import encode_user_cookie, utcnow as utils_utcnow
+from app.core.utils import encode_user_cookie, user_cookie_payload, utcnow as utils_utcnow
 from app.core.security import create_access_token, create_refresh_token, decode_token
 from app.api.dependencies import resolve_user_from_token
 from app.models.session import UserSession
@@ -175,7 +175,7 @@ async def login(
         # serialiser into a shape document.cookie readers cannot parse.
         response.set_cookie(
             key="user",
-            value=encode_user_cookie(response_data["user"]),
+            value=encode_user_cookie(user_cookie_payload(response_data["user"])),
             max_age=7 * 24 * 60 * 60,
             httponly=False,
             **COOKIE_OPTIONS,
@@ -348,7 +348,7 @@ async def refresh_token(
                 }
                 response.set_cookie(
                     key="user",
-                    value=encode_user_cookie(user_data),
+                    value=encode_user_cookie(user_cookie_payload(user_data)),
                     max_age=7 * 24 * 60 * 60,
                     httponly=False,
                     **COOKIE_OPTIONS,
@@ -600,7 +600,7 @@ async def google_verify_token(
     )
     response.set_cookie(
         key="user",
-        value=encode_user_cookie(user_data),
+        value=encode_user_cookie(user_cookie_payload(user_data)),
         max_age=7 * 24 * 60 * 60,
         httponly=False,
         **COOKIE_OPTIONS,
@@ -785,7 +785,7 @@ async def google_callback(
     )
     response.set_cookie(
         key="user",
-        value=encode_user_cookie(user_data),
+        value=encode_user_cookie(user_cookie_payload(user_data)),
         max_age=7 * 24 * 60 * 60,
         httponly=False,
         **COOKIE_OPTIONS,
