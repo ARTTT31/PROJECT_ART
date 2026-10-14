@@ -64,9 +64,11 @@ class AuthService:
                 detail="ชื่อผู้ใช้งานหรือรหัสผ่านไม่ถูกต้อง",
             )
 
-        # Check if account is locked
+        # Check if account is locked.
+        # A lock with NO expiry is a manual ADMIN lock: it only clears when an
+        # admin unlocks it — it must not be silently lifted by the next login.
         if user.is_locked:
-            if user.locked_until and user.locked_until > datetime.now(
+            if user.locked_until is None or user.locked_until > datetime.now(
                 timezone.utc
             ).replace(tzinfo=None):
                 raise HTTPException(
@@ -74,7 +76,7 @@ class AuthService:
                     detail="บัญชีถูกล็อก กรุณาลองใหม่ภายหลัง",
                 )
             else:
-                # Unlock account if lock period has passed
+                # Automatic lock whose expiry has passed: unlock it now
                 user.is_locked = False
                 user.locked_until = None
                 user.failed_login_attempts = 0
