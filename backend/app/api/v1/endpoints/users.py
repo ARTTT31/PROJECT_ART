@@ -2,16 +2,24 @@
 User Management Endpoints (Admin Only)
 """
 
-from typing import List
-from fastapi import APIRouter, Depends, HTTPException, status, Request
+import math
+from typing import List, Literal, Optional
+from fastapi import APIRouter, Depends, HTTPException, Query, status, Request, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.rate_limit import limiter
-from app.schemas.user import UserResponse, UserCreate, UserAdminUpdate, UserAdminCreate
+from app.core.utils import utcnow
+from app.schemas.user import (
+    UserResponse,
+    UserCreate,
+    UserAdminUpdate,
+    UserAdminCreate,
+    UserTrashResponse,
+)
 from app.schemas.response import ResponseModel
-from app.services.user_service import UserService
+from app.services.user_service import UserService, purge_at, retention_days
 from app.api.dependencies import get_current_admin_user
 from app.models.user import User
 
@@ -29,17 +37,73 @@ _GENERAL_LIMIT = f"{settings.RATE_LIMIT_GENERAL_PER_MINUTE}/minute"
 @limiter.limit(_GENERAL_LIMIT)
 async def list_users(
     request: Request,
-    skip: int = 0,
-    limit: int = 100,
+    response: Response,
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=200),
+    q: Optional[str] = Query(None, max_length=100, description="ค้นหาจากชื่อ/อีเมล/ชื่อผู้ใช้"),
+    role: Optional[Literal["user", "admin"]] = None,
+    is_active: Optional[bool] = None,
     current_user: User = Depends(get_current_admin_user),
     db: AsyncSession = Depends(get_db),
 ):
     """
     List all users (Admin only)
+
+    Case-insensitive search plus role/status filters and pagination. The number
+    of matches is returned in ``X-Total-Count`` so the panel can page without a
+    second round trip. Accounts in the trash are never listed here.
     """
     user_service = UserService(db)
-    users = await user_service.get_users(skip=skip, limit=limit)
+
+    # Housekeeping. This panel load is the closest thing to a cron in this
+    # deployment, so expired trash rows are purged on the way in.
+    await user_service.purge_expired_users()
+
+    users = await user_service.get_users(
+        skip=skip, limit=limit, q=q, role=role, is_active=is_active
+    )
+    total = await user_service.count_users(q=q, role=role, is_active=is_active)
+    response.headers["X-Total-Count"] = str(total)
     return users
+
+
+@router.get("/deleted", response_model=List[UserTrashResponse])
+@limiter.limit(_GENERAL_LIMIT)
+async def list_deleted_users(
+    request: Request,
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=200),
+    current_user: User = Depends(get_current_admin_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    List deleted accounts still inside the restore window (Admin only)
+
+    Declared before ``/{user_id}`` on purpose: that path parameter is an int, so
+    its route would swallow "deleted" (422) if it were registered first.
+    """
+    user_service = UserService(db)
+    await user_service.purge_expired_users()
+
+    users = await user_service.get_deleted_users(skip=skip, limit=limit)
+    now = utcnow()
+
+    deleted: List[UserTrashResponse] = []
+    for user in users:
+        # The query already filters on deleted_at, so this only narrows the type
+        # for the arithmetic below.
+        if user.deleted_at is None:
+            continue
+        expires = purge_at(user.deleted_at)
+        deleted.append(
+            UserTrashResponse(
+                **UserResponse.model_validate(user).model_dump(),
+                days_remaining=max(0, math.ceil((expires - now).total_seconds() / 86400)),
+                purge_at=expires,
+            )
+        )
+
+    return deleted
 
 
 @router.get("/{user_id}", response_model=UserResponse)
@@ -219,11 +283,20 @@ async def update_user(
 async def delete_user(
     user_id: int,
     request: Request,
+    purge: bool = Query(
+        False,
+        description="ลบบัญชีถาวรทันที — ใช้ได้เฉพาะบัญชีที่อยู่ในถังขยะแล้ว",
+    ),
     current_user: User = Depends(get_current_admin_user),
     db: AsyncSession = Depends(get_db),
 ):
     """
     Delete user (Admin only)
+
+    By default the account is moved to the trash: it is hidden, locked out and
+    its sessions are revoked, but an admin can restore it for
+    ``settings.USER_DELETE_RETENTION_DAYS`` days. ``?purge=true`` erases a
+    trashed account immediately and permanently instead.
     """
     # Safeguard: Prevent self-targeting admin deletion that would cause system lockout
     if current_user.id == user_id:
@@ -240,24 +313,47 @@ async def delete_user(
 
     # Get user email/username before deletion for logging
     target_user = await user_service.get_user_by_id(user_id)
-    target_identifier = (
-        target_user.email
-        if (target_user and target_user.email)
-        else (target_user.username if target_user else f"ID {user_id}")
-    )
-
-    success = await user_service.delete_user(user_id)
-
-    if not success:
+    if not target_user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found",
         )
 
+    target_identifier = target_user.email or target_user.username or f"ID {user_id}"
+
+    if purge:
+        # Only a trashed account may be erased, so a permanent delete is always a
+        # deliberate second step rather than a typo in a query string.
+        if target_user.deleted_at is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="ต้องย้ายบัญชีเข้าถังขยะก่อนจึงจะลบถาวรได้",
+            )
+        if not await user_service.delete_user(user_id):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found",
+            )
+        action = "ADMIN_USER_PURGE"
+        details = f"Admin permanently deleted user: {target_identifier} (ID: {user_id})"
+        message = "ลบผู้ใช้ถาวรสำเร็จ"
+    else:
+        if await user_service.soft_delete_user(user_id) is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found",
+            )
+        action = "ADMIN_USER_DELETE"
+        details = (
+            f"Admin deleted user: {target_identifier} (ID: {user_id}) "
+            f"— restorable for {retention_days()} days"
+        )
+        message = f"ย้ายบัญชีเข้าถังขยะแล้ว — กู้คืนได้ภายใน {retention_days()} วัน"
+
     await audit_service.log_action(
-        action="ADMIN_USER_DELETE",
+        action=action,
         user_id=current_user.id,
-        details=f"Admin deleted user: {target_identifier} (ID: {user_id})",
+        details=details,
         ip_address=client_ip,
         user_agent=user_agent,
     )
@@ -265,5 +361,45 @@ async def delete_user(
 
     return ResponseModel(
         result="success",
-        message="ลบผู้ใช้สำเร็จ",
+        message=message,
+        data={"user_id": user_id, "purged": purge, "retention_days": retention_days()},
+    )
+
+
+@router.post("/{user_id}/restore", response_model=ResponseModel)
+@limiter.limit(_GENERAL_LIMIT)
+async def restore_user(
+    user_id: int,
+    request: Request,
+    current_user: User = Depends(get_current_admin_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Restore a deleted account from the trash (Admin only)
+    """
+    user_service = UserService(db)
+    restored = await user_service.restore_user(user_id)
+
+    if restored is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="ไม่พบบัญชีนี้ในถังขยะ",
+        )
+
+    audit_service = AuditService(db)
+    await audit_service.log_action(
+        action="ADMIN_USER_RESTORE",
+        user_id=current_user.id,
+        details=(
+            f"Admin restored user: {restored.email or restored.username} (ID: {user_id})"
+        ),
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent"),
+    )
+    await db.commit()
+
+    return ResponseModel(
+        result="success",
+        message="กู้คืนผู้ใช้สำเร็จ",
+        data={"user_id": restored.id, "is_active": restored.is_active},
     )

@@ -106,6 +106,13 @@ class Settings(BaseSettings):
     # its own rate-limit bucket by inventing a header.
     TRUSTED_PROXY_IPS: str = ""
 
+    # ── Soft-deleted accounts ───────────────────────────────────────────────
+    # How long a deleted account sits in the trash before it is purged for good.
+    # While it is there the admin can restore it from the admin panel; the
+    # email/username stay reserved so the account can come back to the same
+    # identity. Set to 0 to purge on the next housekeeping pass.
+    USER_DELETE_RETENTION_DAYS: int = 30
+
     # ── Session housekeeping ────────────────────────────────────────────────
     # In-app scheduler that deletes expired/inactive sessions. Set to 0 to turn
     # it off (then run `python -m app.services.session_cleanup` from cron).

@@ -38,6 +38,13 @@ class User(Base, TimestampMixin):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     is_locked: Mapped[bool] = mapped_column(Boolean, default=False)
 
+    # Soft delete. A NULL value means a live account; a timestamp means the
+    # account is in the trash: it is hidden from every list, cannot log in
+    # (is_active is cleared with it) and is permanently purged once the
+    # retention window in ``settings.USER_DELETE_RETENTION_DAYS`` has passed.
+    # Keeping the row is also what keeps ``audit_logs.user_id`` resolvable.
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime, index=True)
+
     # Login tracking
     last_login: Mapped[datetime | None] = mapped_column(DateTime)
     last_login_ip: Mapped[str | None] = mapped_column(String(45))

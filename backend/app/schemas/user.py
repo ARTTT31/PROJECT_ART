@@ -123,6 +123,9 @@ class UserAdminCreate(BaseModel):
     password: str = Field(..., min_length=8, max_length=100)
     email: Optional[EmailStr] = None
     role: Optional[str] = "user"
+    # Same JSON-as-text shape the admin edit form uses, so the new account can
+    # be set up with its page access in one step (NULL means "all pages").
+    accessible_pages: Optional[str] = Field(None, max_length=100_000)
 
     @field_validator("password")
     @classmethod
@@ -150,5 +153,14 @@ class UserResponse(BaseModel):
     last_login: Optional[datetime] = None
     created_at: datetime
     updated_at: datetime
+    # Set while the account sits in the trash (see the admin restore endpoint).
+    deleted_at: Optional[datetime] = None
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class UserTrashResponse(UserResponse):
+    """A soft-deleted account, with how long it can still be restored."""
+
+    days_remaining: int
+    purge_at: datetime
