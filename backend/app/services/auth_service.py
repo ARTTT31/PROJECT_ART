@@ -2,13 +2,14 @@
 Authentication Service - Business logic for authentication
 """
 
+import hashlib
 import logging
-from typing import Dict, Optional, Tuple, Union
+import time
+from typing import Any, Dict, Optional, Tuple, Union
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from fastapi import HTTPException, status
 from datetime import datetime, timedelta, timezone
-import time
 import uuid
 
 from app.models.user import User
@@ -23,6 +24,7 @@ from app.core.security import (
     decode_token,
     new_refresh_jti,
 )
+from app.core.config import settings
 from app.core.utils import utcnow
 from app.services.user_service import UserService
 
@@ -39,33 +41,106 @@ REFRESH_GRACE_SECONDS = 30
 
 
 # ── Login brute-force backoff (T12) ──────────────────────────────────────
-# Failures are tracked per (lowercased identifier, source IP) in process
-# memory. It deliberately does NOT set user.is_locked: a purely per-user
-# counter lets anyone lock any victim out of their account just by entering
-# wrong passwords from another machine. Backoff expires on its own and is
-# cleared by a successful verification.
+# Failures are tracked per (lowercased identifier, source IP). It deliberately
+# does NOT set user.is_locked: a purely per-user counter lets anyone lock any
+# victim out of their account just by entering wrong passwords from another
+# machine. Backoff expires on its own and is cleared by a successful check.
 _BACKOFF_MAX_FAILURES = 5
 _BACKOFF_SECONDS = 300.0
 _login_backoff: Dict[Tuple[str, Optional[str]], Tuple[float, float]] = {}
 
-# Verified once instead of a account lookup when the user does not exist so
-# the "unknown user" path costs the same Argon2 work as the real one and the
-# response times cannot be used to enumerate accounts.
-_DUMMY_PASSWORD_HASH = get_password_hash("!n0-such-user-dummy-hash-" + uuid.uuid4().hex)
+# ── Shared (Redis) backoff backend (T20) ─────────────────────────────────
+# The in-process counter above only throttles the instance that saw the
+# failures, so behind a load balancer an attacker gets _BACKOFF_MAX_FAILURES
+# fresh attempts per instance. When a Redis URI is configured (SLOWAPI_STORAGE_URI
+# or WS_BROADCAST_REDIS_URL) the counter is kept there instead, keyed by
+# IP + sha256(identifier) so the identifier is not readable in Redis. Every
+# Redis failure falls OPEN (logged, throttled log rate) rather than turning a
+# cache outage into a login outage.
+_REDIS_BACKOFF_TTL_SECONDS = 900
+# The key is unguessable-but-stable; the identifier is hashed so a Redis dump or
+# a MONITOR session does not hand over the list of accounts being attacked.
+_redis_client_cache: Any = None
+_redis_client_url: Optional[str] = None
+_redis_error_logged_at: float = 0.0
+_REDIS_ERROR_LOG_INTERVAL = 60.0
 
 
-def _backoff_failures(key: Tuple[str, Optional[str]]) -> float:
+def _shared_redis_url() -> str:
+    """The configured Redis URI whose storage the backoff counter should share."""
+    for candidate in (settings.SLOWAPI_STORAGE_URI, settings.WS_BROADCAST_REDIS_URL):
+        uri = (candidate or "").strip()
+        if uri.startswith(("redis://", "rediss://")):
+            return uri
+    return ""
+
+
+def _redis_backoff_client() -> Any:
+    """Lazily built async Redis client for the shared backoff, or ``None``.
+
+    Redis is an optional dependency imported lazily, exactly like the WebSocket
+    broadcast bus: without a configured URI (or without the package) callers
+    get ``None`` and the in-process counter is used.
+    """
+    global _redis_client_cache, _redis_client_url
+
+    url = _shared_redis_url()
+    if not url:
+        return None
+
+    if _redis_client_cache is not None and url == _redis_client_url:
+        return _redis_client_cache
+
+    try:
+        import redis.asyncio as redis
+    except ImportError:  # pragma: no cover - redis is a pinned dependency
+        logger.error(
+            "A redis:// URI is configured but the `redis` package is not "
+            "installed; the login backoff stays process-local."
+        )
+        return None
+
+    _redis_client_cache = redis.from_url(url, decode_responses=True)
+    _redis_client_url = url
+    return _redis_client_cache
+
+
+def _redis_failure(key: Tuple[str, Optional[str]]) -> str:
+    """Redis key for one (identifier, IP) bucket. The identifier is hashed."""
+    identifier, ip = key
+    digest = hashlib.sha256((identifier or "").encode("utf-8")).hexdigest()
+    return f"login_fail:{ip or 'unknown'}:{digest}"
+
+
+def _log_redis_backoff_error(exc: Exception) -> None:
+    """Log a Redis backoff failure at most once a minute (brute force is loud)."""
+    global _redis_error_logged_at
+    now = time.time()
+    if now - _redis_error_logged_at >= _REDIS_ERROR_LOG_INTERVAL:
+        _redis_error_logged_at = now
+        logger.warning(
+            "Login backoff Redis unavailable (%s); falling back to the "
+            "in-process counter (fail-open).",
+            exc,
+        )
+
+
+def _memory_backoff_failures(key: Tuple[str, Optional[str]]) -> float:
     entry = _login_backoff.get(key)
     if entry is None:
         return 0
     count, until = entry
-    if time.time() >= until:
+    # ``until`` is only set once the threshold is reached; 0.0 means "below it",
+    # NOT "expired". Treating it as a deadline dropped the entry on the next
+    # check, so the counter could never climb past one failure and the 5-attempt
+    # backoff never actually fired (fixed in T20).
+    if until and time.time() >= until:
         _login_backoff.pop(key, None)
         return 0
     return count
 
 
-def _backoff_record_failure(key: Tuple[str, Optional[str]]) -> None:
+def _memory_backoff_record_failure(key: Tuple[str, Optional[str]]) -> None:
     count, _until = _login_backoff.get(key, (0, 0.0))
     count = min(count + 1, _BACKOFF_MAX_FAILURES)
     if count >= _BACKOFF_MAX_FAILURES:
@@ -73,6 +148,54 @@ def _backoff_record_failure(key: Tuple[str, Optional[str]]) -> None:
     else:
         until = 0.0
     _login_backoff[key] = (count, until)
+
+
+# Verified once instead of a account lookup when the user does not exist so
+# the "unknown user" path costs the same Argon2 work as the real one and the
+# response times cannot be used to enumerate accounts.
+_DUMMY_PASSWORD_HASH = get_password_hash("!n0-such-user-dummy-hash-" + uuid.uuid4().hex)
+
+
+async def _backoff_failures(key: Tuple[str, Optional[str]]) -> float:
+    """Failures recorded for this (identifier, IP) bucket, shared if configured."""
+    client = _redis_backoff_client()
+    if client is not None:
+        try:
+            raw = await client.get(_redis_failure(key))
+            if raw is None:
+                return 0
+            return float(raw)
+        except Exception as exc:
+            _log_redis_backoff_error(exc)
+    return _memory_backoff_failures(key)
+
+
+async def _backoff_record_failure(key: Tuple[str, Optional[str]]) -> None:
+    """Record one failed verification for this (identifier, IP) bucket."""
+    client = _redis_backoff_client()
+    if client is not None:
+        try:
+            redis_key = _redis_failure(key)
+            count = await client.incr(redis_key)
+            if count == 1:
+                # Expire only on creation: re-setting the TTL on every failure
+                # would let an attacker keep a bucket alive indefinitely.
+                await client.expire(redis_key, _REDIS_BACKOFF_TTL_SECONDS)
+            return
+        except Exception as exc:
+            _log_redis_backoff_error(exc)
+    _memory_backoff_record_failure(key)
+
+
+async def _backoff_clear(key: Tuple[str, Optional[str]]) -> None:
+    """Forget the failures of a bucket after a successful verification."""
+    client = _redis_backoff_client()
+    if client is not None:
+        try:
+            await client.delete(_redis_failure(key))
+        except Exception as exc:
+            _log_redis_backoff_error(exc)
+    _login_backoff.pop(key, None)
 
 
 class AuthService:
@@ -111,7 +234,7 @@ class AuthService:
         # Brute-force backoff is checked FIRST and keyed per (identifier, IP)
         _T12_generic_failure = "ชื่อผู้ใช้งานหรือรหัสผ่านไม่ถูกต้อง"
         backoff_key = ((email or "").lower(), ip_address)
-        if _backoff_failures(backoff_key) >= _BACKOFF_MAX_FAILURES:
+        if await _backoff_failures(backoff_key) >= _BACKOFF_MAX_FAILURES:
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                 detail="พยายามเข้าสู่ระบบผิดหลายครั้งเกินไป กรุณาลองใหม่ภายหลัง",
@@ -133,7 +256,7 @@ class AuthService:
         # wrong password the answer is always the same generic 401 (an
         # attacker must not learn is_locked / is_active from messages).
         if not verify_password(password, user.hashed_password):
-            _backoff_record_failure(backoff_key)
+            await _backoff_record_failure(backoff_key)
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail=_T12_generic_failure,
@@ -164,7 +287,7 @@ class AuthService:
             )
 
         # Reset failure bookkeeping on a successful verification
-        _login_backoff.pop(backoff_key, None)
+        await _backoff_clear(backoff_key)
         user.failed_login_attempts = 0
 
         # Update last login

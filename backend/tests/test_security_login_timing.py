@@ -87,7 +87,18 @@ async def test_unknown_user_still_takes_a_hash_check(client, db_session):
 
 
 async def test_repeated_failures_do_not_lock_the_account(client, db_session):
+    """The bucket throttles after five failures; the ACCOUNT is never locked.
+
+    T20 fixed the counter itself: ``until == 0.0`` below the threshold used to be
+    treated as an expired deadline, so each check dropped the entry and the
+    counter never climbed past one failure — the 5-attempt backoff never fired.
+    What must not change is that nothing here touches ``user.is_locked``: an
+    attacker cannot deny a victim access by failing logins from their own IP.
+    """
+    import time
+
     from app.core.security import get_password_hash
+    from app.services import auth_service as auth_service_mod
 
     await db_session.execute(
         User.__table__.insert().values(
@@ -100,10 +111,15 @@ async def test_repeated_failures_do_not_lock_the_account(client, db_session):
     )
     await db_session.commit()
 
-    for i in range(7):
+    codes = []
+    for _ in range(7):
         r = await client.post("/api/v1/auth/login", json={
             "email": "bruteforce@example.com", "password": "WrongPass1"})
-        assert r.status_code == 401
+        codes.append(r.status_code)
+    assert codes[:5] == [401] * 5
+    assert codes[5:] == [429, 429], (
+        "the fifth failure arms the (identity, IP) bucket; the account stays untouched"
+    )
 
     result = await db_session.execute(
         select(User).where(User.email == "bruteforce@example.com")
@@ -113,7 +129,15 @@ async def test_repeated_failures_do_not_lock_the_account(client, db_session):
         "an attacker must not be able to lock a victim's account from a wrong IP"
     )
 
-    # After the failures stop, the correct password still works (no lock).
+    # The throttle is scoped to this (identity, IP) pair, never to the account.
+    assert [k for k in auth_service_mod._login_backoff if k[0] == "bruteforce@example.com"] == [
+        ("bruteforce@example.com", "127.0.0.1")
+    ]
+
+    # Once the window has passed the correct password works again.
+    key = ("bruteforce@example.com", "127.0.0.1")
+    count, _until = auth_service_mod._login_backoff[key]
+    auth_service_mod._login_backoff[key] = (count, time.time() - 1)
     r = await client.post("/api/v1/auth/login", json={
         "email": "bruteforce@example.com", "password": "Passw0rd123"})
     assert r.status_code == 200
