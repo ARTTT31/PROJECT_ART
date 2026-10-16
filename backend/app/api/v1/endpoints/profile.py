@@ -8,8 +8,9 @@ from fastapi import APIRouter, Depends, HTTPException, status, Request, UploadFi
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
+from app.core.config import settings
 from app.core.database import get_db
-from app.core.rate_limit import get_real_client_ip
+from app.core.rate_limit import get_real_client_ip, limiter
 from app.schemas.user import (
     UserResponse,
     UserUpdate,
@@ -36,6 +37,17 @@ from app.models.session import UserSession
 router = APIRouter()
 
 profile_logger = logging.getLogger(__name__)
+
+# SlowAPI "limit" strings are static decorator values, so they are built once at
+# import. The limiter itself lives in app.core.rate_limit (importing it from
+# app.main would create the circular import documented in that module).
+_GENERAL_LIMIT = f"{settings.RATE_LIMIT_GENERAL_PER_MINUTE}/minute"
+_UPLOAD_LIMIT = f"{settings.RATE_LIMIT_UPLOAD_PER_MINUTE}/minute"
+
+# Hard ceiling enforced before anything is decoded or stored. The file is read
+# with a bounded ``read(MAX + 1)`` call, so an oversized upload never lands in
+# memory in full.
+AVATAR_MAX_BYTES = 1 * 1024 * 1024
 
 
 # ── Avatar normalisation (T17/A1) ────────────────────────────────────────────
@@ -150,7 +162,9 @@ def _normalise_avatar_image(data: bytes) -> bytes:
 
 
 @router.get("/me", response_model=UserResponse)
+@limiter.limit(_GENERAL_LIMIT)
 async def get_my_profile(
+    request: Request,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -165,6 +179,7 @@ async def get_my_profile(
 
 
 @router.put("/me", response_model=ResponseModel)
+@limiter.limit(_GENERAL_LIMIT)
 async def update_my_profile(
     user_update: UserUpdate,
     request: Request,
@@ -218,6 +233,7 @@ async def update_my_profile(
 
 
 @router.post("/change-password", response_model=ResponseModel)
+@limiter.limit(_GENERAL_LIMIT)
 async def change_password(
     password_change: UserPasswordChange,
     request: Request,
@@ -270,6 +286,7 @@ async def change_password(
 
 
 @router.post("/upload-avatar", response_model=ResponseModel)
+@limiter.limit(_UPLOAD_LIMIT)
 async def upload_avatar_file(
     request: Request,
     file: UploadFile = File(...),
@@ -288,9 +305,11 @@ async def upload_avatar_file(
         )
 
     try:
-        # 2. Read contents and limit size to 1MB
-        contents = await file.read()
-        if len(contents) > 1 * 1024 * 1024:
+        # 2. Bounded read: one byte past the cap is enough to reject an oversized
+        #    upload — reading the whole body first let a caller stream megabytes
+        #    into memory before the size check ran.
+        contents = await file.read(AVATAR_MAX_BYTES + 1)
+        if len(contents) > AVATAR_MAX_BYTES:
             raise HTTPException(status_code=400, detail="ขนาดไฟล์รูปภาพห้ามเกิน 1MB")
 
         # 3. Sniff magic bytes — never trust the client filename/content-type
@@ -340,7 +359,9 @@ async def upload_avatar_file(
 
 
 @router.post("/quick-links", response_model=ResponseModel)
+@limiter.limit(_GENERAL_LIMIT)
 async def update_quick_links(
+    request: Request,
     quick_links_update: UserQuickLinksUpdate,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -371,7 +392,9 @@ async def update_quick_links(
 
 
 @router.post("/dashboard-layout", response_model=ResponseModel)
+@limiter.limit(_GENERAL_LIMIT)
 async def update_dashboard_layout(
+    request: Request,
     layout_update: UserDashboardLayoutUpdate,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -402,7 +425,9 @@ async def update_dashboard_layout(
 
 
 @router.post("/camera-config", response_model=ResponseModel)
+@limiter.limit(_GENERAL_LIMIT)
 async def update_camera_config(
+    request: Request,
     camera_update: UserCameraConfigUpdate,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -433,7 +458,9 @@ async def update_camera_config(
 
 
 @router.get("/sessions", response_model=ResponseModel)
+@limiter.limit(_GENERAL_LIMIT)
 async def get_my_sessions(
+    request: Request,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -482,7 +509,9 @@ async def get_my_sessions(
 
 
 @router.delete("/sessions/{session_id}", response_model=ResponseModel)
+@limiter.limit(_GENERAL_LIMIT)
 async def revoke_session(
+    request: Request,
     session_id: str,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),

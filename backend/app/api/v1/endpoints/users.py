@@ -6,7 +6,9 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.database import get_db
+from app.core.rate_limit import limiter
 from app.schemas.user import UserResponse, UserCreate, UserAdminUpdate, UserAdminCreate
 from app.schemas.response import ResponseModel
 from app.services.user_service import UserService
@@ -17,9 +19,16 @@ from app.services.audit_service import AuditService
 
 router = APIRouter()
 
+# SlowAPI "limit" strings are static decorator values, so they are built once at
+# import. All admin endpoints are user-paced (a page load, a click), so the
+# general limit is comfortably above real usage while still bounding abuse.
+_GENERAL_LIMIT = f"{settings.RATE_LIMIT_GENERAL_PER_MINUTE}/minute"
+
 
 @router.get("/", response_model=List[UserResponse])
+@limiter.limit(_GENERAL_LIMIT)
 async def list_users(
+    request: Request,
     skip: int = 0,
     limit: int = 100,
     current_user: User = Depends(get_current_admin_user),
@@ -34,7 +43,9 @@ async def list_users(
 
 
 @router.get("/{user_id}", response_model=UserResponse)
+@limiter.limit(_GENERAL_LIMIT)
 async def get_user(
+    request: Request,
     user_id: int,
     current_user: User = Depends(get_current_admin_user),
     db: AsyncSession = Depends(get_db),
@@ -55,6 +66,7 @@ async def get_user(
 
 
 @router.post("/", response_model=ResponseModel, status_code=status.HTTP_201_CREATED)
+@limiter.limit(_GENERAL_LIMIT)
 async def create_user(
     user_create: UserCreate,
     request: Request,
@@ -102,6 +114,7 @@ async def create_user(
 @router.post(
     "/admin-create", response_model=ResponseModel, status_code=status.HTTP_201_CREATED
 )
+@limiter.limit(_GENERAL_LIMIT)
 async def admin_create_user(
     user_create: UserAdminCreate,
     request: Request,
@@ -143,6 +156,7 @@ async def admin_create_user(
 
 
 @router.put("/{user_id}", response_model=ResponseModel)
+@limiter.limit(_GENERAL_LIMIT)
 async def update_user(
     user_id: int,
     user_update: UserAdminUpdate,
@@ -201,6 +215,7 @@ async def update_user(
 
 
 @router.delete("/{user_id}", response_model=ResponseModel)
+@limiter.limit(_GENERAL_LIMIT)
 async def delete_user(
     user_id: int,
     request: Request,

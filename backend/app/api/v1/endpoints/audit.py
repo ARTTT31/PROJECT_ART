@@ -1,15 +1,21 @@
 from typing import List
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel
 
+from app.core.config import settings
 from app.core.database import get_db
+from app.core.rate_limit import limiter
 from app.schemas.audit_log import AuditLogResponse
 from app.services.audit_service import AuditService
 from app.api.dependencies import get_current_admin_user
 from app.models.user import User
 
 router = APIRouter()
+
+# SlowAPI "limit" strings are static decorator values, built once at import.
+# Both endpoints are admin page loads / pagination clicks — user-paced.
+_GENERAL_LIMIT = f"{settings.RATE_LIMIT_GENERAL_PER_MINUTE}/minute"
 
 
 class PaginatedAuditLogsResponse(BaseModel):
@@ -22,7 +28,9 @@ class PaginatedAuditLogsResponse(BaseModel):
 
 
 @router.get("/", response_model=List[AuditLogResponse])
+@limiter.limit(_GENERAL_LIMIT)
 async def list_audit_logs(
+    request: Request,
     skip: int = 0,
     limit: int = 100,
     current_user: User = Depends(get_current_admin_user),
@@ -37,7 +45,9 @@ async def list_audit_logs(
 
 
 @router.get("/paginated", response_model=PaginatedAuditLogsResponse)
+@limiter.limit(_GENERAL_LIMIT)
 async def list_audit_logs_paginated(
+    request: Request,
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=100),
     current_user: User = Depends(get_current_admin_user),
