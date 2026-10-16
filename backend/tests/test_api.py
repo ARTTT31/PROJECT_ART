@@ -4,7 +4,6 @@ from contextlib import contextmanager
 from urllib.parse import unquote
 
 import pytest
-from httpx import AsyncClient, ASGITransport
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from starlette.testclient import TestClient
@@ -18,9 +17,9 @@ from app.models.audit_log import AuditLog
 
 # No module-level asyncio mark: `pytest.ini` sets `asyncio_mode = auto`, so async
 # tests are collected without one — and marking the whole module would also stamp
-# the sync Starlette TestClient tests below with an asyncio mark they cannot use.# NOTE: the shared `db_session` / `client` / `registered_user` /
+# the sync Starlette TestClient tests below with an asyncio mark they cannot use.
+# NOTE: the shared `db_session` / `client` / `registered_user` /
 # `logged_in_user` fixtures live in tests/conftest.py
-
 
 
 # ── CSRF Protection Tests ─────────────────────────────────

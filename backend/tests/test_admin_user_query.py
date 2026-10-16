@@ -149,3 +149,42 @@ async def test_limit_is_capped(admin_client, directory):
     resp = await admin_client.get("/api/v1/users/", params={"limit": 5000})
 
     assert resp.status_code == 422, resp.text
+
+
+async def test_admin_cannot_deactivate_self(admin_client, db_session):
+    admin = (await db_session.execute(select(User).where(User.email == ADMIN_EMAIL))).scalar_one()
+    resp = await admin_client.put(f"/api/v1/users/{admin.id}", json={"is_active": False})
+    assert resp.status_code == 400
+    assert "คุณไม่สามารถระงับการใช้งานบัญชีของตัวเองได้" in resp.json()["detail"]
+
+
+async def test_deactivating_user_revokes_sessions(admin_client, db_session):
+    from httpx import ASGITransport, AsyncClient
+    from app.main import app
+    from app.models.session import UserSession
+
+    victim_email = "victim.session@example.com"
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="https://testserver.local") as victim_client:
+        await _register(victim_client, victim_email, "Victim")
+        victim = (await db_session.execute(select(User).where(User.email == victim_email))).scalar_one()
+
+        # Create session for victim
+        await _login(victim_client, victim_email)
+        sessions = (
+            await db_session.execute(select(UserSession).where(UserSession.user_id == victim.id))
+        ).scalars().all()
+        assert len(sessions) > 0
+
+        # Admin deactivates victim
+        resp = await admin_client.put(f"/api/v1/users/{victim.id}", json={"is_active": False})
+        assert resp.status_code == 200
+
+        # Sessions must be revoked
+        sessions_after = (
+            await db_session.execute(select(UserSession).where(UserSession.user_id == victim.id))
+        ).scalars().all()
+        assert len(sessions_after) == 0
+        # Attempting to refresh must fail
+        refresh_resp = await victim_client.post("/api/v1/auth/refresh")
+        assert refresh_resp.status_code == 401

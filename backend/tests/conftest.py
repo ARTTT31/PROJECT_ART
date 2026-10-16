@@ -15,14 +15,14 @@ os.environ.setdefault("REFRESH_TOKEN_EXPIRE_DAYS", "7")
 os.environ.setdefault("DATABASE_URL", "sqlite+aiosqlite:///:memory:")
 
 # Disable SlowAPI rate limiter during test suite execution
-from app.core.rate_limit import limiter
+from app.core.rate_limit import limiter  # noqa: E402
 limiter.enabled = False
 
 
 # ── Shared fixtures (app import must happen after env overrides) ──
 
-from app.core.database import Base, get_db
-from app.main import app
+from app.core.database import Base, get_db  # noqa: E402
+from app.main import app  # noqa: E402
 
 
 @pytest.fixture

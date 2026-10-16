@@ -8,8 +8,6 @@ a tz=Tokyo request later reads. The timezone must also be a valid IANA name
 
 import pytest
 
-from app.main import app
-
 
 FAKE_FORECAST = {
     "latitude": 0.0, "longitude": 0.0, "timezone": "Asia/Bangkok",

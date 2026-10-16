@@ -238,6 +238,11 @@ async def update_user(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="คุณไม่สามารถล็อคบัญชีของตัวเองได้เพื่อป้องกันระบบล็อคถาวร",
             )
+        if user_update.is_active is False:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="คุณไม่สามารถระงับการใช้งานบัญชีของตัวเองได้เพื่อป้องกันระบบล็อคถาวร",
+            )
         if user_update.role is not None and user_update.role != "admin":
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,

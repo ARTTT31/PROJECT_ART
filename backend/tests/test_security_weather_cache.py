@@ -10,7 +10,6 @@ from sqlalchemy import select
 
 from app.models.weather_cache import WeatherCacheEntry
 from app.services import weather_cache
-from app.main import app
 
 
 FAKE_FORECAST = {
@@ -39,9 +38,6 @@ def _patch_upstream(monkeypatch, calls):
 
 
 async def test_nearby_coordinates_share_one_cache_row(client, db_session, monkeypatch):
-    from app.api.v1.endpoints import weather as w
-
-    _WEATHER = dict(w._WEATHER_CACHE)
     calls = []
     _patch_upstream(monkeypatch, calls)
 

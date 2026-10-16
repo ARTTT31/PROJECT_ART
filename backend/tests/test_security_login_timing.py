@@ -15,7 +15,6 @@ from sqlalchemy.future import select
 from app.core.security import verify_password
 from app.models.user import User
 from app.services import auth_service as auth_service_mod
-from app.services.auth_service import AuthService
 
 
 def _reset_backoff():

@@ -22,6 +22,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.rate_limit import limiter
+from app.core.utils import utcnow
 from app.services import weather_cache
 
 logger = logging.getLogger(__name__)
@@ -161,7 +162,7 @@ async def check_oil_prices_health(request: Request):
     }
 
     if _cache["timestamp"]:
-        age = (datetime.datetime.now() - _cache["timestamp"]).total_seconds()
+        age = (utcnow() - _cache["timestamp"]).total_seconds()
         status["cache_age_seconds"] = int(age)
         status["cache_is_fresh"] = age < CACHE_TTL
 
@@ -211,7 +212,7 @@ async def get_oil_prices(request: Request, db: AsyncSession = Depends(get_db)):
     maintained constants. Only the last of those is not an observed price, and it
     is still flagged ``is_stale`` so the widget can say so.
     """
-    now = datetime.datetime.now()
+    now = utcnow()
 
     # 1. Fresh process cache
     if _cache["data"] and _cache["timestamp"] and (now - _cache["timestamp"]).total_seconds() < CACHE_TTL:

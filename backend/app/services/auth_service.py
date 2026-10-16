@@ -451,10 +451,19 @@ class AuthService:
             )
         ).scalar_one_or_none()
 
-        if not session or not session.is_active:
+        if not session or not session.is_active or session.user_id != user_id:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Session revoked หรือออกจากระบบแล้ว กรุณาเข้าสู่ระบบใหม่",
+            )
+
+        user = await self.user_service.get_user_for_auth(user_id)
+        if not user or not user.is_active or user.is_locked or user.deleted_at is not None:
+            session.is_active = False
+            await self.db.commit()
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="บัญชีผู้ใช้ถูกระงับหรือถูกลบ กรุณาติดต่อผู้ดูแลระบบ",
             )
 
         now = utcnow()

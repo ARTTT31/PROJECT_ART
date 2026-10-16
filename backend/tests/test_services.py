@@ -21,6 +21,7 @@ from app.schemas.user import UserCreate, UserUpdate
 
 # ── Fixtures ──────────────────────────────────────────────
 
+
 @pytest.fixture
 async def db_session():
     """Create a fresh in-memory SQLite database for each test."""
@@ -29,11 +30,11 @@ async def db_session():
     )
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-    
+
     Session = async_sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=False)
     async with Session() as session:
         yield session
-    
+
     await engine.dispose()
 
 
@@ -269,7 +270,7 @@ class TestAuthServiceLogout:
 
     async def test_logout_invalidates_session(self, auth_service, user_service, sample_user_data):
         await user_service.create_user(sample_user_data)
-        result = await auth_service.login(
+        await auth_service.login(
             email="test@example.com",
             password="SecretPass123",
             session_id="test-session-123",

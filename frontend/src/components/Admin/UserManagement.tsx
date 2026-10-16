@@ -92,7 +92,8 @@ export default function UserManagement() {
   // up front instead of letting the user discover it after a confirm dialog.
   const { user: currentUser } = useAuth()
   const [users, setUsers] = useState<AdminUser[]>([])
-  const [loading, setLoading] = useState(true)
+  const [initialLoading, setInitialLoading] = useState(true)
+  const [isFetching, setIsFetching] = useState(false)
 
   // ── Search / filter / paging ────────────────────────────────────────
   // The search box is debounced so a fast typist does not fire a request per
@@ -145,7 +146,7 @@ export default function UserManagement() {
   }, [debouncedQuery, roleFilter, statusFilter])
 
   const loadUsers = useCallback(async () => {
-    setLoading(true)
+    setIsFetching(true)
     try {
       if (statusFilter === 'trash') {
         const res = await fetchWithAuth('/api/v1/users/deleted')
@@ -179,7 +180,8 @@ export default function UserManagement() {
     } catch (e) {
       console.error(e)
     } finally {
-      setLoading(false)
+      setIsFetching(false)
+      setInitialLoading(false)
     }
   }, [debouncedQuery, roleFilter, statusFilter, page, showError])
 
@@ -191,6 +193,16 @@ export default function UserManagement() {
     () => (Number.isNaN(total) ? users.length === PAGE_SIZE : (page + 1) * PAGE_SIZE < total),
     [total, users.length, page],
   )
+
+  const filteredTrash = useMemo(() => {
+    const term = debouncedQuery.trim().toLowerCase()
+    if (!term) return trash
+    return trash.filter(t =>
+      (t.name && t.name.toLowerCase().includes(term)) ||
+      (t.email && t.email.toLowerCase().includes(term)) ||
+      (t.username && t.username.toLowerCase().includes(term))
+    )
+  }, [trash, debouncedQuery])
 
   const isFiltered = Boolean(debouncedQuery.trim() || roleFilter || statusFilter)
 
@@ -447,7 +459,7 @@ export default function UserManagement() {
     }
   }
 
-  if (loading) {
+  if (initialLoading) {
     return (
       <div className="flex h-32 items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-[3px] border-[#f5f5f7] border-t-[#0066cc]" />
@@ -776,7 +788,11 @@ export default function UserManagement() {
           <div className="flex flex-col gap-3 rounded-[18px] border border-black/[0.06] bg-white p-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
               <label className="relative flex-1">
-                <Search size={15} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[#86868b]" />
+                {isFetching ? (
+                  <Loader2 size={15} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 animate-spin text-[#0066cc]" />
+                ) : (
+                  <Search size={15} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[#86868b]" />
+                )}
                 <input
                   type="search"
                   value={query}
@@ -844,7 +860,7 @@ export default function UserManagement() {
               </thead>
               <tbody className="divide-y divide-black/[0.04]">
                 {statusFilter === 'trash' ? (
-                  trash.map(t => (
+                  filteredTrash.map(t => (
                     <tr key={t.id} className="hover:bg-slate-50/50 transition-colors">
                       <td className="px-5 py-4">
                         <div className="font-semibold text-[#1d1d1f] text-[14px]">{t.name}</div>
@@ -961,10 +977,10 @@ export default function UserManagement() {
                   )
                 })}
                 {statusFilter === 'trash'
-                  ? trash.length === 0 && (
+                  ? filteredTrash.length === 0 && (
                       <tr>
                         <td colSpan={5} className="px-5 py-10 text-center text-[13px] font-medium text-[#6e6e73]">
-                          ยังไม่มีบัญชีในถังขยะ
+                          {debouncedQuery.trim() ? 'ไม่พบผู้ใช้ที่ตรงกับเงื่อนไข' : 'ยังไม่มีบัญชีในถังขยะ'}
                         </td>
                       </tr>
                     )
@@ -983,7 +999,9 @@ export default function UserManagement() {
           <div className="flex flex-col gap-3 rounded-[18px] border border-black/[0.06] bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
             <span className="text-[12.5px] font-medium text-[#6e6e73]">
               {statusFilter === 'trash'
-                ? `${trash.length} บัญชีในถังขยะ`
+                ? debouncedQuery.trim()
+                  ? `พบ ${filteredTrash.length} บัญชีในถังขยะ`
+                  : `${trash.length} บัญชีในถังขยะ`
                 : Number.isNaN(total)
                   ? `หน้า ${page + 1}`
                   : `พบ ${total} บัญชี · หน้า ${page + 1} / ${Math.max(1, Math.ceil(total / PAGE_SIZE))}`}

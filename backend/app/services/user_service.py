@@ -548,6 +548,14 @@ class UserService:
         if user_update.password is not None and user_update.password != "":
             user.hashed_password = get_password_hash(user_update.password)
 
+        should_revoke = (
+            user_update.is_active is False
+            or user_update.is_locked is True
+            or (user_update.password is not None and user_update.password != "")
+        )
+        if should_revoke:
+            await self.revoke_sessions(user_id)
+
         user.updated_at = utcnow()
         await self.db.commit()
         await self.db.refresh(user)

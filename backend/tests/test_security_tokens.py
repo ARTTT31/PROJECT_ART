@@ -8,8 +8,6 @@ Guarantees that:
   token so logout/revoke works for them too.
 """
 
-import pytest
-
 import app.api.v1.endpoints.auth as auth_mod
 from sqlalchemy.future import select
 
