@@ -175,76 +175,39 @@ async def lifespan(app: FastAPI):
 allowed_origins = [origin.rstrip("/") for origin in settings.get_cors_origins() if origin.strip()]
 
 
-# ── Content Security Policy (CSP) Middleware ──
-# Two tiers:
-#   PRODUCTION (DEBUG=False) — strict: no 'unsafe-eval', minimal origins
-#   DEVELOPMENT (DEBUG=True) — permissive enough for Next.js HMR + hot reload
-_CSP_SCRIPT_GOOGLE = "https://apis.google.com https://accounts.google.com"
+# ── Content Security Policy (CSP) ──
+# The backend serves JSON and the API docs; the Next.js frontend is a separate
+# origin with its own policy. So the policy here is the strictest one that still
+# works: `default-src 'none'` means nothing loads unless a directive says so,
+# which is exactly right for an API response (an old allow-list of frontend
+# origins, fonts and images was dead weight — no HTML page here needs them).
+CSP_HEADER_VALUE = "default-src 'none'; frame-ancestors 'none'"
 
-# Explicitly-trusted connect origins (frontend API backend + Google auth flows).
-# Widgets that call third-party endpoints (weather etc.) should do so via the
-# backend proxy to keep this list tight.
-# Each allowed frontend origin also gets its WebSocket counterpart so live
-# features keep working without a blanket `https:` / `wss:` wildcard.
-_CSP_ORIGINS = [o for o in allowed_origins if o.startswith(("https://", "http://"))]
-_CSP_WS_ORIGINS = [
-    o.replace("https://", "wss://").replace("http://", "ws://")
-    for o in _CSP_ORIGINS
-]
-_CSP_CONNECT_TRUSTED = " ".join(["'self'", *_CSP_ORIGINS, *_CSP_WS_ORIGINS])
-# Note: third-party hosts are intentionally NOT wildcarded here. The dashboard
-# widgets proxy their data through the backend, so browser connect-src only needs
-# the API origin (plus its WebSocket variant) and the documented frontend origin.
-# If a browser feature ever needs an extra host, add it explicitly to CORS_ORIGINS
-# or extend this list — do not reintroduce a bare `https:`.
-
-CSP_HEADER_VALUE_PROD = (
-    # default-src fallback: self-only (no unsafe-eval), plus fonts/images data/blob
-    f"default-src 'self' data: blob:; "
-    # script-src: keep 'unsafe-inline' (Next.js inline bootstrap), NO unsafe-eval
-    f"script-src 'self' 'unsafe-inline' {_CSP_SCRIPT_GOOGLE}; "
-    # style-src: 'unsafe-inline' required for Tailwind / Radix style injection
-    f"style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
-    # images + media: permissive for avatars / widget visuals
-    f"img-src 'self' data: https: blob:; "
-    f"media-src 'self' data: https: blob:; "
-    # fonts: Google Fonts + data:
-    f"font-src 'self' https://fonts.gstatic.com data:; "
-    # connect: explicit trusted origins + wss for live features
-    f"connect-src {_CSP_CONNECT_TRUSTED}; "
-    # frames: only Google OAuth popup
-    f"frame-src 'self' https://accounts.google.com; "
-    # workers / manifests
-    f"worker-src 'self' blob:; "
-    f"manifest-src 'self'; "
-    # Hard blocks
-    f"object-src 'none'; "
-    f"base-uri 'self'; "
-    f"form-action 'self'; "
-    f"frame-ancestors 'none'; "
+# Swagger UI (/docs) and ReDoc (/redoc) load their bundle and styles from
+# cdn.jsdelivr.net, with the favicon from fastapi.tiangolo.com, so the strict
+# policy above would render a blank page (the previous allow-list had the same
+# problem: it never listed the CDN). These paths get a policy that permits
+# exactly those assets and nothing else.
+DOCS_PATHS = ("/docs", "/redoc", "/openapi.json")
+CSP_HEADER_VALUE_DOCS = (
+    "default-src 'self'; "
+    "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+    "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+    "img-src 'self' data: https://fastapi.tiangolo.com; "
+    "font-src 'self' data: https://fonts.gstatic.com; "
+    "worker-src 'self' blob:; "
+    "object-src 'none'; "
+    "base-uri 'none'; "
+    "frame-ancestors 'none'"
 )
 
-CSP_HEADER_VALUE_DEV = (
-    # Dev-only: 'unsafe-eval' is required for Next.js HMR / Fast Refresh, but the
-    # default fallback stays 'self'-anchored. Third-party dev hosts dance through
-    # the specific directives below instead of a blanket https: wildcard in
-    # default-src, so a careless DEBUG=True on production cannot regress the CSP
-    # posture to "allow everything over TLS".
-    f"default-src 'self' data: blob:; "
-    f"script-src 'self' 'unsafe-inline' 'unsafe-eval' {_CSP_SCRIPT_GOOGLE}; "
-    f"style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
-    f"img-src 'self' data: https: http: blob:; "
-    f"font-src 'self' https://fonts.gstatic.com data:; "
-    f"connect-src 'self' https: wss: http: ws:; "
-    f"frame-src 'self' https://accounts.google.com; "
-    f"worker-src 'self' blob:; "
-    f"manifest-src 'self'; "
-    f"object-src 'none'; "
-    f"base-uri 'self'; "
-    f"form-action 'self'; "
-)
 
-CSP_HEADER_VALUE = CSP_HEADER_VALUE_DEV if settings.DEBUG else CSP_HEADER_VALUE_PROD
+def _csp_for_path(path: str) -> str:
+    """Pick the policy for one request path."""
+    for docs_path in DOCS_PATHS:
+        if path == docs_path or path.startswith(docs_path + "/"):
+            return CSP_HEADER_VALUE_DOCS
+    return CSP_HEADER_VALUE
 
 
 class CSPMiddleware:
@@ -261,6 +224,10 @@ class CSPMiddleware:
             await self.app(scope, receive, send)
             return
 
+        # The policy is chosen per path: the Swagger pages need their CDN, the
+        # API needs nothing at all.
+        path = scope.get("path", "")
+
         async def send_wrapper(message):
             if message["type"] == "http.response.start":
                 headers = list(message.get("headers", []))
@@ -272,17 +239,24 @@ class CSPMiddleware:
                             return
                     headers.append((name, value))
 
-                set_header(b"content-security-policy", CSP_HEADER_VALUE.encode("utf-8"))
+                # Per-path CSP: the API gets `default-src 'none'`, the Swagger
+                # pages get the CDN-capable policy they need to render.
+                set_header(
+                    b"content-security-policy",
+                    _csp_for_path(path).encode("utf-8"),
+                )
                 set_header(b"x-content-type-options", b"nosniff")
                 set_header(b"x-frame-options", b"DENY")
-                set_header(b"referrer-policy", b"strict-origin-when-cross-origin")
+                # No referrer ever leaves the API, not even the origin.
+                set_header(b"referrer-policy", b"no-referrer")
                 set_header(b"permissions-policy", b"camera=(self), microphone=(), geolocation=(self)")
                 # HSTS is meaningless (and harmful) on plain-HTTP local development,
-                # so it is only sent by non-DEBUG deployments.
+                # so it is only sent by non-DEBUG deployments. One year with
+                # includeSubDomains is the documented minimum for a live domain.
                 if not settings.DEBUG:
                     set_header(
                         b"strict-transport-security",
-                        b"max-age=63072000; includeSubDomains; preload",
+                        b"max-age=31536000; includeSubDomains",
                     )
                 message["headers"] = headers
 

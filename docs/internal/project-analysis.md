@@ -293,6 +293,9 @@ All findings below were fixed, verified locally, and pushed as commits `4f21596`
    `unsafe-eval` (needed for Next.js HMR) stays, but only inside `script-src`,
    and the default anchor is back to `'self'`, so a careless `DEBUG=True` on
    production cannot silently downgrade the CSP posture.
+   *(Superseded 2026-10-16, T22: the backend policy is now chosen per path —
+   `default-src 'none'` everywhere except `/docs`, `/redoc` and `/openapi.json`,
+   which get a CDN-capable policy — so the DEV/PROD constants no longer exist.)*
 3. **The unused `/uploads` StaticFiles mount was removed.** Avatars are stored
    as base64 in the database, nothing writes to `uploads/` any more, and the
    mount served whatever landed in that directory with no authentication.
