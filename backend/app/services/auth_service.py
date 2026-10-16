@@ -2,6 +2,7 @@
 Authentication Service - Business logic for authentication
 """
 
+import logging
 from typing import Dict, Optional, Tuple, Union
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -20,8 +21,21 @@ from app.core.security import (
     create_access_token,
     create_refresh_token,
     decode_token,
+    new_refresh_jti,
 )
+from app.core.utils import utcnow
 from app.services.user_service import UserService
+
+
+logger = logging.getLogger(__name__)
+
+
+# ── Refresh-token rotation (T19) ─────────────────────────────────────────
+# How long the just-rotated refresh token keeps working. Two tabs of the same
+# session refresh at the same moment, and the loser of that race presents the
+# jti the winner just rotated away from; inside this window it is treated as a
+# concurrent refresh, outside it as a replay.
+REFRESH_GRACE_SECONDS = 30
 
 
 # ── Login brute-force backoff (T12) ──────────────────────────────────────
@@ -162,6 +176,11 @@ class AuthService:
         if not session_id:
             session_id = str(uuid.uuid4())
 
+        # The jti of the refresh token about to be issued is recorded on the
+        # session: refresh only accepts the current one (plus the previous one
+        # for a few seconds), so a rotated-away token is a detectable replay.
+        refresh_jti = new_refresh_jti()
+
         existing_session = (
             await self.db.execute(
                 select(UserSession).where(UserSession.session_id == session_id)
@@ -176,6 +195,12 @@ class AuthService:
             existing_session.user_agent = user_agent
             existing_session.device_label = device_label
             existing_session.ip_address = ip_address
+            # Re-login on the same session_id (two tabs sharing the stored id):
+            # the new token takes over and the one in use until now stays valid
+            # for the grace window instead of looking like a replay.
+            existing_session.prev_refresh_jti = existing_session.refresh_jti
+            existing_session.refresh_jti = refresh_jti
+            existing_session.rotated_at = utcnow()
         else:
             new_session = UserSession(
                 session_id=session_id,
@@ -183,6 +208,7 @@ class AuthService:
                 user_agent=user_agent,
                 device_label=device_label,
                 ip_address=ip_address,
+                refresh_jti=refresh_jti,
                 expires_at=datetime.now(timezone.utc).replace(tzinfo=None)
                 + timedelta(days=7),
             )
@@ -201,7 +227,8 @@ class AuthService:
                 "sub": user.email or user.username,
                 "user_id": user.id,
                 "sid": session_id,
-            }
+            },
+            jti=refresh_jti,
         )
 
         return {
@@ -241,10 +268,17 @@ class AuthService:
 
     async def refresh_access_token(self, refresh_token: str) -> Token:
         """
-        Create new access token from refresh token.
+        Create new access token from refresh token, rotating the refresh token.
 
-        Validates that the refresh token's session is still active in the DB,
-        so logging out (which sets ``is_active=False``) truly revokes the token.
+        Validates that the refresh token's session is still active in the DB, so
+        logging out (which sets ``is_active=False``) truly revokes the token, and
+        that the token's ``jti`` is the one the session currently accepts.
+
+        A refresh token that was already rotated away is treated as a replay:
+        the session is revoked and the caller gets 401. The one exception is the
+        just-rotated token inside ``REFRESH_GRACE_SECONDS`` — two tabs refreshing
+        at the same moment would otherwise log the user out — where the caller
+        simply receives a token carrying the session's current jti.
 
         Args:
             refresh_token: Refresh token
@@ -253,7 +287,8 @@ class AuthService:
             New token pair
 
         Raises:
-            HTTPException: If refresh token is invalid or its session is revoked
+            HTTPException: If refresh token is invalid, its session is revoked,
+                or a rotated-away (reused) token is presented
         """
         payload = decode_token(refresh_token)
 
@@ -266,6 +301,7 @@ class AuthService:
         sub = payload.get("sub")
         user_id = payload.get("user_id")
         session_id = payload.get("sid")
+        token_jti = payload.get("jti")
 
         if not sub or not user_id:
             raise HTTPException(
@@ -273,28 +309,82 @@ class AuthService:
                 detail="Invalid refresh token",
             )
 
-        # Verify the session bound to this refresh token is still active.
-        # Tokens issued before session_id was embedded (legacy) have no "sid" and
-        # are still accepted to avoid breaking existing sessions during rollout.
-        if session_id:
-            session = (
-                await self.db.execute(
-                    select(UserSession).where(UserSession.session_id == session_id)
+        # 🔒 Every refresh token must name the session it belongs to. Tokens
+        # issued before "sid" was embedded have no session to check or revoke,
+        # so accepting them would be a standing bypass of logout.
+        if not session_id:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid refresh token",
+            )
+
+        # Row lock: two concurrent refreshes on the same session must not both
+        # read the old jti and both rotate (which would look like two replays).
+        session = (
+            await self.db.execute(
+                select(UserSession)
+                .where(UserSession.session_id == session_id)
+                .with_for_update()
+            )
+        ).scalar_one_or_none()
+
+        if not session or not session.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Session revoked หรือออกจากระบบแล้ว กรุณาเข้าสู่ระบบใหม่",
+            )
+
+        now = utcnow()
+        # ``None`` means "rotate below"; a value means "keep this jti".
+        new_jti: Optional[str] = None
+
+        if session.refresh_jti is not None:
+            if token_jti == session.refresh_jti:
+                pass  # the live token — rotate normally
+            elif (
+                token_jti
+                and token_jti == session.prev_refresh_jti
+                and session.rotated_at is not None
+                and (now - session.rotated_at).total_seconds() <= REFRESH_GRACE_SECONDS
+            ):
+                # Concurrent refresh from a second tab: do not rotate again, do
+                # not revoke — hand back the jti the session currently accepts
+                # so both tabs converge on one live token.
+                new_jti = session.refresh_jti
+            else:
+                # A refresh token that was already rotated away. Either a stolen
+                # cookie is being replayed or a client kept an old copy; the
+                # session is killed rather than handing out another pair.
+                # The token itself is never logged.
+                session.is_active = False
+                await self.db.commit()
+                logger.warning(
+                    "Refresh token reuse detected; revoking session %s (user_id=%s)",
+                    session_id,
+                    session.user_id,
                 )
-            ).scalar_one_or_none()
-            if not session or not session.is_active:
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     detail="Session revoked หรือออกจากระบบแล้ว กรุณาเข้าสู่ระบบใหม่",
                 )
+        # else: the session predates refresh-token rotation (no recorded jti),
+        # so this token is accepted once and the session is upgraded below.
+
+        if new_jti is None:
+            new_jti = new_refresh_jti()
+            session.prev_refresh_jti = session.refresh_jti
+            session.refresh_jti = new_jti
+            session.rotated_at = now
+
+        session.last_activity = now
+        await self.db.commit()
 
         # Preserve session_id across refreshes so revocation keeps working.
-        new_token_data = {"sub": sub, "user_id": user_id}
-        if session_id:
-            new_token_data["sid"] = session_id
-
         access_token = create_access_token(data={"sub": sub, "user_id": user_id})
-        new_refresh_token = create_refresh_token(data=new_token_data)
+        new_refresh_token = create_refresh_token(
+            data={"sub": sub, "user_id": user_id, "sid": session_id},
+            jti=new_jti,
+        )
 
         return Token(
             access_token=access_token,

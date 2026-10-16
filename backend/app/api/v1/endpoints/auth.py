@@ -30,7 +30,12 @@ from app.core.config import settings
 from app.core.database import get_db
 from app.core.rate_limit import limiter
 from app.core.utils import encode_user_cookie, user_cookie_payload, utcnow as utils_utcnow
-from app.core.security import create_access_token, create_refresh_token, decode_token
+from app.core.security import (
+    create_access_token,
+    create_refresh_token,
+    decode_token,
+    new_refresh_jti,
+)
 from app.api.dependencies import load_profile_columns, resolve_user_from_token
 from app.models.session import UserSession
 from app.schemas.response import ResponseModel
@@ -44,13 +49,20 @@ logger = logging.getLogger(__name__)
 
 
 async def _create_user_session(
-    db: AsyncSession, user: Any, ip_address: Optional[str], user_agent: Optional[str]
+    db: AsyncSession,
+    user: Any,
+    ip_address: Optional[str],
+    user_agent: Optional[str],
+    refresh_jti: str,
 ) -> str:
     """Create an active UserSession row and return its id.
 
     Google logins previously skipped session creation entirely, so their
     refresh tokens had no ``sid`` and logout could not revoke them. Normal
     password logins do the same via AuthService.login.
+
+    ``refresh_jti`` is recorded on the row so the refresh token issued with it
+    is the one this session accepts (rotation/reuse detection, T19).
     """
     session_id = str(uuid.uuid4())
     db.add(
@@ -59,6 +71,7 @@ async def _create_user_session(
             user_id=user.id,
             user_agent=user_agent,
             ip_address=ip_address,
+            refresh_jti=refresh_jti,
             expires_at=utils_utcnow() + timedelta(days=7),
         )
     )
@@ -630,12 +643,14 @@ async def google_verify_token(
     # Issue tokens — with a real UserSession row + sid so logout/revoke works.
     client_ip_tok = request.client.host if request.client else None
     user_agent_tok = request.headers.get("user-agent")
+    refresh_jti = new_refresh_jti()
     session_id = await _create_user_session(
-        db, user, client_ip_tok, user_agent_tok
+        db, user, client_ip_tok, user_agent_tok, refresh_jti
     )
     access_jwt = create_access_token(data={"sub": user.email, "user_id": user.id})
     refresh_jwt = create_refresh_token(
-        data={"sub": user.email, "user_id": user.id, "sid": session_id}
+        data={"sub": user.email, "user_id": user.id, "sid": session_id},
+        jti=refresh_jti,
     )
 
     # Create response
@@ -812,14 +827,17 @@ async def google_callback(
         )
 
     # Issue tokens — with a real UserSession row + sid so logout/revoke works.
+    refresh_jti = new_refresh_jti()
     session_id = await _create_user_session(
         db, user,
         request.client.host if request.client else None,
         request.headers.get("user-agent"),
+        refresh_jti,
     )
     access_jwt = create_access_token(data={"sub": user.email, "user_id": user.id})
     refresh_jwt = create_refresh_token(
-        data={"sub": user.email, "user_id": user.id, "sid": session_id}
+        data={"sub": user.email, "user_id": user.id, "sid": session_id},
+        jti=refresh_jti,
     )
 
     user_data = {

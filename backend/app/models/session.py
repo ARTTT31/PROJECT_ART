@@ -29,6 +29,16 @@ class UserSession(Base, TimestampMixin):
     last_activity: Mapped[datetime] = mapped_column(DateTime, default=utcnow, index=True)
     expires_at: Mapped[datetime | None] = mapped_column(DateTime, index=True)
 
+    # ── Refresh-token rotation (T19) ────────────────────────────────────────
+    # ``refresh_jti`` is the jti of the refresh token this session accepts right
+    # now. ``prev_refresh_jti``/``rotated_at`` record the previous one and when
+    # it was rotated away, so a second tab that refreshed at the same moment
+    # still works inside a short grace window — anything older is a replay and
+    # revokes the session.
+    refresh_jti: Mapped[str | None] = mapped_column(String(64))
+    prev_refresh_jti: Mapped[str | None] = mapped_column(String(64))
+    rotated_at: Mapped[datetime | None] = mapped_column(DateTime)
+
     # Relationships
     user = relationship("User", back_populates="sessions")
 

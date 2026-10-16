@@ -4,6 +4,7 @@ Security utilities for authentication and authorization
 
 from datetime import timedelta
 from typing import Optional
+import secrets
 import jwt
 from jwt import InvalidTokenError
 from argon2 import PasswordHasher
@@ -58,19 +59,34 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
     return encoded_jwt
 
 
-def create_refresh_token(data: dict) -> str:
+def new_refresh_jti() -> str:
+    """Opaque identifier for one refresh token "generation".
+
+    Rotation is tracked by jti, not by the token string: the session row stores
+    which jti it currently accepts, and a token whose jti is neither the current
+    nor the just-rotated one is a replay.
+    """
+    return secrets.token_urlsafe(16)
+
+
+def create_refresh_token(data: dict, jti: Optional[str] = None) -> str:
     """
     Create JWT refresh token with longer expiration
 
     Args:
         data: Data to encode in token
+        jti: Rotation identifier. Callers that store it on the session pass the
+            value they recorded; when omitted a fresh one is generated so every
+            refresh token is traceable.
 
     Returns:
         Encoded JWT refresh token
     """
     to_encode = data.copy()
     expire = utcnow() + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
-    to_encode.update({"exp": expire, "iat": utcnow(), "type": "refresh"})
+    to_encode.update(
+        {"exp": expire, "iat": utcnow(), "type": "refresh", "jti": jti or new_refresh_jti()}
+    )
 
     encoded_jwt = jwt.encode(
         to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM
