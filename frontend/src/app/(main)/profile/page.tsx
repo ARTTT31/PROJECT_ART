@@ -1258,25 +1258,6 @@ export default function ProfilePage() {
           transition={{ duration: 0.16, ease: 'easeOut' }}
           className="space-y-4 min-h-[600px]"
         >
-          {/* Admin Header Banner */}
-          <div className="overflow-hidden rounded-[18px] bg-gradient-to-r from-purple-900 via-indigo-900 to-slate-900 p-5 sm:p-6 text-white shadow-sm">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div className="flex items-center gap-3.5">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/20 backdrop-blur-md">
-                  <ShieldAlert size={22} className="text-purple-300" />
-                </div>
-                <div>
-                  <h2 className="text-base sm:text-lg font-bold tracking-tight text-white leading-snug">
-                    ศูนย์จัดการผู้ใช้งานระบบ (User Administration)
-                  </h2>
-                  <p className="text-[12px] sm:text-[13px] text-purple-200/80 leading-relaxed mt-0.5">
-                    บริหารจัดการบัญชีผู้ใช้ สิทธิ์การเข้าถึง และการกู้คืนข้อมูลในถังขยะ
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
           {/* User Management Component */}
           <UserManagement />
         </motion.div>
