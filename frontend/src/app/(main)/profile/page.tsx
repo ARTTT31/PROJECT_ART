@@ -823,17 +823,6 @@ export default function ProfilePage() {
                 required
               />
               <InsetField
-                id="profile-username"
-                label="ชื่อผู้ใช้ (Username)"
-                value={user.username || ''}
-                onChange={() => {}}
-                placeholder="ชื่อผู้ใช้ในระบบ"
-                icon={<AtSign size={16} aria-hidden="true" />}
-                autoComplete="username"
-                readOnly
-                hint="กำหนดโดยผู้ดูแลระบบ"
-              />
-              <InsetField
                 id="profile-email"
                 label="อีเมลสำหรับเข้าสู่ระบบ"
                 type="email"

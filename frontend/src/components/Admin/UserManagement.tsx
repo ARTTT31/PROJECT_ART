@@ -341,6 +341,11 @@ export default function UserManagement() {
     [total, users.length, page],
   )
 
+  const showPagination = useMemo(() => {
+    if (statusFilter === 'trash') return false
+    return page > 0 || hasNextPage || (!Number.isNaN(total) && total > PAGE_SIZE)
+  }, [statusFilter, page, hasNextPage, total])
+
   const filteredTrash = useMemo(() => {
     const term = debouncedQuery.trim().toLowerCase()
     if (!term) return trash
@@ -1166,37 +1171,39 @@ export default function UserManagement() {
           </div>
           </div>
 
-          <div className="flex flex-col gap-3 rounded-[18px] border border-black/[0.06] bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-            <span className="text-[12.5px] font-medium text-[#6e6e73]">
-              {statusFilter === 'trash'
-                ? debouncedQuery.trim()
-                  ? `พบ ${filteredTrash.length} บัญชีในถังขยะ`
-                  : `${trash.length} บัญชีในถังขยะ`
-                : Number.isNaN(total)
-                  ? `หน้า ${page + 1}`
-                  : `พบ ${total} บัญชี · หน้า ${page + 1} / ${Math.max(1, Math.ceil(total / PAGE_SIZE))}`}
-            </span>
-            {statusFilter !== 'trash' && (
-              <div className="inline-flex items-center gap-2 self-end sm:self-auto">
-                <button
-                  onClick={() => setPage(prev => Math.max(0, prev - 1))}
-                  disabled={page === 0}
-                  aria-label="หน้าก่อนหน้า"
-                  className="inline-flex items-center gap-1 rounded-full bg-[#f5f5f7] px-3.5 py-1.5 text-[12px] font-bold text-[#1d1d1f] transition-all hover:bg-[#e8e8ed] active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  <ChevronLeft size={13} /> ก่อนหน้า
-                </button>
-                <button
-                  onClick={() => setPage(prev => prev + 1)}
-                  disabled={!hasNextPage}
-                  aria-label="หน้าถัดไป"
-                  className="inline-flex items-center gap-1 rounded-full bg-[#f5f5f7] px-3.5 py-1.5 text-[12px] font-bold text-[#1d1d1f] transition-all hover:bg-[#e8e8ed] active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  ถัดไป <ChevronRight size={13} />
-                </button>
-              </div>
-            )}
-          </div>
+          {showPagination && (
+            <div className="flex flex-col gap-3 rounded-[18px] border border-black/[0.06] bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+              <span className="text-[12.5px] font-medium text-[#6e6e73]">
+                {statusFilter === 'trash'
+                  ? debouncedQuery.trim()
+                    ? `พบ ${filteredTrash.length} บัญชีในถังขยะ`
+                    : `${trash.length} บัญชีในถังขยะ`
+                  : Number.isNaN(total)
+                    ? `หน้า ${page + 1}`
+                    : `พบ ${total} บัญชี · หน้า ${page + 1} / ${Math.max(1, Math.ceil(total / PAGE_SIZE))}`}
+              </span>
+              {statusFilter !== 'trash' && (
+                <div className="inline-flex items-center gap-2 self-end sm:self-auto">
+                  <button
+                    onClick={() => setPage(prev => Math.max(0, prev - 1))}
+                    disabled={page === 0}
+                    aria-label="หน้าก่อนหน้า"
+                    className="inline-flex items-center gap-1 rounded-full bg-[#f5f5f7] px-3.5 py-1.5 text-[12px] font-bold text-[#1d1d1f] transition-all hover:bg-[#e8e8ed] active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    <ChevronLeft size={13} /> ก่อนหน้า
+                  </button>
+                  <button
+                    onClick={() => setPage(prev => prev + 1)}
+                    disabled={!hasNextPage}
+                    aria-label="หน้าถัดไป"
+                    className="inline-flex items-center gap-1 rounded-full bg-[#f5f5f7] px-3.5 py-1.5 text-[12px] font-bold text-[#1d1d1f] transition-all hover:bg-[#e8e8ed] active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    ถัดไป <ChevronRight size={13} />
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </>
       )}
     </div>
