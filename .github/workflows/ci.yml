@@ -5,6 +5,11 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  # A pinned dependency set can go stale without a single push: a CVE published
+  # on a Tuesday is invisible to push-triggered CI until someone commits. The
+  # weekly run re-audits the same requirements every Monday at 02:00 UTC.
+  schedule:
+    - cron: "0 2 * * 1"
 
 jobs:
   # ── Backend: Lint + Test ──────────────────────────────
@@ -64,14 +69,15 @@ jobs:
           pytest -q --tb=short
 
   # ── Dependency advisories ─────────────────────────────
-  # Advisory, not a merge gate: the pinned set currently reports advisories
-  # (starlette via fastapi 0.111, python-jose), and a red build nobody can fix
-  # would just get ignored. Dependabot opens the upgrade PRs; this job makes the
-  # advisories visible in the meantime. Flip `continue-on-error` to false once
-  # the pinned set is clean.
+  # Merge gate: the pinned set audits clean (the old python-jose / starlette
+  # advisories are gone — see the pins in backend/requirements.txt), so a new
+  # advisory now fails the build instead of scrolling past as a warning, and the
+  # weekly schedule catches advisories published between pushes. No entries are
+  # currently ignored; if one ever has to be, add it as an individual
+  # `--ignore-vuln <ID>` with the reason and a review date, never a blanket skip.
   dependency-audit:
     runs-on: ubuntu-latest
-    continue-on-error: true
+    continue-on-error: false
 
     steps:
       - uses: actions/checkout@v4
@@ -118,6 +124,11 @@ jobs:
 
       - name: Type check
         run: npm run type-check
+
+      # The Vitest unit suite is part of the gate: it has been passing locally
+      # for a while but was never wired into this workflow.
+      - name: Run unit tests
+        run: npm test
 
       - name: Build
         run: npm run build

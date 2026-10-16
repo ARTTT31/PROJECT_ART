@@ -1,6 +1,7 @@
-# Pins below are the stack the test suite was run against (155 passed, mypy/flake8
-# clean, Alembic chain applied). Keep them in step with reality: stale pins are how
-# python-jose 3.3.0 stayed in the file long after the venv had moved on.
+# Pins below are the stack the test suite was run against (244 passed, coverage
+# 83.93%, mypy/flake8 clean, Alembic chain applied) and that `pip-audit` reports
+# clean. Keep them in step with reality: stale pins are how python-jose 3.3.0
+# stayed in the file long after the venv had moved on.
 #
 # FastAPI Framework
 fastapi==0.143.0
