@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   User,
@@ -27,6 +27,8 @@ import {
   ShieldCheck,
   Sliders,
   Sparkles,
+  Camera,
+  Loader2,
 } from 'lucide-react'
 import { showDeleteConfirm, showToast, showSuccess, showError } from '@/utils/sweetalert'
 import { useAuth } from '@/hooks/useAuth'
@@ -62,6 +64,20 @@ import type { AuthUser } from '@/types'
 // ─────────────────────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────────────────────
+
+/** Extract readable error message from API response body, handling Pydantic arrays */
+function apiMessage(data: unknown, fallback: string): string {
+  const detail = (data as { detail?: unknown } | null)?.detail
+  if (typeof detail === 'string' && detail) return detail
+  if (Array.isArray(detail) && detail.length > 0) {
+    const first = detail[0] as { msg?: string; loc?: unknown[] }
+    if (first?.msg) {
+      const field = Array.isArray(first.loc) ? first.loc[first.loc.length - 1] : undefined
+      return field ? `${field}: ${first.msg}` : first.msg
+    }
+  }
+  return fallback
+}
 
 function describeQuickLink(url: string) {
   const value = url.trim()
@@ -153,6 +169,7 @@ function SectionCard({
 // ─────────────────────────────────────────────────────────────
 
 interface InsetFieldProps {
+  id?: string
   label: string
   type?: string
   value: string
@@ -167,6 +184,7 @@ interface InsetFieldProps {
 }
 
 function InsetField({
+  id,
   label,
   type = 'text',
   value,
@@ -179,10 +197,12 @@ function InsetField({
   readOnly,
   hint,
 }: InsetFieldProps) {
+  const inputId = id || `field-${label.replace(/[^a-zA-Z0-9ก-๙]/g, '-').toLowerCase()}`
+
   return (
     <div>
       <div className="mb-1.5 ml-1 flex items-center justify-between">
-        <label className="block text-[12px] font-bold text-[#475569]">
+        <label htmlFor={inputId} className="block text-[12px] font-bold text-[#475569] cursor-pointer">
           {label}
         </label>
         {hint && (
@@ -194,6 +214,7 @@ function InsetField({
           {icon}
         </span>
         <input
+          id={inputId}
           type={type}
           value={value}
           onChange={(e) => onChange(e.target.value)}
@@ -231,6 +252,10 @@ export default function ProfilePage() {
   const { user: authUser, updateUser } = useAuth()
   const [user, setUser] = useState<AuthUser | null>(null)
   const [activeTab, setActiveTab] = useState<TabKey>('profile')
+
+  // Avatar Upload
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
 
   // Personal Info Form
   const [name, setName] = useState('')
@@ -270,15 +295,27 @@ export default function ProfilePage() {
 
   const isAdmin = user?.role === 'admin'
 
-  // Sync tab with URL hash if present
+  // Sync tab with URL hash and listen to browser popstate / hashchange
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window === 'undefined') return
+
+    const handleHash = () => {
       const hash = window.location.hash.replace('#', '')
-      if (hash === 'admin' || hash === 'preferences' || hash === 'profile') {
+      if (hash === 'preferences' || hash === 'profile') {
         setActiveTab(hash as TabKey)
+      } else if (hash === 'admin') {
+        if (authUser?.role === 'admin') {
+          setActiveTab('admin')
+        } else {
+          setActiveTab('profile')
+        }
       }
     }
-  }, [])
+
+    handleHash()
+    window.addEventListener('hashchange', handleHash)
+    return () => window.removeEventListener('hashchange', handleHash)
+  }, [authUser])
 
   const handleTabChange = (tab: TabKey) => {
     setActiveTab(tab)
@@ -348,6 +385,61 @@ export default function ProfilePage() {
     return { label: 'ปลอดภัยสูง', color: 'bg-teal-500', text: 'text-teal-700' }
   }
 
+  // ── Handlers: Avatar Upload ───────────────────────────────────
+
+  const handleAvatarFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !user) return
+
+    // Validate size (max 1MB)
+    if (file.size > 1 * 1024 * 1024) {
+      showToast('ขนาดไฟล์รูปภาพห้ามเกิน 1MB', 'warning')
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      return
+    }
+
+    // Validate mime type
+    const validTypes = ['image/jpeg', 'image/png', 'image/gif']
+    if (!validTypes.includes(file.type)) {
+      showToast('รองรับเฉพาะไฟล์รูปภาพ JPG, PNG, GIF เท่านั้น', 'warning')
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      return
+    }
+
+    const formData = new FormData()
+    formData.append('file', file)
+
+    setIsUploadingAvatar(true)
+    try {
+      const response = await fetchWithAuth('/api/v1/profile/upload-avatar', {
+        method: 'POST',
+        body: formData,
+      })
+      const data = await response.json()
+      if (response.ok) {
+        // Re-fetch profile to get updated base64 avatar
+        const profRes = await fetchWithAuth('/api/v1/profile/me')
+        if (profRes.ok) {
+          const fresh = await profRes.json()
+          const updatedUser: AuthUser = { ...user, avatar: fresh.avatar }
+          localStorage.setItem('user', JSON.stringify(updatedUser))
+          setUser(updatedUser)
+          updateUser({ avatar: fresh.avatar })
+          window.dispatchEvent(new Event('user-profile-updated'))
+        }
+        showSuccess('สำเร็จ', data.message || 'อัปเดตรูปโปรไฟล์เรียบร้อยแล้ว!')
+      } else {
+        showError('เกิดข้อผิดพลาด', apiMessage(data, 'ไม่สามารถอัปโหลดรูปภาพได้'))
+      }
+    } catch (err) {
+      console.error('Avatar upload error:', err)
+      showError('ไม่สามารถเชื่อมต่อได้', 'เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์')
+    } finally {
+      setIsUploadingAvatar(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
+
   // ── Handlers: Profile ─────────────────────────────────────────
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
@@ -368,7 +460,7 @@ export default function ProfilePage() {
         window.dispatchEvent(new Event('user-profile-updated'))
         showSuccess('สำเร็จ', data.message || 'อัปเดตข้อมูลโปรไฟล์เรียบร้อยแล้ว!')
       } else {
-        showError('เกิดข้อผิดพลาด', data.detail || 'เกิดข้อผิดพลาดในการอัปเดตโปรไฟล์')
+        showError('เกิดข้อผิดพลาด', apiMessage(data, 'เกิดข้อผิดพลาดในการอัปเดตโปรไฟล์'))
       }
     } catch (error) {
       console.error('Profile update error:', error)
@@ -383,6 +475,7 @@ export default function ProfilePage() {
     if (!oldPassword) { showToast('กรุณากรอกรหัสผ่านปัจจุบัน', 'warning'); return }
     if (!newPassword) { showToast('กรุณากรอกรหัสผ่านใหม่', 'warning'); return }
     if (newPassword.length < 8) { showToast('รหัสผ่านใหม่ต้องมีอย่างน้อย 8 ตัวอักษร', 'warning'); return }
+    if (!confirmPassword) { showToast('กรุณากรอกยืนยันรหัสผ่านใหม่', 'warning'); return }
     if (newPassword !== confirmPassword) { showToast('รหัสผ่านยืนยันไม่ตรงกับรหัสผ่านใหม่', 'warning'); return }
     if (passwordStrength < 3) { showToast('รหัสผ่านยังไม่แข็งแรงพอ กรุณาเพิ่มตัวเลขหรืออักขระพิเศษ', 'warning'); return }
     if (!user) { showError('เซสชันหมดอายุ', 'กรุณาเข้าสู่ระบบใหม่'); router.push('/login'); return }
@@ -400,7 +493,7 @@ export default function ProfilePage() {
         setNewPassword('')
         setConfirmPassword('')
       } else {
-        showError('เกิดข้อผิดพลาด', data.detail || 'เกิดข้อผิดพลาดในการเปลี่ยนรหัสผ่าน')
+        showError('เกิดข้อผิดพลาด', apiMessage(data, 'เกิดข้อผิดพลาดในการเปลี่ยนรหัสผ่าน'))
       }
     } catch (error) {
       console.error('Password change error:', error)
@@ -440,7 +533,7 @@ export default function ProfilePage() {
       })
       if (!response.ok) {
         const data = await response.json().catch(() => ({ detail: '' }))
-        showError('เกิดข้อผิดพลาด', (data as any).detail || 'ไม่สามารถบันทึก Quick Links ได้')
+        showError('เกิดข้อผิดพลาด', apiMessage(data, 'ไม่สามารถบันทึก Quick Links ได้'))
         return false
       }
       const updatedUser: AuthUser = { ...user, quick_links: raw }
@@ -545,20 +638,51 @@ export default function ProfilePage() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5">
           {/* Left: Avatar + Identity */}
           <div className="flex items-center gap-4 sm:gap-5">
-            <div className="relative shrink-0">
-              <div className="flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-[22px] bg-gradient-to-tr from-[#0066cc] via-[#0077ed] to-[#38bdf8] text-2xl sm:text-3xl font-extrabold text-white shadow-md ring-4 ring-black/[0.03]">
-                {user.name?.charAt(0).toUpperCase() || 'U'}
-              </div>
-              <div
-                className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-black/[0.06]"
-                title={isAdmin ? 'ผู้ดูแลระบบ' : 'ผู้ใช้งาน'}
+            <div className="relative shrink-0 group">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/gif"
+                onChange={handleAvatarFileSelect}
+                className="hidden"
+                aria-label="อัปโหลดรูปโปรไฟล์"
+              />
+
+              {user.avatar ? (
+                <div className="relative h-16 w-16 sm:h-20 sm:w-20 overflow-hidden rounded-[22px] shadow-md ring-4 ring-black/[0.03]">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={user.avatar}
+                    alt={user.name || 'โปรไฟล์'}
+                    className="h-full w-full object-cover"
+                  />
+                  {isUploadingAvatar && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-xs">
+                      <Loader2 size={20} className="animate-spin text-white" />
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="relative flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-[22px] bg-gradient-to-tr from-[#0066cc] via-[#0077ed] to-[#38bdf8] text-2xl sm:text-3xl font-extrabold text-white shadow-md ring-4 ring-black/[0.03]">
+                  {isUploadingAvatar ? (
+                    <Loader2 size={24} className="animate-spin text-white" />
+                  ) : (
+                    user.name?.charAt(0).toUpperCase() || 'U'
+                  )}
+                </div>
+              )}
+
+              {/* Upload photo button badge */}
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploadingAvatar}
+                title="เปลี่ยนรูปโปรไฟล์ (ไม่เกิน 1MB)"
+                aria-label="เปลี่ยนรูปโปรไฟล์"
+                className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full bg-white text-[#1d1d1f] shadow-md ring-1 ring-black/[0.08] transition-transform hover:scale-110 active:scale-95 disabled:opacity-50"
               >
-                {isAdmin ? (
-                  <ShieldCheck size={14} className="text-purple-600" />
-                ) : (
-                  <Check size={14} className="text-emerald-600" />
-                )}
-              </div>
+                <Camera size={13} className="text-[#0066cc]" />
+              </button>
             </div>
 
             <div className="min-w-0">
@@ -676,6 +800,7 @@ export default function ProfilePage() {
           >
             <form onSubmit={handleUpdateProfile} className="space-y-4">
               <InsetField
+                id="profile-name"
                 label="ชื่อที่แสดง"
                 value={name}
                 onChange={setName}
@@ -684,6 +809,7 @@ export default function ProfilePage() {
                 required
               />
               <InsetField
+                id="profile-username"
                 label="ชื่อผู้ใช้ (Username)"
                 value={user.username || ''}
                 onChange={() => {}}
@@ -694,6 +820,7 @@ export default function ProfilePage() {
                 hint="กำหนดโดยผู้ดูแลระบบ"
               />
               <InsetField
+                id="profile-email"
                 label="อีเมลสำหรับเข้าสู่ระบบ"
                 type="email"
                 value={email}
@@ -731,6 +858,7 @@ export default function ProfilePage() {
           >
             <form onSubmit={handleChangePassword} className="space-y-4">
               <InsetField
+                id="current-password"
                 label="รหัสผ่านปัจจุบัน"
                 type={showOldPassword ? 'text' : 'password'}
                 value={oldPassword}
@@ -750,6 +878,7 @@ export default function ProfilePage() {
                 }
               />
               <InsetField
+                id="new-password"
                 label="รหัสผ่านใหม่"
                 type={showNewPassword ? 'text' : 'password'}
                 value={newPassword}
@@ -803,6 +932,7 @@ export default function ProfilePage() {
               )}
 
               <InsetField
+                id="confirm-new-password"
                 label="ยืนยันรหัสผ่านใหม่"
                 type={showConfirmPassword ? 'text' : 'password'}
                 value={confirmPassword}
@@ -1072,11 +1202,11 @@ export default function ProfilePage() {
                           href={link.url}
                           target={external ? '_blank' : undefined}
                           rel={external ? 'noopener noreferrer' : undefined}
-                          className="hidden sm:inline-flex h-7 items-center gap-1 rounded-lg px-2 text-[11px] font-bold text-slate-600 hover:bg-slate-100"
-                          aria-label="เปิดลิงก์"
+                          className="flex h-7 items-center justify-center sm:gap-1 rounded-lg px-2 text-[11px] font-bold text-slate-600 hover:bg-slate-100"
+                          aria-label={`เปิดลิงก์ ${link.label}`}
                         >
-                          <ExternalLink size={11} aria-hidden="true" />
-                          เปิด
+                          <ExternalLink size={12} aria-hidden="true" />
+                          <span className="hidden sm:inline">เปิด</span>
                         </a>
                         <button
                           type="button"
@@ -1188,6 +1318,7 @@ export default function ProfilePage() {
               {/* Label + URL */}
               <div className="space-y-3">
                 <InsetField
+                  id="ql-label"
                   label="ชื่อลิงก์"
                   value={qlLabel}
                   onChange={setQlLabel}
@@ -1196,6 +1327,7 @@ export default function ProfilePage() {
                   required
                 />
                 <InsetField
+                  id="ql-url"
                   label="URL / ที่อยู่ลิงก์"
                   value={qlUrl}
                   onChange={setQlUrl}
@@ -1205,12 +1337,12 @@ export default function ProfilePage() {
                 />
               </div>
 
-              {/* Icon Picker */}
+              {/* Icon Picker (with scroll container to avoid huge modal on laptops/phones) */}
               <div>
                 <label className="mb-1.5 ml-1 block text-[11px] font-bold tracking-wide uppercase text-[#6e6e73]">
                   ไอคอน · <span className="text-[#0066cc] font-normal normal-case tracking-normal">{previewIconLabel}</span>
                 </label>
-                <div className="rounded-2xl bg-[#f8fafc] p-2 ring-1 ring-black/[0.04]">
+                <div className="rounded-2xl bg-[#f8fafc] p-2 ring-1 ring-black/[0.04] max-h-44 overflow-y-auto">
                   <div className="grid grid-cols-6 sm:grid-cols-8 gap-1.5">
                     {QUICK_LINK_ICON_OPTIONS.map((option) => {
                       const OptIcon = QUICK_LINK_ICON_MAP[option.key]
