@@ -267,12 +267,30 @@ Both public probes use a 2-second timeout, so a hung database cannot make the pr
 
 Every response carries an `X-Request-ID` header: a caller-supplied id is reused when it is short and safe, otherwise one is generated. Log lines include it as `rid=…`, so a report of "this request failed" can be tied to the exact request that produced it.
 
+### Admin User Management
+
+[`frontend/src/components/Admin/UserManagement.tsx`](frontend/src/components/Admin/UserManagement.tsx) drives `GET/POST/PUT/DELETE /api/v1/users` from the profile page.
+
+| Capability | How |
+|---|---|
+| Search + filters | `GET /api/v1/users/?q=&role=&is_active=&skip=&limit=` — case-insensitive match on name/email/username; `%` and `_` are escaped, so a term like `a_b` is a literal rather than a wildcard. `limit` is capped at 200. |
+| Paging | The match count comes back in the `X-Total-Count` header (`expose_headers=["*"]` is what lets the browser read it). If the header is missing the pager falls back to "a full page may have more". |
+| Create | `POST /api/v1/users/admin-create` with `username`, `display_name`, `password`, optional `email` and `accessible_pages` (the JSON-as-text list the edit form uses; `NULL` means every page). |
+| Edit | `PUT /api/v1/users/{id}` — role, status, page access, unlock, password reset. Refused for an account that is in the trash. |
+| Delete | `DELETE /api/v1/users/{id}` **moves the account to the trash** (see below) rather than erasing it. |
+| Trash | `GET /api/v1/users/deleted` lists trashed accounts with `days_remaining`, `POST /api/v1/users/{id}/restore` brings one back. |
+| Permanent delete | `DELETE /api/v1/users/{id}?purge=true` — only accepted for an account that is already in the trash, so erasing is always a deliberate second step. |
+
+**Deleting an account is recoverable for `USER_DELETE_RETENTION_DAYS` (default 30).** The row survives with `users.deleted_at` set, which is what keeps `audit_logs.user_id` resolvable while the decision can still be revisited. The account is locked out at the same moment (`is_active` cleared and every session row deleted), so a token issued a minute earlier stops working, and it is hidden from every listing. While it is in the trash its email/username stay reserved — that is what lets a restore return the same identity, and why creating a new account with those values gets a message pointing at the trash instead of a dead end.
+
+There is no cron in this deployment: expired trash rows are purged opportunistically whenever an admin loads the user list or the trash (`UserService.purge_expired_users`), using an ORM delete so the sessions relationship cascades (the `sessions.user_id` foreign key has no `ON DELETE` rule).
+
 ## Security
 
 - **CSRF (double-submit cookie).** Authenticated browser writes (`POST`/`PUT`/`PATCH`/`DELETE` under `/api/`) must echo the readable `csrf_token` cookie in the `X-CSRF-Token` header. Requests without any session cookie keep their normal 401, and `/login`, `/register`, `/refresh`, `/google*` and `/csrf` are exempt so a session can always be established or renewed. Failed checks return `403 {"code":"csrf_failed"}`.
 - **Frontend handling.** [`frontend/src/lib/api/fetchWithAuth.ts`](frontend/src/lib/api/fetchWithAuth.ts) reads the cookie (or bootstraps one from `GET /api/v1/auth/csrf`), attaches the header on mutating calls, and retries once on `csrf_failed`. Set `CSRF_PROTECTION_ENABLED=False` only for non-browser clients.
 - **API documentation.** `/docs`, `/redoc` and `/openapi.json` are served only when `DEBUG=True` or `ENABLE_API_DOCS=True`.
-- **Security headers.** The backend sends a strict CSP (`connect-src` is built from `CORS_ORIGINS`), `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy`, and HSTS (two years, `includeSubDomains; preload`) outside `DEBUG`.
+- **Security headers.** The backend sends a strict CSP (`connect-src` is built from `CORS_ORIGINS`), `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`, `Permissions-Policy`, and HSTS (two years, `includeSubDomains; preload`) outside `DEBUG`.
 - **WebSocket notifications require a session.** The subscribe endpoint (`/api/v1/ws/notifications`) authenticates during the handshake and closes with `1008` when the token is missing, expired, belongs to a deleted/inactive/locked account, or does not exist. Nothing is read, sent or registered on that socket, so an anonymous visitor cannot hold a socket or receive admin broadcasts. The rejection is delivered as a WebSocket close frame (`accept()` then `close(1008)`) rather than a pre-accept rejection: an ASGI server answers the latter with HTTP `403`, which browsers surface as the generic abnormal closure `1006` — indistinguishable from a network blip, so the client would retry forever instead of stopping. The token is read from the HTTP-only `access_token` cookie (sent automatically with the upgrade request) or an `Authorization: Bearer` header — never from the query string, which would write credentials into access logs.
 - **Connection caps.** `WS_MAX_CONNECTIONS` (default 200) and `WS_MAX_CONNECTIONS_PER_USER` (default 3) bound the in-process registry. Over-capacity handshakes are closed with `1013`. Without them, one account — or a client stuck in a reconnect loop — could grow the registry without bound. The frontend treats `1008` as terminal (no retry) and backs off progressively for any other close.
 - **Signing keys.** With `DEBUG=False` the app refuses to start unless `SECRET_KEY` is at least 32 characters and not a known placeholder.
