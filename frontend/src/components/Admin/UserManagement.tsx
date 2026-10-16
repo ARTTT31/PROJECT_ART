@@ -7,7 +7,7 @@ import { useAuth } from '@/components/Auth/AuthProvider'
 import { showDeleteConfirm } from '@/utils/sweetalert'
 import {
   Settings, Edit, Check, X, ShieldAlert, User, CheckCircle2, Circle, Trash2, Loader2,
-  Search, UserPlus, RotateCcw, ChevronLeft, ChevronRight, Eraser
+  Search, UserPlus, RotateCcw, ChevronLeft, ChevronRight, Eraser, ChevronDown
 } from 'lucide-react'
 
 // Define a simplified User type for admin management
@@ -799,36 +799,46 @@ export default function UserManagement() {
                   onChange={e => setQuery(e.target.value)}
                   placeholder="ค้นหาชื่อ อีเมล หรือชื่อผู้ใช้"
                   aria-label="ค้นหาผู้ใช้"
-                  className="w-full rounded-full border-0 bg-[#f5f5f7] py-2.5 pl-10 pr-4 text-[13px] font-medium text-[#1d1d1f] outline-none transition-all placeholder:text-[#86868b] focus:bg-white focus:ring-2 focus:ring-[#0066cc]"
+                  style={{ paddingLeft: '2.75rem', borderRadius: '9999px', minHeight: '42px', height: '42px' }}
+                  className="w-full rounded-full border border-black/[0.08] bg-[#f5f5f7] pr-4 text-[13.5px] font-medium text-[#1d1d1f] outline-none transition-all placeholder:text-[#86868b] focus:bg-white focus:border-[#0066cc] focus:ring-2 focus:ring-[#0066cc]/20"
                 />
               </label>
               <div className="grid grid-cols-2 gap-2 w-full sm:w-auto sm:flex sm:items-center">
-                <select
-                  value={roleFilter}
-                  onChange={e => setRoleFilter(e.target.value)}
-                  aria-label="กรองตามสิทธิ์"
-                  className="w-full sm:w-auto rounded-full border-0 bg-[#f5f5f7] px-4 py-2.5 text-[13px] font-bold text-[#1d1d1f] outline-none transition-all focus:bg-white focus:ring-2 focus:ring-[#0066cc]"
-                >
-                  <option value="">ทุกสิทธิ์</option>
-                  <option value="admin">Admin</option>
-                  <option value="user">User</option>
-                </select>
-                <select
-                  value={statusFilter}
-                  onChange={e => setStatusFilter(e.target.value)}
-                  aria-label="กรองตามสถานะ"
-                  className="w-full sm:w-auto rounded-full border-0 bg-[#f5f5f7] px-4 py-2.5 text-[13px] font-bold text-[#1d1d1f] outline-none transition-all focus:bg-white focus:ring-2 focus:ring-[#0066cc]"
-                >
-                  <option value="">ทุกสถานะ</option>
-                  <option value="active">ใช้งานปกติ</option>
-                  <option value="suspended">ระงับบัญชี</option>
-                  <option value="trash">ถังขยะ (ลบแล้ว)</option>
-                </select>
+                <div className="relative w-full sm:w-auto">
+                  <select
+                    value={roleFilter}
+                    onChange={e => setRoleFilter(e.target.value)}
+                    aria-label="กรองตามสิทธิ์"
+                    style={{ borderRadius: '9999px', paddingRight: '2.25rem', minHeight: '42px', height: '42px', WebkitAppearance: 'none', MozAppearance: 'none' }}
+                    className="w-full sm:w-auto appearance-none rounded-full border border-black/[0.08] bg-[#f5f5f7] pl-4 text-[13px] font-bold text-[#1d1d1f] outline-none transition-all focus:bg-white focus:border-[#0066cc] focus:ring-2 focus:ring-[#0066cc]/20 cursor-pointer"
+                  >
+                    <option value="">ทุกสิทธิ์</option>
+                    <option value="admin">Admin</option>
+                    <option value="user">User</option>
+                  </select>
+                  <ChevronDown size={14} className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-[#86868b]" />
+                </div>
+                <div className="relative w-full sm:w-auto">
+                  <select
+                    value={statusFilter}
+                    onChange={e => setStatusFilter(e.target.value)}
+                    aria-label="กรองตามสถานะ"
+                    style={{ borderRadius: '9999px', paddingRight: '2.25rem', minHeight: '42px', height: '42px', WebkitAppearance: 'none', MozAppearance: 'none' }}
+                    className="w-full sm:w-auto appearance-none rounded-full border border-black/[0.08] bg-[#f5f5f7] pl-4 text-[13px] font-bold text-[#1d1d1f] outline-none transition-all focus:bg-white focus:border-[#0066cc] focus:ring-2 focus:ring-[#0066cc]/20 cursor-pointer"
+                  >
+                    <option value="">ทุกสถานะ</option>
+                    <option value="active">ใช้งานปกติ</option>
+                    <option value="suspended">ระงับบัญชี</option>
+                    <option value="trash">ถังขยะ (ลบแล้ว)</option>
+                  </select>
+                  <ChevronDown size={14} className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-[#86868b]" />
+                </div>
               </div>
               {isFiltered && (
                 <button
                   onClick={clearFilters}
-                  className="inline-flex items-center justify-center gap-1.5 rounded-full bg-[#f5f5f7] px-4 py-2.5 text-[13px] font-bold text-[#6e6e73] transition-all hover:bg-[#e8e8ed] hover:text-[#1d1d1f] active:scale-95"
+                  style={{ minHeight: '42px', height: '42px' }}
+                  className="inline-flex items-center justify-center gap-1.5 rounded-full bg-[#f5f5f7] px-4 text-[13px] font-bold text-[#6e6e73] transition-all hover:bg-[#e8e8ed] hover:text-[#1d1d1f] active:scale-95"
                 >
                   <Eraser size={13} /> ล้างตัวกรอง
                 </button>
@@ -836,31 +846,33 @@ export default function UserManagement() {
             </div>
             <button
               onClick={openCreate}
-              className="w-full lg:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-[#0066cc] px-5 py-2.5 text-[13px] font-bold text-white shadow-sm transition-all hover:bg-[#0071e3] active:scale-95"
+              style={{ minHeight: '42px', height: '42px' }}
+              className="w-full lg:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-[#0066cc] px-5 text-[13px] font-bold text-white shadow-sm transition-all hover:bg-[#0071e3] active:scale-95"
             >
               <UserPlus size={14} /> เพิ่มผู้ใช้
             </button>
           </div>
 
           <div className="overflow-hidden rounded-[18px] border border-black/[0.06] bg-white">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm whitespace-nowrap">
-              <thead className="bg-[#fbfbfc] text-[#6e6e73] text-[12px] font-bold uppercase tracking-wider">
-                <tr>
-                  <th className="px-5 py-4 border-b border-black/[0.04]">ชื่อผู้ใช้</th>
-                  <th className="px-5 py-4 border-b border-black/[0.04]">สิทธิ์</th>
-                  {statusFilter === 'trash' ? (
-                    <>
-                      <th className="px-5 py-4 border-b border-black/[0.04]">ลบเมื่อ</th>
-                      <th className="px-5 py-4 border-b border-black/[0.04]">เหลือเวลา</th>
-                    </>
-                  ) : (
-                    <th className="px-5 py-4 border-b border-black/[0.04]">สถานะ</th>
-                  )}
-                  <th className="px-5 py-4 border-b border-black/[0.04] text-right">จัดการ</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-black/[0.04]">
+            <div className={`h-0.5 w-full bg-[#0066cc] transition-all duration-300 ${isFetching ? 'opacity-100 animate-pulse' : 'opacity-0'}`} />
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm whitespace-nowrap">
+                <thead className="bg-[#fbfbfc] text-[#6e6e73] text-[12px] font-bold uppercase tracking-wider">
+                  <tr>
+                    <th className="px-5 py-4 border-b border-black/[0.04]">ชื่อผู้ใช้</th>
+                    <th className="px-5 py-4 border-b border-black/[0.04]">สิทธิ์</th>
+                    {statusFilter === 'trash' ? (
+                      <>
+                        <th className="px-5 py-4 border-b border-black/[0.04]">ลบเมื่อ</th>
+                        <th className="px-5 py-4 border-b border-black/[0.04]">เหลือเวลา</th>
+                      </>
+                    ) : (
+                      <th className="px-5 py-4 border-b border-black/[0.04]">สถานะ</th>
+                    )}
+                    <th className="px-5 py-4 border-b border-black/[0.04] text-right">จัดการ</th>
+                  </tr>
+                </thead>
+                <tbody className={`divide-y divide-black/[0.04] transition-opacity duration-200 ${isFetching ? 'opacity-50' : 'opacity-100'}`}>
                 {statusFilter === 'trash' ? (
                   filteredTrash.map(t => (
                     <tr key={t.id} className="hover:bg-slate-50/50 transition-colors">
@@ -978,21 +990,39 @@ export default function UserManagement() {
                   </tr>
                   )
                 })}
-                {statusFilter === 'trash'
-                  ? filteredTrash.length === 0 && (
-                      <tr>
-                        <td colSpan={5} className="px-5 py-10 text-center text-[13px] font-medium text-[#6e6e73]">
-                          {debouncedQuery.trim() ? 'ไม่พบผู้ใช้ที่ตรงกับเงื่อนไข' : 'ยังไม่มีบัญชีในถังขยะ'}
-                        </td>
-                      </tr>
-                    )
-                  : users.length === 0 && (
-                      <tr>
-                        <td colSpan={4} className="px-5 py-10 text-center text-[13px] font-medium text-[#6e6e73]">
-                          {isFiltered ? 'ไม่พบผู้ใช้ที่ตรงกับเงื่อนไข' : 'ยังไม่มีผู้ใช้งานในระบบ'}
-                        </td>
-                      </tr>
-                    )}
+                {statusFilter === 'trash' ? (
+                  filteredTrash.length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="px-5 py-10 text-center text-[13px] font-medium text-[#6e6e73]">
+                        {isFetching ? (
+                          <span className="inline-flex items-center gap-2">
+                            <Loader2 size={15} className="animate-spin text-[#0066cc]" /> กำลังโหลดข้อมูล...
+                          </span>
+                        ) : debouncedQuery.trim() ? (
+                          'ไม่พบผู้ใช้ที่ตรงกับเงื่อนไข'
+                        ) : (
+                          'ยังไม่มีบัญชีในถังขยะ'
+                        )}
+                      </td>
+                    </tr>
+                  )
+                ) : (
+                  users.length === 0 && (
+                    <tr>
+                      <td colSpan={4} className="px-5 py-10 text-center text-[13px] font-medium text-[#6e6e73]">
+                        {isFetching ? (
+                          <span className="inline-flex items-center gap-2">
+                            <Loader2 size={15} className="animate-spin text-[#0066cc]" /> กำลังโหลดข้อมูล...
+                          </span>
+                        ) : isFiltered ? (
+                          'ไม่พบผู้ใช้ที่ตรงกับเงื่อนไข'
+                        ) : (
+                          'ยังไม่มีผู้ใช้งานในระบบ'
+                        )}
+                      </td>
+                    </tr>
+                  )
+                )}
               </tbody>
             </table>
           </div>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
   User,
   Lock,
@@ -787,8 +788,16 @@ export default function ProfilePage() {
       {/* ══════════════════════════════════════════════════
           TAB 1: ข้อมูลส่วนตัว & ความปลอดภัย
           ══════════════════════════════════════════════════ */}
-      {activeTab === 'profile' && (
-        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 items-start animate-in fade-in duration-200">
+      <AnimatePresence mode="wait" initial={false}>
+        {activeTab === 'profile' && (
+          <motion.div
+            key="profile"
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.16, ease: 'easeOut' }}
+            className="grid grid-cols-1 gap-5 lg:grid-cols-2 items-start"
+          >
           {/* Card 1.1: ข้อมูลส่วนตัว */}
           <SectionCard
             icon={<User size={19} aria-hidden="true" />}
@@ -984,14 +993,21 @@ export default function ProfilePage() {
               </div>
             </form>
           </SectionCard>
-        </div>
+        </motion.div>
       )}
 
       {/* ══════════════════════════════════════════════════
           TAB 2: ทางลัด & ปรับแต่งเมนู
           ══════════════════════════════════════════════════ */}
       {activeTab === 'preferences' && (
-        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 items-start animate-in fade-in duration-200">
+        <motion.div
+          key="preferences"
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -6 }}
+          transition={{ duration: 0.16, ease: 'easeOut' }}
+          className="grid grid-cols-1 gap-5 lg:grid-cols-2 items-start"
+        >
           {/* Card 2.1: การตั้งค่าเมนูหลัก */}
           <SectionCard
             icon={<LayoutGrid size={19} aria-hidden="true" />}
@@ -1233,14 +1249,21 @@ export default function ProfilePage() {
               </div>
             )}
           </SectionCard>
-        </div>
+        </motion.div>
       )}
 
       {/* ══════════════════════════════════════════════════
           TAB 3: การจัดการผู้ใช้งาน (Admin Panel)
           ══════════════════════════════════════════════════ */}
       {activeTab === 'admin' && isAdmin && (
-        <div className="space-y-4 animate-in fade-in duration-200">
+        <motion.div
+          key="admin"
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -6 }}
+          transition={{ duration: 0.16, ease: 'easeOut' }}
+          className="space-y-4"
+        >
           {/* Admin Header Banner */}
           <div className="overflow-hidden rounded-[20px] bg-gradient-to-r from-purple-900 via-indigo-900 to-slate-900 p-5 sm:p-6 text-white shadow-sm">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -1262,8 +1285,9 @@ export default function ProfilePage() {
 
           {/* User Management Component */}
           <UserManagement />
-        </div>
+        </motion.div>
       )}
+      </AnimatePresence>
 
       {/* ══════════════════════════════════════════════════
           QUICK LINK DIALOG (CREATE / EDIT)
