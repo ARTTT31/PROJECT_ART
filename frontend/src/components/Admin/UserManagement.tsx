@@ -85,6 +85,149 @@ const apiMessage = (data: unknown, fallback: string): string => {
 /** Human-readable identifier for confirm dialogs, toasts and aria-labels. */
 const displayLabel = (u: AdminUser) => u.email || u.username || u.name
 
+interface FilterOption {
+  value: string
+  label: string
+  icon?: React.ReactNode
+}
+
+const ROLE_OPTIONS: FilterOption[] = [
+  { value: '', label: 'ทุกสิทธิ์', icon: <User size={13} className="text-[#86868b]" /> },
+  { value: 'admin', label: 'Admin', icon: <ShieldAlert size={13} className="text-purple-600" /> },
+  { value: 'user', label: 'User', icon: <User size={13} className="text-slate-600" /> },
+]
+
+const STATUS_OPTIONS: FilterOption[] = [
+  { value: '', label: 'ทุกสถานะ', icon: <Circle size={13} className="text-[#86868b]" /> },
+  { value: 'active', label: 'ใช้งานปกติ', icon: <span className="h-2 w-2 rounded-full bg-emerald-500 shrink-0" /> },
+  { value: 'suspended', label: 'ระงับบัญชี', icon: <span className="h-2 w-2 rounded-full bg-rose-500 shrink-0" /> },
+  { value: 'trash', label: 'ถังขยะ (ลบแล้ว)', icon: <Trash2 size={13} className="text-amber-600 shrink-0" /> },
+]
+
+function FilterDropdown({
+  ariaLabel,
+  value,
+  onChange,
+  options,
+}: {
+  ariaLabel: string
+  value: string
+  onChange: (val: string) => void
+  options: FilterOption[]
+}) {
+  const [isOpen, setIsOpen] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+
+  const selectedOption = options.find((opt) => opt.value === value) || options[0]
+
+  useEffect(() => {
+    if (!isOpen) return
+
+    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setIsOpen(false)
+      }
+    }
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsOpen(false)
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    document.addEventListener('touchstart', handleClickOutside)
+    document.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('touchstart', handleClickOutside)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [isOpen])
+
+  return (
+    <div ref={dropdownRef} className="relative w-full sm:w-auto">
+      {/* Visual Custom Dropdown Button */}
+      <button
+        type="button"
+        onClick={() => setIsOpen((prev) => !prev)}
+        style={{ minHeight: '42px', height: '42px', borderRadius: '9999px' }}
+        className={`w-full sm:w-auto inline-flex items-center justify-between gap-2.5 rounded-full border px-4 text-[13px] font-bold transition-all active:scale-[0.98] ${
+          isOpen
+            ? 'border-[#0066cc] bg-white ring-2 ring-[#0066cc]/20 text-[#1d1d1f]'
+            : value
+              ? 'border-[#0066cc]/40 bg-[#0066cc]/5 text-[#0066cc] hover:bg-[#0066cc]/10'
+              : 'border-black/[0.08] bg-[#f5f5f7] text-[#1d1d1f] hover:bg-[#e8e8ed]'
+        }`}
+      >
+        <span className="inline-flex items-center gap-2 truncate">
+          {selectedOption.icon}
+          <span>{selectedOption.label}</span>
+        </span>
+        <ChevronDown
+          size={14}
+          className={`shrink-0 transition-transform duration-200 ${
+            isOpen ? 'rotate-180 text-[#0066cc]' : 'text-[#86868b]'
+          }`}
+        />
+      </button>
+
+      {/* Floating Apple-Style Popover Menu */}
+      {isOpen && (
+        <div
+          role="listbox"
+          className="absolute left-0 top-[calc(100%+6px)] z-50 min-w-[175px] max-w-[240px] overflow-hidden rounded-[18px] border border-black/[0.08] bg-white/95 p-1.5 shadow-[0_12px_32px_rgba(0,0,0,0.12),0_2px_6px_rgba(0,0,0,0.04)] backdrop-blur-xl animate-in fade-in zoom-in-95 duration-150"
+        >
+          <div className="space-y-0.5">
+            {options.map((opt) => {
+              const isSelected = opt.value === value
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  role="option"
+                  aria-selected={isSelected}
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    onChange(opt.value)
+                    setIsOpen(false)
+                  }}
+                  className={`flex w-full items-center justify-between gap-3 rounded-[12px] px-3.5 py-2.5 text-[13px] font-semibold transition-all duration-150 ${
+                    isSelected
+                      ? 'bg-[#0066cc]/10 text-[#0066cc]'
+                      : 'text-[#1d1d1f] hover:bg-[#f5f5f7]'
+                  }`}
+                >
+                  <span className="inline-flex items-center gap-2.5 truncate">
+                    {opt.icon}
+                    <span>{opt.label}</span>
+                  </span>
+                  {isSelected && <Check size={14} className="shrink-0 text-[#0066cc]" />}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Accessible native select for test automation & screen readers */}
+      <select
+        aria-label={ariaLabel}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="sr-only"
+        tabIndex={-1}
+      >
+        {options.map((opt) => (
+          <option key={opt.value} value={opt.value}>
+            {opt.label}
+          </option>
+        ))}
+      </select>
+    </div>
+  )
+}
+
 export default function UserManagement() {
   const { success: showSuccess, error: showError } = useToast()
   // The signed-in admin: deleting your own account is refused by the backend
@@ -785,7 +928,7 @@ export default function UserManagement() {
         </div>
       ) : (
         <>
-          <div className="flex flex-col gap-3 rounded-[18px] border border-black/[0.06] bg-white p-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="relative z-20 flex flex-col gap-3 rounded-[18px] border border-black/[0.06] bg-white p-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
               <label className="relative flex-1">
                 {isFetching ? (
@@ -804,35 +947,18 @@ export default function UserManagement() {
                 />
               </label>
               <div className="grid grid-cols-2 gap-2 w-full sm:w-auto sm:flex sm:items-center">
-                <div className="relative w-full sm:w-auto">
-                  <select
-                    value={roleFilter}
-                    onChange={e => setRoleFilter(e.target.value)}
-                    aria-label="กรองตามสิทธิ์"
-                    style={{ borderRadius: '9999px', paddingRight: '2.25rem', minHeight: '42px', height: '42px', WebkitAppearance: 'none', MozAppearance: 'none' }}
-                    className="w-full sm:w-auto appearance-none rounded-full border border-black/[0.08] bg-[#f5f5f7] pl-4 text-[13px] font-bold text-[#1d1d1f] outline-none transition-all focus:bg-white focus:border-[#0066cc] focus:ring-2 focus:ring-[#0066cc]/20 cursor-pointer"
-                  >
-                    <option value="">ทุกสิทธิ์</option>
-                    <option value="admin">Admin</option>
-                    <option value="user">User</option>
-                  </select>
-                  <ChevronDown size={14} className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-[#86868b]" />
-                </div>
-                <div className="relative w-full sm:w-auto">
-                  <select
-                    value={statusFilter}
-                    onChange={e => setStatusFilter(e.target.value)}
-                    aria-label="กรองตามสถานะ"
-                    style={{ borderRadius: '9999px', paddingRight: '2.25rem', minHeight: '42px', height: '42px', WebkitAppearance: 'none', MozAppearance: 'none' }}
-                    className="w-full sm:w-auto appearance-none rounded-full border border-black/[0.08] bg-[#f5f5f7] pl-4 text-[13px] font-bold text-[#1d1d1f] outline-none transition-all focus:bg-white focus:border-[#0066cc] focus:ring-2 focus:ring-[#0066cc]/20 cursor-pointer"
-                  >
-                    <option value="">ทุกสถานะ</option>
-                    <option value="active">ใช้งานปกติ</option>
-                    <option value="suspended">ระงับบัญชี</option>
-                    <option value="trash">ถังขยะ (ลบแล้ว)</option>
-                  </select>
-                  <ChevronDown size={14} className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-[#86868b]" />
-                </div>
+                <FilterDropdown
+                  ariaLabel="กรองตามสิทธิ์"
+                  value={roleFilter}
+                  onChange={setRoleFilter}
+                  options={ROLE_OPTIONS}
+                />
+                <FilterDropdown
+                  ariaLabel="กรองตามสถานะ"
+                  value={statusFilter}
+                  onChange={setStatusFilter}
+                  options={STATUS_OPTIONS}
+                />
               </div>
               {isFiltered && (
                 <button
@@ -853,9 +979,9 @@ export default function UserManagement() {
             </button>
           </div>
 
-          <div className="overflow-hidden rounded-[18px] border border-black/[0.06] bg-white">
+          <div className="overflow-hidden rounded-[18px] border border-black/[0.06] bg-white min-h-[420px]">
             <div className={`h-0.5 w-full bg-[#0066cc] transition-all duration-300 ${isFetching ? 'opacity-100 animate-pulse' : 'opacity-0'}`} />
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto min-h-[340px]">
               <table className="w-full text-left text-sm whitespace-nowrap">
                 <thead className="bg-[#fbfbfc] text-[#6e6e73] text-[12px] font-bold uppercase tracking-wider">
                   <tr>

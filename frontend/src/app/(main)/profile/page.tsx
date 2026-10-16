@@ -1262,7 +1262,7 @@ export default function ProfilePage() {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -6 }}
           transition={{ duration: 0.16, ease: 'easeOut' }}
-          className="space-y-4"
+          className="space-y-4 min-h-[600px]"
         >
           {/* Admin Header Banner */}
           <div className="overflow-hidden rounded-[20px] bg-gradient-to-r from-purple-900 via-indigo-900 to-slate-900 p-5 sm:p-6 text-white shadow-sm">
