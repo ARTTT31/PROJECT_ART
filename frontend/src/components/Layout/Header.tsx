@@ -123,7 +123,7 @@ const ClockTime = memo(function ClockTime() {
   return (
     <>
       <Clock size={14} className="text-[#0066cc]" aria-hidden="true" />
-      <span>{formatted}</span>
+      <span suppressHydrationWarning>{formatted}</span>
     </>
   )
 })

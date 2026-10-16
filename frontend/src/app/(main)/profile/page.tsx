@@ -134,7 +134,7 @@ function SectionCard({
   children,
 }: SectionCardProps) {
   return (
-    <section className="overflow-hidden rounded-[20px] bg-white border border-black/[0.06] shadow-sm transition-all duration-200">
+    <section className="overflow-hidden rounded-[18px] bg-white border border-black/[0.06] shadow-sm transition-all duration-200">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-black/[0.05] bg-[#fafafc] px-5 sm:px-6 py-4">
         <div className="flex items-center gap-3 min-w-0">
           <div
@@ -613,11 +613,16 @@ export default function ProfilePage() {
 
   const strengthMeta = getStrengthLabel()
 
-  const allowedPages = user?.accessible_pages ? (
-    (typeof user.accessible_pages === 'string'
-      ? (() => { try { return JSON.parse(user.accessible_pages) } catch { return null } })()
-      : user.accessible_pages)
-  ) : ['dashboard', 'profile']
+  const allowedPages = (() => {
+    if (!user.accessible_pages) return ['dashboard', 'profile']
+    if (Array.isArray(user.accessible_pages)) return user.accessible_pages
+    try {
+      const parsed = JSON.parse(user.accessible_pages)
+      return Array.isArray(parsed) ? parsed : ['dashboard', 'profile']
+    } catch {
+      return ['dashboard', 'profile']
+    }
+  })()
 
   const filteredMenuItems = mainMenuConfig.filter((item) => {
     if (allowedPages && Array.isArray(allowedPages)) {
@@ -635,7 +640,7 @@ export default function ProfilePage() {
       {/* ══════════════════════════════════════════════════
           HERO IDENTITY CARD (Apple-style Header Banner)
           ══════════════════════════════════════════════════ */}
-      <section className="overflow-hidden rounded-[24px] bg-white border border-black/[0.06] p-5 sm:p-7 shadow-sm transition-all">
+      <section className="overflow-hidden rounded-[18px] bg-white border border-black/[0.06] p-5 sm:p-7 shadow-sm transition-all">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5">
           {/* Left: Avatar + Identity */}
           <div className="flex items-center gap-4 sm:gap-5">
@@ -796,7 +801,7 @@ export default function ProfilePage() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -6 }}
             transition={{ duration: 0.16, ease: 'easeOut' }}
-            className="grid grid-cols-1 gap-5 lg:grid-cols-2 items-start"
+            className="grid grid-cols-1 gap-5 lg:grid-cols-2 items-start min-h-[480px]"
           >
           {/* Card 1.1: ข้อมูลส่วนตัว */}
           <SectionCard
@@ -1006,7 +1011,7 @@ export default function ProfilePage() {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -6 }}
           transition={{ duration: 0.16, ease: 'easeOut' }}
-          className="grid grid-cols-1 gap-5 lg:grid-cols-2 items-start"
+          className="grid grid-cols-1 gap-5 lg:grid-cols-2 items-start min-h-[480px]"
         >
           {/* Card 2.1: การตั้งค่าเมนูหลัก */}
           <SectionCard
@@ -1265,7 +1270,7 @@ export default function ProfilePage() {
           className="space-y-4 min-h-[600px]"
         >
           {/* Admin Header Banner */}
-          <div className="overflow-hidden rounded-[20px] bg-gradient-to-r from-purple-900 via-indigo-900 to-slate-900 p-5 sm:p-6 text-white shadow-sm">
+          <div className="overflow-hidden rounded-[18px] bg-gradient-to-r from-purple-900 via-indigo-900 to-slate-900 p-5 sm:p-6 text-white shadow-sm">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div className="flex items-center gap-3.5">
                 <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/20 backdrop-blur-md">

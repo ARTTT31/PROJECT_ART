@@ -109,11 +109,13 @@ function FilterDropdown({
   value,
   onChange,
   options,
+  align = 'left',
 }: {
   ariaLabel: string
   value: string
   onChange: (val: string) => void
   options: FilterOption[]
+  align?: 'left' | 'right'
 }) {
   const [isOpen, setIsOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
@@ -175,7 +177,9 @@ function FilterDropdown({
       {isOpen && (
         <div
           role="listbox"
-          className="absolute left-0 top-[calc(100%+6px)] z-50 min-w-[175px] max-w-[240px] overflow-hidden rounded-[18px] border border-black/[0.08] bg-white/95 p-1.5 shadow-[0_12px_32px_rgba(0,0,0,0.12),0_2px_6px_rgba(0,0,0,0.04)] backdrop-blur-xl animate-in fade-in zoom-in-95 duration-150"
+          className={`absolute top-[calc(100%+6px)] z-50 min-w-[175px] max-w-[240px] overflow-hidden rounded-[18px] border border-black/[0.08] bg-white/95 p-1.5 shadow-[0_12px_32px_rgba(0,0,0,0.12),0_2px_6px_rgba(0,0,0,0.04)] backdrop-blur-xl animate-in fade-in zoom-in-95 duration-150 ${
+            align === 'right' ? 'right-0 sm:left-0' : 'left-0'
+          }`}
         >
           <div className="space-y-0.5">
             {options.map((opt) => {
@@ -426,7 +430,13 @@ export default function UserManagement() {
 
       if (res.ok) {
         // Drop the row straight away — no need to re-fetch the whole list.
-        setUsers(prev => prev.filter(u => u.id !== user.id))
+        setUsers(prev => {
+          const next = prev.filter(u => u.id !== user.id)
+          if (next.length === 0 && page > 0) {
+            setPage(p => Math.max(0, p - 1))
+          }
+          return next
+        })
         setTotal(prev => (Number.isNaN(prev) ? prev : Math.max(0, prev - 1)))
         const days = data?.data?.retention_days
         if (typeof days === 'number') setRetentionDays(days)
@@ -958,15 +968,17 @@ export default function UserManagement() {
                   value={statusFilter}
                   onChange={setStatusFilter}
                   options={STATUS_OPTIONS}
+                  align="right"
                 />
               </div>
               {isFiltered && (
                 <button
+                  type="button"
                   onClick={clearFilters}
-                  style={{ minHeight: '42px', height: '42px' }}
-                  className="inline-flex items-center justify-center gap-1.5 rounded-full bg-[#f5f5f7] px-4 text-[13px] font-bold text-[#6e6e73] transition-all hover:bg-[#e8e8ed] hover:text-[#1d1d1f] active:scale-95"
+                  className="sr-only"
+                  aria-label="ล้างตัวกรอง"
                 >
-                  <Eraser size={13} /> ล้างตัวกรอง
+                  ล้างตัวกรอง
                 </button>
               )}
             </div>

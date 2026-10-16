@@ -173,10 +173,11 @@ export default function CameraPage() {
 
   // ── Refresh Camera Status ──
   const handleRefresh = () => {
+    if (!activeCamera) return
     setRefreshing(true)
     setSnapshotTicks((prev) => ({
       ...prev,
-      [activeCamera?.id || '']: (prev[activeCamera?.id || ''] || 0) + 1,
+      [activeCamera.id]: (prev[activeCamera.id] || 0) + 1,
     }))
 
     setTimeout(() => {
