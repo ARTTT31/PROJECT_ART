@@ -802,27 +802,29 @@ export default function UserManagement() {
                   className="w-full rounded-full border-0 bg-[#f5f5f7] py-2.5 pl-10 pr-4 text-[13px] font-medium text-[#1d1d1f] outline-none transition-all placeholder:text-[#86868b] focus:bg-white focus:ring-2 focus:ring-[#0066cc]"
                 />
               </label>
-              <select
-                value={roleFilter}
-                onChange={e => setRoleFilter(e.target.value)}
-                aria-label="กรองตามสิทธิ์"
-                className="rounded-full border-0 bg-[#f5f5f7] px-4 py-2.5 text-[13px] font-bold text-[#1d1d1f] outline-none transition-all focus:bg-white focus:ring-2 focus:ring-[#0066cc]"
-              >
-                <option value="">ทุกสิทธิ์</option>
-                <option value="admin">Admin</option>
-                <option value="user">User</option>
-              </select>
-              <select
-                value={statusFilter}
-                onChange={e => setStatusFilter(e.target.value)}
-                aria-label="กรองตามสถานะ"
-                className="rounded-full border-0 bg-[#f5f5f7] px-4 py-2.5 text-[13px] font-bold text-[#1d1d1f] outline-none transition-all focus:bg-white focus:ring-2 focus:ring-[#0066cc]"
-              >
-                <option value="">ทุกสถานะ</option>
-                <option value="active">ใช้งานปกติ</option>
-                <option value="suspended">ระงับบัญชี</option>
-                <option value="trash">ถังขยะ (ลบแล้ว)</option>
-              </select>
+              <div className="grid grid-cols-2 gap-2 w-full sm:w-auto sm:flex sm:items-center">
+                <select
+                  value={roleFilter}
+                  onChange={e => setRoleFilter(e.target.value)}
+                  aria-label="กรองตามสิทธิ์"
+                  className="w-full sm:w-auto rounded-full border-0 bg-[#f5f5f7] px-4 py-2.5 text-[13px] font-bold text-[#1d1d1f] outline-none transition-all focus:bg-white focus:ring-2 focus:ring-[#0066cc]"
+                >
+                  <option value="">ทุกสิทธิ์</option>
+                  <option value="admin">Admin</option>
+                  <option value="user">User</option>
+                </select>
+                <select
+                  value={statusFilter}
+                  onChange={e => setStatusFilter(e.target.value)}
+                  aria-label="กรองตามสถานะ"
+                  className="w-full sm:w-auto rounded-full border-0 bg-[#f5f5f7] px-4 py-2.5 text-[13px] font-bold text-[#1d1d1f] outline-none transition-all focus:bg-white focus:ring-2 focus:ring-[#0066cc]"
+                >
+                  <option value="">ทุกสถานะ</option>
+                  <option value="active">ใช้งานปกติ</option>
+                  <option value="suspended">ระงับบัญชี</option>
+                  <option value="trash">ถังขยะ (ลบแล้ว)</option>
+                </select>
+              </div>
               {isFiltered && (
                 <button
                   onClick={clearFilters}
@@ -834,7 +836,7 @@ export default function UserManagement() {
             </div>
             <button
               onClick={openCreate}
-              className="inline-flex items-center justify-center gap-2 rounded-full bg-[#0066cc] px-5 py-2.5 text-[13px] font-bold text-white shadow-sm transition-all hover:bg-[#0071e3] active:scale-95"
+              className="w-full lg:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-[#0066cc] px-5 py-2.5 text-[13px] font-bold text-white shadow-sm transition-all hover:bg-[#0071e3] active:scale-95"
             >
               <UserPlus size={14} /> เพิ่มผู้ใช้
             </button>
