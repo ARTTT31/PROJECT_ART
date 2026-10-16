@@ -1795,15 +1795,17 @@ class TestAuditTrailPersistence:
         self, client, logged_in_user, db_session
     ):
         # T8 removed the raw-base64 /profile/avatar endpoint; the audited path
-        # is now the byte-sniffing /profile/upload-avatar.
-        png = (
-            b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x08"
-            b"\x08\x06\x00\x00\x00\xcc/\xa1\x18\x00\x00\x00\x0cIDATx\x9c\x02\x8c"
-            b"\x9b\xe3\xe4\x00\x00\x00\x00IEND\xaeB`\x82"
-        )
+        # is now the byte-sniffing /profile/upload-avatar. T17/A1 re-encodes the
+        # upload, so the fixture must be a genuinely decodable image.
+        import io
+
+        from PIL import Image
+
+        buffer = io.BytesIO()
+        Image.new("RGB", (16, 16), (5, 5, 5)).save(buffer, format="PNG")
         resp = await client.post(
             "/api/v1/profile/upload-avatar",
-            files={"file": ("tiny.png", png, "image/png")},
+            files={"file": ("tiny.png", buffer.getvalue(), "image/png")},
         )
         assert resp.status_code == 200, resp.text
         await db_session.rollback()

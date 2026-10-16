@@ -2,9 +2,25 @@
 
 ``POST /profile/avatar`` accepted ANY string (including ``javascript:alert(1)``
 and multi-megabyte blobs) straight into the users table. It is removed;
-``/profile/upload-avatar`` remains the only way to set an avatar and already
-sniffs magic bytes + caps the upload at 1MB.
+``/profile/upload-avatar`` remains the only way to set an avatar; it sniffs magic
+bytes, caps the upload at 1MB and re-encodes the image (T17/A1).
 """
+
+import io
+
+from PIL import Image
+
+
+def _real_png() -> bytes:
+    """A genuinely decodable PNG.
+
+    The fixture this replaced only had valid magic bytes with a broken body;
+    now that the upload is re-encoded it must be a real image. The
+    undecodable-payload case lives in ``test_security_profile_columns.py``.
+    """
+    buffer = io.BytesIO()
+    Image.new("RGB", (32, 32), (10, 200, 10)).save(buffer, format="PNG")
+    return buffer.getvalue()
 
 
 async def test_post_profile_avatar_is_gone(client, logged_in_user):
@@ -42,14 +58,12 @@ async def test_oversized_upload_rejected(client, logged_in_user):
 
 
 async def test_valid_png_upload_accepted(client, logged_in_user):
-    # 1x1 transparent PNG, real magic bytes.
-    png = (
-        b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x08"
-        b"\x08\x06\x00\x00\x00\xcc/\xa1\x18\x00\x00\x00\x0cIDATx\x9c\x02\x8c"
-        b"\x9b\xe3\xe4\x00\x00\x00\x00IEND\xaeB`\x82"
-    )
     r = await client.post(
         "/api/v1/profile/upload-avatar",
-        files={"file": ("tiny.png", png, "image/png")},
+        files={"file": ("tiny.png", _real_png(), "image/png")},
     )
-    assert r.status_code == 200
+    assert r.status_code == 200, r.text
+
+    # Stored as a normalised WebP data URL, never the raw upload.
+    me = await client.get("/api/v1/profile/me")
+    assert me.json()["avatar"].startswith("data:image/webp;base64,")

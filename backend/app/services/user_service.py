@@ -5,12 +5,24 @@ User Service - Business logic for user management
 from typing import List, Optional, Union
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from sqlalchemy.orm import defer
 from sqlalchemy.exc import IntegrityError
 
 from app.models.user import User
 from app.schemas.user import UserCreate, UserRegister, UserUpdate, UserAdminUpdate, UserAdminCreate
 from app.core.security import get_password_hash, verify_password
 from app.core.utils import utcnow
+
+
+# Columns excluded from the per-request authentication lookup. They are the
+# large ones (a base64 avatar plus three 100KB JSON blobs) and are only needed by
+# the handful of endpoints that actually serve them.
+AUTH_DEFERRED_COLUMNS = ("avatar", "quick_links", "dashboard_layout", "camera_config")
+
+
+def _defer_profile_columns() -> list:
+    """Loader options that leave the large profile columns out of the SELECT."""
+    return [defer(getattr(User, name)) for name in AUTH_DEFERRED_COLUMNS]
 
 
 class UserService:
@@ -20,8 +32,31 @@ class UserService:
         self.db = db
 
     async def get_user_by_id(self, user_id: int) -> Optional[User]:
-        """Get user by ID"""
+        """Get user by ID (full row, including the large profile columns)"""
         result = await self.db.execute(select(User).where(User.id == user_id))
+        return result.scalar_one_or_none()
+
+    async def get_user_for_auth(self, user_id: int) -> Optional[User]:
+        """Get the columns authentication needs, without the large profile ones.
+
+        ``resolve_user_from_token`` runs on every authenticated request but only
+        reads ``is_active`` / ``is_locked`` / ``role``. Dragging the avatar and
+        the 100KB JSON blobs along cost megabytes per request, so they are
+        deferred here and re-selected explicitly by the endpoints that serve
+        them (see ``app.api.dependencies.load_profile_columns``).
+        """
+        result = await self.db.execute(
+            select(User).options(*_defer_profile_columns()).where(User.id == user_id)
+        )
+        return result.scalar_one_or_none()
+
+    async def get_user_for_auth_by_email(self, email: str) -> Optional[User]:
+        """Email-keyed counterpart of :meth:`get_user_for_auth`."""
+        result = await self.db.execute(
+            select(User)
+            .options(*_defer_profile_columns())
+            .where(User.email == email.lower())
+        )
         return result.scalar_one_or_none()
 
     async def get_user_by_email(self, email: str) -> Optional[User]:

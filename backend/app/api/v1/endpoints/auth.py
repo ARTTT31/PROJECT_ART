@@ -31,7 +31,7 @@ from app.core.database import get_db
 from app.core.rate_limit import limiter
 from app.core.utils import encode_user_cookie, user_cookie_payload, utcnow as utils_utcnow
 from app.core.security import create_access_token, create_refresh_token, decode_token
-from app.api.dependencies import resolve_user_from_token
+from app.api.dependencies import load_profile_columns, resolve_user_from_token
 from app.models.session import UserSession
 from app.schemas.response import ResponseModel
 from app.schemas.user import UserCreate, UserLogin, UserRegister
@@ -886,6 +886,10 @@ async def get_session(request: Request, db: AsyncSession = Depends(get_db)):
         user = await resolve_user_from_token(access_token, db)
     except HTTPException:
         raise
+
+    # The auth lookup defers the large profile columns; this endpoint serves the
+    # avatar and quick links, so they are re-selected here.
+    await load_profile_columns(db, user, "avatar", "quick_links")
 
     user_data = {
         "id": user.id,

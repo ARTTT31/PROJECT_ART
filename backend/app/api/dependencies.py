@@ -18,6 +18,22 @@ logger = logging.getLogger(__name__)
 # Security scheme (auto_error=False to allow checking cookies manually)
 security = HTTPBearer(auto_error=False)
 
+# Large profile columns that UserService.get_user_for_auth defers. Endpoints
+# that serve them must re-select them first: reading a deferred column that was
+# never loaded raises MissingGreenlet in async SQLAlchemy (the implicit lazy
+# load cannot run outside a greenlet context).
+PROFILE_COLUMNS = ("avatar", "quick_links", "dashboard_layout", "camera_config")
+
+
+async def load_profile_columns(db: AsyncSession, user: User, *columns: str) -> User:
+    """Re-select deferred profile columns before they are read or serialised.
+
+    Called by the few endpoints that actually return these fields (``/profile/me``,
+    ``/auth/session``). Passing no column names loads all of :data:`PROFILE_COLUMNS`.
+    """
+    await db.refresh(user, list(columns) or list(PROFILE_COLUMNS))
+    return user
+
 
 def _unauthorized(detail: str) -> HTTPException:
     return HTTPException(
@@ -51,9 +67,12 @@ async def resolve_user_from_token(token: str, db: AsyncSession) -> User:
     user: Optional[User] = None
 
     if user_id is not None:
-        user = await user_service.get_user_by_id(user_id)
+        # Deferred lookup: this runs on EVERY authenticated request, so the
+        # megabytes of avatar/quick-links/dashboard-layout/camera-config are not
+        # part of it (see UserService.get_user_for_auth).
+        user = await user_service.get_user_for_auth(user_id)
     elif email is not None:
-        user = await user_service.get_user_by_email(email)
+        user = await user_service.get_user_for_auth_by_email(email)
 
     if user is None:
         raise _unauthorized("User not found")

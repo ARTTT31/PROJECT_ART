@@ -20,17 +20,37 @@ from app.schemas.user import (
 )
 from app.schemas.response import ResponseModel
 from app.services.user_service import UserService
-from app.api.dependencies import get_current_user
+from app.api.dependencies import get_current_user, load_profile_columns
 from app.models.user import User
 
 import base64
+import io
 import os
+import warnings
+
+from PIL import Image, ImageOps
+
 from app.services.audit_service import AuditService
 from app.models.session import UserSession
 
 router = APIRouter()
 
 profile_logger = logging.getLogger(__name__)
+
+
+# ── Avatar normalisation (T17/A1) ────────────────────────────────────────────
+# Whatever the client uploads, what lands in the DB is a small WebP. Storing the
+# raw upload meant a 1MB base64 blob (~1.3MB of text) in a column that every
+# authenticated request pulled through the row; a 256x256 WebP is a few KB.
+AVATAR_MAX_DIMENSION = 256
+AVATAR_WEBP_QUALITY = 80
+AVATAR_OUTPUT_MIME = "image/webp"
+# A decompression bomb is a tiny file that expands to gigabytes in memory.
+# Pillow warns above this ceiling and raises above 2x it; the warning is turned
+# into an error locally (see ``_normalise_avatar_image``) so anything over the
+# ceiling is refused rather than decoded.
+AVATAR_MAX_PIXELS = 20_000_000
+Image.MAX_IMAGE_PIXELS = AVATAR_MAX_PIXELS
 
 
 # ── Avatar content validation ────────────────────────────────────────────────
@@ -86,14 +106,62 @@ def _validate_avatar_content(data: bytes, declared_mime: str) -> str:
     return sniffed
 
 
+def _normalise_avatar_image(data: bytes) -> bytes:
+    """Downscale an uploaded image to a bounded WebP and return the bytes.
+
+    ``exif_transpose`` applies the camera orientation first (otherwise a
+    portrait photo is stored sideways), then the result is thumbnailed to
+    ``AVATAR_MAX_DIMENSION`` and re-encoded as WebP at ``AVATAR_WEBP_QUALITY``.
+
+    Raises ``HTTPException(400)`` with a Thai message for anything Pillow
+    cannot process: corrupt/truncated payloads, and decompression bombs (the
+    magic-byte sniff has already rejected every non-JPEG/PNG/GIF file).
+    """
+    try:
+        with warnings.catch_warnings():
+            # A warning here means the image is above the 20MP ceiling, which is
+            # treated as a refusal rather than as a decode-worthy image.
+            warnings.simplefilter("error", Image.DecompressionBombWarning)
+            with Image.open(io.BytesIO(data)) as source:
+                image = ImageOps.exif_transpose(source)
+                image = image.convert("RGB")
+                image.thumbnail((AVATAR_MAX_DIMENSION, AVATAR_MAX_DIMENSION))
+                buffer = io.BytesIO()
+                image.save(buffer, format="WEBP", quality=AVATAR_WEBP_QUALITY)
+        return buffer.getvalue()
+    except (Image.DecompressionBombError, Image.DecompressionBombWarning):
+        # The warning is raised as an error above, so a payload between the
+        # ceiling and twice it lands here just like a true bomb.
+        profile_logger.warning("avatar upload refused: image exceeds the pixel ceiling")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="รูปภาพมีขนาดพิกเซลใหญ่เกินไป กรุณาใช้รูปภาพที่เล็กลง",
+        )
+    except HTTPException:
+        raise
+    except Exception:
+        # Pillow raises a broad family of errors for malformed files
+        # (UnidentifiedImageError, OSError, ValueError, the bomb warning above).
+        profile_logger.warning("avatar image could not be decoded", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="ไม่สามารถประมวลผลไฟล์รูปภาพได้ กรุณาใช้ไฟล์ JPEG, PNG หรือ GIF ที่ถูกต้อง",
+        )
+
+
 @router.get("/me", response_model=UserResponse)
 async def get_my_profile(
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Get current user profile
+
+    The authentication lookup defers the large profile columns (avatar, quick
+    links, dashboard layout, camera config), so they are re-selected here — this
+    endpoint is exactly the one that serves them.
     """
-    return current_user
+    return await load_profile_columns(db, current_user)
 
 
 @router.put("/me", response_model=ResponseModel)
@@ -209,7 +277,7 @@ async def upload_avatar_file(
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Upload user avatar and store as Base64 in Database (Serverless Friendly)
+    Upload user avatar and store as a normalised WebP (Base64) in Database
     """
     # 1. Check file extension
     filename = file.filename or ""
@@ -226,11 +294,15 @@ async def upload_avatar_file(
             raise HTTPException(status_code=400, detail="ขนาดไฟล์รูปภาพห้ามเกิน 1MB")
 
         # 3. Sniff magic bytes — never trust the client filename/content-type
-        sniffed_mime = _validate_avatar_content(contents, (file.content_type or "").split(";")[0].strip().lower())
+        _validate_avatar_content(
+            contents, (file.content_type or "").split(";")[0].strip().lower()
+        )
 
-        # 4. Convert image to Base64 Data URL string with the SNIFFED type
-        base64_data = base64.b64encode(contents).decode("utf-8")
-        avatar_base64 = f"data:{sniffed_mime};base64,{base64_data}"
+        # 4. Normalise (bounded size, metadata stripped) and store as WebP.
+        #    The stored type is always the OUTPUT type — never the client's.
+        normalised = _normalise_avatar_image(contents)
+        base64_data = base64.b64encode(normalised).decode("utf-8")
+        avatar_base64 = f"data:{AVATAR_OUTPUT_MIME};base64,{base64_data}"
 
         # 5. Save to Database (Async Service Call)
         user_service = UserService(db)
