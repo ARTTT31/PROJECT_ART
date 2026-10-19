@@ -16,6 +16,7 @@ from datetime import timedelta
 import jwt as pyjwt
 from sqlalchemy.future import select
 
+from conftest import seed_account
 from app.core.config import settings
 from app.core.security import decode_token
 from app.core.utils import utcnow
@@ -26,9 +27,9 @@ EMAIL = "rotate@example.com"
 PASSWORD = "Passw0rd123"
 
 
-async def _login(client, email=EMAIL):
-    await client.post("/api/v1/auth/register", json={
-        "email": email, "password": PASSWORD, "name": "Rotator"})
+async def _login(client, db_session, email=EMAIL):
+    # Seeded directly: self-registration is closed by default.
+    await seed_account(db_session, email, PASSWORD, name="Rotator")
     resp = await client.post("/api/v1/auth/login", json={
         "email": email, "password": PASSWORD})
     assert resp.status_code == 200, resp.text
@@ -49,7 +50,7 @@ async def _session_row(db_session, session_id: str) -> UserSession:
 
 
 async def test_refresh_rotates_the_refresh_jti(client, db_session):
-    login = await _login(client)
+    login = await _login(client, db_session)
     session_id = login.json()["data"]["session_id"]
     first_jti = decode_token(login.cookies.get("refresh_token"))["jti"]
 
@@ -69,7 +70,7 @@ async def test_refresh_rotates_the_refresh_jti(client, db_session):
 
 
 async def test_replay_outside_the_grace_window_revokes_the_session(client, db_session):
-    login = await _login(client)
+    login = await _login(client, db_session)
     session_id = login.json()["data"]["session_id"]
     stolen = login.cookies.get("refresh_token")
 
@@ -97,7 +98,7 @@ async def test_replay_outside_the_grace_window_revokes_the_session(client, db_se
 
 async def test_concurrent_refresh_inside_the_grace_window_succeeds(client, db_session):
     """Two tabs refreshing at the same moment must not log the user out."""
-    login = await _login(client)
+    login = await _login(client, db_session)
     session_id = login.json()["data"]["session_id"]
     first = login.cookies.get("refresh_token")
 
@@ -149,7 +150,7 @@ async def test_last_pre_deploy_token_upgrades_the_session_once(client, db_sessio
     has no ``refresh_jti``, so the first refresh has to be accepted — once,
     after which the token is rotated away and a second use is a replay.
     """
-    login = await _login(client)
+    login = await _login(client, db_session)
     session_id = login.json()["data"]["session_id"]
     user_id = login.json()["data"]["user"]["id"]
 
@@ -191,9 +192,9 @@ async def test_last_pre_deploy_token_upgrades_the_session_once(client, db_sessio
     assert row.is_active is False
 
 
-async def test_logout_still_revokes_the_rotated_session(client, registered_user):
+async def test_logout_still_revokes_the_rotated_session(client, db_session, registered_user):
     """Rotation must not weaken the existing logout revocation path."""
-    login = await _login(client)
+    login = await _login(client, db_session)
     session_id = login.json()["data"]["session_id"]
     assert (await client.post("/api/v1/auth/refresh")).status_code == 200
 

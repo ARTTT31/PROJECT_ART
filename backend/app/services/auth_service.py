@@ -281,6 +281,20 @@ class AuthService:
 
         # Check if account is active
         if not user.is_active:
+            # A sign-up request waiting for an admin, or one that was refused,
+            # gets its own explanation instead of the generic "disabled account":
+            # the caller just proved they own the password, so this reveals
+            # nothing to anyone else.
+            if user.status == "pending":
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="บัญชีของคุณอยู่ระหว่างรอผู้ดูแลระบบอนุมัติ",
+                )
+            if user.status == "rejected":
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="คำขอสมัครบัญชีนี้ถูกปฏิเสธ กรุณาติดต่อผู้ดูแลระบบ",
+                )
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="บัญชีถูกปิดการใช้งาน",
@@ -372,22 +386,33 @@ class AuthService:
         }
 
     async def register(
-        self, user_create: Union[UserCreate, UserRegister], *, role: str = "user"
+        self,
+        user_create: Union[UserCreate, UserRegister],
+        *,
+        role: str = "user",
+        is_active: bool = True,
+        status: Optional[str] = None,
     ) -> User:
         """
         Register new user
 
         The role is a server-side argument — request payloads cannot choose it
-        (self-registration always ends up with role="user").
+        (self-registration always ends up with role="user"). ``is_active`` and
+        ``status`` are the caller's policy decision: in ``approval`` mode the
+        account is created inactive and pending instead of usable.
 
         Args:
             user_create: User creation data
             role: Role assigned by the server (caller cannot choose it)
+            is_active: Whether the account may sign in right away
+            status: Registration status ('pending', 'rejected' or None)
 
         Returns:
             Created user
         """
-        return await self.user_service.create_user(user_create, role=role)
+        return await self.user_service.create_user(
+            user_create, role=role, is_active=is_active, status=status
+        )
 
     async def refresh_access_token(self, refresh_token: str) -> Token:
         """

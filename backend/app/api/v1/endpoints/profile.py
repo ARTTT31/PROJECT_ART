@@ -21,7 +21,7 @@ from app.schemas.user import (
 )
 from app.schemas.response import ResponseModel
 from app.services.user_service import UserService
-from app.api.dependencies import get_current_user, load_profile_columns
+from app.api.dependencies import get_current_user, load_profile_columns, require_page_access
 from app.models.user import User
 
 import base64
@@ -429,11 +429,15 @@ async def update_dashboard_layout(
 async def update_camera_config(
     request: Request,
     camera_update: UserCameraConfigUpdate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_page_access("camera")),
     db: AsyncSession = Depends(get_db),
 ):
     """
     Update user camera streams configuration (JSON string)
+
+    Gated on the ``camera`` page: the sidebar only *hides* the page, so a user
+    who never received that page could still write camera settings by calling
+    this endpoint directly.
     """
     user_service = UserService(db)
 

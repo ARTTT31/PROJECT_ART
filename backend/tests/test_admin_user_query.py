@@ -10,19 +10,16 @@ it to decide whether a next page exists.
 import pytest
 from sqlalchemy import select
 
+from conftest import seed_account
 from app.models.user import User
 
 ADMIN_EMAIL = "admin.query@example.com"
 PASSWORD = "SecretPass123"
 
 
-async def _register(client, email, name, username=None):
-    resp = await client.post(
-        "/api/v1/auth/register",
-        json={"email": email, "password": PASSWORD, "name": name},
-    )
-    assert resp.status_code == 201, resp.text
-    return resp.json()
+async def _seed(db_session, email, name, username=None):
+    """Create an account directly — self-registration is closed by default."""
+    return await seed_account(db_session, email, PASSWORD, name=name, username=username)
 
 
 async def _set_username_and_role(db_session, email, role="user", username=None):
@@ -48,7 +45,7 @@ async def _login(client, email):
 @pytest.fixture
 async def admin_client(client, db_session):
     """A signed-in admin for the query endpoints."""
-    await _register(client, ADMIN_EMAIL, "Admin Query")
+    await _seed(db_session, ADMIN_EMAIL, "Admin Query")
     await _set_username_and_role(db_session, ADMIN_EMAIL, role="admin")
     await _login(client, ADMIN_EMAIL)
     return client
@@ -57,10 +54,10 @@ async def admin_client(client, db_session):
 @pytest.fixture
 async def directory(client, db_session):
     """Five accounts with distinct names, one suspended, one a username login."""
-    await _register(client, "alice.smith@example.com", "Alice Smith")
-    await _register(client, "bob.jones@example.com", "Bob Jones")
-    await _register(client, "somchai@example.com", "สมชาย ใจดี")
-    await _register(client, "suspended@example.com", "Suspended Sam")
+    await _seed(db_session, "alice.smith@example.com", "Alice Smith")
+    await _seed(db_session, "bob.jones@example.com", "Bob Jones")
+    await _seed(db_session, "somchai@example.com", "สมชาย ใจดี")
+    await _seed(db_session, "suspended@example.com", "Suspended Sam")
     await _set_username_and_role(
         db_session, "suspended@example.com", username="samsam"
     )
@@ -118,7 +115,7 @@ async def test_search_treats_wildcards_as_literals(admin_client, directory):
 
 
 async def test_filters_narrow_by_role_and_status(admin_client, directory, db_session):
-    await _register(admin_client, "second.admin@example.com", "Second Admin")
+    await _seed(db_session, "second.admin@example.com", "Second Admin")
     await _set_username_and_role(db_session, "second.admin@example.com", role="admin")
 
     assert _emails(await _list(admin_client, role="admin")) == sorted(
@@ -166,7 +163,7 @@ async def test_deactivating_user_revokes_sessions(admin_client, db_session):
     victim_email = "victim.session@example.com"
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="https://testserver.local") as victim_client:
-        await _register(victim_client, victim_email, "Victim")
+        await _seed(db_session, victim_email, "Victim")
         victim = (await db_session.execute(select(User).where(User.email == victim_email))).scalar_one()
 
         # Create session for victim

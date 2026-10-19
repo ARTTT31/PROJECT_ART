@@ -7,7 +7,8 @@ import { useAuth } from '@/components/Auth/AuthProvider'
 import { showDeleteConfirm } from '@/utils/sweetalert'
 import {
   Settings, Edit, Check, X, ShieldAlert, User, CheckCircle2, Circle, Trash2, Loader2,
-  Search, UserPlus, RotateCcw, ChevronLeft, ChevronRight, Eraser, ChevronDown
+  Search, UserPlus, RotateCcw, ChevronLeft, ChevronRight, Eraser, ChevronDown, Clock,
+  UserCheck, UserX
 } from 'lucide-react'
 
 // Define a simplified User type for admin management
@@ -20,6 +21,8 @@ interface AdminUser {
   is_active: boolean
   accessible_pages: string | null
   deleted_at?: string | null
+  /** Sign-up lifecycle: null (normal), 'pending', 'rejected'. */
+  status?: string | null
 }
 
 /** A soft-deleted account, as returned by `GET /api/v1/users/deleted`. */
@@ -101,6 +104,7 @@ const STATUS_OPTIONS: FilterOption[] = [
   { value: '', label: 'ทุกสถานะ', icon: <Circle size={13} className="text-[#86868b]" /> },
   { value: 'active', label: 'ใช้งานปกติ', icon: <span className="h-2 w-2 rounded-full bg-emerald-500 shrink-0" /> },
   { value: 'suspended', label: 'ระงับบัญชี', icon: <span className="h-2 w-2 rounded-full bg-rose-500 shrink-0" /> },
+  { value: 'pending', label: 'รออนุมัติ', icon: <Clock size={13} className="text-amber-600 shrink-0" /> },
   { value: 'trash', label: 'ถังขยะ (ลบแล้ว)', icon: <Trash2 size={13} className="text-amber-600 shrink-0" /> },
 ]
 
@@ -256,6 +260,10 @@ export default function UserManagement() {
   // "a full page means there may be more".
   const [total, setTotal] = useState(Number.NaN)
   const [trash, setTrash] = useState<TrashUser[]>([])
+  // Sign-up requests waiting for a decision. They are listed by their own
+  // endpoint so the queue is visible without hunting for inactive accounts.
+  const [pending, setPending] = useState<AdminUser[]>([])
+  const [pendingBusyId, setPendingBusyId] = useState<number | null>(null)
 
   const [editingUser, setEditingUser] = useState<AdminUser | null>(null)
 
@@ -305,6 +313,16 @@ export default function UserManagement() {
         return
       }
 
+      if (statusFilter === 'pending') {
+        const res = await fetchWithAuth('/api/v1/users/pending')
+        if (res.ok) {
+          setPending(await res.json())
+        } else {
+          showError('ข้อผิดพลาด', 'ไม่สามารถโหลดคำขอสมัครได้')
+        }
+        return
+      }
+
       const params = new URLSearchParams({
         skip: String(page * PAGE_SIZE),
         limit: String(PAGE_SIZE),
@@ -342,7 +360,9 @@ export default function UserManagement() {
   )
 
   const showPagination = useMemo(() => {
-    if (statusFilter === 'trash') return false
+    // Neither the trash nor the approval queue is paged: both are short lists
+    // that an admin works through in one pass.
+    if (statusFilter === 'trash' || statusFilter === 'pending') return false
     return page > 0 || hasNextPage || (!Number.isNaN(total) && total > PAGE_SIZE)
   }, [statusFilter, page, hasNextPage, total])
 
@@ -355,6 +375,16 @@ export default function UserManagement() {
       (t.username && t.username.toLowerCase().includes(term))
     )
   }, [trash, debouncedQuery])
+
+  const filteredPending = useMemo(() => {
+    const term = debouncedQuery.trim().toLowerCase()
+    if (!term) return pending
+    return pending.filter(p =>
+      (p.name && p.name.toLowerCase().includes(term)) ||
+      (p.email && p.email.toLowerCase().includes(term)) ||
+      (p.username && p.username.toLowerCase().includes(term))
+    )
+  }, [pending, debouncedQuery])
 
   const isFiltered = Boolean(debouncedQuery.trim() || roleFilter || statusFilter)
 
@@ -546,6 +576,73 @@ export default function UserManagement() {
       showError('ไม่สามารถเชื่อมต่อได้', 'เกิดข้อผิดพลาดในการเชื่อมต่อ')
     } finally {
       setIsCreatingSaving(false)
+    }
+  }
+
+  /** Approve a sign-up request: the account becomes usable immediately. */
+  const handleApprove = async (user: AdminUser) => {
+    if (pendingBusyId !== null) return
+    setPendingBusyId(user.id)
+    try {
+      const res = await fetchWithAuth(`/api/v1/users/${user.id}/approve`, { method: 'POST' })
+      const data = await res.json().catch(() => ({}))
+
+      if (res.ok) {
+        setPending(prev => prev.filter(u => u.id !== user.id))
+        showSuccess('อนุมัติแล้ว', `${displayLabel(user)} เข้าใช้งานได้ทันที`)
+        return
+      }
+
+      if (res.status === 404) {
+        showError('ไม่พบคำขอนี้', 'คำขอนี้อาจถูกตัดสินไปแล้ว — กำลังโหลดรายการใหม่')
+        await loadUsers()
+        return
+      }
+
+      showError(statusTitle(res.status), apiMessage(data, 'ไม่สามารถอนุมัติได้'))
+    } catch (e) {
+      console.error(e)
+      showError('ไม่สามารถเชื่อมต่อได้', 'เกิดข้อผิดพลาดในการเชื่อมต่อ')
+    } finally {
+      setPendingBusyId(null)
+    }
+  }
+
+  /** Refuse a sign-up request. It stays on record, but can never sign in. */
+  const handleReject = async (user: AdminUser) => {
+    if (pendingBusyId !== null) return
+
+    const label = displayLabel(user)
+    const confirmed = await showDeleteConfirm(
+      'ปฏิเสธคำขอสมัครนี้?',
+      `บัญชี "${label}" จะไม่สามารถเข้าสู่ระบบได้ — บันทึกไว้เป็นคำขอที่ถูกปฏิเสธ ` +
+      'และเจ้าของอีเมลนี้สามารถยื่นคำขอใหม่ได้'
+    )
+    if (!confirmed.isConfirmed) return
+
+    setPendingBusyId(user.id)
+    try {
+      const res = await fetchWithAuth(`/api/v1/users/${user.id}/reject`, { method: 'POST' })
+      const data = await res.json().catch(() => ({}))
+
+      if (res.ok) {
+        setPending(prev => prev.filter(u => u.id !== user.id))
+        showSuccess('ปฏิเสธคำขอแล้ว', `${label} จะไม่สามารถเข้าสู่ระบบได้`)
+        return
+      }
+
+      if (res.status === 404) {
+        showError('ไม่พบคำขอนี้', 'คำขอนี้อาจถูกตัดสินไปแล้ว — กำลังโหลดรายการใหม่')
+        await loadUsers()
+        return
+      }
+
+      showError(statusTitle(res.status), apiMessage(data, 'ไม่สามารถปฏิเสธคำขอได้'))
+    } catch (e) {
+      console.error(e)
+      showError('ไม่สามารถเชื่อมต่อได้', 'เกิดข้อผิดพลาดในการเชื่อมต่อ')
+    } finally {
+      setPendingBusyId(null)
     }
   }
 
@@ -1073,6 +1170,56 @@ export default function UserManagement() {
                       </td>
                     </tr>
                   ))
+                ) : statusFilter === 'pending' ? (
+                  filteredPending.map(p => (
+                    <tr key={p.id} className="hover:bg-slate-50/50 transition-colors">
+                      <td className="px-5 py-4">
+                        <div className="font-semibold text-[#1d1d1f] text-[14px]">{p.name}</div>
+                        <div className="text-[12.5px] text-[#6e6e73] mt-0.5">{p.email || p.username}</div>
+                      </td>
+                      <td className="px-5 py-4">
+                        {p.role === 'admin' ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-purple-50 px-2.5 py-1 text-[11px] font-bold text-purple-700 ring-1 ring-inset ring-purple-600/20">
+                            <ShieldAlert size={11} /> Admin
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-bold text-slate-600 ring-1 ring-inset ring-slate-500/20">
+                            <User size={11} /> User
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-5 py-4">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-bold text-amber-700 ring-1 ring-inset ring-amber-600/20">
+                          <Clock size={11} /> รออนุมัติ
+                        </span>
+                      </td>
+                      <td className="px-5 py-4 text-right">
+                        <div className="inline-flex items-center gap-2">
+                          <button
+                            onClick={() => handleApprove(p)}
+                            disabled={pendingBusyId === p.id}
+                            aria-label={`อนุมัติคำขอของ ${displayLabel(p)}`}
+                            className="inline-flex items-center justify-center gap-1.5 rounded-full bg-[#0066cc] px-3.5 py-1.5 text-[12px] font-bold text-white transition-all hover:bg-[#0071e3] active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+                          >
+                            {pendingBusyId === p.id ? (
+                              <Loader2 size={12} className="animate-spin" />
+                            ) : (
+                              <UserCheck size={12} />
+                            )}
+                            อนุมัติ
+                          </button>
+                          <button
+                            onClick={() => handleReject(p)}
+                            disabled={pendingBusyId === p.id}
+                            aria-label={`ปฏิเสธคำขอของ ${displayLabel(p)}`}
+                            className="inline-flex items-center justify-center gap-1.5 rounded-full bg-rose-50 px-3.5 py-1.5 text-[12px] font-bold text-rose-700 ring-1 ring-inset ring-rose-600/20 transition-all hover:bg-rose-100 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+                          >
+                            <UserX size={12} /> ปฏิเสธ
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
                 ) : users.map(u => {
                   const isSelf = currentUser?.id === u.id
                   return (
@@ -1093,7 +1240,11 @@ export default function UserManagement() {
                       )}
                     </td>
                     <td className="px-5 py-4">
-                      {u.is_active ? (
+                      {u.status === 'pending' ? (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-bold text-amber-700 ring-1 ring-inset ring-amber-600/20">
+                          <Clock size={11} /> รออนุมัติ
+                        </span>
+                      ) : u.is_active ? (
                         <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-700 ring-1 ring-inset ring-emerald-600/20">
                           ปกติ
                         </span>
@@ -1145,6 +1296,22 @@ export default function UserManagement() {
                           'ไม่พบผู้ใช้ที่ตรงกับเงื่อนไข'
                         ) : (
                           'ยังไม่มีบัญชีในถังขยะ'
+                        )}
+                      </td>
+                    </tr>
+                  )
+                ) : statusFilter === 'pending' ? (
+                  filteredPending.length === 0 && (
+                    <tr>
+                      <td colSpan={4} className="px-5 py-10 text-center text-[13px] font-medium text-[#6e6e73]">
+                        {isFetching ? (
+                          <span className="inline-flex items-center gap-2">
+                            <Loader2 size={15} className="animate-spin text-[#0066cc]" /> กำลังโหลดข้อมูล...
+                          </span>
+                        ) : debouncedQuery.trim() ? (
+                          'ไม่พบคำขอที่ตรงกับเงื่อนไข'
+                        ) : (
+                          'ยังไม่มีคำขอสมัครที่รออนุมัติ'
                         )}
                       </td>
                     </tr>

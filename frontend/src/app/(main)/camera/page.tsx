@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import DashboardLayout from '@/components/Layout/DashboardLayout'
+import PageAccessGuard from '@/components/Auth/PageAccessGuard'
 import {
   Camera,
   CameraOff,
@@ -350,7 +350,7 @@ export default function CameraPage() {
       : activeCamera?.url
 
   return (
-    <>
+    <PageAccessGuard page="camera">
       <div className="flex flex-col gap-5">
         {/* ── Page header ────────────────────────────────────────────── */}
         <header className="flex flex-wrap items-center justify-between gap-4 border-b border-black/[0.06] pb-5">
@@ -793,6 +793,6 @@ export default function CameraPage() {
           </DialogContent>
         </Dialog>
       </div>
-    </>
+    </PageAccessGuard>
   )
 }

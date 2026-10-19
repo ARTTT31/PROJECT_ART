@@ -9,17 +9,16 @@ cannot even see in the list.
 
 from sqlalchemy import select
 
+from conftest import seed_account
 from app.models.user import User
 
 ADMIN_EMAIL = "admin.create@example.com"
 PASSWORD = "SecretPass123"
 
 
-async def _register(client, email, name=PASSWORD):
-    return await client.post(
-        "/api/v1/auth/register",
-        json={"email": email, "password": PASSWORD, "name": name},
-    )
+async def _seed(db_session, email, name="Admin"):
+    """Create an account directly — self-registration is closed by default."""
+    return await seed_account(db_session, email, PASSWORD, name=name)
 
 
 async def _login(client, email):
@@ -32,7 +31,7 @@ async def _login(client, email):
 
 
 async def _make_admin(client, db_session, email=ADMIN_EMAIL):
-    await _register(client, email, "Admin")
+    await _seed(db_session, email, "Admin")
     user = (await db_session.execute(select(User).where(User.email == email))).scalar_one()
     user.role = "admin"
     await db_session.commit()
@@ -90,7 +89,7 @@ async def test_a_trashed_account_does_not_look_like_an_ordinary_duplicate(
 ):
     """The e-mail is still taken, but the admin needs to know where it went."""
     await _make_admin(client, db_session)
-    await _register(client, "returning@example.com", "Returning")
+    await _seed(db_session, "returning@example.com", "Returning")
 
     victim = (
         await db_session.execute(select(User).where(User.email == "returning@example.com"))
@@ -129,7 +128,7 @@ async def test_a_trashed_account_does_not_look_like_an_ordinary_duplicate(
 
 
 async def test_a_plain_user_cannot_create_accounts(client, db_session):
-    await _register(client, "plain.creator@example.com", "Plain")
+    await _seed(db_session, "plain.creator@example.com", "Plain")
     await _login(client, "plain.creator@example.com")
 
     resp = await client.post(

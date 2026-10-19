@@ -544,6 +544,63 @@
   }
 }
 
+/* ── Sign-up and "waiting for approval" screens ───────────────────
+   Same shell and controls as the sign-in view; only two new blocks are
+   needed: an informational notice and a text switch between the views. */
+.login-notice {
+  border-radius: 11px;
+  border: 1px solid rgba(0, 102, 204, 0.22);
+  background: rgba(0, 102, 204, 0.07);
+  color: #1d1d1f;
+  padding: 14px 16px;
+  font-size: 13.5px;
+  font-weight: 500;
+  line-height: 1.65;
+  text-align: center;
+}
+
+.login-notice-title {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.login-hint {
+  margin: 0;
+  font-size: 12.5px;
+  color: #6e6e73;
+  text-align: center;
+}
+
+.login-switch {
+  min-height: 44px;
+  border: none;
+  border-radius: 9999px;
+  background: transparent;
+  color: #0066cc;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 180ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.login-switch:hover:not(:disabled) {
+  color: #0071e3;
+  text-decoration: underline;
+}
+
+.login-switch:focus-visible {
+  outline: 2px solid #0066cc;
+  outline-offset: 2px;
+}
+
+.login-switch:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .login-shell,
   .login-error {
@@ -561,7 +618,8 @@
   .login-remember-knob,
   .login-submit,
   .google-btn,
-  .login-eye {
+  .login-eye,
+  .login-switch {
     transition: none;
   }
 }

@@ -11,20 +11,21 @@ Guarantees that:
 import app.api.v1.endpoints.auth as auth_mod
 from sqlalchemy.future import select
 
+from conftest import seed_account
+from app.core.config import settings
 from app.core.security import decode_token
 from app.models.session import UserSession
 
 
-async def _register_and_login(client, email="u@example.com"):
-    await client.post("/api/v1/auth/register", json={
-        "email": email, "password": "Passw0rd123", "name": "U"})
-    r = await client.post("/api/v1/auth/login", json={
+async def _seed_and_login(client, db_session, email="u@example.com"):
+    """Seed an account directly (sign-ups are closed) and log it in."""
+    await seed_account(db_session, email, "Passw0rd123", name="U")
+    return await client.post("/api/v1/auth/login", json={
         "email": email, "password": "Passw0rd123"})
-    return r
 
 
-async def test_refresh_token_not_usable_as_access(client):
-    r = await _register_and_login(client)
+async def test_refresh_token_not_usable_as_access(client, db_session):
+    r = await _seed_and_login(client, db_session)
     assert r.status_code == 200
     refresh = r.cookies.get("refresh_token")
     client.cookies.clear()
@@ -39,8 +40,8 @@ async def test_refresh_token_not_usable_as_access(client):
     assert r.status_code == 401
 
 
-async def test_session_ignores_forged_user_cookie(client):
-    r = await _register_and_login(client)
+async def test_session_ignores_forged_user_cookie(client, db_session):
+    r = await _seed_and_login(client, db_session)
     assert r.status_code == 200
     access = r.cookies.get("access_token")
     client.cookies.clear()
@@ -57,6 +58,8 @@ async def test_google_login_creates_session_row_and_sid(client, db_session, monk
     """Google sign-ins get a real UserSession row + sid in the refresh token."""
     monkeypatch.setenv("GOOGLE_VALID_CLIENT_IDS", "legit.apps.googleusercontent.com")
     monkeypatch.setattr(auth_mod, "_GOOGLE_AUTH_AVAILABLE", True)
+    # First sign-in has to create the account, which closed mode forbids.
+    monkeypatch.setattr(settings, "REGISTRATION_MODE", "open")
 
     class G:
         @staticmethod

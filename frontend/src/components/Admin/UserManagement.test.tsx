@@ -443,3 +443,106 @@ describe('UserManagement — trash', () => {
     expect(screen.getByText(TRASHED.email)).toBeTruthy()
   })
 })
+
+/**
+ * The approval queue. A sign-up request is the only thing an admin decides on
+ * from scratch, so the panel has to show the queue on its own, approve without
+ * friction, and keep a confirmation in front of the refusal.
+ */
+describe('UserManagement — approval queue', () => {
+  const PENDING = {
+    id: 9,
+    email: 'hopeful@example.com',
+    username: null,
+    name: 'Hopeful',
+    role: 'user',
+    is_active: false,
+    accessible_pages: null,
+    status: 'pending',
+    deleted_at: null,
+  }
+
+  // The queue lives behind its own endpoint; the list itself still loads first.
+  const queueApi = (method: string, path: string) => {
+    if (method === 'GET' && path.startsWith('/api/v1/users/?')) return listResponse([ADMIN])
+    if (method === 'GET' && path === '/api/v1/users/pending') return json([PENDING])
+    if (method === 'POST' && path === `/api/v1/users/${PENDING.id}/approve`) {
+      return json({
+        result: 'success',
+        message: 'อนุมัติบัญชีผู้ใช้สำเร็จ',
+        data: { user_id: PENDING.id, status: 'active' },
+      })
+    }
+    if (method === 'POST' && path === `/api/v1/users/${PENDING.id}/reject`) {
+      return json({
+        result: 'success',
+        message: 'ปฏิเสธคำขอสมัครแล้ว',
+        data: { user_id: PENDING.id, status: 'rejected' },
+      })
+    }
+    return json({ detail: `unexpected ${method} ${path}` }, { status: 500 })
+  }
+
+  const openQueue = async () => {
+    // The filter bar only exists once the first page has loaded.
+    const statusFilter = await screen.findByLabelText('กรองตามสถานะ')
+    fireEvent.change(statusFilter, { target: { value: 'pending' } })
+    await screen.findByText(PENDING.email)
+  }
+
+  const approveButton = () =>
+    screen.getByRole('button', { name: `อนุมัติคำขอของ ${PENDING.email}` })
+
+  it('lists the requests from the pending endpoint', async () => {
+    api = queueApi
+    renderPanel()
+    await openQueue()
+
+    expect(calls).toContain('GET /api/v1/users/pending')
+    // The status pill joins the filter label, so look for it among matches.
+    expect(screen.getAllByText('รออนุมัติ').length).toBeGreaterThan(0)
+    expect(approveButton()).toBeTruthy()
+  })
+
+  it('approves a request and drops it from the queue', async () => {
+    api = queueApi
+    renderPanel()
+    await openQueue()
+
+    fireEvent.click(approveButton())
+
+    await waitFor(() =>
+      expect(calls).toContain(`POST /api/v1/users/${PENDING.id}/approve`),
+    )
+    await waitFor(() => expect(screen.queryByText(PENDING.email)).toBeNull())
+    expect(screen.getByText('ยังไม่มีคำขอสมัครที่รออนุมัติ')).toBeTruthy()
+  })
+
+  it('rejects only after the admin confirms', async () => {
+    api = queueApi
+    renderPanel()
+    await openQueue()
+
+    fireEvent.click(screen.getByRole('button', { name: `ปฏิเสธคำขอของ ${PENDING.email}` }))
+
+    await waitFor(() =>
+      expect(calls).toContain(`POST /api/v1/users/${PENDING.id}/reject`),
+    )
+    await waitFor(() => expect(screen.queryByText(PENDING.email)).toBeNull())
+    expect(showDeleteConfirm).toHaveBeenCalledTimes(1)
+  })
+
+  it('sends nothing when the refusal dialog is dismissed', async () => {
+    api = queueApi
+    showDeleteConfirm.mockResolvedValue({ isConfirmed: false })
+
+    renderPanel()
+    await openQueue()
+
+    fireEvent.click(screen.getByRole('button', { name: `ปฏิเสธคำขอของ ${PENDING.email}` }))
+
+    await waitFor(() => expect(showDeleteConfirm).toHaveBeenCalledTimes(1))
+    expect(calls.some((call) => call.includes('/reject'))).toBe(false)
+    expect(screen.getByText(PENDING.email)).toBeTruthy()
+  })
+})

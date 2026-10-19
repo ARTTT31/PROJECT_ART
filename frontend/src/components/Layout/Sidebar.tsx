@@ -11,6 +11,7 @@ import {
   MAIN_MENU_STORAGE_KEY,
   MainMenuItemConfig,
 } from '@/utils/mainMenu'
+import { canAccessPage } from '@/utils/accessiblePages'
 import { AuthUser } from '@/types'
 
 interface SidebarProps {
@@ -77,23 +78,11 @@ export default function Sidebar({ isOpen, isCollapsed = false, onClose, user, on
         }
       : null
 
-  // Active Main Menu Items based on user configuration
-
-  const allowedPages = (() => {
-    if (!user?.accessible_pages) return ['dashboard', 'profile']
-    if (Array.isArray(user.accessible_pages)) return user.accessible_pages
-    try {
-      const parsed = JSON.parse(user.accessible_pages)
-      return Array.isArray(parsed) ? parsed : ['dashboard', 'profile']
-    } catch {
-      return ['dashboard', 'profile']
-    }
-  })()
-
+  // Active Main Menu Items based on user configuration. The same rule (and the
+  // same parser) as the server-side gate in app/api/dependencies.py.
   const enabledMainItems = mainMenuConfig.filter((item) => {
     if (!item.enabled) return false
-    if (user?.role !== 'admin' && !allowedPages.includes(item.id)) return false
-    return true
+    return canAccessPage(user, item.id)
   })
 
 

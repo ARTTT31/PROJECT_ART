@@ -28,16 +28,10 @@ async def test_user_cookie_excludes_avatar_and_quick_links(client, logged_in_use
 
 async def test_user_cookie_stays_small_with_large_avatar(client, db_session):
     """A huge avatar must not leak into (or inflate) the user cookie."""
-    from sqlalchemy.future import select
-    from app.models.user import User
+    from conftest import seed_account
 
-    await client.post("/api/v1/auth/register", json={
-        "email": "bigavatar@example.com", "password": "Passw0rd123", "name": "B"})
-
-    result = await db_session.execute(
-        select(User).where(User.email == "bigavatar@example.com")
-    )
-    user = result.scalar_one()
+    # Seeded directly: self-registration is closed by default.
+    user = await seed_account(db_session, "bigavatar@example.com", "Passw0rd123", name="B")
     user.avatar = "data:image/png;base64," + "A" * 600_000  # ~600KB avatar
     await db_session.commit()
 

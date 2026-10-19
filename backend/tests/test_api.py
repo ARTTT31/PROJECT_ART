@@ -84,7 +84,9 @@ class TestHealthCheck:
 # ── Auth API Tests ────────────────────────────────────────
 
 class TestAuthAPI:
-    async def test_register_success(self, client):
+    async def test_register_success(self, client, monkeypatch):
+        # Sign-ups are closed by default; this test covers the opt-in open mode.
+        monkeypatch.setattr(settings, "REGISTRATION_MODE", "open")
         resp = await client.post("/api/v1/auth/register", json={
             "email": "new@example.com",
             "password": "NewPass123",
@@ -94,7 +96,8 @@ class TestAuthAPI:
         data = resp.json()
         assert data["result"] == "success"
 
-    async def test_register_duplicate_email(self, client, registered_user):
+    async def test_register_duplicate_email(self, client, registered_user, monkeypatch):
+        monkeypatch.setattr(settings, "REGISTRATION_MODE", "open")
         resp = await client.post("/api/v1/auth/register", json={
             "email": "test@example.com",
             "password": "AnotherPass",

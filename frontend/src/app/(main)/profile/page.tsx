@@ -32,6 +32,7 @@ import {
   Loader2,
 } from 'lucide-react'
 import { showDeleteConfirm, showToast, showSuccess, showError } from '@/utils/sweetalert'
+import { canAccessPage } from '@/utils/accessiblePages'
 import { useAuth } from '@/hooks/useAuth'
 import UserManagement from '@/components/Admin/UserManagement'
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth'
@@ -613,23 +614,9 @@ export default function ProfilePage() {
 
   const strengthMeta = getStrengthLabel()
 
-  const allowedPages = (() => {
-    if (!user.accessible_pages) return ['dashboard', 'profile']
-    if (Array.isArray(user.accessible_pages)) return user.accessible_pages
-    try {
-      const parsed = JSON.parse(user.accessible_pages)
-      return Array.isArray(parsed) ? parsed : ['dashboard', 'profile']
-    } catch {
-      return ['dashboard', 'profile']
-    }
-  })()
-
-  const filteredMenuItems = mainMenuConfig.filter((item) => {
-    if (allowedPages && Array.isArray(allowedPages)) {
-      if (user?.role !== 'admin' && !allowedPages.includes(item.id)) return false
-    }
-    return true
-  })
+  // One shared rule for the whole app — see utils/accessiblePages.ts and the
+  // server-side twin in backend/app/api/dependencies.py.
+  const filteredMenuItems = mainMenuConfig.filter((item) => canAccessPage(user, item.id))
 
   const enabledMainCount = filteredMenuItems.filter((i) => i.enabled).length
 

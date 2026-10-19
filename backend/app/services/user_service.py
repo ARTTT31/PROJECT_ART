@@ -194,7 +194,12 @@ class UserService:
         return int(result.scalar() or 0)
 
     async def create_user(
-        self, user_create: Union[UserCreate, UserRegister], role: str = "user"
+        self,
+        user_create: Union[UserCreate, UserRegister],
+        role: str = "user",
+        *,
+        is_active: bool = True,
+        status: Optional[str] = None,
     ) -> User:
         """
         Create new user
@@ -203,6 +208,10 @@ class UserService:
             user_create: User creation data
             role: Role assigned by the SERVER — callers must not be able to
                 choose it from unauthenticated endpoints (defaults to "user")
+            is_active: Whether the account can sign in immediately. The approval
+                flow creates the row inactive so no login path can reach it.
+            status: Registration status (``pending`` / ``rejected`` / None).
+                Only records *why* an inactive account is inactive.
 
         Returns:
             Created user
@@ -223,6 +232,8 @@ class UserService:
             hashed_password=hashed_password,
             name=user_create.name,
             role=role,
+            is_active=is_active,
+            status=status,
         )
 
         self.db.add(db_user)
@@ -230,6 +241,102 @@ class UserService:
         await self.db.refresh(db_user)
 
         return db_user
+
+    async def resubmit_registration(
+        self, user: User, payload: UserRegister
+    ) -> User:
+        """Put a refused sign-up request back in the approval queue.
+
+        The row is reused (so the same person keeps one account) and the password
+        is replaced: it is the only secret the new request carries.
+        """
+        user.name = payload.name
+        user.hashed_password = get_password_hash(payload.password)
+        user.is_active = False
+        user.status = "pending"
+        user.updated_at = utcnow()
+
+        await self.db.commit()
+        await self.db.refresh(user)
+        return user
+
+    async def get_pending_users(self, skip: int = 0, limit: int = 100) -> List[User]:
+        """Accounts waiting for an admin decision, oldest request first."""
+        result = await self.db.execute(
+            select(User)
+            .where(User.status == "pending", User.deleted_at.is_(None))
+            .order_by(User.created_at)
+            .offset(skip)
+            .limit(limit)
+        )
+        return list(result.scalars().all())
+
+    async def count_pending_users(self) -> int:
+        """Total number of accounts waiting for an admin decision."""
+        result = await self.db.execute(
+            select(func.count(User.id)).where(
+                User.status == "pending", User.deleted_at.is_(None)
+            )
+        )
+        return int(result.scalar() or 0)
+
+    async def approve_user(self, user_id: int) -> Optional[User]:
+        """Approve a sign-up request, making the account usable.
+
+        Returns the updated user, or ``None`` when the request is not pending
+        (unknown id, already decided, or in the trash).
+        """
+        user = await self.get_user_by_id(user_id)
+        if not user or user.deleted_at is not None or user.status != "pending":
+            return None
+
+        user.status = "active"
+        user.is_active = True
+        user.updated_at = utcnow()
+        await self.db.commit()
+        await self.db.refresh(user)
+        return user
+
+    async def reject_user(self, user_id: int) -> Optional[User]:
+        """Refuse a sign-up request. The row stays so the decision is visible and
+        the address cannot be re-registered from under the admin.
+
+        Returns the updated user, or ``None`` when the request is not pending.
+        """
+        user = await self.get_user_by_id(user_id)
+        if not user or user.deleted_at is not None or user.status != "pending":
+            return None
+
+        user.status = "rejected"
+        user.is_active = False
+        user.updated_at = utcnow()
+        # No session should exist yet, but refusing a request must never leave
+        # one behind if it somehow does.
+        await self.revoke_sessions(user_id)
+        await self.db.commit()
+        await self.db.refresh(user)
+        return user
+
+    async def count_active_admins(self, exclude_user_id: Optional[int] = None) -> int:
+        """How many usable admins remain (optionally ignoring one account).
+
+        Backs the "last admin" guard: demoting, disabling, locking or deleting
+        the only remaining admin would leave the deployment with nobody able to
+        manage it, and no way back in through the UI.
+        """
+        conditions: List[ColumnElement[bool]] = [
+            User.role == "admin",
+            User.is_active.is_(True),
+            User.is_locked.is_(False),
+            User.deleted_at.is_(None),
+        ]
+        if exclude_user_id is not None:
+            conditions.append(User.id != exclude_user_id)
+
+        result = await self.db.execute(
+            select(func.count(User.id)).where(*conditions)
+        )
+        return int(result.scalar() or 0)
 
     async def admin_create_user(self, user_create: UserAdminCreate) -> User:
         """
@@ -540,6 +647,11 @@ class UserService:
             user.accessible_pages = user_update.accessible_pages
         if user_update.is_active is not None:
             user.is_active = user_update.is_active
+            # Switching an account back on through the ordinary edit form is the
+            # same decision as pressing approve: clear the sign-up state so the
+            # badge stops claiming a usable account is still waiting.
+            if user_update.is_active:
+                user.status = "active"
         if user_update.is_locked is not None:
             user.is_locked = user_update.is_locked
             if not user_update.is_locked:

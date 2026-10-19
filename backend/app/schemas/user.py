@@ -60,7 +60,13 @@ class UserLogin(BaseModel):
 
 
 class UserUpdate(BaseModel):
-    """Schema for updating user profile"""
+    """Schema for updating your OWN profile.
+
+    Deliberately has no ``role``, ``is_active``, ``is_locked`` or
+    ``accessible_pages``: those are authorization fields, and a self-service
+    endpoint must not be a way to grant yourself more access. Admin changes go
+    through ``UserAdminUpdate`` and the admin-only endpoints.
+    """
 
     name: Optional[str] = Field(None, min_length=1, max_length=255)
     email: Optional[EmailStr] = None
@@ -68,7 +74,6 @@ class UserUpdate(BaseModel):
     quick_links: Optional[str] = None
     dashboard_layout: Optional[str] = None
     camera_config: Optional[str] = None
-    accessible_pages: Optional[str] = None
 
 
 class UserAdminUpdate(BaseModel):
@@ -149,6 +154,8 @@ class UserResponse(BaseModel):
     dashboard_layout: Optional[str] = None
     camera_config: Optional[str] = None
     accessible_pages: Optional[str] = None
+    # Sign-up lifecycle: None (normal account), "pending", "rejected".
+    status: Optional[str] = None
     is_active: bool
     last_login: Optional[datetime] = None
     created_at: datetime

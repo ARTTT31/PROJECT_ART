@@ -22,7 +22,21 @@ limiter.enabled = False
 # ── Shared fixtures (app import must happen after env overrides) ──
 
 from app.core.database import Base, get_db  # noqa: E402
+from app.core.security import get_password_hash  # noqa: E402
 from app.main import app  # noqa: E402
+from app.models.user import User  # noqa: E402
+
+
+# The standard account every test starts from. It is inserted straight into the
+# database: self-registration is closed by default (``REGISTRATION_MODE=closed``),
+# so tests may not depend on ``POST /api/v1/auth/register`` to obtain an account.
+TEST_USER_EMAIL = "test@example.com"
+TEST_USER_PASSWORD = "SecretPass123"
+TEST_ADMIN_EMAIL = "admin@example.com"
+# Every page the UI knows about. The standard account is deliberately
+# unrestricted so page-access tests can use a restricted account of their own
+# instead of every other test having to grant itself access.
+ALL_PAGES = '["dashboard", "profile", "camera"]'
 
 
 @pytest.fixture
@@ -54,28 +68,68 @@ async def client(db_session):
     app.dependency_overrides.clear()
 
 
-@pytest.fixture
-async def registered_user(client):
-    """Register a user and return the response data."""
-    resp = await client.post("/api/v1/auth/register", json={
-        "email": "test@example.com",
-        "password": "SecretPass123",
-        "name": "Test User",
-    })
-    return resp.json()
+async def seed_account(
+    db_session: AsyncSession,
+    email: str = TEST_USER_EMAIL,
+    password: str = TEST_USER_PASSWORD,
+    *,
+    name: str = "Test User",
+    role: str = "user",
+    is_active: bool = True,
+    status: str | None = None,
+    accessible_pages: str | None = ALL_PAGES,
+    **extra: object,
+) -> User:
+    """Insert an account directly, bypassing the API.
+
+    Accounts are written through the model itself so a test can pick any
+    combination of role, status and page access — including states the API
+    refuses to produce, such as ``status="pending"``. Self-registration is closed
+    by default, so this is how tests obtain an account at all.
+    """
+    user = User(
+        email=email.lower(),
+        hashed_password=get_password_hash(password),
+        name=name,
+        role=role,
+        is_active=is_active,
+        status=status,
+        accessible_pages=accessible_pages,
+        **extra,
+    )
+    db_session.add(user)
+    await db_session.commit()
+    await db_session.refresh(user)
+    return user
 
 
 @pytest.fixture
-async def logged_in_user(client, registered_user):
-    """Login, then echo the CSRF cookie so authenticated mutations pass.
+def make_user(db_session):
+    """Return an async factory around :func:`seed_account` for the shared session."""
+    async def _make_user(
+        email: str = TEST_USER_EMAIL,
+        password: str = TEST_USER_PASSWORD,
+        **kwargs: object,
+    ) -> User:
+        return await seed_account(db_session, email, password, **kwargs)
+
+    return _make_user
+
+
+@pytest.fixture
+async def registered_user(make_user):
+    """The standard account, with the shape the old register response had."""
+    user = await make_user()
+    return {"result": "success", "data": {"user_id": user.id, "email": user.email}}
+
+
+async def _login(client: AsyncClient, email: str, password: str) -> dict:
+    """Log in and return the response body, with CSRF ready for mutations.
 
     Cookie-authenticated writes are protected by a double-submit token, so the
     client has to send the same value the backend stored in `csrf_token`.
     """
-    resp = await client.post("/api/v1/auth/login", json={
-        "email": "test@example.com",
-        "password": "SecretPass123",
-    })
+    resp = await client.post("/api/v1/auth/login", json={"email": email, "password": password})
 
     token = client.cookies.get("csrf_token")
     if not token:
@@ -84,3 +138,16 @@ async def logged_in_user(client, registered_user):
     client.headers["X-CSRF-Token"] = token
 
     return resp.json()
+
+
+@pytest.fixture
+async def logged_in_user(client, registered_user):
+    """Log the standard (non-admin) account in."""
+    return await _login(client, TEST_USER_EMAIL, TEST_USER_PASSWORD)
+
+
+@pytest.fixture
+async def logged_in_admin_user(client, make_user):
+    """Log in an admin, for every endpoint that requires the admin role."""
+    await make_user(email=TEST_ADMIN_EMAIL, name="Test Admin", role="admin")
+    return await _login(client, TEST_ADMIN_EMAIL, TEST_USER_PASSWORD)

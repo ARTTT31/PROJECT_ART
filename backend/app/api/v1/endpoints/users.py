@@ -106,6 +106,113 @@ async def list_deleted_users(
     return deleted
 
 
+@router.get("/pending", response_model=List[UserResponse])
+@limiter.limit(_GENERAL_LIMIT)
+async def list_pending_users(
+    request: Request,
+    response: Response,
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=200),
+    current_user: User = Depends(get_current_admin_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    List sign-up requests waiting for a decision (Admin only)
+
+    Declared before ``/{user_id}`` on purpose — that path parameter is an int, so
+    its route would swallow "pending" (422) if it were registered first.
+    """
+    user_service = UserService(db)
+    users = await user_service.get_pending_users(skip=skip, limit=limit)
+    response.headers["X-Total-Count"] = str(await user_service.count_pending_users())
+    return users
+
+
+@router.post("/{user_id}/approve", response_model=ResponseModel)
+@limiter.limit(_GENERAL_LIMIT)
+async def approve_user(
+    user_id: int,
+    request: Request,
+    current_user: User = Depends(get_current_admin_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Approve a sign-up request (Admin only)
+
+    The account becomes usable and can sign in; the decision is audit-logged.
+    """
+    user_service = UserService(db)
+    approved = await user_service.approve_user(user_id)
+
+    if approved is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="ไม่พบคำขอสมัครที่รออนุมัติสำหรับบัญชีนี้",
+        )
+
+    audit_service = AuditService(db)
+    await audit_service.log_action(
+        action="ADMIN_USER_APPROVE",
+        user_id=current_user.id,
+        details=(
+            f"Admin approved sign-up request: "
+            f"{approved.email or approved.username or approved.name} (ID: {user_id})"
+        ),
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent"),
+    )
+    await db.commit()
+
+    return ResponseModel(
+        result="success",
+        message="อนุมัติบัญชีผู้ใช้สำเร็จ",
+        data={"user_id": approved.id, "status": approved.status},
+    )
+
+
+@router.post("/{user_id}/reject", response_model=ResponseModel)
+@limiter.limit(_GENERAL_LIMIT)
+async def reject_user(
+    user_id: int,
+    request: Request,
+    current_user: User = Depends(get_current_admin_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Refuse a sign-up request (Admin only)
+
+    The account stays in the database as ``rejected`` (so the decision is visible
+    and the address is not silently reusable) but can never sign in.
+    """
+    user_service = UserService(db)
+    rejected = await user_service.reject_user(user_id)
+
+    if rejected is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="ไม่พบคำขอสมัครที่รออนุมัติสำหรับบัญชีนี้",
+        )
+
+    audit_service = AuditService(db)
+    await audit_service.log_action(
+        action="ADMIN_USER_REJECT",
+        user_id=current_user.id,
+        details=(
+            f"Admin rejected sign-up request: "
+            f"{rejected.email or rejected.username or rejected.name} (ID: {user_id})"
+        ),
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent"),
+    )
+    await db.commit()
+
+    return ResponseModel(
+        result="success",
+        message="ปฏิเสธคำขอสมัครแล้ว",
+        data={"user_id": rejected.id, "status": rejected.status},
+    )
+
+
 @router.get("/{user_id}", response_model=UserResponse)
 @limiter.limit(_GENERAL_LIMIT)
 async def get_user(
@@ -251,6 +358,27 @@ async def update_user(
 
     user_service = UserService(db)
 
+    # Safeguard: the deployment must always keep one usable admin. Losing the
+    # last one cannot be undone from the UI, because nobody would be left with
+    # the rights to grant them back.
+    target_user = await user_service.get_user_by_id(user_id)
+    if target_user is not None and target_user.role == "admin":
+        removes_admin_access = (
+            (user_update.role is not None and user_update.role != "admin")
+            or user_update.is_active is False
+            or user_update.is_locked is True
+        )
+        if removes_admin_access and await user_service.count_active_admins(
+            exclude_user_id=user_id
+        ) == 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=(
+                    "ต้องมีผู้ดูแลระบบที่ใช้งานได้อย่างน้อย 1 บัญชี — "
+                    "ไม่สามารถลดสิทธิ์/ปิดใช้งาน/ล็อกผู้ดูแลระบบคนสุดท้ายได้"
+                ),
+            )
+
     audit_service = AuditService(db)
     client_ip = request.client.host if request.client else None
     user_agent = request.headers.get("user-agent")
@@ -312,10 +440,6 @@ async def delete_user(
 
     user_service = UserService(db)
 
-    audit_service = AuditService(db)
-    client_ip = request.client.host if request.client else None
-    user_agent = request.headers.get("user-agent")
-
     # Get user email/username before deletion for logging
     target_user = await user_service.get_user_by_id(user_id)
     if not target_user:
@@ -323,6 +447,25 @@ async def delete_user(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found",
         )
+
+    # Safeguard: deleting the last usable admin leaves nobody able to manage the
+    # deployment, and the UI has no way to undo that.
+    if (
+        target_user.role == "admin"
+        and target_user.deleted_at is None
+        and await user_service.count_active_admins(exclude_user_id=user_id) == 0
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=(
+                "ต้องมีผู้ดูแลระบบที่ใช้งานได้อย่างน้อย 1 บัญชี — "
+                "ไม่สามารถลบผู้ดูแลระบบคนสุดท้ายได้"
+            ),
+        )
+
+    audit_service = AuditService(db)
+    client_ip = request.client.host if request.client else None
+    user_agent = request.headers.get("user-agent")
 
     target_identifier = target_user.email or target_user.username or f"ID {user_id}"
 

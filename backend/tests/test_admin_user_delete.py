@@ -24,6 +24,8 @@ from app.models.audit_log import AuditLog
 from app.models.session import UserSession
 from app.models.user import User
 
+from conftest import seed_account
+
 ADMIN_EMAIL = "admin.delete@example.com"
 VICTIM_EMAIL = "victim.delete@example.com"
 PASSWORD = "SecretPass123"
@@ -68,10 +70,10 @@ async def _client() -> AsyncClient:
     )
 
 
-async def _register(client: AsyncClient, email: str, name: str) -> None:
-    resp = await client.post("/api/v1/auth/register", json={
-        "email": email, "password": PASSWORD, "name": name})
-    assert resp.status_code == 201, resp.text
+async def _seed(session_factory, email: str, name: str) -> None:
+    """Create an account directly — self-registration is closed by default."""
+    async with session_factory() as session:
+        await seed_account(session, email, PASSWORD, name=name)
 
 
 async def _user_id(session_factory, email: str) -> int:
@@ -111,8 +113,8 @@ async def _trash(session_factory, user_id: int) -> User | None:
 async def test_delete_moves_the_account_to_the_trash_and_revokes_sessions(fk_env):
     """``DELETE`` is now recoverable: the row stays, the access does not."""
     async with await _client() as admin_client, await _client() as victim_client:
-        await _register(admin_client, ADMIN_EMAIL, "Admin")
-        await _register(victim_client, VICTIM_EMAIL, "Victim")
+        await _seed(fk_env, ADMIN_EMAIL, "Admin")
+        await _seed(fk_env, VICTIM_EMAIL, "Victim")
         await _promote_to_admin(fk_env, ADMIN_EMAIL)
         await _login(victim_client, VICTIM_EMAIL)
         await _login(admin_client, ADMIN_EMAIL)
@@ -154,8 +156,8 @@ async def test_delete_moves_the_account_to_the_trash_and_revokes_sessions(fk_env
 
 async def test_a_trashed_account_is_hidden_and_locked_out(fk_env):
     async with await _client() as admin_client, await _client() as victim_client:
-        await _register(admin_client, ADMIN_EMAIL, "Admin")
-        await _register(victim_client, VICTIM_EMAIL, "Victim")
+        await _seed(fk_env, ADMIN_EMAIL, "Admin")
+        await _seed(fk_env, VICTIM_EMAIL, "Victim")
         await _promote_to_admin(fk_env, ADMIN_EMAIL)
         await _login(victim_client, VICTIM_EMAIL)
         await _login(admin_client, ADMIN_EMAIL)
@@ -192,8 +194,8 @@ async def test_a_trashed_account_is_hidden_and_locked_out(fk_env):
 
 async def test_restore_returns_the_account_to_service(fk_env):
     async with await _client() as admin_client, await _client() as victim_client:
-        await _register(admin_client, ADMIN_EMAIL, "Admin")
-        await _register(victim_client, VICTIM_EMAIL, "Victim")
+        await _seed(fk_env, ADMIN_EMAIL, "Admin")
+        await _seed(fk_env, VICTIM_EMAIL, "Victim")
         await _promote_to_admin(fk_env, ADMIN_EMAIL)
         await _login(victim_client, VICTIM_EMAIL)
         await _login(admin_client, ADMIN_EMAIL)
@@ -221,9 +223,9 @@ async def test_restore_returns_the_account_to_service(fk_env):
 
 
 async def test_restoring_a_live_account_is_404(fk_env):
-    async with await _client() as admin_client, await _client() as victim_client:
-        await _register(admin_client, ADMIN_EMAIL, "Admin")
-        await _register(victim_client, VICTIM_EMAIL, "Victim")
+    async with await _client() as admin_client:
+        await _seed(fk_env, ADMIN_EMAIL, "Admin")
+        await _seed(fk_env, VICTIM_EMAIL, "Victim")
         await _promote_to_admin(fk_env, ADMIN_EMAIL)
         await _login(admin_client, ADMIN_EMAIL)
 
@@ -237,8 +239,8 @@ async def test_purge_erases_the_row_and_nulls_the_audit_trail(fk_env):
     """The one irreversible path: only reachable from the trash, and it hands
     ``audit_logs.user_id`` back to the database's ON DELETE SET NULL rule."""
     async with await _client() as admin_client, await _client() as victim_client:
-        await _register(admin_client, ADMIN_EMAIL, "Admin")
-        await _register(victim_client, VICTIM_EMAIL, "Victim")
+        await _seed(fk_env, ADMIN_EMAIL, "Admin")
+        await _seed(fk_env, VICTIM_EMAIL, "Victim")
         await _promote_to_admin(fk_env, ADMIN_EMAIL)
         await _login(victim_client, VICTIM_EMAIL)
         await _login(admin_client, ADMIN_EMAIL)
@@ -269,9 +271,9 @@ async def test_purge_erases_the_row_and_nulls_the_audit_trail(fk_env):
 
 async def test_purge_refuses_an_account_that_is_not_in_the_trash(fk_env):
     """A permanent delete has to be a deliberate second step."""
-    async with await _client() as admin_client, await _client() as victim_client:
-        await _register(admin_client, ADMIN_EMAIL, "Admin")
-        await _register(victim_client, VICTIM_EMAIL, "Victim")
+    async with await _client() as admin_client:
+        await _seed(fk_env, ADMIN_EMAIL, "Admin")
+        await _seed(fk_env, VICTIM_EMAIL, "Victim")
         await _promote_to_admin(fk_env, ADMIN_EMAIL)
         await _login(admin_client, ADMIN_EMAIL)
 
@@ -287,8 +289,8 @@ async def test_purge_refuses_an_account_that_is_not_in_the_trash(fk_env):
 async def test_expired_trash_is_purged_on_the_next_panel_load(fk_env):
     """There is no cron here, so the admin list does the housekeeping."""
     async with await _client() as admin_client, await _client() as victim_client:
-        await _register(admin_client, ADMIN_EMAIL, "Admin")
-        await _register(victim_client, VICTIM_EMAIL, "Victim")
+        await _seed(fk_env, ADMIN_EMAIL, "Admin")
+        await _seed(fk_env, VICTIM_EMAIL, "Victim")
         await _promote_to_admin(fk_env, ADMIN_EMAIL)
         await _login(victim_client, VICTIM_EMAIL)
         await _login(admin_client, ADMIN_EMAIL)
@@ -313,8 +315,8 @@ async def test_expired_trash_is_purged_on_the_next_panel_load(fk_env):
 async def test_soft_deleting_twice_is_404(fk_env):
     """The second attempt must not silently restart the retention window."""
     async with await _client() as admin_client, await _client() as victim_client:
-        await _register(admin_client, ADMIN_EMAIL, "Admin")
-        await _register(victim_client, VICTIM_EMAIL, "Victim")
+        await _seed(fk_env, ADMIN_EMAIL, "Admin")
+        await _seed(fk_env, VICTIM_EMAIL, "Victim")
         await _promote_to_admin(fk_env, ADMIN_EMAIL)
         await _login(victim_client, VICTIM_EMAIL)
         await _login(admin_client, ADMIN_EMAIL)
@@ -331,7 +333,7 @@ async def test_soft_deleting_twice_is_404(fk_env):
 
 async def test_admin_cannot_delete_their_own_account(fk_env):
     async with await _client() as admin_client:
-        await _register(admin_client, ADMIN_EMAIL, "Admin")
+        await _seed(fk_env, ADMIN_EMAIL, "Admin")
         admin_id = await _promote_to_admin(fk_env, ADMIN_EMAIL)
         await _login(admin_client, ADMIN_EMAIL)
 
@@ -347,7 +349,7 @@ async def test_admin_cannot_delete_their_own_account(fk_env):
 
 async def test_deleting_an_unknown_user_is_404(fk_env):
     async with await _client() as admin_client:
-        await _register(admin_client, ADMIN_EMAIL, "Admin")
+        await _seed(fk_env, ADMIN_EMAIL, "Admin")
         await _promote_to_admin(fk_env, ADMIN_EMAIL)
         await _login(admin_client, ADMIN_EMAIL)
 
@@ -356,9 +358,9 @@ async def test_deleting_an_unknown_user_is_404(fk_env):
 
 
 async def test_non_admin_cannot_delete_users(fk_env):
-    async with await _client() as user_client, await _client() as victim_client:
-        await _register(user_client, "plain@example.com", "Plain")
-        await _register(victim_client, VICTIM_EMAIL, "Victim")
+    async with await _client() as user_client:
+        await _seed(fk_env, "plain@example.com", "Plain")
+        await _seed(fk_env, VICTIM_EMAIL, "Victim")
         await _login(user_client, "plain@example.com")
 
         async with fk_env() as session:
@@ -373,8 +375,8 @@ async def test_non_admin_cannot_delete_users(fk_env):
 async def test_audit_page_still_renders_after_a_deletion(fk_env):
     """The admin audit log joins user rows; a deleted account must not break it."""
     async with await _client() as admin_client, await _client() as victim_client:
-        await _register(admin_client, ADMIN_EMAIL, "Admin")
-        await _register(victim_client, VICTIM_EMAIL, "Victim")
+        await _seed(fk_env, ADMIN_EMAIL, "Admin")
+        await _seed(fk_env, VICTIM_EMAIL, "Victim")
         await _promote_to_admin(fk_env, ADMIN_EMAIL)
         await _login(victim_client, VICTIM_EMAIL)
         await _login(admin_client, ADMIN_EMAIL)

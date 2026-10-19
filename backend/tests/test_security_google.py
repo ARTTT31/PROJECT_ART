@@ -6,6 +6,7 @@ GOOGLE_VALID_CLIENT_IDS, and an unconfigured client-ID list must fail closed.
 """
 
 import app.api.v1.endpoints.auth as auth_mod
+from app.core.config import settings
 
 
 def _fake_google(payload):
@@ -61,6 +62,9 @@ async def test_google_missing_client_id_config_fails_closed(client, monkeypatch)
 async def test_google_matching_audience_still_works(client, monkeypatch):
     monkeypatch.setenv("GOOGLE_VALID_CLIENT_IDS", "legit.apps.googleusercontent.com")
     monkeypatch.setattr(auth_mod, "_GOOGLE_AUTH_AVAILABLE", True)
+    # This is a first sign-in for the address, so the account has to be created:
+    # closed mode answers 403 before any of the audience logic runs.
+    monkeypatch.setattr(settings, "REGISTRATION_MODE", "open")
     monkeypatch.setattr(
         auth_mod,
         "google_id_token",

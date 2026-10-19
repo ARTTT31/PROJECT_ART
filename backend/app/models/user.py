@@ -34,6 +34,14 @@ class User(Base, TimestampMixin):
     # Camera streams configuration (JSON stored as text)
     camera_config: Mapped[str | None] = mapped_column(Text)
     accessible_pages: Mapped[str | None] = mapped_column(Text)
+    # Registration lifecycle: NULL means a normal account (every row created
+    # before this column existed), ``pending`` is someone waiting for an admin
+    # to approve their sign-up request, and ``rejected`` is a refused request.
+    # A pending/rejected account is also ``is_active=False`` — that flag is what
+    # login and every authenticated request check — so this column only records
+    # *why* it is inactive. Kept as text (not an enum) so a new state is an
+    # application change rather than a database migration.
+    status: Mapped[str | None] = mapped_column(String(20), index=True)
     # Account status
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     is_locked: Mapped[bool] = mapped_column(Boolean, default=False)

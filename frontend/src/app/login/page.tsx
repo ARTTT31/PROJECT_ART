@@ -2,7 +2,7 @@
 
 import '../../styles/pages/login.css';
 import { FormEvent, KeyboardEvent, useCallback, useEffect, useRef, useState } from 'react';
-import { ArrowRight, AlertCircle, Clock, Eye, EyeOff, Loader2, Lock, Mail } from 'lucide-react';
+import { ArrowRight, AlertCircle, Clock, Eye, EyeOff, Loader2, Lock, Mail, User } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useAuth } from '@/hooks/useAuth';
@@ -28,6 +28,58 @@ const formatTime = (date: Date) => timeFormatter.format(date);
 
 const apiBaseUrl = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '');
 const LOGIN_ENDPOINT = `${apiBaseUrl}/api/v1/auth/login`;
+const REGISTER_ENDPOINT = `${apiBaseUrl}/api/v1/auth/register`;
+const REGISTRATION_MODE_ENDPOINT = `${apiBaseUrl}/api/v1/auth/registration-mode`;
+
+/**
+ * How this deployment treats sign-ups, reported by the API:
+ * `closed` (default) offers no form at all, `approval` promises an admin's
+ * review, `open` signs the new account in straight away.
+ */
+type RegistrationMode = 'closed' | 'approval' | 'open'
+type LoginView = 'signin' | 'signup' | 'pending'
+
+/** Brand block shared by every view of this page. */
+function LoginHeader({ now, tagline }: { now: Date; tagline: string }) {
+  return (
+    <header className="login-brand">
+      <Image
+        src="/art-workspace-mark.svg"
+        alt=""
+        width={72}
+        height={72}
+        priority
+        draggable={false}
+        className="login-mark"
+      />
+      <h1 className="login-title">ART Workspace</h1>
+      <p className="login-tagline">{tagline}</p>
+      <p className="login-clock">
+        <Clock size={15} strokeWidth={2} aria-hidden="true" className="login-clock-icon" />
+        <time className="login-clock-time" dateTime={now.toISOString()}>{formatTime(now)} น.</time>
+        <span aria-hidden="true" className="login-clock-sep">•</span>
+        <span className="login-clock-date">{formatDate(now)}</span>
+      </p>
+    </header>
+  );
+}
+
+/**
+ * Shared page chrome for the sign-up and waiting screens, so they keep the
+ * exact look of the sign-in view without duplicating the shell markup.
+ */
+function LoginFrame({ now, tagline, children }: { now: Date; tagline: string; children: React.ReactNode }) {
+  return (
+    <main className="login-page">
+      <section aria-label={tagline} className="login-shell">
+        <div className="login-panel">
+          <LoginHeader now={now} tagline={tagline} />
+          {children}
+        </div>
+      </section>
+    </main>
+  );
+}
 
 function LoginContent() {
   const { login, status } = useAuth();
@@ -48,6 +100,17 @@ function LoginContent() {
   const emailRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
   const errorId = 'login-error-message';
+
+  // ── Sign-up state (only used when the API allows sign-ups) ──
+  const [registrationMode, setRegistrationMode] = useState<RegistrationMode>('closed');
+  const [view, setView] = useState<LoginView>('signin');
+  const [signupName, setSignupName] = useState('');
+  const [signupEmail, setSignupEmail] = useState('');
+  const [signupPassword, setSignupPassword] = useState('');
+  const [signupError, setSignupError] = useState('');
+  const [isSigningUp, setIsSigningUp] = useState(false);
+  const [pendingEmail, setPendingEmail] = useState('');
+  const signupNameRef = useRef<HTMLInputElement>(null);
 
   // Already signed in? The login page has nothing to offer — go to the dashboard.
   // (Logout clears auth state before replacing to /login, so this never loops.)
@@ -104,6 +167,106 @@ function LoginContent() {
     }, 1000);
     return () => window.clearInterval(timer);
   }, [toast]);
+
+  // ── Ask the API how this deployment handles sign-ups ──
+  // A `closed` deployment shows no sign-up affordance at all; the backend
+  // refuses the endpoint there too, so this is presentation, not protection.
+  useEffect(() => {
+    let cancelled = false;
+    const controller = new AbortController();
+
+    fetch(REGISTRATION_MODE_ENDPOINT, {
+      credentials: 'include',
+      signal: controller.signal,
+      headers: { Accept: 'application/json' },
+    })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((body) => {
+        const mode = body?.data?.registration_mode;
+        if (!cancelled && (mode === 'approval' || mode === 'open')) {
+          setRegistrationMode(mode);
+        }
+      })
+      .catch(() => {
+        // Unreachable API: keep the page as a pure sign-in form.
+      });
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (view === 'signup') {
+      setTimeout(() => signupNameRef.current?.focus(), 60);
+    }
+  }, [view]);
+
+  /**
+   * Request an account.
+   *
+   * In `approval` mode the API answers 201 with `status: "pending"` for a brand
+   * new address AND for one that already exists — deliberately, so the form
+   * cannot be used to test whether somebody is registered. The screen therefore
+   * says the same thing in both cases.
+   */
+  const handleSignup = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setSignupError('');
+
+    const name = signupName.trim();
+    const email = signupEmail.trim();
+
+    if (!name) {
+      setSignupError('กรุณากรอกชื่อที่แสดง');
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setSignupError('กรุณาตรวจสอบรูปแบบอีเมลอีกครั้ง');
+      return;
+    }
+    if (signupPassword.length < 8) {
+      setSignupError('รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร');
+      return;
+    }
+
+    setIsSigningUp(true);
+    try {
+      const response = await fetch(REGISTER_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ name, email, password: signupPassword }),
+      });
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        setSignupError(
+          result.detail || result.message || 'สมัครสมาชิกไม่สำเร็จ กรุณาลองใหม่อีกครั้ง'
+        );
+        return;
+      }
+
+      if (registrationMode === 'approval') {
+        setPendingEmail(email);
+        setView('pending');
+        return;
+      }
+
+      // open mode: the account works immediately — send them to the sign-in form.
+      setEmail(email);
+      setSignupPassword('');
+      setSignupName('');
+      setView('signin');
+      toast.success('สมัครสมาชิกสำเร็จ', 'กรุณาเข้าสู่ระบบด้วยบัญชีที่สร้างใหม่');
+    } catch (err) {
+      console.error('Signup submit error:', err);
+      setSignupError('เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง');
+    } finally {
+      setIsSigningUp(false);
+    }
+  };
 
   useEffect(() => {
     if (rateLimitSeconds <= 0) return;
@@ -203,29 +366,133 @@ function LoginContent() {
 
   if (!isClient) return null;
 
+  // ── Waiting for an admin's decision (approval mode) ──
+  if (view === 'pending') {
+    return (
+      <LoginFrame now={now} tagline="สถานะการสมัครสมาชิก">
+        <div className="login-form">
+          <div className="login-notice" role="status" aria-live="polite">
+            <span className="login-notice-title">รอผู้ดูแลระบบอนุมัติ</span>
+            เราได้รับคำขอสมัครของ <strong>{pendingEmail}</strong> แล้ว
+            บัญชีจะใช้งานได้ทันทีที่ผู้ดูแลระบบอนุมัติ — กรุณากลับมาเข้าสู่ระบบในภายหลัง
+          </div>
+          <button
+            type="button"
+            className="login-submit"
+            onClick={() => setView('signin')}
+          >
+            <span>กลับไปหน้าเข้าสู่ระบบ</span>
+            <ArrowRight size={18} aria-hidden="true" />
+          </button>
+        </div>
+      </LoginFrame>
+    );
+  }
+
+  // ── Sign-up (only reachable when the API reports approval/open) ──
+  if (view === 'signup') {
+    return (
+      <LoginFrame now={now} tagline="สมัครสมาชิกเพื่อใช้งานแดชบอร์ด">
+        <form onSubmit={handleSignup} className="login-form" aria-busy={isSigningUp}>
+          <label htmlFor="signup-name" className="login-field">
+            <span>ชื่อที่แสดง</span>
+            <div className="login-input-wrap">
+              <User size={18} aria-hidden="true" />
+              <input
+                id="signup-name"
+                ref={signupNameRef}
+                type="text"
+                value={signupName}
+                onChange={(event) => setSignupName(event.target.value)}
+                placeholder="ชื่อ-นามสกุล"
+                required
+                autoComplete="name"
+                disabled={isSigningUp}
+              />
+            </div>
+          </label>
+
+          <label htmlFor="signup-email" className="login-field">
+            <span>อีเมล</span>
+            <div className="login-input-wrap">
+              <Mail size={18} aria-hidden="true" />
+              <input
+                id="signup-email"
+                type="email"
+                value={signupEmail}
+                onChange={(event) => setSignupEmail(event.target.value)}
+                placeholder="name@example.com"
+                required
+                autoComplete="email"
+                disabled={isSigningUp}
+              />
+            </div>
+          </label>
+
+          <label htmlFor="signup-password" className="login-field">
+            <span>รหัสผ่าน (อย่างน้อย 8 ตัวอักษร)</span>
+            <div className="login-input-wrap">
+              <Lock size={18} aria-hidden="true" />
+              <input
+                id="signup-password"
+                type="password"
+                value={signupPassword}
+                onChange={(event) => setSignupPassword(event.target.value)}
+                placeholder="••••••••"
+                required
+                minLength={8}
+                autoComplete="new-password"
+                disabled={isSigningUp}
+              />
+            </div>
+          </label>
+
+          {registrationMode === 'approval' && (
+            <p className="login-hint">บัญชีที่สมัครจะใช้งานได้หลังผู้ดูแลระบบอนุมัติ</p>
+          )}
+
+          {signupError && (
+            <div role="alert" aria-live="polite" className="login-error">
+              <AlertCircle size={16} aria-hidden="true" className="login-error-icon" />
+              {signupError}
+            </div>
+          )}
+
+          <button type="submit" disabled={isSigningUp} className="login-submit">
+            {isSigningUp ? (
+              <>
+                <Loader2 size={18} className="login-submit-spinner" aria-hidden="true" />
+                <span>กำลังส่งคำขอ...</span>
+              </>
+            ) : (
+              <>
+                <span>ส่งคำขอสมัคร</span>
+                <ArrowRight size={18} aria-hidden="true" />
+              </>
+            )}
+          </button>
+
+          <button
+            type="button"
+            className="login-switch"
+            onClick={() => {
+              setSignupError('');
+              setView('signin');
+            }}
+            disabled={isSigningUp}
+          >
+            กลับไปหน้าเข้าสู่ระบบ
+          </button>
+        </form>
+      </LoginFrame>
+    );
+  }
+
   return (
     <main className="login-page">
       <section aria-label="เข้าสู่ระบบ ART Workspace" className="login-shell">
         <div className="login-panel">
-          <header className="login-brand">
-            <Image
-              src="/art-workspace-mark.svg"
-              alt=""
-              width={72}
-              height={72}
-              priority
-              draggable={false}
-              className="login-mark"
-            />
-            <h1 className="login-title">ART Workspace</h1>
-            <p className="login-tagline">เข้าสู่ระบบเพื่อใช้งานแดชบอร์ดของคุณ</p>
-            <p className="login-clock">
-              <Clock size={15} strokeWidth={2} aria-hidden="true" className="login-clock-icon" />
-              <time className="login-clock-time" dateTime={now.toISOString()}>{formatTime(now)} น.</time>
-              <span aria-hidden="true" className="login-clock-sep">•</span>
-              <span className="login-clock-date">{formatDate(now)}</span>
-            </p>
-          </header>
+          <LoginHeader now={now} tagline="เข้าสู่ระบบเพื่อใช้งานแดชบอร์ดของคุณ" />
 
           <form onSubmit={handleSubmit} className="login-form" aria-busy={isSubmitting}>
             <label htmlFor="login-email" className="login-field">
@@ -347,6 +614,20 @@ function LoginContent() {
                 <span className="google-text">ดำเนินการต่อด้วย Google</span>
               </button>
             </div>
+
+            {registrationMode !== 'closed' && (
+              <button
+                type="button"
+                className="login-switch"
+                onClick={() => {
+                  setSignupError('');
+                  setView('signup');
+                }}
+                disabled={isSubmitting}
+              >
+                ยังไม่มีบัญชี? สมัครสมาชิก
+              </button>
+            )}
           </form>
         </div>
       </section>

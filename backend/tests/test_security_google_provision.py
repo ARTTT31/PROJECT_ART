@@ -2,8 +2,10 @@
 
 Owner policy: Google logins may auto-create an account only for the hosted
 domain(s) configured in GOOGLE_ALLOWED_DOMAINS (checked against the email
-domain and the token's `hd` claim). Public /register stays open (owner
-decision), so only the Google paths are restricted.
+domain and the token's `hd` claim). Account creation on top of that is governed
+by REGISTRATION_MODE, so every test here opts into ``open`` — in the default
+``closed`` mode no Google sign-in creates anything, whatever the domain rules
+say, and the assertions below would pass for the wrong reason.
 """
 
 import pytest
@@ -11,6 +13,7 @@ import pytest
 import app.api.v1.endpoints.auth as auth_mod
 from sqlalchemy.future import select
 
+from app.core.config import settings
 from app.models.user import User
 
 
@@ -34,6 +37,7 @@ def google_checks(monkeypatch):
 
 async def test_foreign_domain_cannot_be_provisioned(client, db_session, monkeypatch, google_checks):
     monkeypatch.setenv("GOOGLE_ALLOWED_DOMAINS", "example.co.th")
+    monkeypatch.setattr(settings, "REGISTRATION_MODE", "open")
     monkeypatch.setattr(
         auth_mod, "google_id_token",
         _fake_google({
@@ -56,6 +60,7 @@ async def test_missing_hd_claim_is_rejected_when_domains_configured(
 ):
     """Consumer Gmail carries no `hd` and its domain is not the corp domain."""
     monkeypatch.setenv("GOOGLE_ALLOWED_DOMAINS", "example.co.th")
+    monkeypatch.setattr(settings, "REGISTRATION_MODE", "open")
     monkeypatch.setattr(
         auth_mod, "google_id_token",
         _fake_google({
@@ -72,6 +77,7 @@ async def test_missing_hd_claim_is_rejected_when_domains_configured(
 
 async def test_allowed_domain_still_provisions(client, db_session, monkeypatch, google_checks):
     monkeypatch.setenv("GOOGLE_ALLOWED_DOMAINS", "example.co.th")
+    monkeypatch.setattr(settings, "REGISTRATION_MODE", "open")
     monkeypatch.setattr(
         auth_mod, "google_id_token",
         _fake_google({
@@ -96,6 +102,7 @@ async def test_unconfigured_domain_list_keeps_previous_behaviour(
 ):
     """No GOOGLE_ALLOWED_DOMAINS -> historic open provisioning (documented)."""
     monkeypatch.delenv("GOOGLE_ALLOWED_DOMAINS", raising=False)
+    monkeypatch.setattr(settings, "REGISTRATION_MODE", "open")
     monkeypatch.setattr(
         auth_mod, "google_id_token",
         _fake_google({

@@ -2,8 +2,9 @@
 API Dependencies
 """
 
+import json
 import logging
-from typing import Optional
+from typing import Any, Callable, List, Optional
 from fastapi import Depends, HTTPException, status, Request, WebSocket
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -23,6 +24,54 @@ security = HTTPBearer(auto_error=False)
 # never loaded raises MissingGreenlet in async SQLAlchemy (the implicit lazy
 # load cannot run outside a greenlet context).
 PROFILE_COLUMNS = ("avatar", "quick_links", "dashboard_layout", "camera_config")
+
+# ── Page-level access (users.accessible_pages) ───────────────────────────
+# The sidebar hides the pages an account may not open, but hiding a menu item is
+# not authorization: the page is still reachable by typing its URL, and the API
+# behind it would still answer. These helpers are the server-side half of that
+# decision. ``NULL`` means the historic default (dashboard + profile) — the same
+# list the frontend assumes — so an account that predates the column does not
+# silently gain access to everything.
+DEFAULT_PAGES: tuple[str, ...] = ("dashboard", "profile")
+PAGE_FORBIDDEN_MESSAGE = "คุณไม่มีสิทธิ์เข้าถึงหน้านี้ กรุณาติดต่อผู้ดูแลระบบ"
+
+
+def parse_accessible_pages(raw: Optional[str]) -> List[str]:
+    """Page ids an account may open; malformed input falls back to the default."""
+    if not raw:
+        return list(DEFAULT_PAGES)
+    try:
+        parsed = json.loads(raw)
+    except (TypeError, ValueError):
+        return list(DEFAULT_PAGES)
+    if not isinstance(parsed, list):
+        return list(DEFAULT_PAGES)
+    return [str(page) for page in parsed]
+
+
+def has_page_access(user: User, page_id: str) -> bool:
+    """Whether ``user`` may use page ``page_id``. Admins are never gated."""
+    if user.role == "admin":
+        return True
+    return page_id in parse_accessible_pages(user.accessible_pages)
+
+
+def require_page_access(page_id: str) -> Callable[..., Any]:
+    """Dependency factory: 403 unless the caller may use that page.
+
+    Usage: ``current_user: User = Depends(require_page_access("camera"))``.
+    """
+    async def _require_page_access(
+        current_user: User = Depends(get_current_user),
+    ) -> User:
+        if not has_page_access(current_user, page_id):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=PAGE_FORBIDDEN_MESSAGE,
+            )
+        return current_user
+
+    return _require_page_access
 
 
 async def load_profile_columns(db: AsyncSession, user: User, *columns: str) -> User:

@@ -92,6 +92,18 @@ COOKIE_OPTIONS: dict[str, Any] = {
 _AUTH_LIMIT = f"{settings.RATE_LIMIT_AUTH_PER_MINUTE}/minute"
 _GENERAL_LIMIT = f"{settings.RATE_LIMIT_GENERAL_PER_MINUTE}/minute"
 
+# ── Self-registration policy (REGISTRATION_MODE) ─────────────────────────
+# Defined once so the API, the login page and the audit trail all describe the
+# same rule with the same words.
+_REGISTRATION_CLOSED_MESSAGE = (
+    "ระบบปิดรับสมัครสมาชิกใหม่ กรุณาติดต่อผู้ดูแลระบบเพื่อขอสิทธิ์เข้าใช้งาน"
+)
+_REGISTRATION_PENDING_MESSAGE = (
+    "ส่งคำขอสมัครแล้ว — บัญชีจะใช้งานได้หลังผู้ดูแลระบบอนุมัติ"
+)
+_SIGNIN_PENDING_MESSAGE = "บัญชีของคุณอยู่ระหว่างรอผู้ดูแลระบบอนุมัติ"
+_SIGNIN_REJECTED_MESSAGE = "คำขอสมัครบัญชีนี้ถูกปฏิเสธ กรุณาติดต่อผู้ดูแลระบบ"
+
 
 @router.get("/csrf")
 async def get_csrf_token(request: Request):
@@ -114,6 +126,21 @@ async def get_csrf_token(request: Request):
         **COOKIE_OPTIONS,
     )
     return response
+
+
+@router.get("/registration-mode")
+@limiter.limit(_GENERAL_LIMIT)
+async def get_registration_mode(request: Request):
+    """Report how this deployment handles sign-ups.
+
+    Public on purpose: the login page has to know whether to offer a sign-up
+    form, and whether to promise immediate access or an admin's approval. It
+    exposes the policy, never any data.
+    """
+    return {
+        "result": "success",
+        "data": {"registration_mode": settings.REGISTRATION_MODE},
+    }
 
 
 @router.post("/login", response_model=ResponseModel)
@@ -251,10 +278,76 @@ async def register(
     """
     auth_service = AuthService(db)
     audit_service = AuditService(db)
+    user_service = UserService(db)
     client_ip = request.client.host if request.client else None
     user_agent = request.headers.get("user-agent")
+    mode = settings.REGISTRATION_MODE
+
+    # ── closed (the default): nobody self-registers ──────────────────────
+    # The refusal is logged on purpose: an admin reading the audit trail can see
+    # how many people knocked while sign-ups were shut.
+    if mode == "closed":
+        await audit_service.log_action(
+            action="USER_REGISTER_BLOCKED",
+            details=(
+                "Self-registration refused (REGISTRATION_MODE=closed) for "
+                f"{_mask_identifier(user_register.email)}"
+            ),
+            ip_address=client_ip,
+            user_agent=user_agent,
+        )
+        await db.commit()
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=_REGISTRATION_CLOSED_MESSAGE,
+        )
 
     try:
+        if mode == "approval":
+            # The answer is IDENTICAL whether the address is unknown, already
+            # registered or sitting in the trash — anything else turns this
+            # endpoint into an account-existence oracle for the whole internet.
+            existing = await user_service.get_user_by_email(user_register.email)
+            if existing is None:
+                user = await auth_service.register(
+                    user_register, role="user", is_active=False, status="pending"
+                )
+                await audit_service.log_action(
+                    action="USER_REGISTER_PENDING",
+                    user_id=user.id,
+                    details=f"Sign-up request awaiting approval: {user.email}",
+                    ip_address=client_ip,
+                    user_agent=user_agent,
+                )
+            elif existing.deleted_at is None and existing.status == "rejected":
+                # A refused request may be re-submitted, with a fresh password.
+                await user_service.resubmit_registration(existing, user_register)
+                await audit_service.log_action(
+                    action="USER_REGISTER_RESUBMIT",
+                    user_id=existing.id,
+                    details=f"Refused sign-up request re-submitted: {existing.email}",
+                    ip_address=client_ip,
+                    user_agent=user_agent,
+                )
+            else:
+                await audit_service.log_action(
+                    action="USER_REGISTER_DUPLICATE",
+                    details=(
+                        "Sign-up request for an address that already exists: "
+                        f"{_mask_identifier(user_register.email)}"
+                    ),
+                    ip_address=client_ip,
+                    user_agent=user_agent,
+                )
+
+            await db.commit()
+            return ResponseModel(
+                result="success",
+                message=_REGISTRATION_PENDING_MESSAGE,
+                data={"status": "pending"},
+            )
+
+        # ── open: self-registration creates a working account immediately ──
         user = await auth_service.register(user_register, role="user")
 
         await audit_service.log_action(
@@ -272,6 +365,8 @@ async def register(
             data={"user_id": user.id, "email": user.email},
         )
 
+    except HTTPException:
+        raise
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -499,6 +594,78 @@ def _check_google_provisioning_domain(
         )
 
 
+async def _provision_google_user(
+    user_service: UserService, email: str, name: str
+) -> Any:
+    """Create the account a first Google sign-in implies, per REGISTRATION_MODE.
+
+    ``approval`` creates the row inactive and pending, so the caller refuses to
+    sign in and the admin sees the request; ``open`` creates a normal account.
+    The insert can lose a race with a concurrent sign-in for the same address, in
+    which case the lookup is retried instead of failing the login.
+    """
+    pending = settings.REGISTRATION_MODE == "approval"
+    user_create = UserCreate(
+        email=email, password=secrets.token_urlsafe(16), name=name, role="user"
+    )
+    try:
+        return await user_service.create_user(
+            user_create,
+            role="user",
+            is_active=not pending,
+            status="pending" if pending else None,
+        )
+    except Exception:
+        return await user_service.get_user_by_email(email)
+
+
+def _assert_google_provisioning_allowed() -> None:
+    """Refuse to create an account from a Google sign-in in ``closed`` mode.
+
+    Without this the Google entry points would keep minting accounts while the
+    password path answers 403, which is exactly the hole REGISTRATION_MODE is
+    supposed to close. Existing accounts are unaffected — this guards creation.
+    """
+    if settings.REGISTRATION_MODE == "closed":
+        logger.warning("GOOGLE_AUTH: provisioning refused (REGISTRATION_MODE=closed)")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=_REGISTRATION_CLOSED_MESSAGE,
+        )
+
+
+def _assert_signin_allowed(user: Any) -> None:
+    """Refuse to hand tokens to an account that may not sign in.
+
+    ``AuthService.login`` applies these rules to password logins, but both Google
+    entry points used to issue cookies first and leave the rejection to the next
+    API call — so a suspended or still-unapproved account could finish the OAuth
+    round trip and only then meet a bare 403.
+    """
+    if getattr(user, "deleted_at", None) is not None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="บัญชีนี้ถูกลบแล้ว กรุณาติดต่อผู้ดูแลระบบ",
+        )
+    if user.status == "pending":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail=_SIGNIN_PENDING_MESSAGE
+        )
+    if user.status == "rejected":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail=_SIGNIN_REJECTED_MESSAGE
+        )
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="บัญชีถูกปิดการใช้งาน"
+        )
+    if user.is_locked:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="บัญชีถูกล็อก กรุณาลองใหม่ภายหลัง",
+        )
+
+
 @router.post("/google/verify-token")
 @limiter.limit(_AUTH_LIMIT)
 async def google_verify_token(
@@ -611,34 +778,33 @@ async def google_verify_token(
         )
 
     # Find or create user — provisioning is domain-restricted (owner policy, T13)
+    # and gated by REGISTRATION_MODE: a closed deployment creates nothing here.
     _check_google_provisioning_domain(
         email, verified_info, _get_allowed_google_domains()
     )
+    _assert_google_provisioning_allowed()
     try:
         user_service = UserService(db)
         user = await user_service.get_user_by_email(email)
         if not user:
-            # Create with a random password
-            random_pwd = secrets.token_urlsafe(16)
-            user_create = UserCreate(
-                email=email, password=random_pwd, name=name, role="user"
-            )
-            try:
-                user = await user_service.create_user(user_create)
-            except Exception:
-                user = await user_service.get_user_by_email(email)
+            user = await _provision_google_user(user_service, email, name)
 
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to create or retrieve user",
             )
+    except HTTPException:
+        raise
     except Exception:
         logger.exception("Error during Google token verify user fetch")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="เกิดข้อผิดพลาดภายในระบบ กรุณาลองอีกครั้งภายหลัง",
         )
+
+    # Only an approved, active account may complete the round trip.
+    _assert_signin_allowed(user)
 
     # Issue tokens — with a real UserSession row + sid so logout/revoke works.
     client_ip_tok = request.client.host if request.client else None
@@ -805,26 +971,24 @@ async def google_callback(
         )
 
     # Find or create user — provisioning is domain-restricted (owner policy, T13)
+    # and gated by REGISTRATION_MODE: a closed deployment creates nothing here.
     _check_google_provisioning_domain(
         email, verified_info, _get_allowed_google_domains()
     )
+    _assert_google_provisioning_allowed()
     user_service = UserService(db)
     user = await user_service.get_user_by_email(email)
     if not user:
-        random_pwd = secrets.token_urlsafe(16)
-        user_create = UserCreate(
-            email=email, password=random_pwd, name=name, role="user"
-        )
-        try:
-            user = await user_service.create_user(user_create)
-        except Exception:
-            user = await user_service.get_user_by_email(email)
+        user = await _provision_google_user(user_service, email, name)
 
     if not user:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to create or retrieve user",
         )
+
+    # Only an approved, active account may complete the round trip.
+    _assert_signin_allowed(user)
 
     # Issue tokens — with a real UserSession row + sid so logout/revoke works.
     refresh_jti = new_refresh_jti()

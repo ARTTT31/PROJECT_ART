@@ -4,7 +4,7 @@ Application Configuration
 
 import logging
 import os
-from typing import List
+from typing import List, Literal
 from pydantic import ValidationInfo, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -214,6 +214,21 @@ class Settings(BaseSettings):
                 )
             parsed.append(origin.rstrip("/"))
         return parsed
+
+    # ── Registration policy ─────────────────────────────────────────────────
+    # Who may create an account:
+    #   closed   (default) — nobody. POST /auth/register answers 403 and the
+    #                        only way in is an admin creating the account.
+    #   approval — anyone may ask, but the account stays inactive and
+    #              "pending" until an admin approves it.
+    #   open     — self-registration creates a working account immediately.
+    REGISTRATION_MODE: Literal["closed", "approval", "open"] = "closed"
+
+    @field_validator("REGISTRATION_MODE", mode="before")
+    @classmethod
+    def normalize_registration_mode(cls, v: object) -> str:
+        """Accept "CLOSED"/" Closed " from a hand-edited .env file."""
+        return (str(v).strip().lower() if v is not None else "closed") or "closed"
 
     # ── Google OAuth ────────────────────────────────────────────────────────
     GOOGLE_CLIENT_ID: str = ""
