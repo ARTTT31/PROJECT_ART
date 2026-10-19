@@ -29,6 +29,7 @@ import {
   Sliders,
   Sparkles,
   Camera,
+  Download,
   Loader2,
 } from 'lucide-react'
 import { showDeleteConfirm, showToast, showSuccess, showError } from '@/utils/sweetalert'
@@ -251,7 +252,7 @@ type TabKey = 'profile' | 'preferences' | 'admin'
 
 export default function ProfilePage() {
   const router = useRouter()
-  const { user: authUser, updateUser } = useAuth()
+  const { user: authUser, updateUser, logout } = useAuth()
   const [user, setUser] = useState<AuthUser | null>(null)
   const [activeTab, setActiveTab] = useState<TabKey>('profile')
 
@@ -273,6 +274,11 @@ export default function ProfilePage() {
   const [showNewPassword, setShowNewPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isChangingPassword, setIsChangingPassword] = useState(false)
+
+  // Data & privacy (PDPA): export + self-delete
+  const [isExporting, setIsExporting] = useState(false)
+  const [deletePassword, setDeletePassword] = useState('')
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false)
 
   // Quick Links
   const [quickLinks, setQuickLinks] = useState<QuickLink[]>([])
@@ -502,6 +508,68 @@ export default function ProfilePage() {
       showError('ไม่สามารถเชื่อมต่อได้', 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้')
     } finally {
       setIsChangingPassword(false)
+    }
+  }
+
+  // ── Handlers: data & privacy (PDPA) ───────────────────────────
+
+  const handleExportData = async () => {
+    setIsExporting(true)
+    try {
+      const response = await fetchWithAuth('/api/v1/profile/export')
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}))
+        showError('ส่งออกข้อมูลไม่สำเร็จ', apiMessage(body, 'กรุณาลองใหม่อีกครั้ง'))
+        return
+      }
+      const blob = await response.blob()
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = 'art-workspace-export.json'
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      URL.revokeObjectURL(url)
+      showSuccess('ดาวน์โหลดข้อมูลแล้ว', 'ไฟล์สำเนาข้อมูลของคุณถูกบันทึกไว้ในเครื่อง')
+    } catch (error) {
+      console.error('Export data error:', error)
+      showError('ส่งออกข้อมูลไม่สำเร็จ', 'เกิดข้อผิดพลาดในการเชื่อมต่อ')
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
+  const handleDeleteAccount = async () => {
+    if (!deletePassword) {
+      showToast('กรุณากรอกรหัสผ่านเพื่อยืนยัน', 'warning')
+      return
+    }
+    const result = await showDeleteConfirm(
+      'ลบบัญชีของคุณ?',
+      'บัญชีจะถูกย้ายไปถังขยะและใช้งานไม่ได้ทันที ผู้ดูแลระบบสามารถกู้คืนได้ภายใน 30 วัน จากนั้นจะถูกลบถาวร'
+    )
+    if (!result.isConfirmed) return
+
+    setIsDeletingAccount(true)
+    try {
+      const response = await fetchWithAuth('/api/v1/profile/me', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: deletePassword }),
+      })
+      const body = await response.json().catch(() => ({}))
+      if (!response.ok) {
+        showError('ลบบัญชีไม่สำเร็จ', apiMessage(body, 'กรุณาตรวจสอบรหัสผ่านแล้วลองใหม่'))
+        return
+      }
+      await logout()
+      router.replace('/login')
+    } catch (error) {
+      console.error('Delete account error:', error)
+      showError('ลบบัญชีไม่สำเร็จ', 'เกิดข้อผิดพลาดในการเชื่อมต่อ')
+    } finally {
+      setIsDeletingAccount(false)
     }
   }
 
@@ -973,6 +1041,90 @@ export default function ProfilePage() {
                 </button>
               </div>
             </form>
+          </SectionCard>
+
+          {/* Card 1.3: ข้อมูลส่วนตัว (PDPA) */}
+          <SectionCard
+            icon={<ShieldCheck size={19} aria-hidden="true" />}
+            iconBg="bg-sky-50"
+            iconColor="text-sky-600"
+            iconRing="ring-sky-200/60"
+            title="ข้อมูลส่วนตัวของฉัน (PDPA)"
+            subtitle="ใช้สิทธิ์ของเจ้าของข้อมูล — ส่งออกสำเนา หรือลบบัญชีของคุณ"
+          >
+            <div className="space-y-4">
+              <div className="rounded-2xl bg-[#f8fafc] p-4 ring-1 ring-black/[0.04]">
+                <p className="text-[12.5px] font-semibold text-[#1d1d1f]">ส่งออกข้อมูลของฉัน</p>
+                <p className="mt-1 text-[12px] leading-relaxed text-[#6e6e73]">
+                  ดาวน์โหลดสำเนาข้อมูลบัญชี การตั้งค่า และรายการอุปกรณ์ที่เข้าสู่ระบบ เป็นไฟล์ JSON
+                </p>
+                <button
+                  type="button"
+                  onClick={handleExportData}
+                  disabled={isExporting}
+                  className="mt-3 inline-flex min-h-[40px] items-center justify-center gap-2 rounded-full border border-black/[0.08] bg-white px-4 py-2 text-[12.5px] font-bold text-[#1d1d1f] transition-all hover:border-[#0066cc]/40 hover:text-[#0066cc] disabled:opacity-50 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0066cc]"
+                >
+                  {isExporting ? (
+                    <Loader2 size={14} className="animate-spin" aria-hidden="true" />
+                  ) : (
+                    <Download size={14} aria-hidden="true" />
+                  )}
+                  {isExporting ? 'กำลังเตรียมไฟล์…' : 'ส่งออกข้อมูลของฉัน'}
+                </button>
+              </div>
+
+              <div className="rounded-2xl border border-rose-200/70 bg-rose-50/60 p-4">
+                <p className="text-[12.5px] font-semibold text-rose-700">ลบบัญชีของฉัน</p>
+                <p className="mt-1 text-[12px] leading-relaxed text-rose-700/80">
+                  บัญชีจะถูกย้ายไปถังขยะและใช้งานไม่ได้ทันที ผู้ดูแลระบบกู้คืนได้ภายใน 30 วัน
+                  แล้วจึงลบถาวร กรุณากรอกรหัสผ่านเพื่อยืนยัน
+                </p>
+                <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                  <input
+                    type="password"
+                    value={deletePassword}
+                    onChange={(event) => setDeletePassword(event.target.value)}
+                    placeholder="รหัสผ่านปัจจุบัน"
+                    autoComplete="current-password"
+                    className="min-h-[40px] flex-1 rounded-full border border-rose-200 bg-white px-4 py-2 text-[13px] text-[#1d1d1f] outline-none focus:border-rose-400 focus:ring-2 focus:ring-rose-200"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleDeleteAccount}
+                    disabled={isDeletingAccount}
+                    className="inline-flex min-h-[40px] items-center justify-center gap-2 rounded-full bg-rose-600 px-4 py-2 text-[12.5px] font-bold text-white transition-all hover:bg-rose-700 disabled:opacity-50 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
+                  >
+                    {isDeletingAccount ? (
+                      <Loader2 size={14} className="animate-spin" aria-hidden="true" />
+                    ) : (
+                      <Trash2 size={14} aria-hidden="true" />
+                    )}
+                    {isDeletingAccount ? 'กำลังลบ…' : 'ลบบัญชี'}
+                  </button>
+                </div>
+              </div>
+
+              <p className="text-[11.5px] text-[#6e6e73]">
+                อ่าน{' '}
+                <a
+                  href="/privacy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[#0066cc] underline"
+                >
+                  นโยบายความเป็นส่วนตัว
+                </a>{' '}
+                และ{' '}
+                <a
+                  href="/terms"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[#0066cc] underline"
+                >
+                  ข้อตกลงการใช้งาน
+                </a>
+              </p>
+            </div>
           </SectionCard>
         </motion.div>
       )}

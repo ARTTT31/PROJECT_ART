@@ -304,6 +304,15 @@ class CSRFMiddleware:
         "/api/v1/auth/refresh",
         "/api/v1/auth/google",
         "/api/v1/auth/csrf",
+        # Account-email flows. Same reasoning as login/register: they are
+        # pre-authentication doors (a reset link arrives in an inbox, not a
+        # browser session), and each state change requires a secret carried in
+        # the body — a reset token is bound to its own account, so riding a
+        # victim's cookies cannot reset anyone but the token's owner.
+        "/api/v1/auth/forgot-password",
+        "/api/v1/auth/reset-password",
+        "/api/v1/auth/verify-email",
+        "/api/v1/auth/resend-verification",
     )
 
     def __init__(self, app):

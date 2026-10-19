@@ -23,6 +23,7 @@ limiter.enabled = False
 
 from app.core.database import Base, get_db  # noqa: E402
 from app.core.security import get_password_hash  # noqa: E402
+from app.core.utils import utcnow  # noqa: E402
 from app.main import app  # noqa: E402
 from app.models.user import User  # noqa: E402
 
@@ -86,7 +87,12 @@ async def seed_account(
     combination of role, status and page access — including states the API
     refuses to produce, such as ``status="pending"``. Self-registration is closed
     by default, so this is how tests obtain an account at all.
+
+    ``email_verified_at`` defaults to "now": the migration backfills every
+    pre-existing row the same way, so a seeded account mirrors a real legacy
+    account. Pass ``email_verified_at=None`` for an unverified one.
     """
+    extra.setdefault("email_verified_at", utcnow())
     user = User(
         email=email.lower(),
         hashed_password=get_password_hash(password),

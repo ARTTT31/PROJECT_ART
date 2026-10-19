@@ -300,6 +300,18 @@ class AuthService:
                 detail="บัญชีถูกปิดการใช้งาน",
             )
 
+        # Email verification gate (opt-in). Enforced only when the deployment
+        # has switched it on: a missing mail backend must never lock everyone
+        # out. Password ownership was proven above, so the caller may be told.
+        if settings.REQUIRE_EMAIL_VERIFICATION and user.email_verified_at is None:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=(
+                    "กรุณายืนยันอีเมลของคุณก่อนเข้าสู่ระบบ — "
+                    "ขออีเมลยืนยันใหม่ได้ที่หน้าล็อกอิน"
+                ),
+            )
+
         # Reset failure bookkeeping on a successful verification
         await _backoff_clear(backoff_key)
         user.failed_login_attempts = 0

@@ -26,6 +26,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.session import UserSession
 from app.core.utils import utcnow
+from app.models.email_token import EmailToken
 
 logger = logging.getLogger(__name__)
 
@@ -90,6 +91,17 @@ async def cleanup_expired_sessions_async(
         logger.info("Removed %d expired/inactive sessions", total)
     else:
         logger.debug("No expired sessions found")
+
+    # Email tokens are cheap but unbounded: drop those that expired more than a
+    # day ago in the same pass, so password-reset/verification rows do not
+    # accumulate forever.
+    token_result = await db.execute(
+        delete(EmailToken).where(EmailToken.expires_at < now - timedelta(days=1))
+    )
+    token_total = int(cast(CursorResult[Any], token_result).rowcount or 0)
+    if token_total > 0:
+        logger.info("Removed %d expired email tokens", token_total)
+    await db.commit()
     return total
 
 

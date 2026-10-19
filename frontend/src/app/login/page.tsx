@@ -3,9 +3,11 @@
 import '../../styles/pages/login.css';
 import { FormEvent, KeyboardEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { ArrowRight, AlertCircle, Clock, Eye, EyeOff, Loader2, Lock, Mail, User } from 'lucide-react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useAuth } from '@/hooks/useAuth';
+import TurnstileWidget from '@/components/Auth/TurnstileWidget';
 import { useToast } from '@/components/Toast/ToastProvider';
 
 /** Thai date, short month (e.g. "วันพฤหัสบดีที่ 9 ต.ค. 2569") — fits one line. */
@@ -110,6 +112,8 @@ function LoginContent() {
   const [signupError, setSignupError] = useState('');
   const [isSigningUp, setIsSigningUp] = useState(false);
   const [pendingEmail, setPendingEmail] = useState('');
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState('');
   const signupNameRef = useRef<HTMLInputElement>(null);
 
   // Already signed in? The login page has nothing to offer — go to the dashboard.
@@ -148,11 +152,20 @@ function LoginContent() {
       setTimeout(() => emailRef.current?.focus(), 100);
     }
 
-    // Surface errors handed back by the OAuth provider / backend redirect.
-    const hash = window.location.hash;
-    const search = window.location.search;
-    if (hash.includes('error=') || search.includes('error=')) {
-      toast.error('การเข้าสู่ระบบด้วย Google ล้มเหลว');
+    // Surface refusals handed back by the backend's OAuth callback and by the
+    // provider itself. The callback sends the readable reason as `google_error`
+    // (sign-ups closed, account awaiting approval, ...) so the person sees why
+    // they were turned away instead of a raw JSON page on the API origin.
+    const params = new URLSearchParams(window.location.search);
+    const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+    const googleError =
+      params.get('google_error') || params.get('error') || hashParams.get('error');
+    if (googleError) {
+      const reason =
+        googleError === 'access_denied'
+          ? 'คุณยกเลิกการเข้าสู่ระบบด้วย Google'
+          : googleError;
+      toast.error('เข้าสู่ระบบด้วย Google ไม่สำเร็จ', reason);
       window.history.replaceState(null, '', window.location.pathname);
     }
 
@@ -230,6 +243,10 @@ function LoginContent() {
       setSignupError('รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร');
       return;
     }
+    if (!acceptedTerms) {
+      setSignupError('กรุณายอมรับข้อตกลงการใช้งานและนโยบายความเป็นส่วนตัวก่อนสมัครสมาชิก');
+      return;
+    }
 
     setIsSigningUp(true);
     try {
@@ -237,7 +254,15 @@ function LoginContent() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ name, email, password: signupPassword }),
+        body: JSON.stringify({
+          name,
+          email,
+          password: signupPassword,
+          // Consent (PDPA) and the optional CAPTCHA token travel with the
+          // request; the backend records both.
+          accepted_terms: true,
+          ...(turnstileToken ? { turnstile_token: turnstileToken } : {}),
+        }),
       });
       const result = await response.json().catch(() => ({}));
 
@@ -374,7 +399,8 @@ function LoginContent() {
           <div className="login-notice" role="status" aria-live="polite">
             <span className="login-notice-title">รอผู้ดูแลระบบอนุมัติ</span>
             เราได้รับคำขอสมัครของ <strong>{pendingEmail}</strong> แล้ว
-            บัญชีจะใช้งานได้ทันทีที่ผู้ดูแลระบบอนุมัติ — กรุณากลับมาเข้าสู่ระบบในภายหลัง
+            บัญชีจะใช้งานได้ทันทีที่ผู้ดูแลระบบอนุมัติ และเราจะแจ้งผลให้ทราบทางอีเมล
+            เมื่อได้รับอนุมัติแล้วกรุณากลับมาเข้าสู่ระบบ
           </div>
           <button
             type="button"
@@ -450,6 +476,28 @@ function LoginContent() {
           {registrationMode === 'approval' && (
             <p className="login-hint">บัญชีที่สมัครจะใช้งานได้หลังผู้ดูแลระบบอนุมัติ</p>
           )}
+
+          <label htmlFor="signup-consent" className="login-consent">
+            <input
+              id="signup-consent"
+              type="checkbox"
+              checked={acceptedTerms}
+              onChange={(event) => setAcceptedTerms(event.target.checked)}
+              disabled={isSigningUp}
+            />
+            <span>
+              ฉันยอมรับ{' '}
+              <Link href="/terms" target="_blank" rel="noopener noreferrer">
+                ข้อตกลงการใช้งาน
+              </Link>{' '}
+              และ{' '}
+              <Link href="/privacy" target="_blank" rel="noopener noreferrer">
+                นโยบายความเป็นส่วนตัว
+              </Link>
+            </span>
+          </label>
+
+          <TurnstileWidget onToken={setTurnstileToken} />
 
           {signupError && (
             <div role="alert" aria-live="polite" className="login-error">
@@ -565,6 +613,9 @@ function LoginContent() {
                 </span>
                 <span className="login-remember-text">จดจำฉันไว้</span>
               </label>
+              <Link href="/forgot-password" className="login-forgot">
+                ลืมรหัสผ่าน?
+              </Link>
             </div>
 
             {error && (

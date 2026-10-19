@@ -3,15 +3,20 @@ User Profile Endpoints
 """
 
 import logging
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, status, Request, UploadFile, File
+from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.rate_limit import get_real_client_ip, limiter
+from app.core.security import verify_password
+from app.core.utils import utcnow
 from app.schemas.user import (
+    SelfDeleteRequest,
     UserResponse,
     UserUpdate,
     UserPasswordChange,
@@ -20,8 +25,13 @@ from app.schemas.user import (
     UserCameraConfigUpdate,
 )
 from app.schemas.response import ResponseModel
-from app.services.user_service import UserService
-from app.api.dependencies import get_current_user, load_profile_columns, require_page_access
+from app.services.user_service import UserService, retention_days
+from app.api.dependencies import (
+    PROFILE_COLUMNS,
+    get_current_user,
+    load_profile_columns,
+    require_page_access,
+)
 from app.models.user import User
 
 import base64
@@ -552,3 +562,141 @@ async def revoke_session(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="เกิดข้อผิดพลาดภายในระบบ กรุณาลองอีกครั้งภายหลัง",
         )
+
+
+@router.get("/export", response_model=None)
+@limiter.limit(_GENERAL_LIMIT)
+async def export_my_data(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    PDPA right of access (Admin not required): a machine-readable copy of
+    everything held about the caller.
+
+    Built from the caller's own rows only — profile, preferences and sessions.
+    The audit log is deliberately NOT included: admin entries quote other
+    people's data, and copying that into one user's export would be a leak.
+    """
+    await load_profile_columns(db, current_user, *PROFILE_COLUMNS)
+
+    sessions_result = await db.execute(
+        select(UserSession).where(UserSession.user_id == current_user.id)
+    )
+    sessions = sessions_result.scalars().all()
+
+    def _stamp(value):
+        return value.isoformat() if value is not None else None
+
+    payload = {
+        "exported_at": utcnow().isoformat(),
+        "account": {
+            "id": current_user.id,
+            "email": current_user.email,
+            "username": current_user.username,
+            "name": current_user.name,
+            "display_name": current_user.display_name,
+            "role": current_user.role,
+            "is_active": current_user.is_active,
+            "created_at": _stamp(current_user.created_at),
+            "last_login": _stamp(current_user.last_login),
+            "email_verified_at": _stamp(current_user.email_verified_at),
+            "terms_accepted_at": _stamp(current_user.terms_accepted_at),
+            "terms_version": current_user.terms_version,
+        },
+        "profile": {
+            "avatar": getattr(current_user, "avatar", None),
+            "quick_links": getattr(current_user, "quick_links", None),
+            "dashboard_layout": getattr(current_user, "dashboard_layout", None),
+            "camera_config": getattr(current_user, "camera_config", None),
+            "accessible_pages": current_user.accessible_pages,
+        },
+        "sessions": [
+            {
+                "session_id": s.session_id,
+                "device_label": s.device_label,
+                "user_agent": s.user_agent,
+                "ip_address": s.ip_address,
+                "is_active": s.is_active,
+                "created_at": _stamp(s.created_at),
+                "last_activity": _stamp(s.last_activity),
+            }
+            for s in sessions
+        ],
+    }
+
+    response = JSONResponse(content=payload)
+    response.headers["Content-Disposition"] = (
+        f'attachment; filename="art-workspace-export-{current_user.id}.json"'
+    )
+    return response
+
+
+@router.delete("/me", response_model=ResponseModel)
+@limiter.limit(_GENERAL_LIMIT)
+async def delete_my_account(
+    request: Request,
+    payload: SelfDeleteRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    PDPA right to erasure: move your own account to the trash.
+
+    The row is soft-deleted inside the same retention window the admin trash
+    uses, so an admin can still restore it and ``audit_logs.user_id`` stays
+    resolvable; the scheduled purge removes it for good afterwards. The
+    password is required again so a stolen session alone cannot erase an
+    account, and the last usable admin cannot delete themselves.
+    """
+    if not verify_password(payload.password, current_user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="รหัสผ่านไม่ถูกต้อง"
+        )
+
+    user_service = UserService(db)
+    if (
+        current_user.role == "admin"
+        and await user_service.count_active_admins(exclude_user_id=current_user.id) == 0
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=(
+                "ต้องมีผู้ดูแลระบบที่ใช้งานได้อย่างน้อย 1 บัญชี — "
+                "บัญชีนี้เป็นผู้ดูแลระบบคนสุดท้าย จึงลบไม่ได้"
+            ),
+        )
+
+    deleted = await user_service.soft_delete_user(current_user.id)
+    if deleted is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="ไม่พบบัญชีที่ใช้งานได้สำหรับการลบ",
+        )
+
+    await AuditService(db).log_action(
+        action="USER_SELF_DELETE",
+        user_id=current_user.id,
+        details=(
+            "User deleted their own account "
+            f"(restorable for {retention_days()} days before purge)"
+        ),
+        ip_address=get_real_client_ip(request),
+        user_agent=request.headers.get("user-agent"),
+    )
+    await db.commit()
+
+    response = JSONResponse(
+        content={"result": "success", "message": "ลบบัญชีของคุณแล้ว ขอบคุณที่ใช้งาน"}
+    )
+    # ``dict[str, Any]`` (not the inferred union) so the splat matches
+    # delete_cookie's typed parameters under mypy.
+    cookie_opts: dict[str, Any] = {
+        "secure": settings.COOKIE_SECURE,
+        "samesite": settings.COOKIE_SAMESITE_EFFECTIVE,
+        "path": "/",
+    }
+    for cookie_name in ("access_token", "refresh_token", "user", "csrf_token"):
+        response.delete_cookie(cookie_name, **cookie_opts)
+    return response

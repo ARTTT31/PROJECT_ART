@@ -230,10 +230,72 @@ class Settings(BaseSettings):
         """Accept "CLOSED"/" Closed " from a hand-edited .env file."""
         return (str(v).strip().lower() if v is not None else "closed") or "closed"
 
+    # ── Google account creation ─────────────────────────────────────────────
+    # Whether a FIRST Google sign-in may create an account, independent of
+    # REGISTRATION_MODE. True (the default) keeps the historic behaviour: anyone
+    # with a verified Google email (subject to GOOGLE_ALLOWED_DOMAINS) gets a
+    # working account. Set it to false to make Google creation follow
+    # REGISTRATION_MODE instead (closed refuses, approval queues the request).
+    # Existing accounts can always sign in with Google in every mode.
+    GOOGLE_SIGNUP_ENABLED: bool = True
+
+    # ── Terms / PDPA consent ────────────────────────────────────────────────
+    # Version string recorded on an account when it accepts the terms. Bump it
+    # when the terms change so a re-consent can be required later.
+    TERMS_VERSION: str = "2026-10"
+
+    # ── Transactional email ─────────────────────────────────────────────────
+    # console (default): messages are logged + kept in an in-memory outbox —
+    #   fine for tests/dev, nothing is delivered. smtp: any provider's SMTP
+    #   relay (Brevo, Gmail app password, SES, ...). resend: Resend HTTP API.
+    EMAIL_BACKEND: Literal["console", "smtp", "resend"] = "console"
+    # RFC 5322 From header, e.g. "ART Workspace <no-reply@example.com>".
+    EMAIL_FROM: str = "ART Workspace <no-reply@artworkspace.local>"
+    EMAIL_TIMEOUT_SECONDS: float = 10.0
+    # SMTP backend
+    SMTP_HOST: str = ""
+    SMTP_PORT: int = 587
+    SMTP_USERNAME: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_STARTTLS: bool = True
+    # Resend backend
+    RESEND_API_KEY: str = ""
+    # How long the links stay valid.
+    PASSWORD_RESET_TOKEN_MINUTES: int = 30
+    EMAIL_VERIFY_TOKEN_MINUTES: int = 60 * 24
+    # Require a verified email before a password login succeeds. Off by default
+    # so a deployment whose email backend is not configured yet cannot lock
+    # everyone out; turn it on once delivery works. Google sign-ins are always
+    # verified (Google checks the address), so this never affects them.
+    REQUIRE_EMAIL_VERIFICATION: bool = False
+
+    @property
+    def EMAIL_DELIVERY_ENABLED(self) -> bool:
+        """True when the configured backend actually delivers mail."""
+        return self.EMAIL_BACKEND in ("smtp", "resend")
+
+    @property
+    def FRONTEND_BASE_URL(self) -> str:
+        """Frontend origin used in email links (no trailing slash)."""
+        return (os.getenv("FRONTEND_URL") or self.FRONTEND_URL).rstrip("/")
+
+    # ── Abuse protection ────────────────────────────────────────────────────
+    # Cloudflare Turnstile (optional, free). When the secret is set,
+    # /auth/register and /auth/forgot-password require a valid turnstile_token.
+    TURNSTILE_SECRET_KEY: str = ""
+    # Extra domains to refuse at signup, comma-separated. A small built-in list
+    # of known disposable-email providers is always applied.
+    DISPOSABLE_EMAIL_DOMAINS: str = ""
+
     # ── Google OAuth ────────────────────────────────────────────────────────
     GOOGLE_CLIENT_ID: str = ""
     GOOGLE_CLIENT_SECRET: str = ""
     GOOGLE_REDIRECT_URI: str = ""
+
+    # Public origin of the frontend, used for links inside emails (password
+    # reset, verification). FRONTEND_URL is the canonical name; the property
+    # above also honours the environment variable of the same name.
+    FRONTEND_URL: str = "http://localhost:3000"
 
     def require_google_client_id(self) -> str:
         """Return the configured Google client ID or raise a clear 500 error."""

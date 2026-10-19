@@ -42,6 +42,15 @@ class User(Base, TimestampMixin):
     # *why* it is inactive. Kept as text (not an enum) so a new state is an
     # application change rather than a database migration.
     status: Mapped[str | None] = mapped_column(String(20), index=True)
+    # When the address was confirmed. NULL means "never confirmed" — the
+    # migration backfills every pre-existing row to its created_at, so only an
+    # account that went through password self-registration can be unverified.
+    email_verified_at: Mapped[datetime | None] = mapped_column(DateTime)
+    # PDPA consent record: when the account accepted the terms, and which
+    # revision of them. Kept even if the account is later deactivated, because
+    # consent must remain provable.
+    terms_accepted_at: Mapped[datetime | None] = mapped_column(DateTime)
+    terms_version: Mapped[str | None] = mapped_column(String(20))
     # Account status
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     is_locked: Mapped[bool] = mapped_column(Boolean, default=False)

@@ -21,6 +21,7 @@ The migration step matters: the test suite builds its schema from the models, so
 - [Quick Reference](docs/setup/quick-reference.md)
 - [Login System Setup](docs/setup/login-system.md)
 - [Migration and Deployment](docs/setup/migration-deployment.md)
+- [Production Readiness — opening the app to many users](docs/setup/production-readiness.md)
 
 ### Architecture and Design
 

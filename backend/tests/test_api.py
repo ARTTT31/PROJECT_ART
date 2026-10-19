@@ -91,6 +91,7 @@ class TestAuthAPI:
             "email": "new@example.com",
             "password": "NewPass123",
             "name": "New User",
+            "accepted_terms": True,
         })
         assert resp.status_code == 201
         data = resp.json()
@@ -102,6 +103,7 @@ class TestAuthAPI:
             "email": "test@example.com",
             "password": "AnotherPass",
             "name": "Another User",
+            "accepted_terms": True,
         })
         assert resp.status_code == 400
 

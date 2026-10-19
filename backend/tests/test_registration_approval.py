@@ -31,7 +31,12 @@ async def _submit_request(client, email=HOPEFUL_EMAIL):
     """Sign up through the public endpoint (approval mode)."""
     return await client.post(
         "/api/v1/auth/register",
-        json={"email": email, "password": PASSWORD, "name": "Hopeful"},
+        json={
+            "email": email,
+            "password": PASSWORD,
+            "name": "Hopeful",
+            "accepted_terms": True,
+        },
     )
 
 

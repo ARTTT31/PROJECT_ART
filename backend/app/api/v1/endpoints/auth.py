@@ -28,18 +28,30 @@ except ImportError:
     _GOOGLE_AUTH_AVAILABLE = False
 from app.core.config import settings
 from app.core.database import get_db
+from app.core.disposable_email import is_disposable_email
 from app.core.rate_limit import limiter
+from app.core.turnstile import verify_turnstile
 from app.core.utils import encode_user_cookie, user_cookie_payload, utcnow as utils_utcnow
 from app.core.security import (
     create_access_token,
     create_refresh_token,
     decode_token,
+    get_password_hash,
     new_refresh_jti,
 )
 from app.api.dependencies import load_profile_columns, resolve_user_from_token
 from app.models.session import UserSession
 from app.schemas.response import ResponseModel
-from app.schemas.user import UserCreate, UserLogin, UserRegister
+from app.schemas.user import (
+    ForgotPasswordRequest,
+    ResendVerificationRequest,
+    ResetPasswordRequest,
+    UserCreate,
+    UserLogin,
+    UserRegister,
+    VerifyEmailRequest,
+)
+from app.services import account_emails
 from app.services.auth_service import AuthService
 from app.services.audit_service import AuditService
 from app.services.user_service import UserService
@@ -103,6 +115,38 @@ _REGISTRATION_PENDING_MESSAGE = (
 )
 _SIGNIN_PENDING_MESSAGE = "บัญชีของคุณอยู่ระหว่างรอผู้ดูแลระบบอนุมัติ"
 _SIGNIN_REJECTED_MESSAGE = "คำขอสมัครบัญชีนี้ถูกปฏิเสธ กรุณาติดต่อผู้ดูแลระบบ"
+_SIGNIN_UNVERIFIED_MESSAGE = (
+    "กรุณายืนยันอีเมลของคุณก่อนเข้าสู่ระบบ — ขออีเมลยืนยันใหม่ได้ที่หน้าล็อกอิน"
+)
+_GENERIC_EMAIL_SENT_MESSAGE = "ถ้าอีเมลนี้มีอยู่ในระบบ เราได้ส่งลิงก์ให้แล้ว กรุณาตรวจสอบกล่องจดหมาย"
+_VERIFY_EMAIL_INVALID_MESSAGE = "ลิงก์ยืนยันอีเมลไม่ถูกต้องหรือหมดอายุ กรุณาขออีเมลยืนยันฉบับใหม่"
+_RESET_TOKEN_INVALID_MESSAGE = "ลิงก์ตั้งรหัสผ่านใหม่ไม่ถูกต้องหรือหมดอายุ กรุณาขอลิงก์ใหม่"
+_CAPTCHA_REQUIRED_MESSAGE = "กรุณายืนยันว่าไม่ใช่โปรแกรมอัตโนมัติ (CAPTCHA) แล้วลองอีกครั้ง"
+
+
+def _login_page_url(frontend_redirect: str, error: str | None = None) -> str:
+    """Build the frontend login URL, optionally carrying a readable reason."""
+    base = (frontend_redirect or "http://localhost:3000").rstrip("/")
+    if not error:
+        return f"{base}/login"
+    return f"{base}/login?{urlencode({'google_error': error})}"
+
+
+def _google_error_redirect(frontend_redirect: str, message: str) -> RedirectResponse:
+    """Send a refused Google callback back to the login page instead of JSON.
+
+    ``/google/callback`` is reached by a full-page navigation from Google, so an
+    ``HTTPException`` raised here leaves the person on the API origin staring at
+    raw JSON with no way back. Every refusal a real user can hit — sign-ups
+    closed, account pending/rejected, disabled, cancelled consent — becomes a
+    redirect the login page renders as a toast. The single-use state cookie is
+    consumed either way, exactly like the success path.
+    """
+    response = RedirectResponse(url=_login_page_url(frontend_redirect, message))
+    response.delete_cookie(
+        "oauth_state", samesite="lax", secure=settings.COOKIE_SECURE, path="/"
+    )
+    return response
 
 
 @router.get("/csrf")
@@ -302,6 +346,35 @@ async def register(
             detail=_REGISTRATION_CLOSED_MESSAGE,
         )
 
+    # ── Abuse checks (only meaningful when sign-ups are open at all) ──────
+    if is_disposable_email(user_register.email):
+        await audit_service.log_action(
+            action="USER_REGISTER_BLOCKED",
+            details=(
+                "Disposable email domain refused: "
+                f"{_mask_identifier(user_register.email)}"
+            ),
+            ip_address=client_ip,
+            user_agent=user_agent,
+        )
+        await db.commit()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="ไม่รับอีเมลจากผู้ให้บริการอีเมลชั่วคราว กรุณาใช้ที่อยู่อีเมลถาวร",
+        )
+
+    if not await verify_turnstile(user_register.turnstile_token, client_ip):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=_CAPTCHA_REQUIRED_MESSAGE,
+        )
+
+    if not user_register.accepted_terms:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="กรุณายอมรับข้อตกลงการใช้งานและนโยบายความเป็นส่วนตัวก่อนสมัครสมาชิก",
+        )
+
     try:
         if mode == "approval":
             # The answer is IDENTICAL whether the address is unknown, already
@@ -319,6 +392,11 @@ async def register(
                     ip_address=client_ip,
                     user_agent=user_agent,
                 )
+                # Consent is recorded with the request: provable from here on.
+                user.terms_accepted_at = utils_utcnow()
+                user.terms_version = settings.TERMS_VERSION
+                # Tell the admins something is waiting; best-effort by design.
+                await account_emails.notify_admins_new_request(db, user)
             elif existing.deleted_at is None and existing.status == "rejected":
                 # A refused request may be re-submitted, with a fresh password.
                 await user_service.resubmit_registration(existing, user_register)
@@ -329,6 +407,10 @@ async def register(
                     ip_address=client_ip,
                     user_agent=user_agent,
                 )
+                # Re-submission re-accepts the current terms and re-notifies admins.
+                existing.terms_accepted_at = utils_utcnow()
+                existing.terms_version = settings.TERMS_VERSION
+                await account_emails.notify_admins_new_request(db, existing)
             else:
                 await audit_service.log_action(
                     action="USER_REGISTER_DUPLICATE",
@@ -349,6 +431,16 @@ async def register(
 
         # ── open: self-registration creates a working account immediately ──
         user = await auth_service.register(user_register, role="user")
+
+        # Consent is recorded with the request: provable from here on.
+        user.terms_accepted_at = utils_utcnow()
+        user.terms_version = settings.TERMS_VERSION
+
+        # Verification link for every self-registered password account. Whether
+        # an unverified account may SIGN IN is decided at login
+        # (REQUIRE_EMAIL_VERIFICATION), so a deployment without a mail backend
+        # is never locked out and can grant access by other means.
+        await account_emails.send_verification(db, user)
 
         await audit_service.log_action(
             action="USER_REGISTER",
@@ -378,6 +470,164 @@ async def register(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="เกิดข้อผิดพลาดภายในระบบ กรุณาลองอีกครั้งภายหลัง",
         )
+
+
+@router.post("/forgot-password", response_model=ResponseModel)
+@limiter.limit(_AUTH_LIMIT)
+async def forgot_password(
+    payload: ForgotPasswordRequest,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Email a password-reset link to an account that has one.
+
+    The answer is IDENTICAL whether or not the address exists — anything else
+    would turn this endpoint into an account-existence oracle. The audit log
+    keeps the real outcome for an admin to read.
+    """
+    audit_service = AuditService(db)
+    client_ip = request.client.host if request.client else None
+    user_agent = request.headers.get("user-agent")
+
+    if not await verify_turnstile(payload.turnstile_token, client_ip):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=_CAPTCHA_REQUIRED_MESSAGE,
+        )
+
+    user = await UserService(db).get_user_by_email(payload.email)
+    if user is not None and user.deleted_at is None:
+        await account_emails.send_password_reset(db, user)
+        await audit_service.log_action(
+            action="PASSWORD_RESET_REQUESTED",
+            user_id=user.id,
+            details=f"Password reset link emailed to {user.email}",
+            ip_address=client_ip,
+            user_agent=user_agent,
+        )
+    else:
+        await audit_service.log_action(
+            action="PASSWORD_RESET_REQUESTED",
+            details=(
+                "Password reset requested for an address that does not exist: "
+                f"{_mask_identifier(payload.email)}"
+            ),
+            ip_address=client_ip,
+            user_agent=user_agent,
+        )
+
+    await db.commit()
+    return ResponseModel(
+        result="success", message=_GENERIC_EMAIL_SENT_MESSAGE, data={"sent": True}
+    )
+
+
+@router.post("/reset-password", response_model=ResponseModel)
+@limiter.limit(_AUTH_LIMIT)
+async def reset_password(
+    payload: ResetPasswordRequest,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+):
+    """Set a new password from a valid, unused reset link."""
+    client_ip = request.client.host if request.client else None
+    user_agent = request.headers.get("user-agent")
+
+    token = await account_emails.consume_token(
+        db, account_emails.PURPOSE_PASSWORD_RESET, payload.token
+    )
+    user_service = UserService(db)
+    user = await user_service.get_user_by_id(token.user_id) if token else None
+    if token is None or user is None or user.deleted_at is not None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=_RESET_TOKEN_INVALID_MESSAGE
+        )
+
+    user.hashed_password = get_password_hash(payload.new_password)
+    user.updated_at = utils_utcnow()
+    # The mailbox was just proven. Clearing the lockout bookkeeping keeps a
+    # lock acquired by repeated forgotten-password attempts from outliving the
+    # reset the user finally managed to complete.
+    user.failed_login_attempts = 0
+    user.is_locked = False
+    user.locked_until = None
+
+    # Any session opened with the old password is now suspect: revoke them all.
+    revoked = await user_service.revoke_sessions(user.id)
+
+    await AuditService(db).log_action(
+        action="PASSWORD_RESET_COMPLETED",
+        user_id=user.id,
+        details=f"Password reset via email link; {revoked} session(s) revoked",
+        ip_address=client_ip,
+        user_agent=user_agent,
+    )
+    await db.commit()
+
+    return ResponseModel(
+        result="success", message="ตั้งรหัสผ่านใหม่สำเร็จ กรุณาเข้าสู่ระบบ"
+    )
+
+
+@router.post("/verify-email", response_model=ResponseModel)
+@limiter.limit(_AUTH_LIMIT)
+async def verify_email(
+    payload: VerifyEmailRequest,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+):
+    """Confirm an address from the link in the verification email."""
+    token = await account_emails.consume_token(
+        db, account_emails.PURPOSE_EMAIL_VERIFY, payload.token
+    )
+    user = await UserService(db).get_user_by_id(token.user_id) if token else None
+    if token is None or user is None or user.deleted_at is not None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=_VERIFY_EMAIL_INVALID_MESSAGE
+        )
+
+    user.email_verified_at = utils_utcnow()
+    user.updated_at = utils_utcnow()
+    await AuditService(db).log_action(
+        action="EMAIL_VERIFIED",
+        user_id=user.id,
+        details=f"Email verified: {user.email}",
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent"),
+    )
+    await db.commit()
+
+    return ResponseModel(result="success", message="ยืนยันอีเมลสำเร็จ เข้าสู่ระบบได้แล้ว")
+
+
+@router.post("/resend-verification", response_model=ResponseModel)
+@limiter.limit(_AUTH_LIMIT)
+async def resend_verification(
+    payload: ResendVerificationRequest,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+):
+    """Send a fresh verification link. Same generic answer as forgot-password."""
+    audit_service = AuditService(db)
+    client_ip = request.client.host if request.client else None
+    user_agent = request.headers.get("user-agent")
+
+    user = await UserService(db).get_user_by_email(payload.email)
+    if user is not None and user.deleted_at is None and user.email_verified_at is None:
+        await account_emails.send_verification(db, user)
+        await audit_service.log_action(
+            action="EMAIL_VERIFICATION_RESENT",
+            user_id=user.id,
+            details=f"Verification email re-sent to {user.email}",
+            ip_address=client_ip,
+            user_agent=user_agent,
+        )
+    await db.commit()
+
+    return ResponseModel(
+        result="success", message=_GENERIC_EMAIL_SENT_MESSAGE, data={"sent": True}
+    )
 
 
 @router.post("/refresh", response_model=ResponseModel)
@@ -597,19 +847,27 @@ def _check_google_provisioning_domain(
 async def _provision_google_user(
     user_service: UserService, email: str, name: str
 ) -> Any:
-    """Create the account a first Google sign-in implies, per REGISTRATION_MODE.
+    """Create the account a first Google sign-in implies.
 
-    ``approval`` creates the row inactive and pending, so the caller refuses to
-    sign in and the admin sees the request; ``open`` creates a normal account.
-    The insert can lose a race with a concurrent sign-in for the same address, in
-    which case the lookup is retried instead of failing the login.
+    While ``GOOGLE_SIGNUP_ENABLED`` is true (the default) this keeps the
+    historic behaviour: the account is created usable, whatever
+    ``REGISTRATION_MODE`` says. With the flag false, creation follows the mode —
+    ``approval`` creates the row inactive and pending so the caller refuses to
+    sign in and the admin sees the request, and ``closed`` never reaches here
+    (the caller refused it first).
+
+    The insert can lose a race with a concurrent sign-in for the same address,
+    in which case the lookup is retried instead of failing the login.
     """
-    pending = settings.REGISTRATION_MODE == "approval"
+    if settings.GOOGLE_SIGNUP_ENABLED:
+        pending = False
+    else:
+        pending = settings.REGISTRATION_MODE == "approval"
     user_create = UserCreate(
         email=email, password=secrets.token_urlsafe(16), name=name, role="user"
     )
     try:
-        return await user_service.create_user(
+        created = await user_service.create_user(
             user_create,
             role="user",
             is_active=not pending,
@@ -617,15 +875,23 @@ async def _provision_google_user(
         )
     except Exception:
         return await user_service.get_user_by_email(email)
+    # Google already verified the address before we ever saw it, so the account
+    # is born verified and never passes through the verification flow.
+    created.email_verified_at = utils_utcnow()
+    return created
 
 
 def _assert_google_provisioning_allowed() -> None:
-    """Refuse to create an account from a Google sign-in in ``closed`` mode.
+    """Refuse to CREATE an account from a Google sign-in when signups are off.
 
-    Without this the Google entry points would keep minting accounts while the
-    password path answers 403, which is exactly the hole REGISTRATION_MODE is
-    supposed to close. Existing accounts are unaffected — this guards creation.
+    Only consulted for a first sign-in (no account exists yet). While
+    ``GOOGLE_SIGNUP_ENABLED`` is true (the default) Google keeps creating
+    accounts in every mode — set it to false to make Google creation follow
+    ``REGISTRATION_MODE`` instead (``closed`` refuses, ``approval`` queues the
+    request). Existing accounts can always sign in, in every mode.
     """
+    if settings.GOOGLE_SIGNUP_ENABLED:
+        return
     if settings.REGISTRATION_MODE == "closed":
         logger.warning("GOOGLE_AUTH: provisioning refused (REGISTRATION_MODE=closed)")
         raise HTTPException(
@@ -779,14 +1045,17 @@ async def google_verify_token(
 
     # Find or create user — provisioning is domain-restricted (owner policy, T13)
     # and gated by REGISTRATION_MODE: a closed deployment creates nothing here.
-    _check_google_provisioning_domain(
-        email, verified_info, _get_allowed_google_domains()
-    )
-    _assert_google_provisioning_allowed()
+    # Find or create the account. The provisioning gates apply ONLY when no
+    # account exists yet: an existing account must always be able to sign in
+    # (running the gates first used to refuse even accounts that exist).
     try:
         user_service = UserService(db)
         user = await user_service.get_user_by_email(email)
         if not user:
+            _check_google_provisioning_domain(
+                email, verified_info, _get_allowed_google_domains()
+            )
+            _assert_google_provisioning_allowed()
             user = await _provision_google_user(user_service, email, name)
 
         if not user:
@@ -857,50 +1126,17 @@ async def google_verify_token(
     return response
 
 
-@router.get("/google/callback")
-async def google_callback(
+async def _finish_google_callback(
+    *,
     request: Request,
-    code: str | None = None,
-    state: str | None = None,
-    db: AsyncSession = Depends(get_db),
-):
-    """Handle callback from Google with id_token verification, then issue JWT via HTTP-only cookies"""
-    if not _GOOGLE_AUTH_AVAILABLE:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="google-auth library not installed. Run: pip install google-auth",
-        )
-    try:
-        client_id = settings.require_google_client_id()
-        client_secret = settings.require_google_client_secret()
-    except RuntimeError as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e),
-        )
-    redirect_uri = settings.get_google_redirect_uri()
-    frontend_redirect = os.getenv("FRONTEND_URL", "http://localhost:3000")
-
-    if not code:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Missing code from Google"
-        )
-
-    # 🔒 OAuth CSRF protection: the state must match the one we issued in
-    # /google and stored in the oauth_state cookie. Reject BEFORE exchanging
-    # the code, so an attacker-supplied code is never redeemed.
-    cookie_state = request.cookies.get("oauth_state") or ""
-    query_state = state or ""
-    if (
-        not cookie_state
-        or not query_state
-        or not secrets.compare_digest(cookie_state, query_state)
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Missing or invalid OAuth state",
-        )
-
+    code: str,
+    client_id: str,
+    client_secret: str,
+    redirect_uri: str,
+    frontend_redirect: str,
+    db: AsyncSession,
+) -> RedirectResponse:
+    """Exchange the code, verify the id_token, then sign the user in."""
     # Exchange code for tokens
     token_url = "https://oauth2.googleapis.com/token"
     data = {
@@ -972,13 +1208,14 @@ async def google_callback(
 
     # Find or create user — provisioning is domain-restricted (owner policy, T13)
     # and gated by REGISTRATION_MODE: a closed deployment creates nothing here.
-    _check_google_provisioning_domain(
-        email, verified_info, _get_allowed_google_domains()
-    )
-    _assert_google_provisioning_allowed()
+    # Provisioning gates apply only to a first sign-in (see /google/verify-token).
     user_service = UserService(db)
     user = await user_service.get_user_by_email(email)
     if not user:
+        _check_google_provisioning_domain(
+            email, verified_info, _get_allowed_google_domains()
+        )
+        _assert_google_provisioning_allowed()
         user = await _provision_google_user(user_service, email, name)
 
     if not user:
@@ -1043,6 +1280,87 @@ async def google_callback(
         **COOKIE_OPTIONS,
     )
     return response
+
+
+@router.get("/google/callback")
+async def google_callback(
+    request: Request,
+    code: str | None = None,
+    state: str | None = None,
+    error: str | None = None,
+    db: AsyncSession = Depends(get_db),
+):
+    """Finish the Google authorization-code flow and set the session cookies.
+
+    Every refusal a person can reach is turned into a redirect to the login page
+    carrying ``google_error`` — this URL is the browser's landing page, so an
+    ``HTTPException`` here used to strand the user on raw JSON with no way back.
+    The missing / mismatched ``state`` case stays a 400: it means the callback
+    did not come from the flow this browser started, and no code is exchanged.
+    """
+    frontend_redirect = os.getenv("FRONTEND_URL", "http://localhost:3000")
+
+    if not _GOOGLE_AUTH_AVAILABLE:
+        logger.error("GOOGLE_AUTH: google-auth library not installed")
+        return _google_error_redirect(
+            frontend_redirect,
+            "ระบบยังไม่พร้อมให้เข้าสู่ระบบด้วย Google กรุณาติดต่อผู้ดูแลระบบ",
+        )
+    try:
+        client_id = settings.require_google_client_id()
+        client_secret = settings.require_google_client_secret()
+    except RuntimeError as e:
+        logger.error("GOOGLE_AUTH: callback misconfigured: %s", e)
+        return _google_error_redirect(
+            frontend_redirect,
+            "ระบบยังไม่พร้อมให้เข้าสู่ระบบด้วย Google กรุณาติดต่อผู้ดูแลระบบ",
+        )
+    redirect_uri = settings.get_google_redirect_uri()
+
+    # 🔒 OAuth CSRF protection: the state must match the one we issued in
+    # /google and stored in the oauth_state cookie. Reject BEFORE exchanging
+    # the code, so an attacker-supplied code is never redeemed.
+    cookie_state = request.cookies.get("oauth_state") or ""
+    query_state = state or ""
+    if (
+        not cookie_state
+        or not query_state
+        or not secrets.compare_digest(cookie_state, query_state)
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Missing or invalid OAuth state",
+        )
+
+    # "Cancel" on the consent screen comes back as ?error=access_denied with no
+    # code; a code-less callback without it is simply malformed. Either way this
+    # is the user's own browser, so it returns to the login page with a message.
+    if error or not code:
+        logger.info("GOOGLE_AUTH: callback without a code (error=%s)", error)
+        return _google_error_redirect(
+            frontend_redirect, "การเข้าสู่ระบบด้วย Google ถูกยกเลิก กรุณาลองอีกครั้ง"
+        )
+
+    try:
+        return await _finish_google_callback(
+            request=request,
+            code=code,
+            client_id=client_id,
+            client_secret=client_secret,
+            redirect_uri=redirect_uri,
+            frontend_redirect=frontend_redirect,
+            db=db,
+        )
+    except HTTPException as exc:
+        logger.warning(
+            "GOOGLE_AUTH: callback refused (%s): %s", exc.status_code, exc.detail
+        )
+        return _google_error_redirect(frontend_redirect, str(exc.detail))
+    except Exception:
+        logger.exception("GOOGLE_AUTH: unexpected error during callback")
+        return _google_error_redirect(
+            frontend_redirect, "เกิดข้อผิดพลาดในระบบ กรุณาลองอีกครั้งภายหลัง"
+        )
 
 
 @router.get("/session")

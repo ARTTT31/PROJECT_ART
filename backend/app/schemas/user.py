@@ -18,10 +18,16 @@ class UserRegister(UserBase):
     """Schema for SELF-registration via the unauthenticated /auth/register endpoint.
 
     Same fields as ``UserCreate`` but WITHOUT a role — server code always assigns
-    the "user" role, so an anonymous caller cannot create an admin.
+    the    "user" role, so an anonymous caller cannot create an admin.
     """
 
     password: str = Field(..., min_length=8, max_length=100)
+    # Consent and CAPTCHA travel with the sign-up payload. ``accepted_terms`` is
+    # enforced by the endpoint (not the schema) so the refusal can say exactly
+    # what is missing; ``turnstile_token`` is only required when Turnstile is
+    # configured for the deployment.
+    accepted_terms: Optional[bool] = None
+    turnstile_token: Optional[str] = Field(None, max_length=4096)
 
     @field_validator("password")
     @classmethod
@@ -57,6 +63,45 @@ class UserLogin(BaseModel):
     session_id: Optional[str] = Field(None, max_length=64)
     user_agent: Optional[str] = Field(None, max_length=500)  # matches DB column
     device_label: Optional[str] = Field(None, max_length=255)  # matches DB column
+
+
+class ForgotPasswordRequest(BaseModel):
+    """Ask for a password-reset link. Turnstile is checked when configured."""
+
+    email: EmailStr
+    turnstile_token: Optional[str] = Field(None, max_length=4096)
+
+
+class ResetPasswordRequest(BaseModel):
+    """Redeem a password-reset link."""
+
+    token: str = Field(..., min_length=16, max_length=128)
+    new_password: str = Field(..., min_length=8, max_length=100)
+
+    @field_validator("new_password")
+    @classmethod
+    def validate_new_password(cls, v):
+        if len(v) < 8:
+            raise ValueError("Password must be at least 8 characters")
+        return v
+
+
+class VerifyEmailRequest(BaseModel):
+    """Redeem an email-verification link."""
+
+    token: str = Field(..., min_length=16, max_length=128)
+
+
+class ResendVerificationRequest(BaseModel):
+    """Ask for a fresh verification email."""
+
+    email: EmailStr
+
+
+class SelfDeleteRequest(BaseModel):
+    """Deleting your own account requires the password one more time."""
+
+    password: str = Field(..., min_length=1, max_length=100)
 
 
 class UserUpdate(BaseModel):
@@ -156,6 +201,8 @@ class UserResponse(BaseModel):
     accessible_pages: Optional[str] = None
     # Sign-up lifecycle: None (normal account), "pending", "rejected".
     status: Optional[str] = None
+    # Address confirmation; None only for accounts that never confirmed.
+    email_verified_at: Optional[datetime] = None
     is_active: bool
     last_login: Optional[datetime] = None
     created_at: datetime

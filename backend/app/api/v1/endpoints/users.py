@@ -23,6 +23,7 @@ from app.services.user_service import UserService, purge_at, retention_days
 from app.api.dependencies import get_current_admin_user
 from app.models.user import User
 
+from app.services import account_emails
 from app.services.audit_service import AuditService
 
 router = APIRouter()
@@ -161,6 +162,9 @@ async def approve_user(
         ip_address=request.client.host if request.client else None,
         user_agent=request.headers.get("user-agent"),
     )
+    # Best-effort notice to the applicant; the decision stands even if email
+    # delivery fails (the admin can always tell them another way).
+    await account_emails.notify_user_decision(db, approved, approved=True)
     await db.commit()
 
     return ResponseModel(
@@ -204,6 +208,9 @@ async def reject_user(
         ip_address=request.client.host if request.client else None,
         user_agent=request.headers.get("user-agent"),
     )
+    # Best-effort notice to the applicant; the decision stands even if email
+    # delivery fails (the admin can always tell them another way).
+    await account_emails.notify_user_decision(db, rejected, approved=False)
     await db.commit()
 
     return ResponseModel(
