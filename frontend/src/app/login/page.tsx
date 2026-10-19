@@ -107,8 +107,8 @@ function LoginContent() {
   const passwordRef = useRef<HTMLInputElement>(null);
   const errorId = 'login-error-message';
 
-  // ── Sign-up state (only used when the API allows sign-ups) ──
-  const [registrationMode, setRegistrationMode] = useState<RegistrationMode>('closed');
+  // ── Sign-up state (defaults to approval for multi-user deployments) ──
+  const [registrationMode, setRegistrationMode] = useState<RegistrationMode>('approval');
   const [view, setView] = useState<LoginView>('signin');
   const [signupName, setSignupName] = useState('');
   const [signupEmail, setSignupEmail] = useState('');
@@ -670,14 +670,24 @@ function LoginContent() {
               </button>
             </div>
 
-            {registrationMode !== 'closed' && (
+            {/* Dedicated prominent registration box */}
+            <div className="pt-4 mt-3 border-t border-black/[0.08] text-center">
+              <p className="text-[13.5px] text-[#6e6e73] mb-2.5">
+                ยังไม่มีบัญชีสำหรับใช้งาน?
+              </p>
               <Link
                 href="/register"
-                className="login-switch block text-center"
+                className="inline-flex items-center justify-center gap-1.5 w-full py-2.5 px-4 rounded-xl border border-[#0066cc]/30 bg-[#0066cc]/5 text-[#0066cc] font-bold text-[13.5px] hover:bg-[#0066cc]/10 hover:border-[#0066cc]/50 transition-all active:scale-[0.98]"
               >
-                ยังไม่มีบัญชี? สมัครสมาชิก
+                <span>สมัครสมาชิก</span>
+                <ArrowRight size={15} aria-hidden="true" />
               </Link>
-            )}
+              {registrationMode === 'approval' && (
+                <span className="text-[11.5px] text-amber-800/80 block mt-1.5">
+                  * เมื่อส่งคำขอแล้ว แอดมินจะต้องอนุมัติก่อนจึงจะเข้าสู่ระบบได้
+                </span>
+              )}
+            </div>
           </form>
         </div>
       </section>
