@@ -4,5 +4,6 @@ from app.models.session import UserSession
 from app.models.audit_log import AuditLog
 from app.models.weather_cache import WeatherCacheEntry
 from app.models.email_token import EmailToken
+from app.models.system_setting import SystemSetting
 
-__all__ = ["User", "UserSession", "AuditLog", "WeatherCacheEntry", "EmailToken"]
+__all__ = ["User", "UserSession", "AuditLog", "WeatherCacheEntry", "EmailToken", "SystemSetting"]

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { LogOut, ExternalLink, Sparkles } from 'lucide-react'
 import { isExternalUrl, parseQuickLinks, QUICK_LINK_ICON_MAP } from '@/utils/quickLinks'
 import {
@@ -13,6 +14,7 @@ import {
 } from '@/utils/mainMenu'
 import { canAccessPage } from '@/utils/accessiblePages'
 import { AuthUser } from '@/types'
+import { useBranding } from '@/context/BrandingContext'
 
 interface SidebarProps {
   isOpen: boolean
@@ -38,6 +40,7 @@ interface MenuSection {
 
 export default function Sidebar({ isOpen, isCollapsed = false, onClose, user, onLogout }: SidebarProps) {
   const pathname = usePathname()
+  const { companyName, companyTagline, brandLogoUrl } = useBranding()
 
   const [mainMenuConfig, setMainMenuConfig] = useState<MainMenuItemConfig[]>(() => {
     if (typeof window === 'undefined') return parseMainMenuConfig(null)
@@ -112,8 +115,28 @@ export default function Sidebar({ isOpen, isCollapsed = false, onClose, user, on
       } ${isCollapsed ? 'lg:-translate-x-full' : 'lg:translate-x-0'}`}
     >
       <div className="flex h-full flex-col">
+        {/* Brand Header */}
+        <div className="flex items-center gap-3 px-4 py-3.5 border-b border-black/[0.06] bg-white/40">
+          <Image
+            src={brandLogoUrl || '/art-workspace-mark.svg'}
+            alt={companyName}
+            width={34}
+            height={34}
+            className="rounded-[10px] shrink-0 object-contain shadow-2xs"
+            priority
+          />
+          <div className="min-w-0 flex-1">
+            <h2 className="truncate text-[13.5px] font-bold text-[#1d1d1f] tracking-tight">
+              {companyName}
+            </h2>
+            <p className="truncate text-[11px] text-[#86868b]">
+              {companyTagline || 'Workspace'}
+            </p>
+          </div>
+        </div>
+
         {/* Navigation Menu */}
-        <nav className="flex-1 overflow-y-auto p-3.5 pt-6">
+        <nav className="flex-1 overflow-y-auto p-3.5 pt-4">
           <div className="space-y-6">
             {menuSections.map((section) => (
               <div key={section.title}>

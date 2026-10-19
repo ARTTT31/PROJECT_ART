@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useAuth } from '@/hooks/useAuth';
+import { useBranding } from '@/context/BrandingContext';
 import TurnstileWidget from '@/components/Auth/TurnstileWidget';
 import { useToast } from '@/components/Toast/ToastProvider';
 
@@ -43,19 +44,22 @@ type LoginView = 'signin' | 'signup' | 'pending'
 
 /** Brand block shared by every view of this page. */
 function LoginHeader({ now, tagline }: { now: Date; tagline: string }) {
+  const { companyName, companyTagline, brandLogoUrl } = useBranding();
+  const effectiveLogo = brandLogoUrl || '/art-workspace-mark.svg';
+
   return (
     <header className="login-brand">
       <Image
-        src="/art-workspace-mark.svg"
-        alt=""
+        src={effectiveLogo}
+        alt={companyName}
         width={72}
         height={72}
         priority
         draggable={false}
         className="login-mark"
       />
-      <h1 className="login-title">ART Workspace</h1>
-      <p className="login-tagline">{tagline}</p>
+      <h1 className="login-title">{companyName}</h1>
+      <p className="login-tagline">{tagline || companyTagline}</p>
       <p className="login-clock">
         <Clock size={15} strokeWidth={2} aria-hidden="true" className="login-clock-icon" />
         <time className="login-clock-time" dateTime={now.toISOString()}>{formatTime(now)} น.</time>
@@ -667,17 +671,12 @@ function LoginContent() {
             </div>
 
             {registrationMode !== 'closed' && (
-              <button
-                type="button"
-                className="login-switch"
-                onClick={() => {
-                  setSignupError('');
-                  setView('signup');
-                }}
-                disabled={isSubmitting}
+              <Link
+                href="/register"
+                className="login-switch block text-center"
               >
                 ยังไม่มีบัญชี? สมัครสมาชิก
-              </button>
+              </Link>
             )}
           </form>
         </div>

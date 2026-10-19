@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   User,
@@ -31,10 +32,12 @@ import {
   Camera,
   Download,
   Loader2,
+  Building2,
 } from 'lucide-react'
 import { showDeleteConfirm, showToast, showSuccess, showError } from '@/utils/sweetalert'
 import { canAccessPage } from '@/utils/accessiblePages'
 import { useAuth } from '@/hooks/useAuth'
+import { useBranding } from '@/context/BrandingContext'
 import UserManagement from '@/components/Admin/UserManagement'
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth'
 import {
@@ -288,6 +291,36 @@ export default function ProfilePage() {
   const [qlUrl, setQlUrl] = useState('')
   const [qlIcon, setQlIcon] = useState<QuickLinkIconKey>('link')
   const [qlColor, setQlColor] = useState('#0066cc')
+
+  // Workspace Branding
+  const { companyName, companyTagline, brandLogoUrl, updateBranding } = useBranding()
+  const [formCompanyName, setFormCompanyName] = useState(companyName)
+  const [formCompanyTagline, setFormCompanyTagline] = useState(companyTagline)
+  const [isSavingBranding, setIsSavingBranding] = useState(false)
+
+  useEffect(() => {
+    setFormCompanyName(companyName)
+    setFormCompanyTagline(companyTagline)
+  }, [companyName, companyTagline])
+
+  const handleSaveBranding = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!formCompanyName.trim()) {
+      showToast('กรุณากรอกชื่อทีมหรือองค์กร', 'warning')
+      return
+    }
+    setIsSavingBranding(true)
+    const res = await updateBranding({
+      company_name: formCompanyName.trim(),
+      company_tagline: formCompanyTagline.trim(),
+    })
+    setIsSavingBranding(false)
+    if (res.success) {
+      showSuccess('สำเร็จ', 'บันทึกชื่อทีม/แบรนด์เรียบร้อยแล้ว!')
+    } else {
+      showError('เกิดข้อผิดพลาด', res.error || 'ไม่สามารถบันทึกข้อมูลได้')
+    }
+  }
 
   // Main Menu Config
   const [mainMenuConfig, setMainMenuConfig] = useState<MainMenuItemConfig[]>(() => {
@@ -1382,6 +1415,103 @@ export default function ProfilePage() {
               </div>
             )}
           </SectionCard>
+
+          {/* Card 2.3: ข้อมูลทีม / องค์กร / ครอบครัว */}
+          <div className="lg:col-span-2">
+            <SectionCard
+              icon={<Building2 size={19} aria-hidden="true" />}
+              iconBg="bg-amber-50"
+              iconColor="text-amber-600"
+              iconRing="ring-amber-200/60"
+              title="ชื่อทีม / ครอบครัว / องค์กร (Workspace Branding)"
+              subtitle="เปลี่ยนชื่อโลโก้หรือหัวแบรนด์ตามชื่อทีมหรือครอบครัว ที่แสดงบนหัวเว็บ เมนูข้าง และหน้าเข้าสู่ระบบ"
+              badge={isAdmin ? 'สิทธิ์แอดมินแก้ไขได้' : 'เฉพาะแอดมิน'}
+            >
+              <form onSubmit={handleSaveBranding} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[13px] font-semibold text-[#1d1d1f] mb-1.5">
+                      ชื่อทีม / บริษัท / ครอบครัว <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={formCompanyName}
+                      onChange={(e) => setFormCompanyName(e.target.value)}
+                      placeholder="เช่น ทีม Dev ART หรือ ครอบครัวใจดี"
+                      disabled={!isAdmin || isSavingBranding}
+                      required
+                      className="w-full rounded-xl border border-black/10 bg-white px-3.5 py-2.5 text-[14px] text-[#1d1d1f] shadow-2xs placeholder:text-[#86868b] focus:border-[#0066cc] focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[13px] font-semibold text-[#1d1d1f] mb-1.5">
+                      สโลแกนหรือคำโปรย (Tagline)
+                    </label>
+                    <input
+                      type="text"
+                      value={formCompanyTagline}
+                      onChange={(e) => setFormCompanyTagline(e.target.value)}
+                      placeholder="เช่น ศูนย์รวมเครื่องมือและการทำงานส่วนกลาง"
+                      disabled={!isAdmin || isSavingBranding}
+                      className="w-full rounded-xl border border-black/10 bg-white px-3.5 py-2.5 text-[14px] text-[#1d1d1f] shadow-2xs placeholder:text-[#86868b] focus:border-[#0066cc] focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed"
+                    />
+                  </div>
+                </div>
+
+                {/* Live Preview Box */}
+                <div className="rounded-xl border border-black/[0.06] bg-[#f5f5f7]/60 p-4">
+                  <span className="text-[11.5px] font-bold text-[#86868b] uppercase tracking-wider block mb-2">
+                    ตัวอย่างการแสดงผลบนแถบเมนูด้านข้าง (Live Preview)
+                  </span>
+                  <div className="inline-flex items-center gap-3 rounded-2xl bg-white/90 p-3 shadow-sm border border-black/[0.06] max-w-sm">
+                    <Image
+                      src={brandLogoUrl || '/art-workspace-mark.svg'}
+                      alt=""
+                      width={36}
+                      height={36}
+                      className="h-9 w-9 rounded-xl object-contain shrink-0"
+                    />
+                    <div className="min-w-0">
+                      <div className="truncate text-[14px] font-bold text-[#1d1d1f]">
+                        {formCompanyName.trim() || 'ชื่อทีมของคุณ'}
+                      </div>
+                      <div className="truncate text-[11px] text-[#86868b]">
+                        {formCompanyTagline.trim() || 'Workspace'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {isAdmin ? (
+                  <div className="flex justify-end pt-2">
+                    <button
+                      type="submit"
+                      disabled={isSavingBranding}
+                      className="inline-flex items-center gap-2 rounded-full bg-[#0066cc] px-5 py-2 text-[13px] font-bold text-white shadow-sm transition-all hover:bg-[#0071e3] active:scale-95 disabled:opacity-50"
+                    >
+                      {isSavingBranding ? (
+                        <>
+                          <Loader2 size={15} className="animate-spin" />
+                          <span>กำลังบันทึก...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Save size={15} />
+                          <span>บันทึกชื่อทีมและแบรนด์</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                ) : (
+                  <p className="text-[12px] text-[#86868b] flex items-center gap-1.5 pt-1">
+                    <Info size={14} className="shrink-0 text-[#86868b]" />
+                    เฉพาะผู้ดูแลระบบ (Admin) เท่านั้นที่สามารถเปลี่ยนชื่อและข้อมูลแบรนด์ส่วนกลางได้
+                  </p>
+                )}
+              </form>
+            </SectionCard>
+          </div>
         </motion.div>
       )}
 
