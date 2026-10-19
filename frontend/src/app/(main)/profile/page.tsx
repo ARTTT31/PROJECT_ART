@@ -293,15 +293,17 @@ export default function ProfilePage() {
   const [qlColor, setQlColor] = useState('#0066cc')
 
   // Workspace Branding
-  const { companyName, companyTagline, brandLogoUrl, updateBranding } = useBranding()
+  const { companyName, companyTagline, brandLogoUrl, registrationMode, updateBranding } = useBranding()
   const [formCompanyName, setFormCompanyName] = useState(companyName)
   const [formCompanyTagline, setFormCompanyTagline] = useState(companyTagline)
+  const [formRegistrationMode, setFormRegistrationMode] = useState(registrationMode || 'approval')
   const [isSavingBranding, setIsSavingBranding] = useState(false)
 
   useEffect(() => {
     setFormCompanyName(companyName)
     setFormCompanyTagline(companyTagline)
-  }, [companyName, companyTagline])
+    setFormRegistrationMode(registrationMode || 'approval')
+  }, [companyName, companyTagline, registrationMode])
 
   const handleSaveBranding = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -313,10 +315,11 @@ export default function ProfilePage() {
     const res = await updateBranding({
       company_name: formCompanyName.trim(),
       company_tagline: formCompanyTagline.trim(),
+      registration_mode: formRegistrationMode,
     })
     setIsSavingBranding(false)
     if (res.success) {
-      showSuccess('สำเร็จ', 'บันทึกชื่อทีม/แบรนด์เรียบร้อยแล้ว!')
+      showSuccess('สำเร็จ', 'บันทึกชื่อทีมและนโยบายการใช้งานเรียบร้อยแล้ว!')
     } else {
       showError('เกิดข้อผิดพลาด', res.error || 'ไม่สามารถบันทึกข้อมูลได้')
     }
@@ -1456,6 +1459,59 @@ export default function ProfilePage() {
                       disabled={!isAdmin || isSavingBranding}
                       className="w-full rounded-xl border border-black/10 bg-white px-3.5 py-2.5 text-[14px] text-[#1d1d1f] shadow-2xs placeholder:text-[#86868b] focus:border-[#0066cc] focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed"
                     />
+                  </div>
+                </div>
+
+                {/* Registration Mode Selector */}
+                <div>
+                  <label className="block text-[13px] font-semibold text-[#1d1d1f] mb-1.5">
+                    นโยบายการเปิดรับสมาชิกใหม่ (Registration Policy)
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                    {[
+                      {
+                        value: 'approval',
+                        label: 'ต้องรอแอดมินอนุมัติ',
+                        desc: 'สมัครได้ทันที แต่แอดมินต้องกดอนุมัติก่อนจึงจะเข้าใช้งานได้',
+                        badge: 'แนะนำ',
+                      },
+                      {
+                        value: 'open',
+                        label: 'เปิดรับสมัครอิสระ',
+                        desc: 'สมัครแล้วสามารถเข้าสู่ระบบและเริ่มใช้งานได้ทันที',
+                      },
+                      {
+                        value: 'closed',
+                        label: 'ปิดรับสมัคร',
+                        desc: 'ไม่อนุญาตให้บุคคลภายนอกสมัคร (แอดมินต้องสร้างให้เท่านั้น)',
+                      },
+                    ].map((opt) => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        disabled={!isAdmin || isSavingBranding}
+                        onClick={() => setFormRegistrationMode(opt.value)}
+                        className={`flex flex-col p-3.5 rounded-xl border text-left transition-all relative ${
+                          formRegistrationMode === opt.value
+                            ? 'border-[#0066cc] bg-[#0066cc]/[0.04] ring-2 ring-[#0066cc]/20'
+                            : 'border-black/10 bg-white hover:bg-slate-50'
+                        } disabled:cursor-not-allowed disabled:opacity-50`}
+                      >
+                        <div className="flex items-center justify-between w-full mb-1">
+                          <span className="text-[13px] font-bold text-[#1d1d1f]">
+                            {opt.label}
+                          </span>
+                          {opt.badge && (
+                            <span className="rounded-full bg-blue-100 text-[#0066cc] px-2 py-0.5 text-[10px] font-bold">
+                              {opt.badge}
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-[11.5px] text-[#6e6e73] leading-relaxed">
+                          {opt.desc}
+                        </span>
+                      </button>
+                    ))}
                   </div>
                 </div>
 

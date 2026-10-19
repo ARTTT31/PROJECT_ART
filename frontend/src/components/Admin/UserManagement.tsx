@@ -8,7 +8,7 @@ import { showDeleteConfirm } from '@/utils/sweetalert'
 import {
   Settings, Edit, Check, X, ShieldAlert, User, CheckCircle2, Circle, Trash2, Loader2,
   Search, UserPlus, RotateCcw, ChevronLeft, ChevronRight, Eraser, ChevronDown, Clock,
-  UserCheck, UserX
+  UserCheck, UserX, ArrowRight
 } from 'lucide-react'
 
 // Define a simplified User type for admin management
@@ -386,6 +386,8 @@ export default function UserManagement() {
     )
   }, [pending, debouncedQuery])
 
+  const pendingInView = useMemo(() => users.filter((u) => u.status === 'pending'), [users])
+
   const isFiltered = Boolean(debouncedQuery.trim() || roleFilter || statusFilter)
 
   const clearFilters = () => {
@@ -589,6 +591,7 @@ export default function UserManagement() {
 
       if (res.ok) {
         setPending(prev => prev.filter(u => u.id !== user.id))
+        setUsers(prev => prev.map(u => u.id === user.id ? { ...u, status: 'active', is_active: true } : u))
         showSuccess('อนุมัติแล้ว', `${displayLabel(user)} เข้าใช้งานได้ทันที`)
         return
       }
@@ -627,6 +630,7 @@ export default function UserManagement() {
 
       if (res.ok) {
         setPending(prev => prev.filter(u => u.id !== user.id))
+        setUsers(prev => prev.map(u => u.id === user.id ? { ...u, status: 'rejected', is_active: false } : u))
         showSuccess('ปฏิเสธคำขอแล้ว', `${label} จะไม่สามารถเข้าสู่ระบบได้`)
         return
       }
@@ -1040,6 +1044,35 @@ export default function UserManagement() {
         </div>
       ) : (
         <>
+          {statusFilter !== 'pending' && pendingInView.length > 0 && (
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 rounded-2xl bg-amber-500/[0.08] border border-amber-500/25 text-[#1d1d1f]">
+              <div className="flex items-start gap-3">
+                <span className="p-2 rounded-xl bg-amber-500/15 text-amber-700 shrink-0 mt-0.5 sm:mt-0">
+                  <Clock size={18} />
+                </span>
+                <div>
+                  <div className="font-bold text-[14px] text-amber-950 flex items-center gap-2">
+                    <span>มีคำขอสมัครสมาชิกใหม่ {pendingInView.length} รายการในหน้านี้ รอการอนุมัติ</span>
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10.5px] font-bold bg-amber-500 text-white">
+                      รออนุมัติ
+                    </span>
+                  </div>
+                  <p className="text-[12.5px] text-amber-800/90 mt-0.5">
+                    คุณสามารถกดอนุมัติได้ทันทีที่ตารางด้านล่าง หรือคลิกเพื่อกรองดูเฉพาะคำขอทั้งหมด
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setStatusFilter('pending')}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-amber-600 hover:bg-amber-700 active:scale-[0.98] text-white text-[12.5px] font-bold shadow-xs transition-all shrink-0 self-stretch sm:self-auto justify-center"
+              >
+                <span>กรองดูเฉพาะคำขอรออนุมัติ</span>
+                <ArrowRight size={14} />
+              </button>
+            </div>
+          )}
+
           <div className="relative z-20 flex flex-col gap-3 rounded-[18px] border border-black/[0.06] bg-white p-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
               <label className="relative flex-1">
@@ -1256,29 +1289,57 @@ export default function UserManagement() {
                     </td>
                     <td className="px-5 py-4 text-right">
                       <div className="inline-flex items-center gap-2">
-                        <button 
-                          onClick={() => openEdit(u)}
-                          className="inline-flex items-center justify-center gap-1.5 rounded-full bg-[#f5f5f7] px-3.5 py-1.5 text-[12px] font-bold text-[#1d1d1f] transition-all hover:bg-[#e8e8ed] active:scale-95"
-                        >
-                          <Settings size={12} /> ตั้งค่า
-                        </button>
-                        <button
-                          onClick={() => handleDelete(u)}
-                          disabled={isSelf || deletingId === u.id}
-                          title={isSelf ? 'ไม่สามารถลบบัญชีของตัวเองได้' : `ลบผู้ใช้ ${displayLabel(u)}`}
-                          aria-label={`ลบผู้ใช้ ${displayLabel(u)}`}
-                          className="inline-flex items-center justify-center gap-1.5 rounded-full bg-rose-50 px-3.5 py-1.5 text-[12px] font-bold text-rose-700 ring-1 ring-inset ring-rose-600/20 transition-all hover:bg-rose-100 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-rose-50"
-                        >
-                          {deletingId === u.id ? (
-                            <>
-                              <Loader2 size={12} className="animate-spin" /> กำลังลบ...
-                            </>
-                          ) : (
-                            <>
-                              <Trash2 size={12} /> ลบ
-                            </>
-                          )}
-                        </button>
+                        {u.status === 'pending' ? (
+                          <>
+                            <button
+                              onClick={() => handleApprove(u)}
+                              disabled={pendingBusyId === u.id}
+                              aria-label={`อนุมัติคำขอของ ${displayLabel(u)}`}
+                              className="inline-flex items-center justify-center gap-1.5 rounded-full bg-[#0066cc] px-3.5 py-1.5 text-[12px] font-bold text-white transition-all hover:bg-[#0071e3] active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 shadow-xs"
+                            >
+                              {pendingBusyId === u.id ? (
+                                <Loader2 size={12} className="animate-spin" />
+                              ) : (
+                                <UserCheck size={12} />
+                              )}
+                              อนุมัติ
+                            </button>
+                            <button
+                              onClick={() => handleReject(u)}
+                              disabled={pendingBusyId === u.id}
+                              aria-label={`ปฏิเสธคำขอของ ${displayLabel(u)}`}
+                              className="inline-flex items-center justify-center gap-1.5 rounded-full bg-rose-50 px-3.5 py-1.5 text-[12px] font-bold text-rose-700 ring-1 ring-inset ring-rose-600/20 transition-all hover:bg-rose-100 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+                            >
+                              <UserX size={12} /> ปฏิเสธ
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button 
+                              onClick={() => openEdit(u)}
+                              className="inline-flex items-center justify-center gap-1.5 rounded-full bg-[#f5f5f7] px-3.5 py-1.5 text-[12px] font-bold text-[#1d1d1f] transition-all hover:bg-[#e8e8ed] active:scale-95"
+                            >
+                              <Settings size={12} /> ตั้งค่า
+                            </button>
+                            <button
+                              onClick={() => handleDelete(u)}
+                              disabled={isSelf || deletingId === u.id}
+                              title={isSelf ? 'ไม่สามารถลบบัญชีของตัวเองได้' : `ลบผู้ใช้ ${displayLabel(u)}`}
+                              aria-label={`ลบผู้ใช้ ${displayLabel(u)}`}
+                              className="inline-flex items-center justify-center gap-1.5 rounded-full bg-rose-50 px-3.5 py-1.5 text-[12px] font-bold text-rose-700 ring-1 ring-inset ring-rose-600/20 transition-all hover:bg-rose-100 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-rose-50"
+                            >
+                              {deletingId === u.id ? (
+                                <>
+                                  <Loader2 size={12} className="animate-spin" /> กำลังลบ...
+                                </>
+                              ) : (
+                                <>
+                                  <Trash2 size={12} /> ลบ
+                                </>
+                              )}
+                            </button>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>

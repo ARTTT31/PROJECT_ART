@@ -66,6 +66,13 @@ def upgrade() -> None:
                     'created_at': now,
                     'updated_at': now,
                 },
+                {
+                    'key': 'registration_mode',
+                    'value': 'approval',
+                    'description': 'โหมดการรับสมัครสมาชิก (closed, approval, open)',
+                    'created_at': now,
+                    'updated_at': now,
+                },
             ],
         )
 

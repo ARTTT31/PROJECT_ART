@@ -7,12 +7,14 @@ export interface BrandingInfo {
   company_name: string
   company_tagline: string
   brand_logo_url?: string
+  registration_mode?: string
 }
 
 interface BrandingContextValue {
   companyName: string
   companyTagline: string
   brandLogoUrl: string
+  registrationMode: string
   isLoading: boolean
   refreshBranding: () => Promise<void>
   updateBranding: (branding: Partial<BrandingInfo>) => Promise<{ success: boolean; error?: string }>
@@ -22,6 +24,7 @@ const DEFAULT_BRANDING: BrandingInfo = {
   company_name: 'ART Workspace',
   company_tagline: 'จัดการวันทำงานของคุณให้ง่ายขึ้น',
   brand_logo_url: '',
+  registration_mode: 'approval',
 }
 
 const STORAGE_KEY = 'art_workspace_branding'
@@ -30,6 +33,7 @@ const BrandingContext = createContext<BrandingContextValue>({
   companyName: DEFAULT_BRANDING.company_name,
   companyTagline: DEFAULT_BRANDING.company_tagline,
   brandLogoUrl: DEFAULT_BRANDING.brand_logo_url || '',
+  registrationMode: DEFAULT_BRANDING.registration_mode || 'approval',
   isLoading: false,
   refreshBranding: async () => {},
   updateBranding: async () => ({ success: false }),
@@ -46,6 +50,7 @@ export function BrandingProvider({ children }: { children: React.ReactNode }) {
           company_name: parsed.company_name || DEFAULT_BRANDING.company_name,
           company_tagline: parsed.company_tagline ?? DEFAULT_BRANDING.company_tagline,
           brand_logo_url: parsed.brand_logo_url ?? '',
+          registration_mode: parsed.registration_mode ?? 'approval',
         }
       }
     } catch {
@@ -67,6 +72,7 @@ export function BrandingProvider({ children }: { children: React.ReactNode }) {
           company_name: data.company_name || DEFAULT_BRANDING.company_name,
           company_tagline: data.company_tagline ?? DEFAULT_BRANDING.company_tagline,
           brand_logo_url: data.brand_logo_url || '',
+          registration_mode: data.registration_mode || 'approval',
         }
         setBranding(newBranding)
         try {
@@ -91,6 +97,7 @@ export function BrandingProvider({ children }: { children: React.ReactNode }) {
         company_name: newValues.company_name ?? branding.company_name,
         company_tagline: newValues.company_tagline ?? branding.company_tagline,
         brand_logo_url: newValues.brand_logo_url ?? branding.brand_logo_url,
+        registration_mode: newValues.registration_mode ?? branding.registration_mode,
       }
 
       const res = await fetchWithAuth('/api/v1/system/branding', {
@@ -110,6 +117,7 @@ export function BrandingProvider({ children }: { children: React.ReactNode }) {
         company_name: updated.company_name,
         company_tagline: updated.company_tagline,
         brand_logo_url: updated.brand_logo_url || '',
+        registration_mode: updated.registration_mode || 'approval',
       }
       setBranding(savedBranding)
       try {
@@ -132,6 +140,7 @@ export function BrandingProvider({ children }: { children: React.ReactNode }) {
         companyName: branding.company_name,
         companyTagline: branding.company_tagline,
         brandLogoUrl: branding.brand_logo_url || '',
+        registrationMode: branding.registration_mode || 'approval',
         isLoading,
         refreshBranding,
         updateBranding,

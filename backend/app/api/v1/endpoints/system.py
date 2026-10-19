@@ -75,16 +75,18 @@ async def get_system_health(
 
 @router.get("/branding", response_model=BrandingResponse)
 async def get_branding(db: AsyncSession = Depends(get_db)):
-    """Public endpoint to get current workspace / team branding (company name, tagline, logo)"""
+    """Public endpoint to get current workspace / team branding & settings"""
     stmt = select(SystemSetting).where(
-        SystemSetting.key.in_(["company_name", "company_tagline", "brand_logo_url"])
+        SystemSetting.key.in_(["company_name", "company_tagline", "brand_logo_url", "registration_mode"])
     )
     result = await db.execute(stmt)
     settings_map = {s.key: s.value for s in result.scalars().all()}
+    effective_mode = settings_map.get("registration_mode") or "approval"
     return BrandingResponse(
         company_name=settings_map.get("company_name") or "ART Workspace",
         company_tagline=settings_map.get("company_tagline") or "จัดการวันทำงานของคุณให้ง่ายขึ้น",
         brand_logo_url=settings_map.get("brand_logo_url") or "",
+        registration_mode=effective_mode,
     )
 
 
@@ -95,7 +97,7 @@ async def update_branding(
     current_admin=Depends(get_current_admin_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Admin-only endpoint to update company / team branding"""
+    """Admin-only endpoint to update company / team branding and registration policy"""
     company_name = payload.company_name.strip()
     company_tagline = (payload.company_tagline or "").strip()
     brand_logo_url = (payload.brand_logo_url or "").strip()
@@ -105,6 +107,8 @@ async def update_branding(
         "company_tagline": company_tagline,
         "brand_logo_url": brand_logo_url,
     }
+    if payload.registration_mode and payload.registration_mode in ("closed", "approval", "open"):
+        updates["registration_mode"] = payload.registration_mode
 
     current_time = utcnow()
     for key, val in updates.items():
@@ -120,7 +124,7 @@ async def update_branding(
     await audit_service.log_action(
         action="UPDATE_BRANDING",
         user_id=current_admin.id,
-        details=f"Updated company/team branding: '{company_name}'",
+        details=f"Updated company/team branding: '{company_name}', registration_mode: '{payload.registration_mode or 'unchanged'}'",
         ip_address=client_ip,
         user_agent=request.headers.get("user-agent"),
     )
@@ -130,4 +134,5 @@ async def update_branding(
         company_name=company_name,
         company_tagline=company_tagline,
         brand_logo_url=brand_logo_url,
+        registration_mode=updates.get("registration_mode") or (await db.get(SystemSetting, "registration_mode")).value if await db.get(SystemSetting, "registration_mode") else "approval",
     )

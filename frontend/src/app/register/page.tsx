@@ -106,7 +106,7 @@ export default function RegisterPage() {
       .then((body) => {
         if (!cancelled) {
           const mode = body?.data?.registration_mode as RegistrationMode | undefined;
-          setRegistrationMode(mode || 'closed');
+          setRegistrationMode(mode || 'approval');
           setIsCheckingMode(false);
           if (mode === 'approval' || mode === 'open') {
             setTimeout(() => nameRef.current?.focus(), 60);
@@ -115,7 +115,7 @@ export default function RegisterPage() {
       })
       .catch(() => {
         if (!cancelled) {
-          setRegistrationMode('closed');
+          setRegistrationMode('approval');
           setIsCheckingMode(false);
         }
       });

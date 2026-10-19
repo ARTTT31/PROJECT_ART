@@ -41,6 +41,7 @@ from app.core.security import (
 )
 from app.api.dependencies import load_profile_columns, resolve_user_from_token
 from app.models.session import UserSession
+from app.models.system_setting import SystemSetting
 from app.schemas.response import ResponseModel
 from app.schemas.user import (
     ForgotPasswordRequest,
@@ -172,18 +173,32 @@ async def get_csrf_token(request: Request):
     return response
 
 
+async def _get_effective_registration_mode(db: AsyncSession) -> str:
+    """Resolve registration mode from SystemSetting DB table, fallback to settings.REGISTRATION_MODE."""
+    try:
+        stmt = select(SystemSetting).where(SystemSetting.key == "registration_mode")
+        result = await db.execute(stmt)
+        setting = result.scalar_one_or_none()
+        if setting and setting.value in ("closed", "approval", "open"):
+            return setting.value
+    except Exception as exc:
+        logger.debug("Could not read registration_mode from SystemSetting: %s", exc)
+    return settings.REGISTRATION_MODE
+
+
 @router.get("/registration-mode")
 @limiter.limit(_GENERAL_LIMIT)
-async def get_registration_mode(request: Request):
+async def get_registration_mode(request: Request, db: AsyncSession = Depends(get_db)):
     """Report how this deployment handles sign-ups.
 
     Public on purpose: the login page has to know whether to offer a sign-up
     form, and whether to promise immediate access or an admin's approval. It
     exposes the policy, never any data.
     """
+    mode = await _get_effective_registration_mode(db)
     return {
         "result": "success",
-        "data": {"registration_mode": settings.REGISTRATION_MODE},
+        "data": {"registration_mode": mode},
     }
 
 
@@ -325,7 +340,7 @@ async def register(
     user_service = UserService(db)
     client_ip = request.client.host if request.client else None
     user_agent = request.headers.get("user-agent")
-    mode = settings.REGISTRATION_MODE
+    mode = await _get_effective_registration_mode(db)
 
     # ── closed (the default): nobody self-registers ──────────────────────
     # The refusal is logged on purpose: an admin reading the audit trail can see
