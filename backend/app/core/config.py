@@ -258,9 +258,6 @@ class Settings(BaseSettings):
     # verified (Google checks the address), so this never affects them.
 
     @property
-        """True when the configured backend actually delivers mail."""
-
-    @property
     def FRONTEND_BASE_URL(self) -> str:
         """Frontend origin used in email links (no trailing slash)."""
         return (os.getenv("FRONTEND_URL") or self.FRONTEND_URL).rstrip("/")
