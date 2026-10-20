@@ -18,7 +18,8 @@ from app.schemas.user import (
     UserAdminCreate,
     UserTrashResponse,
 )
-from app.schemas.response import ResponseModelfrom app.services.user_service import UserService
+from app.schemas.response import ResponseModel
+from app.services.user_service import UserService
 , purge_at, retention_days
 from app.api.dependencies import get_current_admin_user
 from app.models.user import User
