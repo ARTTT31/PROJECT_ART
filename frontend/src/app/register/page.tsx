@@ -285,12 +285,7 @@ export default function RegisterPage() {
           ) : (
             /* Registration Form */
             <form onSubmit={handleSubmit} className="login-form" aria-busy={isSubmitting}>
-              {registrationMode === 'approval' && (
-                <div className="flex items-center gap-2 p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-[12px] text-amber-800">
-                  <Shield size={15} className="shrink-0 text-amber-600" />
-                  <span>คำขอสมัครจะต้องผ่านการอนุมัติจากผู้ดูแลระบบก่อนเข้าใช้งาน</span>
-                </div>
-              )}
+              
 
               <label htmlFor="reg-name" className="login-field">
                 <span>ชื่อที่แสดง</span>

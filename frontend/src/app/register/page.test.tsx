@@ -34,7 +34,7 @@ describe('RegisterPage', () => {
     localStorage.clear()
   })
 
-  it('renders approval notice and form fields when registration mode is approval', async () => {
+  it('renders form fields when registration mode is approval', async () => {
     global.fetch = vi.fn().mockImplementation((url: string) => {
       if (url.includes('registration-mode')) {
         return Promise.resolve({
@@ -61,12 +61,9 @@ describe('RegisterPage', () => {
     )
 
     await waitFor(() => {
-      expect(
-        screen.getByText('คำขอสมัครจะต้องผ่านการอนุมัติจากผู้ดูแลระบบก่อนเข้าใช้งาน')
-      ).toBeTruthy()
+      expect(screen.getByPlaceholderText(/สมชาย/)).toBeTruthy()
     })
 
-    expect(screen.getByPlaceholderText(/สมชาย/)).toBeTruthy()
     expect(screen.getByPlaceholderText('name@example.com')).toBeTruthy()
   })
 
