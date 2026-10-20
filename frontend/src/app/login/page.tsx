@@ -711,11 +711,7 @@ function LoginContent() {
                 <span>สมัครสมาชิก</span>
                 <ArrowRight size={15} aria-hidden="true" />
               </Link>
-              {registrationMode === 'approval' && (
-                <span className="text-[11.5px] text-amber-800/80 block mt-1.5">
-                  * เมื่อส่งคำขอแล้ว แอดมินจะต้องอนุมัติก่อนจึงจะเข้าสู่ระบบได้
-                </span>
-              )}
+              
               {registrationMode === 'closed' && (
                 <span className="text-[11.5px] text-[#86868b] block mt-1.5">
                   ระบบปิดรับสมัครสมาชิกใหม่ กรุณาติดต่อผู้ดูแลระบบเพื่อขอสิทธิ์เข้าใช้งาน
