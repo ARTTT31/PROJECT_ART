@@ -19,7 +19,12 @@ export default function AuthGuard({
   useEffect(() => {
     if (status === 'loading') return
     if (!isAuthenticated) {
-      router.replace(redirectTo)
+      // Remember where the visitor was headed. The admin approval alert email
+      // links straight to /profile?tab=admin, so dropping the deep link at the
+      // sign-in wall would leave the new request invisible after login.
+      const next = `${window.location.pathname}${window.location.search}${window.location.hash}`
+      const separator = redirectTo.includes('?') ? '&' : '?'
+      router.replace(`${redirectTo}${separator}next=${encodeURIComponent(next)}`)
       return
     }
 

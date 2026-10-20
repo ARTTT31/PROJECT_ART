@@ -31,6 +31,16 @@ cd backend && alembic upgrade head     # schema มาก่อนเสมอ (
 # จากนั้น Render จะ deploy code ใหม่ — ตั้ง env vars ให้ครบก่อน restart
 ```
 
+**ตรวจว่าโหมดที่ใช้จริงคือ approval:** เรียก
+`GET /api/v1/auth/registration-mode` แล้วต้องได้ `{"data":{"registration_mode":"approval"}}`
+ค่าเดียวกับ `GET /api/v1/system/branding` มิฉะนั้นหน้า login จะโชว์ฟอร์มแต่สมัครไม่ผ่าน
+ถ้ายังได้ `closed`:
+
+1. รัน `alembic upgrade head` อีกครั้ง — migration `20261022_registration_mode_seed`
+   จะเติมแถว `system_settings.registration_mode` ที่ฐานข้อมูลเก่ายังไม่มี (ค่าเดิมไม่ถูกเขียนทับ)
+2. หรือให้แอดมินเข้า **โปรไฟล์ → การตั้งค่าแบรนด์ → โหมดรับสมัครสมาชิก = approval** แล้วกดบันทึก
+   (ค่านี้อยู่ในฐานข้อมูลและมีผลเหนือ environment variable)
+
 ---
 
 ## 2. อีเมล (จำเป็นสำหรับ "ใช้งานทั่วไป")

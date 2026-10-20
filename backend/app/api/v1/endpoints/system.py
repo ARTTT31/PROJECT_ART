@@ -7,7 +7,7 @@ import time
 from typing import Optional
 
 import psutil
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -18,6 +18,7 @@ from app.core.utils import utcnow
 from app.models.system_setting import SystemSetting
 from app.schemas.system import BrandingResponse, BrandingUpdate
 from app.services.audit_service import AuditService
+from app.services.registration_policy import get_effective_registration_mode
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -81,7 +82,10 @@ async def get_branding(db: AsyncSession = Depends(get_db)):
     )
     result = await db.execute(stmt)
     settings_map = {s.key: s.value for s in result.scalars().all()}
-    effective_mode = settings_map.get("registration_mode") or "approval"
+    # Resolve the policy the same way /auth/registration-mode does. Reporting a
+    # separate default here is what let the login page advertise an approval
+    # flow that the registration endpoint then refused as "closed".
+    effective_mode = await get_effective_registration_mode(db)
     return BrandingResponse(
         company_name=settings_map.get("company_name") or "ART Workspace",
         company_tagline=settings_map.get("company_tagline") or "จัดการวันทำงานของคุณให้ง่ายขึ้น",
@@ -107,7 +111,12 @@ async def update_branding(
         "company_tagline": company_tagline,
         "brand_logo_url": brand_logo_url,
     }
-    if payload.registration_mode and payload.registration_mode in ("closed", "approval", "open"):
+    if payload.registration_mode:
+        if payload.registration_mode not in ("closed", "approval", "open"):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="โหมดการรับสมัครสมาชิกต้องเป็น closed, approval หรือ open",
+            )
         updates["registration_mode"] = payload.registration_mode
 
     current_time = utcnow()
@@ -121,18 +130,24 @@ async def update_branding(
 
     audit_service = AuditService(db)
     client_ip = request.client.host if request.client else None
+    mode_label = payload.registration_mode or "unchanged"
     await audit_service.log_action(
         action="UPDATE_BRANDING",
         user_id=current_admin.id,
-        details=f"Updated company/team branding: '{company_name}', registration_mode: '{payload.registration_mode or 'unchanged'}'",
+        details=(
+            f"Updated company/team branding: '{company_name}', "
+            f"registration_mode: '{mode_label}'"
+        ),
         ip_address=client_ip,
         user_agent=request.headers.get("user-agent"),
     )
     await db.commit()
 
+    # Read the policy back through the shared resolver: when this request did
+    # not change it, the answer must still describe what is actually enforced.
     return BrandingResponse(
         company_name=company_name,
         company_tagline=company_tagline,
         brand_logo_url=brand_logo_url,
-        registration_mode=updates.get("registration_mode") or (await db.get(SystemSetting, "registration_mode")).value if await db.get(SystemSetting, "registration_mode") else "approval",
+        registration_mode=await get_effective_registration_mode(db),
     )

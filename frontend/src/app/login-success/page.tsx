@@ -14,6 +14,16 @@ export default function LoginSuccessPage() {
   useEffect(() => {
     if (hasRedirected.current) return;
 
+    /** Same-origin only: anything else falls back to the dashboard. */
+    const goAfterLogin = () => {
+      const stored = sessionStorage.getItem('post_login_redirect')
+      sessionStorage.removeItem('post_login_redirect')
+      const safe = stored && stored.startsWith('/') && !stored.startsWith('//')
+        ? stored
+        : '/dashboard'
+      router.replace(safe)
+    }
+
     const processLogin = async () => {
       try {
         // Step 1: Read user data from the non-httpOnly cookie for speed (fast-path).
@@ -27,7 +37,7 @@ export default function LoginSuccessPage() {
           hasRedirected.current = true;
           login(user);
           window.history.replaceState({}, '', '/login-success');
-          router.replace('/dashboard');
+          goAfterLogin();
           return;
         }
 
@@ -51,7 +61,7 @@ export default function LoginSuccessPage() {
           hasRedirected.current = true;
           login(sessionUser);
           window.history.replaceState({}, '', '/login-success');
-          router.replace('/dashboard');
+          goAfterLogin();
         } else {
           hasRedirected.current = true;
           router.replace('/login');

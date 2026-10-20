@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import LoginPage from './page'
 import { BrandingProvider } from '@/context/BrandingContext'
 
@@ -16,10 +16,15 @@ vi.mock('next/navigation', () => ({
   }),
 }))
 
+const authState = vi.hoisted(() => ({
+  status: 'unauthenticated' as 'unauthenticated' | 'authenticated',
+  user: null as null | { role: string },
+}))
+
 vi.mock('@/hooks/useAuth', () => ({
   useAuth: () => ({
-    status: 'unauthenticated',
-    user: null,
+    status: authState.status,
+    user: authState.user,
   }),
 }))
 
@@ -38,6 +43,9 @@ vi.mock('@/components/Auth/TurnstileWidget', () => ({
 describe('LoginPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    authState.status = 'unauthenticated'
+    authState.user = null
+    window.history.replaceState({}, '', '/login')
     localStorage.clear()
     global.fetch = vi.fn().mockImplementation((url: string) => {
       if (url.includes('registration-mode')) {
@@ -71,5 +79,22 @@ describe('LoginPage', () => {
     const registerLink = screen.getByRole('link', { name: /สมัครสมาชิก/i })
     expect(registerLink).toBeDefined()
     expect(registerLink.getAttribute('href')).toBe('/register')
+  })
+
+  it('returns to the ?next page once a session is restored', async () => {
+    // The approval alert email is a deep link. If the admin was signed out,
+    // AuthGuard sends them to /login?next=… and login must honour it.
+    authState.status = 'authenticated'
+    window.history.replaceState({}, '', '/login?next=%2Fprofile%3Ftab%3Dadmin')
+
+    render(
+      <BrandingProvider>
+        <LoginPage />
+      </BrandingProvider>
+    )
+
+    await waitFor(() => {
+      expect(mockReplace).toHaveBeenCalledWith('/profile?tab=admin')
+    })
   })
 })

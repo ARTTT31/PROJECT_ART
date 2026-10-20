@@ -223,7 +223,7 @@ export default function RegisterPage() {
             <p className="login-tagline">{companyTagline || 'สมัครสมาชิกเพื่อเริ่มต้นใช้งานแดชบอร์ด'}</p>
             <p className="login-clock">
               <Clock size={15} strokeWidth={2} aria-hidden="true" className="login-clock-icon" />
-              <time className="login-clock-time" dateTime={now.toISOString()}>
+              <time suppressHydrationWarning className="login-clock-time" dateTime={now.toISOString()}>
                 {formatTime(now)} น.
               </time>
               <span aria-hidden="true" className="login-clock-sep">•</span>

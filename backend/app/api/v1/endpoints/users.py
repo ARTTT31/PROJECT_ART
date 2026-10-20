@@ -162,6 +162,12 @@ async def approve_user(
         ip_address=request.client.host if request.client else None,
         user_agent=request.headers.get("user-agent"),
     )
+    # A self-registered account has never proven its address (approval mode
+    # skips the verification mail until a human says yes). Send it now, so a
+    # deployment with REQUIRE_EMAIL_VERIFICATION enabled does not approve
+    # someone into a state they cannot sign in from.
+    if approved.email_verified_at is None and approved.email:
+        await account_emails.send_verification(db, approved)
     # Best-effort notice to the applicant; the decision stands even if email
     # delivery fails (the admin can always tell them another way).
     await account_emails.notify_user_decision(db, approved, approved=True)

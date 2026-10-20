@@ -29,6 +29,16 @@ const timeFormatter = new Intl.DateTimeFormat('th-TH', {
 const formatDate = (date: Date) => dateFormatter.format(date);
 const formatTime = (date: Date) => timeFormatter.format(date);
 
+/**
+ * Only same-origin, absolute paths are accepted as a post-login destination.
+ * `//evil.example` and `https://evil.example` are protocol-relative/absolute
+ * URLs, so they are refused to keep this out of open-redirect territory.
+ */
+function safeInternalPath(raw: string | null): string | null {
+  if (!raw || !raw.startsWith('/') || raw.startsWith('//')) return null;
+  return raw;
+}
+
 const apiBaseUrl = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '');
 const LOGIN_ENDPOINT = `${apiBaseUrl}/api/v1/auth/login`;
 const REGISTER_ENDPOINT = `${apiBaseUrl}/api/v1/auth/register`;
@@ -62,7 +72,7 @@ function LoginHeader({ now, tagline }: { now: Date; tagline: string }) {
       <p className="login-tagline">{tagline || companyTagline}</p>
       <p className="login-clock">
         <Clock size={15} strokeWidth={2} aria-hidden="true" className="login-clock-icon" />
-        <time className="login-clock-time" dateTime={now.toISOString()}>{formatTime(now)} น.</time>
+        <time suppressHydrationWarning className="login-clock-time" dateTime={now.toISOString()}>{formatTime(now)} น.</time>
         <span aria-hidden="true" className="login-clock-sep">•</span>
         <span className="login-clock-date">{formatDate(now)}</span>
       </p>
@@ -106,9 +116,20 @@ function LoginContent() {
   const emailRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
   const errorId = 'login-error-message';
+  // Where to go after a successful sign-in. AuthGuard puts the page the
+  // visitor was refused at in `?next=`, which is how the admin approval alert
+  // email opens the pending queue after login instead of dropping to dashboard.
+  // Read it during the first render so an already-authenticated visitor is
+  // redirected to the deep link instead of racing to /dashboard.
+  const [nextPath] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null;
+    return safeInternalPath(new URLSearchParams(window.location.search).get('next'));
+  });
 
   // ── Sign-up state (defaults to approval for multi-user deployments) ──
-  const [registrationMode, setRegistrationMode] = useState<RegistrationMode>('approval');
+  // `null` until the API answers: never promise an approval flow before the
+  // deployment has confirmed that it actually accepts sign-ups.
+  const [registrationMode, setRegistrationMode] = useState<RegistrationMode | null>(null);
   const [view, setView] = useState<LoginView>('signin');
   const [signupName, setSignupName] = useState('');
   const [signupEmail, setSignupEmail] = useState('');
@@ -120,13 +141,14 @@ function LoginContent() {
   const [turnstileToken, setTurnstileToken] = useState('');
   const signupNameRef = useRef<HTMLInputElement>(null);
 
-  // Already signed in? The login page has nothing to offer — go to the dashboard.
-  // (Logout clears auth state before replacing to /login, so this never loops.)
+  // Already signed in? The login page has nothing to offer — go to the
+  // requested page, or the dashboard. (Logout clears auth state before
+  // replacing to /login, so this never loops.)
   useEffect(() => {
     if (status === 'authenticated') {
-      router.replace('/dashboard');
+      router.replace(nextPath || '/dashboard');
     }
-  }, [status, router]);
+  }, [status, router, nextPath]);
 
   /**
    * Authorization-code flow: hand off to the backend, which builds the Google
@@ -137,6 +159,13 @@ function LoginContent() {
   const handleGoogleSignIn = () => {
     setIsSubmitting(true);
     setError('');
+    // The OAuth round trip leaves this SPA, so the destination is parked in
+    // sessionStorage and picked up by /login-success after the callback.
+    if (nextPath) {
+      sessionStorage.setItem('post_login_redirect', nextPath);
+    } else {
+      sessionStorage.removeItem('post_login_redirect');
+    }
     toast.info('กำลังนำคุณไปยัง Google...');
     // Full-page navigation is required so the browser follows the backend's
     // 302 redirect to Google; a router push would stay inside Next.js.
@@ -200,7 +229,7 @@ function LoginContent() {
       .then((response) => (response.ok ? response.json() : null))
       .then((body) => {
         const mode = body?.data?.registration_mode;
-        if (!cancelled && (mode === 'approval' || mode === 'open')) {
+        if (!cancelled && (mode === 'closed' || mode === 'approval' || mode === 'open')) {
           setRegistrationMode(mode);
         }
       })
@@ -685,6 +714,11 @@ function LoginContent() {
               {registrationMode === 'approval' && (
                 <span className="text-[11.5px] text-amber-800/80 block mt-1.5">
                   * เมื่อส่งคำขอแล้ว แอดมินจะต้องอนุมัติก่อนจึงจะเข้าสู่ระบบได้
+                </span>
+              )}
+              {registrationMode === 'closed' && (
+                <span className="text-[11.5px] text-[#86868b] block mt-1.5">
+                  ระบบปิดรับสมัครสมาชิกใหม่ กรุณาติดต่อผู้ดูแลระบบเพื่อขอสิทธิ์เข้าใช้งาน
                 </span>
               )}
             </div>

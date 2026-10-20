@@ -339,32 +339,44 @@ export default function ProfilePage() {
 
   const isAdmin = user?.role === 'admin'
 
-  // Sync tab with URL hash and listen to browser popstate / hashchange
+  // Sync the tab with the URL. `?tab=admin` is what the new-sign-up alert
+  // email links to, while `#admin` is kept for old bookmarks and manual links.
   useEffect(() => {
     if (typeof window === 'undefined') return
 
-    const handleHash = () => {
-      const hash = window.location.hash.replace('#', '')
-      if (hash === 'preferences' || hash === 'profile') {
-        setActiveTab(hash as TabKey)
-      } else if (hash === 'admin') {
-        if (authUser?.role === 'admin') {
-          setActiveTab('admin')
-        } else {
-          setActiveTab('profile')
-        }
+    const applyTabFromUrl = () => {
+      const params = new URLSearchParams(window.location.search)
+      const requested = params.get('tab') || window.location.hash.replace('#', '')
+      const tab = requested as TabKey
+      if (tab !== 'profile' && tab !== 'preferences' && tab !== 'admin') return
+
+      if (tab === 'admin' && authUser?.role !== 'admin') {
+        setActiveTab('profile')
+        return
       }
+      setActiveTab(tab)
     }
 
-    handleHash()
-    window.addEventListener('hashchange', handleHash)
-    return () => window.removeEventListener('hashchange', handleHash)
+    applyTabFromUrl()
+    window.addEventListener('popstate', applyTabFromUrl)
+    window.addEventListener('hashchange', applyTabFromUrl)
+    return () => {
+      window.removeEventListener('popstate', applyTabFromUrl)
+      window.removeEventListener('hashchange', applyTabFromUrl)
+    }
   }, [authUser])
 
   const handleTabChange = (tab: TabKey) => {
     setActiveTab(tab)
     if (typeof window !== 'undefined') {
-      window.history.replaceState(null, '', `#${tab}`)
+      const url = new URL(window.location.href)
+      if (tab === 'profile') {
+        url.searchParams.delete('tab')
+      } else {
+        url.searchParams.set('tab', tab)
+      }
+      url.hash = ''
+      window.history.replaceState(null, '', url.toString())
     }
   }
 
