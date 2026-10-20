@@ -27,7 +27,7 @@ requests==2.34.2
 httpx==0.28.1
 
 # Google OAuth verification
-google-auth>=2.28.0
+google-auth>=2.62.0
 
 # Image processing (avatar normalisation — bounded WebP re-encode)
 pillow==12.3.0
