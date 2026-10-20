@@ -51,7 +51,6 @@ from app.schemas.user import (
     UserRegister,
     VerifyEmailRequest,
 )
-from app.services import account_emails
 from app.services.auth_service import AuthService
 from app.services.audit_service import AuditService
 from app.services.registration_policy import get_effective_registration_mode
@@ -398,7 +397,6 @@ async def register(
                 user.terms_accepted_at = utils_utcnow()
                 user.terms_version = settings.TERMS_VERSION
                 # Tell the admins something is waiting; best-effort by design.
-                await account_emails.notify_admins_new_request(db, user)
             elif existing.deleted_at is None and existing.status == "rejected":
                 # A refused request may be re-submitted, with a fresh password.
                 await user_service.resubmit_registration(existing, user_register)
@@ -412,7 +410,6 @@ async def register(
                 # Re-submission re-accepts the current terms and re-notifies admins.
                 existing.terms_accepted_at = utils_utcnow()
                 existing.terms_version = settings.TERMS_VERSION
-                await account_emails.notify_admins_new_request(db, existing)
             else:
                 await audit_service.log_action(
                     action="USER_REGISTER_DUPLICATE",
@@ -442,7 +439,6 @@ async def register(
         # an unverified account may SIGN IN is decided at login
         # (REQUIRE_EMAIL_VERIFICATION), so a deployment without a mail backend
         # is never locked out and can grant access by other means.
-        await account_emails.send_verification(db, user)
 
         await audit_service.log_action(
             action="USER_REGISTER",
@@ -500,7 +496,6 @@ async def forgot_password(
 
     user = await UserService(db).get_user_by_email(payload.email)
     if user is not None and user.deleted_at is None:
-        await account_emails.send_password_reset(db, user)
         await audit_service.log_action(
             action="PASSWORD_RESET_REQUESTED",
             user_id=user.id,
@@ -536,9 +531,6 @@ async def reset_password(
     client_ip = request.client.host if request.client else None
     user_agent = request.headers.get("user-agent")
 
-    token = await account_emails.consume_token(
-        db, account_emails.PURPOSE_PASSWORD_RESET, payload.token
-    )
     user_service = UserService(db)
     user = await user_service.get_user_by_id(token.user_id) if token else None
     if token is None or user is None or user.deleted_at is not None:
@@ -580,9 +572,6 @@ async def verify_email(
     db: AsyncSession = Depends(get_db),
 ):
     """Confirm an address from the link in the verification email."""
-    token = await account_emails.consume_token(
-        db, account_emails.PURPOSE_EMAIL_VERIFY, payload.token
-    )
     user = await UserService(db).get_user_by_id(token.user_id) if token else None
     if token is None or user is None or user.deleted_at is not None:
         raise HTTPException(
@@ -617,7 +606,6 @@ async def resend_verification(
 
     user = await UserService(db).get_user_by_email(payload.email)
     if user is not None and user.deleted_at is None and user.email_verified_at is None:
-        await account_emails.send_verification(db, user)
         await audit_service.log_action(
             action="EMAIL_VERIFICATION_RESENT",
             user_id=user.id,

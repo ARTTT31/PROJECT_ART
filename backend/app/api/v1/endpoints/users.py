@@ -18,12 +18,11 @@ from app.schemas.user import (
     UserAdminCreate,
     UserTrashResponse,
 )
-from app.schemas.response import ResponseModel
-from app.services.user_service import UserService, purge_at, retention_days
+from app.schemas.response import ResponseModelfrom app.services.user_service import UserService
+, purge_at, retention_days
 from app.api.dependencies import get_current_admin_user
 from app.models.user import User
 
-from app.services import account_emails
 from app.services.audit_service import AuditService
 
 router = APIRouter()
@@ -167,10 +166,8 @@ async def approve_user(
     # deployment with REQUIRE_EMAIL_VERIFICATION enabled does not approve
     # someone into a state they cannot sign in from.
     if approved.email_verified_at is None and approved.email:
-        await account_emails.send_verification(db, approved)
     # Best-effort notice to the applicant; the decision stands even if email
     # delivery fails (the admin can always tell them another way).
-    await account_emails.notify_user_decision(db, approved, approved=True)
     await db.commit()
 
     return ResponseModel(
@@ -216,7 +213,6 @@ async def reject_user(
     )
     # Best-effort notice to the applicant; the decision stands even if email
     # delivery fails (the admin can always tell them another way).
-    await account_emails.notify_user_decision(db, rejected, approved=False)
     await db.commit()
 
     return ResponseModel(

@@ -246,33 +246,19 @@ class Settings(BaseSettings):
 
     # ── Transactional email ─────────────────────────────────────────────────
     # console (default): messages are logged + kept in an in-memory outbox —
-    #   fine for tests/dev, nothing is delivered. smtp: any provider's SMTP
     #   relay (Brevo, Gmail app password, SES, ...). resend: Resend HTTP API.
-    EMAIL_BACKEND: Literal["console", "smtp", "resend"] = "console"
+    EMAIL_BACKEND: Literal["console"] = "console"
     # RFC 5322 From header, e.g. "ART Workspace <no-reply@example.com>".
-    EMAIL_FROM: str = "ART Workspace <no-reply@artworkspace.local>"
-    EMAIL_TIMEOUT_SECONDS: float = 10.0
-    # SMTP backend
-    SMTP_HOST: str = ""
-    SMTP_PORT: int = 587
-    SMTP_USERNAME: str = ""
-    SMTP_PASSWORD: str = ""
-    SMTP_STARTTLS: bool = True
     # Resend backend
-    RESEND_API_KEY: str = ""
     # How long the links stay valid.
     PASSWORD_RESET_TOKEN_MINUTES: int = 30
-    EMAIL_VERIFY_TOKEN_MINUTES: int = 60 * 24
     # Require a verified email before a password login succeeds. Off by default
     # so a deployment whose email backend is not configured yet cannot lock
     # everyone out; turn it on once delivery works. Google sign-ins are always
     # verified (Google checks the address), so this never affects them.
-    REQUIRE_EMAIL_VERIFICATION: bool = False
 
     @property
-    def EMAIL_DELIVERY_ENABLED(self) -> bool:
         """True when the configured backend actually delivers mail."""
-        return self.EMAIL_BACKEND in ("smtp", "resend")
 
     @property
     def FRONTEND_BASE_URL(self) -> str:
