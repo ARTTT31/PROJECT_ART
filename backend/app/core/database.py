@@ -49,3 +49,27 @@ async def get_db():
     """
     async with SessionLocal() as db:
         yield db
+
+
+def to_sync_database_url(url: str) -> str:
+    """Return ``url`` in the form a *synchronous* engine accepts.
+
+    ``Settings`` rewrites DATABASE_URL for the async driver
+    (``sqlite+aiosqlite://``, ``postgresql+asyncpg://``) and a raw Neon/Render
+    DATABASE_URL is a bare ``postgresql://``, so the two synchronous callers
+    (Alembic, ``python -m app.services.session_cleanup``) have to choose a
+    synchronous driver themselves. SQLAlchemy 2.1 resolves a bare
+    ``postgresql://`` to psycopg 3 — which this project does not install — so
+    merely stripping the ``+asyncpg`` suffix made every deploy fail at
+    ``alembic upgrade head`` with ``ModuleNotFoundError: No module named
+    'psycopg'``. Point the URL at the pinned driver instead.
+    """
+    if "+aiosqlite" in url:
+        return url.replace("+aiosqlite", "", 1)
+    if "+asyncpg" in url:
+        return url.replace("+asyncpg", "+psycopg2", 1)
+    if url.startswith("postgres://"):
+        return url.replace("postgres://", "postgresql+psycopg2://", 1)
+    if url.startswith("postgresql://"):
+        return url.replace("postgresql://", "postgresql+psycopg2://", 1)
+    return url

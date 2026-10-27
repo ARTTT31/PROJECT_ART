@@ -9,6 +9,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from app.core.config import settings
+from app.core.database import to_sync_database_url
 from app.models.base import Base
 from app.models import audit_log, session, user, weather_cache  # Import all models
 
@@ -43,11 +44,7 @@ def run_migrations_offline() -> None:
 def run_migrations_online() -> None:
     """Run migrations in 'online' mode."""
     # Convert async driver string to sync for Alembic
-    sync_url = settings.DATABASE_URL
-    if "+asyncpg" in sync_url:
-        sync_url = sync_url.replace("+asyncpg", "")
-    elif "+aiosqlite" in sync_url:
-        sync_url = sync_url.replace("+aiosqlite", "")
+    sync_url = to_sync_database_url(settings.DATABASE_URL)
         
     configuration = config.get_section(config.config_ini_section, {})
     configuration["sqlalchemy.url"] = sync_url

@@ -24,6 +24,7 @@ from sqlalchemy import CursorResult, delete
 from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.database import to_sync_database_url
 from app.models.session import UserSession
 from app.core.utils import utcnow
 from app.models.email_token import EmailToken
@@ -119,8 +120,8 @@ def run_cleanup() -> None:
 
     # Settings rewrites the URL for the async driver (``sqlite+aiosqlite://``,
     # ``postgresql+asyncpg://``); this script builds a synchronous engine, so
-    # the driver suffix has to come back off.
-    database_url = database_url.replace("+aiosqlite", "").replace("+asyncpg", "")
+    # the URL has to name the pinned synchronous driver instead.
+    database_url = to_sync_database_url(database_url)
 
     from sqlalchemy import create_engine
 
