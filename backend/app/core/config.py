@@ -245,17 +245,29 @@ class Settings(BaseSettings):
     TERMS_VERSION: str = "2026-10"
 
     # ── Transactional email ─────────────────────────────────────────────────
-    # console (default): messages are logged + kept in an in-memory outbox —
-    #   relay (Brevo, Gmail app password, SES, ...). resend: Resend HTTP API.
-    EMAIL_BACKEND: Literal["console"] = "console"
+    # console (default): messages are logged + kept in an in-memory outbox — the
+    #   safe choice for local work and for deployments with no provider yet.
+    # smtp: any relay (Brevo, Gmail app password, SES, ...). resend: Resend API.
+    EMAIL_BACKEND: Literal["console", "smtp", "resend"] = "console"
     # RFC 5322 From header, e.g. "ART Workspace <no-reply@example.com>".
+    EMAIL_FROM: str = "ART Workspace <no-reply@localhost>"
+    # SMTP relay, used when EMAIL_BACKEND=smtp.
+    SMTP_HOST: str = ""
+    SMTP_PORT: int = 587
+    SMTP_USERNAME: str = ""
+    SMTP_PASSWORD: str = ""
+    # STARTTLS on submit ports (587). Set False for an implicit-TLS relay on 465.
+    SMTP_STARTTLS: bool = True
     # Resend backend
+    RESEND_API_KEY: str = ""
     # How long the links stay valid.
     PASSWORD_RESET_TOKEN_MINUTES: int = 30
+    EMAIL_VERIFY_TOKEN_MINUTES: int = 1440
     # Require a verified email before a password login succeeds. Off by default
     # so a deployment whose email backend is not configured yet cannot lock
     # everyone out; turn it on once delivery works. Google sign-ins are always
     # verified (Google checks the address), so this never affects them.
+    REQUIRE_EMAIL_VERIFICATION: bool = False
 
     @property
     def FRONTEND_BASE_URL(self) -> str:

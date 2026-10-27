@@ -1,19 +1,21 @@
-"""Simplified account email service — no-op for deployments without email configured."""
+"""Single-use tokens that back the password-reset and email-verify links.
+
+The raw token is mailed to the user; only its SHA-256 hash is stored, so a
+leaked database cannot be turned into working reset links.
+"""
 
 from __future__ import annotations
 
 import hashlib
 import secrets
 from datetime import timedelta
-from typing import Any, cast, Optional
+from typing import cast, Optional
 
-from sqlalchemy import CursorResult, delete as sa_delete
+from sqlalchemy import CursorResult, delete as sa_delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import settings
 from app.core.utils import utcnow
 from app.models.email_token import EmailToken
-from app.models.user import User
 
 
 PURPOSE_PASSWORD_RESET = "password_reset"
@@ -68,13 +70,3 @@ async def purge_expired_tokens(db: AsyncSession) -> int:
     cutoff = utcnow() - timedelta(days=1)
     result = await db.execute(sa_delete(EmailToken).where(EmailToken.expires_at < cutoff))
     return int(cast("CursorResult", result).rowcount or 0)
-
-
-async def send(message: Optional[object] = None) -> bool:
-    """No-op: always returns True without sending email."""
-    return True
-
-
-def get_email_service():
-    """Return a no-op email service instance."""
-    return type("NoOpEmailService", (), {"send": lambda self, m: True})()

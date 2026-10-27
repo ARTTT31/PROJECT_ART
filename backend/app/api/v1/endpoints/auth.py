@@ -51,6 +51,7 @@ from app.schemas.user import (
     UserRegister,
     VerifyEmailRequest,
 )
+from app.services import account_emails, email_service
 from app.services.auth_service import AuthService
 from app.services.audit_service import AuditService
 from app.services.registration_policy import get_effective_registration_mode
@@ -89,6 +90,55 @@ async def _create_user_session(
     )
     await db.commit()
     return session_id
+
+
+# ── Account emails ──────────────────────────────────────────────────────────
+# The three link-bearing mails are built in one place so the token TTL, the
+# frontend route and the failure behaviour cannot drift between the endpoints
+# that send them. Every helper is best-effort: a mail outage never changes the
+# API answer, because EmailService.send() returns False instead of raising.
+
+
+async def _send_verification_email(db: AsyncSession, user: Any) -> None:
+    """Issue a fresh verification token and mail the link."""
+    raw = await account_emails.issue_token(
+        db,
+        user.id,
+        account_emails.PURPOSE_EMAIL_VERIFY,
+        settings.EMAIL_VERIFY_TOKEN_MINUTES,
+    )
+    link = f"{settings.FRONTEND_BASE_URL}/verify-email?token={raw}"
+    await email_service.get_email_service().send(
+        email_service.verify_email_message(user.email or "", user.name or "", link)
+    )
+
+
+async def _send_password_reset_email(db: AsyncSession, user: Any) -> None:
+    """Issue a single-use reset token and mail the link."""
+    raw = await account_emails.issue_token(
+        db,
+        user.id,
+        account_emails.PURPOSE_PASSWORD_RESET,
+        settings.PASSWORD_RESET_TOKEN_MINUTES,
+    )
+    link = f"{settings.FRONTEND_BASE_URL}/reset-password?token={raw}"
+    await email_service.get_email_service().send(
+        email_service.password_reset_email(user.email or "", user.name or "", link)
+    )
+
+
+async def _notify_admins_of_request(db: AsyncSession, applicant: Any) -> None:
+    """Tell every admin who can still decide that a request is waiting."""
+    review_url = f"{settings.FRONTEND_BASE_URL}/profile?tab=admin"
+    service = email_service.get_email_service()
+    for admin in await UserService(db).get_active_admins():
+        if not admin.email:
+            continue
+        await service.send(
+            email_service.admin_new_request_email(
+                admin.email, admin.name or "", applicant.email or "", review_url
+            )
+        )
 
 
 COOKIE_OPTIONS: dict[str, Any] = {
@@ -397,6 +447,7 @@ async def register(
                 user.terms_accepted_at = utils_utcnow()
                 user.terms_version = settings.TERMS_VERSION
                 # Tell the admins something is waiting; best-effort by design.
+                await _notify_admins_of_request(db, user)
             elif existing.deleted_at is None and existing.status == "rejected":
                 # A refused request may be re-submitted, with a fresh password.
                 await user_service.resubmit_registration(existing, user_register)
@@ -439,6 +490,7 @@ async def register(
         # an unverified account may SIGN IN is decided at login
         # (REQUIRE_EMAIL_VERIFICATION), so a deployment without a mail backend
         # is never locked out and can grant access by other means.
+        await _send_verification_email(db, user)
 
         await audit_service.log_action(
             action="USER_REGISTER",
@@ -503,6 +555,7 @@ async def forgot_password(
             ip_address=client_ip,
             user_agent=user_agent,
         )
+        await _send_password_reset_email(db, user)
     else:
         await audit_service.log_action(
             action="PASSWORD_RESET_REQUESTED",
@@ -532,6 +585,9 @@ async def reset_password(
     user_agent = request.headers.get("user-agent")
 
     user_service = UserService(db)
+    token = await account_emails.consume_token(
+        db, account_emails.PURPOSE_PASSWORD_RESET, payload.token
+    )
     user = await user_service.get_user_by_id(token.user_id) if token else None
     if token is None or user is None or user.deleted_at is not None:
         raise HTTPException(
@@ -572,6 +628,9 @@ async def verify_email(
     db: AsyncSession = Depends(get_db),
 ):
     """Confirm an address from the link in the verification email."""
+    token = await account_emails.consume_token(
+        db, account_emails.PURPOSE_EMAIL_VERIFY, payload.token
+    )
     user = await UserService(db).get_user_by_id(token.user_id) if token else None
     if token is None or user is None or user.deleted_at is not None:
         raise HTTPException(
@@ -613,6 +672,7 @@ async def resend_verification(
             ip_address=client_ip,
             user_agent=user_agent,
         )
+        await _send_verification_email(db, user)
     await db.commit()
 
     return ResponseModel(

@@ -280,6 +280,23 @@ class UserService:
         )
         return int(result.scalar() or 0)
 
+    async def get_active_admins(self) -> List[User]:
+        """Admins who can still act — the audience for a new sign-up request.
+
+        Trashed and deactivated admins are excluded: mailing someone who has
+        already lost the permission only creates a support question.
+        """
+        result = await self.db.execute(
+            select(User)
+            .where(
+                User.role == "admin",
+                User.is_active.is_(True),
+                User.deleted_at.is_(None),
+            )
+            .order_by(User.id)
+        )
+        return list(result.scalars().all())
+
     async def approve_user(self, user_id: int) -> Optional[User]:
         """Approve a sign-up request, making the account usable.
 
