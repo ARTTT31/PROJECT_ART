@@ -138,91 +138,93 @@
    Do NOT apply these classes inside dense data widgets.
    ═══════════════════════════════════════════════════════ */
 
-/* ── Global Typography Polish ────────────── */
-html {
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-rendering: optimizeLegibility;
-  font-size: 16px;
-  scrollbar-gutter: stable;
-}
+@layer base {
+  /* ── Global Typography Polish ────────────── */
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    font-size: 16px;
+    scrollbar-gutter: stable;
+  }
 
-body {
-  /* Apple-style stack: SF Pro / system for Latin, Anuphan for Thai fallback */
-  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'SF Pro', Inter, var(--font-anuphan), Anuphan, system-ui, sans-serif;
-  font-feature-settings: 'kern' 1, 'liga' 1, 'calt' 1;
-  letter-spacing: 0;
-  line-height: var(--line-normal);
-  color: var(--art-ink);
-  background: var(--art-page-bg);
-  font-size: var(--type-base);
-  font-weight: 400;
-  min-height: 100dvh;
-}
+  body {
+    /* Apple-style stack: SF Pro / system for Latin, Anuphan for Thai fallback */
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'SF Pro', Inter, var(--font-anuphan), Anuphan, system-ui, sans-serif;
+    font-feature-settings: 'kern' 1, 'liga' 1, 'calt' 1;
+    letter-spacing: 0;
+    line-height: var(--line-normal);
+    color: var(--art-ink);
+    background: var(--art-page-bg);
+    font-size: var(--type-base);
+    font-weight: 400;
+    min-height: 100dvh;
+  }
 
-h1 {
-  font-size: var(--type-4xl);
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  line-height: var(--line-tight);
-  text-wrap: balance;
-}
+  h1 {
+    font-size: var(--type-4xl);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: var(--line-tight);
+    text-wrap: balance;
+  }
 
-h2 {
-  font-size: var(--type-3xl);
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  line-height: var(--line-tight);
-  text-wrap: balance;
-}
+  h2 {
+    font-size: var(--type-3xl);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: var(--line-tight);
+    text-wrap: balance;
+  }
 
-h3 {
-  font-size: var(--type-2xl);
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  line-height: var(--line-snug);
-  text-wrap: balance;
-}
+  h3 {
+    font-size: var(--type-2xl);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    line-height: var(--line-snug);
+    text-wrap: balance;
+  }
 
-h4 {
-  font-size: var(--type-xl);
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  line-height: var(--line-snug);
-}
+  h4 {
+    font-size: var(--type-xl);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    line-height: var(--line-snug);
+  }
 
-h5 {
-  font-size: var(--type-lg);
-  font-weight: 600;
-  letter-spacing: 0;
-  line-height: var(--line-normal);
-}
+  h5 {
+    font-size: var(--type-lg);
+    font-weight: 600;
+    letter-spacing: 0;
+    line-height: var(--line-normal);
+  }
 
-h6 {
-  font-size: var(--type-base);
-  font-weight: 600;
-  letter-spacing: 0;
-  line-height: var(--line-normal);
-}
+  h6 {
+    font-size: var(--type-base);
+    font-weight: 600;
+    letter-spacing: 0;
+    line-height: var(--line-normal);
+  }
 
-p {
-  line-height: var(--line-relaxed);
-  max-width: 75ch;
-  text-wrap: pretty;
-  font-size: var(--type-base);
-}
+  p {
+    line-height: var(--line-relaxed);
+    max-width: 75ch;
+    text-wrap: pretty;
+    font-size: var(--type-base);
+  }
 
-small {
-  font-size: var(--type-sm);
-  line-height: var(--line-normal);
-}
+  small {
+    font-size: var(--type-sm);
+    line-height: var(--line-normal);
+  }
 
-label {
-  display: block;
-  font-size: var(--type-sm);
-  font-weight: 600;
-  color: #334155;
-  margin-bottom: 0.5rem;
+  label {
+    display: block;
+    font-size: var(--type-sm);
+    font-weight: 600;
+    color: #334155;
+    margin-bottom: 0.5rem;
+  }
 }
 
 .art-app-shell {
@@ -306,17 +308,19 @@ label {
    iOS-STYLE BUTTONS - Liquid Glass
    ═══════════════════════════════════════════════════════ */
 
-button {
-  border-radius: var(--art-radius-sm);
-  font-family: inherit;
-  cursor: pointer;
-  border: none;
-  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
-}
+@layer base {
+  button {
+    border-radius: var(--art-radius-sm);
+    font-family: inherit;
+    cursor: pointer;
+    border: none;
+    transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
 
-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+  button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
 }
 
 .art-button,
