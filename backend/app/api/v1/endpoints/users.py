@@ -23,6 +23,7 @@ from app.services.user_service import UserService, purge_at, retention_days
 from app.api.dependencies import get_current_admin_user
 from app.models.user import User
 
+from app.services import email_service
 from app.services.audit_service import AuditService
 
 router = APIRouter()
@@ -161,14 +162,17 @@ async def approve_user(
         ip_address=request.client.host if request.client else None,
         user_agent=request.headers.get("user-agent"),
     )
-    # A self-registered account has never proven its address (approval mode
-    # skips the verification mail until a human says yes). Send it now, so a
-    # deployment with REQUIRE_EMAIL_VERIFICATION enabled does not approve
-    # someone into a state they cannot sign in from.
-    if approved.email_verified_at is None and approved.email:
     # Best-effort notice to the applicant; the decision stands even if email
     # delivery fails (the admin can always tell them another way).
     await db.commit()
+    if approved.email:
+        await email_service.get_email_service().send(
+            email_service.account_approved_email(
+                approved.email,
+                approved.name or "",
+                f"{settings.FRONTEND_BASE_URL}/login",
+            )
+        )
 
     return ResponseModel(
         result="success",
@@ -214,6 +218,10 @@ async def reject_user(
     # Best-effort notice to the applicant; the decision stands even if email
     # delivery fails (the admin can always tell them another way).
     await db.commit()
+    if rejected.email:
+        await email_service.get_email_service().send(
+            email_service.account_rejected_email(rejected.email, rejected.name or "")
+        )
 
     return ResponseModel(
         result="success",
