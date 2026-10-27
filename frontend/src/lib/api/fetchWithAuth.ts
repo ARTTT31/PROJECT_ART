@@ -6,14 +6,8 @@
 import { parseJsonWithSchema, type ResponseModelParsed } from './schemas';
 import type { z } from 'zod';
 
-// In browser client-side runtime, always use same-origin relative URL ('') so requests
-// pass through Next.js rewrites and cookies are treated as first-party (same-site).
-// This prevents third-party cookie blocking in Chromium/Opera/Safari and cross-origin CSRF 403 errors.
-// In Node.js / SSR / testing, use the configured backend URL.
-const API_URL =
-  typeof window !== 'undefined' && !process.env.VITEST
-    ? ''
-    : (process.env.API_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '');
+// Leave this empty in browser deployments to use the same-origin /api rewrite.
+const API_URL = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '');
 
 // ── CSRF (double-submit cookie) ──────────────────────────────
 const CSRF_COOKIE = 'csrf_token';

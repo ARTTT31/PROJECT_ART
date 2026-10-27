@@ -315,6 +315,13 @@ async def login(
             httponly=False,
             **COOKIE_OPTIONS,
         )
+        response.set_cookie(
+            key="csrf_token",
+            value=secrets.token_urlsafe(32),
+            max_age=7 * 24 * 60 * 60,
+            httponly=False,
+            **COOKIE_OPTIONS,
+        )
         return response
 
     except HTTPException as e:
@@ -1172,6 +1179,13 @@ async def google_verify_token(
         httponly=False,
         **COOKIE_OPTIONS,
     )
+    response.set_cookie(
+        key="csrf_token",
+        value=secrets.token_urlsafe(32),
+        max_age=7 * 24 * 60 * 60,
+        httponly=False,
+        **COOKIE_OPTIONS,
+    )
 
     return response
 
@@ -1325,6 +1339,13 @@ async def _finish_google_callback(
     response.set_cookie(
         key="user",
         value=encode_user_cookie(user_cookie_payload(user_data)),
+        max_age=7 * 24 * 60 * 60,
+        httponly=False,
+        **COOKIE_OPTIONS,
+    )
+    response.set_cookie(
+        key="csrf_token",
+        value=secrets.token_urlsafe(32),
         max_age=7 * 24 * 60 * 60,
         httponly=False,
         **COOKIE_OPTIONS,
