@@ -19,6 +19,7 @@ backend/scripts/
 | `create_admin.py` | `py scripts/admin/create_admin.py` <br> Prompt for email/password | ต้องการสร้าง admin user แบบ interactive |
 | `create_admin_auto.py` | `py scripts/admin/create_admin_auto.py` <br> ใช้ค่า default จาก ENV | CI / first-time setup ไม่ต้องกรอกอะไร |
 | `create_test_user.py` | `py scripts/admin/create_test_user.py` | สร้าง user ปกติ (user@test.test) สำหรับทดสอบ |
+| `promote_admin.py` | `py scripts/admin/promote_admin.py <email> [--create] [--activate]` | ตั้งบัญชีที่มีอยู่ให้เป็น admin (ใช้ `--create` ถ้ายังไม่มีบัญชี) ใช้ได้ทั้ง SQLite ในเครื่องและ production ผ่าน `DATABASE_URL` |
 | `reset_user.py` | `py scripts/admin/reset_user.py <email> [new_password]` | รีเซ็ตรหัสผ่านลืม / unlock user ที่ล็อก |
 | `check_password.py` | `py scripts/admin/check_password.py <email> <password>` | Debug ว่าที่ user บอก password นั้นตรงกับใน DB หรือไม่ |
 
@@ -49,6 +50,7 @@ backend/scripts/
 
 ## ⚠️ Do's & Don'ts
 
+- ✅ **Do**: ใช้ `promote_admin.py` เมื่อต้องการให้บัญชีจริง (เช่น บัญชี Google ของเจ้าของ) เป็น admin
 - ✅ **Do**: ใช้ `create_admin_auto.py` สำหรับ bootstrap production ครั้งแรก
 - ✅ **Do**: ใช้ `reset_user.py` เมื่อ user ล็อกบัญชีจาก login ผิด 5 ครั้ง
 - ❌ **Don't**: commit test output หรือ passwords จาก script เหล่านี้
