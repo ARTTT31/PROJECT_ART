@@ -89,7 +89,7 @@ def to_sync_database_url(url: str) -> str:
     """Return ``url`` in the form a *synchronous* engine accepts.
 
     ``Settings`` rewrites DATABASE_URL for the async driver
-    (``sqlite+aiosqlite://``, ``postgresql+asyncpg://``) and a raw Neon/Render
+    (``sqlite+aiosqlite://``, ``postgresql+asyncpg://``) and a raw Aiven/Render
     DATABASE_URL is a bare ``postgresql://``, so the two synchronous callers
     (Alembic, ``python -m app.services.session_cleanup``) have to choose a
     synchronous driver themselves. SQLAlchemy 2.1 resolves a bare

@@ -9,7 +9,7 @@ The system is designed and separated into parts for easy scaling and maintenance
 
 * **Frontend:** Developed with Next.js and deployed on **Vercel** for optimal client-side delivery performance (Edge Network).
 * **Backend:** Developed with FastAPI and deployed as a Web Service on **Render**, which is suitable for processing and handling asynchronous connections.
-* **Database:** Uses PostgreSQL running on **Neon.tech** (Serverless Postgres) for flexibility in connection pool management.
+* **Database:** Uses PostgreSQL running on **Aiven for PostgreSQL** (project `thanyapong-8a15`, service `pg-8a0b819`), reached over TLS with the service's project CA.
 
 ---
 
@@ -20,7 +20,8 @@ For the code on Render to communicate with external services correctly, importan
 * `BACKEND_GOOGLE_CLIENT_ID`: Client ID from Google Cloud Console
 * `BACKEND_GOOGLE_CLIENT_SECRET`: Secret from Google Cloud Console
 * `BACKEND_GOOGLE_REDIRECT`: URL to receive callbacks from Google, must point to Render's domain (e.g., `https://<render-domain>/api/v1/auth/google/callback`)
-* `DATABASE_URL`: Connection String to connect to Neon.tech database
+* `DATABASE_URL`: the Aiven service URI (Console → Overview → Connection information), in the async form `postgresql+asyncpg://…`
+* `SSL_CA_CERT_PATH`: path to the Aiven project CA on the backend host. Without it `asyncpg` falls back to certifi, which does not include that CA, and the connection fails certificate verification.
 * `FRONTEND_URL`: URL of the frontend running on Vercel, used to redirect back with data after a successful login
 * `CORS_ORIGINS`: Comma-separated frontend origins; required because cookies cannot be combined with wildcards
 * `TRUSTED_PROXY_IPS`: Optional. Leave empty on Render — the platform load balancer is a private address, which is trusted by default. Set it explicitly only when the proxy is not loopback/RFC1918, otherwise every request looks like it comes from that proxy and one client can exhaust the shared rate-limit budget.
@@ -52,8 +53,9 @@ Every response also carries `X-Request-ID` and the same value appears as `rid=�
 Alembic remains the only schema authority, and CI now applies the chain (`alembic upgrade head`) and checks for model drift (`alembic check`) on every push — a broken revision fails the build instead of the deployment.
 
 ### 2.5 Enabling SSL Security (Database Connection)
-Connecting to a Managed Database like Neon requires data transmission through an encrypted channel:
+Connecting to a managed database such as Aiven requires data transmission through an encrypted channel:
 * Embedded the `connect_args={"ssl": True}` parameter at the SQLAlchemy Engine level to force `asyncpg` to always operate via SSL Mode.
+* `_build_ssl_context()` in `app/core/database.py` loads the file named by `SSL_CA_CERT_PATH` and keeps `verify_mode=CERT_REQUIRED`. `check_hostname` is disabled only because Aiven's shared CA name does not always match the service hostname; the certificate itself is still verified.
 
 ---
 
@@ -66,12 +68,12 @@ During the cloud migration, the main issues encountered and successfully resolve
 * **Solution:** Configured in the Google Cloud Console (API & Services > Credentials) to update **Authorized JavaScript origins** to match the Vercel domain and **Authorized redirect URIs** to match the Render path (`/api/v1/auth/google/callback`).
 
 ### 🔴 Issue 2: `connection is insecure (try using sslmode=require)`
-* **Cause:** Python's `asyncpg` driver does not allow connecting to Neon database without encryption.
+* **Cause:** Python's `asyncpg` driver does not allow connecting to the Aiven database without encryption.
 * **Solution:** Removed the `?sslmode=require` query string from the end of the original `DATABASE_URL` and enabled the `{"ssl": True}` option in `connect_args` when creating `create_async_engine` instead.
 
 ### 🔴 Issue 3: `InvalidPasswordError` (Database connection)
-* **Cause:** Incorrect password or Connection String, or not using the password for Neon's Connection Pooling.
-* **Solution:** Cleaned up the connection string and switched to using the latest Pooler Connection String copied directly from the Neon dashboard.
+* **Cause:** Incorrect password or connection string, or not using the pooling credentials.
+* **Solution:** Cleaned up the connection string and switched to the service URI copied from the Aiven Console (or the PgBouncer URI when going through the pooler).
 
 ### 🔴 Issue 4: `AttributeError: 'AsyncSession' object has no attribute 'query'`
 * **Cause:** Calling the `.query()` method is a Syntax for Synchronous sessions, which is not supported on `AsyncSession`.
@@ -90,7 +92,7 @@ During the cloud migration, the main issues encountered and successfully resolve
 * **Solution:**
   * Added automated failover to **MET Norway (`api.met.no`)** Locationforecast 2.0 when Open-Meteo fails.
   * Added automated failover to **OpenStreetMap Nominatim** when BigDataCloud fails, plus a graceful coordinates-only 200 OK fallback.
-  * Persisted both responses into L1 memory and L2 Neon database (`weather_cache`) to protect future requests.
+  * Persisted both responses into L1 memory and L2 Aiven database (`weather_cache`) to protect future requests.
 
 ---
 
@@ -109,13 +111,13 @@ During the cloud migration, the main issues encountered and successfully resolve
 
 ### 5.1 Target Architecture
 * **No need to install Docker/Docker Desktop** on the developer's machine.
-* **No local database running** (moved to connect directly with Neon.tech via encrypted channel).
+* **No local database running** (the backend connects directly to Aiven for PostgreSQL over an encrypted channel).
 * **GitHub-Driven Deployment (CI/CD):** 
   * All code edits will be done on the local machine (editing plain files).
   * When executing `git push` to push code to GitHub:
     * **Vercel** will be responsible for pulling frontend code to build and serve on the web automatically (Free).
     * **Render** will be responsible for pulling backend code to run as a Web Service automatically (Free).
-    * Everything connects wirelessly to the **Neon.tech** database (Serverless Postgres Free).
+    * Everything connects wirelessly to the **Aiven for PostgreSQL** service over TLS.
 
 ### 5.2 Docker-less Local Development Workflow
 Developers can write code and test the system locally right away with native tools:

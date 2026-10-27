@@ -6,7 +6,7 @@
 
 ## Executive Summary
 
-ART Workspace is a Thai-language personal productivity dashboard built as a modern full-stack web application. The architecture consists of a Next.js 16 frontend (App Router, webpack dev server), a FastAPI backend, and a PostgreSQL database target (Neon in production, in-memory SQLite for tests).
+ART Workspace is a Thai-language personal productivity dashboard built as a modern full-stack web application. The architecture consists of a Next.js 16 frontend (App Router, webpack dev server), a FastAPI backend, and a PostgreSQL database target (Aiven for PostgreSQL in production, in-memory SQLite for tests).
 
 Current verified state (all commands run from the repository on October 9, 2026):
 - **Backend Tests:** 162/162 pytest tests passing, coverage **76.57%** (gate 40%).
@@ -28,7 +28,7 @@ Security and resilience improvements including automated secondary provider fail
 | UI libraries | Lucide React, Radix Dialog, SweetAlert2 | Icons, dialogs, notifications |
 | Backend | FastAPI 0.162, SQLAlchemy 2.1 async, Alembic | REST API and database access |
 | Auth | PyJWT access/refresh tokens in HTTP-only cookies | Standard login and Google OAuth |
-| Database | PostgreSQL target, SQLite for tests | Neon serverless PostgreSQL in production |
+| Database | PostgreSQL target, SQLite for tests | Aiven for PostgreSQL in production |
 | External data | Open-Meteo & MET Norway (weather), Open-Meteo (air quality), Bangchak (oil price), BigDataCloud & OpenStreetMap Nominatim (geocode) | Dashboard widgets and GPS reverse-geocoding |
 
 ## System Improvements Applied (October 1, 2026)

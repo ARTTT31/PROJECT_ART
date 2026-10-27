@@ -23,6 +23,7 @@
 | ข้อตกลง/PDPA | เติม `[กรอก...]` ในหน้า `/terms` และ `/privacy` | มี consent checkbox + บันทึก `terms_version` ที่หน้าสมัครแล้ว |
 | Redis (ถ้ามีหลาย instance) | `SLOWAPI_STORAGE_URI`, `WS_BROADCAST_REDIS_URL` | ดูข้อ 4 |
 | Secret | `SECRET_KEY` (≥32 ตัวอักษร) | ระบบจะปฏิเสธการ start ถ้าใช้ค่า placeholder ตอน `DEBUG=False` |
+| Database (Aiven) | `DATABASE_URL`, `SSL_CA_CERT_PATH` | Aiven บังคับ TLS และ CA ของ Aiven ไม่อยู่ใน certifi — ดาวน์โหลด CA จาก Console (Service → Overview → CA certificate) วางบน host แล้วชี้ path ไปที่ไฟล์นั้น |
 
 **ลำดับ deploy ที่ถูกต้อง (ทุกครั้งที่มี migration ใหม่):**
 
@@ -103,14 +104,16 @@ cd backend && alembic upgrade head     # schema มาก่อนเสมอ (
 
 ---
 
-## 5. Backup / Disaster recovery (Neon)
+## 5. Backup / Disaster recovery (Aiven for PostgreSQL)
 
-1. ตรวจ retention ของ PITR (point-in-time restore) ตาม plan ที่ใช้
-2. **ซ้อม restore 1 ครั้ง** ไปยัง branch/database ใหม่ แล้วรัน `alembic current` ตรวจ schema
-3. จด runbook สั้นๆ: ใคร restore, restore จาก branch ไหน, แจ้งใคร
+Production ใช้ **Aiven for PostgreSQL** (project `thanyapong-8a15`, service `pg-8a0b819`)
+
+1. ตรวจ backup retention / PITR (point-in-time restore) ของ service ตาม plan ที่ใช้ — Aiven Console → Service → Backups
+2. **ซ้อม restore 1 ครั้ง** ด้วยการ fork service (หรือ restore ไป service ใหม่) แล้วรัน `alembic current` ตรวจ schema
+3. จด runbook สั้นๆ: ใคร restore, restore จาก service/backup ไหน, แจ้งใคร
 
 ข้อมูลที่ไม่ต้อง backup แยก: รูปโปรไฟล์เก็บเป็น base64 ใน DB และค่าตั้งค่าอื่นๆ อยู่ใน DB/env
-ทั้งหมด → backup ของ Neon คือ backup ของระบบ
+ทั้งหมด → backup ของ Aiven คือ backup ของระบบ
 
 ---
 
@@ -128,7 +131,7 @@ cd backend && alembic upgrade head     # schema มาก่อนเสมอ (
 ## 7. PDPA ที่ต้องทำด้วยมือ (โค้ดเตรียมไว้ให้แล้ว)
 
 - [ ] เติมช่อง `[กรอกอีเมลผู้ดูแลระบบ]`, `[กรอกที่อยู่/หน่วยงาน]` ในหน้า `/terms` และ `/privacy`
-- [ ] ตรวจว่าเนื้อหานโยบายตรงกับผู้ให้บริการจริงที่ใช้ (Neon/Vercel/Render/Sentry/อีเมล/Turnstile)
+- [ ] ตรวจว่าเนื้อหานโยบายตรงกับผู้ให้บริการจริงที่ใช้ (Aiven/Vercel/Render/Sentry/อีเมล/Turnstile)
 - [ ] กำหนดนโยบาย retention ของ audit log (ค่าเริ่มต้น: เก็บต่อเนื่อง — ระบุจำนวนเดือนที่ยอมรับได้)
 - [ ] จัดทำขั้นตอนแจ้งเหตุละเมิดข้อมูลภายใน 72 ชม. (ใครรับผิดชอบ, ช่องทางแจ้ง สคส.)
 - [ ] ประกาศเวอร์ชันข้อตกลง (`TERMS_VERSION`) และเมื่อแก้ข้อตกลงให้ bump ค่านี้

@@ -61,7 +61,7 @@ The migration step matters: the test suite builds its schema from the models, so
 | Framework | FastAPI 0.162, Starlette 1.10, Uvicorn 0.54 |
 | Real-time | WebSocket notifications (authenticated handshake, connection caps, optional Redis fan-out) |
 | ORM / DB | SQLAlchemy 2 async, Alembic migrations |
-| Database | PostgreSQL (Neon in production, SQLite for CI tests) |
+| Database | PostgreSQL on Aiven (production), SQLite for CI tests |
 | Auth | PyJWT access + refresh tokens in HTTP-only cookies + double-submit-cookie CSRF (`X-CSRF-Token`) |
 | Rate Limiting | SlowAPI |
 | Upstream data | httpx (Bangchak oil prices, Open-Meteo & MET Norway weather forecast, Open-Meteo air quality, BigDataCloud & OpenStreetMap Nominatim reverse geocode) |
@@ -73,7 +73,7 @@ The migration step matters: the test suite builds its schema from the models, so
 |---|---|
 | Frontend Hosting | Vercel |
 | Backend Hosting | Render |
-| Database | Neon (serverless PostgreSQL) |
+| Database | Aiven for PostgreSQL (managed; TLS with the project CA) |
 
 ## Local Development
 
@@ -135,6 +135,7 @@ Notable variables:
 |---|---|---|
 | `DEBUG` | `False` | Opt-in to development behaviour. Required `True` for local dev tooling such as `/docs`. |
 | `SECRET_KEY` | — | JWT signing key. When `DEBUG=False` it must be at least 32 characters and not a placeholder. |
+| `SSL_CA_CERT_PATH` | empty | Path to the Aiven project CA file. Aiven's CA is not in certifi, so setting this lets the async engine verify TLS against it explicitly. |
 | `ENABLE_API_DOCS` | `False` | Serves `/docs`, `/redoc` and `/openapi.json`. Always on when `DEBUG=True`. |
 | `CSRF_PROTECTION_ENABLED` | `True` | Double-submit-cookie CSRF check for authenticated browser writes. Only disable for non-browser clients. |
 | `COOKIE_SECURE` / `COOKIE_SAMESITE` | derived | `True`/`none` on Render; `False`/`lax` for plain local HTTP. |
@@ -219,7 +220,7 @@ PROJECT_ART/
 - Root directory: `backend`
 - Build command: `pip install -r requirements.txt`
 - Start command: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
-- Set `DATABASE_URL`, a long random `SECRET_KEY`, OAuth values, `FRONTEND_URL`, and the exact `CORS_ORIGINS` frontend URL in Render environment variables.
+- Set `DATABASE_URL` (the Aiven service URI), `SSL_CA_CERT_PATH` (the downloaded Aiven CA), a long random `SECRET_KEY`, OAuth values, `FRONTEND_URL`, and the exact `CORS_ORIGINS` frontend URL in Render environment variables.
 - Keep `DEBUG=False` and `AUTO_CREATE_TABLES=False` in production. Alembic is the only owner of the schema: run `alembic upgrade head` for every release.
 
 ### Vercel Frontend
