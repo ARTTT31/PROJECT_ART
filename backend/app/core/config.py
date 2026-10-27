@@ -132,6 +132,12 @@ class Settings(BaseSettings):
     SENTRY_PROFILES_SAMPLE_RATE: float = 0.0  # disabled by default (high overhead)
     SENTRY_ENVIRONMENT: str = "development"  # set via ENV to "production" in prod
 
+    # Database SSL — path to the CA certificate for TLS-hosted Postgres backends
+    # (Aiven, Neon, etc.). When set the async engine builds an ssl.SSLContext that
+    # trusts this CA instead of relying on the platform certifi bundle, which does
+    # not include self-signed provider CAs.
+    SSL_CA_CERT_PATH: str = ""
+
     @property
     def COOKIE_SECURE(self) -> bool:
         if "RENDER" in os.environ:
