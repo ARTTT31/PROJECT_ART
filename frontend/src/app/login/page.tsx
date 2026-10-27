@@ -39,7 +39,9 @@ function safeInternalPath(raw: string | null): string | null {
   return raw;
 }
 
-const apiBaseUrl = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '');
+// Always use same-origin in the browser so requests go through the Next.js
+// rewrite proxy and cookies are first-party.
+const apiBaseUrl = '';
 const LOGIN_ENDPOINT = `${apiBaseUrl}/api/v1/auth/login`;
 const REGISTER_ENDPOINT = `${apiBaseUrl}/api/v1/auth/register`;
 const REGISTRATION_MODE_ENDPOINT = `${apiBaseUrl}/api/v1/auth/registration-mode`;
