@@ -8,7 +8,13 @@ uvicorn[standard]==0.54.0
 python-multipart>=0.0.32
 
 # Database
-sqlalchemy==2.1.6
+# SQLAlchemy 2.1 made greenlet optional, where 2.0 pulled it in by itself on
+# x86_64/arm64 — but the async engine imports it at runtime. Without the extra a
+# fresh install resolves cleanly here (a developer venv still has greenlet from
+# an older pin) and then every deploy dies on
+# "The SQLAlchemy asyncio module requires that the Python 'greenlet' library is
+# installed", so the `asyncio` extra is part of the pin, not an optional nicety.
+sqlalchemy[asyncio]==2.1.6
 psycopg2-binary==2.9.13
 alembic==1.20.1
 
