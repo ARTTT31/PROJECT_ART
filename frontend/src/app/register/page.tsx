@@ -40,9 +40,7 @@ const timeFormatter = new Intl.DateTimeFormat('th-TH', {
 const formatDate = (date: Date) => dateFormatter.format(date);
 const formatTime = (date: Date) => timeFormatter.format(date);
 
-// Always use same-origin in the browser so requests go through the Next.js
-// rewrite proxy and cookies are first-party.
-const apiBaseUrl = '';
+const apiBaseUrl = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '');
 const REGISTER_ENDPOINT = `${apiBaseUrl}/api/v1/auth/register`;
 const REGISTRATION_MODE_ENDPOINT = `${apiBaseUrl}/api/v1/auth/registration-mode`;
 

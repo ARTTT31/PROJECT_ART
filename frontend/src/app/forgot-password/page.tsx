@@ -7,9 +7,7 @@ import AuthPageShell from '@/components/Auth/AuthPageShell'
 import TurnstileWidget from '@/components/Auth/TurnstileWidget'
 import '../../styles/pages/login.css'
 
-// Always use same-origin in the browser so requests go through the Next.js
-// rewrite proxy and cookies are first-party.
-const apiBaseUrl = ''
+const apiBaseUrl = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '')
 const FORGOT_ENDPOINT = `${apiBaseUrl}/api/v1/auth/forgot-password`
 
 export default function ForgotPasswordPage() {

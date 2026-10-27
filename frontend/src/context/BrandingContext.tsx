@@ -61,9 +61,7 @@ export function BrandingProvider({ children }: { children: React.ReactNode }) {
 
   const [isLoading, setIsLoading] = useState(false)
 
-  // Always use same-origin in the browser so requests go through the Next.js
-  // rewrite proxy and cookies are first-party.
-  const apiBaseUrl = typeof window !== 'undefined' && !process.env.VITEST ? '' : (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '')
+  const apiBaseUrl = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '')
 
   const refreshBranding = useCallback(async () => {
     try {

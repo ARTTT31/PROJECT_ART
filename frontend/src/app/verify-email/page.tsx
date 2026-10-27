@@ -6,9 +6,7 @@ import { AlertCircle, ArrowRight, CheckCircle2, Loader2 } from 'lucide-react'
 import AuthPageShell from '@/components/Auth/AuthPageShell'
 import '../../styles/pages/login.css'
 
-// Always use same-origin in the browser so requests go through the Next.js
-// rewrite proxy and cookies are first-party.
-const apiBaseUrl = ''
+const apiBaseUrl = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '')
 const VERIFY_ENDPOINT = `${apiBaseUrl}/api/v1/auth/verify-email`
 
 type VerifyState = 'checking' | 'verifying' | 'success' | 'error'
