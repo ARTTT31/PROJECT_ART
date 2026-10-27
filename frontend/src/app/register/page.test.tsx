@@ -152,7 +152,6 @@ describe('RegisterPage', () => {
     fireEvent.change(passwordInputs[1], {
       target: { value: 'Password123!' },
     })
-    fireEvent.click(screen.getByRole('checkbox'))
 
     fireEvent.click(screen.getByRole('button', { name: 'ส่งคำขอสมัครสมาชิก' }))
 

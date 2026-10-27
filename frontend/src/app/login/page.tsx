@@ -137,7 +137,6 @@ function LoginContent() {
   const [signupError, setSignupError] = useState('');
   const [isSigningUp, setIsSigningUp] = useState(false);
   const [pendingEmail, setPendingEmail] = useState('');
-  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState('');
   const signupNameRef = useRef<HTMLInputElement>(null);
 
@@ -274,10 +273,6 @@ function LoginContent() {
     }
     if (signupPassword.length < 8) {
       setSignupError('รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร');
-      return;
-    }
-    if (!acceptedTerms) {
-      setSignupError('กรุณายอมรับข้อตกลงการใช้งานและนโยบายความเป็นส่วนตัวก่อนสมัครสมาชิก');
       return;
     }
 
@@ -510,25 +505,6 @@ function LoginContent() {
             <p className="login-hint">บัญชีที่สมัครจะใช้งานได้หลังผู้ดูแลระบบอนุมัติ</p>
           )}
 
-          <label htmlFor="signup-consent" className="login-consent">
-            <input
-              id="signup-consent"
-              type="checkbox"
-              checked={acceptedTerms}
-              onChange={(event) => setAcceptedTerms(event.target.checked)}
-              disabled={isSigningUp}
-            />
-            <span>
-              ฉันยอมรับ{' '}
-              <Link href="/terms" target="_blank" rel="noopener noreferrer">
-                ข้อตกลงการใช้งาน
-              </Link>{' '}
-              และ{' '}
-              <Link href="/privacy" target="_blank" rel="noopener noreferrer">
-                นโยบายความเป็นส่วนตัว
-              </Link>
-            </span>
-          </label>
 
           <TurnstileWidget onToken={setTurnstileToken} />
 
