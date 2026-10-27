@@ -9,6 +9,12 @@ import type { z } from 'zod';
 // Leave this empty in browser deployments to use the same-origin /api rewrite.
 const API_URL = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '');
 
+// When the API lives on another origin its cookies belong to that origin, so a
+// `csrf_token` in `document.cookie` here is unrelated (and may be stale from an
+// earlier same-origin deployment). Only the cookie this origin actually owns is
+// safe to echo back.
+const API_IS_CROSS_ORIGIN = /^https?:\/\//i.test(API_URL);
+
 // ── CSRF (double-submit cookie) ──────────────────────────────
 const CSRF_COOKIE = 'csrf_token';
 const CSRF_HEADER = 'X-CSRF-Token';
@@ -51,7 +57,7 @@ async function requestCsrfToken(): Promise<string | null> {
 
 /** Return the current CSRF token (cookie first, API fallback, then memory). */
 export async function getCsrfToken(): Promise<string | null> {
-  const fromCookie = readCsrfCookie();
+  const fromCookie = API_IS_CROSS_ORIGIN ? null : readCsrfCookie();
   if (fromCookie) {
     csrfTokenCache = fromCookie;
     return fromCookie;
@@ -236,7 +242,12 @@ export async function fetchWithAuth(
 
       if (csrfFailed) {
         csrfTokenCache = null;
-        const freshToken = readCsrfCookie() ?? (await requestCsrfToken());
+        // Reuse the local cookie only when it belongs to the API origin; across
+        // origins the value the API just issued for this request is the only
+        // one it will accept.
+        const freshToken = API_IS_CROSS_ORIGIN
+          ? await requestCsrfToken()
+          : (readCsrfCookie() ?? (await requestCsrfToken()));
         if (freshToken) {
           csrfTokenCache = freshToken;
           headers.set(CSRF_HEADER, freshToken);
