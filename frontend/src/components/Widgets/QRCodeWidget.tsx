@@ -355,7 +355,7 @@ export default function QRCodeWidget({
                   setError(null)
                 }}
                 aria-pressed={isActive}
-                className={`flex flex-1 items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0066cc] active:scale-[0.95] ${
+                className={`flex flex-1 items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold transition-all duration-150 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#0066cc] active:scale-[0.95] ${
                   isActive
                     ? 'bg-white text-[#1d1d1f] shadow-[0_1px_3px_rgba(0,0,0,0.12)]'
                     : 'text-[#6e6e73] hover:text-[#1d1d1f]'
@@ -382,7 +382,7 @@ export default function QRCodeWidget({
                 ? 'พิมพ์ข้อความ, URL, เบอร์โทร หรือ PromptPay...'
                 : 'พิมพ์รหัส เช่น ART-10023, 12345678 (ภาษาอังกฤษ/ตัวเลข)...'
             }
-            className="w-full rounded-[12px] bg-[#f2f2f7] px-3.5 py-2.5 text-[14px] text-[#1d1d1f] placeholder:text-[#86868b] transition-all duration-150 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0066cc]"
+            className="w-full rounded-[12px] bg-[#f2f2f7] px-3.5 py-2.5 text-[14px] text-[#1d1d1f] placeholder:text-[#86868b] transition-all duration-150 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-[#0066cc]"
             aria-label="ข้อความสำหรับสร้างโค้ด"
           />
         </div>
@@ -406,7 +406,7 @@ export default function QRCodeWidget({
                 }`}
               >
                 {format === 'qrcode' ? (
-                  <div ref={qrWrapRef} className="rounded-[14px] bg-white p-3 shadow-sm ring-1 ring-black/[0.05]">
+                  <div ref={qrWrapRef} className="rounded-[14px] bg-white p-3 shadow-xs ring-1 ring-black/[0.05]">
                     <QRCodeCanvas
                       value={generatedText}
                       size={width >= 3 ? 200 : width >= 2 ? 170 : 145}
@@ -417,7 +417,7 @@ export default function QRCodeWidget({
                     />
                   </div>
                 ) : (
-                  <div className="flex w-full items-center justify-center overflow-x-auto rounded-[14px] bg-white p-3 shadow-sm ring-1 ring-black/[0.05]">
+                  <div className="flex w-full items-center justify-center overflow-x-auto rounded-[14px] bg-white p-3 shadow-xs ring-1 ring-black/[0.05]">
                     <canvas ref={barcodeCanvasRef} className="max-w-full" />
                   </div>
                 )}
@@ -448,7 +448,7 @@ export default function QRCodeWidget({
                 <button
                   type="button"
                   onClick={downloadImage}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-[#0066cc] px-4 py-2 text-[12px] font-semibold text-white transition-all duration-150 hover:bg-[#0071e3] active:scale-[0.95] shadow-sm"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-[#0066cc] px-4 py-2 text-[12px] font-semibold text-white transition-all duration-150 hover:bg-[#0071e3] active:scale-[0.95] shadow-xs"
                   aria-label="ดาวน์โหลดรูปภาพ PNG"
                 >
                   <Download size={13} />

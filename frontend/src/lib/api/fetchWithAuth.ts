@@ -270,11 +270,23 @@ export async function fetchWithAuth(
  * If you don't pass a schema it falls back to `ResponseModelSchema` (the default
  * {result, message, data} envelope).
  */
+export async function fetchWithAuthJson(
+  path: string,
+  options?: RequestInit,
+): Promise<ResponseModelParsed>;
+export async function fetchWithAuthJson<T extends z.ZodTypeAny>(
+  path: string,
+  options: RequestInit,
+  schema: T,
+): Promise<z.infer<T>>;
+// Zod 4 types `z.infer<T>` as a mapped `output<T>`, which TypeScript cannot
+// prove assignable to a deferred conditional return type, so the two call
+// shapes above are expressed as overloads instead.
 export async function fetchWithAuthJson<T extends z.ZodTypeAny>(
   path: string,
   options: RequestInit = {},
   schema?: T,
-): Promise<T extends undefined ? ResponseModelParsed : z.infer<T>> {
+): Promise<ResponseModelParsed | z.infer<T>> {
   const res = await fetchWithAuth(path, options);
   if (!res.ok) {
     try {

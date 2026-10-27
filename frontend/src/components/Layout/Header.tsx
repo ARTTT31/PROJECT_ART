@@ -51,7 +51,7 @@ export default function Header({ user, onMenuClick, sidebarCollapsed = false }: 
         <div className="flex items-center gap-3 sm:gap-4">
           <button
             onClick={onMenuClick}
-            className="flex h-9 w-9 items-center justify-center rounded-full text-[#1d1d1f] transition-all duration-150 hover:bg-black/[0.05] active:scale-[0.95] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0066cc]"
+            className="flex h-9 w-9 items-center justify-center rounded-full text-[#1d1d1f] transition-all duration-150 hover:bg-black/[0.05] active:scale-[0.95] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#0066cc]"
             aria-label={sidebarCollapsed ? 'เปิดแถบเมนูด้านข้าง' : 'พับแถบเมนูด้านข้าง'}
             aria-pressed={!sidebarCollapsed}
           >

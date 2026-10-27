@@ -66,7 +66,7 @@ const DialogContent = React.forwardRef<
         // Overflow handling
         'overflow-hidden',
         // Focus styles
-        'focus:outline-none focus:ring-2 focus:ring-[#0066cc] focus:ring-offset-2',
+        'focus:outline-hidden focus:ring-2 focus:ring-[#0066cc] focus:ring-offset-2',
         // Animations
         'data-[state=open]:animate-in data-[state=closed]:animate-out',
         'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
@@ -95,7 +95,7 @@ const DialogContent = React.forwardRef<
           // Transitions
           'transition-all duration-150 active:scale-[0.95]',
           // Focus ring
-          'focus:outline-none focus:ring-2 focus:ring-[#0066cc]',
+          'focus:outline-hidden focus:ring-2 focus:ring-[#0066cc]',
           // Disabled state
           'disabled:pointer-events-none disabled:opacity-50'
         )}

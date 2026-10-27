@@ -124,12 +124,12 @@ export default function HolidayWidget({
               {/* Countdown badge */}
               <div className="shrink-0 text-right">
                 {nextHoliday.isToday ? (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-[#34c759] px-3 py-1 text-xs font-bold text-white shadow-sm animate-pulse">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-[#34c759] px-3 py-1 text-xs font-bold text-white shadow-xs animate-pulse">
                     <Sparkles size={12} />
                     <span>วันนี้เป็นวันหยุด!</span>
                   </span>
                 ) : (
-                  <div className="rounded-[12px] bg-white/95 px-3 py-1.5 text-center shadow-sm ring-1 ring-black/[0.06]">
+                  <div className="rounded-[12px] bg-white/95 px-3 py-1.5 text-center shadow-xs ring-1 ring-black/[0.06]">
                     <span className="block text-[10px] font-semibold text-[#86868b]">เหลืออีก</span>
                     <span className="text-[15px] font-extrabold text-[#0066cc] sm:text-[17px]">
                       {nextHoliday.daysLeft} วัน
@@ -210,7 +210,7 @@ export default function HolidayWidget({
                 <div
                   className={`flex h-[42px] w-[42px] shrink-0 flex-col items-center justify-center rounded-[12px] font-bold text-center ${
                     item.id === nextHoliday?.id
-                      ? 'bg-[#0066cc] text-white shadow-sm'
+                      ? 'bg-[#0066cc] text-white shadow-xs'
                       : item.isPast
                       ? 'bg-[#e5e5ea] text-[#8e8e93]'
                       : 'bg-[#f2f2f7] text-[#1d1d1f]'

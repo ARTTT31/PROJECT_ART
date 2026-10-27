@@ -97,7 +97,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: ["20"]
+        node-version: ["26"]
 
     defaults:
       run:

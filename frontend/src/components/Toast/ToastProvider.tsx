@@ -146,7 +146,7 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: string) =
       </div>
       <button
         onClick={() => onRemove(toast.id)}
-        className="flex h-8 w-8 items-center justify-center rounded-full text-[#86868b] transition-colors hover:bg-black/5 hover:text-[#1d1d1f] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0066cc]"
+        className="flex h-8 w-8 items-center justify-center rounded-full text-[#86868b] transition-colors hover:bg-black/5 hover:text-[#1d1d1f] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#0066cc]"
         aria-label="ปิดการแจ้งเตือน"
       >
         <X size={16} aria-hidden="true" />

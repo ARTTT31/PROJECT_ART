@@ -50,7 +50,7 @@ export default function PageAccessGuard({
         </p>
         <Link
           href="/dashboard"
-          className="mt-1 inline-flex min-h-[44px] items-center rounded-full bg-[#0066cc] px-6 text-[13.5px] font-semibold text-white transition-colors hover:bg-[#0071e3] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0066cc] focus-visible:ring-offset-2 active:scale-[0.95]"
+          className="mt-1 inline-flex min-h-[44px] items-center rounded-full bg-[#0066cc] px-6 text-[13.5px] font-semibold text-white transition-colors hover:bg-[#0071e3] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#0066cc] focus-visible:ring-offset-2 active:scale-[0.95]"
         >
           กลับหน้าหลัก
         </Link>

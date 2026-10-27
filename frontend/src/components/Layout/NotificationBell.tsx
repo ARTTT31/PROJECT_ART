@@ -416,14 +416,14 @@ export default function NotificationBell() {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="relative flex h-9 w-9 items-center justify-center rounded-full text-[#1d1d1f] transition-all duration-150 hover:bg-black/[0.05] active:scale-[0.95] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0066cc]"
+        className="relative flex h-9 w-9 items-center justify-center rounded-full text-[#1d1d1f] transition-all duration-150 hover:bg-black/[0.05] active:scale-[0.95] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#0066cc]"
         aria-label={`การแจ้งเตือน${unreadCount > 0 ? ` (${unreadCount} รายการใหม่)` : ''}`}
         aria-haspopup="true"
         aria-expanded={open}
       >
         <Bell size={19} />
         {unreadCount > 0 && (
-          <span className="absolute -right-0.5 -top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#ff3b30] px-1 text-[10px] font-bold text-white shadow-sm ring-2 ring-white">
+          <span className="absolute -right-0.5 -top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#ff3b30] px-1 text-[10px] font-bold text-white shadow-xs ring-2 ring-white">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
@@ -479,7 +479,7 @@ export default function NotificationBell() {
           <div className="max-h-[26rem] overflow-y-auto p-3 space-y-2.5">
             {notifications.length === 0 ? (
               <div className="flex flex-col items-center justify-center rounded-[16px] border border-dashed border-black/[0.08] bg-[#f5f5f7]/60 px-6 py-10 text-center text-[#86868b]">
-                <div className="mb-2.5 flex h-10 w-10 items-center justify-center rounded-full bg-white text-[#86868b] shadow-sm ring-1 ring-black/[0.04]">
+                <div className="mb-2.5 flex h-10 w-10 items-center justify-center rounded-full bg-white text-[#86868b] shadow-xs ring-1 ring-black/[0.04]">
                   <Bell size={20} />
                 </div>
                 <span className="text-[13px] font-bold text-[#1d1d1f]">ไม่มีการแจ้งเตือนใหม่</span>
@@ -496,7 +496,7 @@ export default function NotificationBell() {
                     key={n.id}
                     className={`relative flex gap-3 rounded-[16px] border p-3.5 transition-all duration-150 ${
                       meta.itemClass
-                    } ${isRead ? 'opacity-60' : 'shadow-sm ring-1 ring-black/[0.04]'}`}
+                    } ${isRead ? 'opacity-60' : 'shadow-xs ring-1 ring-black/[0.04]'}`}
                   >
                     {!isRead && (
                       <span

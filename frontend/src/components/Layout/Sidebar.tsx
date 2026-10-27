@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, type ReactElement } from 'react'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -27,7 +27,7 @@ interface SidebarProps {
 interface MenuItem {
   name: string
   href: string
-  icon: JSX.Element
+  icon: ReactElement
   external?: boolean
   isWip?: boolean
   wipLabel?: string
@@ -212,7 +212,7 @@ export default function Sidebar({ isOpen, isCollapsed = false, onClose, user, on
               onClose()
               onLogout()
             }}
-            className="flex min-h-[48px] w-full items-center gap-2.5 rounded-[11px] px-3 py-2 text-[14px] font-semibold text-[#ff3b30] transition-all duration-150 hover:bg-[#ff3b30]/10 active:scale-[0.95] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ff3b30]"
+            className="flex min-h-[48px] w-full items-center gap-2.5 rounded-[11px] px-3 py-2 text-[14px] font-semibold text-[#ff3b30] transition-all duration-150 hover:bg-[#ff3b30]/10 active:scale-[0.95] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#ff3b30]"
             aria-label="ออกจากระบบ"
           >
             <span className="flex h-7 w-7 items-center justify-center rounded-[8px] bg-[#ff3b30]/10 text-[#ff3b30]">

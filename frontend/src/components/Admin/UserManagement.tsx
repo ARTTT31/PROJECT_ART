@@ -759,7 +759,7 @@ export default function UserManagement() {
               </label>
               <div 
                 onClick={() => setEditIsActive(!editIsActive)}
-                className="group flex cursor-pointer items-center gap-3 rounded-2xl bg-[#f8fafc] p-4 ring-1 ring-black/[0.04] transition-all hover:bg-white hover:shadow-sm"
+                className="group flex cursor-pointer items-center gap-3 rounded-2xl bg-[#f8fafc] p-4 ring-1 ring-black/[0.04] transition-all hover:bg-white hover:shadow-xs"
               >
                 {editIsActive ? (
                   <CheckCircle2 size={22} className="text-[#0066cc]" />
@@ -785,7 +785,7 @@ export default function UserManagement() {
                   className={`group relative flex cursor-pointer items-start gap-3 rounded-2xl p-4 transition-all duration-200 ${
                     editRole === 'user' 
                       ? 'bg-white ring-2 ring-[#0066cc] shadow-[0_4px_12px_rgba(0,102,204,0.12)]' 
-                      : 'bg-[#f8fafc] ring-1 ring-black/[0.04] hover:bg-white hover:shadow-sm'
+                      : 'bg-[#f8fafc] ring-1 ring-black/[0.04] hover:bg-white hover:shadow-xs'
                   }`}
                 >
                   <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-all duration-200 ${
@@ -812,7 +812,7 @@ export default function UserManagement() {
                   className={`group relative flex cursor-pointer items-start gap-3 rounded-2xl p-4 transition-all duration-200 ${
                     editRole === 'admin' 
                       ? 'bg-white ring-2 ring-purple-600 shadow-[0_4px_12px_rgba(147,51,234,0.12)]' 
-                      : 'bg-[#f8fafc] ring-1 ring-black/[0.04] hover:bg-white hover:shadow-sm'
+                      : 'bg-[#f8fafc] ring-1 ring-black/[0.04] hover:bg-white hover:shadow-xs'
                   }`}
                 >
                   <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-all duration-200 ${
@@ -874,7 +874,7 @@ export default function UserManagement() {
             <button 
               onClick={handleSave}
               disabled={isSaving}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-[#0066cc] px-6 py-2.5 text-[13px] font-bold text-white shadow-sm transition-all duration-150 hover:bg-[#0071e3]  active:scale-[0.95] disabled:opacity-50"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-[#0066cc] px-6 py-2.5 text-[13px] font-bold text-white shadow-xs transition-all duration-150 hover:bg-[#0071e3]  active:scale-[0.95] disabled:opacity-50"
             >
               {isSaving ? 'กำลังบันทึก...' : <><Check size={14} /> บันทึกการแก้ไข</>}
             </button>
@@ -913,7 +913,7 @@ export default function UserManagement() {
                   onChange={e => setCreateForm(prev => ({ ...prev, username: e.target.value }))}
                   placeholder="อย่างน้อย 3 ตัวอักษร"
                   autoComplete="off"
-                  className="w-full rounded-2xl border-0 bg-[#f8fafc] px-4 py-3 text-[14px] font-medium text-[#1d1d1f] outline-none ring-1 ring-black/[0.04] transition-all placeholder:text-[#86868b] focus:bg-white focus:ring-2 focus:ring-[#0066cc]"
+                  className="w-full rounded-2xl border-0 bg-[#f8fafc] px-4 py-3 text-[14px] font-medium text-[#1d1d1f] outline-hidden ring-1 ring-black/[0.04] transition-all placeholder:text-[#86868b] focus:bg-white focus:ring-2 focus:ring-[#0066cc]"
                 />
               </div>
               <div>
@@ -925,7 +925,7 @@ export default function UserManagement() {
                   value={createForm.display_name}
                   onChange={e => setCreateForm(prev => ({ ...prev, display_name: e.target.value }))}
                   placeholder="ชื่อ-นามสกุล"
-                  className="w-full rounded-2xl border-0 bg-[#f8fafc] px-4 py-3 text-[14px] font-medium text-[#1d1d1f] outline-none ring-1 ring-black/[0.04] transition-all placeholder:text-[#86868b] focus:bg-white focus:ring-2 focus:ring-[#0066cc]"
+                  className="w-full rounded-2xl border-0 bg-[#f8fafc] px-4 py-3 text-[14px] font-medium text-[#1d1d1f] outline-hidden ring-1 ring-black/[0.04] transition-all placeholder:text-[#86868b] focus:bg-white focus:ring-2 focus:ring-[#0066cc]"
                 />
               </div>
               <div>
@@ -939,7 +939,7 @@ export default function UserManagement() {
                   onChange={e => setCreateForm(prev => ({ ...prev, email: e.target.value }))}
                   placeholder="name@example.com"
                   autoComplete="off"
-                  className="w-full rounded-2xl border-0 bg-[#f8fafc] px-4 py-3 text-[14px] font-medium text-[#1d1d1f] outline-none ring-1 ring-black/[0.04] transition-all placeholder:text-[#86868b] focus:bg-white focus:ring-2 focus:ring-[#0066cc]"
+                  className="w-full rounded-2xl border-0 bg-[#f8fafc] px-4 py-3 text-[14px] font-medium text-[#1d1d1f] outline-hidden ring-1 ring-black/[0.04] transition-all placeholder:text-[#86868b] focus:bg-white focus:ring-2 focus:ring-[#0066cc]"
                 />
               </div>
               <div>
@@ -953,7 +953,7 @@ export default function UserManagement() {
                   onChange={e => setCreateForm(prev => ({ ...prev, password: e.target.value }))}
                   placeholder="อย่างน้อย 8 ตัวอักษร"
                   autoComplete="new-password"
-                  className="w-full rounded-2xl border-0 bg-[#f8fafc] px-4 py-3 text-[14px] font-medium text-[#1d1d1f] outline-none ring-1 ring-black/[0.04] transition-all placeholder:text-[#86868b] focus:bg-white focus:ring-2 focus:ring-[#0066cc]"
+                  className="w-full rounded-2xl border-0 bg-[#f8fafc] px-4 py-3 text-[14px] font-medium text-[#1d1d1f] outline-hidden ring-1 ring-black/[0.04] transition-all placeholder:text-[#86868b] focus:bg-white focus:ring-2 focus:ring-[#0066cc]"
                 />
               </div>
             </div>
@@ -972,7 +972,7 @@ export default function UserManagement() {
                     className={`group relative flex items-center gap-3 rounded-2xl p-4 text-left transition-all duration-200 ${
                       createForm.role === role
                         ? 'bg-white ring-2 ring-[#0066cc] shadow-[0_4px_12px_rgba(0,102,204,0.12)]'
-                        : 'bg-[#f8fafc] ring-1 ring-black/[0.04] hover:bg-white hover:shadow-sm'
+                        : 'bg-[#f8fafc] ring-1 ring-black/[0.04] hover:bg-white hover:shadow-xs'
                     }`}
                   >
                     <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-all duration-200 ${
@@ -1036,7 +1036,7 @@ export default function UserManagement() {
             <button
               onClick={handleCreate}
               disabled={isCreatingSaving}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-[#0066cc] px-6 py-2.5 text-[13px] font-bold text-white shadow-sm transition-all duration-150 hover:bg-[#0071e3] active:scale-[0.95] disabled:opacity-50"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-[#0066cc] px-6 py-2.5 text-[13px] font-bold text-white shadow-xs transition-all duration-150 hover:bg-[#0071e3] active:scale-[0.95] disabled:opacity-50"
             >
               {isCreatingSaving ? 'กำลังสร้าง...' : <><UserPlus size={14} /> สร้างผู้ใช้</>}
             </button>
@@ -1088,7 +1088,7 @@ export default function UserManagement() {
                   placeholder="ค้นหาชื่อ อีเมล หรือชื่อผู้ใช้"
                   aria-label="ค้นหาผู้ใช้"
                   style={{ paddingLeft: '2.75rem', borderRadius: '9999px', minHeight: '42px', height: '42px' }}
-                  className="w-full rounded-full border border-black/[0.08] bg-[#f5f5f7] pr-4 text-[13.5px] font-medium text-[#1d1d1f] outline-none transition-all placeholder:text-[#86868b] focus:bg-white focus:border-[#0066cc] focus:ring-2 focus:ring-[#0066cc]/20"
+                  className="w-full rounded-full border border-black/[0.08] bg-[#f5f5f7] pr-4 text-[13.5px] font-medium text-[#1d1d1f] outline-hidden transition-all placeholder:text-[#86868b] focus:bg-white focus:border-[#0066cc] focus:ring-2 focus:ring-[#0066cc]/20"
                 />
               </label>
               <div className="grid grid-cols-2 gap-2 w-full sm:w-auto sm:flex sm:items-center">
@@ -1120,7 +1120,7 @@ export default function UserManagement() {
             <button
               onClick={openCreate}
               style={{ minHeight: '42px', height: '42px' }}
-              className="w-full lg:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-[#0066cc] px-5 text-[13px] font-bold text-white shadow-sm transition-all hover:bg-[#0071e3] active:scale-95"
+              className="w-full lg:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-[#0066cc] px-5 text-[13px] font-bold text-white shadow-xs transition-all hover:bg-[#0071e3] active:scale-95"
             >
               <UserPlus size={14} /> เพิ่มผู้ใช้
             </button>

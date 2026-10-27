@@ -524,7 +524,7 @@ export default function WeatherWidget({
         <button
           type="button"
           onClick={() => fetchWeatherData(selectedCity, true)}
-          className="mt-4 inline-flex items-center justify-center gap-1.5 rounded-full bg-[#0066cc] px-4 py-2 text-[13px] font-semibold text-white transition-all duration-150 hover:bg-[#0071e3] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0066cc] focus-visible:ring-offset-2"
+          className="mt-4 inline-flex items-center justify-center gap-1.5 rounded-full bg-[#0066cc] px-4 py-2 text-[13px] font-semibold text-white transition-all duration-150 hover:bg-[#0071e3] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#0066cc] focus-visible:ring-offset-2"
         >
           <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} aria-hidden="true" />
           {refreshing ? 'กำลังลองใหม่…' : 'ลองอีกครั้ง'}

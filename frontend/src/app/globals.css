@@ -1,6 +1,26 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+/* Design tokens stay in the JS config and are loaded through @config. */
+@config "../../tailwind.config.ts";
+
+/* Tailwind v4 changed the default border color from gray-200 to currentColor.
+   The existing screens rely on the v3 default for every colour-less `border`,
+   so restore it here rather than colouring each usage by hand. */
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentColor);
+  }
+
+  /* v4 resolves a colour-less `ring-*` to currentColor; v3 defaulted to
+     blue-500 at 50%. Restore the v3 value for the usages that pass only a
+     ring width. */
+  * {
+    --tw-ring-color: rgb(59 130 246 / 0.5);
+  }
+}
 
 :root {
   /* Enforce light mode (anti-reference: no dark mode) */

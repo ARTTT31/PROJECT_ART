@@ -77,7 +77,7 @@ function WidgetErrorFallback({ name, error, reset }: { name: string; error: Erro
               reset()
             }
           }}
-          className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-[#f2f2f7] px-4 py-2 text-[13px] font-semibold text-[#1d1d1f] transition-all duration-200 hover:bg-[#e5e5ea] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0066cc]"
+          className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-[#f2f2f7] px-4 py-2 text-[13px] font-semibold text-[#1d1d1f] transition-all duration-200 hover:bg-[#e5e5ea] active:scale-95 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#0066cc]"
         >
           {isChunkError ? 'รีเฟรชหน้าเว็บ' : 'ลองใหม่อีกครั้ง'}
         </button>
@@ -234,7 +234,7 @@ export default function DashboardPage() {
               type="button"
               onClick={() => setShowConfigModal(true)}
               data-testid="manage-widgets-button"
-              className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-[13px] font-semibold text-[#1d1d1f] shadow-sm ring-1 ring-black/[0.08] transition-all duration-150 hover:bg-[#f5f5f7] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0066cc] focus-visible:ring-offset-2 active:scale-[0.95]"
+              className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-[13px] font-semibold text-[#1d1d1f] shadow-xs ring-1 ring-black/[0.08] transition-all duration-150 hover:bg-[#f5f5f7] hover:shadow-md focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#0066cc] focus-visible:ring-offset-2 active:scale-[0.95]"
               aria-label="จัดการวิดเจ็ต"
             >
               <SlidersHorizontal className="h-3.5 w-3.5 text-[#475569]" aria-hidden="true" />
@@ -288,7 +288,7 @@ export default function DashboardPage() {
                       key={widget.id}
                       className={`flex items-center gap-3 rounded-xl p-3.5 transition-all duration-150 ${
                         isVisible
-                          ? 'bg-white shadow-sm ring-1 ring-black/[0.06]'
+                          ? 'bg-white shadow-xs ring-1 ring-black/[0.06]'
                           : 'hover:bg-white/70'
                       }`}
                     >
@@ -309,7 +309,7 @@ export default function DashboardPage() {
                         disabled={isLocked}
                         onClick={() => toggleWidgetVisibility(widget.id)}
                         style={{ width: '44px', height: '28px', minWidth: '44px', minHeight: '28px', padding: '2px', display: 'flex', alignItems: 'center', justifyContent: 'flex-start' }}
-                        className={`relative shrink-0 cursor-pointer rounded-full transition-colors duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0066cc] focus-visible:ring-offset-2 disabled:cursor-not-allowed ${
+                        className={`relative shrink-0 cursor-pointer rounded-full transition-colors duration-200 ease-in-out focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#0066cc] focus-visible:ring-offset-2 disabled:cursor-not-allowed ${
                           isLocked ? 'opacity-50' : ''
                         } ${isVisible ? 'bg-[#0066cc]' : 'bg-[#e5e5ea]'}`}
                       >
@@ -329,7 +329,7 @@ export default function DashboardPage() {
           <DialogFooter>
             <button
               onClick={() => setShowConfigModal(false)}
-              className="inline-flex items-center justify-center rounded-full bg-[#0066cc] px-6 py-2.5 text-[15px] font-semibold text-white transition-all duration-150 hover:bg-[#0071e3]  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0066cc] focus-visible:ring-offset-2 active:scale-[0.95]"
+              className="inline-flex items-center justify-center rounded-full bg-[#0066cc] px-6 py-2.5 text-[15px] font-semibold text-white transition-all duration-150 hover:bg-[#0071e3]  focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#0066cc] focus-visible:ring-offset-2 active:scale-[0.95]"
             >
               เสร็จสิ้น
             </button>

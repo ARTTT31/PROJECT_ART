@@ -23,10 +23,10 @@ Security and resilience improvements including automated secondary provider fail
 
 | Layer | Technology | Current Use |
 | --- | --- | --- |
-| Frontend | Next.js 16 App Router, React 18, TypeScript 5 | Main web application |
+| Frontend | Next.js 16 App Router, React 19, TypeScript 6 | Main web application |
 | Styling | Tailwind CSS, Apple HIG Design Tokens | Dashboard, login, profile, widgets |
 | UI libraries | Lucide React, Radix Dialog, SweetAlert2 | Icons, dialogs, notifications |
-| Backend | FastAPI 0.143, SQLAlchemy async, Alembic | REST API and database access |
+| Backend | FastAPI 0.162, SQLAlchemy 2.1 async, Alembic | REST API and database access |
 | Auth | PyJWT access/refresh tokens in HTTP-only cookies | Standard login and Google OAuth |
 | Database | PostgreSQL target, SQLite for tests | Neon serverless PostgreSQL in production |
 | External data | Open-Meteo & MET Norway (weather), Open-Meteo (air quality), Bangchak (oil price), BigDataCloud & OpenStreetMap Nominatim (geocode) | Dashboard widgets and GPS reverse-geocoding |

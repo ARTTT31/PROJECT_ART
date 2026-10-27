@@ -139,7 +139,7 @@ function SectionCard({
   children,
 }: SectionCardProps) {
   return (
-    <section className="overflow-hidden rounded-[18px] bg-white border border-black/[0.06] shadow-sm transition-all duration-200">
+    <section className="overflow-hidden rounded-[18px] bg-white border border-black/[0.06] shadow-xs transition-all duration-200">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-black/[0.05] bg-[#fafafc] px-5 sm:px-6 py-4">
         <div className="flex items-center gap-3 min-w-0">
           <div
@@ -232,7 +232,7 @@ function InsetField({
             'w-full rounded-[14px] py-3 text-[16px] sm:text-[14px] font-medium text-[#1d1d1f] placeholder:text-[#86868b] transition-all duration-150',
             readOnly
               ? 'bg-[#f2f2f7]/60 cursor-default select-text'
-              : 'bg-[#f5f5f7] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0066cc] focus:shadow-sm',
+              : 'bg-[#f5f5f7] focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-[#0066cc] focus:shadow-xs',
             trailing ? '!pr-12' : '!pr-4',
           ].join(' ')}
           style={{ paddingLeft: '2.75rem' }}
@@ -743,7 +743,7 @@ export default function ProfilePage() {
       {/* ══════════════════════════════════════════════════
           HERO IDENTITY CARD (Apple-style Header Banner)
           ══════════════════════════════════════════════════ */}
-      <section className="overflow-hidden rounded-[18px] bg-white border border-black/[0.06] p-5 sm:p-7 shadow-sm transition-all">
+      <section className="overflow-hidden rounded-[18px] bg-white border border-black/[0.06] p-5 sm:p-7 shadow-xs transition-all">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5">
           {/* Left: Avatar + Identity */}
           <div className="flex items-center gap-4 sm:gap-5">
@@ -940,7 +940,7 @@ export default function ProfilePage() {
                 <button
                   type="submit"
                   disabled={isSavingProfile}
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-[#0066cc] px-6 py-2.5 text-[13px] font-bold text-white shadow-sm transition-all duration-150 hover:bg-[#0071e3] disabled:opacity-50 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0066cc]"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-[#0066cc] px-6 py-2.5 text-[13px] font-bold text-white shadow-xs transition-all duration-150 hover:bg-[#0071e3] disabled:opacity-50 active:scale-[0.96] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#0066cc]"
                 >
                   {isSavingProfile ? (
                     <div className="h-3.5 w-3.5 animate-spin rounded-full border-[2px] border-white/30 border-t-white" />
@@ -1078,7 +1078,7 @@ export default function ProfilePage() {
                 <button
                   type="submit"
                   disabled={isChangingPassword}
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-[#0066cc] px-6 py-2.5 text-[13px] font-bold text-white shadow-sm transition-all duration-150 hover:bg-[#0071e3] disabled:opacity-50 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0066cc]"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-[#0066cc] px-6 py-2.5 text-[13px] font-bold text-white shadow-xs transition-all duration-150 hover:bg-[#0071e3] disabled:opacity-50 active:scale-[0.96] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#0066cc]"
                 >
                   {isChangingPassword ? (
                     <div className="h-3.5 w-3.5 animate-spin rounded-full border-[2px] border-white/30 border-t-white" />
@@ -1110,7 +1110,7 @@ export default function ProfilePage() {
                   type="button"
                   onClick={handleExportData}
                   disabled={isExporting}
-                  className="mt-3 inline-flex min-h-[40px] items-center justify-center gap-2 rounded-full border border-black/[0.08] bg-white px-4 py-2 text-[12.5px] font-bold text-[#1d1d1f] transition-all hover:border-[#0066cc]/40 hover:text-[#0066cc] disabled:opacity-50 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0066cc]"
+                  className="mt-3 inline-flex min-h-[40px] items-center justify-center gap-2 rounded-full border border-black/[0.08] bg-white px-4 py-2 text-[12.5px] font-bold text-[#1d1d1f] transition-all hover:border-[#0066cc]/40 hover:text-[#0066cc] disabled:opacity-50 active:scale-[0.97] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#0066cc]"
                 >
                   {isExporting ? (
                     <Loader2 size={14} className="animate-spin" aria-hidden="true" />
@@ -1134,13 +1134,13 @@ export default function ProfilePage() {
                     onChange={(event) => setDeletePassword(event.target.value)}
                     placeholder="รหัสผ่านปัจจุบัน"
                     autoComplete="current-password"
-                    className="min-h-[40px] flex-1 rounded-full border border-rose-200 bg-white px-4 py-2 text-[13px] text-[#1d1d1f] outline-none focus:border-rose-400 focus:ring-2 focus:ring-rose-200"
+                    className="min-h-[40px] flex-1 rounded-full border border-rose-200 bg-white px-4 py-2 text-[13px] text-[#1d1d1f] outline-hidden focus:border-rose-400 focus:ring-2 focus:ring-rose-200"
                   />
                   <button
                     type="button"
                     onClick={handleDeleteAccount}
                     disabled={isDeletingAccount}
-                    className="inline-flex min-h-[40px] items-center justify-center gap-2 rounded-full bg-rose-600 px-4 py-2 text-[12.5px] font-bold text-white transition-all hover:bg-rose-700 disabled:opacity-50 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
+                    className="inline-flex min-h-[40px] items-center justify-center gap-2 rounded-full bg-rose-600 px-4 py-2 text-[12.5px] font-bold text-white transition-all hover:bg-rose-700 disabled:opacity-50 active:scale-[0.97] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-rose-500"
                   >
                     {isDeletingAccount ? (
                       <Loader2 size={14} className="animate-spin" aria-hidden="true" />
@@ -1273,7 +1273,7 @@ export default function ProfilePage() {
                           alignItems: 'center',
                           justifyContent: 'flex-start',
                         }}
-                        className={`relative ml-1 shrink-0 cursor-pointer rounded-full transition-colors duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0066cc] disabled:cursor-not-allowed ${
+                        className={`relative ml-1 shrink-0 cursor-pointer rounded-full transition-colors duration-200 ease-in-out focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#0066cc] disabled:cursor-not-allowed ${
                           item.enabled ? 'bg-[#0066cc]' : 'bg-[#e5e5ea]'
                         } ${item.required ? 'opacity-70' : ''}`}
                       >
@@ -1311,7 +1311,7 @@ export default function ProfilePage() {
               <button
                 type="button"
                 onClick={openCreateQuickLink}
-                className="inline-flex items-center gap-1.5 rounded-full bg-[#0066cc] px-3.5 py-1.5 text-[11.5px] font-bold text-white shadow-sm transition-all hover:bg-[#0071e3] active:scale-95"
+                className="inline-flex items-center gap-1.5 rounded-full bg-[#0066cc] px-3.5 py-1.5 text-[11.5px] font-bold text-white shadow-xs transition-all hover:bg-[#0071e3] active:scale-95"
               >
                 <Plus size={13} aria-hidden="true" />
                 เพิ่มลิงก์
@@ -1320,7 +1320,7 @@ export default function ProfilePage() {
           >
             {quickLinks.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 p-8 text-center">
-                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-sky-600 shadow-sm ring-1 ring-black/[0.06]">
+                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-sky-600 shadow-xs ring-1 ring-black/[0.06]">
                   <Link2 size={20} aria-hidden="true" />
                 </div>
                 <h3 className="text-[14px] font-bold text-[#1d1d1f]">ยังไม่มีควิกลิ้งค์</h3>
@@ -1330,7 +1330,7 @@ export default function ProfilePage() {
                 <button
                   type="button"
                   onClick={openCreateQuickLink}
-                  className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-[#0066cc] px-4 py-2 text-[12px] font-bold text-white shadow-sm transition-all hover:bg-[#0071e3]"
+                  className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-[#0066cc] px-4 py-2 text-[12px] font-bold text-white shadow-xs transition-all hover:bg-[#0071e3]"
                 >
                   <Plus size={13} aria-hidden="true" />
                   สร้างควิกลิ้งค์แรก
@@ -1455,7 +1455,7 @@ export default function ProfilePage() {
                       placeholder="เช่น ทีม Dev ART หรือ ครอบครัวใจดี"
                       disabled={!isAdmin || isSavingBranding}
                       required
-                      className="w-full rounded-xl border border-black/10 bg-white px-3.5 py-2.5 text-[14px] text-[#1d1d1f] shadow-2xs placeholder:text-[#86868b] focus:border-[#0066cc] focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed"
+                      className="w-full rounded-xl border border-black/10 bg-white px-3.5 py-2.5 text-[14px] text-[#1d1d1f] shadow-2xs placeholder:text-[#86868b] focus:border-[#0066cc] focus:outline-hidden focus:ring-2 focus:ring-[#0066cc]/20 disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed"
                     />
                   </div>
 
@@ -1469,7 +1469,7 @@ export default function ProfilePage() {
                       onChange={(e) => setFormCompanyTagline(e.target.value)}
                       placeholder="เช่น ศูนย์รวมเครื่องมือและการทำงานส่วนกลาง"
                       disabled={!isAdmin || isSavingBranding}
-                      className="w-full rounded-xl border border-black/10 bg-white px-3.5 py-2.5 text-[14px] text-[#1d1d1f] shadow-2xs placeholder:text-[#86868b] focus:border-[#0066cc] focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed"
+                      className="w-full rounded-xl border border-black/10 bg-white px-3.5 py-2.5 text-[14px] text-[#1d1d1f] shadow-2xs placeholder:text-[#86868b] focus:border-[#0066cc] focus:outline-hidden focus:ring-2 focus:ring-[#0066cc]/20 disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed"
                     />
                   </div>
                 </div>
@@ -1532,7 +1532,7 @@ export default function ProfilePage() {
                   <span className="text-[11.5px] font-bold text-[#86868b] uppercase tracking-wider block mb-2">
                     ตัวอย่างการแสดงผลบนแถบเมนูด้านข้าง (Live Preview)
                   </span>
-                  <div className="inline-flex items-center gap-3 rounded-2xl bg-white/90 p-3 shadow-sm border border-black/[0.06] max-w-sm">
+                  <div className="inline-flex items-center gap-3 rounded-2xl bg-white/90 p-3 shadow-xs border border-black/[0.06] max-w-sm">
                     <Image
                       src={brandLogoUrl || '/art-workspace-mark.svg'}
                       alt=""
@@ -1556,7 +1556,7 @@ export default function ProfilePage() {
                     <button
                       type="submit"
                       disabled={isSavingBranding}
-                      className="inline-flex items-center gap-2 rounded-full bg-[#0066cc] px-5 py-2 text-[13px] font-bold text-white shadow-sm transition-all hover:bg-[#0071e3] active:scale-95 disabled:opacity-50"
+                      className="inline-flex items-center gap-2 rounded-full bg-[#0066cc] px-5 py-2 text-[13px] font-bold text-white shadow-xs transition-all hover:bg-[#0071e3] active:scale-95 disabled:opacity-50"
                     >
                       {isSavingBranding ? (
                         <>
@@ -1622,7 +1622,7 @@ export default function ProfilePage() {
                 <div className="text-[10px] font-bold uppercase tracking-wider text-[#86868b] mb-2">
                   ตัวอย่างการแสดงผล
                 </div>
-                <div className="flex items-center gap-3 rounded-2xl bg-white p-3 ring-1 ring-black/[0.06] shadow-sm">
+                <div className="flex items-center gap-3 rounded-2xl bg-white p-3 ring-1 ring-black/[0.06] shadow-xs">
                   <div
                     className="flex h-10 w-10 items-center justify-center rounded-[14px]"
                     style={{ backgroundColor: `${qlColor}15` }}
@@ -1693,7 +1693,7 @@ export default function ProfilePage() {
                           className={[
                             'relative flex h-9 w-9 items-center justify-center rounded-xl transition-all duration-150',
                             active
-                              ? 'bg-white shadow-sm ring-2 ring-[#0066cc]'
+                              ? 'bg-white shadow-xs ring-2 ring-[#0066cc]'
                               : 'bg-white/50 hover:bg-white ring-1 ring-black/[0.04] hover:ring-black/[0.08]',
                           ].join(' ')}
                         >
@@ -1736,7 +1736,7 @@ export default function ProfilePage() {
                           aria-label={`สี ${color}`}
                           className={[
                             'h-7 w-7 rounded-lg transition-all duration-150 ring-offset-2',
-                            active ? 'ring-2 ring-[#1d1d1f] scale-110 shadow-sm' : 'ring-1 ring-black/10 hover:scale-105',
+                            active ? 'ring-2 ring-[#1d1d1f] scale-110 shadow-xs' : 'ring-1 ring-black/10 hover:scale-105',
                           ].join(' ')}
                           style={{ backgroundColor: color }}
                         />
@@ -1780,7 +1780,7 @@ export default function ProfilePage() {
               </button>
               <button
                 type="submit"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-[#0066cc] px-6 py-2.5 text-[13px] font-bold text-white shadow-sm transition-all duration-150 hover:bg-[#0071e3] active:scale-[0.95]"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-[#0066cc] px-6 py-2.5 text-[13px] font-bold text-white shadow-xs transition-all duration-150 hover:bg-[#0071e3] active:scale-[0.95]"
               >
                 <Check size={14} aria-hidden="true" />
                 {editingQuickLinkId ? 'บันทึกการแก้ไข' : 'สร้างลิงก์'}

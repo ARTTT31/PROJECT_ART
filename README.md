@@ -8,8 +8,8 @@ Production URL: configure this in your deployment environment; do not commit a p
 
 The GitHub Actions pipeline (`ci.yml`) runs on every push and pull request to `main`:
 
-- **Backend:** Python 3.11 — flake8 7.4 lint (`--max-line-length=120`) + mypy 2.4 type check + `alembic upgrade head` and `alembic check` against a throwaway SQLite database + pytest (250 tests, coverage 83.98%, gate 40%)
-- **Frontend:** Node 20 — ESLint + TypeScript type-check + 102 Vitest unit tests + Next.js production build + Playwright smoke tests
+- **Backend:** Python 3.11 — flake8 7.4 lint (`--max-line-length=120`) + mypy 2.4 type check + `alembic upgrade head` and `alembic check` against a throwaway SQLite database + pytest (374 tests, coverage 88.41%, gate 40%)
+- **Frontend:** Node 26 — ESLint + TypeScript type-check + 140 Vitest unit tests + Next.js production build + Playwright smoke tests
 - **Dependency audit (blocking):** `pip-audit` gates every push and pull request and re-runs weekly (`cron: 0 2 * * 1`, Mondays 02:00 UTC). The pinned backend set currently reports no known advisories; Dependabot opens the upgrade pull requests (see `.github/dependabot.yml`).
 
 The migration step matters: the test suite builds its schema from the models, so a broken or forgotten Alembic revision used to pass CI and only fail against production. `alembic check` additionally fails when the models drift from the migration head.
@@ -41,8 +41,10 @@ The migration step matters: the test suite builds its schema from the models, so
 ## Tech Stack
 
 ### Frontend
-- **Framework:** Next.js 16 App Router, React 18, TypeScript 5
-- **Styling:** Tailwind CSS, custom design tokens
+- **Framework:** Next.js 16 App Router, React 19, TypeScript 6
+- **Styling:** Tailwind CSS 4, custom design tokens
+
+  > TypeScript is held at 6.x on purpose: `typescript-eslint` (via `eslint-config-next`) declares `typescript >=4.8.4 <6.1.0`, so 7.x would break `npm run lint`. Move it once that range widens.
 - **UI Components:** Radix UI, Lucide React icons, Framer Motion
 - **Drag and Drop:** `@dnd-kit/core`, `@dnd-kit/sortable`
 - **PWA Support:** `@serwist/next`
@@ -56,7 +58,7 @@ The migration step matters: the test suite builds its schema from the models, so
 
 | Layer | Technology |
 |---|---|
-| Framework | FastAPI 0.143, Starlette 1.7, Uvicorn |
+| Framework | FastAPI 0.162, Starlette 1.10, Uvicorn 0.54 |
 | Real-time | WebSocket notifications (authenticated handshake, connection caps, optional Redis fan-out) |
 | ORM / DB | SQLAlchemy 2 async, Alembic migrations |
 | Database | PostgreSQL (Neon in production, SQLite for CI tests) |
