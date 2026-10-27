@@ -6,8 +6,14 @@
 import { parseJsonWithSchema, type ResponseModelParsed } from './schemas';
 import type { z } from 'zod';
 
-// Leave this empty in browser deployments to use the same-origin /api rewrite.
-const API_URL = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '');
+// In browser client-side runtime, always use same-origin relative URL ('') so requests
+// pass through Next.js rewrites and cookies are treated as first-party (same-site).
+// This prevents third-party cookie blocking in Chromium/Opera/Safari and cross-origin CSRF 403 errors.
+// In Node.js / SSR / testing, use the configured backend URL.
+const API_URL =
+  typeof window !== 'undefined' && !process.env.VITEST
+    ? ''
+    : (process.env.API_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '');
 
 // ── CSRF (double-submit cookie) ──────────────────────────────
 const CSRF_COOKIE = 'csrf_token';
@@ -18,6 +24,7 @@ const MUTATING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 // Fallback for deployments where the CSRF cookie lives on the API origin and
 // is therefore not readable from `document.cookie`.
 let csrfTokenCache: string | null = null;
+let csrfTokenPromise: Promise<string | null> | null = null;
 
 function readCsrfCookie(): string | null {
   if (typeof document === 'undefined') return null;
@@ -56,7 +63,12 @@ export async function getCsrfToken(): Promise<string | null> {
     return fromCookie;
   }
   if (csrfTokenCache) return csrfTokenCache;
-  csrfTokenCache = await requestCsrfToken();
+  if (!csrfTokenPromise) {
+    csrfTokenPromise = requestCsrfToken().finally(() => {
+      csrfTokenPromise = null;
+    });
+  }
+  csrfTokenCache = await csrfTokenPromise;
   return csrfTokenCache;
 }
 

@@ -74,6 +74,7 @@ export default function Header({ user, onMenuClick, sidebarCollapsed = false }: 
                       {c.href ? (
                         <Link
                           href={c.href}
+                          prefetch={false}
                           className="transition-colors hover:text-[#1d1d1f]"
                         >
                           {c.label}

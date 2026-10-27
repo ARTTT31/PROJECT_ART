@@ -154,6 +154,7 @@ export default function Sidebar({ isOpen, isCollapsed = false, onClose, user, on
                       <li key={item.name}>
                         <ItemComponent
                           href={item.href}
+                          prefetch={item.external ? undefined : false}
                           target={item.external ? '_blank' : undefined}
                           rel={item.external ? 'noopener noreferrer' : undefined}
                           className={`group flex min-h-[48px] items-center gap-2.5 rounded-[11px] px-3 py-2 text-[14px] font-semibold transition-all duration-150 active:scale-[0.95] ${
