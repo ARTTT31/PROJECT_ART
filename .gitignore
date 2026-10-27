@@ -10,6 +10,7 @@
 .cursorrules
 .agents/
 .freebuff/
+load_freebuff_cookies.py
 .gemini/
 .impeccable/
 .kiro/
