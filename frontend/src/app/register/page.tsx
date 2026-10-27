@@ -62,6 +62,9 @@ export default function RegisterPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  // PDPA consent is a separate acknowledgement from the form fields: the
+  // backend refuses the sign-up without it and records when it was given.
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState('');
   const [capsLock, setCapsLock] = useState(false);
 
@@ -154,6 +157,10 @@ export default function RegisterPage() {
       setError('รหัสผ่านและยืนยันรหัสผ่านไม่ตรงกัน');
       return;
     }
+    if (!acceptedTerms) {
+      setError('กรุณายอมรับข้อตกลงการใช้งานและนโยบายความเป็นส่วนตัวก่อนสมัครสมาชิก');
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -166,6 +173,7 @@ export default function RegisterPage() {
           email: trimmedEmail,
           password,
           
+          accepted_terms: true,
           ...(turnstileToken ? { turnstile_token: turnstileToken } : {}),
         }),
       });
@@ -375,6 +383,26 @@ export default function RegisterPage() {
               </label>
 
               
+
+              <label htmlFor="reg-consent" className="login-consent">
+                <input
+                  id="reg-consent"
+                  type="checkbox"
+                  checked={acceptedTerms}
+                  onChange={(event) => setAcceptedTerms(event.target.checked)}
+                  disabled={isSubmitting}
+                />
+                <span>
+                  ฉันยอมรับ{' '}
+                  <Link href="/terms" target="_blank" rel="noopener noreferrer">
+                    ข้อตกลงการใช้งาน
+                  </Link>{' '}
+                  และ{' '}
+                  <Link href="/privacy" target="_blank" rel="noopener noreferrer">
+                    นโยบายความเป็นส่วนตัว
+                  </Link>
+                </span>
+              </label>
 
               <TurnstileWidget onToken={setTurnstileToken} />
 
