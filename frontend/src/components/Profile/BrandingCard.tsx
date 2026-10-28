@@ -63,7 +63,6 @@ export function BrandingCard({ isAdmin }: { isAdmin: boolean }) {
   const brandLogoInputRef = useRef<HTMLInputElement>(null);
   const [isUploadingBrandLogo, setIsUploadingBrandLogo] = useState(false);
   const [isDraggingLogo, setIsDraggingLogo] = useState(false);
-  const [logoUrlInput, setLogoUrlInput] = useState('');
 
   useEffect(() => {
     setFormCompanyName(companyName);
@@ -126,25 +125,6 @@ export function BrandingCard({ isAdmin }: { isAdmin: boolean }) {
     if (file) await uploadLogoFile(file);
   };
 
-  const isHttpLogoUrl = (value: string) => /^https?:\/\/\S+$/i.test(value);
-
-  const handleApplyLogoUrl = async () => {
-    const value = logoUrlInput.trim();
-    if (!isHttpLogoUrl(value)) {
-      showToast('ลิงก์โลโก้ต้องขึ้นต้นด้วย http:// หรือ https://', 'warning');
-      return;
-    }
-    setIsUploadingBrandLogo(true);
-    const res = await updateBranding({ brand_logo_url: value });
-    setIsUploadingBrandLogo(false);
-    if (res.success) {
-      setLogoUrlInput('');
-      showSuccess('สำเร็จ', 'ใช้โลโก้จากลิงก์ที่ระบุแล้ว');
-    } else {
-      showError('เกิดข้อผิดพลาด', res.error || 'ไม่สามารถใช้ลิงก์นี้ได้');
-    }
-  };
-
   const handleResetBrandLogo = async () => {
     const confirmed = await showConfirm(
       'กลับไปใช้โลโก้เริ่มต้น?',
@@ -171,9 +151,9 @@ export function BrandingCard({ isAdmin }: { isAdmin: boolean }) {
       iconBg="bg-amber-50"
       iconColor="text-amber-600"
       iconRing="ring-amber-200/60"
-      title="ชื่อทีม / ครอบครัว / องค์กร (Workspace Branding)"
-      subtitle="เปลี่ยนชื่อ โลโก้ หรือหัวแบรนด์ตามชื่อทีมหรือครอบครัว ที่แสดงบนหัวเว็บ เมนูข้าง และหน้าเข้าสู่ระบบ"
-      badge={isAdmin ? 'สิทธิ์แอดมินแก้ไขได้' : 'เฉพาะแอดมิน'}
+      title="ชื่อทีมและโลโก้"
+      subtitle="ตั้งชื่อทีมและโลโก้ ที่ใช้แสดงในเมนูด้านข้าง หน้าเข้าสู่ระบบ และไอคอนแท็บ"
+      badge={isAdmin ? 'เฉพาะแอดมิน' : 'อ่านอย่างเดียว'}
     >
       <form onSubmit={handleSaveBranding} className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -256,7 +236,7 @@ export function BrandingCard({ isAdmin }: { isAdmin: boolean }) {
           }`}
         >
           <span className="text-[11.5px] font-bold text-[#86868b] uppercase tracking-wider block mb-2">
-            โลโก้และตัวอย่างการแสดงผลบนแถบเมนูด้านข้าง (Live Preview)
+            โลโก้และตัวอย่างในเมนูด้านข้าง
           </span>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="inline-flex items-center gap-3 rounded-2xl bg-white/90 p-3 shadow-xs border border-black/[0.06] max-w-sm">
@@ -290,6 +270,7 @@ export function BrandingCard({ isAdmin }: { isAdmin: boolean }) {
                   type="button"
                   onClick={() => brandLogoInputRef.current?.click()}
                   disabled={isBusyLogo}
+                  title="PNG, JPG, GIF หรือ WebP ขนาดไม่เกิน 1MB"
                   className="inline-flex items-center gap-1.5 rounded-full bg-[#0066cc] px-3.5 py-1.5 text-[11.5px] font-bold text-white shadow-xs transition-all hover:bg-[#0071e3] active:scale-95 disabled:opacity-50"
                 >
                   {isUploadingBrandLogo ? (
@@ -318,43 +299,6 @@ export function BrandingCard({ isAdmin }: { isAdmin: boolean }) {
           </div>
 
           {isAdmin && (
-            <div className="mt-3">
-              <label
-                htmlFor="brand-logo-url"
-                className="mb-1 ml-1 block text-[11px] font-bold text-[#6e6e73]"
-              >
-                หรือใช้โลโก้จากลิงก์
-              </label>
-              <div className="flex flex-col gap-2 sm:flex-row">
-                <input
-                  id="brand-logo-url"
-                  type="url"
-                  inputMode="url"
-                  value={logoUrlInput}
-                  onChange={(e) => setLogoUrlInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      void handleApplyLogoUrl();
-                    }
-                  }}
-                  placeholder="https://example.com/logo.png"
-                  disabled={isBusyLogo}
-                  className="w-full rounded-xl border border-black/10 bg-white px-3.5 py-2 text-[13px] text-[#1d1d1f] shadow-2xs placeholder:text-[#86868b] focus:border-[#0066cc] focus:outline-hidden focus:ring-2 focus:ring-[#0066cc]/20 disabled:bg-slate-100 disabled:text-slate-500"
-                />
-                <button
-                  type="button"
-                  onClick={handleApplyLogoUrl}
-                  disabled={isBusyLogo || !logoUrlInput.trim()}
-                  className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-xl bg-[#1d1d1f] px-4 py-2 text-[12px] font-bold text-white transition-all hover:bg-black active:scale-95 disabled:opacity-40"
-                >
-                  ใช้ลิงก์นี้
-                </button>
-              </div>
-            </div>
-          )}
-
-          {isAdmin && (
             <input
               ref={brandLogoInputRef}
               type="file"
@@ -364,11 +308,6 @@ export function BrandingCard({ isAdmin }: { isAdmin: boolean }) {
               aria-label="เลือกรูปโลโก้ของทีม"
             />
           )}
-          <p className="mt-2.5 text-[11px] leading-relaxed text-[#86868b]">
-            รองรับ PNG, JPG, GIF หรือ WebP ขนาดไม่เกิน 1MB (ไม่รองรับ SVG) —
-            ลากไฟล์มาวางในกล่องนี้ได้เลย ระบบจะย่อ/ขยายให้เป็นสี่เหลี่ยมจัตุรัสและแปลงเป็น WebP
-            อัตโนมัติ แล้วใช้เป็นโลโก้แถบเมนู หน้าเข้าสู่ระบบ ไอคอนแท็บ และไอคอน PWA
-          </p>
         </div>
 
         {isAdmin ? (

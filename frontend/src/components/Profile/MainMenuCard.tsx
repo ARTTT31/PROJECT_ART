@@ -1,6 +1,6 @@
 'use client';
 
-import { ChevronDown, ChevronUp, Info, LayoutGrid, Sparkles } from 'lucide-react';
+import { ChevronDown, ChevronUp, LayoutGrid, Sparkles } from 'lucide-react';
 import { SectionCard } from './SectionCard';
 import { MAIN_MENU_ICON_MAP, type MainMenuItemConfig } from '@/utils/mainMenu';
 
@@ -116,11 +116,6 @@ export function MainMenuCard({ items, onToggle, onMove }: MainMenuCardProps) {
           );
         })}
       </div>
-
-      <p className="mt-4 text-[11.5px] text-[#86868b] flex items-center gap-1.5">
-        <Info size={13} className="shrink-0 text-[#86868b]" aria-hidden="true" />
-        รายการที่ปิดจะไม่แสดงในแถบเมนูข้าง รายการ &quot;บังคับ&quot; จำเป็นต่อระบบไม่สามารถปิดได้
-      </p>
     </SectionCard>
   );
 }

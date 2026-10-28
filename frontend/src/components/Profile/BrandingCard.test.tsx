@@ -82,26 +82,23 @@ describe('BrandingCard', () => {
     expect(uploadBrandLogo).not.toHaveBeenCalled();
   });
 
-  it('applies a logo from an https link', async () => {
-    renderCard();
-    const url = 'https://example.com/logo.png';
-
-    fireEvent.change(screen.getByLabelText('หรือใช้โลโก้จากลิงก์'), { target: { value: url } });
-    fireEvent.click(screen.getByRole('button', { name: 'ใช้ลิงก์นี้' }));
-
-    await waitFor(() => expect(updateBranding).toHaveBeenCalledWith({ brand_logo_url: url }));
-  });
-
-  it('rejects a link that is not http(s)', async () => {
-    renderCard();
-
-    fireEvent.change(screen.getByLabelText('หรือใช้โลโก้จากลิงก์'), {
-      target: { value: 'javascript:alert(1)' },
+  it('resets to the default logo when the admin confirms', async () => {
+    branding.useBranding.mockReturnValue({
+      companyName: 'ART Workspace',
+      companyTagline: 'จัดการวันทำงานของคุณให้ง่ายขึ้น',
+      brandLogoUrl: 'data:image/webp;base64,AAA',
+      registrationMode: 'approval',
+      isLoading: false,
+      refreshBranding: vi.fn(),
+      updateBranding,
+      uploadBrandLogo,
     });
-    fireEvent.click(screen.getByRole('button', { name: 'ใช้ลิงก์นี้' }));
+    swal.showConfirm.mockResolvedValue({ isConfirmed: true });
 
-    await waitFor(() => expect(swal.showToast).toHaveBeenCalled());
-    expect(updateBranding).not.toHaveBeenCalled();
+    renderCard();
+    fireEvent.click(screen.getByRole('button', { name: 'ใช้โลโก้เริ่มต้น' }));
+
+    await waitFor(() => expect(updateBranding).toHaveBeenCalledWith({ brand_logo_url: '' }));
   });
 
   it('saves the name without resending the logo field', async () => {
@@ -122,7 +119,6 @@ describe('BrandingCard', () => {
     renderCard(false);
 
     expect(screen.queryByLabelText('เลือกรูปโลโก้ของทีม')).toBeNull();
-    expect(screen.queryByLabelText('หรือใช้โลโก้จากลิงก์')).toBeNull();
     expect(screen.queryByRole('button', { name: /อัปโหลดโลโก้|เปลี่ยนโลโก้/ })).toBeNull();
   });
 });
