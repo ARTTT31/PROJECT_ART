@@ -41,6 +41,9 @@ import {
   HolidaySkeleton,
   OilPriceSkeleton,
   QRCodeSkeleton,
+  QuickNotesSkeleton,
+  PriceCalcSkeleton,
+  MarketSkeleton,
 } from '@/components/Widgets/Skeletons';
 
 const OilPriceWidget = dynamic(() => import('@/components/Widgets/OilPriceWidget'), {
@@ -58,6 +61,18 @@ const WeatherWidget = dynamic(() => import('@/components/Widgets/WeatherWidget')
 const HolidayWidget = dynamic(() => import('@/components/Widgets/HolidayWidget'), {
   ssr: false,
   loading: () => <HolidaySkeleton />,
+});
+const QuickNotesWidget = dynamic(() => import('@/components/Widgets/QuickNotesWidget'), {
+  ssr: false,
+  loading: () => <QuickNotesSkeleton />,
+});
+const PriceCalcWidget = dynamic(() => import('@/components/Widgets/PriceCalcWidget'), {
+  ssr: false,
+  loading: () => <PriceCalcSkeleton />,
+});
+const MarketWidget = dynamic(() => import('@/components/Widgets/MarketWidget'), {
+  ssr: false,
+  loading: () => <MarketSkeleton />,
 });
 
 import { useDashboardLayout, widgetNames, widgetDescriptions } from '@/hooks/useDashboardLayout';
@@ -162,6 +177,33 @@ function SortableWidget({
       </div>
 
       {/* Widget content */}
+      {widget.id === 'notes' && (
+        <ErrorBoundary
+          fallback={(err, reset) => (
+            <WidgetErrorFallback name="โน้ตด่วน" error={err} reset={reset} />
+          )}
+        >
+          <QuickNotesWidget width={widget.w} onResize={(newSize) => onResize(widget.id, newSize)} />
+        </ErrorBoundary>
+      )}
+      {widget.id === 'calc' && (
+        <ErrorBoundary
+          fallback={(err, reset) => (
+            <WidgetErrorFallback name="คิดราคา / กำไร" error={err} reset={reset} />
+          )}
+        >
+          <PriceCalcWidget width={widget.w} onResize={(newSize) => onResize(widget.id, newSize)} />
+        </ErrorBoundary>
+      )}
+      {widget.id === 'market' && (
+        <ErrorBoundary
+          fallback={(err, reset) => (
+            <WidgetErrorFallback name="ค่าเงิน · ทอง · SET" error={err} reset={reset} />
+          )}
+        >
+          <MarketWidget width={widget.w} onResize={(newSize) => onResize(widget.id, newSize)} />
+        </ErrorBoundary>
+      )}
       {widget.id === 'holidays' && (
         <ErrorBoundary
           fallback={(err, reset) => (

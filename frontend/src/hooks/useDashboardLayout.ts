@@ -4,6 +4,9 @@ import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
 import { useAuth } from '@/hooks/useAuth';
 
 const defaultWidgets: WidgetConfig[] = [
+  { id: 'notes', w: 1 },
+  { id: 'calc', w: 1 },
+  { id: 'market', w: 2 },
   { id: 'holidays', w: 1 },
   { id: 'weather', w: 1 },
   { id: 'oilprice', w: 1 },
@@ -11,6 +14,9 @@ const defaultWidgets: WidgetConfig[] = [
 ];
 
 export const widgetNames: Record<string, string> = {
+  notes: 'โน้ตด่วน / To-do วันนี้',
+  calc: 'คิดราคา / กำไร',
+  market: 'ค่าเงิน · ทอง · SET',
   holidays: 'วันหยุดนักขัตฤกษ์',
   weather: 'สภาพอากาศ & PM 2.5',
   oilprice: 'ราคาน้ำมัน',
@@ -18,6 +24,9 @@ export const widgetNames: Record<string, string> = {
 };
 
 export const widgetDescriptions: Record<string, string> = {
+  notes: 'จดรายการที่ต้องทำวันนี้ ติ๊กเสร็จแล้วบันทึกอัตโนมัติ',
+  calc: 'คิดราคาขายหลังหักส่วนลด พร้อมกำไรต่อชิ้นและเปอร์เซ็นต์',
+  market: 'อัตราแลกเปลี่ยน ราคาทองคำแท่ง และดัชนี SET',
   holidays: 'ปฏิทินวันหยุดนักขัตฤกษ์ พร้อมระบบนับถอยหลัง',
   weather: 'ตรวจสอบสภาพอากาศ อุณหภูมิ และดัชนีฝุ่น PM 2.5 รายวัน',
   oilprice: 'ติดตามราคาน้ำมันล่าสุดในหน้าแดชบอร์ด',
@@ -147,16 +156,18 @@ export function useDashboardLayout() {
     loadedWidgets = loadedWidgets.filter((widget) => supportedWidgetIds.has(widget.id));
     loadedVisible = loadedVisible.filter((widgetId) => supportedWidgetIds.has(widgetId));
 
-    // Ensure newly added default widgets exist in loadedWidgets
+    // Ensure newly added default widgets exist in loadedWidgets. They are
+    // prepended as one group, in default order, so a release that adds several
+    // widgets does not show them in reverse.
     const existingWidgetIds = new Set(loadedWidgets.map((w: any) => w.id));
-    defaultWidgets.forEach((dw) => {
-      if (!existingWidgetIds.has(dw.id)) {
-        loadedWidgets = [dw, ...loadedWidgets];
-        if (!loadedVisible.includes(dw.id)) {
-          loadedVisible = [dw.id, ...loadedVisible];
-        }
-      }
-    });
+    const missingDefaults = defaultWidgets.filter((dw) => !existingWidgetIds.has(dw.id));
+    if (missingDefaults.length > 0) {
+      loadedWidgets = [...missingDefaults, ...loadedWidgets];
+      loadedVisible = [
+        ...missingDefaults.map((dw) => dw.id).filter((id) => !loadedVisible.includes(id)),
+        ...loadedVisible,
+      ];
+    }
 
     applyLayout(loadedWidgets, loadedVisible);
     hasInitializedRef.current = true;

@@ -37,6 +37,10 @@ class User(Base, TimestampMixin):
     # Dashboard layout and widget preferences (JSON stored as text)
     dashboard_layout: Mapped[str | None] = mapped_column(Text)
 
+    # Quick notes / to-do list for the dashboard widget (JSON array as text).
+    # NULL means "never used", which the API reports as an empty list.
+    quick_notes: Mapped[str | None] = mapped_column(Text)
+
     # Camera streams configuration (JSON stored as text)
     camera_config: Mapped[str | None] = mapped_column(Text)
     accessible_pages: Mapped[str | None] = mapped_column(Text)

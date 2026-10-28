@@ -25,7 +25,11 @@ from app.schemas.user import (
     UserCameraConfigUpdate,
     WorkspaceBrandingUpdate,
     WorkspaceBrandingResponse,
+    QuickNotesUpdate,
+    QuickNotesResponse,
+    QuickNote,
 )
+from app.core.quick_notes import parse_quick_notes, serialize_quick_notes
 from app.core.brand_logo import (
     LOGO_ALLOWED_EXTENSIONS,
     LOGO_SUPPORTED_HINT,
@@ -806,3 +810,41 @@ async def upload_workspace_logo(
     )
     await db.commit()
     return _workspace_branding_response(current_user)
+
+
+# ── Quick notes / to-do widget ───────────────────────────────────────────────
+# One list per account, stored as a JSON array in ``users.quick_notes``. The
+# widget always sends the whole list back, which keeps the endpoint free of
+# per-item ordering and merge rules: last save wins, for that account only.
+
+
+def _quick_notes_response(raw: str | None) -> QuickNotesResponse:
+    """Parse the stored JSON into the response model (bad entries dropped)."""
+    return QuickNotesResponse(notes=[QuickNote(**note) for note in parse_quick_notes(raw)])
+
+
+@router.get("/quick-notes", response_model=QuickNotesResponse)
+@limiter.limit(_GENERAL_LIMIT)
+async def get_quick_notes(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """The signed-in account's quick notes (empty when never used)."""
+    # Deferred payload column: re-select it like the avatar before reading.
+    user = await load_profile_columns(db, current_user, "quick_notes")
+    return _quick_notes_response(user.quick_notes)
+
+
+@router.put("/quick-notes", response_model=QuickNotesResponse)
+@limiter.limit(_GENERAL_LIMIT)
+async def update_quick_notes(
+    request: Request,
+    payload: QuickNotesUpdate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Replace the account's quick notes with the list in the request."""
+    current_user.quick_notes = serialize_quick_notes(payload.notes)
+    await db.commit()
+    return _quick_notes_response(current_user.quick_notes)

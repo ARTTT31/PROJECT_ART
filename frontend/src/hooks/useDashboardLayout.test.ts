@@ -17,7 +17,7 @@ import type { WidgetConfig } from '@/types';
 let mockUser: { dashboard_layout?: string | null } | null = null;
 const mockUpdateUser = vi.fn();
 
-const DEFAULT_IDS = ['holidays', 'weather', 'oilprice', 'qrcode'];
+const DEFAULT_IDS = ['notes', 'calc', 'market', 'holidays', 'weather', 'oilprice', 'qrcode'];
 
 beforeEach(() => {
   mockUser = null;
@@ -34,7 +34,7 @@ async function renderLayout() {
 }
 
 describe('useDashboardLayout — initialization', () => {
-  it('falls back to the four default widgets with no saved state', async () => {
+  it('falls back to every default widget with no saved state', async () => {
     const { result } = await renderLayout();
 
     expect(result.current.widgets.map((w) => w.id)).toEqual(DEFAULT_IDS);
@@ -51,7 +51,15 @@ describe('useDashboardLayout — initialization', () => {
     const { result } = await renderLayout();
 
     expect(result.current.widgets).toEqual(expect.arrayContaining(saved));
-    // Order is preserved from storage, then missing defaults are prepended.
+    // Order is preserved from storage, then the missing defaults are prepended
+    // as one group, in default order.
+    expect(result.current.widgets.map((w) => w.id).slice(0, 5)).toEqual([
+      'notes',
+      'calc',
+      'market',
+      'holidays',
+      'oilprice',
+    ]);
     expect(result.current.visibleWidgetIds).toContain('weather');
     expect(result.current.visibleWidgetIds).toContain('qrcode');
   });
@@ -156,7 +164,7 @@ describe('useDashboardLayout — mutations', () => {
     // Hide everything except `holidays`. Each toggle must run in its own act()
     // because the hook closes over `visibleWidgetIds` from the current render —
     // batching them into a single act() would reuse stale state.
-    for (const id of ['weather', 'oilprice', 'qrcode']) {
+    for (const id of DEFAULT_IDS.filter((widgetId) => widgetId !== 'holidays')) {
       act(() => result.current.toggleWidgetVisibility(id));
     }
     expect(result.current.visibleWidgetIds).toEqual(['holidays']);
