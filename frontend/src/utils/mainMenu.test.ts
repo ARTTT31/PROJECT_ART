@@ -60,6 +60,14 @@ describe('parseMainMenuConfig', () => {
     expect(dashboard?.enabled).toBe(true);
   });
 
+  it('keeps the profile page pinned on, like the dashboard', () => {
+    const raw = JSON.stringify([{ id: 'profile', enabled: false }]);
+
+    const profile = parseMainMenuConfig(raw).find((item) => item.id === 'profile');
+    expect(profile?.required).toBe(true);
+    expect(profile?.enabled).toBe(true);
+  });
+
   it('honours disabling an optional item', () => {
     const raw = JSON.stringify([
       { id: 'dashboard', enabled: true },

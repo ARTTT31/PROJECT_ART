@@ -63,6 +63,9 @@ export const DEFAULT_MAIN_MENU_ITEMS: MainMenuItemConfig[] = [
     href: '/profile',
     icon: 'user',
     enabled: true,
+    // This page hosts the menu settings themselves; hiding it would strand the
+    // account that hid it, so it stays on like the dashboard.
+    required: true,
     description: 'จัดการข้อมูลส่วนตัว ความปลอดภัย และการตั้งค่า',
   },
 ];
