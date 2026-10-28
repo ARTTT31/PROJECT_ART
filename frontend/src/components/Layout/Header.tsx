@@ -1,48 +1,42 @@
-'use client'
+'use client';
 
-import { memo, useEffect, useState } from 'react'
-import { usePathname } from 'next/navigation'
-import Link from 'next/link'
-import { Clock, Menu } from 'lucide-react'
-import { AuthUser } from '@/types'
-import NotificationBell from './NotificationBell'
+import { memo, useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
+import Link from 'next/link';
+import { Clock, Menu } from 'lucide-react';
+import { AuthUser } from '@/types';
+import NotificationBell from './NotificationBell';
 
 interface HeaderProps {
-  user?: AuthUser | null
-  onMenuClick: () => void
-  sidebarCollapsed?: boolean
+  user?: AuthUser | null;
+  onMenuClick: () => void;
+  sidebarCollapsed?: boolean;
 }
 
 export default function Header({ user, onMenuClick, sidebarCollapsed = false }: HeaderProps) {
-  const pathname = usePathname()
+  const pathname = usePathname();
 
   const headerMeta = (() => {
     if (pathname.startsWith('/camera')) {
       return {
         title: 'กล้องวงจรปิด',
-        crumbs: [
-          { label: 'หน้าหลัก', href: '/dashboard' },
-          { label: 'กล้องวงจรปิด' },
-        ],
-      }
+        crumbs: [{ label: 'หน้าหลัก', href: '/dashboard' }, { label: 'กล้องวงจรปิด' }],
+      };
     }
 
     if (pathname.startsWith('/profile')) {
       return {
         title: 'โปรไฟล์',
-        crumbs: [
-          { label: 'หน้าหลัก', href: '/dashboard' },
-          { label: 'โปรไฟล์' },
-        ],
-      }
+        crumbs: [{ label: 'หน้าหลัก', href: '/dashboard' }, { label: 'โปรไฟล์' }],
+      };
     }
 
     // default: dashboard
     return {
       title: 'แดชบอร์ด',
       crumbs: [{ label: 'หน้าหลัก' }, { label: 'แดชบอร์ด' }],
-    }
-  })()
+    };
+  })();
 
   return (
     <header className="sticky top-0 z-20 border-b border-black/[0.06] bg-[rgba(255,255,255,0.82)] backdrop-blur-2xl transition-all">
@@ -68,7 +62,7 @@ export default function Header({ user, onMenuClick, sidebarCollapsed = false }: 
                 className="flex items-center gap-1.5 text-[12px] font-medium text-[#86868b]"
               >
                 {headerMeta.crumbs.map((c, idx) => {
-                  const isLast = idx === headerMeta.crumbs.length - 1
+                  const isLast = idx === headerMeta.crumbs.length - 1;
                   return (
                     <span key={`${c.label}-${idx}`} className="flex items-center gap-1.5">
                       {c.href ? (
@@ -80,13 +74,15 @@ export default function Header({ user, onMenuClick, sidebarCollapsed = false }: 
                           {c.label}
                         </Link>
                       ) : (
-                        <span className={isLast ? 'text-[#1d1d1f]' : ''}>
-                          {c.label}
+                        <span className={isLast ? 'text-[#1d1d1f]' : ''}>{c.label}</span>
+                      )}
+                      {!isLast && (
+                        <span aria-hidden="true" className="text-black/20">
+                          /
                         </span>
                       )}
-                      {!isLast && <span aria-hidden="true" className="text-black/20">/</span>}
                     </span>
-                  )
+                  );
                 })}
               </nav>
             </div>
@@ -103,16 +99,16 @@ export default function Header({ user, onMenuClick, sidebarCollapsed = false }: 
         </div>
       </div>
     </header>
-  )
+  );
 }
 
 /** Isolated clock component – only this subtree re-renders every minute */
 const ClockTime = memo(function ClockTime() {
-  const [time, setTime] = useState(new Date())
+  const [time, setTime] = useState(new Date());
   useEffect(() => {
-    const id = setInterval(() => setTime(new Date()), 60_000)
-    return () => clearInterval(id)
-  }, [])
+    const id = setInterval(() => setTime(new Date()), 60_000);
+    return () => clearInterval(id);
+  }, []);
   const formatted = time.toLocaleString('th-TH', {
     weekday: 'short',
     day: 'numeric',
@@ -120,11 +116,11 @@ const ClockTime = memo(function ClockTime() {
     year: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
-  })
+  });
   return (
     <>
       <Clock size={14} className="text-[#0066cc]" aria-hidden="true" />
       <span suppressHydrationWarning>{formatted}</span>
     </>
-  )
-})
+  );
+});

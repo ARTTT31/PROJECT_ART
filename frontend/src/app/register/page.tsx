@@ -165,7 +165,7 @@ export default function RegisterPage() {
           name: trimmedName,
           email: trimmedEmail,
           password,
-          
+
           accepted_terms: true,
           ...(turnstileToken ? { turnstile_token: turnstileToken } : {}),
         }),
@@ -174,9 +174,7 @@ export default function RegisterPage() {
       const result = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        setError(
-          result.detail || result.message || 'สมัครสมาชิกไม่สำเร็จ กรุณาลองใหม่อีกครั้ง'
-        );
+        setError(result.detail || result.message || 'สมัครสมาชิกไม่สำเร็จ กรุณาลองใหม่อีกครั้ง');
         return;
       }
 
@@ -216,13 +214,21 @@ export default function RegisterPage() {
               className="login-mark"
             />
             <h1 className="login-title">{companyName}</h1>
-            <p className="login-tagline">{companyTagline || 'สมัครสมาชิกเพื่อเริ่มต้นใช้งานแดชบอร์ด'}</p>
+            <p className="login-tagline">
+              {companyTagline || 'สมัครสมาชิกเพื่อเริ่มต้นใช้งานแดชบอร์ด'}
+            </p>
             <p className="login-clock">
               <Clock size={15} strokeWidth={2} aria-hidden="true" className="login-clock-icon" />
-              <time suppressHydrationWarning className="login-clock-time" dateTime={now.toISOString()}>
+              <time
+                suppressHydrationWarning
+                className="login-clock-time"
+                dateTime={now.toISOString()}
+              >
                 {formatTime(now)} น.
               </time>
-              <span aria-hidden="true" className="login-clock-sep">•</span>
+              <span aria-hidden="true" className="login-clock-sep">
+                •
+              </span>
               <span className="login-clock-date">{formatDate(now)}</span>
             </p>
           </header>
@@ -267,9 +273,12 @@ export default function RegisterPage() {
                 <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-500 mx-auto flex items-center justify-center mb-3">
                   <Lock size={22} />
                 </div>
-                <h2 className="text-[15px] font-bold text-slate-900 mb-1">ปิดรับสมัครสมาชิกชั่วคราว</h2>
+                <h2 className="text-[15px] font-bold text-slate-900 mb-1">
+                  ปิดรับสมัครสมาชิกชั่วคราว
+                </h2>
                 <p className="text-[13px] text-slate-600 leading-relaxed">
-                  ระบบนี้กำหนดให้เฉพาะผู้ดูแลระบบสร้างบัญชีให้เท่านั้น หากต้องการใช้งานกรุณาติดต่อผู้ดูแลระบบของคุณ
+                  ระบบนี้กำหนดให้เฉพาะผู้ดูแลระบบสร้างบัญชีให้เท่านั้น
+                  หากต้องการใช้งานกรุณาติดต่อผู้ดูแลระบบของคุณ
                 </p>
               </div>
 
@@ -281,8 +290,6 @@ export default function RegisterPage() {
           ) : (
             /* Registration Form */
             <form onSubmit={handleSubmit} className="login-form" aria-busy={isSubmitting}>
-              
-
               <label htmlFor="reg-name" className="login-field">
                 <span>ชื่อที่แสดง</span>
                 <div className="login-input-wrap">
@@ -375,9 +382,6 @@ export default function RegisterPage() {
                 </div>
               </label>
 
-              
-
-
               <TurnstileWidget onToken={setTurnstileToken} />
 
               {error && (
@@ -395,7 +399,9 @@ export default function RegisterPage() {
                   </>
                 ) : (
                   <>
-                    <span>{registrationMode === 'approval' ? 'ส่งคำขอสมัครสมาชิก' : 'สมัครสมาชิก'}</span>
+                    <span>
+                      {registrationMode === 'approval' ? 'ส่งคำขอสมัครสมาชิก' : 'สมัครสมาชิก'}
+                    </span>
                     <ArrowRight size={18} aria-hidden="true" />
                   </>
                 )}

@@ -1,9 +1,10 @@
-import { Metadata } from 'next'
+import { Metadata } from 'next';
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'),
   title: 'แดชบอร์ด | ART Workspace',
-  description: 'ระบบแดชบอร์ด วันหยุดนักขัตฤกษ์ สภาพอากาศ ราคาน้ำมัน และเครื่องมือต่างๆ ของ ART Workspace',
+  description:
+    'ระบบแดชบอร์ด วันหยุดนักขัตฤกษ์ สภาพอากาศ ราคาน้ำมัน และเครื่องมือต่างๆ ของ ART Workspace',
   keywords: 'dashboard, art workspace, holidays, weather, oil prices, qr code',
   alternates: {
     canonical: '/dashboard',
@@ -17,12 +18,8 @@ export const metadata: Metadata = {
     description: 'ระบบจัดการงานและเครื่องมือต่างๆ ในที่เดียว',
     type: 'website',
   },
-}
+};
 
-export default function DashboardLayoutMetadata({
-  children,
-}: {
-  children: React.ReactNode
-}) {
-  return <>{children}</>
+export default function DashboardLayoutMetadata({ children }: { children: React.ReactNode }) {
+  return <>{children}</>;
 }

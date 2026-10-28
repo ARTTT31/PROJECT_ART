@@ -1,11 +1,11 @@
-'use client'
+'use client';
 
-import { useState, useEffect } from 'react'
-import { GripHorizontal, SlidersHorizontal } from 'lucide-react'
-import { WidgetConfig } from '@/types'
-import DashboardLayout from '@/components/Layout/DashboardLayout'
-import ErrorBoundary from '@/components/ErrorBoundary'
-import { getGreeting } from '@/utils/greeting'
+import { useState, useEffect } from 'react';
+import { GripHorizontal, SlidersHorizontal } from 'lucide-react';
+import { WidgetConfig } from '@/types';
+import DashboardLayout from '@/components/Layout/DashboardLayout';
+import ErrorBoundary from '@/components/ErrorBoundary';
+import { getGreeting } from '@/utils/greeting';
 
 import {
   Dialog,
@@ -15,7 +15,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/Dialog'
+} from '@/components/ui/Dialog';
 import {
   DndContext,
   KeyboardSensor,
@@ -24,57 +24,96 @@ import {
   useSensor,
   useSensors,
   type DragEndEvent,
-} from '@dnd-kit/core'
+} from '@dnd-kit/core';
 import {
   arrayMove,
   SortableContext,
   sortableKeyboardCoordinates,
   useSortable,
   verticalListSortingStrategy,
-} from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
-import dynamic from 'next/dynamic'
-import { motion, AnimatePresence } from 'framer-motion'
-import { WeatherSkeleton, HolidaySkeleton, OilPriceSkeleton, QRCodeSkeleton } from '@/components/Widgets/Skeletons'
+import dynamic from 'next/dynamic';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  WeatherSkeleton,
+  HolidaySkeleton,
+  OilPriceSkeleton,
+  QRCodeSkeleton,
+} from '@/components/Widgets/Skeletons';
 
-const OilPriceWidget = dynamic(() => import('@/components/Widgets/OilPriceWidget'), { ssr: false, loading: () => <OilPriceSkeleton /> })
-const QRCodeWidget = dynamic(() => import('@/components/Widgets/QRCodeWidget'), { ssr: false, loading: () => <QRCodeSkeleton /> })
-const WeatherWidget = dynamic(() => import('@/components/Widgets/WeatherWidget'), { ssr: false, loading: () => <WeatherSkeleton /> })
-const HolidayWidget = dynamic(() => import('@/components/Widgets/HolidayWidget'), { ssr: false, loading: () => <HolidaySkeleton /> })
+const OilPriceWidget = dynamic(() => import('@/components/Widgets/OilPriceWidget'), {
+  ssr: false,
+  loading: () => <OilPriceSkeleton />,
+});
+const QRCodeWidget = dynamic(() => import('@/components/Widgets/QRCodeWidget'), {
+  ssr: false,
+  loading: () => <QRCodeSkeleton />,
+});
+const WeatherWidget = dynamic(() => import('@/components/Widgets/WeatherWidget'), {
+  ssr: false,
+  loading: () => <WeatherSkeleton />,
+});
+const HolidayWidget = dynamic(() => import('@/components/Widgets/HolidayWidget'), {
+  ssr: false,
+  loading: () => <HolidaySkeleton />,
+});
 
-import { useDashboardLayout, widgetNames, widgetDescriptions } from '@/hooks/useDashboardLayout'
+import { useDashboardLayout, widgetNames, widgetDescriptions } from '@/hooks/useDashboardLayout';
 
 // ── Col-span helper ──────────────────────────────────────────────────────────
 
 const getColSpanClass = (w: number) => {
-  if (w === 3) return 'col-span-full'
-  if (w === 2) return 'col-span-full md:col-span-8'
-  return 'col-span-full md:col-span-6'
-}
+  if (w === 3) return 'col-span-full';
+  if (w === 2) return 'col-span-full md:col-span-8';
+  return 'col-span-full md:col-span-6';
+};
 
 // ── Inline error fallback ────────────────────────────────────────────────────
 
-function WidgetErrorFallback({ name, error, reset }: { name: string; error: Error; reset: () => void }) {
-  const isChunkError = error?.name === 'ChunkLoadError' || error?.message?.includes('Failed to load chunk')
+function WidgetErrorFallback({
+  name,
+  error,
+  reset,
+}: {
+  name: string;
+  error: Error;
+  reset: () => void;
+}) {
+  const isChunkError =
+    error?.name === 'ChunkLoadError' || error?.message?.includes('Failed to load chunk');
   return (
     <div className="flex min-h-[220px] flex-col items-center justify-center rounded-[18px] border border-black/[0.06] bg-white p-6">
       <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-red-100/50">
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-6 w-6 text-red-500"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+          />
         </svg>
       </div>
       <div className="text-center">
         <p className="text-[15px] font-semibold text-[#1d1d1f]">วิดเจ็ต{name}ไม่พร้อมใช้งาน</p>
         <p className="mt-1 text-[13px] text-[#6e6e73]">
-          {isChunkError ? 'มีการอัปเดตเวอร์ชันใหม่ กรุณารีเฟรชหน้าเว็บ' : 'ไม่สามารถโหลดข้อมูลวิดเจ็ตนี้ได้ในขณะนี้'}
+          {isChunkError
+            ? 'มีการอัปเดตเวอร์ชันใหม่ กรุณารีเฟรชหน้าเว็บ'
+            : 'ไม่สามารถโหลดข้อมูลวิดเจ็ตนี้ได้ในขณะนี้'}
         </p>
         <button
           onClick={() => {
             if (isChunkError && typeof window !== 'undefined') {
-              window.location.reload()
+              window.location.reload();
             } else {
-              reset()
+              reset();
             }
           }}
           className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-[#f2f2f7] px-4 py-2 text-[13px] font-semibold text-[#1d1d1f] transition-all duration-200 hover:bg-[#e5e5ea] active:scale-95 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#0066cc]"
@@ -83,7 +122,7 @@ function WidgetErrorFallback({ name, error, reset }: { name: string; error: Erro
         </button>
       </div>
     </div>
-  )
+  );
 }
 
 // ── Sortable widget wrapper ──────────────────────────────────────────────────
@@ -92,17 +131,12 @@ function SortableWidget({
   widget,
   onResize,
 }: {
-  widget: WidgetConfig
-  onResize: (id: string, newWidth: number) => void
+  widget: WidgetConfig;
+  onResize: (id: string, newWidth: number) => void;
 }) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: widget.id })
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: widget.id,
+  });
 
   const style = {
     transform: CSS.Translate.toString(transform),
@@ -110,14 +144,10 @@ function SortableWidget({
     opacity: isDragging ? 0.8 : 1,
     zIndex: isDragging ? 50 : 1,
     scale: isDragging ? '0.98' : '1', // Add visual scale down on drag start
-  }
+  };
 
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className={`group relative ${getColSpanClass(widget.w)}`}
-    >
+    <div ref={setNodeRef} style={style} className={`group relative ${getColSpanClass(widget.w)}`}>
       {/* Drag handle — visible on hover, sits above widget */}
       <div
         {...attributes}
@@ -133,27 +163,43 @@ function SortableWidget({
 
       {/* Widget content */}
       {widget.id === 'holidays' && (
-        <ErrorBoundary fallback={(err, reset) => <WidgetErrorFallback name="วันหยุดนักขัตฤกษ์" error={err} reset={reset} />}>
+        <ErrorBoundary
+          fallback={(err, reset) => (
+            <WidgetErrorFallback name="วันหยุดนักขัตฤกษ์" error={err} reset={reset} />
+          )}
+        >
           <HolidayWidget width={widget.w} onResize={(newSize) => onResize(widget.id, newSize)} />
         </ErrorBoundary>
       )}
       {widget.id === 'weather' && (
-        <ErrorBoundary fallback={(err, reset) => <WidgetErrorFallback name="สภาพอากาศ" error={err} reset={reset} />}>
+        <ErrorBoundary
+          fallback={(err, reset) => (
+            <WidgetErrorFallback name="สภาพอากาศ" error={err} reset={reset} />
+          )}
+        >
           <WeatherWidget width={widget.w} onResize={(newSize) => onResize(widget.id, newSize)} />
         </ErrorBoundary>
       )}
       {widget.id === 'oilprice' && (
-        <ErrorBoundary fallback={(err, reset) => <WidgetErrorFallback name="ราคาน้ำมัน" error={err} reset={reset} />}>
+        <ErrorBoundary
+          fallback={(err, reset) => (
+            <WidgetErrorFallback name="ราคาน้ำมัน" error={err} reset={reset} />
+          )}
+        >
           <OilPriceWidget width={widget.w} onResize={(newSize) => onResize(widget.id, newSize)} />
         </ErrorBoundary>
       )}
       {widget.id === 'qrcode' && (
-        <ErrorBoundary fallback={(err, reset) => <WidgetErrorFallback name="QR Code" error={err} reset={reset} />}>
+        <ErrorBoundary
+          fallback={(err, reset) => (
+            <WidgetErrorFallback name="QR Code" error={err} reset={reset} />
+          )}
+        >
           <QRCodeWidget width={widget.w} onResize={(newSize) => onResize(widget.id, newSize)} />
         </ErrorBoundary>
       )}
     </div>
-  )
+  );
 }
 
 // ── Dashboard page ───────────────────────────────────────────────────────────
@@ -167,36 +213,36 @@ export default function DashboardPage() {
     defaultWidgets,
     persistLayout,
     handleResize,
-    toggleWidgetVisibility
-  } = useDashboardLayout()
-  
-  const [showConfigModal, setShowConfigModal] = useState(false)
-  const [greeting, setGreeting] = useState<string>(getGreeting)
+    toggleWidgetVisibility,
+  } = useDashboardLayout();
+
+  const [showConfigModal, setShowConfigModal] = useState(false);
+  const [greeting, setGreeting] = useState<string>(getGreeting);
 
   useEffect(() => {
-    setGreeting(getGreeting())
+    setGreeting(getGreeting());
     const timer = setInterval(() => {
-      setGreeting(getGreeting())
-    }, 60_000)
-    return () => clearInterval(timer)
-  }, [])
+      setGreeting(getGreeting());
+    }, 60_000);
+    return () => clearInterval(timer);
+  }, []);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
-  )
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
 
   const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event
-    if (!over || active.id === over.id) return
-    const oldIndex = widgets.findIndex((w) => w.id === active.id)
-    const newIndex = widgets.findIndex((w) => w.id === over.id)
-    if (oldIndex === -1 || newIndex === -1) return
-    const newLayout = arrayMove(widgets, oldIndex, newIndex)
-    persistLayout(newLayout, visibleWidgetIds)
-  }
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = widgets.findIndex((w) => w.id === active.id);
+    const newIndex = widgets.findIndex((w) => w.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+    const newLayout = arrayMove(widgets, oldIndex, newIndex);
+    persistLayout(newLayout, visibleWidgetIds);
+  };
 
-  const visibleWidgets = widgets.filter((w) => visibleWidgetIds.includes(w.id))
+  const visibleWidgets = widgets.filter((w) => visibleWidgetIds.includes(w.id));
 
   // ── Loading state ────────────────────────────────────────────────────────
 
@@ -207,7 +253,7 @@ export default function DashboardPage() {
           <div className="h-11 w-11 animate-spin rounded-full border-[3px] border-[#f5f5f7] border-t-[#0066cc]" />
         </div>
       </>
-    )
+    );
   }
 
   // ── Render ───────────────────────────────────────────────────────────────
@@ -222,7 +268,8 @@ export default function DashboardPage() {
         <div className="relative z-10 flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
           <div className="space-y-1.5">
             <h1 className="text-2xl font-semibold tracking-tight text-[#1d1d1f] sm:text-3xl">
-              {greeting}, <span className="text-[#0066cc]">{user.display_name || user.username}</span> 👋
+              {greeting},{' '}
+              <span className="text-[#0066cc]">{user.display_name || user.username}</span> 👋
             </h1>
             <p className="text-[13px] font-medium text-[#6e6e73]">
               ภาพรวมข้อมูลสำคัญของคุณสำหรับวันนี้
@@ -245,22 +292,14 @@ export default function DashboardPage() {
       </section>
 
       {/* ── Widget grid ─────────────────────────────────────────────────── */}
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragEnd={handleDragEnd}
-      >
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext
           items={visibleWidgets.map((w) => w.id)}
           strategy={verticalListSortingStrategy}
         >
           <div className="grid grid-cols-1 gap-4 sm:gap-5 md:grid-cols-12">
             {visibleWidgets.map((widget) => (
-              <SortableWidget
-                key={widget.id}
-                widget={widget}
-                onResize={handleResize}
-              />
+              <SortableWidget key={widget.id} widget={widget} onResize={handleResize} />
             ))}
           </div>
         </SortableContext>
@@ -281,8 +320,8 @@ export default function DashboardPage() {
               {defaultWidgets
                 .filter((widget) => widget.id !== 'syshealth' || user?.role === 'admin')
                 .map((widget) => {
-                  const isVisible = visibleWidgetIds.includes(widget.id)
-                  const isLocked = isVisible && visibleWidgetIds.length <= 1
+                  const isVisible = visibleWidgetIds.includes(widget.id);
+                  const isLocked = isVisible && visibleWidgetIds.length <= 1;
                   return (
                     <div
                       key={widget.id}
@@ -300,7 +339,7 @@ export default function DashboardPage() {
                           {widgetDescriptions[widget.id]}
                         </span>
                       </div>
-                      
+
                       {/* Custom Apple-style Toggle Switch */}
                       <button
                         type="button"
@@ -308,7 +347,16 @@ export default function DashboardPage() {
                         aria-checked={isVisible}
                         disabled={isLocked}
                         onClick={() => toggleWidgetVisibility(widget.id)}
-                        style={{ width: '44px', height: '28px', minWidth: '44px', minHeight: '28px', padding: '2px', display: 'flex', alignItems: 'center', justifyContent: 'flex-start' }}
+                        style={{
+                          width: '44px',
+                          height: '28px',
+                          minWidth: '44px',
+                          minHeight: '28px',
+                          padding: '2px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'flex-start',
+                        }}
                         className={`relative shrink-0 cursor-pointer rounded-full transition-colors duration-200 ease-in-out focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#0066cc] focus-visible:ring-offset-2 disabled:cursor-not-allowed ${
                           isLocked ? 'opacity-50' : ''
                         } ${isVisible ? 'bg-[#0066cc]' : 'bg-[#e5e5ea]'}`}
@@ -316,12 +364,16 @@ export default function DashboardPage() {
                         <span className="sr-only">สลับวิดเจ็ต {widgetNames[widget.id]}</span>
                         <span
                           aria-hidden="true"
-                          style={{ width: '24px', height: '24px', transform: isVisible ? 'translateX(16px)' : 'translateX(0px)' }}
+                          style={{
+                            width: '24px',
+                            height: '24px',
+                            transform: isVisible ? 'translateX(16px)' : 'translateX(0px)',
+                          }}
                           className="pointer-events-none inline-block rounded-full bg-white shadow-[0_2px_4px_rgba(0,0,0,0.15),0_0_1px_rgba(0,0,0,0.1)] transition-transform duration-200 ease-in-out"
                         />
                       </button>
                     </div>
-                  )
+                  );
                 })}
             </div>
           </DialogBody>
@@ -337,5 +389,5 @@ export default function DashboardPage() {
         </DialogContent>
       </Dialog>
     </>
-  )
+  );
 }

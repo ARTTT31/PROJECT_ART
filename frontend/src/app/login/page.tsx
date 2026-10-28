@@ -2,7 +2,17 @@
 
 import '../../styles/pages/login.css';
 import { FormEvent, KeyboardEvent, useCallback, useEffect, useRef, useState } from 'react';
-import { ArrowRight, AlertCircle, Clock, Eye, EyeOff, Loader2, Lock, Mail, User } from 'lucide-react';
+import {
+  ArrowRight,
+  AlertCircle,
+  Clock,
+  Eye,
+  EyeOff,
+  Loader2,
+  Lock,
+  Mail,
+  User,
+} from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
@@ -49,8 +59,8 @@ const REGISTRATION_MODE_ENDPOINT = `${apiBaseUrl}/api/v1/auth/registration-mode`
  * `closed` (default) offers no form at all, `approval` promises an admin's
  * review, `open` signs the new account in straight away.
  */
-type RegistrationMode = 'closed' | 'approval' | 'open'
-type LoginView = 'signin' | 'signup' | 'pending'
+type RegistrationMode = 'closed' | 'approval' | 'open';
+type LoginView = 'signin' | 'signup' | 'pending';
 
 /** Brand block shared by every view of this page. */
 function LoginHeader({ now, tagline }: { now: Date; tagline: string }) {
@@ -72,8 +82,12 @@ function LoginHeader({ now, tagline }: { now: Date; tagline: string }) {
       <p className="login-tagline">{tagline || companyTagline}</p>
       <p className="login-clock">
         <Clock size={15} strokeWidth={2} aria-hidden="true" className="login-clock-icon" />
-        <time suppressHydrationWarning className="login-clock-time" dateTime={now.toISOString()}>{formatTime(now)} น.</time>
-        <span aria-hidden="true" className="login-clock-sep">•</span>
+        <time suppressHydrationWarning className="login-clock-time" dateTime={now.toISOString()}>
+          {formatTime(now)} น.
+        </time>
+        <span aria-hidden="true" className="login-clock-sep">
+          •
+        </span>
         <span className="login-clock-date">{formatDate(now)}</span>
       </p>
     </header>
@@ -84,7 +98,15 @@ function LoginHeader({ now, tagline }: { now: Date; tagline: string }) {
  * Shared page chrome for the sign-up and waiting screens, so they keep the
  * exact look of the sign-in view without duplicating the shell markup.
  */
-function LoginFrame({ now, tagline, children }: { now: Date; tagline: string; children: React.ReactNode }) {
+function LoginFrame({
+  now,
+  tagline,
+  children,
+}: {
+  now: Date;
+  tagline: string;
+  children: React.ReactNode;
+}) {
   return (
     <main className="login-page">
       <section aria-label={tagline} className="login-shell">
@@ -172,7 +194,6 @@ function LoginContent() {
     window.location.href = googleAuthUrl.toString();
   };
 
-
   useEffect(() => {
     setIsClient(true);
     const rememberedEmail = localStorage.getItem('remembered_email');
@@ -194,9 +215,7 @@ function LoginContent() {
       params.get('google_error') || params.get('error') || hashParams.get('error');
     if (googleError) {
       const reason =
-        googleError === 'access_denied'
-          ? 'คุณยกเลิกการเข้าสู่ระบบด้วย Google'
-          : googleError;
+        googleError === 'access_denied' ? 'คุณยกเลิกการเข้าสู่ระบบด้วย Google' : googleError;
       toast.error('เข้าสู่ระบบด้วย Google ไม่สำเร็จ', reason);
       window.history.replaceState(null, '', window.location.pathname);
     }
@@ -296,7 +315,7 @@ function LoginContent() {
 
       if (!response.ok) {
         setSignupError(
-          result.detail || result.message || 'สมัครสมาชิกไม่สำเร็จ กรุณาลองใหม่อีกครั้ง'
+          result.detail || result.message || 'สมัครสมาชิกไม่สำเร็จ กรุณาลองใหม่อีกครั้ง',
         );
         return;
       }
@@ -324,7 +343,7 @@ function LoginContent() {
   useEffect(() => {
     if (rateLimitSeconds <= 0) return;
     rateLimitTimer.current = setInterval(() => {
-      setRateLimitSeconds(s => {
+      setRateLimitSeconds((s) => {
         if (s <= 1) {
           clearInterval(rateLimitTimer.current!);
           return 0;
@@ -341,13 +360,12 @@ function LoginContent() {
     }
   }, []);
 
-
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError('');
 
     if (password.length < 6) {
-      setErrorKey(k => k + 1);
+      setErrorKey((k) => k + 1);
       setError('รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร');
       return;
     }
@@ -365,7 +383,13 @@ function LoginContent() {
 
       const userAgent = navigator.userAgent;
       const deviceLabel = /Mobile|Android|iPhone|iPad/.test(userAgent) ? 'Mobile' : 'Desktop';
-      const payload = { email, password, session_id: sessionId, user_agent: userAgent, device_label: deviceLabel };
+      const payload = {
+        email,
+        password,
+        session_id: sessionId,
+        user_agent: userAgent,
+        device_label: deviceLabel,
+      };
 
       const response = await fetch(LOGIN_ENDPOINT, {
         method: 'POST',
@@ -379,7 +403,7 @@ function LoginContent() {
       if (response.status === 429) {
         const retryAfter = parseInt(response.headers.get('Retry-After') || '30', 10);
         setRateLimitSeconds(retryAfter);
-        setErrorKey(k => k + 1);
+        setErrorKey((k) => k + 1);
         setError(`ลองเข้าสู่ระบบบ่อยเกินไป กรุณารอ ${retryAfter} วินาที`);
         setIsSubmitting(false);
         return;
@@ -400,8 +424,10 @@ function LoginContent() {
 
         toast.success('เข้าสู่ระบบสำเร็จ', `ยินดีต้อนรับกลับมา ${result.data.user.name || ''}!`);
       } else {
-        setError(result.detail || result.message || 'เข้าสู่ระบบไม่สำเร็จ กรุณาตรวจสอบอีเมลและรหัสผ่าน');
-        setErrorKey(k => k + 1);
+        setError(
+          result.detail || result.message || 'เข้าสู่ระบบไม่สำเร็จ กรุณาตรวจสอบอีเมลและรหัสผ่าน',
+        );
+        setErrorKey((k) => k + 1);
         setIsSubmitting(false);
       }
     } catch (err: any) {
@@ -412,7 +438,7 @@ function LoginContent() {
       } else {
         setError('เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง');
       }
-      setErrorKey(k => k + 1);
+      setErrorKey((k) => k + 1);
       setIsSubmitting(false);
     }
   };
@@ -430,11 +456,7 @@ function LoginContent() {
             บัญชีจะใช้งานได้ทันทีที่ผู้ดูแลระบบอนุมัติ และเราจะแจ้งผลให้ทราบทางอีเมล
             เมื่อได้รับอนุมัติแล้วกรุณากลับมาเข้าสู่ระบบ
           </div>
-          <button
-            type="button"
-            className="login-submit"
-            onClick={() => setView('signin')}
-          >
+          <button type="button" className="login-submit" onClick={() => setView('signin')}>
             <span>กลับไปหน้าเข้าสู่ระบบ</span>
             <ArrowRight size={18} aria-hidden="true" />
           </button>
@@ -504,7 +526,6 @@ function LoginContent() {
           {registrationMode === 'approval' && (
             <p className="login-hint">บัญชีที่สมัครจะใช้งานได้หลังผู้ดูแลระบบอนุมัติ</p>
           )}
-
 
           <TurnstileWidget onToken={setTurnstileToken} />
 
@@ -600,7 +621,11 @@ function LoginContent() {
                   className="login-eye"
                   disabled={isSubmitting}
                 >
-                  {showPassword ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
+                  {showPassword ? (
+                    <EyeOff size={18} aria-hidden="true" />
+                  ) : (
+                    <Eye size={18} aria-hidden="true" />
+                  )}
                 </button>
               </div>
             </label>
@@ -628,13 +653,23 @@ function LoginContent() {
             </div>
 
             {error && (
-              <div key={errorKey} id={errorId} role="alert" aria-live="polite" className="login-error">
+              <div
+                key={errorKey}
+                id={errorId}
+                role="alert"
+                aria-live="polite"
+                className="login-error"
+              >
                 <AlertCircle size={16} aria-hidden="true" className="login-error-icon" />
                 {error}
               </div>
             )}
 
-            <button type="submit" disabled={isSubmitting || rateLimitSeconds > 0} className="login-submit">
+            <button
+              type="submit"
+              disabled={isSubmitting || rateLimitSeconds > 0}
+              className="login-submit"
+            >
               {rateLimitSeconds > 0 ? (
                 <>
                   <Loader2 size={18} className="login-submit-spinner" aria-hidden="true" />
@@ -664,11 +699,30 @@ function LoginContent() {
                 aria-label="ดำเนินการต่อด้วย Google"
               >
                 <span className="google-btn-mark" aria-hidden="true">
-                  <svg className="google-btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" focusable="false">
-                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                    <path fill="#FBBC05" d="M5.84 14.1c-.22-.66-.35-1.36-.35-2.1s.13-1.44.35-2.1V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l3.66-2.84z" />
-                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06L5.84 9.9c.87-2.6 3.3-4.52 6.16-4.52z" />
+                  <svg
+                    className="google-btn-icon"
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    width="20"
+                    height="20"
+                    focusable="false"
+                  >
+                    <path
+                      fill="#4285F4"
+                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                    />
+                    <path
+                      fill="#34A853"
+                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                    />
+                    <path
+                      fill="#FBBC05"
+                      d="M5.84 14.1c-.22-.66-.35-1.36-.35-2.1s.13-1.44.35-2.1V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l3.66-2.84z"
+                    />
+                    <path
+                      fill="#EA4335"
+                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06L5.84 9.9c.87-2.6 3.3-4.52 6.16-4.52z"
+                    />
                   </svg>
                 </span>
                 <span className="google-text">ดำเนินการต่อด้วย Google</span>
@@ -677,9 +731,7 @@ function LoginContent() {
 
             {/* Dedicated prominent registration box */}
             <div className="pt-4 mt-3 border-t border-black/[0.08] text-center">
-              <p className="text-[13.5px] text-[#6e6e73] mb-2.5">
-                ยังไม่มีบัญชีสำหรับใช้งาน?
-              </p>
+              <p className="text-[13.5px] text-[#6e6e73] mb-2.5">ยังไม่มีบัญชีสำหรับใช้งาน?</p>
               <Link
                 href="/register"
                 className="inline-flex items-center justify-center gap-1.5 w-full py-2.5 px-4 rounded-xl border border-[#0066cc]/30 bg-[#0066cc]/5 text-[#0066cc] font-bold text-[13.5px] hover:bg-[#0066cc]/10 hover:border-[#0066cc]/50 transition-all active:scale-[0.98]"
@@ -687,7 +739,7 @@ function LoginContent() {
                 <span>สมัครสมาชิก</span>
                 <ArrowRight size={15} aria-hidden="true" />
               </Link>
-              
+
               {registrationMode === 'closed' && (
                 <span className="text-[11.5px] text-[#86868b] block mt-1.5">
                   ระบบปิดรับสมัครสมาชิกใหม่ กรุณาติดต่อผู้ดูแลระบบเพื่อขอสิทธิ์เข้าใช้งาน

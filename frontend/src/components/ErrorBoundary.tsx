@@ -1,20 +1,20 @@
-'use client'
+'use client';
 
-import React, { Component, ReactNode } from 'react'
-import { AlertTriangle, RotateCcw, Home } from 'lucide-react'
-import Link from 'next/link'
+import React, { Component, ReactNode } from 'react';
+import { AlertTriangle, RotateCcw, Home } from 'lucide-react';
+import Link from 'next/link';
 
 interface ErrorBoundaryProps {
-  children: ReactNode
+  children: ReactNode;
   /** Optional fallback UI; receives the error and a reset function */
-  fallback?: (error: Error, reset: () => void) => ReactNode
+  fallback?: (error: Error, reset: () => void) => ReactNode;
   /** Called when an error is caught (for logging) */
-  onError?: (error: Error, errorInfo: React.ErrorInfo) => void
+  onError?: (error: Error, errorInfo: React.ErrorInfo) => void;
 }
 
 interface ErrorBoundaryState {
-  hasError: boolean
-  error: Error | null
+  hasError: boolean;
+  error: Error | null;
 }
 
 /**
@@ -23,29 +23,29 @@ interface ErrorBoundaryState {
  */
 export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   constructor(props: ErrorBoundaryProps) {
-    super(props)
-    this.state = { hasError: false, error: null }
+    super(props);
+    this.state = { hasError: false, error: null };
   }
 
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
-    return { hasError: true, error }
+    return { hasError: true, error };
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     // Preserve console output for debugging
-    console.error('[ErrorBoundary] Caught error:', error, errorInfo)
-    this.props.onError?.(error, errorInfo)
+    console.error('[ErrorBoundary] Caught error:', error, errorInfo);
+    this.props.onError?.(error, errorInfo);
   }
 
   handleReset = () => {
-    this.setState({ hasError: false, error: null })
-  }
+    this.setState({ hasError: false, error: null });
+  };
 
   render() {
     if (this.state.hasError && this.state.error) {
       // Custom fallback provided
       if (this.props.fallback) {
-        return this.props.fallback(this.state.error, this.handleReset)
+        return this.props.fallback(this.state.error, this.handleReset);
       }
 
       // Default fallback UI
@@ -99,11 +99,11 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
             </div>
           </div>
         </div>
-      )
+      );
     }
 
-    return this.props.children
+    return this.props.children;
   }
 }
 
-export default ErrorBoundary
+export default ErrorBoundary;

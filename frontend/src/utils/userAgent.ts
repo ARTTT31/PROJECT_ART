@@ -2,7 +2,7 @@
  * User-Agent parsing utilities for session display
  */
 
-import type { ParsedUA } from '@/types'
+import type { ParsedUA } from '@/types';
 
 /**
  * Parse a User-Agent string into human-readable browser + OS info.
@@ -10,62 +10,62 @@ import type { ParsedUA } from '@/types'
  */
 export function parseUserAgent(ua: string | null | undefined): ParsedUA {
   if (!ua) {
-    return { browser: 'ไม่ระบุ', os: 'ไม่ระบุ', isMobile: false }
+    return { browser: 'ไม่ระบุ', os: 'ไม่ระบุ', isMobile: false };
   }
 
-  const lower = ua.toLowerCase()
+  const lower = ua.toLowerCase();
 
   // Version lookups run against the lowercased string on purpose: user agents
   // spell tokens with inconsistent capitalisation ("Mac OS X", "Android 14",
   // "Chrome/120"), so matching the original would silently drop every version.
 
   // ── OS ───────────────────────────────────────────────
-  let os = 'ไม่ระบุ'
+  let os = 'ไม่ระบุ';
   if (lower.includes('windows')) {
-    if (lower.includes('windows nt 10')) os = 'Windows 10/11'
-    else if (lower.includes('windows nt 6.3')) os = 'Windows 8.1'
-    else if (lower.includes('windows nt 6.2')) os = 'Windows 8'
-    else if (lower.includes('windows nt 6.1')) os = 'Windows 7'
-    else os = 'Windows'
+    if (lower.includes('windows nt 10')) os = 'Windows 10/11';
+    else if (lower.includes('windows nt 6.3')) os = 'Windows 8.1';
+    else if (lower.includes('windows nt 6.2')) os = 'Windows 8';
+    else if (lower.includes('windows nt 6.1')) os = 'Windows 7';
+    else os = 'Windows';
   } else if (lower.includes('iphone') || lower.includes('ipad') || lower.includes('ipod')) {
     // Must be checked before 'mac os x': iOS agents contain "like Mac OS X",
     // so ordering these the other way round reports every iPhone as a Mac.
-    const ver = lower.match(/os (\d+[._]\d+)/)
-    os = ver ? `iOS ${ver[1].replace('_', '.')}` : 'iOS'
+    const ver = lower.match(/os (\d+[._]\d+)/);
+    os = ver ? `iOS ${ver[1].replace('_', '.')}` : 'iOS';
   } else if (lower.includes('android')) {
-    const ver = lower.match(/android (\d+(\.\d+)?)/)
-    os = ver ? `Android ${ver[1]}` : 'Android'
+    const ver = lower.match(/android (\d+(\.\d+)?)/);
+    os = ver ? `Android ${ver[1]}` : 'Android';
   } else if (lower.includes('mac os x')) {
-    const ver = lower.match(/mac os x (\d+[._]\d+)/)
-    os = ver ? `macOS ${ver[1].replace('_', '.')}` : 'macOS'
+    const ver = lower.match(/mac os x (\d+[._]\d+)/);
+    os = ver ? `macOS ${ver[1].replace('_', '.')}` : 'macOS';
   } else if (lower.includes('linux')) {
-    os = 'Linux'
+    os = 'Linux';
   } else if (lower.includes('cros')) {
-    os = 'Chrome OS'
+    os = 'Chrome OS';
   }
 
   // ── Browser ──────────────────────────────────────────
-  let browser = 'ไม่ระบุ'
+  let browser = 'ไม่ระบุ';
   if (lower.includes('edg/')) {
-    const ver = lower.match(/edg\/(\d+)/)
-    browser = ver ? `Edge ${ver[1]}` : 'Edge'
+    const ver = lower.match(/edg\/(\d+)/);
+    browser = ver ? `Edge ${ver[1]}` : 'Edge';
   } else if (lower.includes('opr/') || lower.includes('opera')) {
-    const ver = lower.match(/opr\/(\d+)/)
-    browser = ver ? `Opera ${ver[1]}` : 'Opera'
+    const ver = lower.match(/opr\/(\d+)/);
+    browser = ver ? `Opera ${ver[1]}` : 'Opera';
   } else if (lower.includes('firefox/')) {
-    const ver = lower.match(/firefox\/(\d+)/)
-    browser = ver ? `Firefox ${ver[1]}` : 'Firefox'
+    const ver = lower.match(/firefox\/(\d+)/);
+    browser = ver ? `Firefox ${ver[1]}` : 'Firefox';
   } else if (lower.includes('chrome/') && !lower.includes('edg/')) {
-    const ver = lower.match(/chrome\/(\d+)/)
-    browser = ver ? `Chrome ${ver[1]}` : 'Chrome'
+    const ver = lower.match(/chrome\/(\d+)/);
+    browser = ver ? `Chrome ${ver[1]}` : 'Chrome';
   } else if (lower.includes('safari/') && !lower.includes('chrome')) {
-    const ver = lower.match(/version\/(\d+(\.\d+)?)/)
-    browser = ver ? `Safari ${ver[1]}` : 'Safari'
+    const ver = lower.match(/version\/(\d+(\.\d+)?)/);
+    browser = ver ? `Safari ${ver[1]}` : 'Safari';
   }
 
-  const isMobile = /mobile|android|iphone|ipad|ipod|phone/i.test(ua)
+  const isMobile = /mobile|android|iphone|ipad|ipod|phone/i.test(ua);
 
-  return { browser, os, isMobile }
+  return { browser, os, isMobile };
 }
 
 /**
@@ -73,37 +73,42 @@ export function parseUserAgent(ua: string | null | undefined): ParsedUA {
  * e.g. "2 ชั่วโมงที่แล้ว · 14:30 9 มิ.ย."
  */
 export function formatRelativeTime(isoDate: string | null | undefined): {
-  relative: string
-  absolute: string
+  relative: string;
+  absolute: string;
 } {
   if (!isoDate) {
-    return { relative: 'ไม่ระบุ', absolute: '' }
+    return { relative: 'ไม่ระบุ', absolute: '' };
   }
 
-  const date = new Date(isoDate)
-  const now = new Date()
-  const diffMs = now.getTime() - date.getTime()
-  const diffSec = Math.floor(diffMs / 1000)
-  const diffMin = Math.floor(diffSec / 60)
-  const diffHour = Math.floor(diffMin / 60)
-  const diffDay = Math.floor(diffHour / 24)
+  const date = new Date(isoDate);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffSec = Math.floor(diffMs / 1000);
+  const diffMin = Math.floor(diffSec / 60);
+  const diffHour = Math.floor(diffMin / 60);
+  const diffDay = Math.floor(diffHour / 24);
 
-  let relative = ''
+  let relative = '';
   if (diffSec < 60) {
-    relative = 'เมื่อสักครู่'
+    relative = 'เมื่อสักครู่';
   } else if (diffMin < 60) {
-    relative = `${diffMin} นาทีที่แล้ว`
+    relative = `${diffMin} นาทีที่แล้ว`;
   } else if (diffHour < 24) {
-    relative = `${diffHour} ชั่วโมงที่แล้ว`
+    relative = `${diffHour} ชั่วโมงที่แล้ว`;
   } else if (diffDay < 30) {
-    relative = `${diffDay} วันที่แล้ว`
+    relative = `${diffDay} วันที่แล้ว`;
   } else {
-    relative = date.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' })
+    relative = date.toLocaleDateString('th-TH', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
   }
 
-  const absolute = date.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })
-    + ' '
-    + date.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' })
+  const absolute =
+    date.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) +
+    ' ' +
+    date.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
 
-  return { relative, absolute }
+  return { relative, absolute };
 }

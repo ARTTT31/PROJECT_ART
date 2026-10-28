@@ -1,12 +1,12 @@
-'use client'
+'use client';
 
-import clsx from 'clsx'
+import clsx from 'clsx';
 
 interface WidgetSizeToggleProps {
-  value: number
-  onChange: (next: number) => void
-  sizes?: number[]
-  className?: string
+  value: number;
+  onChange: (next: number) => void;
+  sizes?: number[];
+  className?: string;
 }
 
 /**
@@ -19,7 +19,7 @@ const sizeDescriptions: Record<number, string> = {
   1: 'ขนาดเล็ก (1 คอลัมน์)',
   2: 'ขนาดกลาง (2 คอลัมน์)',
   3: 'ขนาดใหญ่ (เต็มความกว้าง)',
-}
+};
 
 export default function WidgetSizeToggle({
   value,
@@ -37,9 +37,9 @@ export default function WidgetSizeToggle({
       aria-label="ปรับขนาดวิดเจ็ต"
     >
       {sizes.map((size) => {
-        const label = size === 1 ? 'S' : size === 2 ? 'M' : size === 3 ? 'L' : String(size)
-        const isActive = value === size
-        const description = sizeDescriptions[size] || `ขนาด ${size}`
+        const label = size === 1 ? 'S' : size === 2 ? 'M' : size === 3 ? 'L' : String(size);
+        const isActive = value === size;
+        const description = sizeDescriptions[size] || `ขนาด ${size}`;
         return (
           <button
             key={size}
@@ -58,8 +58,8 @@ export default function WidgetSizeToggle({
           >
             {label}
           </button>
-        )
+        );
       })}
     </div>
-  )
+  );
 }

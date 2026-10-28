@@ -1,13 +1,13 @@
-'use client'
+'use client';
 
-import * as React from 'react'
-import * as DialogPrimitive from '@radix-ui/react-dialog'
-import { X } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import * as React from 'react';
+import * as DialogPrimitive from '@radix-ui/react-dialog';
+import { X } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 /**
  * Centralized Dialog Component - Radix UI + Liquid Glass Styling
- * 
+ *
  * Features:
  * - WCAG AAA compliant with automatic focus management
  * - Focus trap with ESC key support
@@ -16,13 +16,13 @@ import { cn } from '@/lib/utils'
  * - Follows ART Workspace design system (16px max radius)
  */
 
-const Dialog = DialogPrimitive.Root
+const Dialog = DialogPrimitive.Root;
 
-const DialogTrigger = DialogPrimitive.Trigger
+const DialogTrigger = DialogPrimitive.Trigger;
 
-const DialogPortal = DialogPrimitive.Portal
+const DialogPortal = DialogPrimitive.Portal;
 
-const DialogClose = DialogPrimitive.Close
+const DialogClose = DialogPrimitive.Close;
 
 const DialogOverlay = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Overlay>,
@@ -37,12 +37,12 @@ const DialogOverlay = React.forwardRef<
       // Smooth fade-in animation
       'data-[state=open]:animate-in data-[state=closed]:animate-out',
       'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
-      className
+      className,
     )}
     {...props}
   />
-))
-DialogOverlay.displayName = DialogPrimitive.Overlay.displayName
+));
+DialogOverlay.displayName = DialogPrimitive.Overlay.displayName;
 
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
@@ -75,7 +75,7 @@ const DialogContent = React.forwardRef<
         'data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%]',
         // Duration
         'duration-200',
-        className
+        className,
       )}
       {...props}
     >
@@ -97,7 +97,7 @@ const DialogContent = React.forwardRef<
           // Focus ring
           'focus:outline-hidden focus:ring-2 focus:ring-[#0066cc]',
           // Disabled state
-          'disabled:pointer-events-none disabled:opacity-50'
+          'disabled:pointer-events-none disabled:opacity-50',
         )}
         aria-label="ปิดหน้าต่าง"
       >
@@ -105,13 +105,10 @@ const DialogContent = React.forwardRef<
       </DialogPrimitive.Close>
     </DialogPrimitive.Content>
   </DialogPortal>
-))
-DialogContent.displayName = DialogPrimitive.Content.displayName
+));
+DialogContent.displayName = DialogPrimitive.Content.displayName;
 
-const DialogHeader = ({
-  className,
-  ...props
-}: React.HTMLAttributes<HTMLDivElement>) => (
+const DialogHeader = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
     className={cn(
       // Layout
@@ -120,17 +117,14 @@ const DialogHeader = ({
       'px-6 pt-6 pb-4',
       // Border separator
       'border-b border-black/[0.06]',
-      className
+      className,
     )}
     {...props}
   />
-)
-DialogHeader.displayName = 'DialogHeader'
+);
+DialogHeader.displayName = 'DialogHeader';
 
-const DialogFooter = ({
-  className,
-  ...props
-}: React.HTMLAttributes<HTMLDivElement>) => (
+const DialogFooter = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
     className={cn(
       // Layout
@@ -139,12 +133,12 @@ const DialogFooter = ({
       'gap-2 px-6 py-4',
       // Border separator
       'border-t border-black/[0.06]',
-      className
+      className,
     )}
     {...props}
   />
-)
-DialogFooter.displayName = 'DialogFooter'
+);
+DialogFooter.displayName = 'DialogFooter';
 
 const DialogTitle = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Title>,
@@ -157,12 +151,12 @@ const DialogTitle = React.forwardRef<
       'text-xl font-semibold leading-tight tracking-tight',
       // Color (Ink from design system)
       'text-slate-900',
-      className
+      className,
     )}
     {...props}
   />
-))
-DialogTitle.displayName = DialogPrimitive.Title.displayName
+));
+DialogTitle.displayName = DialogPrimitive.Title.displayName;
 
 const DialogDescription = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Description>,
@@ -175,12 +169,12 @@ const DialogDescription = React.forwardRef<
       'text-sm leading-relaxed',
       // Color (Muted from design system)
       'text-slate-600',
-      className
+      className,
     )}
     {...props}
   />
-))
-DialogDescription.displayName = DialogPrimitive.Description.displayName
+));
+DialogDescription.displayName = DialogPrimitive.Description.displayName;
 
 /**
  * DialogTitleSR — visually hidden DialogTitle for screen readers only.
@@ -200,13 +194,9 @@ const DialogTitleSR = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Title>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Title>
 >(({ className, ...props }, ref) => (
-  <DialogPrimitive.Title
-    ref={ref}
-    className={cn('sr-only', className)}
-    {...props}
-  />
-))
-DialogTitleSR.displayName = 'DialogTitleSR'
+  <DialogPrimitive.Title ref={ref} className={cn('sr-only', className)} {...props} />
+));
+DialogTitleSR.displayName = 'DialogTitleSR';
 
 /**
  * DialogDescriptionSR — visually hidden DialogDescription for screen readers only.
@@ -216,18 +206,11 @@ const DialogDescriptionSR = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Description>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Description>
 >(({ className, ...props }, ref) => (
-  <DialogPrimitive.Description
-    ref={ref}
-    className={cn('sr-only', className)}
-    {...props}
-  />
-))
-DialogDescriptionSR.displayName = 'DialogDescriptionSR'
+  <DialogPrimitive.Description ref={ref} className={cn('sr-only', className)} {...props} />
+));
+DialogDescriptionSR.displayName = 'DialogDescriptionSR';
 
-const DialogBody = ({
-  className,
-  ...props
-}: React.HTMLAttributes<HTMLDivElement>) => (
+const DialogBody = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
     className={cn(
       // Scrollable content area
@@ -235,12 +218,12 @@ const DialogBody = ({
       'max-h-[calc(100dvh-14rem)]',
       // Spacing
       'px-6 py-4',
-      className
+      className,
     )}
     {...props}
   />
-)
-DialogBody.displayName = 'DialogBody'
+);
+DialogBody.displayName = 'DialogBody';
 
 export {
   Dialog,
@@ -256,4 +239,4 @@ export {
   DialogDescription,
   DialogDescriptionSR,
   DialogBody,
-}
+};

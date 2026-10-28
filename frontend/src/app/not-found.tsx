@@ -1,15 +1,15 @@
-'use client'
+'use client';
 
-import Link from 'next/link'
-import { useEffect, useState } from 'react'
-import { Home, LogIn, SearchX, ArrowLeft } from 'lucide-react'
+import Link from 'next/link';
+import { useEffect, useState } from 'react';
+import { Home, LogIn, SearchX, ArrowLeft } from 'lucide-react';
 
 export default function NotFound() {
-  const [mounted, setMounted] = useState(false)
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true)
-  }, [])
+    setMounted(true);
+  }, []);
 
   return (
     <main className="min-h-[100dvh] text-slate-950" style={{ background: 'var(--art-page-bg)' }}>
@@ -32,7 +32,10 @@ export default function NotFound() {
                 <SearchX size={32} aria-hidden="true" />
               </div>
               <div>
-                <p className="text-[clamp(4rem,10vw,6rem)] font-semibold leading-none tracking-normal" aria-label="404">
+                <p
+                  className="text-[clamp(4rem,10vw,6rem)] font-semibold leading-none tracking-normal"
+                  aria-label="404"
+                >
                   404
                 </p>
                 <p className="mt-4 max-w-sm text-xl font-semibold leading-8 text-white/86">
@@ -80,5 +83,5 @@ export default function NotFound() {
         </section>
       </div>
     </main>
-  )
+  );
 }

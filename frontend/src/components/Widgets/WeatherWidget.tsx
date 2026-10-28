@@ -1,6 +1,6 @@
-'use client'
+'use client';
 
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   Cloud,
   CloudDrizzle,
@@ -20,17 +20,17 @@ import {
   AlertCircle,
   Navigation,
   Clock,
-} from 'lucide-react'
-import WidgetSizeToggle from './WidgetSizeToggle'
+} from 'lucide-react';
+import WidgetSizeToggle from './WidgetSizeToggle';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
 interface CityLocation {
-  id: string
-  name: string
-  lat: number
-  lon: number
-  isGps?: boolean
+  id: string;
+  name: string;
+  lat: number;
+  lon: number;
+  isGps?: boolean;
 }
 
 const CITY_PRESETS: CityLocation[] = [
@@ -42,57 +42,57 @@ const CITY_PRESETS: CityLocation[] = [
   { id: 'kkn', name: 'ขอนแก่น', lat: 16.4419, lon: 102.8359 },
   { id: 'nbr', name: 'นนทบุรี', lat: 13.8621, lon: 100.5144 },
   { id: 'spk', name: 'สมุทรปราการ', lat: 13.5991, lon: 100.5968 },
-]
+];
 
 interface HourlyForecastItem {
-  time: string
-  rawTime: string
-  weatherCode: number
-  temp: number
-  rainProb: number
-  isCurrent?: boolean
+  time: string;
+  rawTime: string;
+  weatherCode: number;
+  temp: number;
+  rainProb: number;
+  isCurrent?: boolean;
 }
 
 interface WeatherData {
-  currentTemp: number
-  apparentTemp: number
-  humidity: number
-  windSpeed: number
-  weatherCode: number
-  tempMax: number
-  tempMin: number
-  rainProb: number
-  hourlyForecast: HourlyForecastItem[]
+  currentTemp: number;
+  apparentTemp: number;
+  humidity: number;
+  windSpeed: number;
+  weatherCode: number;
+  tempMax: number;
+  tempMin: number;
+  rainProb: number;
+  hourlyForecast: HourlyForecastItem[];
 }
 
 interface AirQualityData {
-  pm25: number
-  pm10: number
-  usAqi: number
+  pm25: number;
+  pm10: number;
+  usAqi: number;
 }
 
 interface CombinedWeatherCache {
-  savedAt: number
-  cityId: string
-  cityName: string
-  lat: number
-  lon: number
-  weather: WeatherData
-  airQuality: AirQualityData
+  savedAt: number;
+  cityId: string;
+  cityName: string;
+  lat: number;
+  lon: number;
+  weather: WeatherData;
+  airQuality: AirQualityData;
 }
 
 // ── Cache helpers ────────────────────────────────────────────────────────────
 
-const CACHE_KEY = 'artWeatherCacheV7'
-const LOCATION_KEY = 'artWeatherLocationV7'
-const CACHE_TTL_MS = 20 * 60_000 // 20 minutes
+const CACHE_KEY = 'artWeatherCacheV7';
+const LOCATION_KEY = 'artWeatherLocationV7';
+const CACHE_TTL_MS = 20 * 60_000; // 20 minutes
 
 function safeJsonParse<T>(raw: string | null): T | null {
-  if (!raw) return null
+  if (!raw) return null;
   try {
-    return JSON.parse(raw) as T
+    return JSON.parse(raw) as T;
   } catch {
-    return null
+    return null;
   }
 }
 
@@ -102,17 +102,17 @@ async function resolveLocationName(lat: number, lon: number): Promise<string> {
   try {
     const res = await fetch(
       `/api/v1/weather/reverse-geocode?latitude=${lat}&longitude=${lon}&locality_language=th`,
-    )
+    );
     if (res.ok) {
-      const data = await res.json()
-      const locality = data.locality || ''
-      const city = data.city || data.principalSubdivision || ''
-      if (locality && city) return `${locality}, ${city}`
-      if (city) return city
-      if (data.countryName) return data.countryName
+      const data = await res.json();
+      const locality = data.locality || '';
+      const city = data.city || data.principalSubdivision || '';
+      if (locality && city) return `${locality}, ${city}`;
+      if (city) return city;
+      if (data.countryName) return data.countryName;
     }
   } catch {}
-  return `พิกัด ${lat.toFixed(2)}, ${lon.toFixed(2)}`
+  return `พิกัด ${lat.toFixed(2)}, ${lon.toFixed(2)}`;
 }
 
 // ── Weather Code Interpreter (WMO standard) ───────────────────────────────────
@@ -120,33 +120,73 @@ async function resolveLocationName(lat: number, lon: number): Promise<string> {
 function getWeatherMeta(code: number) {
   switch (code) {
     case 0:
-      return { label: 'ท้องฟ้าแจ่มใส', icon: Sun, colorClass: 'text-amber-500', bgClass: 'bg-amber-50' }
+      return {
+        label: 'ท้องฟ้าแจ่มใส',
+        icon: Sun,
+        colorClass: 'text-amber-500',
+        bgClass: 'bg-amber-50',
+      };
     case 1:
     case 2:
-      return { label: 'มีเมฆบางส่วน', icon: CloudSun, colorClass: 'text-sky-500', bgClass: 'bg-sky-50' }
+      return {
+        label: 'มีเมฆบางส่วน',
+        icon: CloudSun,
+        colorClass: 'text-sky-500',
+        bgClass: 'bg-sky-50',
+      };
     case 3:
-      return { label: 'มีเมฆมาก', icon: Cloud, colorClass: 'text-slate-500', bgClass: 'bg-slate-100' }
+      return {
+        label: 'มีเมฆมาก',
+        icon: Cloud,
+        colorClass: 'text-slate-500',
+        bgClass: 'bg-slate-100',
+      };
     case 45:
     case 48:
-      return { label: 'หมอกลง', icon: CloudFog, colorClass: 'text-slate-500', bgClass: 'bg-slate-100' }
+      return {
+        label: 'หมอกลง',
+        icon: CloudFog,
+        colorClass: 'text-slate-500',
+        bgClass: 'bg-slate-100',
+      };
     case 51:
     case 53:
     case 55:
-      return { label: 'ฝนปรอยๆ', icon: CloudDrizzle, colorClass: 'text-blue-500', bgClass: 'bg-blue-50' }
+      return {
+        label: 'ฝนปรอยๆ',
+        icon: CloudDrizzle,
+        colorClass: 'text-blue-500',
+        bgClass: 'bg-blue-50',
+      };
     case 61:
     case 63:
     case 65:
-      return { label: 'ฝนตก', icon: CloudRain, colorClass: 'text-blue-600', bgClass: 'bg-blue-50' }
+      return { label: 'ฝนตก', icon: CloudRain, colorClass: 'text-blue-600', bgClass: 'bg-blue-50' };
     case 80:
     case 81:
     case 82:
-      return { label: 'ฝนตกหนัก', icon: CloudRain, colorClass: 'text-indigo-600', bgClass: 'bg-indigo-50' }
+      return {
+        label: 'ฝนตกหนัก',
+        icon: CloudRain,
+        colorClass: 'text-indigo-600',
+        bgClass: 'bg-indigo-50',
+      };
     case 95:
     case 96:
     case 99:
-      return { label: 'ฝนฟ้าคะนอง', icon: CloudLightning, colorClass: 'text-purple-600', bgClass: 'bg-purple-50' }
+      return {
+        label: 'ฝนฟ้าคะนอง',
+        icon: CloudLightning,
+        colorClass: 'text-purple-600',
+        bgClass: 'bg-purple-50',
+      };
     default:
-      return { label: 'สภาพอากาศทั่วไป', icon: CloudSun, colorClass: 'text-sky-500', bgClass: 'bg-sky-50' }
+      return {
+        label: 'สภาพอากาศทั่วไป',
+        icon: CloudSun,
+        colorClass: 'text-sky-500',
+        bgClass: 'bg-sky-50',
+      };
   }
 }
 
@@ -160,7 +200,7 @@ function getPM25Meta(pm25: number) {
       badgeClass: 'bg-emerald-50 text-emerald-700 ring-emerald-200/80',
       dotClass: 'bg-emerald-500',
       icon: ShieldCheck,
-    }
+    };
   }
   if (pm25 <= 25) {
     return {
@@ -169,7 +209,7 @@ function getPM25Meta(pm25: number) {
       badgeClass: 'bg-sky-50 text-sky-700 ring-sky-200/80',
       dotClass: 'bg-sky-500',
       icon: ShieldCheck,
-    }
+    };
   }
   if (pm25 <= 37.5) {
     return {
@@ -178,7 +218,7 @@ function getPM25Meta(pm25: number) {
       badgeClass: 'bg-amber-50 text-amber-700 ring-amber-200/80',
       dotClass: 'bg-amber-500',
       icon: ShieldAlert,
-    }
+    };
   }
   if (pm25 <= 75) {
     return {
@@ -187,7 +227,7 @@ function getPM25Meta(pm25: number) {
       badgeClass: 'bg-orange-50 text-orange-700 ring-orange-200/80',
       dotClass: 'bg-orange-500',
       icon: ShieldAlert,
-    }
+    };
   }
   return {
     level: 'มีผลกระทบต่อสุขภาพ',
@@ -195,7 +235,7 @@ function getPM25Meta(pm25: number) {
     badgeClass: 'bg-rose-50 text-rose-700 ring-rose-200/80',
     dotClass: 'bg-rose-500',
     icon: ShieldAlert,
-  }
+  };
 }
 
 // ── Main Component ───────────────────────────────────────────────────────────
@@ -204,214 +244,218 @@ export default function WeatherWidget({
   width = 1,
   onResize,
 }: {
-  width?: number
-  onResize?: (size: number) => void
+  width?: number;
+  onResize?: (size: number) => void;
 }) {
-  const [selectedCity, setSelectedCity] = useState<CityLocation>(CITY_PRESETS[0])
-  const [weather, setWeather] = useState<WeatherData | null>(null)
-  const [airQuality, setAirQuality] = useState<AirQualityData | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [refreshing, setRefreshing] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [staleNotice, setStaleNotice] = useState<string | null>(null)
-  const [lastUpdated, setLastUpdated] = useState<Date>(new Date())
-  const [isCityDropdownOpen, setIsCityDropdownOpen] = useState(false)
-  const [isLocating, setIsLocating] = useState(false)
-  const [unit, setUnit] = useState<'C' | 'F'>('C')
+  const [selectedCity, setSelectedCity] = useState<CityLocation>(CITY_PRESETS[0]);
+  const [weather, setWeather] = useState<WeatherData | null>(null);
+  const [airQuality, setAirQuality] = useState<AirQualityData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [staleNotice, setStaleNotice] = useState<string | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  const [isCityDropdownOpen, setIsCityDropdownOpen] = useState(false);
+  const [isLocating, setIsLocating] = useState(false);
+  const [unit, setUnit] = useState<'C' | 'F'>('C');
 
-  const dropdownRef = useRef<HTMLDivElement>(null)
-  const abortRef = useRef<AbortController | null>(null)
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
   // `fetchWeatherData` is a `useCallback([])` and never sees fresh state, so the
   // data actually on screen is mirrored here for the fallback decisions below.
   const dataRef = useRef<{ weather: WeatherData | null; airQuality: AirQualityData | null }>({
     weather: null,
     airQuality: null,
-  })
-  
-  const displayTemp = useCallback((celsius: number) => {
-    return unit === 'C' ? celsius : Math.round((celsius * 9) / 5 + 32)
-  }, [unit])
+  });
+
+  const displayTemp = useCallback(
+    (celsius: number) => {
+      return unit === 'C' ? celsius : Math.round((celsius * 9) / 5 + 32);
+    },
+    [unit],
+  );
 
   // ── Fetch Weather & AQI from Open-Meteo ─────────────────────────────────────
-  const fetchWeatherData = useCallback(
-    async (city: CityLocation, isRefresh = false) => {
-      abortRef.current?.abort()
-      const controller = new AbortController()
-      abortRef.current = controller
+  const fetchWeatherData = useCallback(async (city: CityLocation, isRefresh = false) => {
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
 
-      if (isRefresh) {
-        setRefreshing(true)
+    if (isRefresh) {
+      setRefreshing(true);
+    } else {
+      setLoading(true);
+    }
+    setError(null);
+    setStaleNotice(null);
+
+    try {
+      const weatherUrl = `/api/v1/weather/forecast?latitude=${city.lat}&longitude=${city.lon}&timezone=Asia%2FBangkok&forecast_days=2`;
+      const aqiUrl = `/api/v1/weather/air-quality?latitude=${city.lat}&longitude=${city.lon}&timezone=Asia%2FBangkok`;
+
+      const [weatherRes, aqiRes] = await Promise.all([
+        fetch(weatherUrl, { signal: controller.signal }),
+        fetch(aqiUrl, { signal: controller.signal }),
+      ]);
+
+      // The two endpoints fail independently — the forecast call is the one
+      // Open-Meteo throttles — so each half is optional. Throwing because one
+      // of them 502'd used to discard the other half along with it.
+      const weatherJson = weatherRes.ok ? await weatherRes.json().catch(() => null) : null;
+      const aqiJson = aqiRes.ok ? await aqiRes.json().catch(() => null) : null;
+
+      if (!weatherJson && !aqiJson) {
+        throw new Error('ไม่สามารถดึงข้อมูลสภาพอากาศได้ในขณะนี้');
+      }
+
+      let mappedWeather: WeatherData | null = null;
+      if (weatherJson?.current) {
+        const dailyMax: number[] = weatherJson.daily?.temperature_2m_max || [];
+        const dailyMin: number[] = weatherJson.daily?.temperature_2m_min || [];
+        const dailyRain: number[] = weatherJson.daily?.precipitation_probability_max || [];
+
+        // Hourly forecast extraction
+        const hourlyTimes: string[] = weatherJson.hourly?.time || [];
+        const hourlyTemps: number[] = weatherJson.hourly?.temperature_2m || [];
+        const hourlyCodes: number[] = weatherJson.hourly?.weather_code || [];
+        const hourlyRains: number[] = weatherJson.hourly?.precipitation_probability || [];
+
+        const now = new Date();
+        const currentHour = now.getHours();
+        const todayIsoDate = now.toISOString().slice(0, 10);
+
+        // Find matching current hour index
+        let startIndex = hourlyTimes.findIndex((tStr) => {
+          const d = new Date(tStr);
+          return d.getHours() === currentHour && tStr.startsWith(todayIsoDate);
+        });
+
+        if (startIndex === -1) {
+          startIndex = 0;
+        }
+
+        const hourlyList: HourlyForecastItem[] = [];
+        const totalHoursToExtract = 8;
+
+        for (
+          let i = startIndex;
+          i < Math.min(hourlyTimes.length, startIndex + totalHoursToExtract);
+          i++
+        ) {
+          const d = new Date(hourlyTimes[i]);
+          const hour = d.getHours();
+          const isNow = i === startIndex;
+          const formattedHour = `${String(hour).padStart(2, '0')}:00`;
+
+          hourlyList.push({
+            time: isNow ? 'ตอนนี้' : formattedHour,
+            rawTime: hourlyTimes[i],
+            weatherCode: hourlyCodes[i] ?? 0,
+            temp: Math.round(hourlyTemps[i] ?? 0),
+            rainProb: hourlyRains[i] ?? 0,
+            isCurrent: isNow,
+          });
+        }
+
+        mappedWeather = {
+          currentTemp: Math.round(weatherJson.current?.temperature_2m ?? 0),
+          apparentTemp: Math.round(weatherJson.current?.apparent_temperature ?? 0),
+          humidity: Math.round(weatherJson.current?.relative_humidity_2m ?? 0),
+          windSpeed: Math.round(weatherJson.current?.wind_speed_10m ?? 0),
+          weatherCode: weatherJson.current?.weather_code ?? 0,
+          tempMax: Math.round(dailyMax[0] ?? 0),
+          tempMin: Math.round(dailyMin[0] ?? 0),
+          rainProb: Math.round(dailyRain[0] ?? 0),
+          hourlyForecast: hourlyList,
+        };
+      }
+
+      let mappedAqi: AirQualityData | null = null;
+      if (aqiJson?.current) {
+        mappedAqi = {
+          pm25: Math.round((aqiJson.current.pm2_5 ?? 0) * 10) / 10,
+          pm10: Math.round((aqiJson.current.pm10 ?? 0) * 10) / 10,
+          usAqi: Math.round(aqiJson.current.us_aqi ?? 0),
+        };
+      }
+
+      // Half a response is enough to keep rendering: the cached half stands in
+      // for the part the provider refused this time round.
+      const nextWeather = mappedWeather ?? dataRef.current.weather;
+      const nextAirQuality = mappedAqi ?? dataRef.current.airQuality;
+
+      if (!nextWeather || !nextAirQuality) {
+        // Both halves are needed for the card and nothing is cached to fall
+        // back on — this is the genuine "no data" case.
+        throw new Error('ไม่สามารถดึงข้อมูลสภาพอากาศได้ในขณะนี้');
+      }
+
+      setWeather(nextWeather);
+      setAirQuality(nextAirQuality);
+      setLastUpdated(new Date());
+      dataRef.current = { weather: nextWeather, airQuality: nextAirQuality };
+
+      if (!weatherRes.ok || !aqiRes.ok) {
+        console.warn('Weather refresh returned partial data:', {
+          forecast: weatherRes.status,
+          airQuality: aqiRes.status,
+        });
+        setStaleNotice('ผู้ให้บริการข้อมูลตอบกลับไม่ครบ — แสดงข้อมูลล่าสุดที่มีอยู่');
+      } else if (typeof window !== 'undefined') {
+        // Only a fully fresh response may claim `savedAt`: marking a cached half
+        // as new would stop the widget from retrying it for another TTL.
+        const cacheData: CombinedWeatherCache = {
+          savedAt: Date.now(),
+          cityId: city.id,
+          cityName: city.name,
+          lat: city.lat,
+          lon: city.lon,
+          weather: nextWeather,
+          airQuality: nextAirQuality,
+        };
+        localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
+      }
+    } catch (err: any) {
+      if (err.name === 'AbortError') return;
+      console.error('Weather fetch error:', err);
+      if (dataRef.current.weather && dataRef.current.airQuality) {
+        // Something is already on screen. Raising an alarm over a failed refresh
+        // reads as a broken widget, so keep the data and say what happened.
+        setStaleNotice('อัปเดตล่าสุดไม่สำเร็จ — กำลังแสดงข้อมูลเดิม');
       } else {
-        setLoading(true)
+        setError('เกิดข้อผิดพลาดในการโหลดข้อมูลสภาพอากาศ');
       }
-      setError(null)
-      setStaleNotice(null)
-
-      try {
-        const weatherUrl = `/api/v1/weather/forecast?latitude=${city.lat}&longitude=${city.lon}&timezone=Asia%2FBangkok&forecast_days=2`
-        const aqiUrl = `/api/v1/weather/air-quality?latitude=${city.lat}&longitude=${city.lon}&timezone=Asia%2FBangkok`
-
-        const [weatherRes, aqiRes] = await Promise.all([
-          fetch(weatherUrl, { signal: controller.signal }),
-          fetch(aqiUrl, { signal: controller.signal }),
-        ])
-
-        // The two endpoints fail independently — the forecast call is the one
-        // Open-Meteo throttles — so each half is optional. Throwing because one
-        // of them 502'd used to discard the other half along with it.
-        const weatherJson = weatherRes.ok ? await weatherRes.json().catch(() => null) : null
-        const aqiJson = aqiRes.ok ? await aqiRes.json().catch(() => null) : null
-
-        if (!weatherJson && !aqiJson) {
-          throw new Error('ไม่สามารถดึงข้อมูลสภาพอากาศได้ในขณะนี้')
-        }
-
-        let mappedWeather: WeatherData | null = null
-        if (weatherJson?.current) {
-          const dailyMax: number[] = weatherJson.daily?.temperature_2m_max || []
-          const dailyMin: number[] = weatherJson.daily?.temperature_2m_min || []
-          const dailyRain: number[] = weatherJson.daily?.precipitation_probability_max || []
-
-          // Hourly forecast extraction
-          const hourlyTimes: string[] = weatherJson.hourly?.time || []
-          const hourlyTemps: number[] = weatherJson.hourly?.temperature_2m || []
-          const hourlyCodes: number[] = weatherJson.hourly?.weather_code || []
-          const hourlyRains: number[] = weatherJson.hourly?.precipitation_probability || []
-
-          const now = new Date()
-          const currentHour = now.getHours()
-          const todayIsoDate = now.toISOString().slice(0, 10)
-
-          // Find matching current hour index
-          let startIndex = hourlyTimes.findIndex((tStr) => {
-            const d = new Date(tStr)
-            return d.getHours() === currentHour && tStr.startsWith(todayIsoDate)
-          })
-
-          if (startIndex === -1) {
-            startIndex = 0
-          }
-
-          const hourlyList: HourlyForecastItem[] = []
-          const totalHoursToExtract = 8
-
-          for (let i = startIndex; i < Math.min(hourlyTimes.length, startIndex + totalHoursToExtract); i++) {
-            const d = new Date(hourlyTimes[i])
-            const hour = d.getHours()
-            const isNow = i === startIndex
-            const formattedHour = `${String(hour).padStart(2, '0')}:00`
-
-            hourlyList.push({
-              time: isNow ? 'ตอนนี้' : formattedHour,
-              rawTime: hourlyTimes[i],
-              weatherCode: hourlyCodes[i] ?? 0,
-              temp: Math.round(hourlyTemps[i] ?? 0),
-              rainProb: hourlyRains[i] ?? 0,
-              isCurrent: isNow,
-            })
-          }
-
-          mappedWeather = {
-            currentTemp: Math.round(weatherJson.current?.temperature_2m ?? 0),
-            apparentTemp: Math.round(weatherJson.current?.apparent_temperature ?? 0),
-            humidity: Math.round(weatherJson.current?.relative_humidity_2m ?? 0),
-            windSpeed: Math.round(weatherJson.current?.wind_speed_10m ?? 0),
-            weatherCode: weatherJson.current?.weather_code ?? 0,
-            tempMax: Math.round(dailyMax[0] ?? 0),
-            tempMin: Math.round(dailyMin[0] ?? 0),
-            rainProb: Math.round(dailyRain[0] ?? 0),
-            hourlyForecast: hourlyList,
-          }
-        }
-
-        let mappedAqi: AirQualityData | null = null
-        if (aqiJson?.current) {
-          mappedAqi = {
-            pm25: Math.round((aqiJson.current.pm2_5 ?? 0) * 10) / 10,
-            pm10: Math.round((aqiJson.current.pm10 ?? 0) * 10) / 10,
-            usAqi: Math.round(aqiJson.current.us_aqi ?? 0),
-          }
-        }
-
-        // Half a response is enough to keep rendering: the cached half stands in
-        // for the part the provider refused this time round.
-        const nextWeather = mappedWeather ?? dataRef.current.weather
-        const nextAirQuality = mappedAqi ?? dataRef.current.airQuality
-
-        if (!nextWeather || !nextAirQuality) {
-          // Both halves are needed for the card and nothing is cached to fall
-          // back on — this is the genuine "no data" case.
-          throw new Error('ไม่สามารถดึงข้อมูลสภาพอากาศได้ในขณะนี้')
-        }
-
-        setWeather(nextWeather)
-        setAirQuality(nextAirQuality)
-        setLastUpdated(new Date())
-        dataRef.current = { weather: nextWeather, airQuality: nextAirQuality }
-
-        if (!weatherRes.ok || !aqiRes.ok) {
-          console.warn('Weather refresh returned partial data:', {
-            forecast: weatherRes.status,
-            airQuality: aqiRes.status,
-          })
-          setStaleNotice('ผู้ให้บริการข้อมูลตอบกลับไม่ครบ — แสดงข้อมูลล่าสุดที่มีอยู่')
-        } else if (typeof window !== 'undefined') {
-          // Only a fully fresh response may claim `savedAt`: marking a cached half
-          // as new would stop the widget from retrying it for another TTL.
-          const cacheData: CombinedWeatherCache = {
-            savedAt: Date.now(),
-            cityId: city.id,
-            cityName: city.name,
-            lat: city.lat,
-            lon: city.lon,
-            weather: nextWeather,
-            airQuality: nextAirQuality,
-          }
-          localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData))
-        }
-      } catch (err: any) {
-        if (err.name === 'AbortError') return
-        console.error('Weather fetch error:', err)
-        if (dataRef.current.weather && dataRef.current.airQuality) {
-          // Something is already on screen. Raising an alarm over a failed refresh
-          // reads as a broken widget, so keep the data and say what happened.
-          setStaleNotice('อัปเดตล่าสุดไม่สำเร็จ — กำลังแสดงข้อมูลเดิม')
-        } else {
-          setError('เกิดข้อผิดพลาดในการโหลดข้อมูลสภาพอากาศ')
-        }
-      } finally {
-        setLoading(false)
-        setRefreshing(false)
-      }
-    },
-    [],
-  )
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
 
   // ── Auto-Detect Location (GPS) ──────────────────────────────────────────────
   const handleDetectLocation = useCallback(async () => {
     if (typeof window === 'undefined' || !navigator.geolocation) {
-      setError('เบราว์เซอร์ไม่รองรับการระบุพิกัดตำแหน่ง')
-      return
+      setError('เบราว์เซอร์ไม่รองรับการระบุพิกัดตำแหน่ง');
+      return;
     }
 
-    setIsLocating(true)
-    setIsCityDropdownOpen(false)
+    setIsLocating(true);
+    setIsCityDropdownOpen(false);
 
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
-        const { latitude, longitude } = pos.coords
+        const { latitude, longitude } = pos.coords;
         try {
-          const resolvedName = await resolveLocationName(latitude, longitude)
+          const resolvedName = await resolveLocationName(latitude, longitude);
           const gpsCity: CityLocation = {
             id: 'gps',
             name: resolvedName,
             lat: latitude,
             lon: longitude,
             isGps: true,
-          }
-          setSelectedCity(gpsCity)
-          localStorage.setItem(LOCATION_KEY, JSON.stringify(gpsCity))
-          fetchWeatherData(gpsCity)
+          };
+          setSelectedCity(gpsCity);
+          localStorage.setItem(LOCATION_KEY, JSON.stringify(gpsCity));
+          fetchWeatherData(gpsCity);
         } catch {
           const fallbackCity: CityLocation = {
             id: 'gps',
@@ -419,90 +463,90 @@ export default function WeatherWidget({
             lat: latitude,
             lon: longitude,
             isGps: true,
-          }
-          setSelectedCity(fallbackCity)
-          localStorage.setItem(LOCATION_KEY, JSON.stringify(fallbackCity))
-          fetchWeatherData(fallbackCity)
+          };
+          setSelectedCity(fallbackCity);
+          localStorage.setItem(LOCATION_KEY, JSON.stringify(fallbackCity));
+          fetchWeatherData(fallbackCity);
         } finally {
-          setIsLocating(false)
+          setIsLocating(false);
         }
       },
       (geoErr) => {
-        console.warn('Geolocation denied or failed:', geoErr.message)
-        setIsLocating(false)
-        fetchWeatherData(selectedCity)
+        console.warn('Geolocation denied or failed:', geoErr.message);
+        setIsLocating(false);
+        fetchWeatherData(selectedCity);
       },
       { timeout: 10000, enableHighAccuracy: false },
-    )
-  }, [fetchWeatherData, selectedCity])
+    );
+  }, [fetchWeatherData, selectedCity]);
 
   // ── Initialization with Cache & Auto-GPS ────────────────────────────────────
   useEffect(() => {
-    if (typeof window === 'undefined') return
+    if (typeof window === 'undefined') return;
 
-    const cachedLoc = safeJsonParse<CityLocation>(localStorage.getItem(LOCATION_KEY))
-    const cachedData = safeJsonParse<CombinedWeatherCache>(localStorage.getItem(CACHE_KEY))
-    const savedUnit = localStorage.getItem('artWeatherUnit')
-    if (savedUnit === 'F' || savedUnit === 'C') setUnit(savedUnit)
+    const cachedLoc = safeJsonParse<CityLocation>(localStorage.getItem(LOCATION_KEY));
+    const cachedData = safeJsonParse<CombinedWeatherCache>(localStorage.getItem(CACHE_KEY));
+    const savedUnit = localStorage.getItem('artWeatherUnit');
+    if (savedUnit === 'F' || savedUnit === 'C') setUnit(savedUnit);
 
-    let initialCity = CITY_PRESETS[0]
+    let initialCity = CITY_PRESETS[0];
 
     if (cachedLoc) {
-      initialCity = cachedLoc
-      setSelectedCity(cachedLoc)
+      initialCity = cachedLoc;
+      setSelectedCity(cachedLoc);
     }
 
     if (cachedData && cachedData.cityId === initialCity.id) {
-      const isFresh = Date.now() - cachedData.savedAt < CACHE_TTL_MS
-      setWeather(cachedData.weather)
-      setAirQuality(cachedData.airQuality)
-      dataRef.current = { weather: cachedData.weather, airQuality: cachedData.airQuality }
-      setLastUpdated(new Date(cachedData.savedAt))
-      setLoading(false)
+      const isFresh = Date.now() - cachedData.savedAt < CACHE_TTL_MS;
+      setWeather(cachedData.weather);
+      setAirQuality(cachedData.airQuality);
+      dataRef.current = { weather: cachedData.weather, airQuality: cachedData.airQuality };
+      setLastUpdated(new Date(cachedData.savedAt));
+      setLoading(false);
 
       if (!isFresh) {
-        fetchWeatherData(initialCity, true)
+        fetchWeatherData(initialCity, true);
       }
     } else {
       if (!cachedLoc) {
-        handleDetectLocation()
+        handleDetectLocation();
       } else {
-        fetchWeatherData(initialCity)
+        fetchWeatherData(initialCity);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, []);
 
   // ── Close dropdown when clicking outside ────────────────────────────────────
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setIsCityDropdownOpen(false)
+        setIsCityDropdownOpen(false);
       }
-    }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // ── Handle City Selection ──────────────────────────────────────────────────
   const handleSelectCity = (city: CityLocation) => {
-    setSelectedCity(city)
-    setIsCityDropdownOpen(false)
+    setSelectedCity(city);
+    setIsCityDropdownOpen(false);
     if (typeof window !== 'undefined') {
-      localStorage.setItem(LOCATION_KEY, JSON.stringify(city))
+      localStorage.setItem(LOCATION_KEY, JSON.stringify(city));
     }
-    fetchWeatherData(city)
-  }
+    fetchWeatherData(city);
+  };
 
   // ── Computed Meta ──────────────────────────────────────────────────────────
   const weatherMeta = useMemo(
     () => getWeatherMeta(weather?.weatherCode ?? 0),
     [weather?.weatherCode],
-  )
-  const pm25Meta = useMemo(() => getPM25Meta(airQuality?.pm25 ?? 0), [airQuality?.pm25])
+  );
+  const pm25Meta = useMemo(() => getPM25Meta(airQuality?.pm25 ?? 0), [airQuality?.pm25]);
 
-  const WeatherIcon = weatherMeta.icon
-  const ShieldIcon = pm25Meta.icon
+  const WeatherIcon = weatherMeta.icon;
+  const ShieldIcon = pm25Meta.icon;
 
   // With no data at all the full card renders as a tall empty shell, which
   // reads as a broken widget. Collapse it to a compact, actionable state.
@@ -530,7 +574,7 @@ export default function WeatherWidget({
           {refreshing ? 'กำลังลองใหม่…' : 'ลองอีกครั้ง'}
         </button>
       </section>
-    )
+    );
   }
 
   return (
@@ -552,7 +596,10 @@ export default function WeatherWidget({
             {/* City Selector & Title */}
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">
-                <h2 id="weather-title" className="text-[16px] font-bold tracking-tight text-[#1d1d1f] truncate">
+                <h2
+                  id="weather-title"
+                  className="text-[16px] font-bold tracking-tight text-[#1d1d1f] truncate"
+                >
                   สภาพอากาศ &amp; PM 2.5
                 </h2>
               </div>
@@ -569,7 +616,10 @@ export default function WeatherWidget({
                   {selectedCity.isGps ? (
                     <Navigation size={11} className="text-[#0066cc] fill-[#0066cc] shrink-0" />
                   ) : (
-                    <MapPin size={11} className="text-[#86868b] group-hover:text-[#1d1d1f] shrink-0" />
+                    <MapPin
+                      size={11}
+                      className="text-[#86868b] group-hover:text-[#1d1d1f] shrink-0"
+                    />
                   )}
                   <span className="truncate max-w-[140px] sm:max-w-[200px]">
                     {selectedCity.name}
@@ -593,7 +643,9 @@ export default function WeatherWidget({
                         className="flex w-full items-center gap-2 rounded-[10px] px-2.5 py-1.5 text-left text-xs font-semibold text-[#0066cc] hover:bg-[#0066cc]/10 transition-colors disabled:opacity-50"
                       >
                         <LocateFixed size={13} className={isLocating ? 'animate-spin' : ''} />
-                        <span>{isLocating ? 'กำลังค้นหาพิกัด...' : 'ใช้ตำแหน่งเครื่องปัจจุบัน (GPS)'}</span>
+                        <span>
+                          {isLocating ? 'กำลังค้นหาพิกัด...' : 'ใช้ตำแหน่งเครื่องปัจจุบัน (GPS)'}
+                        </span>
                       </button>
                     </div>
 
@@ -631,9 +683,9 @@ export default function WeatherWidget({
             <button
               type="button"
               onClick={() => {
-                const next = unit === 'C' ? 'F' : 'C'
-                setUnit(next)
-                localStorage.setItem('artWeatherUnit', next)
+                const next = unit === 'C' ? 'F' : 'C';
+                setUnit(next);
+                localStorage.setItem('artWeatherUnit', next);
               }}
               className="flex h-8 w-8 items-center justify-center rounded-full text-[12px] font-bold text-[#6e6e73] hover:bg-black/[0.05] hover:text-[#1d1d1f] active:scale-[0.95] transition-all"
               aria-label="สลับหน่วยอุณหภูมิ"
@@ -656,13 +708,7 @@ export default function WeatherWidget({
               />
             </button>
 
-            {onResize && (
-              <WidgetSizeToggle
-                value={width}
-                onChange={onResize}
-                sizes={[1, 2, 3]}
-              />
-            )}
+            {onResize && <WidgetSizeToggle value={width} onChange={onResize} sizes={[1, 2, 3]} />}
           </div>
         </div>
 
@@ -791,10 +837,12 @@ export default function WeatherWidget({
               <span className="text-[10px] font-medium text-[#86868b]">อุณหภูมิ / สภาพอากาศ</span>
             </div>
 
-            <div className={`grid gap-1 sm:gap-2 ${width >= 3 ? 'grid-cols-6' : width >= 2 ? 'grid-cols-5' : 'grid-cols-4 sm:grid-cols-5'}`}>
+            <div
+              className={`grid gap-1 sm:gap-2 ${width >= 3 ? 'grid-cols-6' : width >= 2 ? 'grid-cols-5' : 'grid-cols-4 sm:grid-cols-5'}`}
+            >
               {weather.hourlyForecast.slice(0, width >= 3 ? 6 : 5).map((item, index) => {
-                const hourMeta = getWeatherMeta(item.weatherCode)
-                const HourIcon = hourMeta.icon
+                const hourMeta = getWeatherMeta(item.weatherCode);
+                const HourIcon = hourMeta.icon;
                 return (
                   <div
                     key={item.rawTime}
@@ -820,12 +868,10 @@ export default function WeatherWidget({
                         💧{item.rainProb}%
                       </span>
                     ) : (
-                      <span className="mt-0.5 text-[9px] font-medium text-[#86868b]">
-                        -
-                      </span>
+                      <span className="mt-0.5 text-[9px] font-medium text-[#86868b]">-</span>
                     )}
                   </div>
-                )
+                );
               })}
             </div>
           </div>
@@ -836,10 +882,10 @@ export default function WeatherWidget({
       <footer className="mt-3.5 flex items-center justify-between border-t border-black/[0.06] pt-2.5 text-[11px] text-[#86868b]">
         <span>ข้อมูลสภาพอากาศ &amp; ฝุ่นละอองจาก Open-Meteo</span>
         <span>
-          อัปเดต:{' '}
-          {lastUpdated.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })} น.
+          อัปเดต: {lastUpdated.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}{' '}
+          น.
         </span>
       </footer>
     </section>
-  )
+  );
 }

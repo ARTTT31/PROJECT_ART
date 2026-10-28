@@ -1,33 +1,33 @@
-'use client'
+'use client';
 
-import { useEffect, useRef, useState } from 'react'
-import Link from 'next/link'
-import { AlertCircle, ArrowRight, CheckCircle2, Loader2 } from 'lucide-react'
-import AuthPageShell from '@/components/Auth/AuthPageShell'
-import '../../styles/pages/login.css'
+import { useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
+import { AlertCircle, ArrowRight, CheckCircle2, Loader2 } from 'lucide-react';
+import AuthPageShell from '@/components/Auth/AuthPageShell';
+import '../../styles/pages/login.css';
 
-const apiBaseUrl = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '')
-const VERIFY_ENDPOINT = `${apiBaseUrl}/api/v1/auth/verify-email`
+const apiBaseUrl = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '');
+const VERIFY_ENDPOINT = `${apiBaseUrl}/api/v1/auth/verify-email`;
 
-type VerifyState = 'checking' | 'verifying' | 'success' | 'error'
+type VerifyState = 'checking' | 'verifying' | 'success' | 'error';
 
 export default function VerifyEmailPage() {
-  const [state, setState] = useState<VerifyState>('checking')
-  const [message, setMessage] = useState('')
-  const startedRef = useRef(false)
+  const [state, setState] = useState<VerifyState>('checking');
+  const [message, setMessage] = useState('');
+  const startedRef = useRef(false);
 
   useEffect(() => {
-    if (startedRef.current) return
-    startedRef.current = true
+    if (startedRef.current) return;
+    startedRef.current = true;
 
-    const token = new URLSearchParams(window.location.search).get('token')
+    const token = new URLSearchParams(window.location.search).get('token');
     if (!token) {
-      setState('error')
-      setMessage('ลิงก์ยืนยันอีเมลไม่ถูกต้องหรือหมดอายุ กรุณาขออีเมลยืนยันฉบับใหม่')
-      return
+      setState('error');
+      setMessage('ลิงก์ยืนยันอีเมลไม่ถูกต้องหรือหมดอายุ กรุณาขออีเมลยืนยันฉบับใหม่');
+      return;
     }
 
-    setState('verifying')
+    setState('verifying');
     fetch(VERIFY_ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
@@ -35,19 +35,19 @@ export default function VerifyEmailPage() {
       body: JSON.stringify({ token }),
     })
       .then(async (response) => {
-        const body = await response.json().catch(() => ({}))
+        const body = await response.json().catch(() => ({}));
         if (!response.ok) {
           throw new Error(
-            body.detail || 'ลิงก์ยืนยันอีเมลไม่ถูกต้องหรือหมดอายุ กรุณาขออีเมลยืนยันฉบับใหม่'
-          )
+            body.detail || 'ลิงก์ยืนยันอีเมลไม่ถูกต้องหรือหมดอายุ กรุณาขออีเมลยืนยันฉบับใหม่',
+          );
         }
-        setState('success')
+        setState('success');
       })
       .catch((error: Error) => {
-        setState('error')
-        setMessage(error.message)
-      })
-  }, [])
+        setState('error');
+        setMessage(error.message);
+      });
+  }, []);
 
   return (
     <AuthPageShell tagline="ยืนยันอีเมลของคุณ">
@@ -56,7 +56,13 @@ export default function VerifyEmailPage() {
           <div
             role="status"
             aria-live="polite"
-            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, padding: '20px 0' }}
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 12,
+              padding: '20px 0',
+            }}
           >
             <Loader2 size={26} className="login-submit-spinner" aria-hidden="true" />
             <span style={{ color: '#6e6e73', fontSize: 14 }}>กำลังยืนยันอีเมล...</span>
@@ -104,5 +110,5 @@ export default function VerifyEmailPage() {
         )}
       </div>
     </AuthPageShell>
-  )
+  );
 }

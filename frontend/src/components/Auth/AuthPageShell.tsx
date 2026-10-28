@@ -1,6 +1,6 @@
-'use client'
+'use client';
 
-import Image from 'next/image'
+import Image from 'next/image';
 
 /**
  * Shared chrome for the account-email screens (forgot / reset / verify).
@@ -13,8 +13,8 @@ export default function AuthPageShell({
   tagline,
   children,
 }: {
-  tagline: string
-  children: React.ReactNode
+  tagline: string;
+  children: React.ReactNode;
 }) {
   return (
     <main className="login-page">
@@ -37,5 +37,5 @@ export default function AuthPageShell({
         </div>
       </section>
     </main>
-  )
+  );
 }

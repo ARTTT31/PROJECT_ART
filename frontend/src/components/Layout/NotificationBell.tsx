@@ -1,6 +1,6 @@
-'use client'
+'use client';
 
-import { useEffect, useRef, useState, useMemo } from 'react'
+import { useEffect, useRef, useState, useMemo } from 'react';
 import {
   Bell,
   X,
@@ -13,31 +13,31 @@ import {
   ShieldAlert,
   Sparkles,
   Trash2,
-} from 'lucide-react'
+} from 'lucide-react';
 
 export interface Notification {
-  id: string
-  type: 'holiday' | 'weather' | 'oilprice' | 'system'
-  level: 'info' | 'warning' | 'danger'
-  title: string
-  body: string
-  at: Date
+  id: string;
+  type: 'holiday' | 'weather' | 'oilprice' | 'system';
+  level: 'info' | 'warning' | 'danger';
+  title: string;
+  body: string;
+  at: Date;
 }
 
-type Listener = (notifications: Notification[]) => void
-const listeners = new Set<Listener>()
-let store: Notification[] = []
+type Listener = (notifications: Notification[]) => void;
+const listeners = new Set<Listener>();
+let store: Notification[] = [];
 
 export function pushNotifications(items: Notification[]) {
-  const map = new Map(store.map((n) => [n.id, n]))
-  items.forEach((n) => map.set(n.id, n))
+  const map = new Map(store.map((n) => [n.id, n]));
+  items.forEach((n) => map.set(n.id, n));
   store = Array.from(map.values())
     .sort((a, b) => b.at.getTime() - a.at.getTime())
-    .slice(0, 30)
-  listeners.forEach((fn) => fn([...store]))
+    .slice(0, 30);
+  listeners.forEach((fn) => fn([...store]));
 }
 
-import { getHolidaysWithDiff } from '@/utils/holidays'
+import { getHolidaysWithDiff } from '@/utils/holidays';
 
 /*
  * Late-subscriber guarantee: when a second <NotificationBell/> (e.g. soft
@@ -48,24 +48,24 @@ import { getHolidaysWithDiff } from '@/utils/holidays'
  * makes the bell badge "disappear" on first app open.
  */
 function subscribe(listener: Listener): () => void {
-  listeners.add(listener)
+  listeners.add(listener);
   // Replay the current store upsream so the subscriber's first render matches.
-  listener([...store])
-  return () => listeners.delete(listener)
+  listener([...store]);
+  return () => listeners.delete(listener);
 }
 
 const levelIcon = {
   info: <Info size={14} className="text-sky-500 shrink-0 mt-0.5" />,
   warning: <AlertTriangle size={14} className="text-amber-500 shrink-0 mt-0.5" />,
   danger: <ShieldAlert size={14} className="text-rose-500 shrink-0 mt-0.5" />,
-}
+};
 
 const typeIcon = {
   holiday: <Palmtree size={13} className="text-emerald-600" />,
   weather: <CloudRain size={13} className="text-sky-600" />,
   oilprice: <Fuel size={13} className="text-amber-600" />,
   system: <Sparkles size={13} className="text-purple-600" />,
-}
+};
 
 const levelMeta = {
   info: {
@@ -86,19 +86,19 @@ const levelMeta = {
     badgeClass: 'bg-rose-100 text-rose-800',
     iconWrapClass: 'bg-rose-100 text-rose-700',
   },
-}
+};
 
 const typeLabel = {
   holiday: 'วันหยุด',
   weather: 'สภาพอากาศ',
   oilprice: 'ราคาน้ำมัน',
   system: 'ระบบ',
-}
+};
 
-const READ_STORAGE_KEY = 'artNotificationReadV2'
-const DISMISSED_STORAGE_KEY = 'artNotificationDismissedV2'
+const READ_STORAGE_KEY = 'artNotificationReadV2';
+const DISMISSED_STORAGE_KEY = 'artNotificationDismissedV2';
 
-const WS_PATH = '/api/v1/ws/notifications'
+const WS_PATH = '/api/v1/ws/notifications';
 
 /**
  * WebSocket endpoint for the notification feed.
@@ -114,51 +114,51 @@ const WS_PATH = '/api/v1/ws/notifications'
  * where the socket lives somewhere the HTTP API does not.
  */
 export function resolveNotificationsWsUrl(location: { protocol: string; host: string }) {
-  const explicit = process.env.NEXT_PUBLIC_WS_URL?.trim()
-  if (explicit) return `${explicit.replace(/\/+$/, '')}${WS_PATH}`
+  const explicit = process.env.NEXT_PUBLIC_WS_URL?.trim();
+  if (explicit) return `${explicit.replace(/\/+$/, '')}${WS_PATH}`;
 
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL?.trim()
-  if (apiUrl) return `${apiUrl.replace(/\/+$/, '').replace(/^http/, 'ws')}${WS_PATH}`
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
+  if (apiUrl) return `${apiUrl.replace(/\/+$/, '').replace(/^http/, 'ws')}${WS_PATH}`;
 
-  const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:'
-  return `${protocol}//${location.host}${WS_PATH}`
+  const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  return `${protocol}//${location.host}${WS_PATH}`;
 }
 
 export default function NotificationBell() {
-  const [notifications, setNotifications] = useState<Notification[]>([...store])
-  const [open, setOpen] = useState(false)
+  const [notifications, setNotifications] = useState<Notification[]>([...store]);
+  const [open, setOpen] = useState(false);
   const [readIds, setReadIds] = useState<Set<string>>(() => {
-    if (typeof window === 'undefined') return new Set()
+    if (typeof window === 'undefined') return new Set();
     try {
-      const saved = localStorage.getItem(READ_STORAGE_KEY)
-      return saved ? new Set(JSON.parse(saved)) : new Set()
+      const saved = localStorage.getItem(READ_STORAGE_KEY);
+      return saved ? new Set(JSON.parse(saved)) : new Set();
     } catch {
-      return new Set()
+      return new Set();
     }
-  })
-  const panelRef = useRef<HTMLDivElement>(null)
+  });
+  const panelRef = useRef<HTMLDivElement>(null);
 
   // ── Smart Notifications Generator ──────────────────────────────────────────
   useEffect(() => {
-    if (typeof window === 'undefined') return
+    if (typeof window === 'undefined') return;
 
-    const smartAlerts: Notification[] = []
-    const now = new Date()
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const smartAlerts: Notification[] = [];
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-    let dismissedSet = new Set<string>()
+    let dismissedSet = new Set<string>();
     try {
-      const dismissedRaw = localStorage.getItem(DISMISSED_STORAGE_KEY)
-      if (dismissedRaw) dismissedSet = new Set(JSON.parse(dismissedRaw))
+      const dismissedRaw = localStorage.getItem(DISMISSED_STORAGE_KEY);
+      if (dismissedRaw) dismissedSet = new Set(JSON.parse(dismissedRaw));
     } catch {}
 
     // 1. Check Thai Holidays Alert
-    const holidaysWithDiff = getHolidaysWithDiff(today)
+    const holidaysWithDiff = getHolidaysWithDiff(today);
 
-    const nextHoliday = holidaysWithDiff.find((h) => h.daysLeft >= 0)
+    const nextHoliday = holidaysWithDiff.find((h) => h.daysLeft >= 0);
     if (nextHoliday) {
       if (nextHoliday.daysLeft === 0) {
-        const id = `holiday-today-${nextHoliday.id}`
+        const id = `holiday-today-${nextHoliday.id}`;
         if (!dismissedSet.has(id)) {
           smartAlerts.push({
             id,
@@ -167,10 +167,10 @@ export default function NotificationBell() {
             title: `วันนี้เป็นวันหยุดนักขัตฤกษ์: ${nextHoliday.title} 🎉`,
             body: `สุขสันต์วันหยุด ขอให้พักผ่อนอย่างมีความสุขครับ`,
             at: now,
-          })
+          });
         }
       } else if (nextHoliday.daysLeft <= 7) {
-        const id = `holiday-upcoming-${nextHoliday.id}-${nextHoliday.daysLeft}`
+        const id = `holiday-upcoming-${nextHoliday.id}-${nextHoliday.daysLeft}`;
         if (!dismissedSet.has(id)) {
           smartAlerts.push({
             id,
@@ -179,7 +179,7 @@ export default function NotificationBell() {
             title: `ใกล้ถึงวันหยุด: ${nextHoliday.title} 🏖️`,
             body: `อีก ${nextHoliday.daysLeft} วัน จะถึงวันหยุด (${nextHoliday.dayOfWeek} ${nextHoliday.day} ${nextHoliday.monthName})`,
             at: now,
-          })
+          });
         }
       }
     }
@@ -189,16 +189,16 @@ export default function NotificationBell() {
       const weatherCacheRaw =
         localStorage.getItem('artWeatherCacheV7') ||
         localStorage.getItem('artWeatherCacheV6') ||
-        localStorage.getItem('artWeatherCacheV5')
+        localStorage.getItem('artWeatherCacheV5');
       if (weatherCacheRaw) {
-        const parsed = JSON.parse(weatherCacheRaw)
-        const pm25 = parsed?.airQuality?.pm25
-        const rainProb = parsed?.weather?.rainProb
-        const cityName = parsed?.cityName || 'พื้นที่ของคุณ'
+        const parsed = JSON.parse(weatherCacheRaw);
+        const pm25 = parsed?.airQuality?.pm25;
+        const rainProb = parsed?.weather?.rainProb;
+        const cityName = parsed?.cityName || 'พื้นที่ของคุณ';
 
         if (typeof pm25 === 'number') {
           if (pm25 >= 37.6) {
-            const id = 'weather-pm25-high'
+            const id = 'weather-pm25-high';
             if (!dismissedSet.has(id)) {
               smartAlerts.push({
                 id,
@@ -207,10 +207,10 @@ export default function NotificationBell() {
                 title: `แจ้งเตือนฝุ่น PM 2.5 สูงใน${cityName} ⚠️`,
                 body: `ค่าฝุ่น PM 2.5 อยู่ที่ ${pm25} µg/m³ (เริ่มมีผลกระทบต่อสุขภาพ) ควรสวมหน้ากากป้องกันเมื่อออกกลางแจ้ง`,
                 at: now,
-              })
+              });
             }
           } else if (pm25 <= 15) {
-            const id = 'weather-pm25-good'
+            const id = 'weather-pm25-good';
             if (!dismissedSet.has(id)) {
               smartAlerts.push({
                 id,
@@ -219,13 +219,13 @@ export default function NotificationBell() {
                 title: `คุณภาพอากาศใน${cityName}อยู่ในเกณฑ์ดีมาก 🌿`,
                 body: `ค่าฝุ่น PM 2.5 อยู่ที่ ${pm25} µg/m³ อากาศบริสุทธิ์ เหมาะกับการทำกิจกรรมกลางแจ้ง`,
                 at: now,
-              })
+              });
             }
           }
         }
 
         if (typeof rainProb === 'number' && rainProb >= 60) {
-          const id = 'weather-rain-high'
+          const id = 'weather-rain-high';
           if (!dismissedSet.has(id)) {
             smartAlerts.push({
               id,
@@ -234,17 +234,18 @@ export default function NotificationBell() {
               title: `โอกาสเกิดฝนตกสูง ${rainProb}% 🌧️`,
               body: `พยากรณ์อากาศระบุว่ามีโอกาสเกิดฝนตกสูง อย่าลืมพกร่มก่อนออกจากอาคาร`,
               at: now,
-            })
+            });
           }
         }
       }
     } catch {}
 
     // 3. System Welcome Notification — show only once (respect dismissed)
-    const sysId = 'system-workspace-ready'
+    const sysId = 'system-workspace-ready';
     if (!dismissedSet.has(sysId)) {
       // Also check if already shown this session via sessionStorage to avoid re-showing on soft navigations
-      const shownThisSession = typeof sessionStorage !== 'undefined' && sessionStorage.getItem(sysId)
+      const shownThisSession =
+        typeof sessionStorage !== 'undefined' && sessionStorage.getItem(sysId);
       if (!shownThisSession) {
         smartAlerts.push({
           id: sysId,
@@ -253,155 +254,157 @@ export default function NotificationBell() {
           title: 'ระบบ ART Workspace พร้อมใช้งาน ✨',
           body: 'คุณสามารถปรับแต่ง จัดเรียงวิดเจ็ต และตั้งค่าลิงก์ด่วนได้ตามต้องการ',
           at: now,
-        })
+        });
         if (typeof sessionStorage !== 'undefined') {
-          sessionStorage.setItem(sysId, '1')
+          sessionStorage.setItem(sysId, '1');
         }
       }
     }
 
     if (smartAlerts.length > 0) {
-      pushNotifications(smartAlerts)
+      pushNotifications(smartAlerts);
     }
-  }, [])
+  }, []);
 
   // Subscribe to store updates & WebSocket
   useEffect(() => {
-    const fn: Listener = (items) => setNotifications([...items])
+    const fn: Listener = (items) => setNotifications([...items]);
     // subscribe() (not `listeners.add`) → replays the store so a bell that
     // mounts after the initial alerts were pushed is not stuck empty.
-    const unsubscribe = subscribe(fn)
+    const unsubscribe = subscribe(fn);
 
     // Setup WebSocket connection
-    let ws: WebSocket | null = null
-    let reconnectTimer: ReturnType<typeof setTimeout> | null = null
-    let attempts = 0
-    let stopped = false
+    let ws: WebSocket | null = null;
+    let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+    let attempts = 0;
+    let stopped = false;
 
     // Back off progressively instead of hammering every five seconds: a backend
     // restart or a capacity rejection (1013) must not turn every open tab into a
     // reconnect storm.
     const scheduleReconnect = () => {
-      if (stopped) return
-      attempts += 1
-      reconnectTimer = setTimeout(connectWs, Math.min(5000 * 2 ** (attempts - 1), 60000))
-    }
+      if (stopped) return;
+      attempts += 1;
+      reconnectTimer = setTimeout(connectWs, Math.min(5000 * 2 ** (attempts - 1), 60000));
+    };
 
     const connectWs = () => {
-      if (typeof window === 'undefined' || stopped) return
+      if (typeof window === 'undefined' || stopped) return;
 
-      const wsUrl = resolveNotificationsWsUrl(window.location)
+      const wsUrl = resolveNotificationsWsUrl(window.location);
 
       try {
-        ws = new WebSocket(wsUrl)
+        ws = new WebSocket(wsUrl);
         ws.onopen = () => {
-          attempts = 0
-        }
+          attempts = 0;
+        };
         ws.onmessage = (event) => {
           try {
-            const data = JSON.parse(event.data)
+            const data = JSON.parse(event.data);
             if (data && data.id && data.title && data.body) {
               // Real-time broadcast received
-              pushNotifications([{
-                id: data.id,
-                type: data.type || 'system',
-                level: data.level || 'info',
-                title: data.title,
-                body: data.body,
-                at: new Date()
-              }])
+              pushNotifications([
+                {
+                  id: data.id,
+                  type: data.type || 'system',
+                  level: data.level || 'info',
+                  title: data.title,
+                  body: data.body,
+                  at: new Date(),
+                },
+              ]);
             }
           } catch (e) {
-            console.error('Invalid WebSocket message:', e)
+            console.error('Invalid WebSocket message:', e);
           }
-        }
+        };
         ws.onclose = (event) => {
           // 1008 is the backend's "your session is not valid" code. Retrying it
           // would loop forever against a closed door, so stop: signing in again
           // remounts this component and opens a fresh, authenticated socket.
           if (event.code === 1008) {
-            stopped = true
-            return
+            stopped = true;
+            return;
           }
-          scheduleReconnect()
-        }
+          scheduleReconnect();
+        };
       } catch (err) {
-        console.error('WebSocket connection failed:', err)
-        scheduleReconnect()
+        console.error('WebSocket connection failed:', err);
+        scheduleReconnect();
       }
-    }
-    
-    connectWs()
+    };
+
+    connectWs();
 
     return () => {
-      stopped = true
-      unsubscribe()
+      stopped = true;
+      unsubscribe();
       if (ws) {
         // Detach the handler first so an intentional close cannot schedule a
         // reconnect after unmount.
-        ws.onclose = null
-        ws.close()
+        ws.onclose = null;
+        ws.close();
       }
-      if (reconnectTimer) clearTimeout(reconnectTimer)
-    }
-  }, [])
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+    };
+  }, []);
 
   // Save readIds to localStorage
   useEffect(() => {
-    if (typeof window === 'undefined') return
+    if (typeof window === 'undefined') return;
     try {
-      localStorage.setItem(READ_STORAGE_KEY, JSON.stringify(Array.from(readIds)))
+      localStorage.setItem(READ_STORAGE_KEY, JSON.stringify(Array.from(readIds)));
     } catch {}
-  }, [readIds])
+  }, [readIds]);
 
   // Close panel on outside click
   useEffect(() => {
-    if (!open) return
+    if (!open) return;
     const handler = (e: MouseEvent) => {
       if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
-        setOpen(false)
+        setOpen(false);
       }
-    }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [open])
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
 
   const unreadCount = useMemo(() => {
-    return notifications.filter((n) => !readIds.has(n.id)).length
-  }, [notifications, readIds])
+    return notifications.filter((n) => !readIds.has(n.id)).length;
+  }, [notifications, readIds]);
 
   const markAllRead = () => {
-    const allIds = new Set(notifications.map((n) => n.id))
-    setReadIds(allIds)
-  }
+    const allIds = new Set(notifications.map((n) => n.id));
+    setReadIds(allIds);
+  };
 
   const clearAllNotifications = () => {
     if (typeof window !== 'undefined') {
       try {
-        const allIds = notifications.map((n) => n.id)
-        localStorage.setItem(DISMISSED_STORAGE_KEY, JSON.stringify(allIds))
+        const allIds = notifications.map((n) => n.id);
+        localStorage.setItem(DISMISSED_STORAGE_KEY, JSON.stringify(allIds));
       } catch {}
     }
-    store = []
-    setNotifications([])
-    listeners.forEach((fn) => fn([]))
-  }
+    store = [];
+    setNotifications([]);
+    listeners.forEach((fn) => fn([]));
+  };
 
   const dismiss = (id: string) => {
     if (typeof window !== 'undefined') {
       try {
-        const saved = localStorage.getItem(DISMISSED_STORAGE_KEY)
-        const parsed: string[] = saved ? JSON.parse(saved) : []
+        const saved = localStorage.getItem(DISMISSED_STORAGE_KEY);
+        const parsed: string[] = saved ? JSON.parse(saved) : [];
         if (!parsed.includes(id)) {
-          parsed.push(id)
-          localStorage.setItem(DISMISSED_STORAGE_KEY, JSON.stringify(parsed))
+          parsed.push(id);
+          localStorage.setItem(DISMISSED_STORAGE_KEY, JSON.stringify(parsed));
         }
       } catch {}
     }
-    store = store.filter((n) => n.id !== id)
-    setNotifications([...store])
-    listeners.forEach((fn) => fn([...store]))
-  }
+    store = store.filter((n) => n.id !== id);
+    setNotifications([...store]);
+    listeners.forEach((fn) => fn([...store]));
+  };
 
   const formatTime = (date: Date) =>
     date.toLocaleString('th-TH', {
@@ -409,7 +412,7 @@ export default function NotificationBell() {
       month: 'short',
       hour: '2-digit',
       minute: '2-digit',
-    })
+    });
 
   return (
     <div className="relative" ref={panelRef}>
@@ -484,13 +487,14 @@ export default function NotificationBell() {
                 </div>
                 <span className="text-[13px] font-bold text-[#1d1d1f]">ไม่มีการแจ้งเตือนใหม่</span>
                 <p className="mt-0.5 text-[12px] text-[#86868b]">
-                  ระบบจะแจ้งเตือนอัตโนมัติเมื่อใกล้ถึงวันหยุด มีข้อมูลสภาพอากาศสำคัญ หรือราคาน้ำมันเปลี่ยนแปลง
+                  ระบบจะแจ้งเตือนอัตโนมัติเมื่อใกล้ถึงวันหยุด มีข้อมูลสภาพอากาศสำคัญ
+                  หรือราคาน้ำมันเปลี่ยนแปลง
                 </p>
               </div>
             ) : (
               notifications.map((n) => {
-                const isRead = readIds.has(n.id)
-                const meta = levelMeta[n.level]
+                const isRead = readIds.has(n.id);
+                const meta = levelMeta[n.level];
                 return (
                   <div
                     key={n.id}
@@ -524,7 +528,9 @@ export default function NotificationBell() {
                         </span>
                       </div>
 
-                      <h4 className="text-[13px] font-bold leading-snug text-[#1d1d1f]">{n.title}</h4>
+                      <h4 className="text-[13px] font-bold leading-snug text-[#1d1d1f]">
+                        {n.title}
+                      </h4>
                       <p className="mt-0.5 text-[12px] leading-relaxed text-[#6e6e73]">{n.body}</p>
 
                       <span className="mt-1.5 block text-[11px] font-medium text-[#86868b]">
@@ -541,12 +547,12 @@ export default function NotificationBell() {
                       <X size={13} />
                     </button>
                   </div>
-                )
+                );
               })
             )}
           </div>
         </div>
       )}
     </div>
-  )
+  );
 }

@@ -1,6 +1,6 @@
-'use client'
+'use client';
 
-import type { LucideIcon } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react';
 import {
   Home,
   Cctv,
@@ -12,18 +12,18 @@ import {
   Shield,
   Layers,
   Sparkles,
-} from 'lucide-react'
+} from 'lucide-react';
 
 export interface MainMenuItemConfig {
-  id: string
-  name: string
-  href: string
-  icon: string
-  enabled: boolean
-  isWip?: boolean
-  wipLabel?: string
-  required?: boolean
-  description?: string
+  id: string;
+  name: string;
+  href: string;
+  icon: string;
+  enabled: boolean;
+  isWip?: boolean;
+  wipLabel?: string;
+  required?: boolean;
+  description?: string;
 }
 
 export const MAIN_MENU_ICON_MAP: Record<string, LucideIcon> = {
@@ -37,7 +37,7 @@ export const MAIN_MENU_ICON_MAP: Record<string, LucideIcon> = {
   shield: Shield,
   layers: Layers,
   sparkles: Sparkles,
-}
+};
 
 export const DEFAULT_MAIN_MENU_ITEMS: MainMenuItemConfig[] = [
   {
@@ -65,42 +65,42 @@ export const DEFAULT_MAIN_MENU_ITEMS: MainMenuItemConfig[] = [
     enabled: true,
     description: 'จัดการข้อมูลส่วนตัว ความปลอดภัย และการตั้งค่า',
   },
-]
+];
 
-export const MAIN_MENU_STORAGE_KEY = 'artMainMenuConfigV4'
+export const MAIN_MENU_STORAGE_KEY = 'artMainMenuConfigV4';
 
 export function parseMainMenuConfig(raw: string | null | undefined): MainMenuItemConfig[] {
-  if (!raw) return DEFAULT_MAIN_MENU_ITEMS
+  if (!raw) return DEFAULT_MAIN_MENU_ITEMS;
   try {
-    const parsed = JSON.parse(raw)
-    if (!Array.isArray(parsed)) return DEFAULT_MAIN_MENU_ITEMS
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return DEFAULT_MAIN_MENU_ITEMS;
 
-    const defaultMap = new Map(DEFAULT_MAIN_MENU_ITEMS.map((item) => [item.id, item]))
-    const seen = new Set<string>()
-    const ordered: MainMenuItemConfig[] = []
+    const defaultMap = new Map(DEFAULT_MAIN_MENU_ITEMS.map((item) => [item.id, item]));
+    const seen = new Set<string>();
+    const ordered: MainMenuItemConfig[] = [];
 
     for (const saved of parsed) {
-      if (!saved || typeof saved.id !== 'string') continue
-      const fallback = defaultMap.get(saved.id)
-      if (!fallback) continue
-      seen.add(fallback.id)
+      if (!saved || typeof saved.id !== 'string') continue;
+      const fallback = defaultMap.get(saved.id);
+      if (!fallback) continue;
+      seen.add(fallback.id);
       ordered.push({
         ...fallback,
         enabled: fallback.required ? true : Boolean(saved.enabled),
-      })
+      });
     }
 
     for (const fallback of DEFAULT_MAIN_MENU_ITEMS) {
-      if (!seen.has(fallback.id)) ordered.push(fallback)
+      if (!seen.has(fallback.id)) ordered.push(fallback);
     }
 
-    return ordered
+    return ordered;
   } catch {
-    return DEFAULT_MAIN_MENU_ITEMS
+    return DEFAULT_MAIN_MENU_ITEMS;
   }
 }
 
 export function serializeMainMenuConfig(items: MainMenuItemConfig[]): string {
-  const minimal = items.map(({ id, enabled }) => ({ id, enabled }))
-  return JSON.stringify(minimal)
+  const minimal = items.map(({ id, enabled }) => ({ id, enabled }));
+  return JSON.stringify(minimal);
 }

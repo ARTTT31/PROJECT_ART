@@ -1,112 +1,117 @@
-'use client'
+'use client';
 
-import { useState, useEffect, type ReactElement } from 'react'
-import { usePathname } from 'next/navigation'
-import Link from 'next/link'
-import Image from 'next/image'
-import { LogOut, ExternalLink, Sparkles } from 'lucide-react'
-import { isExternalUrl, parseQuickLinks, QUICK_LINK_ICON_MAP } from '@/utils/quickLinks'
+import { useState, useEffect, type ReactElement } from 'react';
+import { usePathname } from 'next/navigation';
+import Link from 'next/link';
+import Image from 'next/image';
+import { LogOut, ExternalLink, Sparkles } from 'lucide-react';
+import { isExternalUrl, parseQuickLinks, QUICK_LINK_ICON_MAP } from '@/utils/quickLinks';
 import {
   parseMainMenuConfig,
   MAIN_MENU_ICON_MAP,
   MAIN_MENU_STORAGE_KEY,
   MainMenuItemConfig,
-} from '@/utils/mainMenu'
-import { canAccessPage } from '@/utils/accessiblePages'
-import { AuthUser } from '@/types'
-import { useBranding } from '@/context/BrandingContext'
+} from '@/utils/mainMenu';
+import { canAccessPage } from '@/utils/accessiblePages';
+import { AuthUser } from '@/types';
+import { useBranding } from '@/context/BrandingContext';
 
 interface SidebarProps {
-  isOpen: boolean
-  isCollapsed?: boolean
-  onClose: () => void
-  user: AuthUser | null
-  onLogout: () => void
+  isOpen: boolean;
+  isCollapsed?: boolean;
+  onClose: () => void;
+  user: AuthUser | null;
+  onLogout: () => void;
 }
 
 interface MenuItem {
-  name: string
-  href: string
-  icon: ReactElement
-  external?: boolean
-  isWip?: boolean
-  wipLabel?: string
+  name: string;
+  href: string;
+  icon: ReactElement;
+  external?: boolean;
+  isWip?: boolean;
+  wipLabel?: string;
 }
 
 interface MenuSection {
-  title: string
-  items: MenuItem[]
+  title: string;
+  items: MenuItem[];
 }
 
-export default function Sidebar({ isOpen, isCollapsed = false, onClose, user, onLogout }: SidebarProps) {
-  const pathname = usePathname()
-  const { companyName, companyTagline, brandLogoUrl } = useBranding()
+export default function Sidebar({
+  isOpen,
+  isCollapsed = false,
+  onClose,
+  user,
+  onLogout,
+}: SidebarProps) {
+  const pathname = usePathname();
+  const { companyName, companyTagline, brandLogoUrl } = useBranding();
 
   const [mainMenuConfig, setMainMenuConfig] = useState<MainMenuItemConfig[]>(() => {
-    if (typeof window === 'undefined') return parseMainMenuConfig(null)
-    const saved = localStorage.getItem(MAIN_MENU_STORAGE_KEY)
-    return parseMainMenuConfig(saved)
-  })
+    if (typeof window === 'undefined') return parseMainMenuConfig(null);
+    const saved = localStorage.getItem(MAIN_MENU_STORAGE_KEY);
+    return parseMainMenuConfig(saved);
+  });
 
   // Listen for changes from Profile Page
   useEffect(() => {
     const handleMenuUpdate = () => {
-      const saved = localStorage.getItem(MAIN_MENU_STORAGE_KEY)
-      setMainMenuConfig(parseMainMenuConfig(saved))
-    }
-    window.addEventListener('art-main-menu-updated', handleMenuUpdate)
-    window.addEventListener('storage', handleMenuUpdate)
+      const saved = localStorage.getItem(MAIN_MENU_STORAGE_KEY);
+      setMainMenuConfig(parseMainMenuConfig(saved));
+    };
+    window.addEventListener('art-main-menu-updated', handleMenuUpdate);
+    window.addEventListener('storage', handleMenuUpdate);
     return () => {
-      window.removeEventListener('art-main-menu-updated', handleMenuUpdate)
-      window.removeEventListener('storage', handleMenuUpdate)
-    }
-  }, [])
+      window.removeEventListener('art-main-menu-updated', handleMenuUpdate);
+      window.removeEventListener('storage', handleMenuUpdate);
+    };
+  }, []);
 
-  const quickLinks = parseQuickLinks(user?.quick_links)
+  const quickLinks = parseQuickLinks(user?.quick_links);
 
   const quickLinkSection: MenuSection | null =
     quickLinks.length > 0
       ? {
           title: 'ควิกลิ้งค์',
           items: quickLinks.map((ql) => {
-            const Icon = QUICK_LINK_ICON_MAP[ql.icon]
-            const external = isExternalUrl(ql.url)
+            const Icon = QUICK_LINK_ICON_MAP[ql.icon];
+            const external = isExternalUrl(ql.url);
             return {
               name: ql.label,
               href: ql.url,
               external,
               icon: <Icon size={20} aria-hidden="true" style={{ color: ql.color || undefined }} />,
-            }
+            };
           }),
         }
-      : null
+      : null;
 
   // Active Main Menu Items based on user configuration. The same rule (and the
   // same parser) as the server-side gate in app/api/dependencies.py.
   const enabledMainItems = mainMenuConfig.filter((item) => {
-    if (!item.enabled) return false
-    return canAccessPage(user, item.id)
-  })
-
+    if (!item.enabled) return false;
+    return canAccessPage(user, item.id);
+  });
 
   const mainMenuItemsSection: MenuSection = {
     title: 'เมนูหลัก',
     items: enabledMainItems.map((item) => {
-      const Icon = MAIN_MENU_ICON_MAP[item.icon] || Sparkles
+      const Icon = MAIN_MENU_ICON_MAP[item.icon] || Sparkles;
       return {
         name: item.name,
         href: item.href,
         icon: <Icon size={20} aria-hidden="true" />,
         isWip: item.isWip,
         wipLabel: item.wipLabel,
-      }
+      };
     }),
-  }
+  };
 
   const menuSections: MenuSection[] = [
     mainMenuItemsSection,
     ...(quickLinkSection ? [quickLinkSection] : []),
-  ]
+  ];
 
   return (
     <aside
@@ -129,9 +134,7 @@ export default function Sidebar({ isOpen, isCollapsed = false, onClose, user, on
             <h2 className="truncate text-[13.5px] font-bold text-[#1d1d1f] tracking-tight">
               {companyName}
             </h2>
-            <p className="truncate text-[11px] text-[#86868b]">
-              {companyTagline || 'Workspace'}
-            </p>
+            <p className="truncate text-[11px] text-[#86868b]">{companyTagline || 'Workspace'}</p>
           </div>
         </div>
 
@@ -140,15 +143,13 @@ export default function Sidebar({ isOpen, isCollapsed = false, onClose, user, on
           <div className="space-y-6">
             {menuSections.map((section) => (
               <div key={section.title}>
-                <div
-                  className="mb-1.5 px-3 text-[11px] font-semibold tracking-wide text-[#86868b]"
-                >
+                <div className="mb-1.5 px-3 text-[11px] font-semibold tracking-wide text-[#86868b]">
                   {section.title}
                 </div>
                 <ul className="space-y-1">
                   {section.items.map((item) => {
-                    const isActive = !item.external && pathname === item.href
-                    const ItemComponent = item.external ? 'a' : Link
+                    const isActive = !item.external && pathname === item.href;
+                    const ItemComponent = item.external ? 'a' : Link;
 
                     return (
                       <li key={item.name}>
@@ -197,7 +198,7 @@ export default function Sidebar({ isOpen, isCollapsed = false, onClose, user, on
                           )}
                         </ItemComponent>
                       </li>
-                    )
+                    );
                   })}
                 </ul>
               </div>
@@ -210,8 +211,8 @@ export default function Sidebar({ isOpen, isCollapsed = false, onClose, user, on
           <button
             type="button"
             onClick={() => {
-              onClose()
-              onLogout()
+              onClose();
+              onLogout();
             }}
             className="flex min-h-[48px] w-full items-center gap-2.5 rounded-[11px] px-3 py-2 text-[14px] font-semibold text-[#ff3b30] transition-all duration-150 hover:bg-[#ff3b30]/10 active:scale-[0.95] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#ff3b30]"
             aria-label="ออกจากระบบ"
@@ -224,5 +225,5 @@ export default function Sidebar({ isOpen, isCollapsed = false, onClose, user, on
         </div>
       </div>
     </aside>
-  )
+  );
 }

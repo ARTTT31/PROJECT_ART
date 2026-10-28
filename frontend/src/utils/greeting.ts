@@ -10,11 +10,11 @@
  * - 22:00 - 04:59: ราตรีสวัสดิ์ (Late Night)
  */
 export function getGreeting(date: Date = new Date()): string {
-  const hour = date.getHours()
-  if (hour >= 5 && hour < 12) return 'สวัสดีตอนเช้า'
-  if (hour >= 12 && hour < 13) return 'สวัสดีตอนเที่ยง'
-  if (hour >= 13 && hour < 16) return 'สวัสดีตอนบ่าย'
-  if (hour >= 16 && hour < 19) return 'สวัสดีตอนเย็น'
-  if (hour >= 19 && hour < 22) return 'สวัสดีตอนค่ำ'
-  return 'ราตรีสวัสดิ์'
+  const hour = date.getHours();
+  if (hour >= 5 && hour < 12) return 'สวัสดีตอนเช้า';
+  if (hour >= 12 && hour < 13) return 'สวัสดีตอนเที่ยง';
+  if (hour >= 13 && hour < 16) return 'สวัสดีตอนบ่าย';
+  if (hour >= 16 && hour < 19) return 'สวัสดีตอนเย็น';
+  if (hour >= 19 && hour < 22) return 'สวัสดีตอนค่ำ';
+  return 'ราตรีสวัสดิ์';
 }

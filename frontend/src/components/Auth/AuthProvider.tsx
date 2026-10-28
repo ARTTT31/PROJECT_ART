@@ -1,14 +1,14 @@
-'use client'
+'use client';
 
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { fetchWithAuth, fetchWithAuthJson, refreshSessionToken } from '@/lib/api/fetchWithAuth'
-import { AuthUserSchema, makeEnvelopeSchema } from '@/lib/api/schemas'
-import { readUserCookie } from '@/lib/api/userCookie'
-import type { AuthUser, AuthRole } from '@/types'
-import { z, ZodError } from 'zod'
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { fetchWithAuth, fetchWithAuthJson, refreshSessionToken } from '@/lib/api/fetchWithAuth';
+import { AuthUserSchema, makeEnvelopeSchema } from '@/lib/api/schemas';
+import { readUserCookie } from '@/lib/api/userCookie';
+import type { AuthUser, AuthRole } from '@/types';
+import { z, ZodError } from 'zod';
 
-export type { AuthUser, AuthRole }
+export type { AuthUser, AuthRole };
 
 // Auth endpoints return { result, message, data: { user, session_id? } }.
 const AuthEnvelopeSchema = makeEnvelopeSchema(
@@ -16,90 +16,90 @@ const AuthEnvelopeSchema = makeEnvelopeSchema(
     user: AuthUserSchema,
     session_id: z.string().optional(),
   }),
-)
+);
 
-type AuthStatus = 'loading' | 'authenticated' | 'anonymous'
+type AuthStatus = 'loading' | 'authenticated' | 'anonymous';
 
 interface AuthContextValue {
-  status: AuthStatus
-  isAuthenticated: boolean
-  user: AuthUser | null
-  login: (user: AuthUser, sessionId?: string) => void
-  logout: () => void
-  updateUser: (next: Partial<AuthUser>) => void
+  status: AuthStatus;
+  isAuthenticated: boolean;
+  user: AuthUser | null;
+  login: (user: AuthUser, sessionId?: string) => void;
+  logout: () => void;
+  updateUser: (next: Partial<AuthUser>) => void;
   /** Check if session is still valid - returns false if 401 */
-  validateSession: () => Promise<boolean>
+  validateSession: () => Promise<boolean>;
 }
 
-const AuthContext = createContext<AuthContextValue | null>(null)
+const AuthContext = createContext<AuthContextValue | null>(null);
 
 /**
  * Parse raw JSON user string and validate with Zod runtime schema.
  * Falls back to null on parse failure (instead of silently returning `any`).
  */
 function safeParseUser(raw: string | null): AuthUser | null {
-  if (!raw) return null
+  if (!raw) return null;
   try {
-    const parsed = JSON.parse(raw)
-    const result = AuthUserSchema.safeParse(parsed)
-    if (result.success) return result.data
+    const parsed = JSON.parse(raw);
+    const result = AuthUserSchema.safeParse(parsed);
+    if (result.success) return result.data;
     if (typeof window !== 'undefined') {
-      console.warn('[AUTH] localStorage user failed Zod validation:', result.error.message)
+      console.warn('[AUTH] localStorage user failed Zod validation:', result.error.message);
     }
-    return null
+    return null;
   } catch {
-    return null
+    return null;
   }
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const router = useRouter()
-  const [status, setStatus] = useState<AuthStatus>('loading')
-  const [user, setUser] = useState<AuthUser | null>(null)
+  const router = useRouter();
+  const [status, setStatus] = useState<AuthStatus>('loading');
+  const [user, setUser] = useState<AuthUser | null>(null);
 
   // ── Validate session helper ──
   // Refresh the token first so an expired access token doesn't 401 (and thus
   // log 'Failed to load resource' noise in the browser console).
   const validateSession = useCallback(async (): Promise<boolean> => {
-    const refreshResult = await refreshSessionToken()
-    if (!refreshResult.success && refreshResult.isUnauthenticated) return false
-    if (!refreshResult.success) return true // transient failure — keep session
+    const refreshResult = await refreshSessionToken();
+    if (!refreshResult.success && refreshResult.isUnauthenticated) return false;
+    if (!refreshResult.success) return true; // transient failure — keep session
     try {
-      const json = await fetchWithAuthJson('/api/v1/auth/session', {}, AuthEnvelopeSchema)
-      const sessionData = json?.data as unknown as Record<string, unknown> | undefined
-      if (sessionData?.user) return true
+      const json = await fetchWithAuthJson('/api/v1/auth/session', {}, AuthEnvelopeSchema);
+      const sessionData = json?.data as unknown as Record<string, unknown> | undefined;
+      if (sessionData?.user) return true;
       // Network error or other issue - assume valid to avoid false negatives
-      return true
+      return true;
     } catch (err) {
       if (err instanceof Error) {
-        const anyErr = err as Error & { status?: number }
-        if (anyErr.status === 401 || anyErr.status === 403) return false
+        const anyErr = err as Error & { status?: number };
+        if (anyErr.status === 401 || anyErr.status === 403) return false;
         if (err instanceof ZodError) {
           // Schema mismatch — session data shape is unexpected but server returned 2xx,
           // keep session alive rather than logging the user out.
-          console.warn('[AUTH] Session envelope Zod mismatch (server version drift?)')
-          return true
+          console.warn('[AUTH] Session envelope Zod mismatch (server version drift?)');
+          return true;
         }
       }
       // Network error / timeout — treat as valid to not punish cold-starts
-      return true
+      return true;
     }
-  }, [])
+  }, []);
 
   // ── Centralized 401 handler ──
   useEffect(() => {
     const handle401 = () => {
-      setUser(null)
-      setStatus('anonymous')
-      localStorage.removeItem('user')
-      localStorage.removeItem('session_id')
+      setUser(null);
+      setStatus('anonymous');
+      localStorage.removeItem('user');
+      localStorage.removeItem('session_id');
       // Use router.replace for smooth navigation
-      router.replace('/login')
-    }
+      router.replace('/login');
+    };
 
-    window.addEventListener('auth-logout', handle401)
-    return () => window.removeEventListener('auth-logout', handle401)
-  }, [router])
+    window.addEventListener('auth-logout', handle401);
+    return () => window.removeEventListener('auth-logout', handle401);
+  }, [router]);
 
   // 1. Session check on mount — fast-path from localStorage, background verify
   useEffect(() => {
@@ -132,39 +132,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Refresh the access token first, so the verification calls below don't
         // start with a guaranteed 401 when the token has expired (keeps the
         // browser console free of 'Failed to load resource: 401' noise).
-        const refreshResult = await refreshSessionToken()
+        const refreshResult = await refreshSessionToken();
         if (!refreshResult.success && refreshResult.isUnauthenticated) {
           // Backend rejected the refresh token — session is genuinely invalid.
-          setUser(null)
-          localStorage.removeItem('user')
-          localStorage.removeItem('session_id')
-          setStatus('anonymous')
-          return
+          setUser(null);
+          localStorage.removeItem('user');
+          localStorage.removeItem('session_id');
+          setStatus('anonymous');
+          return;
         }
 
         const [sessionJson, profileJson] = await Promise.all([
-          fetchWithAuthJson('/api/v1/auth/session', {}, AuthEnvelopeSchema)
-            .catch((e) => {
-              if ((e as Error & { status?: number }).status === 401) throw e
-              return null
-            }),
+          fetchWithAuthJson('/api/v1/auth/session', {}, AuthEnvelopeSchema).catch((e) => {
+            if ((e as Error & { status?: number }).status === 401) throw e;
+            return null;
+          }),
           // /profile/me returns the user object directly, not the standard envelope.
-          fetchWithAuthJson('/api/v1/profile/me', {}, AuthUserSchema)
-            .catch(() => null),
-        ])
+          fetchWithAuthJson('/api/v1/profile/me', {}, AuthUserSchema).catch(() => null),
+        ]);
 
-        let sessionUser: AuthUser | null = null
+        let sessionUser: AuthUser | null = null;
         if (sessionJson) {
-          const sessionData = sessionJson?.data as unknown as Record<string, unknown> | undefined
-          const rawSessionUser = sessionData?.user
-          const parsed = AuthUserSchema.safeParse(rawSessionUser)
-          if (parsed.success) sessionUser = parsed.data
+          const sessionData = sessionJson?.data as unknown as Record<string, unknown> | undefined;
+          const rawSessionUser = sessionData?.user;
+          const parsed = AuthUserSchema.safeParse(rawSessionUser);
+          if (parsed.success) sessionUser = parsed.data;
         }
 
-        let profileData = null
+        let profileData = null;
         if (profileJson) {
-          const parsed = AuthUserSchema.safeParse(profileJson)
-          if (parsed.success) profileData = parsed.data
+          const parsed = AuthUserSchema.safeParse(profileJson);
+          if (parsed.success) profileData = parsed.data;
         }
 
         if (sessionUser) {
@@ -198,137 +196,137 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     initializeAuth();
 
     const onStorage = (e: StorageEvent) => {
-      if (!e.key) return
+      if (!e.key) return;
       if (['user', 'session_id'].includes(e.key)) {
         const u = safeParseUser(localStorage.getItem('user'));
         setUser(u);
         setStatus(u ? 'authenticated' : 'anonymous');
       }
-    }
+    };
 
     const onLogout = () => {
       setUser(null);
       setStatus('anonymous');
-    }
+    };
 
     const onLogin = () => {
       const u = safeParseUser(localStorage.getItem('user'));
       setUser(u);
       setStatus(u ? 'authenticated' : 'anonymous');
-    }
+    };
 
-    window.addEventListener('storage', onStorage)
-    window.addEventListener('auth-logout', onLogout)
-    window.addEventListener('auth-login', onLogin)
+    window.addEventListener('storage', onStorage);
+    window.addEventListener('auth-logout', onLogout);
+    window.addEventListener('auth-login', onLogin);
 
     // ── Proactive Keep-Alive: Refresh token + verify session every 15 mins ──
-    const keepAliveInterval = setInterval(async () => {
-      const u = safeParseUser(localStorage.getItem('user'))
-      if (!u) return
-      try {
-        // Refresh first so the keep-alive session ping doesn't log a 401 in
-        // the browser console when the access token has expired.
-        const refreshResult = await refreshSessionToken()
-        if (!refreshResult.success && refreshResult.isUnauthenticated) {
-          window.dispatchEvent(new Event('auth-logout'))
-          return
+    const keepAliveInterval = setInterval(
+      async () => {
+        const u = safeParseUser(localStorage.getItem('user'));
+        if (!u) return;
+        try {
+          // Refresh first so the keep-alive session ping doesn't log a 401 in
+          // the browser console when the access token has expired.
+          const refreshResult = await refreshSessionToken();
+          if (!refreshResult.success && refreshResult.isUnauthenticated) {
+            window.dispatchEvent(new Event('auth-logout'));
+            return;
+          }
+          await fetchWithAuth('/api/v1/auth/session');
+        } catch (e) {
+          console.warn('Background session keep-alive ping:', e);
         }
-        await fetchWithAuth('/api/v1/auth/session')
-      } catch (e) {
-        console.warn('Background session keep-alive ping:', e)
-      }
-    }, 15 * 60 * 1000)
+      },
+      15 * 60 * 1000,
+    );
 
     // ── Tab re-focus / visibility change handler ──
     const onVisibilityChange = async () => {
       if (document.visibilityState === 'visible') {
-        const u = safeParseUser(localStorage.getItem('user'))
+        const u = safeParseUser(localStorage.getItem('user'));
         if (u) {
           try {
             // Same as keep-alive: refresh before the session ping so an expired
             // token doesn't surface a 401 in the browser console.
-            const refreshResult = await refreshSessionToken()
+            const refreshResult = await refreshSessionToken();
             if (!refreshResult.success && refreshResult.isUnauthenticated) {
-              window.dispatchEvent(new Event('auth-logout'))
-              return
+              window.dispatchEvent(new Event('auth-logout'));
+              return;
             }
-            await fetchWithAuth('/api/v1/auth/session')
+            await fetchWithAuth('/api/v1/auth/session');
           } catch (e) {
-            console.warn('Visibility session check:', e)
+            console.warn('Visibility session check:', e);
           }
         }
       }
-    }
+    };
 
-    document.addEventListener('visibilitychange', onVisibilityChange)
-    window.addEventListener('focus', onVisibilityChange)
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    window.addEventListener('focus', onVisibilityChange);
 
     return () => {
-      clearInterval(keepAliveInterval)
-      document.removeEventListener('visibilitychange', onVisibilityChange)
-      window.removeEventListener('focus', onVisibilityChange)
-      window.removeEventListener('storage', onStorage)
-      window.removeEventListener('auth-logout', onLogout)
-      window.removeEventListener('auth-login', onLogin)
-    }
-  }, [])
+      clearInterval(keepAliveInterval);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      window.removeEventListener('focus', onVisibilityChange);
+      window.removeEventListener('storage', onStorage);
+      window.removeEventListener('auth-logout', onLogout);
+      window.removeEventListener('auth-login', onLogin);
+    };
+  }, []);
 
-  const login = useCallback(
-    (nextUser: AuthUser, sessionId?: string) => {
-      localStorage.setItem('user', JSON.stringify(nextUser))
-      if (sessionId) localStorage.setItem('session_id', sessionId)
+  const login = useCallback((nextUser: AuthUser, sessionId?: string) => {
+    localStorage.setItem('user', JSON.stringify(nextUser));
+    if (sessionId) localStorage.setItem('session_id', sessionId);
 
-      setUser(nextUser)
-      setStatus('authenticated')
-      window.dispatchEvent(new Event('auth-login'))
-    },
-    []
-  )
+    setUser(nextUser);
+    setStatus('authenticated');
+    window.dispatchEvent(new Event('auth-login'));
+  }, []);
 
   const logout = useCallback(async () => {
-    const sessionId = typeof window !== 'undefined' ? localStorage.getItem('session_id') : null
+    const sessionId = typeof window !== 'undefined' ? localStorage.getItem('session_id') : null;
 
     // 1. Immediately wipe local state & cookies for instant UI response
     try {
-      localStorage.removeItem('session_id')
-      localStorage.removeItem('user')
-      document.cookie = 'user=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; max-age=0'
-      document.cookie = 'access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; max-age=0'
-      document.cookie = 'refresh_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; max-age=0'
+      localStorage.removeItem('session_id');
+      localStorage.removeItem('user');
+      document.cookie = 'user=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; max-age=0';
+      document.cookie = 'access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; max-age=0';
+      document.cookie = 'refresh_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; max-age=0';
     } catch {}
 
-    setUser(null)
-    setStatus('anonymous')
-    window.dispatchEvent(new Event('auth-logout'))
+    setUser(null);
+    setStatus('anonymous');
+    window.dispatchEvent(new Event('auth-logout'));
 
     // T11: purge Cache Storage after logout so no cached (session-scoped)
     // response survives for the next signed-in account.
     try {
-      const { clearServiceWorkerCaches } = await import('@/utils/swCacheRules')
-      await clearServiceWorkerCaches()
+      const { clearServiceWorkerCaches } = await import('@/utils/swCacheRules');
+      await clearServiceWorkerCaches();
     } catch (e) {
-      console.warn('Logout cache purge:', e)
+      console.warn('Logout cache purge:', e);
     }
 
     // 2. Notify backend in background to invalidate session & clear httpOnly cookies
     try {
       await fetchWithAuth(`/api/v1/auth/logout${sessionId ? `?session_id=${sessionId}` : ''}`, {
         method: 'POST',
-        body: JSON.stringify({ session_id: sessionId })
-      })
+        body: JSON.stringify({ session_id: sessionId }),
+      });
     } catch (e) {
-      console.warn('Backend logout notification:', e)
+      console.warn('Backend logout notification:', e);
     }
-  }, [])
+  }, []);
 
   const updateUser = useCallback((next: Partial<AuthUser>) => {
     setUser((prev) => {
-      if (!prev) return prev
-      const merged = { ...prev, ...next }
-      localStorage.setItem('user', JSON.stringify(merged))
-      return merged
-    })
-  }, [])
+      if (!prev) return prev;
+      const merged = { ...prev, ...next };
+      localStorage.setItem('user', JSON.stringify(merged));
+      return merged;
+    });
+  }, []);
 
   const value = useMemo<AuthContextValue>(
     () => ({
@@ -340,16 +338,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       updateUser,
       validateSession,
     }),
-    [status, user, login, logout, updateUser, validateSession]
-  )
+    [status, user, login, logout, updateUser, validateSession],
+  );
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {
-  const ctx = useContext(AuthContext)
+  const ctx = useContext(AuthContext);
   if (!ctx) {
-    throw new Error('useAuth ต้องถูกเรียกภายใน <AuthProvider>')
+    throw new Error('useAuth ต้องถูกเรียกภายใน <AuthProvider>');
   }
-  return ctx
+  return ctx;
 }

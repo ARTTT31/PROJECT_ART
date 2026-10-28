@@ -1,93 +1,104 @@
-'use client'
+'use client';
 
-import { useEffect, useRef, useState } from 'react'
-import { AlertCircle, Fuel, TrendingUp, TrendingDown } from 'lucide-react'
-import WidgetSizeToggle from './WidgetSizeToggle'
-import { fetchWithAuth } from '@/lib/api/fetchWithAuth'
-import { pushNotifications, type Notification } from '@/components/Layout/NotificationBell'
+import { useEffect, useRef, useState } from 'react';
+import { AlertCircle, Fuel, TrendingUp, TrendingDown } from 'lucide-react';
+import WidgetSizeToggle from './WidgetSizeToggle';
+import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
+import { pushNotifications, type Notification } from '@/components/Layout/NotificationBell';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
 interface OilPrice {
-  key: string
-  name: string
-  price: number
-  unit: string
-  icon: string
+  key: string;
+  name: string;
+  price: number;
+  unit: string;
+  icon: string;
 }
 
 interface OilPriceData {
-  success: boolean
-  prices?: OilPrice[]
-  oil_prices?: OilPrice[]
-  update_date: string
-  source: string
-  is_stale?: boolean
-  fetched_at?: string | null
+  success: boolean;
+  prices?: OilPrice[];
+  oil_prices?: OilPrice[];
+  update_date: string;
+  source: string;
+  is_stale?: boolean;
+  fetched_at?: string | null;
 }
 
-type OilCache = { savedAt: number; data: OilPriceData; lastUpdate: number }
+type OilCache = { savedAt: number; data: OilPriceData; lastUpdate: number };
 
 // ── Cache helpers ─────────────────────────────────────────────────────────────
 
-const OIL_CACHE_KEY = 'artOilPriceCacheV1'
-const OIL_CACHE_TTL_MS = 30 * 60_000 // 30 min
+const OIL_CACHE_KEY = 'artOilPriceCacheV1';
+const OIL_CACHE_TTL_MS = 30 * 60_000; // 30 min
 
 function safeJsonParse<T>(raw: string | null): T | null {
-  if (!raw) return null
-  try { return JSON.parse(raw) as T } catch { return null }
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    return null;
+  }
 }
 
 function loadOilCache(): OilCache | null {
   const cached = safeJsonParse<OilCache>(
     typeof window !== 'undefined' ? localStorage.getItem(OIL_CACHE_KEY) : null,
-  )
-  if (!cached?.savedAt || !cached.data) return null
-  return cached
+  );
+  if (!cached?.savedAt || !cached.data) return null;
+  return cached;
 }
 
 function saveOilCache(cache: OilCache) {
-  try { localStorage.setItem(OIL_CACHE_KEY, JSON.stringify(cache)) } catch { /* ignore */ }
+  try {
+    localStorage.setItem(OIL_CACHE_KEY, JSON.stringify(cache));
+  } catch {
+    /* ignore */
+  }
 }
 
 // ── Price change detection ────────────────────────────────────────────────────
 
-const OIL_PREV_KEY = 'artOilPricePrevV1'
+const OIL_PREV_KEY = 'artOilPricePrevV1';
 
 interface PriceChange {
-  key: string
-  name: string
-  oldPrice: number
-  newPrice: number
-  diff: number
-  direction: 'up' | 'down'
+  key: string;
+  name: string;
+  oldPrice: number;
+  newPrice: number;
+  diff: number;
+  direction: 'up' | 'down';
 }
 
 function loadPrevPrices(): Record<string, number> | null {
-  if (typeof window === 'undefined') return null
+  if (typeof window === 'undefined') return null;
   try {
-    const raw = localStorage.getItem(OIL_PREV_KEY)
-    return raw ? JSON.parse(raw) : null
-  } catch { return null }
+    const raw = localStorage.getItem(OIL_PREV_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
 }
 
 function savePrevPrices(prices: OilPrice[]) {
   try {
-    const map: Record<string, number> = {}
-    prices.forEach((p) => { map[p.key] = p.price })
-    localStorage.setItem(OIL_PREV_KEY, JSON.stringify(map))
-  } catch { /* ignore */ }
+    const map: Record<string, number> = {};
+    prices.forEach((p) => {
+      map[p.key] = p.price;
+    });
+    localStorage.setItem(OIL_PREV_KEY, JSON.stringify(map));
+  } catch {
+    /* ignore */
+  }
 }
 
-function detectPriceChanges(
-  oldMap: Record<string, number>,
-  newPrices: OilPrice[],
-): PriceChange[] {
-  const changes: PriceChange[] = []
+function detectPriceChanges(oldMap: Record<string, number>, newPrices: OilPrice[]): PriceChange[] {
+  const changes: PriceChange[] = [];
   for (const item of newPrices) {
-    const oldPrice = oldMap[item.key]
-    if (oldPrice == null) continue
-    const diff = +(item.price - oldPrice).toFixed(2)
+    const oldPrice = oldMap[item.key];
+    if (oldPrice == null) continue;
+    const diff = +(item.price - oldPrice).toFixed(2);
     if (diff !== 0) {
       changes.push({
         key: item.key,
@@ -96,48 +107,43 @@ function detectPriceChanges(
         newPrice: item.price,
         diff,
         direction: diff > 0 ? 'up' : 'down',
-      })
+      });
     }
   }
-  return changes
+  return changes;
 }
 
 function buildOilPriceNotification(changes: PriceChange[]): Notification | null {
-  if (changes.length === 0) return null
-  const today = new Date().toISOString().slice(0, 10)
+  if (changes.length === 0) return null;
+  const today = new Date().toISOString().slice(0, 10);
 
-  const ups = changes.filter((c) => c.direction === 'up')
-  const downs = changes.filter((c) => c.direction === 'down')
+  const ups = changes.filter((c) => c.direction === 'up');
+  const downs = changes.filter((c) => c.direction === 'down');
 
-  const lines: string[] = []
+  const lines: string[] = [];
   if (ups.length > 0) {
-    lines.push(
-      '📈 ปรับขึ้น: ' +
-        ups.map((c) => `${c.name} +${c.diff.toFixed(2)}`).join(', '),
-    )
+    lines.push('📈 ปรับขึ้น: ' + ups.map((c) => `${c.name} +${c.diff.toFixed(2)}`).join(', '));
   }
   if (downs.length > 0) {
-    lines.push(
-      '📉 ปรับลง: ' +
-        downs.map((c) => `${c.name} ${c.diff.toFixed(2)}`).join(', '),
-    )
+    lines.push('📉 ปรับลง: ' + downs.map((c) => `${c.name} ${c.diff.toFixed(2)}`).join(', '));
   }
 
-  const hasUp = ups.length > 0
-  const hasDown = downs.length > 0
+  const hasUp = ups.length > 0;
+  const hasDown = downs.length > 0;
 
   return {
     id: `oilprice-change-${today}`,
     type: 'oilprice',
     level: hasUp && !hasDown ? 'warning' : 'info',
-    title: hasUp && hasDown
-      ? 'ราคาน้ำมันปรับตัว ⛽'
-      : hasUp
-      ? 'ราคาน้ำมันปรับขึ้น ⬆️'
-      : 'ราคาน้ำมันปรับลง ⬇️',
+    title:
+      hasUp && hasDown
+        ? 'ราคาน้ำมันปรับตัว ⛽'
+        : hasUp
+          ? 'ราคาน้ำมันปรับขึ้น ⬆️'
+          : 'ราคาน้ำมันปรับลง ⬇️',
     body: lines.join(' | '),
     at: new Date(),
-  }
+  };
 }
 
 // ── Fuel display maps ─────────────────────────────────────────────────────────
@@ -147,25 +153,32 @@ function buildOilPriceNotification(changes: PriceChange[]): Notification | null 
 // red #ff3b30, orange #ff9500, and Apple blue for diesel — arbitrary raw
 // Tailwind shades used to disagree with the rest of the dashboard.
 const fuelDotColor: Record<string, string> = {
-  benzene_95:  'bg-[#ff3b30]',
-  gasohol_95:  'bg-[#ff9500]',
-  gasohol_91:  'bg-[#ffcc00]',
+  benzene_95: 'bg-[#ff3b30]',
+  gasohol_95: 'bg-[#ff9500]',
+  gasohol_91: 'bg-[#ffcc00]',
   gasohol_e20: 'bg-[#34c759]',
   gasohol_e85: 'bg-[#34c759]',
-  diesel:      'bg-[#0066cc]',
-}
-const defaultDotColor = 'bg-slate-400'
+  diesel: 'bg-[#0066cc]',
+};
+const defaultDotColor = 'bg-slate-400';
 
 const shortName: Record<string, string> = {
-  benzene_95:  'เบนซิน',
-  gasohol_95:  'แก๊ส 95',
-  gasohol_91:  'แก๊ส 91',
+  benzene_95: 'เบนซิน',
+  gasohol_95: 'แก๊ส 95',
+  gasohol_91: 'แก๊ส 91',
   gasohol_e20: 'E20',
   gasohol_e85: 'E85',
-  diesel:      'ดีเซล',
-}
+  diesel: 'ดีเซล',
+};
 
-const PRICE_ORDER = ['benzene_95', 'gasohol_95', 'gasohol_91', 'gasohol_e20', 'gasohol_e85', 'diesel']
+const PRICE_ORDER = [
+  'benzene_95',
+  'gasohol_95',
+  'gasohol_91',
+  'gasohol_e20',
+  'gasohol_e85',
+  'diesel',
+];
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
@@ -173,102 +186,106 @@ export default function OilPriceWidget({
   width = 1,
   onResize,
 }: {
-  width?: number
-  onResize?: (size: number) => void
+  width?: number;
+  onResize?: (size: number) => void;
 }) {
-  const [data, setData]           = useState<OilPriceData | null>(null)
-  const [loading, setLoading]     = useState(true)
-  const [refreshing, setRefreshing] = useState(false)
-  const [error, setError]         = useState<string | null>(null)
-  const [lastUpdate, setLastUpdate] = useState<Date>(new Date())
-  const [cacheNote, setCacheNote] = useState<string | null>(null)
-  const [priceChanges, setPriceChanges] = useState<Record<string, PriceChange>>({})
-  const abortRef = useRef<AbortController | null>(null)
+  const [data, setData] = useState<OilPriceData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
+  const [cacheNote, setCacheNote] = useState<string | null>(null);
+  const [priceChanges, setPriceChanges] = useState<Record<string, PriceChange>>({});
+  const abortRef = useRef<AbortController | null>(null);
 
   const fetchPrices = async (opts?: { refresh?: boolean }) => {
-    const isRefresh = Boolean(opts?.refresh)
-    abortRef.current?.abort()
-    const controller = new AbortController()
-    abortRef.current = controller
+    const isRefresh = Boolean(opts?.refresh);
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
 
-    isRefresh ? setRefreshing(true) : setLoading(true)
-    setError(null)
+    isRefresh ? setRefreshing(true) : setLoading(true);
+    setError(null);
 
     try {
-      const res = await fetchWithAuth('/api/v1/oil-prices/oil-prices', { signal: controller.signal })
+      const res = await fetchWithAuth('/api/v1/oil-prices/oil-prices', {
+        signal: controller.signal,
+      });
 
       if (!res.ok) {
-        const detail = await res.json().catch(() => ({}))
-        const msg = detail?.detail || res.statusText
-        let userMessage = 'ไม่สามารถโหลดข้อมูลราคาน้ำมันได้'
+        const detail = await res.json().catch(() => ({}));
+        const msg = detail?.detail || res.statusText;
+        let userMessage = 'ไม่สามารถโหลดข้อมูลราคาน้ำมันได้';
         if (res.status === 502 || res.status === 504) {
-          userMessage = 'เชื่อมต่อแหล่งข้อมูลน้ำมันไม่สำเร็จ — กำลังแสดงข้อมูลสำรอง'
-          console.warn('🌐 Oil price source connection error:', msg)
+          userMessage = 'เชื่อมต่อแหล่งข้อมูลน้ำมันไม่สำเร็จ — กำลังแสดงข้อมูลสำรอง';
+          console.warn('🌐 Oil price source connection error:', msg);
         } else if (res.status === 503) {
-          userMessage = 'บริการราคาน้ำมันไม่พร้อมใช้งานชั่วคราว'
-          console.error('⚠️ Oil price service unavailable:', msg)
+          userMessage = 'บริการราคาน้ำมันไม่พร้อมใช้งานชั่วคราว';
+          console.error('⚠️ Oil price service unavailable:', msg);
         } else {
-          console.error('❌ Oil price API error:', msg)
+          console.error('❌ Oil price API error:', msg);
         }
-        throw new Error(`HTTP ${res.status}: ${msg}`, { cause: userMessage })
+        throw new Error(`HTTP ${res.status}: ${msg}`, { cause: userMessage });
       }
 
-      const result = await res.json()
+      const result = await res.json();
       if (result.success && (result.prices || result.oil_prices)) {
-        const newPrices: OilPrice[] = result.prices || result.oil_prices || []
-        setData(result)
-        setCacheNote(null)
-        saveOilCache({ savedAt: Date.now(), data: result, lastUpdate: Date.now() })
+        const newPrices: OilPrice[] = result.prices || result.oil_prices || [];
+        setData(result);
+        setCacheNote(null);
+        saveOilCache({ savedAt: Date.now(), data: result, lastUpdate: Date.now() });
 
         // ── Price change detection & notification ──
-        const prevMap = loadPrevPrices()
+        const prevMap = loadPrevPrices();
         if (prevMap) {
-          const changes = detectPriceChanges(prevMap, newPrices)
+          const changes = detectPriceChanges(prevMap, newPrices);
           if (changes.length > 0) {
-            const changeMap: Record<string, PriceChange> = {}
-            changes.forEach((c) => { changeMap[c.key] = c })
-            setPriceChanges(changeMap)
-            const notif = buildOilPriceNotification(changes)
-            if (notif) pushNotifications([notif])
+            const changeMap: Record<string, PriceChange> = {};
+            changes.forEach((c) => {
+              changeMap[c.key] = c;
+            });
+            setPriceChanges(changeMap);
+            const notif = buildOilPriceNotification(changes);
+            if (notif) pushNotifications([notif]);
           }
         }
-        savePrevPrices(newPrices)
+        savePrevPrices(newPrices);
       } else {
-        setError('ไม่สามารถดึงข้อมูลราคาน้ำมันได้')
+        setError('ไม่สามารถดึงข้อมูลราคาน้ำมันได้');
       }
-      setLastUpdate(new Date())
+      setLastUpdate(new Date());
     } catch (err: any) {
-      if (err?.name === 'AbortError') return
+      if (err?.name === 'AbortError') return;
       if (err?.message === 'Request timeout') {
         // Built-in 45s fetch cap (Render cold start tolerance). Expected in a
         // free-tier deployment when the upstream oil-price provider is slow;
         // the widget shows its error banner with a retry, and the 5-minute
         // interval retries anyway. Warn, not error — this is not a logic fault.
-        console.warn('⏱️ Oil price request timed out (backend/upstream slow):', err)
+        console.warn('⏱️ Oil price request timed out (backend/upstream slow):', err);
       } else {
-        console.error('❌ Oil price fetch error:', err)
+        console.error('❌ Oil price fetch error:', err);
       }
-      setError(err?.cause || 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์')
+      setError(err?.cause || 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์');
     } finally {
-      setLoading(false)
-      setRefreshing(false)
+      setLoading(false);
+      setRefreshing(false);
     }
-  }
+  };
 
   useEffect(() => {
-    const cached = loadOilCache()
+    const cached = loadOilCache();
     if (cached && Date.now() - cached.savedAt <= OIL_CACHE_TTL_MS) {
-      setData(cached.data)
-      setLastUpdate(new Date(cached.lastUpdate || cached.savedAt))
-      setCacheNote('แสดงข้อมูลจากแคช')
-      setLoading(false)
+      setData(cached.data);
+      setLastUpdate(new Date(cached.lastUpdate || cached.savedAt));
+      setCacheNote('แสดงข้อมูลจากแคช');
+      setLoading(false);
     }
-    fetchPrices()
-    const interval = setInterval(() => fetchPrices({ refresh: true }), 300_000)
-    return () => clearInterval(interval)
-  }, [])
+    fetchPrices();
+    const interval = setInterval(() => fetchPrices({ refresh: true }), 300_000);
+    return () => clearInterval(interval);
+  }, []);
 
-  useEffect(() => () => abortRef.current?.abort(), [])
+  useEffect(() => () => abortRef.current?.abort(), []);
 
   // ── Loading skeleton ────────────────────────────────────────────────────────
 
@@ -293,14 +310,14 @@ export default function OilPriceWidget({
           ))}
         </div>
       </div>
-    )
+    );
   }
 
   // ── Main render ─────────────────────────────────────────────────────────────
 
   const prices = [...(data?.oil_prices ?? data?.prices ?? [])].sort(
     (a, b) => PRICE_ORDER.indexOf(a.key) - PRICE_ORDER.indexOf(b.key),
-  )
+  );
 
   return (
     <section
@@ -325,13 +342,13 @@ export default function OilPriceWidget({
 
               {/* Meta line */}
               <p className="mt-0.5 text-[12px] text-[#86868b] truncate">
-                {(loading || refreshing)
+                {loading || refreshing
                   ? 'กำลังอัปเดต...'
                   : cacheNote
-                  ? cacheNote
-                  : data
-                  ? `อัปเดต ${data.update_date || lastUpdate.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}`
-                  : ''}
+                    ? cacheNote
+                    : data
+                      ? `อัปเดต ${data.update_date || lastUpdate.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}`
+                      : ''}
               </p>
 
               {/* Stale warning */}
@@ -344,9 +361,7 @@ export default function OilPriceWidget({
             </div>
           </div>
 
-          {onResize && (
-            <WidgetSizeToggle value={width} onChange={onResize} sizes={[1, 2, 3]} />
-          )}
+          {onResize && <WidgetSizeToggle value={width} onChange={onResize} sizes={[1, 2, 3]} />}
         </div>
 
         {/* ── Error banner ──────────────────────────────────────────────── */}
@@ -370,7 +385,7 @@ export default function OilPriceWidget({
         {prices.length > 0 ? (
           <div className="grid flex-1 grid-cols-2 gap-2.5 sm:grid-cols-2 md:grid-cols-3">
             {prices.map((item, idx) => {
-              const change = priceChanges[item.key]
+              const change = priceChanges[item.key];
               return (
                 <div
                   key={item.key || idx}
@@ -407,14 +422,15 @@ export default function OilPriceWidget({
                       ) : (
                         <TrendingDown size={10} aria-hidden="true" />
                       )}
-                      {change.direction === 'up' ? '+' : ''}{change.diff.toFixed(2)}
+                      {change.direction === 'up' ? '+' : ''}
+                      {change.diff.toFixed(2)}
                     </span>
                   ) : (
                     /* Unit */
                     <span className="text-[11px] font-medium text-[#475569]">{item.unit}</span>
                   )}
                 </div>
-              )
+              );
             })}
           </div>
         ) : (
@@ -431,5 +447,5 @@ export default function OilPriceWidget({
         </div>
       </div>
     </section>
-  )
+  );
 }

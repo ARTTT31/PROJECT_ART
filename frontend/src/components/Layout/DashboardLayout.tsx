@@ -1,39 +1,38 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import { useRouter, usePathname } from 'next/navigation'
-import { motion, AnimatePresence } from 'framer-motion'
-import Header from './Header'
-import Sidebar from './Sidebar'
-import { showConfirm } from '@/utils/sweetalert'
-import AuthGuard from '@/components/Auth/AuthGuard'
-import { useAuth } from '@/hooks/useAuth'
+import { useState } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
+import Header from './Header';
+import Sidebar from './Sidebar';
+import { showConfirm } from '@/utils/sweetalert';
+import AuthGuard from '@/components/Auth/AuthGuard';
+import { useAuth } from '@/hooks/useAuth';
 
 interface DashboardLayoutProps {
-  children: React.ReactNode
+  children: React.ReactNode;
 }
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
-  const router = useRouter()
-  const pathname = usePathname()
-  const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
-  const { user, logout } = useAuth()
+  const router = useRouter();
+  const pathname = usePathname();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const { user, logout } = useAuth();
 
   const handleLogout = async () => {
-    const result = await showConfirm('ต้องการออกจากระบบหรือไม่?', 'กดยืนยันเพื่อออกจากระบบ')
+    const result = await showConfirm('ต้องการออกจากระบบหรือไม่?', 'กดยืนยันเพื่อออกจากระบบ');
     if (result.isConfirmed) {
-      await logout()
-      router.replace('/login')
+      await logout();
+      router.replace('/login');
     }
-  }
+  };
 
   return (
     <AuthGuard>
       <div className="art-app-shell relative overflow-x-hidden bg-[#f5f5f7] min-h-[100dvh] text-[#1d1d1f]">
         {/* Sidebar wrapper */}
         <div className="relative z-20">
-
           <Sidebar
             isOpen={sidebarOpen}
             isCollapsed={sidebarCollapsed}
@@ -54,10 +53,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             user={user}
             onMenuClick={() => {
               if (window.matchMedia('(min-width: 1024px)').matches) {
-                setSidebarCollapsed((value) => !value)
-                return
+                setSidebarCollapsed((value) => !value);
+                return;
               }
-              setSidebarOpen(true)
+              setSidebarOpen(true);
             }}
             sidebarCollapsed={sidebarCollapsed}
           />
@@ -89,5 +88,5 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         )}
       </div>
     </AuthGuard>
-  )
+  );
 }

@@ -16,13 +16,12 @@ export default function LoginSuccessPage() {
 
     /** Same-origin only: anything else falls back to the dashboard. */
     const goAfterLogin = () => {
-      const stored = sessionStorage.getItem('post_login_redirect')
-      sessionStorage.removeItem('post_login_redirect')
-      const safe = stored && stored.startsWith('/') && !stored.startsWith('//')
-        ? stored
-        : '/dashboard'
-      router.replace(safe)
-    }
+      const stored = sessionStorage.getItem('post_login_redirect');
+      sessionStorage.removeItem('post_login_redirect');
+      const safe =
+        stored && stored.startsWith('/') && !stored.startsWith('//') ? stored : '/dashboard';
+      router.replace(safe);
+    };
 
     const processLogin = async () => {
       try {
@@ -86,4 +85,3 @@ export default function LoginSuccessPage() {
     </div>
   );
 }
-

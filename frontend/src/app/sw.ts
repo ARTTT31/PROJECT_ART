@@ -1,8 +1,8 @@
 /// <reference lib="webworker" />
-import { defaultCache } from "@serwist/next/worker";
-import type { PrecacheEntry, RuntimeCaching, SerwistGlobalConfig } from "serwist";
-import { NetworkOnly, Serwist } from "serwist";
-import { isApiPathname } from "@/utils/swCacheRules";
+import { defaultCache } from '@serwist/next/worker';
+import type { PrecacheEntry, RuntimeCaching, SerwistGlobalConfig } from 'serwist';
+import { NetworkOnly, Serwist } from 'serwist';
+import { isApiPathname } from '@/utils/swCacheRules';
 
 declare global {
   interface WorkerGlobalScope extends SerwistGlobalConfig {

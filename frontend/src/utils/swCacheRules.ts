@@ -8,13 +8,13 @@
 
 /** API responses are auth-cookie scoped and session-private: network only. */
 export function isApiPathname(url: URL): boolean {
-  return url.pathname.startsWith("/api/")
+  return url.pathname.startsWith('/api/');
 }
 
 /** Delete every Cache Storage region; returns how many regions were wiped. */
 export async function clearServiceWorkerCaches(): Promise<number> {
-  if (typeof window === "undefined" || !("caches" in window)) return 0
-  const names = await caches.keys()
-  await Promise.all(names.map((name) => caches.delete(name)))
-  return names.length
+  if (typeof window === 'undefined' || !('caches' in window)) return 0;
+  const names = await caches.keys();
+  await Promise.all(names.map((name) => caches.delete(name)));
+  return names.length;
 }

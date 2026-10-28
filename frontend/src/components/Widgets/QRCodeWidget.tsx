@@ -1,22 +1,22 @@
-'use client'
+'use client';
 
-import { useEffect, useRef, useState } from 'react'
-import { Barcode, Copy, Download, Printer, QrCode, Check, AlertCircle } from 'lucide-react'
-import WidgetSizeToggle from './WidgetSizeToggle'
-import { QRCodeCanvas } from 'qrcode.react'
-import JsBarcode from 'jsbarcode'
-import { showToast } from '@/utils/sweetalert'
+import { useEffect, useRef, useState } from 'react';
+import { Barcode, Copy, Download, Printer, QrCode, Check, AlertCircle } from 'lucide-react';
+import WidgetSizeToggle from './WidgetSizeToggle';
+import { QRCodeCanvas } from 'qrcode.react';
+import JsBarcode from 'jsbarcode';
+import { showToast } from '@/utils/sweetalert';
 
 // ── Types & constants ─────────────────────────────────────────────────────────
 
-type BarcodeFormat = 'code128' | 'qrcode'
+type BarcodeFormat = 'code128' | 'qrcode';
 
 const formatOptions: { value: BarcodeFormat; label: string; icon: typeof QrCode }[] = [
   { value: 'code128', label: 'Code 128 (Barcode)', icon: Barcode },
   { value: 'qrcode', label: 'QR Code', icon: QrCode },
-]
+];
 
-const STORAGE_KEY = 'artQrWidgetV2'
+const STORAGE_KEY = 'artQrWidgetV2';
 
 /**
  * Escape a plain-text string for safe interpolation into an HTML *text*
@@ -30,19 +30,19 @@ function escapeHtml(value: string): string {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;')
+    .replace(/'/g, '&#39;');
 }
 
 function readStorage<T>(key: keyof T, fallback: any, validator?: (v: any) => boolean): any {
-  if (typeof window === 'undefined') return fallback
+  if (typeof window === 'undefined') return fallback;
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    const parsed = raw ? (JSON.parse(raw) as any) : null
-    const v = parsed?.[key]
-    if (validator) return validator(v) ? v : fallback
-    return v ?? fallback
+    const raw = localStorage.getItem(STORAGE_KEY);
+    const parsed = raw ? (JSON.parse(raw) as any) : null;
+    const v = parsed?.[key];
+    if (validator) return validator(v) ? v : fallback;
+    return v ?? fallback;
   } catch {
-    return fallback
+    return fallback;
   }
 }
 
@@ -52,69 +52,68 @@ export default function QRCodeWidget({
   width = 1,
   onResize,
 }: {
-  width?: number
-  onResize?: (size: number) => void
+  width?: number;
+  onResize?: (size: number) => void;
 }) {
   // ── Persisted state ─────────────────────────────────────────────────────────
   const [format, setFormat] = useState<BarcodeFormat>(() =>
     readStorage('format', 'code128', (v) => v === 'qrcode' || v === 'code128'),
-  )
+  );
   const [text, setText] = useState<string>(() =>
     readStorage('text', '', (v) => typeof v === 'string' && v.trim().length > 0),
-  )
+  );
   const [qrSize, setQrSize] = useState<number>(() =>
     readStorage('qrSize', 160, (v) => Number.isFinite(+v) && +v >= 120 && +v <= 320),
-  )
+  );
 
   // ── Ephemeral state ─────────────────────────────────────────────────────────
-  const [generatedText, setGeneratedText] = useState<string | null>(() => text.trim() || null)
-  const [error, setError] = useState<string | null>(null)
-  const [copyingImage, setCopyingImage] = useState(false)
-  const [printing, setPrinting] = useState(false)
-  const [copiedSuccess, setCopiedSuccess] = useState(false)
+  const [generatedText, setGeneratedText] = useState<string | null>(() => text.trim() || null);
+  const [error, setError] = useState<string | null>(null);
+  const [copyingImage, setCopyingImage] = useState(false);
+  const [printing, setPrinting] = useState(false);
+  const [copiedSuccess, setCopiedSuccess] = useState(false);
 
-  const barcodeCanvasRef = useRef<HTMLCanvasElement | null>(null)
-  const qrWrapRef = useRef<HTMLDivElement | null>(null)
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const barcodeCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const qrWrapRef = useRef<HTMLDivElement | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ── Debounced code generation ────────────────────────────────────────────────
   useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current)
-    const trimmed = text.trim()
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    const trimmed = text.trim();
     if (!trimmed) {
-      setGeneratedText(null)
-      setError(null)
-      return
+      setGeneratedText(null);
+      setError(null);
+      return;
     }
     debounceRef.current = setTimeout(() => {
-      setError(null)
-      setGeneratedText(trimmed)
-    }, 200)
+      setError(null);
+      setGeneratedText(trimmed);
+    }, 200);
     return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current)
-    }
-  }, [text, format])
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [text, format]);
 
   // ── Persist to localStorage ──────────────────────────────────────────────────
   useEffect(() => {
-    if (typeof window === 'undefined') return
+    if (typeof window === 'undefined') return;
     try {
-      localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({ format, text, qrSize }),
-      )
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ format, text, qrSize }));
     } catch {}
-  }, [format, text, qrSize])
+  }, [format, text, qrSize]);
 
   // ── Render Barcode directly on Canvas (High performance & Reliable) ─────────
   useEffect(() => {
     if (generatedText && format === 'code128' && barcodeCanvasRef.current) {
       try {
         // Validate ASCII for Code 128
-        const isNonAscii = /[^\x00-\x7F]/.test(generatedText)
+        const isNonAscii = /[^\x00-\x7F]/.test(generatedText);
         if (isNonAscii) {
-          setError('บาร์โค้ด Code 128 รองรับเฉพาะภาษาอังกฤษและตัวเลข (สำหรับภาษาไทยแนะนำให้เลือกใช้ QR Code)')
-          return
+          setError(
+            'บาร์โค้ด Code 128 รองรับเฉพาะภาษาอังกฤษและตัวเลข (สำหรับภาษาไทยแนะนำให้เลือกใช้ QR Code)',
+          );
+          return;
         }
 
         JsBarcode(barcodeCanvasRef.current, generatedText, {
@@ -128,123 +127,128 @@ export default function QRCodeWidget({
           background: '#ffffff',
           valid: (valid) => {
             if (!valid) {
-              setError('รูปแบบข้อความไม่ถูกต้องสำหรับบาร์โค้ด Code 128')
+              setError('รูปแบบข้อความไม่ถูกต้องสำหรับบาร์โค้ด Code 128');
             } else {
-              setError(null)
+              setError(null);
             }
           },
-        })
+        });
       } catch (e: any) {
-        console.warn('Barcode render error:', e)
-        setError(e.message || 'ไม่สามารถสร้าง Barcode ได้')
+        console.warn('Barcode render error:', e);
+        setError(e.message || 'ไม่สามารถสร้าง Barcode ได้');
       }
     }
-  }, [generatedText, format, width])
+  }, [generatedText, format, width]);
 
   // ── Actions: Download PNG (Synchronous & Zero Failure) ───────────────────────
   const downloadImage = () => {
-    if (!generatedText) return
+    if (!generatedText) return;
     try {
-      let canvas: HTMLCanvasElement | null = null
+      let canvas: HTMLCanvasElement | null = null;
       if (format === 'qrcode') {
-        canvas = qrWrapRef.current?.querySelector('canvas') || null
+        canvas = qrWrapRef.current?.querySelector('canvas') || null;
       } else {
-        canvas = barcodeCanvasRef.current
+        canvas = barcodeCanvasRef.current;
       }
 
       if (!canvas) {
-        showToast('ไม่พบรูปภาพสำหรับดาวน์โหลด', 'error')
-        return
+        showToast('ไม่พบรูปภาพสำหรับดาวน์โหลด', 'error');
+        return;
       }
 
-      const dataUrl = canvas.toDataURL('image/png')
-      const sanitizedName = generatedText.replace(/[^a-zA-Z0-9-_]/g, '_').slice(0, 20) || 'code'
-      const filename = `${format === 'qrcode' ? 'qr' : 'barcode'}_${sanitizedName}.png`
+      const dataUrl = canvas.toDataURL('image/png');
+      const sanitizedName = generatedText.replace(/[^a-zA-Z0-9-_]/g, '_').slice(0, 20) || 'code';
+      const filename = `${format === 'qrcode' ? 'qr' : 'barcode'}_${sanitizedName}.png`;
 
-      const link = document.createElement('a')
-      link.download = filename
-      link.href = dataUrl
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
+      const link = document.createElement('a');
+      link.download = filename;
+      link.href = dataUrl;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
 
-      showToast('ดาวน์โหลดรูปภาพสำเร็จ', 'success')
+      showToast('ดาวน์โหลดรูปภาพสำเร็จ', 'success');
     } catch (err) {
-      console.error('Download error:', err)
-      showToast('ไม่สามารถดาวน์โหลดรูปได้', 'error')
+      console.error('Download error:', err);
+      showToast('ไม่สามารถดาวน์โหลดรูปได้', 'error');
     }
-  }
+  };
 
   // ── Actions: Copy to Clipboard ───────────────────────────────────────────────
   const copyImageToClipboard = async () => {
-    if (!generatedText) return
-    setCopyingImage(true)
+    if (!generatedText) return;
+    setCopyingImage(true);
     try {
-      let canvas: HTMLCanvasElement | null = null
+      let canvas: HTMLCanvasElement | null = null;
       if (format === 'qrcode') {
-        canvas = qrWrapRef.current?.querySelector('canvas') || null
+        canvas = qrWrapRef.current?.querySelector('canvas') || null;
       } else {
-        canvas = barcodeCanvasRef.current
+        canvas = barcodeCanvasRef.current;
       }
 
       if (!canvas) {
-        throw new Error('ไม่พบรูปภาพ')
+        throw new Error('ไม่พบรูปภาพ');
       }
 
       // Try modern Clipboard API (image/png)
       if (navigator.clipboard && typeof window.ClipboardItem !== 'undefined') {
-        const blob = await new Promise<Blob | null>((resolve) => canvas!.toBlob(resolve, 'image/png'))
+        const blob = await new Promise<Blob | null>((resolve) =>
+          canvas!.toBlob(resolve, 'image/png'),
+        );
         if (blob) {
-          await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
-          setCopiedSuccess(true)
-          setTimeout(() => setCopiedSuccess(false), 2000)
-          showToast(format === 'qrcode' ? 'คัดลอกรูปภาพ QR Code แล้ว' : 'คัดลอกรูปภาพบาร์โค้ดแล้ว', 'success')
-          return
+          await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+          setCopiedSuccess(true);
+          setTimeout(() => setCopiedSuccess(false), 2000);
+          showToast(
+            format === 'qrcode' ? 'คัดลอกรูปภาพ QR Code แล้ว' : 'คัดลอกรูปภาพบาร์โค้ดแล้ว',
+            'success',
+          );
+          return;
         }
       }
 
       // Fallback to text copy if image clipboard is unsupported
-      await navigator.clipboard.writeText(generatedText)
-      setCopiedSuccess(true)
-      setTimeout(() => setCopiedSuccess(false), 2000)
-      showToast('คัดลอกข้อความลงคลิปบอร์ดแล้ว', 'info')
+      await navigator.clipboard.writeText(generatedText);
+      setCopiedSuccess(true);
+      setTimeout(() => setCopiedSuccess(false), 2000);
+      showToast('คัดลอกข้อความลงคลิปบอร์ดแล้ว', 'info');
     } catch (err: any) {
-      console.warn('Copy image error, fallback to text:', err)
+      console.warn('Copy image error, fallback to text:', err);
       try {
-        await navigator.clipboard.writeText(generatedText)
-        setCopiedSuccess(true)
-        setTimeout(() => setCopiedSuccess(false), 2000)
-        showToast('คัดลอกข้อความแล้ว (เบราว์เซอร์ไม่รองรับคัดลอกรูป)', 'info')
+        await navigator.clipboard.writeText(generatedText);
+        setCopiedSuccess(true);
+        setTimeout(() => setCopiedSuccess(false), 2000);
+        showToast('คัดลอกข้อความแล้ว (เบราว์เซอร์ไม่รองรับคัดลอกรูป)', 'info');
       } catch {
-        showToast('ไม่สามารถคัดลอกได้', 'error')
+        showToast('ไม่สามารถคัดลอกได้', 'error');
       }
     } finally {
-      setCopyingImage(false)
+      setCopyingImage(false);
     }
-  }
+  };
 
   // ── Actions: Print Code ──────────────────────────────────────────────────────
   const printCode = () => {
-    if (!generatedText) return
-    setPrinting(true)
+    if (!generatedText) return;
+    setPrinting(true);
     try {
-      let canvas: HTMLCanvasElement | null = null
+      let canvas: HTMLCanvasElement | null = null;
       if (format === 'qrcode') {
-        canvas = qrWrapRef.current?.querySelector('canvas') || null
+        canvas = qrWrapRef.current?.querySelector('canvas') || null;
       } else {
-        canvas = barcodeCanvasRef.current
+        canvas = barcodeCanvasRef.current;
       }
 
       if (!canvas) {
-        showToast('ไม่พบรูปภาพสำหรับสั่งพิมพ์', 'error')
-        return
+        showToast('ไม่พบรูปภาพสำหรับสั่งพิมพ์', 'error');
+        return;
       }
 
-      const dataUrl = canvas.toDataURL('image/png')
-      const printWindow = window.open('', '_blank')
+      const dataUrl = canvas.toDataURL('image/png');
+      const printWindow = window.open('', '_blank');
       if (!printWindow) {
-        showToast('กรุณาอนุญาตป๊อปอัปเพื่อเปิดหน้าต่างสั่งพิมพ์', 'warning')
-        return
+        showToast('กรุณาอนุญาตป๊อปอัปเพื่อเปิดหน้าต่างสั่งพิมพ์', 'warning');
+        return;
       }
 
       printWindow.document.write(`
@@ -295,15 +299,15 @@ export default function QRCodeWidget({
             </div>
           </body>
         </html>
-      `)
-      printWindow.document.close()
+      `);
+      printWindow.document.close();
     } catch (err) {
-      console.error('Print error:', err)
-      showToast('ไม่สามารถสั่งพิมพ์ได้', 'error')
+      console.error('Print error:', err);
+      showToast('ไม่สามารถสั่งพิมพ์ได้', 'error');
     } finally {
-      setPrinting(false)
+      setPrinting(false);
     }
-  }
+  };
 
   // ── Render ───────────────────────────────────────────────────────────────────
   return (
@@ -324,18 +328,21 @@ export default function QRCodeWidget({
               )}
             </div>
             <div className="min-w-0">
-              <h2 id="qr-title" className="text-[16px] font-bold tracking-tight text-[#1d1d1f] truncate">
+              <h2
+                id="qr-title"
+                className="text-[16px] font-bold tracking-tight text-[#1d1d1f] truncate"
+              >
                 {format === 'qrcode' ? 'สร้าง QR Code' : 'สร้างบาร์โค้ด Code 128'}
               </h2>
               <p className="mt-0.5 text-[12px] text-[#86868b] truncate">
-                {format === 'qrcode' ? 'แปลงข้อความ หรือ URL เป็น QR Code' : 'แปลงรหัสสินค้า/ตัวเลข เป็นบาร์โค้ดมาตรฐาน'}
+                {format === 'qrcode'
+                  ? 'แปลงข้อความ หรือ URL เป็น QR Code'
+                  : 'แปลงรหัสสินค้า/ตัวเลข เป็นบาร์โค้ดมาตรฐาน'}
               </p>
             </div>
           </div>
 
-          {onResize && (
-            <WidgetSizeToggle value={width} onChange={onResize} sizes={[1, 2, 3]} />
-          )}
+          {onResize && <WidgetSizeToggle value={width} onChange={onResize} sizes={[1, 2, 3]} />}
         </div>
 
         {/* ── Format toggle pills ─────────────────────────────────────── */}
@@ -345,14 +352,14 @@ export default function QRCodeWidget({
           aria-label="เลือกรูปแบบโค้ด"
         >
           {formatOptions.map(({ value: val, label, icon: Icon }) => {
-            const isActive = format === val
+            const isActive = format === val;
             return (
               <button
                 key={val}
                 type="button"
                 onClick={() => {
-                  setFormat(val)
-                  setError(null)
+                  setFormat(val);
+                  setError(null);
                 }}
                 aria-pressed={isActive}
                 className={`flex flex-1 items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold transition-all duration-150 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#0066cc] active:scale-[0.95] ${
@@ -364,7 +371,7 @@ export default function QRCodeWidget({
                 <Icon size={14} aria-hidden="true" />
                 <span>{label}</span>
               </button>
-            )
+            );
           })}
         </div>
 
@@ -374,8 +381,8 @@ export default function QRCodeWidget({
             type="text"
             value={text}
             onChange={(e) => {
-              setText(e.target.value)
-              setError(null)
+              setText(e.target.value);
+              setError(null);
             }}
             placeholder={
               format === 'qrcode'
@@ -406,7 +413,10 @@ export default function QRCodeWidget({
                 }`}
               >
                 {format === 'qrcode' ? (
-                  <div ref={qrWrapRef} className="rounded-[14px] bg-white p-3 shadow-xs ring-1 ring-black/[0.05]">
+                  <div
+                    ref={qrWrapRef}
+                    className="rounded-[14px] bg-white p-3 shadow-xs ring-1 ring-black/[0.05]"
+                  >
                     <QRCodeCanvas
                       value={generatedText}
                       size={width >= 3 ? 200 : width >= 2 ? 170 : 145}
@@ -469,9 +479,11 @@ export default function QRCodeWidget({
             </div>
           ) : !generatedText ? (
             /* Empty state */
-            <div className={`flex w-full flex-col items-center justify-center gap-2 text-center transition-all duration-200 ${
-              width >= 3 ? 'min-h-[310px]' : width >= 2 ? 'min-h-[280px]' : 'min-h-[250px]'
-            }`}>
+            <div
+              className={`flex w-full flex-col items-center justify-center gap-2 text-center transition-all duration-200 ${
+                width >= 3 ? 'min-h-[310px]' : width >= 2 ? 'min-h-[280px]' : 'min-h-[250px]'
+              }`}
+            >
               <div className="flex h-14 w-14 items-center justify-center rounded-[16px] bg-[#f5f5f7] text-[#86868b]">
                 {format === 'qrcode' ? <QrCode size={28} /> : <Barcode size={28} />}
               </div>
@@ -486,5 +498,5 @@ export default function QRCodeWidget({
         </div>
       </div>
     </section>
-  )
+  );
 }

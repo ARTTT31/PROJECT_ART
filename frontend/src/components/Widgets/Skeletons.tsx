@@ -1,4 +1,4 @@
-'use client'
+'use client';
 
 export function WeatherSkeleton() {
   return (
@@ -14,7 +14,7 @@ export function WeatherSkeleton() {
           </div>
           <div className="h-8 w-16 rounded-full skeleton-shimmer" />
         </div>
-        
+
         <div className="flex items-end justify-between mt-6">
           <div className="space-y-2">
             <div className="h-12 w-28 rounded-lg skeleton-shimmer" />
@@ -26,7 +26,7 @@ export function WeatherSkeleton() {
           </div>
         </div>
       </div>
-      
+
       <div className="mt-6 flex justify-between gap-2 border-t border-black/[0.04] pt-4">
         {[...Array(5)].map((_, i) => (
           <div key={i} className="flex flex-col items-center gap-2">
@@ -37,7 +37,7 @@ export function WeatherSkeleton() {
         ))}
       </div>
     </div>
-  )
+  );
 }
 
 export function HolidaySkeleton() {
@@ -64,7 +64,10 @@ export function HolidaySkeleton() {
 
       <div className="mt-4 space-y-3">
         {[...Array(3)].map((_, i) => (
-          <div key={i} className="flex items-center justify-between rounded-[14px] bg-white p-3 ring-1 ring-slate-100 skeleton-shimmer">
+          <div
+            key={i}
+            className="flex items-center justify-between rounded-[14px] bg-white p-3 ring-1 ring-slate-100 skeleton-shimmer"
+          >
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-xl bg-slate-50" />
               <div className="space-y-1.5">
@@ -77,7 +80,7 @@ export function HolidaySkeleton() {
         ))}
       </div>
     </div>
-  )
+  );
 }
 
 export function OilPriceSkeleton() {
@@ -96,14 +99,17 @@ export function OilPriceSkeleton() {
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[...Array(4)].map((_, i) => (
-          <div key={i} className="rounded-[16px] bg-slate-50 p-3 ring-1 ring-slate-100 skeleton-shimmer">
+          <div
+            key={i}
+            className="rounded-[16px] bg-slate-50 p-3 ring-1 ring-slate-100 skeleton-shimmer"
+          >
             <div className="h-3 w-16 rounded-full bg-slate-200 mb-2" />
             <div className="h-6 w-20 rounded-full bg-slate-200" />
           </div>
         ))}
       </div>
     </div>
-  )
+  );
 }
 
 export function QRCodeSkeleton() {
@@ -125,5 +131,5 @@ export function QRCodeSkeleton() {
         <div className="h-10 w-full max-w-[300px] rounded-xl skeleton-shimmer" />
       </div>
     </div>
-  )
+  );
 }

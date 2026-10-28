@@ -1,9 +1,9 @@
-'use client'
+'use client';
 
-import Link from 'next/link'
-import { Lock } from 'lucide-react'
-import { useAuth } from '@/hooks/useAuth'
-import { canAccessPage } from '@/utils/accessiblePages'
+import Link from 'next/link';
+import { Lock } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { canAccessPage } from '@/utils/accessiblePages';
 
 /**
  * Client-side half of the page-access check.
@@ -18,17 +18,20 @@ export default function PageAccessGuard({
   page,
   children,
 }: {
-  page: string
-  children: React.ReactNode
+  page: string;
+  children: React.ReactNode;
 }) {
-  const { status, user } = useAuth()
+  const { status, user } = useAuth();
 
   if (status === 'loading') {
     return (
       <div className="flex min-h-[60dvh] items-center justify-center">
-        <div className="h-10 w-10 animate-spin rounded-full border-b-2 border-sky-500" aria-label="กำลังโหลด" />
+        <div
+          className="h-10 w-10 animate-spin rounded-full border-b-2 border-sky-500"
+          aria-label="กำลังโหลด"
+        />
       </div>
-    )
+    );
   }
 
   if (!canAccessPage(user, page)) {
@@ -55,8 +58,8 @@ export default function PageAccessGuard({
           กลับหน้าหลัก
         </Link>
       </section>
-    )
+    );
   }
 
-  return children
+  return children;
 }

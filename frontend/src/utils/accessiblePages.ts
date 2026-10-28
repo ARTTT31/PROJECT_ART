@@ -9,40 +9,37 @@
  */
 
 /** Pages an account gets when `accessible_pages` was never set. */
-export const DEFAULT_PAGES = ['dashboard', 'profile'] as const
+export const DEFAULT_PAGES = ['dashboard', 'profile'] as const;
 
 /** Every page the product knows about, in menu order. */
-export const ALL_PAGES = ['dashboard', 'profile', 'camera'] as const
+export const ALL_PAGES = ['dashboard', 'profile', 'camera'] as const;
 
-export type PageId = (typeof ALL_PAGES)[number]
+export type PageId = (typeof ALL_PAGES)[number];
 
 /** Minimal user shape this module needs (works for AuthUser and API rows). */
 export interface PageAccessSubject {
-  role?: string | null
-  accessible_pages?: string | string[] | null
+  role?: string | null;
+  accessible_pages?: string | string[] | null;
 }
 
 /** Page ids an account may open. Anything unusable falls back to the default. */
 export function parseAccessiblePages(raw: string | string[] | null | undefined): string[] {
-  if (!raw) return [...DEFAULT_PAGES]
+  if (!raw) return [...DEFAULT_PAGES];
   if (Array.isArray(raw)) {
-    return raw.filter((page): page is string => typeof page === 'string')
+    return raw.filter((page): page is string => typeof page === 'string');
   }
   try {
-    const parsed: unknown = JSON.parse(raw)
-    if (!Array.isArray(parsed)) return [...DEFAULT_PAGES]
-    return parsed.filter((page): page is string => typeof page === 'string')
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [...DEFAULT_PAGES];
+    return parsed.filter((page): page is string => typeof page === 'string');
   } catch {
-    return [...DEFAULT_PAGES]
+    return [...DEFAULT_PAGES];
   }
 }
 
 /** Whether the account may open `pageId`. Admins are never gated. */
-export function canAccessPage(
-  user: PageAccessSubject | null | undefined,
-  pageId: string,
-): boolean {
-  if (!user) return false
-  if (user.role === 'admin') return true
-  return parseAccessiblePages(user.accessible_pages).includes(pageId)
+export function canAccessPage(user: PageAccessSubject | null | undefined, pageId: string): boolean {
+  if (!user) return false;
+  if (user.role === 'admin') return true;
+  return parseAccessiblePages(user.accessible_pages).includes(pageId);
 }

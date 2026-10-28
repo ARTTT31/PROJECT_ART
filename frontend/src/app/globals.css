@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 /* Design tokens stay in the JS config and are loaded through @config. */
 @config "../../tailwind.config.ts";
 
@@ -30,19 +30,19 @@
      Use these for bento tiles, hero sections, display headings, CTA buttons,
      and page/section backgrounds on showcase-style surfaces.
   ─────────────────────────────────────────────────────────────────────────── */
-  --apple-ink: #1d1d1f;          /* Hero/tile headings */
-  --apple-muted: #6e6e73;        /* Body copy, descriptions */
-  --apple-bg: #f5f5f7;           /* Section alternation background */
-  --apple-surface: #ffffff;      /* White tile on gray section */
-  --apple-blue: #0066cc;         /* CTA primary button */
-  --apple-blue-hover: #0071e3;   /* CTA hover */
+  --apple-ink: #1d1d1f; /* Hero/tile headings */
+  --apple-muted: #6e6e73; /* Body copy, descriptions */
+  --apple-bg: #f5f5f7; /* Section alternation background */
+  --apple-surface: #ffffff; /* White tile on gray section */
+  --apple-blue: #0066cc; /* CTA primary button */
+  --apple-blue-hover: #0071e3; /* CTA hover */
 
   /* Apple Bento Tile Radius */
-  --art-radius-tile: 18px;       /* Large bento tiles */
-  --art-radius-tile-sm: 18px;    /* Small bento tiles */
-  --art-radius-tile-icon: 11px;  /* Icon badge inside color tile */
+  --art-radius-tile: 18px; /* Large bento tiles */
+  --art-radius-tile-sm: 18px; /* Small bento tiles */
+  --art-radius-tile-icon: 11px; /* Icon badge inside color tile */
   --art-radius-tile-icon-sm: 11px; /* Icon badge inside white card */
-  --art-radius-dialog: 18px;     /* Dialogs/modals (updated from 16px) */
+  --art-radius-dialog: 18px; /* Dialogs/modals (updated from 16px) */
 
   /* Apple Nav */
   --apple-nav-bg: rgba(255, 255, 255, 0.82);
@@ -56,29 +56,29 @@
   --art-blue: #0066cc;
   --art-ink: #0f172a;
   --art-muted: #475569;
-  --art-shell: #f5f5f7;          /* Updated: aligned with --apple-bg */
-  
+  --art-shell: #f5f5f7; /* Updated: aligned with --apple-bg */
+
   /* Liquid Glass Borders */
   --art-border: rgba(255, 255, 255, 0.25);
   --art-border-strong: rgba(255, 255, 255, 0.45);
-  
+
   /* Flat Apple surfaces — decorative gradients removed per Apple spec */
   --art-gradient: #0b63ce;
   --art-page-bg: #f5f5f7;
-  
+
   /* Semantic Colors */
   --art-success: #22c55e;
   --art-error: #ef4444;
   --art-warning: #f59e0b;
   --art-info: #3b82f6;
-  
+
   /* Refined Radii - Apple Showcase DNA (v2.0)
      Tile radii live in --art-radius-tile* above.
      These govern UI controls: buttons, inputs, cards, widgets. */
-  --art-radius-xl: 18px;   /* UI cards / widgets (raised from 12px) */
-  --art-radius-lg: 18px;   /* UI cards / widgets */
-  --art-radius-md: 11px;   /* Buttons, inputs */
-  --art-radius-sm: 11px;   /* Buttons, inputs */
+  --art-radius-xl: 18px; /* UI cards / widgets (raised from 12px) */
+  --art-radius-lg: 18px; /* UI cards / widgets */
+  --art-radius-md: 11px; /* Buttons, inputs */
+  --art-radius-sm: 11px; /* Buttons, inputs */
 
   /* Spacing scale (use across pages/components) */
   --space-1: 4px;
@@ -100,7 +100,7 @@
   --z-sticky: 100;
   --z-modal: 1000;
   --z-toast: 1100;
-  
+
   /* Glass Opacity Levels */
   --glass-white-100: rgba(255, 255, 255, 0.95);
   --glass-white-90: rgba(255, 255, 255, 0.9);
@@ -109,12 +109,12 @@
   --glass-white-40: rgba(255, 255, 255, 0.4);
   --glass-white-20: rgba(255, 255, 255, 0.2);
   --glass-white-10: rgba(255, 255, 255, 0.1);
-  
+
   /* Shadows */
   --shadow-glass-sm: 0 2px 8px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.02);
   --shadow-glass: 0 8px 32px rgba(15, 23, 42, 0.06), 0 2px 8px rgba(15, 23, 42, 0.03);
   --shadow-glass-lg: 0 16px 48px rgba(15, 23, 42, 0.08), 0 4px 16px rgba(15, 23, 42, 0.04);
-  --shadow-glass-xl: 0 24px 64px rgba(15, 23, 42, 0.10), 0 8px 24px rgba(15, 23, 42, 0.05);
+  --shadow-glass-xl: 0 24px 64px rgba(15, 23, 42, 0.1), 0 8px 24px rgba(15, 23, 42, 0.05);
 
   /* Typography Scale (Responsive with clamp) */
   --type-xs: 0.75rem;
@@ -125,7 +125,7 @@
   --type-2xl: clamp(1.25rem, 0.8vw + 1rem, 1.5rem);
   --type-3xl: clamp(1.375rem, 1.5vw + 1rem, 1.875rem);
   --type-4xl: clamp(1.625rem, 2.5vw + 1rem, 2.5rem);
-  
+
   --line-tight: 1.25;
   --line-snug: 1.35;
   --line-normal: 1.5;
@@ -150,8 +150,13 @@
 
   body {
     /* Apple-style stack: SF Pro / system for Latin, Anuphan for Thai fallback */
-    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'SF Pro', Inter, var(--font-anuphan), Anuphan, system-ui, sans-serif;
-    font-feature-settings: 'kern' 1, 'liga' 1, 'calt' 1;
+    font-family:
+      -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'SF Pro', Inter,
+      var(--font-anuphan), Anuphan, system-ui, sans-serif;
+    font-feature-settings:
+      'kern' 1,
+      'liga' 1,
+      'calt' 1;
     letter-spacing: 0;
     line-height: var(--line-normal);
     color: var(--art-ink);
@@ -238,11 +243,11 @@
    ═══════════════════════════════════════════════════════ */
 
 @layer base {
-  input[type="text"],
-  input[type="email"],
-  input[type="password"],
-  input[type="search"],
-  input[type="number"],
+  input[type='text'],
+  input[type='email'],
+  input[type='password'],
+  input[type='search'],
+  input[type='number'],
   textarea,
   select {
     min-height: 48px;
@@ -257,44 +262,46 @@
     transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  input[type="text"]::placeholder,
-  input[type="email"]::placeholder,
-  input[type="password"]::placeholder,
-  input[type="search"]::placeholder,
+  input[type='text']::placeholder,
+  input[type='email']::placeholder,
+  input[type='password']::placeholder,
+  input[type='search']::placeholder,
   textarea::placeholder {
     color: #6b7280;
     font-weight: 500;
   }
 
-  input[type="text"]:hover,
-  input[type="email"]:hover,
-  input[type="password"]:hover,
-  input[type="search"]:hover,
-  input[type="number"]:hover,
+  input[type='text']:hover,
+  input[type='email']:hover,
+  input[type='password']:hover,
+  input[type='search']:hover,
+  input[type='number']:hover,
   textarea:hover,
   select:hover {
     border-color: #a1aec8;
     background: #fafbfc;
   }
 
-  input[type="text"]:focus,
-  input[type="email"]:focus,
-  input[type="password"]:focus,
-  input[type="search"]:focus,
-  input[type="number"]:focus,
+  input[type='text']:focus,
+  input[type='email']:focus,
+  input[type='password']:focus,
+  input[type='search']:focus,
+  input[type='number']:focus,
   textarea:focus,
   select:focus {
     outline: none;
     border-color: var(--art-primary);
     background: white;
-    box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1), 0 0 0 1px var(--art-primary);
+    box-shadow:
+      0 0 0 3px rgba(0, 102, 204, 0.1),
+      0 0 0 1px var(--art-primary);
   }
 
-  input[type="text"]:disabled,
-  input[type="email"]:disabled,
-  input[type="password"]:disabled,
-  input[type="search"]:disabled,
-  input[type="number"]:disabled,
+  input[type='text']:disabled,
+  input[type='email']:disabled,
+  input[type='password']:disabled,
+  input[type='search']:disabled,
+  input[type='number']:disabled,
   textarea:disabled,
   select:disabled {
     opacity: 0.5;
@@ -341,7 +348,8 @@
   line-height: 1;
   overflow: hidden;
   isolation: isolate;
-  transition: background-color 180ms cubic-bezier(0.4, 0, 0.2, 1),
+  transition:
+    background-color 180ms cubic-bezier(0.4, 0, 0.2, 1),
     border-color 180ms cubic-bezier(0.4, 0, 0.2, 1),
     color 180ms cubic-bezier(0.4, 0, 0.2, 1),
     box-shadow 180ms cubic-bezier(0.4, 0, 0.2, 1),
@@ -430,7 +438,7 @@
    ALERT & STATE MESSAGES
    ═══════════════════════════════════════════════════════ */
 
-[role="alert"],
+[role='alert'],
 .alert {
   padding: 1rem 1.25rem;
   border-radius: 11px;
@@ -455,12 +463,11 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  [role="alert"],
+  [role='alert'],
   .alert {
     animation: none;
   }
 }
-
 
 /* Success state: 4.5:1 contrast */
 .alert-success {
@@ -483,9 +490,6 @@
   color: #0c4a6e;
 }
 
-
-
-
 /* Skeleton Loading */
 .skeleton {
   background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
@@ -496,8 +500,12 @@
 }
 
 @keyframes skeleton-loading {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -534,10 +542,9 @@
   animation: slideIn 400ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-
-
 @keyframes pulse-slow {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
     transform: scale(1);
   }
@@ -566,10 +573,6 @@
     background-position: 1000px 0;
   }
 }
-
-
-
-
 
 /* ═══════════════════════════════════════════════════════
    CUSTOM SCROLLBAR - Liquid Glass Style
@@ -668,12 +671,12 @@ button:not(.inline-action):not(.small-control):not(.weather-refresh-btn):not(.mi
 a.btn,
 a.art-primary-button,
 a.art-soft-button,
-a[role="button"],
-input[type="checkbox"],
-input[type="radio"],
-[role="button"]:not(.inline-action):not(.small-control),
-[role="checkbox"],
-[role="radio"] {
+a[role='button'],
+input[type='checkbox'],
+input[type='radio'],
+[role='button']:not(.inline-action):not(.small-control),
+[role='checkbox'],
+[role='radio'] {
   min-width: 44px;
   min-height: 44px;
   display: inline-flex;
@@ -710,11 +713,11 @@ input[type="radio"],
   button:not(:disabled) {
     border: 2px solid currentColor;
   }
-  
-  }
+}
 
 @keyframes pulse-glow {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 0.5;
   }
   50% {
@@ -736,8 +739,6 @@ input[type="radio"],
     transform: translateX(0);
   }
 }
-
-
 
 /* ═══════════════════════════════════════════════════════
    RESPONSIVE & REDUCED MOTION - iOS Optimized
@@ -771,8 +772,7 @@ input[type="radio"],
   .action-btn:hover:not(:disabled) {
     transform: none !important;
   }
-
-  }
+}
 
 /* Page styles live in:
    - src/styles/pages/login.css   (sign-in screen)
@@ -783,7 +783,9 @@ input[type="radio"],
   z-index: var(--z-modal, 1050) !important;
 }
 
-.swal2-container.swal2-backdrop-show:not(.swal2-top-end):not(.swal2-top-start):not(.swal2-bottom-end):not(.swal2-bottom-start):not(.swal2-toast-shown) {
+.swal2-container.swal2-backdrop-show:not(.swal2-top-end):not(.swal2-top-start):not(
+    .swal2-bottom-end
+  ):not(.swal2-bottom-start):not(.swal2-toast-shown) {
   background: rgba(15, 23, 42, 0.42) !important;
   backdrop-filter: blur(6px) saturate(120%) !important;
   -webkit-backdrop-filter: blur(6px) saturate(120%) !important;
@@ -942,7 +944,8 @@ input[type="radio"],
   font-weight: 650 !important;
   letter-spacing: 0 !important;
   line-height: 1 !important;
-  transition: background-color 180ms cubic-bezier(0.4, 0, 0.2, 1),
+  transition:
+    background-color 180ms cubic-bezier(0.4, 0, 0.2, 1),
     border-color 180ms cubic-bezier(0.4, 0, 0.2, 1),
     color 180ms cubic-bezier(0.4, 0, 0.2, 1),
     box-shadow 180ms cubic-bezier(0.4, 0, 0.2, 1),
@@ -1071,7 +1074,6 @@ input[type="radio"],
   }
 }
 /* Apple HIG Scrollbar */
-
 
 /* ═══════════════════════════════════════════════════════
    APPLE HIG SCROLLBAR

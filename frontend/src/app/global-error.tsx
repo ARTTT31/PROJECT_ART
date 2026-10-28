@@ -1,13 +1,13 @@
-'use client'
+'use client';
 
-import * as Sentry from '@sentry/nextjs'
-import { useEffect } from 'react'
-import { AlertTriangle, RotateCcw } from 'lucide-react'
-import '../styles/global-error.css'
+import * as Sentry from '@sentry/nextjs';
+import { useEffect } from 'react';
+import { AlertTriangle, RotateCcw } from 'lucide-react';
+import '../styles/global-error.css';
 
 interface GlobalErrorProps {
-  error: Error & { digest?: string }
-  reset: () => void
+  error: Error & { digest?: string };
+  reset: () => void;
 }
 
 /**
@@ -22,11 +22,11 @@ interface GlobalErrorProps {
  */
 export default function GlobalError({ error, reset }: GlobalErrorProps) {
   useEffect(() => {
-    console.error('[GlobalError]', error)
+    console.error('[GlobalError]', error);
     if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
-      Sentry.captureException(error)
+      Sentry.captureException(error);
     }
-  }, [error])
+  }, [error]);
 
   return (
     <html lang="th">
@@ -55,5 +55,5 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
         </main>
       </body>
     </html>
-  )
+  );
 }

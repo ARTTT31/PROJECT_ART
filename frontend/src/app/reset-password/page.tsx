@@ -1,69 +1,66 @@
-'use client'
+'use client';
 
-import { FormEvent, useEffect, useState } from 'react'
-import Link from 'next/link'
-import { AlertCircle, ArrowRight, CheckCircle2, Eye, EyeOff, Loader2, Lock } from 'lucide-react'
-import AuthPageShell from '@/components/Auth/AuthPageShell'
-import '../../styles/pages/login.css'
+import { FormEvent, useEffect, useState } from 'react';
+import Link from 'next/link';
+import { AlertCircle, ArrowRight, CheckCircle2, Eye, EyeOff, Loader2, Lock } from 'lucide-react';
+import AuthPageShell from '@/components/Auth/AuthPageShell';
+import '../../styles/pages/login.css';
 
-const apiBaseUrl = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '')
-const RESET_ENDPOINT = `${apiBaseUrl}/api/v1/auth/reset-password`
+const apiBaseUrl = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '');
+const RESET_ENDPOINT = `${apiBaseUrl}/api/v1/auth/reset-password`;
 
 export default function ResetPasswordPage() {
-  const [token, setToken] = useState('')
-  const [tokenChecked, setTokenChecked] = useState(false)
-  const [password, setPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [error, setError] = useState('')
-  const [done, setDone] = useState(false)
+  const [token, setToken] = useState('');
+  const [tokenChecked, setTokenChecked] = useState(false);
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
+  const [done, setDone] = useState(false);
 
   // Read the token from the URL in an effect: the page is statically rendered,
   // and the token never reaches the server this way.
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    setToken(params.get('token') || '')
-    setTokenChecked(true)
-  }, [])
+    const params = new URLSearchParams(window.location.search);
+    setToken(params.get('token') || '');
+    setTokenChecked(true);
+  }, []);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    setError('')
+    event.preventDefault();
+    setError('');
 
     if (password.length < 8) {
-      setError('รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร')
-      return
+      setError('รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร');
+      return;
     }
     if (password !== confirmPassword) {
-      setError('รหัสผ่านยืนยันไม่ตรงกัน')
-      return
+      setError('รหัสผ่านยืนยันไม่ตรงกัน');
+      return;
     }
 
-    setIsSubmitting(true)
+    setIsSubmitting(true);
     try {
       const response = await fetch(RESET_ENDPOINT, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         credentials: 'include',
         body: JSON.stringify({ token, new_password: password }),
-      })
-      const result = await response.json().catch(() => ({}))
+      });
+      const result = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        setError(
-          result.detail ||
-            'ลิงก์ตั้งรหัสผ่านใหม่ไม่ถูกต้องหรือหมดอายุ กรุณาขอลิงก์ใหม่'
-        )
-        return
+        setError(result.detail || 'ลิงก์ตั้งรหัสผ่านใหม่ไม่ถูกต้องหรือหมดอายุ กรุณาขอลิงก์ใหม่');
+        return;
       }
-      setDone(true)
+      setDone(true);
     } catch {
-      setError('เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง')
+      setError('เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง');
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   if (done) {
     return (
@@ -80,7 +77,7 @@ export default function ResetPasswordPage() {
           </Link>
         </div>
       </AuthPageShell>
-    )
+    );
   }
 
   if (tokenChecked && !token) {
@@ -100,7 +97,7 @@ export default function ResetPasswordPage() {
           </Link>
         </div>
       </AuthPageShell>
-    )
+    );
   }
 
   if (!tokenChecked) {
@@ -112,7 +109,7 @@ export default function ResetPasswordPage() {
           </div>
         </div>
       </AuthPageShell>
-    )
+    );
   }
 
   return (
@@ -200,5 +197,5 @@ export default function ResetPasswordPage() {
         </Link>
       </form>
     </AuthPageShell>
-  )
+  );
 }

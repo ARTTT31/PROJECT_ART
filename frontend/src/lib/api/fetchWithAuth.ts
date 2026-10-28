@@ -28,9 +28,7 @@ let csrfTokenPromise: Promise<string | null> | null = null;
 
 function readCsrfCookie(): string | null {
   if (typeof document === 'undefined') return null;
-  const match = document.cookie
-    .split('; ')
-    .find((cookie) => cookie.startsWith(`${CSRF_COOKIE}=`));
+  const match = document.cookie.split('; ').find((cookie) => cookie.startsWith(`${CSRF_COOKIE}=`));
   if (!match) return null;
   try {
     return decodeURIComponent(match.slice(CSRF_COOKIE.length + 1));
@@ -155,10 +153,7 @@ export async function refreshSessionToken(): Promise<{
  * 4. On 403 `csrf_failed`, refreshes the CSRF token and retries once
  * 5. If refresh also fails with 401, clears auth state
  */
-export async function fetchWithAuth(
-  path: string,
-  options: RequestInit = {},
-): Promise<Response> {
+export async function fetchWithAuth(path: string, options: RequestInit = {}): Promise<Response> {
   // Enforce credentials: 'include' to pass HTTP-only cookies
   const fetchOptions: RequestInit = {
     ...options,
@@ -309,7 +304,10 @@ export async function fetchWithAuthJson<T extends z.ZodTypeAny>(
     try {
       const errData = await res.json();
       const msg = errData?.message || errData?.detail || res.statusText;
-      const error = new Error(`Request failed: ${res.status} ${msg}`) as Error & { status?: number; data?: unknown };
+      const error = new Error(`Request failed: ${res.status} ${msg}`) as Error & {
+        status?: number;
+        data?: unknown;
+      };
       error.status = res.status;
       error.data = errData;
       throw error;
@@ -317,8 +315,5 @@ export async function fetchWithAuthJson<T extends z.ZodTypeAny>(
       throw new Error(`Request failed: ${res.status} ${res.statusText}`);
     }
   }
-  return parseJsonWithSchema(
-    res,
-    (schema || (await import('./schemas')).ResponseModelSchema) as T,
-  );
+  return parseJsonWithSchema(res, (schema || (await import('./schemas')).ResponseModelSchema) as T);
 }

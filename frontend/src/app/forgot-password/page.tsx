@@ -1,32 +1,32 @@
-'use client'
+'use client';
 
-import { FormEvent, useState } from 'react'
-import Link from 'next/link'
-import { AlertCircle, ArrowRight, Loader2, Mail } from 'lucide-react'
-import AuthPageShell from '@/components/Auth/AuthPageShell'
-import TurnstileWidget from '@/components/Auth/TurnstileWidget'
-import '../../styles/pages/login.css'
+import { FormEvent, useState } from 'react';
+import Link from 'next/link';
+import { AlertCircle, ArrowRight, Loader2, Mail } from 'lucide-react';
+import AuthPageShell from '@/components/Auth/AuthPageShell';
+import TurnstileWidget from '@/components/Auth/TurnstileWidget';
+import '../../styles/pages/login.css';
 
-const apiBaseUrl = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '')
-const FORGOT_ENDPOINT = `${apiBaseUrl}/api/v1/auth/forgot-password`
+const apiBaseUrl = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '');
+const FORGOT_ENDPOINT = `${apiBaseUrl}/api/v1/auth/forgot-password`;
 
 export default function ForgotPasswordPage() {
-  const [email, setEmail] = useState('')
-  const [turnstileToken, setTurnstileToken] = useState('')
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [error, setError] = useState('')
-  const [sent, setSent] = useState(false)
+  const [email, setEmail] = useState('');
+  const [turnstileToken, setTurnstileToken] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
+  const [sent, setSent] = useState(false);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    setError('')
+    event.preventDefault();
+    setError('');
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-      setError('กรุณาตรวจสอบรูปแบบอีเมลอีกครั้ง')
-      return
+      setError('กรุณาตรวจสอบรูปแบบอีเมลอีกครั้ง');
+      return;
     }
 
-    setIsSubmitting(true)
+    setIsSubmitting(true);
     try {
       const response = await fetch(FORGOT_ENDPOINT, {
         method: 'POST',
@@ -36,22 +36,22 @@ export default function ForgotPasswordPage() {
           email: email.trim(),
           ...(turnstileToken ? { turnstile_token: turnstileToken } : {}),
         }),
-      })
-      const result = await response.json().catch(() => ({}))
+      });
+      const result = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        setError(result.detail || 'ส่งคำขอไม่สำเร็จ กรุณาลองใหม่อีกครั้ง')
-        return
+        setError(result.detail || 'ส่งคำขอไม่สำเร็จ กรุณาลองใหม่อีกครั้ง');
+        return;
       }
       // The API answers the same way whether or not the address exists — the
       // screen must not undo that by behaving differently.
-      setSent(true)
+      setSent(true);
     } catch {
-      setError('เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง')
+      setError('เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง');
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   if (sent) {
     return (
@@ -69,15 +69,13 @@ export default function ForgotPasswordPage() {
           </Link>
         </div>
       </AuthPageShell>
-    )
+    );
   }
 
   return (
     <AuthPageShell tagline="ลืมรหัสผ่าน? ให้เราช่วยคุณกลับเข้าใช้งาน">
       <form onSubmit={handleSubmit} className="login-form" aria-busy={isSubmitting}>
-        <p className="login-hint">
-          กรอกอีเมลที่ใช้สมัคร เราจะส่งลิงก์สำหรับตั้งรหัสผ่านใหม่ให้
-        </p>
+        <p className="login-hint">กรอกอีเมลที่ใช้สมัคร เราจะส่งลิงก์สำหรับตั้งรหัสผ่านใหม่ให้</p>
 
         <label htmlFor="forgot-email" className="login-field">
           <span>อีเมล</span>
@@ -124,5 +122,5 @@ export default function ForgotPasswordPage() {
         </Link>
       </form>
     </AuthPageShell>
-  )
+  );
 }

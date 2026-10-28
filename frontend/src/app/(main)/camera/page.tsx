@@ -1,7 +1,7 @@
-'use client'
+'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react'
-import PageAccessGuard from '@/components/Auth/PageAccessGuard'
+import { useState, useEffect, useRef, useCallback } from 'react';
+import PageAccessGuard from '@/components/Auth/PageAccessGuard';
 import {
   Camera,
   CameraOff,
@@ -16,12 +16,12 @@ import {
   Radio,
   Image as ImageIcon,
   Check,
-} from 'lucide-react'
-import { useAuth } from '@/hooks/useAuth'
-import { fetchWithAuth } from '@/lib/api/fetchWithAuth'
-import { CameraStreamConfig, CameraStreamType } from '@/types'
-import { sanitizeCameraStreams, stripCameraCredentials } from '@/utils/cameraUrl'
-import { showToast, showDeleteConfirm } from '@/utils/sweetalert'
+} from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
+import { CameraStreamConfig, CameraStreamType } from '@/types';
+import { sanitizeCameraStreams, stripCameraCredentials } from '@/utils/cameraUrl';
+import { showToast, showDeleteConfirm } from '@/utils/sweetalert';
 import {
   Dialog,
   DialogBody,
@@ -30,7 +30,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/Dialog'
+} from '@/components/ui/Dialog';
 
 const DEFAULT_STREAMS: CameraStreamConfig[] = [
   {
@@ -69,74 +69,74 @@ const DEFAULT_STREAMS: CameraStreamConfig[] = [
     fps: 0,
     resolution: 'N/A',
   },
-]
+];
 
 export default function CameraPage() {
-  const { user, updateUser } = useAuth()
-  const [streams, setStreams] = useState<CameraStreamConfig[]>(DEFAULT_STREAMS)
-  const [activeCameraId, setActiveCameraId] = useState<string>('1')
-  const [refreshing, setRefreshing] = useState(false)
-  const [isFullscreen, setIsFullscreen] = useState(false)
-  const [isClient, setIsClient] = useState(false)
-  const [snapshotTicks, setSnapshotTicks] = useState<Record<string, number>>({})
+  const { user, updateUser } = useAuth();
+  const [streams, setStreams] = useState<CameraStreamConfig[]>(DEFAULT_STREAMS);
+  const [activeCameraId, setActiveCameraId] = useState<string>('1');
+  const [refreshing, setRefreshing] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isClient, setIsClient] = useState(false);
+  const [snapshotTicks, setSnapshotTicks] = useState<Record<string, number>>({});
 
   // Modal State
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [editingCameraId, setEditingCameraId] = useState<string | null>(null)
-  const [formName, setFormName] = useState('')
-  const [formLocation, setFormLocation] = useState('')
-  const [formUrl, setFormUrl] = useState('')
-  const [formStreamType, setFormStreamType] = useState<CameraStreamType>('simulated')
-  const [formRefreshInterval, setFormRefreshInterval] = useState<number>(3)
-  const [formFps, setFormFps] = useState<number>(30)
-  const [formResolution, setFormResolution] = useState<string>('1920x1080')
-  const [isSaving, setIsSaving] = useState(false)
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingCameraId, setEditingCameraId] = useState<string | null>(null);
+  const [formName, setFormName] = useState('');
+  const [formLocation, setFormLocation] = useState('');
+  const [formUrl, setFormUrl] = useState('');
+  const [formStreamType, setFormStreamType] = useState<CameraStreamType>('simulated');
+  const [formRefreshInterval, setFormRefreshInterval] = useState<number>(3);
+  const [formFps, setFormFps] = useState<number>(30);
+  const [formResolution, setFormResolution] = useState<string>('1920x1080');
+  const [isSaving, setIsSaving] = useState(false);
 
-  const videoContainerRef = useRef<HTMLDivElement>(null)
+  const videoContainerRef = useRef<HTMLDivElement>(null);
 
   // ── Load streams from user.camera_config or localStorage ──
   useEffect(() => {
-    setIsClient(true)
-    let loaded: CameraStreamConfig[] = DEFAULT_STREAMS
+    setIsClient(true);
+    let loaded: CameraStreamConfig[] = DEFAULT_STREAMS;
 
     if (user?.camera_config) {
       try {
-        const parsed = JSON.parse(user.camera_config)
+        const parsed = JSON.parse(user.camera_config);
         if (Array.isArray(parsed) && parsed.length > 0) {
           // T16: migrate the removed iframe type and never resurrect stored credentials.
-          loaded = sanitizeCameraStreams(parsed) as CameraStreamConfig[]
+          loaded = sanitizeCameraStreams(parsed) as CameraStreamConfig[];
         }
       } catch (e) {
-        console.error('Failed to parse camera_config:', e)
+        console.error('Failed to parse camera_config:', e);
       }
     } else {
-      const saved = localStorage.getItem('artWorkspaceCameraConfig')
+      const saved = localStorage.getItem('artWorkspaceCameraConfig');
       if (saved) {
         try {
-          const parsed = JSON.parse(saved)
+          const parsed = JSON.parse(saved);
           if (Array.isArray(parsed) && parsed.length > 0) {
-            loaded = sanitizeCameraStreams(parsed) as CameraStreamConfig[]
+            loaded = sanitizeCameraStreams(parsed) as CameraStreamConfig[];
           }
         } catch {}
       }
     }
 
-    setStreams(loaded)
+    setStreams(loaded);
     if (loaded.length > 0) {
-      setActiveCameraId(loaded[0].id)
+      setActiveCameraId(loaded[0].id);
     }
-  }, [user?.camera_config])
+  }, [user?.camera_config]);
 
   // ── Persist streams helper ──
   const persistStreams = useCallback(
     async (nextStreams: CameraStreamConfig[]) => {
-      setStreams(nextStreams)
+      setStreams(nextStreams);
       // T16: credentials typed into a camera URL are stripped before they are
       // ever written to localStorage or the users table.
-      const payload = JSON.stringify(sanitizeCameraStreams(nextStreams))
+      const payload = JSON.stringify(sanitizeCameraStreams(nextStreams));
 
       try {
-        localStorage.setItem('artWorkspaceCameraConfig', payload)
+        localStorage.setItem('artWorkspaceCameraConfig', payload);
       } catch {}
 
       try {
@@ -144,117 +144,123 @@ export default function CameraPage() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ camera_config: payload }),
-        })
-        updateUser({ camera_config: payload })
+        });
+        updateUser({ camera_config: payload });
       } catch (err) {
-        console.error('Failed to sync camera config to backend:', err)
+        console.error('Failed to sync camera config to backend:', err);
       }
     },
-    [updateUser]
-  )
+    [updateUser],
+  );
 
   // ── Active camera object ──
-  const activeCamera = streams.find((s) => s.id === activeCameraId) || streams[0]
+  const activeCamera = streams.find((s) => s.id === activeCameraId) || streams[0];
 
   // ── Snapshot Interval Timer ──
   useEffect(() => {
-    if (!activeCamera || activeCamera.streamType !== 'snapshot') return
+    if (!activeCamera || activeCamera.streamType !== 'snapshot') return;
 
-    const intervalSec = activeCamera.refreshInterval || 3
+    const intervalSec = activeCamera.refreshInterval || 3;
     const timer = setInterval(() => {
       setSnapshotTicks((prev) => ({
         ...prev,
         [activeCamera.id]: (prev[activeCamera.id] || 0) + 1,
-      }))
-    }, intervalSec * 1000)
+      }));
+    }, intervalSec * 1000);
 
-    return () => clearInterval(timer)
-  }, [activeCamera])
+    return () => clearInterval(timer);
+  }, [activeCamera]);
 
   // ── Refresh Camera Status ──
   const handleRefresh = () => {
-    if (!activeCamera) return
-    setRefreshing(true)
+    if (!activeCamera) return;
+    setRefreshing(true);
     setSnapshotTicks((prev) => ({
       ...prev,
       [activeCamera.id]: (prev[activeCamera.id] || 0) + 1,
-    }))
+    }));
 
     setTimeout(() => {
-      setRefreshing(false)
+      setRefreshing(false);
       setStreams((prev) =>
         prev.map((s) => ({
           ...s,
           status: 'online',
           fps: s.fps || 30,
-        }))
-      )
-      showToast('รีเฟรชสถานะกล้องทั้งหมดสำเร็จ', 'success')
-    }, 1000)
-  }
+        })),
+      );
+      showToast('รีเฟรชสถานะกล้องทั้งหมดสำเร็จ', 'success');
+    }, 1000);
+  };
 
   // ── Fullscreen toggle ──
   const toggleFullscreen = () => {
-    if (!videoContainerRef.current) return
+    if (!videoContainerRef.current) return;
 
     if (!document.fullscreenElement) {
-      videoContainerRef.current.requestFullscreen().then(() => {
-        setIsFullscreen(true)
-      }).catch((err) => {
-        console.error('Error entering fullscreen:', err)
-      })
+      videoContainerRef.current
+        .requestFullscreen()
+        .then(() => {
+          setIsFullscreen(true);
+        })
+        .catch((err) => {
+          console.error('Error entering fullscreen:', err);
+        });
     } else {
-      document.exitFullscreen().then(() => {
-        setIsFullscreen(false)
-      }).catch((err) => {
-        console.error('Error exiting fullscreen:', err)
-      })
+      document
+        .exitFullscreen()
+        .then(() => {
+          setIsFullscreen(false);
+        })
+        .catch((err) => {
+          console.error('Error exiting fullscreen:', err);
+        });
     }
-  }
+  };
 
   useEffect(() => {
     const onFsChange = () => {
-      setIsFullscreen(!!document.fullscreenElement)
-    }
-    document.addEventListener('fullscreenchange', onFsChange)
-    return () => document.removeEventListener('fullscreenchange', onFsChange)
-  }, [])
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', onFsChange);
+    return () => document.removeEventListener('fullscreenchange', onFsChange);
+  }, []);
 
   // ── Dialog Handlers ──
   const openAddDialog = () => {
-    setEditingCameraId(null)
-    setFormName('')
-    setFormLocation('')
-    setFormUrl('')
-    setFormStreamType('simulated')
-    setFormRefreshInterval(3)
-    setFormFps(30)
-    setFormResolution('1920x1080')
-    setIsDialogOpen(true)
-  }
+    setEditingCameraId(null);
+    setFormName('');
+    setFormLocation('');
+    setFormUrl('');
+    setFormStreamType('simulated');
+    setFormRefreshInterval(3);
+    setFormFps(30);
+    setFormResolution('1920x1080');
+    setIsDialogOpen(true);
+  };
 
   const openEditDialog = (cam: CameraStreamConfig) => {
-    setEditingCameraId(cam.id)
-    setFormName(cam.name)
-    setFormLocation(cam.location)
-    setFormUrl(cam.url || '')
-    setFormStreamType(cam.streamType)
-    setFormRefreshInterval(cam.refreshInterval || 3)
-    setFormFps(cam.fps || 30)
-    setFormResolution(cam.resolution || '1920x1080')
-    setIsDialogOpen(true)
-  }
+    setEditingCameraId(cam.id);
+    setFormName(cam.name);
+    setFormLocation(cam.location);
+    setFormUrl(cam.url || '');
+    setFormStreamType(cam.streamType);
+    setFormRefreshInterval(cam.refreshInterval || 3);
+    setFormFps(cam.fps || 30);
+    setFormResolution(cam.resolution || '1920x1080');
+    setIsDialogOpen(true);
+  };
 
   const handleSaveCamera = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
     if (!formName.trim()) {
-      showToast('กรุณาระบุชื่อกล้อง', 'warning')
-      return
+      showToast('กรุณาระบุชื่อกล้อง', 'warning');
+      return;
     }
 
-    setIsSaving(true)
+    setIsSaving(true);
     try {
-      let updated: CameraStreamConfig[]
+      let updated: CameraStreamConfig[];
 
       if (editingCameraId) {
         // Edit
@@ -271,9 +277,9 @@ export default function CameraPage() {
                 resolution: formResolution,
                 status: 'online',
               }
-            : s
-        )
-        showToast('อัปเดตข้อมูลกล้องสำเร็จ', 'success')
+            : s,
+        );
+        showToast('อัปเดตข้อมูลกล้องสำเร็จ', 'success');
       } else {
         // Add new
         const newCam: CameraStreamConfig = {
@@ -286,52 +292,55 @@ export default function CameraPage() {
           fps: formFps,
           resolution: formResolution,
           status: 'online',
-        }
-        updated = [...streams, newCam]
-        setActiveCameraId(newCam.id)
-        showToast('เพิ่มกล้องวงจรปิดใหม่สำเร็จ', 'success')
+        };
+        updated = [...streams, newCam];
+        setActiveCameraId(newCam.id);
+        showToast('เพิ่มกล้องวงจรปิดใหม่สำเร็จ', 'success');
       }
 
-      await persistStreams(updated)
-      setIsDialogOpen(false)
+      await persistStreams(updated);
+      setIsDialogOpen(false);
     } catch {
-      showToast('เกิดข้อผิดพลาดในการบันทึก', 'error')
+      showToast('เกิดข้อผิดพลาดในการบันทึก', 'error');
     } finally {
-      setIsSaving(false)
+      setIsSaving(false);
     }
-  }
+  };
 
   const handleDeleteCamera = async (camId: string, camName: string) => {
     if (streams.length <= 1) {
-      showToast('ต้องมีกล้องอย่างน้อย 1 ตัวในระบบ', 'warning')
-      return
+      showToast('ต้องมีกล้องอย่างน้อย 1 ตัวในระบบ', 'warning');
+      return;
     }
 
-    const confirm = await showDeleteConfirm('ต้องการลบกล้องนี้หรือไม่?', `ลบกล้อง "${camName}" ออกจากระบบ`)
-    if (!confirm.isConfirmed) return
+    const confirm = await showDeleteConfirm(
+      'ต้องการลบกล้องนี้หรือไม่?',
+      `ลบกล้อง "${camName}" ออกจากระบบ`,
+    );
+    if (!confirm.isConfirmed) return;
 
-    const updated = streams.filter((s) => s.id !== camId)
-    await persistStreams(updated)
+    const updated = streams.filter((s) => s.id !== camId);
+    await persistStreams(updated);
 
     if (activeCameraId === camId) {
-      setActiveCameraId(updated[0]?.id || '')
+      setActiveCameraId(updated[0]?.id || '');
     }
-    showToast('ลบกล้องสำเร็จ', 'success')
-  }
+    showToast('ลบกล้องสำเร็จ', 'success');
+  };
 
   // ── Render Helpers ──
   const getStreamTypeLabel = (type: CameraStreamType) => {
     switch (type) {
       case 'snapshot':
-        return 'ภาพนิ่ง Snapshot (Auto-refresh)'
+        return 'ภาพนิ่ง Snapshot (Auto-refresh)';
       case 'mjpeg':
-        return 'MJPEG / Web Stream'
+        return 'MJPEG / Web Stream';
       case 'iframe':
-        return 'Web Embed / Lovelace NVR'
+        return 'Web Embed / Lovelace NVR';
       case 'simulated':
-        return 'โหมดจำลอง (Simulated Live)'
+        return 'โหมดจำลอง (Simulated Live)';
     }
-  }
+  };
 
   if (!isClient) {
     return (
@@ -340,14 +349,14 @@ export default function CameraPage() {
           <div className="h-10 w-10 animate-spin rounded-full border-[3px] border-[#f5f5f7] border-t-[#0066cc]" />
         </div>
       </>
-    )
+    );
   }
 
-  const currentTick = snapshotTicks[activeCamera?.id || ''] || 0
+  const currentTick = snapshotTicks[activeCamera?.id || ''] || 0;
   const currentSnapshotUrl =
     activeCamera?.streamType === 'snapshot' && activeCamera.url
       ? `${activeCamera.url}${activeCamera.url.includes('?') ? '&' : '?'}_t=${currentTick}`
-      : activeCamera?.url
+      : activeCamera?.url;
 
   return (
     <PageAccessGuard page="camera">
@@ -407,8 +416,10 @@ export default function CameraPage() {
                         className="h-full w-full object-contain"
                         onError={() => {
                           setStreams((prev) =>
-                            prev.map((s) => (s.id === activeCamera.id ? { ...s, status: 'offline' } : s))
-                          )
+                            prev.map((s) =>
+                              s.id === activeCamera.id ? { ...s, status: 'offline' } : s,
+                            ),
+                          );
                         }}
                       />
                     </div>
@@ -421,8 +432,10 @@ export default function CameraPage() {
                         className="h-full w-full object-contain"
                         onError={() => {
                           setStreams((prev) =>
-                            prev.map((s) => (s.id === activeCamera.id ? { ...s, status: 'offline' } : s))
-                          )
+                            prev.map((s) =>
+                              s.id === activeCamera.id ? { ...s, status: 'offline' } : s,
+                            ),
+                          );
                         }}
                       />
                     </div>
@@ -439,7 +452,11 @@ export default function CameraPage() {
                     /* Simulated Live Mode */
                     <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900">
                       <div className="flex flex-col items-center gap-3 text-slate-500">
-                        <Camera size={52} className="animate-pulse text-sky-400/50" aria-hidden="true" />
+                        <Camera
+                          size={52}
+                          className="animate-pulse text-sky-400/50"
+                          aria-hidden="true"
+                        />
                         <span className="text-xs font-medium tracking-wide text-slate-400">
                           จำลองภาพสตรีมความละเอียด {activeCamera.resolution || '1080p'}
                         </span>
@@ -452,7 +469,10 @@ export default function CameraPage() {
                     {/* Top HUD Bar */}
                     <div className="pointer-events-auto flex items-center justify-between">
                       <span className="flex items-center gap-2 rounded-full bg-red-600/90 px-3 py-1 text-[11px] font-bold text-white shadow-xs backdrop-blur-md">
-                        <span className="h-1.5 w-1.5 animate-ping rounded-full bg-white" aria-hidden="true" />
+                        <span
+                          className="h-1.5 w-1.5 animate-ping rounded-full bg-white"
+                          aria-hidden="true"
+                        />
                         LIVE
                       </span>
                       <div className="flex items-center gap-2">
@@ -460,7 +480,8 @@ export default function CameraPage() {
                           {getStreamTypeLabel(activeCamera.streamType)}
                         </span>
                         <span className="rounded-full bg-black/60 px-3 py-1 text-[11px] font-semibold text-white/90 backdrop-blur-md">
-                          FPS: {activeCamera.fps || 30} &nbsp;|&nbsp; {activeCamera.resolution || '1080p'}
+                          FPS: {activeCamera.fps || 30} &nbsp;|&nbsp;{' '}
+                          {activeCamera.resolution || '1080p'}
                         </span>
                       </div>
                     </div>
@@ -501,7 +522,8 @@ export default function CameraPage() {
                       {activeCamera?.name || 'กล้อง'} ตัดการเชื่อมต่อ (Offline)
                     </p>
                     <p className="mt-1 text-xs text-slate-500">
-                      ไม่สามารถเชื่อมต่อ URL ของกล้องได้ กรุณาตรวจสอบการตั้งค่าเครือข่ายหรือ URL สตรีม
+                      ไม่สามารถเชื่อมต่อ URL ของกล้องได้ กรุณาตรวจสอบการตั้งค่าเครือข่ายหรือ URL
+                      สตรีม
                     </p>
                   </div>
                   <div className="mt-2 flex items-center gap-2">
@@ -539,7 +561,7 @@ export default function CameraPage() {
 
               <ul className="flex flex-col gap-2" role="list">
                 {streams.map((cam) => {
-                  const isSelected = activeCamera?.id === cam.id
+                  const isSelected = activeCamera?.id === cam.id;
                   return (
                     <li key={cam.id} className="group relative">
                       <div
@@ -585,8 +607,8 @@ export default function CameraPage() {
                         <div className="flex items-center gap-1.5 pl-2">
                           <button
                             onClick={(e) => {
-                              e.stopPropagation()
-                              openEditDialog(cam)
+                              e.stopPropagation();
+                              openEditDialog(cam);
                             }}
                             className="rounded-lg p-1.5 text-slate-400 opacity-0 transition-opacity hover:bg-black/[0.05] hover:text-slate-700 group-hover:opacity-100 focus-visible:opacity-100"
                             aria-label={`แก้ไข ${cam.name}`}
@@ -596,8 +618,8 @@ export default function CameraPage() {
 
                           <button
                             onClick={(e) => {
-                              e.stopPropagation()
-                              handleDeleteCamera(cam.id, cam.name)
+                              e.stopPropagation();
+                              handleDeleteCamera(cam.id, cam.name);
                             }}
                             className="rounded-lg p-1.5 text-slate-400 opacity-0 transition-opacity hover:bg-rose-50 hover:text-rose-600 group-hover:opacity-100 focus-visible:opacity-100"
                             aria-label={`ลบ ${cam.name}`}
@@ -618,7 +640,7 @@ export default function CameraPage() {
                         </div>
                       </div>
                     </li>
-                  )
+                  );
                 })}
               </ul>
             </div>
@@ -676,8 +698,8 @@ export default function CameraPage() {
                       { type: 'mjpeg' as const, label: 'MJPEG สตรีม', icon: Video },
                       { type: 'simulated' as const, label: 'โหมดจำลอง', icon: Radio },
                     ].map((opt) => {
-                      const Icon = opt.icon
-                      const isChecked = formStreamType === opt.type
+                      const Icon = opt.icon;
+                      const isChecked = formStreamType === opt.type;
                       return (
                         <button
                           key={opt.type}
@@ -690,10 +712,13 @@ export default function CameraPage() {
                               : 'bg-slate-50 text-slate-700 hover:bg-slate-100',
                           ].join(' ')}
                         >
-                          <Icon size={14} className={isChecked ? 'text-[#0066cc]' : 'text-slate-400'} />
+                          <Icon
+                            size={14}
+                            className={isChecked ? 'text-[#0066cc]' : 'text-slate-400'}
+                          />
                           {opt.label}
                         </button>
-                      )
+                      );
                     })}
                   </div>
                 </div>
@@ -712,8 +737,8 @@ export default function CameraPage() {
                         formStreamType === 'snapshot'
                           ? 'http://192.168.1.50/snapshot.jpg'
                           : formStreamType === 'mjpeg'
-                          ? 'http://192.168.1.50:8080/video.mjpg'
-                          : 'https://homeassistant.local/lovelace/cctv'
+                            ? 'http://192.168.1.50:8080/video.mjpg'
+                            : 'https://homeassistant.local/lovelace/cctv'
                       }
                       className="mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 font-mono text-xs text-slate-900 transition-colors focus:border-[#0066cc] focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-[#0066cc]/20"
                     />
@@ -794,5 +819,5 @@ export default function CameraPage() {
         </Dialog>
       </div>
     </PageAccessGuard>
-  )
+  );
 }

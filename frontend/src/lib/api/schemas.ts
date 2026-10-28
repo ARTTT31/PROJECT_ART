@@ -123,11 +123,13 @@ export async function parseJsonWithSchema<T extends z.ZodTypeAny>(
     const issues = result.error.issues;
     if (typeof window !== 'undefined') {
       console.warn('[ZOD] Schema mismatch for %s %s', res.url, '\nIssues:');
-      console.table(issues.map((i) => ({
-        path: (i.path || []).join('.'),
-        message: i.message,
-        code: i.code,
-      })));
+      console.table(
+        issues.map((i) => ({
+          path: (i.path || []).join('.'),
+          message: i.message,
+          code: i.code,
+        })),
+      );
     }
     // Re-throw as ZodError so callers can catch and handle gracefully
     throw result.error;

@@ -1,12 +1,12 @@
-'use client'
+'use client';
 
-import { useEffect } from 'react'
-import { AlertTriangle, RotateCcw, Home } from 'lucide-react'
-import Link from 'next/link'
+import { useEffect } from 'react';
+import { AlertTriangle, RotateCcw, Home } from 'lucide-react';
+import Link from 'next/link';
 
 interface ErrorPageProps {
-  error: Error & { digest?: string }
-  reset: () => void
+  error: Error & { digest?: string };
+  reset: () => void;
 }
 
 /**
@@ -16,8 +16,8 @@ interface ErrorPageProps {
  */
 export default function ErrorPage({ error, reset }: ErrorPageProps) {
   useEffect(() => {
-    console.error('[RouteError]', error)
-  }, [error])
+    console.error('[RouteError]', error);
+  }, [error]);
 
   return (
     <div
@@ -41,7 +41,8 @@ export default function ErrorPage({ error, reset }: ErrorPageProps) {
         {/* Body */}
         <div className="px-6 py-5">
           <p className="text-sm text-slate-600">
-            เกิดข้อผิดพลาดที่ไม่คาดคิดระหว่างการโหลดหน้าเพจ คุณสามารถลองโหลดใหม่ หรือกลับไปยังหน้าหลัก
+            เกิดข้อผิดพลาดที่ไม่คาดคิดระหว่างการโหลดหน้าเพจ คุณสามารถลองโหลดใหม่
+            หรือกลับไปยังหน้าหลัก
           </p>
           {process.env.NODE_ENV === 'development' && (
             <pre className="mt-3 max-h-40 overflow-auto rounded-lg bg-slate-100 p-3 text-xs text-red-700">
@@ -70,5 +71,5 @@ export default function ErrorPage({ error, reset }: ErrorPageProps) {
         </div>
       </div>
     </div>
-  )
+  );
 }

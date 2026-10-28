@@ -1,6 +1,6 @@
-'use client'
+'use client';
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo } from 'react';
 import {
   CalendarDays,
   Palmtree,
@@ -9,54 +9,54 @@ import {
   Clock,
   CheckCircle2,
   CalendarHeart,
-} from 'lucide-react'
-import WidgetSizeToggle from './WidgetSizeToggle'
-import { HolidayItem, getHolidaysWithDiff } from '@/utils/holidays'
+} from 'lucide-react';
+import WidgetSizeToggle from './WidgetSizeToggle';
+import { HolidayItem, getHolidaysWithDiff } from '@/utils/holidays';
 
-export type { HolidayItem }
+export type { HolidayItem };
 
 export default function HolidayWidget({
   width = 1,
   onResize,
 }: {
-  width?: number
-  onResize?: (size: number) => void
+  width?: number;
+  onResize?: (size: number) => void;
 }) {
-  const [filterMode, setFilterMode] = useState<'upcoming' | 'all'>('upcoming')
+  const [filterMode, setFilterMode] = useState<'upcoming' | 'all'>('upcoming');
 
   // Calculate day difference relative to today
   const today = useMemo(() => {
-    const d = new Date()
-    d.setHours(0, 0, 0, 0)
-    return d
-  }, [])
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }, []);
 
   const holidaysWithDiff = useMemo(() => {
-    return getHolidaysWithDiff(today)
-  }, [today])
-  const calendarYear = today.getFullYear()
-  const hasCalendar = holidaysWithDiff.length > 0
+    return getHolidaysWithDiff(today);
+  }, [today]);
+  const calendarYear = today.getFullYear();
+  const hasCalendar = holidaysWithDiff.length > 0;
 
   // Next upcoming holiday
   const nextHoliday = useMemo(() => {
-    return holidaysWithDiff.find((h) => h.daysLeft >= 0) || holidaysWithDiff[0]
-  }, [holidaysWithDiff])
+    return holidaysWithDiff.find((h) => h.daysLeft >= 0) || holidaysWithDiff[0];
+  }, [holidaysWithDiff]);
 
   // Filtered list
   const displayedHolidays = useMemo(() => {
-    let result = holidaysWithDiff
+    let result = holidaysWithDiff;
     if (filterMode === 'upcoming') {
-      const upcomingList = holidaysWithDiff.filter((h) => h.daysLeft >= 0)
-      result = upcomingList.length > 0 ? upcomingList : holidaysWithDiff
+      const upcomingList = holidaysWithDiff.filter((h) => h.daysLeft >= 0);
+      result = upcomingList.length > 0 ? upcomingList : holidaysWithDiff;
     }
-    
+
     // Limit to 3 upcoming when widget is small (width 1)
     if (width === 1 && filterMode === 'upcoming') {
-      return result.slice(0, 3)
+      return result.slice(0, 3);
     }
-    
-    return result
-  }, [filterMode, holidaysWithDiff, width])
+
+    return result;
+  }, [filterMode, holidaysWithDiff, width]);
 
   return (
     <section
@@ -89,16 +89,18 @@ export default function HolidayWidget({
             </div>
           </div>
 
-          {onResize && (
-            <WidgetSizeToggle value={width} onChange={onResize} sizes={[1, 2, 3]} />
-          )}
+          {onResize && <WidgetSizeToggle value={width} onChange={onResize} sizes={[1, 2, 3]} />}
         </div>
 
         {!hasCalendar && (
           <div className="mt-4 rounded-[18px] border border-dashed border-[#0066cc]/30 bg-[#0066cc]/5 p-4 text-center">
             <CalendarHeart className="mx-auto text-[#0066cc]" size={22} aria-hidden="true" />
-            <p className="mt-2 text-[13px] font-bold text-[#1d1d1f]">ยังไม่มีปฏิทินวันหยุดปี {calendarYear + 543}</p>
-            <p className="mt-1 text-[11px] text-[#86868b]">จะแสดงข้อมูลเมื่อเพิ่มปฏิทินที่ยืนยันแล้ว</p>
+            <p className="mt-2 text-[13px] font-bold text-[#1d1d1f]">
+              ยังไม่มีปฏิทินวันหยุดปี {calendarYear + 543}
+            </p>
+            <p className="mt-1 text-[11px] text-[#86868b]">
+              จะแสดงข้อมูลเมื่อเพิ่มปฏิทินที่ยืนยันแล้ว
+            </p>
           </div>
         )}
 
@@ -151,7 +153,9 @@ export default function HolidayWidget({
         )}
 
         {/* ── Filter Tabs ─────────────────────────────────────────────── */}
-        <div className={`mt-4 flex items-center justify-between gap-2 ${hasCalendar ? '' : 'hidden'}`}>
+        <div
+          className={`mt-4 flex items-center justify-between gap-2 ${hasCalendar ? '' : 'hidden'}`}
+        >
           <div
             className="inline-flex rounded-full bg-[#e5e5ea] p-0.5"
             role="group"
@@ -191,7 +195,11 @@ export default function HolidayWidget({
         {/* ── Holiday List ────────────────────────────────────────────── */}
         <div
           className={`mt-4 flex flex-col gap-1.5 overflow-y-auto ${hasCalendar ? '' : 'hidden'} ${
-            width >= 3 ? 'max-h-72 grid grid-cols-1 md:grid-cols-2' : width >= 2 ? 'max-h-64' : 'max-h-48'
+            width >= 3
+              ? 'max-h-72 grid grid-cols-1 md:grid-cols-2'
+              : width >= 2
+                ? 'max-h-64'
+                : 'max-h-48'
           }`}
         >
           {displayedHolidays.map((item) => (
@@ -201,8 +209,8 @@ export default function HolidayWidget({
                 item.id === nextHoliday?.id
                   ? 'bg-[#0066cc]/[0.03] border-[#0066cc]/20 shadow-[0_2px_8px_rgba(0,102,204,0.06)]'
                   : item.isPast
-                  ? 'border-transparent opacity-60 hover:bg-[#f5f5f7]'
-                  : 'border-transparent hover:bg-[#f5f5f7]'
+                    ? 'border-transparent opacity-60 hover:bg-[#f5f5f7]'
+                    : 'border-transparent hover:bg-[#f5f5f7]'
               }`}
             >
               <div className="flex items-center gap-3 min-w-0">
@@ -212,8 +220,8 @@ export default function HolidayWidget({
                     item.id === nextHoliday?.id
                       ? 'bg-[#0066cc] text-white shadow-xs'
                       : item.isPast
-                      ? 'bg-[#e5e5ea] text-[#8e8e93]'
-                      : 'bg-[#f2f2f7] text-[#1d1d1f]'
+                        ? 'bg-[#e5e5ea] text-[#8e8e93]'
+                        : 'bg-[#f2f2f7] text-[#1d1d1f]'
                   }`}
                 >
                   <span className="text-[10px] leading-none opacity-90 mb-0.5 uppercase tracking-wider">
@@ -224,7 +232,9 @@ export default function HolidayWidget({
 
                 {/* Holiday details */}
                 <div className="min-w-0">
-                  <p className={`truncate text-[13px] font-bold ${item.id === nextHoliday?.id ? 'text-[#0066cc]' : 'text-[#1d1d1f]'}`}>
+                  <p
+                    className={`truncate text-[13px] font-bold ${item.id === nextHoliday?.id ? 'text-[#0066cc]' : 'text-[#1d1d1f]'}`}
+                  >
                     {item.title}
                   </p>
                   <p className="mt-0.5 text-[11px] text-[#86868b]">
@@ -246,11 +256,13 @@ export default function HolidayWidget({
                     <span>วันนี้</span>
                   </span>
                 ) : (
-                  <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-semibold ${
-                    item.id === nextHoliday?.id
-                      ? 'bg-[#0066cc]/10 text-[#0066cc]'
-                      : 'bg-[#f2f2f7] text-[#6e6e73]'
-                  }`}>
+                  <span
+                    className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-semibold ${
+                      item.id === nextHoliday?.id
+                        ? 'bg-[#0066cc]/10 text-[#0066cc]'
+                        : 'bg-[#f2f2f7] text-[#6e6e73]'
+                    }`}
+                  >
                     อีก {item.daysLeft} วัน
                   </span>
                 )}
@@ -262,9 +274,13 @@ export default function HolidayWidget({
 
       {/* ── Footer ─────────────────────────────────────────────────────────── */}
       <footer className="mt-3 flex items-center justify-between border-t border-black/[0.06] pt-2.5 text-[11px] text-[#86868b]">
-        <span>{hasCalendar ? `ข้อมูลวันหยุดราชการประจำปี ${calendarYear + 543}` : 'รออัปเดตปฏิทินที่ยืนยันแล้ว'}</span>
+        <span>
+          {hasCalendar
+            ? `ข้อมูลวันหยุดราชการประจำปี ${calendarYear + 543}`
+            : 'รออัปเดตปฏิทินที่ยืนยันแล้ว'}
+        </span>
         <span>{hasCalendar ? `รวมทั้งหมด ${holidaysWithDiff.length} วัน` : ''}</span>
       </footer>
     </section>
-  )
+  );
 }
