@@ -443,8 +443,6 @@ export default function ProfilePage() {
   // server-side twin in backend/app/api/dependencies.py.
   const filteredMenuItems = mainMenuConfig.filter((item) => canAccessPage(user, item.id));
 
-  const enabledMainCount = filteredMenuItems.filter((i) => i.enabled).length;
-
   // ── Render ────────────────────────────────────────────────────
 
   return (
@@ -533,14 +531,6 @@ export default function ProfilePage() {
               </div>
             </div>
           </div>
-
-          {/* Right: Quick Stats & Status */}
-          <div className="flex items-center gap-2 self-start sm:self-center border-t sm:border-t-0 border-black/[0.05] pt-3 sm:pt-0 w-full sm:w-auto justify-between sm:justify-end">
-            <div className="flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 text-[12px] font-bold text-emerald-700 ring-1 ring-emerald-600/20">
-              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-              พร้อมใช้งาน
-            </div>
-          </div>
         </div>
       </section>
 
@@ -575,15 +565,6 @@ export default function ProfilePage() {
         >
           <Sliders size={15} />
           <span>ทางลัด &amp; ปรับแต่งเมนู</span>
-          <span
-            className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
-              activeTab === 'preferences'
-                ? 'bg-[#0066cc]/10 text-[#0066cc]'
-                : 'bg-black/[0.05] text-[#6e6e73]'
-            }`}
-          >
-            {quickLinks.length + enabledMainCount}
-          </span>
         </button>
 
         {isAdmin && (
@@ -601,9 +582,6 @@ export default function ProfilePage() {
               className={activeTab === 'admin' ? 'text-purple-600' : 'text-[#86868b]'}
             />
             <span>จัดการผู้ใช้งาน</span>
-            <span className="rounded-full bg-purple-100 text-purple-700 px-2 py-0.5 text-[10px] font-bold">
-              Admin
-            </span>
           </button>
         )}
       </nav>
@@ -855,19 +833,26 @@ export default function ProfilePage() {
             transition={{ duration: 0.16, ease: 'easeOut' }}
             className="grid grid-cols-1 gap-5 lg:grid-cols-2 items-start min-h-[480px]"
           >
-            <MainMenuCard
-              items={filteredMenuItems}
-              onToggle={toggleMainMenuItem}
-              onMove={moveMainMenuItem}
-            />
+            {/* Which pages exist in the sidebar is an admin decision: hiding
+                this card keeps ordinary users from rearranging (or hiding)
+                pages while the workspace is still being built. */}
+            {isAdmin && (
+              <MainMenuCard
+                items={filteredMenuItems}
+                onToggle={toggleMainMenuItem}
+                onMove={moveMainMenuItem}
+              />
+            )}
 
-            <QuickLinksCard
-              links={quickLinks}
-              onAdd={openCreateQuickLink}
-              onEdit={openEditQuickLink}
-              onDelete={handleDeleteQuickLink}
-              onMove={handleMoveQuickLink}
-            />
+            <div className={isAdmin ? undefined : 'lg:col-span-2'}>
+              <QuickLinksCard
+                links={quickLinks}
+                onAdd={openCreateQuickLink}
+                onEdit={openEditQuickLink}
+                onDelete={handleDeleteQuickLink}
+                onMove={handleMoveQuickLink}
+              />
+            </div>
 
             <div className="lg:col-span-2">
               <BrandingCard isAdmin={isAdmin} />
