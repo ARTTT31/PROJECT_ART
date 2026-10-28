@@ -57,14 +57,21 @@ describe('BrandingContext', () => {
   });
 
   it('updates branding when updateBranding is called', async () => {
-    fetchWithAuth.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({
-        company_name: 'Super Team',
-        company_tagline: 'Custom Tagline',
-        brand_logo_url: '',
-      }),
-    });
+    // The provider also asks for this account's personal workspace branding on
+    // mount; answer that with "signed out" and the save call with the new values.
+    fetchWithAuth.mockImplementation(async (path: string) =>
+      String(path).includes('workspace-branding')
+        ? { ok: false, status: 401, json: async () => ({}) }
+        : {
+            ok: true,
+            status: 200,
+            json: async () => ({
+              company_name: 'Super Team',
+              company_tagline: 'Custom Tagline',
+              brand_logo_url: '',
+            }),
+          },
+    );
 
     render(
       <BrandingProvider>

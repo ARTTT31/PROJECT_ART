@@ -23,6 +23,7 @@ import { showDeleteConfirm, showToast, showSuccess, showError } from '@/utils/sw
 import { canAccessPage } from '@/utils/accessiblePages';
 import { useAuth } from '@/hooks/useAuth';
 import UserManagement from '@/components/Admin/UserManagement';
+import { RegistrationPolicyCard } from '@/components/Admin/RegistrationPolicyCard';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
 import { InsetField, SectionCard } from '@/components/Profile/SectionCard';
 import { MainMenuCard } from '@/components/Profile/MainMenuCard';
@@ -855,7 +856,7 @@ export default function ProfilePage() {
             </div>
 
             <div className="lg:col-span-2">
-              <BrandingCard isAdmin={isAdmin} />
+              <BrandingCard />
             </div>
           </motion.div>
         )}
@@ -872,6 +873,12 @@ export default function ProfilePage() {
             transition={{ duration: 0.16, ease: 'easeOut' }}
             className="space-y-4 min-h-[600px]"
           >
+            <RegistrationPolicyCard />
+
+            {/* The sign-in page and every account default show the workspace
+                branding; personal overrides live on the profile tab. */}
+            <BrandingCard scope="workspace" />
+
             {/* User Management Component */}
             <UserManagement />
           </motion.div>

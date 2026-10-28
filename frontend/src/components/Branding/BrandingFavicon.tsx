@@ -26,7 +26,11 @@ export function BrandingFavicon() {
   useEffect(() => {
     if (!brandLogoUrl) return;
 
-    const href = `/branding-icon?size=192&v=${iconVersion(brandLogoUrl)}`;
+    // A personal logo is stored as a data URL on the account, so it can be used
+    // directly; the workspace logo goes through the icon route.
+    const href = brandLogoUrl.startsWith('data:')
+      ? brandLogoUrl
+      : `/branding-icon?size=192&v=${iconVersion(brandLogoUrl)}`;
     // `rel="shortcut icon"` is one token with a space, so it needs its own
     // selector; a plain `rel="shortcut"` link would be a different (invalid) rel.
     const selectors = [

@@ -6,6 +6,8 @@ from typing import Literal, Optional
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
+from app.core.brand_logo import clean_logo_value
+
 
 class UserBase(BaseModel):
     """Base user schema"""
@@ -149,6 +151,33 @@ class UserCameraConfigUpdate(BaseModel):
     """Schema for updating user camera configuration"""
 
     camera_config: str = Field(..., min_length=0, max_length=100_000)
+
+
+class WorkspaceBrandingUpdate(BaseModel):
+    """Per-user workspace branding (name / tagline / logo).
+
+    Omitted fields are left untouched; an empty string clears the override so
+    the account falls back to the workspace-wide branding. No ``role`` or other
+    authorization field: this only personalises what the sidebar shows.
+    """
+
+    workspace_name: Optional[str] = Field(None, max_length=100)
+    workspace_tagline: Optional[str] = Field(None, max_length=200)
+    # Same cap as the global logo: a 256px WebP data URL is tens of KB.
+    workspace_logo: Optional[str] = Field(None, max_length=400_000)
+
+    @field_validator("workspace_logo")
+    @classmethod
+    def validate_logo(cls, value: Optional[str]) -> Optional[str]:
+        return clean_logo_value(value)
+
+
+class WorkspaceBrandingResponse(BaseModel):
+    """What an account personalised; empty means "use the workspace value"."""
+
+    workspace_name: Optional[str] = ""
+    workspace_tagline: Optional[str] = ""
+    workspace_logo: Optional[str] = ""
 
 
 class UserPasswordChange(BaseModel):

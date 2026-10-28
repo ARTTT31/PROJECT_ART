@@ -10,17 +10,37 @@ export interface BrandingInfo {
   registration_mode?: string;
 }
 
+/** What one account personalised; empty means "use the workspace value". */
+export interface WorkspaceBrandingInfo {
+  name: string;
+  tagline: string;
+  logo: string;
+}
+
 interface BrandingContextValue {
+  /** Effective values for this account: personal override, else workspace. */
   companyName: string;
   companyTagline: string;
   brandLogoUrl: string;
   registrationMode: string;
+  /** The raw personal overrides (empty when the account uses the defaults). */
+  workspaceName: string;
+  workspaceTagline: string;
+  workspaceLogo: string;
   isLoading: boolean;
   refreshBranding: () => Promise<void>;
   updateBranding: (
     branding: Partial<BrandingInfo>,
   ) => Promise<{ success: boolean; error?: string }>;
   uploadBrandLogo: (file: File) => Promise<{ success: boolean; error?: string }>;
+  updateWorkspaceBranding: (
+    branding: Partial<{
+      workspace_name: string;
+      workspace_tagline: string;
+      workspace_logo: string;
+    }>,
+  ) => Promise<{ success: boolean; error?: string }>;
+  uploadWorkspaceLogo: (file: File) => Promise<{ success: boolean; error?: string }>;
 }
 
 const DEFAULT_BRANDING: BrandingInfo = {
@@ -30,6 +50,8 @@ const DEFAULT_BRANDING: BrandingInfo = {
   registration_mode: 'approval',
 };
 
+const EMPTY_PERSONAL: WorkspaceBrandingInfo = { name: '', tagline: '', logo: '' };
+
 const STORAGE_KEY = 'art_workspace_branding';
 
 const BrandingContext = createContext<BrandingContextValue>({
@@ -37,10 +59,15 @@ const BrandingContext = createContext<BrandingContextValue>({
   companyTagline: DEFAULT_BRANDING.company_tagline,
   brandLogoUrl: DEFAULT_BRANDING.brand_logo_url || '',
   registrationMode: DEFAULT_BRANDING.registration_mode || 'approval',
+  workspaceName: '',
+  workspaceTagline: '',
+  workspaceLogo: '',
   isLoading: false,
   refreshBranding: async () => {},
   updateBranding: async () => ({ success: false }),
   uploadBrandLogo: async () => ({ success: false }),
+  updateWorkspaceBranding: async () => ({ success: false }),
+  uploadWorkspaceLogo: async () => ({ success: false }),
 });
 
 /** Normalise an API payload into the context shape (missing fields → defaults). */
@@ -50,6 +77,19 @@ function toBrandingInfo(data: Partial<BrandingInfo> | null | undefined): Brandin
     company_tagline: data?.company_tagline ?? DEFAULT_BRANDING.company_tagline,
     brand_logo_url: data?.brand_logo_url || '',
     registration_mode: data?.registration_mode || 'approval',
+  };
+}
+
+function toWorkspaceBranding(data: unknown): WorkspaceBrandingInfo {
+  const payload = (data ?? {}) as {
+    workspace_name?: string;
+    workspace_tagline?: string;
+    workspace_logo?: string;
+  };
+  return {
+    name: payload.workspace_name || '',
+    tagline: payload.workspace_tagline || '',
+    logo: payload.workspace_logo || '',
   };
 }
 
@@ -65,6 +105,7 @@ export function BrandingProvider({ children }: { children: React.ReactNode }) {
     return DEFAULT_BRANDING;
   });
 
+  const [personal, setPersonal] = useState<WorkspaceBrandingInfo>(EMPTY_PERSONAL);
   const [isLoading, setIsLoading] = useState(false);
 
   const apiBaseUrl = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '');
@@ -93,6 +134,38 @@ export function BrandingProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     refreshBranding();
   }, [refreshBranding]);
+
+  /**
+   * The signed-in account's own overrides. They live on the user row, so a
+   * 401 (signed out) simply clears them and the workspace values show through.
+   */
+  const refreshWorkspaceBranding = useCallback(async () => {
+    try {
+      const res = await fetchWithAuth('/api/v1/profile/workspace-branding');
+      if (res.status === 401) {
+        setPersonal(EMPTY_PERSONAL);
+        return;
+      }
+      if (!res.ok) return;
+      setPersonal(toWorkspaceBranding(await res.json()));
+    } catch {
+      // keep whatever we already show
+    }
+  }, []);
+
+  useEffect(() => {
+    void refreshWorkspaceBranding();
+
+    const handleAuthChange = () => {
+      void refreshWorkspaceBranding();
+    };
+    window.addEventListener('auth-login', handleAuthChange);
+    window.addEventListener('auth-logout', handleAuthChange);
+    return () => {
+      window.removeEventListener('auth-login', handleAuthChange);
+      window.removeEventListener('auth-logout', handleAuthChange);
+    };
+  }, [refreshWorkspaceBranding]);
 
   const uploadBrandLogo = useCallback(
     async (file: File): Promise<{ success: boolean; error?: string }> => {
@@ -163,20 +236,93 @@ export function BrandingProvider({ children }: { children: React.ReactNode }) {
     [applyBranding, branding.company_name, branding.company_tagline, branding.registration_mode],
   );
 
+  const updateWorkspaceBranding = useCallback(
+    async (
+      values: Partial<{
+        workspace_name: string;
+        workspace_tagline: string;
+        workspace_logo: string;
+      }>,
+    ): Promise<{ success: boolean; error?: string }> => {
+      setIsLoading(true);
+      try {
+        const res = await fetchWithAuth('/api/v1/profile/workspace-branding', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(values),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          const msg = data?.detail || data?.message || 'ไม่สามารถบันทึกข้อมูลของคุณได้';
+          return { success: false, error: typeof msg === 'string' ? msg : JSON.stringify(msg) };
+        }
+        setPersonal(toWorkspaceBranding(data));
+        return { success: true };
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : 'เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์';
+        return { success: false, error: msg };
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [],
+  );
+
+  const uploadWorkspaceLogo = useCallback(
+    async (file: File): Promise<{ success: boolean; error?: string }> => {
+      setIsLoading(true);
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        const res = await fetchWithAuth('/api/v1/profile/workspace-branding/logo', {
+          method: 'POST',
+          body: formData,
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          const msg = data?.detail || data?.message || 'ไม่สามารถอัปโหลดโลโก้ได้';
+          return { success: false, error: typeof msg === 'string' ? msg : JSON.stringify(msg) };
+        }
+        setPersonal(toWorkspaceBranding(data));
+        return { success: true };
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : 'เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์';
+        return { success: false, error: msg };
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [],
+  );
+
   // A stable value keeps every consumer (sidebar, login, register, profile)
   // from re-rendering whenever something above them re-renders.
   const value = useMemo<BrandingContextValue>(
     () => ({
-      companyName: branding.company_name,
-      companyTagline: branding.company_tagline,
-      brandLogoUrl: branding.brand_logo_url || '',
+      companyName: personal.name || branding.company_name,
+      companyTagline: personal.tagline || branding.company_tagline,
+      brandLogoUrl: personal.logo || branding.brand_logo_url || '',
       registrationMode: branding.registration_mode || 'approval',
+      workspaceName: personal.name,
+      workspaceTagline: personal.tagline,
+      workspaceLogo: personal.logo,
       isLoading,
       refreshBranding,
       updateBranding,
       uploadBrandLogo,
+      updateWorkspaceBranding,
+      uploadWorkspaceLogo,
     }),
-    [branding, isLoading, refreshBranding, updateBranding, uploadBrandLogo],
+    [
+      personal,
+      branding,
+      isLoading,
+      refreshBranding,
+      updateBranding,
+      uploadBrandLogo,
+      updateWorkspaceBranding,
+      uploadWorkspaceLogo,
+    ],
   );
 
   return <BrandingContext.Provider value={value}>{children}</BrandingContext.Provider>;

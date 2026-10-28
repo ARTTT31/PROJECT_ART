@@ -23,6 +23,15 @@ from app.schemas.user import (
     UserQuickLinksUpdate,
     UserDashboardLayoutUpdate,
     UserCameraConfigUpdate,
+    WorkspaceBrandingUpdate,
+    WorkspaceBrandingResponse,
+)
+from app.core.brand_logo import (
+    LOGO_ALLOWED_EXTENSIONS,
+    LOGO_SUPPORTED_HINT,
+    logo_data_url,
+    normalise_logo_image,
+    validate_logo_content,
 )
 from app.schemas.response import ResponseModel
 from app.services.user_service import UserService, retention_days
@@ -700,3 +709,100 @@ async def delete_my_account(
     for cookie_name in ("access_token", "refresh_token", "user", "csrf_token"):
         response.delete_cookie(cookie_name, **cookie_opts)
     return response
+
+
+# ── Per-user workspace branding ──────────────────────────────────────────────
+# The workspace name/tagline/logo used to be one global setting an admin owned.
+# Each account can now personalise its own sidebar; an empty value means "use
+# the workspace-wide branding", which is what an account that never touched
+# these fields keeps (the columns are NULL).
+
+
+def _workspace_branding_response(user: User) -> WorkspaceBrandingResponse:
+    return WorkspaceBrandingResponse(
+        workspace_name=user.workspace_name or "",
+        workspace_tagline=user.workspace_tagline or "",
+        workspace_logo=user.workspace_logo or "",
+    )
+
+
+@router.get("/workspace-branding", response_model=WorkspaceBrandingResponse)
+@limiter.limit(_GENERAL_LIMIT)
+async def get_workspace_branding(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """The current account's own workspace name / tagline / logo overrides."""
+    # ``workspace_logo`` is a deferred payload column (see PROFILE_COLUMNS), so
+    # it is re-selected here just like the avatar.
+    user = await load_profile_columns(db, current_user, "workspace_logo")
+    return _workspace_branding_response(user)
+
+
+@router.put("/workspace-branding", response_model=WorkspaceBrandingResponse)
+@limiter.limit(_GENERAL_LIMIT)
+async def update_workspace_branding(
+    payload: WorkspaceBrandingUpdate,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Personalise the workspace name / tagline shown to this account.
+
+    Only the fields present in the request are touched, and an empty string
+    clears the override instead of storing an empty name.
+    """
+    supplied = payload.model_fields_set
+    if "workspace_name" in supplied:
+        current_user.workspace_name = (payload.workspace_name or "").strip() or None
+    if "workspace_tagline" in supplied:
+        current_user.workspace_tagline = (payload.workspace_tagline or "").strip() or None
+    if "workspace_logo" in supplied:
+        current_user.workspace_logo = (payload.workspace_logo or "").strip() or None
+
+    await db.commit()
+    return _workspace_branding_response(current_user)
+
+
+@router.post("/workspace-branding/logo", response_model=WorkspaceBrandingResponse)
+@limiter.limit(_UPLOAD_LIMIT)
+async def upload_workspace_logo(
+    request: Request,
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Upload this account's own workspace logo.
+
+    Same guarantees as the global logo: bounded size, magic-byte sniffing, then
+    a downscale/re-encode to a square WebP data URL.
+    """
+    ext = os.path.splitext(file.filename or "")[1].lower()
+    if ext not in LOGO_ALLOWED_EXTENSIONS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=LOGO_SUPPORTED_HINT,
+        )
+
+    contents = await file.read(AVATAR_MAX_BYTES + 1)
+    if len(contents) > AVATAR_MAX_BYTES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="ขนาดไฟล์รูปภาพห้ามเกิน 1MB",
+        )
+
+    validate_logo_content(
+        contents, (file.content_type or "").split(";")[0].strip().lower()
+    )
+    current_user.workspace_logo = logo_data_url(normalise_logo_image(contents))
+
+    await AuditService(db).log_action(
+        action="UPLOAD_WORKSPACE_LOGO",
+        user_id=current_user.id,
+        details="User uploaded their own workspace logo",
+        ip_address=get_real_client_ip(request),
+        user_agent=request.headers.get("user-agent"),
+    )
+    await db.commit()
+    return _workspace_branding_response(current_user)

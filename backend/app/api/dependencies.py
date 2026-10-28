@@ -23,7 +23,14 @@ security = HTTPBearer(auto_error=False)
 # that serve them must re-select them first: reading a deferred column that was
 # never loaded raises MissingGreenlet in async SQLAlchemy (the implicit lazy
 # load cannot run outside a greenlet context).
-PROFILE_COLUMNS = ("avatar", "quick_links", "dashboard_layout", "camera_config")
+PROFILE_COLUMNS = (
+    "avatar",
+    "quick_links",
+    "dashboard_layout",
+    "camera_config",
+    # Holds a data URL (up to ~40KB) like avatar, so it stays deferred too.
+    "workspace_logo",
+)
 
 # ── Page-level access (users.accessible_pages) ───────────────────────────
 # The sidebar hides the pages an account may not open, but hiding a menu item is

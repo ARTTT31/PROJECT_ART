@@ -25,6 +25,12 @@ class User(Base, TimestampMixin):
     avatar: Mapped[str | None] = mapped_column(Text)  # Base64 or URL
     role: Mapped[str] = mapped_column(String(50), default="user")  # user, admin
 
+    # Per-user workspace branding. NULL means "use the workspace-wide value from
+    # system_settings", so these only ever hold what this account changed.
+    workspace_name: Mapped[str | None] = mapped_column(String(100))
+    workspace_tagline: Mapped[str | None] = mapped_column(String(200))
+    workspace_logo: Mapped[str | None] = mapped_column(Text)
+
     # Quick links (JSON stored as text)
     quick_links: Mapped[str | None] = mapped_column(Text)
 
