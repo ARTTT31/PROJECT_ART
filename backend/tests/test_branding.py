@@ -1,5 +1,6 @@
 """Tests for Company/Team Branding endpoints in system.py"""
 
+import base64
 import io
 
 import pytest
@@ -201,3 +202,22 @@ async def test_brand_logo_upload_rejects_non_image(client, logged_in_admin_user)
         headers=await _csrf_header(client),
     )
     assert resp.status_code == 400, resp.text
+
+
+@pytest.mark.asyncio
+async def test_brand_logo_keeps_transparent_background(client, logged_in_admin_user):
+    """A transparent PNG logo must not be flattened to a black square."""
+    buffer = io.BytesIO()
+    Image.new("RGBA", (64, 64), (0, 0, 0, 0)).save(buffer, format="PNG")
+
+    resp = await client.post(
+        "/api/v1/system/branding/logo",
+        files={"file": ("logo.png", buffer.getvalue(), "image/png")},
+        headers=await _csrf_header(client),
+    )
+    assert resp.status_code == 200, resp.text
+
+    encoded = resp.json()["brand_logo_url"].split(",", 1)[1]
+    with Image.open(io.BytesIO(base64.b64decode(encoded))) as stored:
+        assert stored.mode in ("RGBA", "LA"), stored.mode
+        assert stored.convert("RGBA").getpixel((0, 0))[3] == 0

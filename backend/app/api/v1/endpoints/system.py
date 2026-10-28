@@ -3,23 +3,22 @@ System Health & Settings API
 """
 
 import base64
+import io
 import logging
 import os
 import time
+import warnings
 from typing import Optional
 
 import psutil
+from PIL import Image, ImageOps
 from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
 from pydantic import BaseModel
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_current_admin_user
-from app.api.v1.endpoints.profile import (
-    AVATAR_MAX_BYTES,
-    _normalise_avatar_image,
-    _validate_avatar_content,
-)
+from app.api.v1.endpoints.profile import AVATAR_MAX_BYTES, _validate_avatar_content
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.rate_limit import get_real_client_ip, limiter
@@ -38,11 +37,53 @@ _UPLOAD_LIMIT = f"{settings.RATE_LIMIT_UPLOAD_PER_MINUTE}/minute"
 
 BRANDING_KEYS = ["company_name", "company_tagline", "brand_logo_url", "registration_mode"]
 
+# A workspace logo is rendered at 34px in the sidebar, so 256px is plenty even
+# on a 4x display. Slightly higher quality than avatars: logos are usually flat
+# colour and line art, where compression artefacts are easy to see.
+LOGO_MAX_DIMENSION = 256
+LOGO_WEBP_QUALITY = 88
+
 
 def _logo_data_url(webp_bytes: bytes) -> str:
     """Wrap normalised WebP bytes as a data URL (what the UI renders)."""
     encoded = base64.b64encode(webp_bytes).decode("utf-8")
     return f"data:image/webp;base64,{encoded}"
+
+
+def _normalise_logo_image(data: bytes) -> bytes:
+    """Downscale an uploaded logo to a bounded WebP, keeping transparency.
+
+    This deliberately does not reuse the avatar normaliser: that one flattens
+    every image to RGB because a photo never needs alpha, which turned a
+    transparent PNG logo into a black square in the sidebar. Logos keep their
+    alpha channel here, while the size ceiling and re-encode guarantees are the
+    same.
+    """
+    try:
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", Image.DecompressionBombWarning)
+            with Image.open(io.BytesIO(data)) as source:
+                image = ImageOps.exif_transpose(source)
+                has_alpha = image.mode in ("RGBA", "LA", "PA") or (
+                    image.mode == "P" and "transparency" in image.info
+                )
+                image = image.convert("RGBA" if has_alpha else "RGB")
+                image.thumbnail((LOGO_MAX_DIMENSION, LOGO_MAX_DIMENSION))
+                buffer = io.BytesIO()
+                image.save(buffer, format="WEBP", quality=LOGO_WEBP_QUALITY)
+        return buffer.getvalue()
+    except (Image.DecompressionBombError, Image.DecompressionBombWarning):
+        logger.warning("brand logo refused: image exceeds the pixel ceiling")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="รูปภาพมีขนาดพิกเซลใหญ่เกินไป กรุณาใช้รูปภาพที่เล็กลง",
+        )
+    except Exception:
+        logger.warning("brand logo could not be decoded", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="ไม่สามารถประมวลผลไฟล์รูปภาพได้ กรุณาใช้ไฟล์ JPEG, PNG หรือ GIF ที่ถูกต้อง",
+        )
 
 
 async def _branding_response(db: AsyncSession) -> BrandingResponse:
@@ -221,7 +262,7 @@ async def upload_branding_logo(
     _validate_avatar_content(
         contents, (file.content_type or "").split(";")[0].strip().lower()
     )
-    logo_data_url = _logo_data_url(_normalise_avatar_image(contents))
+    logo_data_url = _logo_data_url(_normalise_logo_image(contents))
 
     current_time = utcnow()
     setting = await db.get(SystemSetting, "brand_logo_url")
