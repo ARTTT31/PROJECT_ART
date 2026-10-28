@@ -13,12 +13,13 @@ from typing import Optional
 import psutil
 from PIL import Image, ImageOps
 from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
+from fastapi.responses import RedirectResponse, Response
 from pydantic import BaseModel
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_current_admin_user
-from app.api.v1.endpoints.profile import AVATAR_MAX_BYTES, _validate_avatar_content
+from app.api.v1.endpoints.profile import AVATAR_MAX_BYTES
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.rate_limit import get_real_client_ip, limiter
@@ -43,6 +44,14 @@ BRANDING_KEYS = ["company_name", "company_tagline", "brand_logo_url", "registrat
 LOGO_MAX_DIMENSION = 256
 LOGO_WEBP_QUALITY = 88
 
+# Sizes that a favicon / apple-touch-icon / PWA manifest may ask for.
+LOGO_ICON_MIN_SIZE = 32
+LOGO_ICON_MAX_SIZE = 512
+
+_ALLOWED_LOGO_MIMES = {"image/jpeg", "image/png", "image/gif", "image/webp"}
+LOGO_ALLOWED_EXTENSIONS = [".jpg", ".jpeg", ".png", ".gif", ".webp"]
+LOGO_SUPPORTED_HINT = "รองรับเฉพาะไฟล์รูปภาพ JPEG, PNG, GIF หรือ WebP เท่านั้น (ไม่รองรับ SVG)"
+
 
 def _logo_data_url(webp_bytes: bytes) -> str:
     """Wrap normalised WebP bytes as a data URL (what the UI renders)."""
@@ -50,14 +59,50 @@ def _logo_data_url(webp_bytes: bytes) -> str:
     return f"data:image/webp;base64,{encoded}"
 
 
+def _validate_logo_content(data: bytes, declared_mime: str) -> str:
+    """Sniff the real image type of an uploaded logo from its magic bytes.
+
+    SVG is deliberately absent: it is an XML document that can carry script, so
+    it is refused with an explicit message instead of being fed to Pillow.
+    """
+    if data.startswith(b"\xff\xd8\xff"):
+        sniffed = "image/jpeg"
+    elif data.startswith(b"\x89PNG\r\n\x1a\n"):
+        sniffed = "image/png"
+    elif data[:6] in (b"GIF87a", b"GIF89a"):
+        sniffed = "image/gif"
+    elif data[:4] == b"RIFF" and data[8:12] == b"WEBP":
+        sniffed = "image/webp"
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=LOGO_SUPPORTED_HINT,
+        )
+
+    if declared_mime and declared_mime not in _ALLOWED_LOGO_MIMES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Content-Type ของไฟล์ไม่อยู่ในประเภทที่รองรับ",
+        )
+
+    # The declared type is only a hint; the sniffed value wins, and a mismatch
+    # (payload.html renamed to payload.png) is refused.
+    if declared_mime and sniffed != declared_mime and declared_mime in _ALLOWED_LOGO_MIMES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="เนื้อหาไฟล์ไม่ตรงกับประเภทที่ประกาศ",
+        )
+    return sniffed
+
+
 def _normalise_logo_image(data: bytes) -> bytes:
-    """Downscale an uploaded logo to a bounded WebP, keeping transparency.
+    """Downscale an uploaded logo to a bounded, square WebP.
 
     This deliberately does not reuse the avatar normaliser: that one flattens
     every image to RGB because a photo never needs alpha, which turned a
     transparent PNG logo into a black square in the sidebar. Logos keep their
-    alpha channel here, while the size ceiling and re-encode guarantees are the
-    same.
+    alpha channel here, and they are padded to a square so the same image can
+    serve the sidebar (34px), the browser favicon and the PWA icon.
     """
     try:
         with warnings.catch_warnings():
@@ -69,6 +114,16 @@ def _normalise_logo_image(data: bytes) -> bytes:
                 )
                 image = image.convert("RGBA" if has_alpha else "RGB")
                 image.thumbnail((LOGO_MAX_DIMENSION, LOGO_MAX_DIMENSION))
+
+                if image.width != image.height:
+                    side = max(image.width, image.height)
+                    background = (0, 0, 0, 0) if has_alpha else (255, 255, 255)
+                    canvas = Image.new(image.mode, (side, side), background)
+                    canvas.paste(
+                        image, ((side - image.width) // 2, (side - image.height) // 2)
+                    )
+                    image = canvas
+
                 buffer = io.BytesIO()
                 image.save(buffer, format="WEBP", quality=LOGO_WEBP_QUALITY)
         return buffer.getvalue()
@@ -82,7 +137,7 @@ def _normalise_logo_image(data: bytes) -> bytes:
         logger.warning("brand logo could not be decoded", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="ไม่สามารถประมวลผลไฟล์รูปภาพได้ กรุณาใช้ไฟล์ JPEG, PNG หรือ GIF ที่ถูกต้อง",
+            detail="ไม่สามารถประมวลผลไฟล์รูปภาพได้ กรุณาใช้ไฟล์ JPEG, PNG, GIF หรือ WebP ที่ถูกต้อง",
         )
 
 
@@ -151,22 +206,11 @@ async def get_system_health(
 
 @router.get("/branding", response_model=BrandingResponse)
 async def get_branding(db: AsyncSession = Depends(get_db)):
-    """Public endpoint to get current workspace / team branding & settings"""
-    stmt = select(SystemSetting).where(
-        SystemSetting.key.in_(["company_name", "company_tagline", "brand_logo_url", "registration_mode"])
-    )
-    result = await db.execute(stmt)
-    settings_map = {s.key: s.value for s in result.scalars().all()}
-    # Resolve the policy the same way /auth/registration-mode does. Reporting a
-    # separate default here is what let the login page advertise an approval
-    # flow that the registration endpoint then refused as "closed".
-    effective_mode = await get_effective_registration_mode(db)
-    return BrandingResponse(
-        company_name=settings_map.get("company_name") or "ART Workspace",
-        company_tagline=settings_map.get("company_tagline") or "จัดการวันทำงานของคุณให้ง่ายขึ้น",
-        brand_logo_url=settings_map.get("brand_logo_url") or "",
-        registration_mode=effective_mode,
-    )
+    """Public endpoint to get current workspace / team branding & settings."""
+    # The registration policy is resolved through the shared resolver (see
+    # _branding_response): reporting a separate default here is what let the
+    # login page advertise an approval flow that the register endpoint refused.
+    return await _branding_response(db)
 
 
 @router.put("/branding", response_model=BrandingResponse)
@@ -179,17 +223,19 @@ async def update_branding(
     """Admin-only endpoint to update company / team branding and registration policy"""
     company_name = payload.company_name.strip()
     company_tagline = (payload.company_tagline or "").strip()
-    brand_logo_url = (payload.brand_logo_url or "").strip()
 
     updates = {
         "company_name": company_name,
         "company_tagline": company_tagline,
-        "brand_logo_url": brand_logo_url,
     }
+    # A missing logo field means "leave it alone". Treating it as "" wiped the
+    # uploaded logo every time the admin saved the name or the tagline.
+    if "brand_logo_url" in payload.model_fields_set:
+        updates["brand_logo_url"] = (payload.brand_logo_url or "").strip()
     if payload.registration_mode:
         if payload.registration_mode not in ("closed", "approval", "open"):
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail="โหมดการรับสมัครสมาชิกต้องเป็น closed, approval หรือ open",
             )
         updates["registration_mode"] = payload.registration_mode
@@ -218,13 +264,55 @@ async def update_branding(
     )
     await db.commit()
 
-    # Read the policy back through the shared resolver: when this request did
-    # not change it, the answer must still describe what is actually enforced.
-    return BrandingResponse(
-        company_name=company_name,
-        company_tagline=company_tagline,
-        brand_logo_url=brand_logo_url,
-        registration_mode=await get_effective_registration_mode(db),
+    # Read everything back through the shared resolver: when this request did
+    # not change the logo or the policy, the answer must still describe what is
+    # actually stored and enforced.
+    return await _branding_response(db)
+
+
+@router.get("/branding/logo.png")
+async def get_branding_logo_icon(
+    size: int = 192,
+    db: AsyncSession = Depends(get_db),
+):
+    """Serve the workspace logo as a real PNG.
+
+    A web app manifest cannot point at a ``data:`` URL, so the favicon and PWA
+    icons need an actual image response. The stored logo is always a normalised
+    square WebP, which is re-encoded to PNG here (and resized on demand) so the
+    browser gets a format every platform accepts.
+    """
+    setting = await db.get(SystemSetting, "brand_logo_url")
+    stored = (setting.value or "") if setting else ""
+    if not stored:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="ยังไม่ได้ตั้งค่าโลโก้ของทีม"
+        )
+
+    # An admin may have pasted an https:// logo instead of uploading one; the
+    # browser can fetch that directly, so no proxy (and no SSRF surface) here.
+    if not stored.startswith("data:image/"):
+        return RedirectResponse(url=stored, status_code=status.HTTP_307_TEMPORARY_REDIRECT)
+
+    target = max(LOGO_ICON_MIN_SIZE, min(size, LOGO_ICON_MAX_SIZE))
+    try:
+        encoded = stored.split(",", 1)[1]
+        with Image.open(io.BytesIO(base64.b64decode(encoded))) as source:
+            image = source.convert("RGBA")
+            image.thumbnail((target, target))
+            buffer = io.BytesIO()
+            image.save(buffer, format="PNG", optimize=True)
+    except Exception:
+        logger.warning("stored brand logo could not be rendered as png", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="โลโก้ที่บันทึกไว้ไม่สามารถแสดงผลได้",
+        )
+
+    return Response(
+        content=buffer.getvalue(),
+        media_type="image/png",
+        headers={"Cache-Control": "public, max-age=300"},
     )
 
 
@@ -244,10 +332,10 @@ async def upload_branding_logo(
     ``system_settings`` as a data URL. Client bytes never reach the DB.
     """
     ext = os.path.splitext(file.filename or "")[1].lower()
-    if ext not in [".jpg", ".jpeg", ".png", ".gif"]:
+    if ext not in LOGO_ALLOWED_EXTENSIONS:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="รองรับเฉพาะไฟล์รูปภาพ (jpg, jpeg, png, gif)",
+            detail=LOGO_SUPPORTED_HINT,
         )
 
     # Bounded read: one byte past the cap is enough to reject an oversized file
@@ -259,7 +347,7 @@ async def upload_branding_logo(
             detail="ขนาดไฟล์รูปภาพห้ามเกิน 1MB",
         )
 
-    _validate_avatar_content(
+    _validate_logo_content(
         contents, (file.content_type or "").split(";")[0].strip().lower()
     )
     logo_data_url = _logo_data_url(_normalise_logo_image(contents))

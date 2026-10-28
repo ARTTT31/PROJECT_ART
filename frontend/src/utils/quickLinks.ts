@@ -1,6 +1,6 @@
-'use client'
+'use client';
 
-import type { LucideIcon } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react';
 import {
   Bookmark,
   Briefcase,
@@ -41,7 +41,7 @@ import {
   TrendingUp,
   Wifi,
   Wrench,
-} from 'lucide-react'
+} from 'lucide-react';
 
 export type QuickLinkIconKey =
   | 'link'
@@ -82,14 +82,14 @@ export type QuickLinkIconKey =
   | 'target'
   | 'trending'
   | 'wifi'
-  | 'wrench'
+  | 'wrench';
 
 export interface QuickLink {
-  id: string
-  label: string
-  url: string
-  icon: QuickLinkIconKey
-  color?: string
+  id: string;
+  label: string;
+  url: string;
+  icon: QuickLinkIconKey;
+  color?: string;
 }
 
 export const QUICK_LINK_ICON_MAP: Record<QuickLinkIconKey, LucideIcon> = {
@@ -132,7 +132,7 @@ export const QUICK_LINK_ICON_MAP: Record<QuickLinkIconKey, LucideIcon> = {
   trending: TrendingUp,
   wifi: Wifi,
   wrench: Wrench,
-}
+};
 
 export const QUICK_LINK_ICON_OPTIONS: Array<{ key: QuickLinkIconKey; label: string }> = [
   { key: 'link', label: 'ลิงก์' },
@@ -174,49 +174,71 @@ export const QUICK_LINK_ICON_OPTIONS: Array<{ key: QuickLinkIconKey; label: stri
   { key: 'trending', label: 'แนวโน้ม' },
   { key: 'wifi', label: 'ไวไฟ' },
   { key: 'wrench', label: 'ประแจ' },
-]
+];
 
 export function isExternalUrl(url: string) {
-  return /^https?:\/\//i.test(url)
+  return /^https?:\/\//i.test(url);
+}
+
+/**
+ * Human-readable summary of a quick link's destination, used by the settings
+ * card and the create/edit dialog so both describe a link the same way.
+ */
+export function describeQuickLink(url: string) {
+  const value = url.trim();
+  if (!value) {
+    return { tone: 'ยังไม่ระบุ', title: 'รอระบุปลายทาง', subtitle: 'ลิงก์นี้จะแสดงใน Sidebar' };
+  }
+  if (isExternalUrl(value)) {
+    try {
+      const parsed = new URL(value);
+      return {
+        tone: 'ภายนอก',
+        title: parsed.hostname.replace(/^www\./, '') || value,
+        subtitle: parsed.pathname && parsed.pathname !== '/' ? parsed.pathname : 'ลิงก์ภายนอก',
+      };
+    } catch {
+      return { tone: 'ภายนอก', title: value, subtitle: 'ลิงก์ภายนอก' };
+    }
+  }
+  return { tone: 'ภายใน', title: 'เส้นทางภายในระบบ', subtitle: value };
 }
 
 function normalizeQuickLink(input: any): QuickLink | null {
-  if (!input || typeof input !== 'object') return null
+  if (!input || typeof input !== 'object') return null;
 
-  const id = typeof input.id === 'string' && input.id.trim() ? input.id.trim() : null
-  const label = typeof input.label === 'string' ? input.label.trim() : ''
-  const url = typeof input.url === 'string' ? input.url.trim() : ''
-  const icon = (typeof input.icon === 'string' ? input.icon : '') as QuickLinkIconKey
-  const color = typeof input.color === 'string' ? input.color.trim() : undefined
+  const id = typeof input.id === 'string' && input.id.trim() ? input.id.trim() : null;
+  const label = typeof input.label === 'string' ? input.label.trim() : '';
+  const url = typeof input.url === 'string' ? input.url.trim() : '';
+  const icon = (typeof input.icon === 'string' ? input.icon : '') as QuickLinkIconKey;
+  const color = typeof input.color === 'string' ? input.color.trim() : undefined;
 
-  if (!label || !url) return null
-  if (!Object.prototype.hasOwnProperty.call(QUICK_LINK_ICON_MAP, icon)) return null
+  if (!label || !url) return null;
+  if (!Object.prototype.hasOwnProperty.call(QUICK_LINK_ICON_MAP, icon)) return null;
 
   // ถ้าไม่มี id ให้สร้างแบบเบื้องต้น (ไว้ key ใน React)
   const safeId =
     id ??
     (typeof crypto !== 'undefined' && 'randomUUID' in crypto
       ? crypto.randomUUID()
-      : `ql_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`)
+      : `ql_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`);
 
-  return { id: safeId, label, url, icon, color }
+  return { id: safeId, label, url, icon, color };
 }
 
 export function parseQuickLinks(raw: string | null | undefined): QuickLink[] {
-  if (!raw) return []
+  if (!raw) return [];
   try {
-    const parsed = JSON.parse(raw)
-    if (!Array.isArray(parsed)) return []
-    return parsed.map(normalizeQuickLink).filter(Boolean) as QuickLink[]
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.map(normalizeQuickLink).filter(Boolean) as QuickLink[];
   } catch {
-    return []
+    return [];
   }
 }
 
 export function serializeQuickLinks(links: QuickLink[]) {
   // กันข้อมูลแปลก ๆ
-  const cleaned = links
-    .map((l) => normalizeQuickLink(l))
-    .filter(Boolean) as QuickLink[]
-  return JSON.stringify(cleaned)
+  const cleaned = links.map((l) => normalizeQuickLink(l)).filter(Boolean) as QuickLink[];
+  return JSON.stringify(cleaned);
 }

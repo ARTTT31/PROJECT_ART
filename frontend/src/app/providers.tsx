@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { AuthProvider } from '@/components/Auth/AuthProvider';
 import { ToastProvider } from '@/components/Toast/ToastProvider';
 import { BrandingProvider } from '@/context/BrandingContext';
+import { BrandingFavicon } from '@/components/Branding/BrandingFavicon';
 import ErrorBoundary from '@/components/ErrorBoundary';
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -17,13 +18,14 @@ export function Providers({ children }: { children: React.ReactNode }) {
             refetchOnWindowFocus: false,
           },
         },
-      })
+      }),
   );
 
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <BrandingProvider>
+          <BrandingFavicon />
           <AuthProvider>
             <ToastProvider>{children}</ToastProvider>
           </AuthProvider>

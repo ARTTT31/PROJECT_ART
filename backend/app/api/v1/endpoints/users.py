@@ -408,7 +408,7 @@ async def update_user(
             user_id=current_user.id,
             details=(
                 f"Admin updated user {updated_user.email or updated_user.username} (ID: {user_id}). "
-                f"Fields: {', '.join([k for k, v in user_update.dict(exclude_unset=True).items() if v is not None])}"
+                f"Fields: {', '.join([k for k, v in user_update.model_dump(exclude_unset=True).items() if v is not None])}"
             ),
             ip_address=client_ip,
             user_agent=user_agent,

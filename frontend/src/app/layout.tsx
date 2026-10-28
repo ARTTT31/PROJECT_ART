@@ -22,12 +22,16 @@ export const metadata: Metadata = {
     template: '%s | ART Workspace',
     default: 'ART Workspace - จัดการวันทำงานของคุณให้ง่ายขึ้น',
   },
-  description: 'แพลตฟอร์มจัดการงานส่วนตัวและเชื่อมต่อระบบภายใน (Dashboard) รวบรวมข้อมูลวันหยุด ราคาน้ำมัน และสภาพอากาศไว้ในที่เดียว',
+  description:
+    'แพลตฟอร์มจัดการงานส่วนตัวและเชื่อมต่อระบบภายใน (Dashboard) รวบรวมข้อมูลวันหยุด ราคาน้ำมัน และสภาพอากาศไว้ในที่เดียว',
   keywords: ['workspace', 'dashboard', 'productivity', 'management', 'art workspace'],
   authors: [{ name: 'ART Workspace Team' }],
+  // The workspace logo an admin uploads lives in the database, so the icon is
+  // resolved by a route that returns a PNG (or the bundled mark as fallback).
   icons: {
-    icon: '/art-workspace-mark.svg',
-    apple: '/art-workspace-mark.svg',
+    icon: [{ url: '/branding-icon?size=192', sizes: '192x192', type: 'image/png' }],
+    shortcut: '/branding-icon?size=192',
+    apple: [{ url: '/branding-icon?size=192', sizes: '192x192', type: 'image/png' }],
   },
   manifest: '/manifest.json',
   openGraph: {
@@ -47,18 +51,12 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="th">
       <body className={anuphan.variable}>
-          {/* Theme toggle removed */}
-          <Providers>
-            {children}
-          </Providers>
+        {/* Theme toggle removed */}
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

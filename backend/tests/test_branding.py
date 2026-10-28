@@ -221,3 +221,94 @@ async def test_brand_logo_keeps_transparent_background(client, logged_in_admin_u
     with Image.open(io.BytesIO(base64.b64decode(encoded))) as stored:
         assert stored.mode in ("RGBA", "LA"), stored.mode
         assert stored.convert("RGBA").getpixel((0, 0))[3] == 0
+
+
+@pytest.mark.asyncio
+async def test_brand_logo_accepts_webp_and_is_padded_square(client, logged_in_admin_user):
+    """WebP uploads are accepted and wide logos come back square."""
+    buffer = io.BytesIO()
+    Image.new("RGBA", (120, 60), (0, 102, 204, 255)).save(buffer, format="WEBP")
+
+    resp = await client.post(
+        "/api/v1/system/branding/logo",
+        files={"file": ("logo.webp", buffer.getvalue(), "image/webp")},
+        headers=await _csrf_header(client),
+    )
+    assert resp.status_code == 200, resp.text
+
+    encoded = resp.json()["brand_logo_url"].split(",", 1)[1]
+    with Image.open(io.BytesIO(base64.b64decode(encoded))) as stored:
+        assert stored.width == stored.height
+
+
+@pytest.mark.asyncio
+async def test_brand_logo_rejects_svg(client, logged_in_admin_user):
+    """SVG is an XML document that can carry script, so it is refused by name."""
+    resp = await client.post(
+        "/api/v1/system/branding/logo",
+        files={
+            "file": (
+                "logo.svg",
+                b'<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>',
+                "image/svg+xml",
+            )
+        },
+        headers=await _csrf_header(client),
+    )
+    assert resp.status_code == 400, resp.text
+
+
+@pytest.mark.asyncio
+async def test_branding_rejects_a_javascript_logo_url(client, logged_in_admin_user):
+    """Only http(s) links and uploaded image data URLs may be stored as a logo."""
+    resp = await client.put(
+        "/api/v1/system/branding",
+        json={"company_name": "ART Workspace", "brand_logo_url": "javascript:alert(1)"},
+        headers=await _csrf_header(client),
+    )
+    assert resp.status_code == 422, resp.text
+
+
+@pytest.mark.asyncio
+async def test_brand_logo_icon_returns_png_for_favicon(client, logged_in_admin_user):
+    """The manifest/favicon needs a real image, not a data URL."""
+    await client.post(
+        "/api/v1/system/branding/logo",
+        files={"file": ("logo.png", _png_bytes((256, 256)), "image/png")},
+        headers=await _csrf_header(client),
+    )
+
+    icon = await client.get("/api/v1/system/branding/logo.png?size=192")
+    assert icon.status_code == 200, icon.text
+    assert icon.headers["content-type"] == "image/png"
+    with Image.open(io.BytesIO(icon.content)) as rendered:
+        assert rendered.size == (192, 192)
+
+
+@pytest.mark.asyncio
+async def test_brand_logo_icon_is_404_when_no_logo_is_set(client):
+    """Without an uploaded logo the UI must keep falling back to the app mark."""
+    resp = await client.get("/api/v1/system/branding/logo.png")
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_saving_the_name_keeps_the_uploaded_logo(client, logged_in_admin_user):
+    """Omitting brand_logo_url must preserve it, not clear it."""
+    csrf = await _csrf_header(client)
+    await client.post(
+        "/api/v1/system/branding/logo",
+        files={"file": ("logo.png", _png_bytes(), "image/png")},
+        headers=csrf,
+    )
+    before = (await client.get("/api/v1/system/branding")).json()["brand_logo_url"]
+    assert before
+
+    saved = await client.put(
+        "/api/v1/system/branding",
+        json={"company_name": "ทีมใหม่", "company_tagline": "สโลแกนใหม่", "registration_mode": "approval"},
+        headers=csrf,
+    )
+    assert saved.status_code == 200, saved.text
+    assert saved.json()["company_name"] == "ทีมใหม่"
+    assert saved.json()["brand_logo_url"] == before
