@@ -68,7 +68,7 @@ describe('BrandingCard', () => {
     const [nameInput, taglineInput] = screen.getAllByRole('textbox');
     fireEvent.change(nameInput, { target: { value: 'ทีมของฉัน' } });
     fireEvent.change(taglineInput, { target: { value: 'งานส่วนตัว' } });
-    fireEvent.click(screen.getByRole('button', { name: /บันทึกชื่อทีมและโลโก้/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^บันทึก$/ }));
 
     await waitFor(() =>
       expect(updateWorkspaceBranding).toHaveBeenCalledWith({
@@ -82,7 +82,7 @@ describe('BrandingCard', () => {
   it('saves the workspace-wide branding through the global endpoint for an admin', async () => {
     renderCard(true);
 
-    fireEvent.click(screen.getByRole('button', { name: /บันทึกชื่อทีมและโลโก้/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^บันทึก$/ }));
 
     await waitFor(() =>
       expect(updateBranding).toHaveBeenCalledWith({
@@ -98,7 +98,7 @@ describe('BrandingCard', () => {
     mockBranding({ workspaceName: 'ทีมเก่า', workspaceTagline: 'สโลแกนเก่า' });
     renderCard(true);
 
-    fireEvent.click(screen.getByRole('button', { name: /บันทึกชื่อทีมและโลโก้/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^บันทึก$/ }));
 
     await waitFor(() =>
       expect(updateWorkspaceBranding).toHaveBeenCalledWith({
@@ -176,7 +176,7 @@ describe('BrandingCard', () => {
     swal.showConfirm.mockResolvedValue({ isConfirmed: true });
 
     renderCard();
-    fireEvent.click(screen.getByRole('button', { name: 'ใช้โลโก้เริ่มต้น' }));
+    fireEvent.click(screen.getByRole('button', { name: 'ใช้โลโก้เดิม' }));
 
     await waitFor(() =>
       expect(updateWorkspaceBranding).toHaveBeenCalledWith({ workspace_logo: '' }),
@@ -189,7 +189,7 @@ describe('BrandingCard', () => {
     swal.showConfirm.mockResolvedValue({ isConfirmed: true });
 
     renderCard(true);
-    fireEvent.click(screen.getByRole('button', { name: 'ใช้โลโก้เริ่มต้น' }));
+    fireEvent.click(screen.getByRole('button', { name: 'ใช้โลโก้เดิม' }));
 
     await waitFor(() => expect(updateBranding).toHaveBeenCalledWith({ brand_logo_url: '' }));
   });

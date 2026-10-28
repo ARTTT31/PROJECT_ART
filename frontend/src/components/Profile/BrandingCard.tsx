@@ -23,26 +23,26 @@ function validateLogoFile(file: File): string | null {
 
 const COPY = {
   personal: {
-    title: 'ชื่อทีมและโลโก้',
+    title: 'ชื่อและโลโก้',
     subtitle: 'ชื่อและโลโก้ที่แสดงเฉพาะบัญชีของคุณ',
-    nameLabel: 'ชื่อทีม / บริษัท / ครอบครัว',
-    namePlaceholder: 'เช่น ทีมส่วนตัวของฉัน',
-    saveLabel: 'บันทึกชื่อทีมและโลโก้',
-    savedMessage: 'บันทึกชื่อทีมและโลโก้ของคุณเรียบร้อยแล้ว!',
-    resetConfirm: 'กลับไปใช้โลโก้ของ workspace?',
-    resetBody: 'โลโก้ที่คุณอัปโหลดไว้จะถูกแทนที่ด้วยโลโก้ส่วนกลางของระบบ',
-    resetDone: 'รีเซ็ตโลโก้กลับเป็นค่าเริ่มต้นแล้ว',
+    nameLabel: 'ชื่อที่ใช้แสดง',
+    namePlaceholder: 'เช่น ทีมของฉัน',
+    saveLabel: 'บันทึก',
+    savedMessage: 'บันทึกชื่อและโลโก้เรียบร้อยแล้ว',
+    resetConfirm: 'ยืนยันการใช้โลโก้เดิมหรือไม่?',
+    resetBody: 'โลโก้ที่อัปโหลดไว้จะถูกแทนที่ด้วยโลโก้ของระบบ',
+    resetDone: 'กลับไปใช้โลโก้เดิมเรียบร้อยแล้ว',
   },
   workspace: {
-    title: 'ชื่อทีมและโลโก้',
-    subtitle: 'ชื่อและโลโก้ของทีม ใช้ทั้งแถบเมนู หน้าเข้าสู่ระบบ และเป็นค่าเริ่มต้นของทุกบัญชี',
-    nameLabel: 'ชื่อทีม / บริษัท / ครอบครัว',
-    namePlaceholder: 'เช่น ทีม Dev ART หรือ ครอบครัวใจดี',
-    saveLabel: 'บันทึกชื่อทีมและโลโก้',
-    savedMessage: 'บันทึกชื่อทีมและโลโก้เรียบร้อยแล้ว!',
-    resetConfirm: 'กลับไปใช้โลโก้เริ่มต้นของระบบ?',
+    title: 'ชื่อและโลโก้',
+    subtitle: 'ใช้ทั้งแถบเมนู หน้าเข้าสู่ระบบ และเป็นค่าเริ่มต้นของทุกบัญชี',
+    nameLabel: 'ชื่อที่ใช้แสดง',
+    namePlaceholder: 'เช่น ART Workspace หรือ ครอบครัวใจดี',
+    saveLabel: 'บันทึก',
+    savedMessage: 'บันทึกชื่อและโลโก้เรียบร้อยแล้ว',
+    resetConfirm: 'ยืนยันการใช้โลโก้เริ่มต้นของระบบหรือไม่?',
     resetBody: 'โลโก้ที่อัปโหลดไว้จะถูกแทนที่ด้วยโลโก้มาตรฐานของระบบ',
-    resetDone: 'รีเซ็ตโลโก้กลับเป็นค่าเริ่มต้นแล้ว',
+    resetDone: 'กลับไปใช้โลโก้เริ่มต้นเรียบร้อยแล้ว',
   },
 } as const;
 
@@ -104,7 +104,7 @@ export function BrandingCard({ isAdmin = false }: { isAdmin?: boolean }) {
     e.preventDefault();
     const name = formCompanyName.trim();
     if (!name) {
-      showToast('กรุณากรอกชื่อทีมหรือองค์กร', 'warning');
+      showToast('กรุณากรอกชื่อก่อนบันทึก', 'warning');
       return;
     }
 
@@ -211,13 +211,13 @@ export function BrandingCard({ isAdmin = false }: { isAdmin?: boolean }) {
 
           <div>
             <label className="block text-[13px] font-semibold text-[#1d1d1f] mb-1.5">
-              สโลแกนหรือคำโปรย (Tagline)
+              คำโปรย (ไม่บังคับ)
             </label>
             <input
               type="text"
               value={formCompanyTagline}
               onChange={(e) => setFormCompanyTagline(e.target.value)}
-              placeholder="เช่น ศูนย์รวมเครื่องมือและการทำงานส่วนกลาง"
+              placeholder="เช่น ทำงานให้ง่ายขึ้นทุกวัน"
               disabled={isSavingBranding}
               className="w-full rounded-xl border border-black/10 bg-white px-3.5 py-2.5 text-[14px] text-[#1d1d1f] shadow-2xs placeholder:text-[#86868b] focus:border-[#0066cc] focus:outline-hidden focus:ring-2 focus:ring-[#0066cc]/20 disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed"
             />
@@ -241,14 +241,14 @@ export function BrandingCard({ isAdmin = false }: { isAdmin?: boolean }) {
           }`}
         >
           <span className="text-[11.5px] font-bold text-[#86868b] uppercase tracking-wider block mb-2">
-            โลโก้และตัวอย่างในเมนูด้านข้าง
+            ตัวอย่างในเมนูด้านข้าง
           </span>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="inline-flex items-center gap-3 rounded-2xl bg-white/90 p-3 shadow-xs border border-black/[0.06] max-w-sm">
               <div className="relative shrink-0">
                 <Image
                   src={brandLogoUrl || '/art-workspace-mark.svg'}
-                  alt={brandLogoUrl ? 'โลโก้ของทีม' : 'โลโก้เริ่มต้นของระบบ'}
+                  alt={brandLogoUrl ? 'โลโก้ที่ตั้งไว้' : 'โลโก้เริ่มต้นของระบบ'}
                   width={36}
                   height={36}
                   className="h-9 w-9 rounded-xl object-contain"
@@ -261,10 +261,10 @@ export function BrandingCard({ isAdmin = false }: { isAdmin?: boolean }) {
               </div>
               <div className="min-w-0">
                 <div className="truncate text-[14px] font-bold text-[#1d1d1f]">
-                  {formCompanyName.trim() || companyName || 'ชื่อทีมของคุณ'}
+                  {formCompanyName.trim() || companyName || 'ชื่อของคุณ'}
                 </div>
                 <div className="truncate text-[11px] text-[#86868b]">
-                  {formCompanyTagline.trim() || companyTagline || 'Workspace'}
+                  {formCompanyTagline.trim() || companyTagline || 'พร้อมใช้งาน'}
                 </div>
               </div>
             </div>
@@ -295,7 +295,7 @@ export function BrandingCard({ isAdmin = false }: { isAdmin?: boolean }) {
                   disabled={isBusyLogo}
                   className="inline-flex items-center gap-1.5 rounded-full bg-white px-3.5 py-1.5 text-[11.5px] font-bold text-[#475569] ring-1 ring-black/[0.08] transition-all hover:bg-slate-50 active:scale-95 disabled:opacity-50"
                 >
-                  ใช้โลโก้เริ่มต้น
+                  ใช้โลโก้เดิม
                 </button>
               )}
             </div>
