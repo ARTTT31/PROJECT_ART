@@ -784,7 +784,9 @@ input[type="radio"],
 }
 
 .swal2-container.swal2-backdrop-show:not(.swal2-top-end):not(.swal2-top-start):not(.swal2-bottom-end):not(.swal2-bottom-start):not(.swal2-toast-shown) {
-  background: rgba(15, 23, 42, 0.4) !important;
+  background: rgba(15, 23, 42, 0.42) !important;
+  backdrop-filter: blur(6px) saturate(120%) !important;
+  -webkit-backdrop-filter: blur(6px) saturate(120%) !important;
 }
 
 .swal2-container.swal2-top-end,
@@ -807,47 +809,134 @@ input[type="radio"],
 }
 
 .art-swal-popup {
-  width: min(32rem, calc(100vw - 2rem)) !important;
-  border-radius: 24px !important;
-  border: 1px solid rgba(0, 0, 0, 0.06) !important;
-  background: rgba(255, 255, 255, 0.82) !important;
-  backdrop-filter: blur(24px) saturate(180%) !important;
-  -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+  width: min(28rem, calc(100vw - 2rem)) !important;
+  border-radius: 28px !important;
+  border: 1px solid rgba(15, 23, 42, 0.06) !important;
+  background:
+    radial-gradient(120% 70% at 50% -12%, rgba(0, 102, 204, 0.07), rgba(255, 255, 255, 0) 62%),
+    #ffffff !important;
   color: var(--art-ink) !important;
-  box-shadow: 0 32px 80px rgba(0,0,0,0.14), 0 8px 24px rgba(0,0,0,0.06) !important;
-  padding: 1.5rem !important;
+  box-shadow:
+    0 40px 90px -24px rgba(15, 23, 42, 0.32),
+    0 14px 32px -14px rgba(15, 23, 42, 0.16) !important;
+  padding: 2.5rem 1.75rem 1.75rem !important;
   font-family: inherit !important;
+  text-align: center !important;
+}
+
+/* Gradient badge replacing the default flat SweetAlert icon */
+.art-swal-popup .art-swal-icon {
+  position: relative;
+  box-sizing: border-box !important;
+  width: 76px !important;
+  height: 76px !important;
+  margin: 0 auto 1.375rem !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  line-height: 1 !important;
+  color: #fff !important;
+  background: linear-gradient(155deg, #34d399 0%, #10b981 48%, #059669 100%) !important;
+  box-shadow:
+    0 0 0 9px rgba(16, 185, 129, 0.09),
+    0 16px 28px -12px rgba(5, 150, 105, 0.55) !important;
+  animation: art-swal-icon-pop 420ms cubic-bezier(0.34, 1.56, 0.64, 1) both !important;
+}
+
+.art-swal-popup .art-swal-icon .swal2-icon-content {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 0 !important;
+  line-height: 1 !important;
+}
+
+.art-swal-popup .art-swal-glyph {
+  width: 36px;
+  height: 36px;
+  display: block;
+}
+
+.art-swal-popup .art-swal-icon-error {
+  background: linear-gradient(155deg, #f87171 0%, #ef4444 48%, #dc2626 100%) !important;
+  box-shadow:
+    0 0 0 9px rgba(239, 68, 68, 0.09),
+    0 16px 28px -12px rgba(220, 38, 38, 0.5) !important;
+}
+
+.art-swal-popup .art-swal-icon-warning {
+  background: linear-gradient(155deg, #fbbf24 0%, #f59e0b 48%, #d97706 100%) !important;
+  box-shadow:
+    0 0 0 9px rgba(245, 158, 11, 0.1),
+    0 16px 28px -12px rgba(217, 119, 6, 0.5) !important;
+}
+
+.art-swal-popup .art-swal-icon-info {
+  background: linear-gradient(155deg, #38bdf8 0%, #0ea5e9 48%, #0284c7 100%) !important;
+  box-shadow:
+    0 0 0 9px rgba(14, 165, 233, 0.1),
+    0 16px 28px -12px rgba(2, 132, 199, 0.5) !important;
+}
+
+/* Confirm / input dialogs keep the default icon, softened to match the card */
+.art-swal-popup .swal2-icon.swal2-question {
+  border-color: rgba(0, 102, 204, 0.2) !important;
+  background: rgba(0, 102, 204, 0.05) !important;
+  color: var(--art-primary) !important;
+  margin: 0 auto 1.375rem !important;
+}
+
+@keyframes art-swal-icon-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .art-swal-title {
   color: var(--art-ink) !important;
-  font-size: var(--type-xl) !important;
-  font-weight: 750 !important;
-  letter-spacing: 0 !important;
-  line-height: var(--line-snug) !important;
+  font-size: 1.375rem !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.015em !important;
+  line-height: 1.35 !important;
   padding: 0 !important;
 }
 
 .art-swal-html {
-  margin: 0.75rem 0 0 !important;
-  color: var(--art-muted) !important;
-  font-size: var(--type-sm) !important;
+  margin: 0.5rem 0 0 !important;
+  margin-inline: auto !important;
+  padding: 0 !important;
+  max-width: 22rem;
+  color: #5a6472 !important;
+  font-size: 0.9375rem !important;
   font-weight: 500 !important;
-  line-height: var(--line-relaxed) !important;
+  line-height: 1.6 !important;
+}
+
+.art-swal-html:empty {
+  display: none !important;
 }
 
 .art-swal-actions {
   gap: 0.75rem !important;
-  margin: 1.5rem 0 0 !important;
+  margin: 1.75rem 0 0 !important;
+  justify-content: center !important;
 }
 
 .art-swal-confirm,
 .art-swal-cancel,
 .art-swal-deny {
   min-width: 44px !important;
-  min-height: 44px !important;
-  border-radius: var(--art-radius-lg) !important;
-  padding: 0.75rem 1.25rem !important;
+  min-height: 46px !important;
+  border-radius: 9999px !important;
+  padding: 0.75rem 1.5rem !important;
   font: inherit !important;
   font-size: var(--type-sm) !important;
   font-weight: 650 !important;
@@ -861,15 +950,25 @@ input[type="radio"],
 }
 
 .art-swal-confirm {
-  border: 1px solid var(--art-primary) !important;
-  background: var(--art-primary) !important;
+  min-width: 9.5rem !important;
+  border: 1px solid transparent !important;
+  background: linear-gradient(180deg, #0a7cdf 0%, #0066cc 100%) !important;
   color: white !important;
-  box-shadow: none !important;
+  box-shadow:
+    0 10px 22px -10px rgba(0, 102, 204, 0.75),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22) !important;
 }
 
 .art-swal-confirm:hover {
-  background: var(--apple-blue-hover) !important;
-  box-shadow: none !important;
+  background: linear-gradient(180deg, #1683e6 0%, #0071e3 100%) !important;
+  transform: translateY(-1px) !important;
+  box-shadow:
+    0 14px 26px -10px rgba(0, 102, 204, 0.8),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25) !important;
+}
+
+.art-swal-confirm:active {
+  transform: translateY(0) scale(0.985) !important;
 }
 
 .art-swal-confirm.art-swal-danger {
@@ -946,8 +1045,29 @@ input[type="radio"],
 @media (prefers-reduced-motion: reduce) {
   .swal2-show,
   .swal2-hide,
-  .swal2-toast {
+  .swal2-toast,
+  .art-swal-popup .art-swal-icon {
     animation: none !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .art-swal-popup {
+    padding: 2rem 1.25rem 1.5rem !important;
+  }
+
+  .art-swal-popup .art-swal-icon {
+    width: 68px !important;
+    height: 68px !important;
+  }
+
+  .art-swal-popup .art-swal-glyph {
+    width: 32px;
+    height: 32px;
+  }
+
+  .art-swal-confirm {
+    min-width: 100% !important;
   }
 }
 /* Apple HIG Scrollbar */

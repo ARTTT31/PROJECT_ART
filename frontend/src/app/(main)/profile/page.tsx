@@ -31,8 +31,9 @@ import {
   Camera,
   Loader2,
   Building2,
+  Upload,
 } from 'lucide-react'
-import { showDeleteConfirm, showToast, showSuccess, showError } from '@/utils/sweetalert'
+import { showDeleteConfirm, showToast, showSuccess, showError, showConfirm } from '@/utils/sweetalert'
 import { canAccessPage } from '@/utils/accessiblePages'
 import { useAuth } from '@/hooks/useAuth'
 import { useBranding } from '@/context/BrandingContext'
@@ -286,11 +287,22 @@ export default function ProfilePage() {
   const [qlColor, setQlColor] = useState('#0066cc')
 
   // Workspace Branding
-  const { companyName, companyTagline, brandLogoUrl, registrationMode, updateBranding } = useBranding()
+  const {
+    companyName,
+    companyTagline,
+    brandLogoUrl,
+    registrationMode,
+    updateBranding,
+    uploadBrandLogo,
+  } = useBranding()
   const [formCompanyName, setFormCompanyName] = useState(companyName)
   const [formCompanyTagline, setFormCompanyTagline] = useState(companyTagline)
   const [formRegistrationMode, setFormRegistrationMode] = useState(registrationMode || 'approval')
   const [isSavingBranding, setIsSavingBranding] = useState(false)
+
+  // Brand Logo Upload
+  const brandLogoInputRef = useRef<HTMLInputElement>(null)
+  const [isUploadingBrandLogo, setIsUploadingBrandLogo] = useState(false)
 
   useEffect(() => {
     setFormCompanyName(companyName)
@@ -315,6 +327,58 @@ export default function ProfilePage() {
       showSuccess('สำเร็จ', 'บันทึกชื่อทีมและนโยบายการใช้งานเรียบร้อยแล้ว!')
     } else {
       showError('เกิดข้อผิดพลาด', res.error || 'ไม่สามารถบันทึกข้อมูลได้')
+    }
+  }
+
+  const handleBrandLogoFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (file.size > 1 * 1024 * 1024) {
+      showToast('ขนาดไฟล์รูปภาพห้ามเกิน 1MB', 'warning')
+      if (brandLogoInputRef.current) brandLogoInputRef.current.value = ''
+      return
+    }
+
+    const validTypes = ['image/jpeg', 'image/png', 'image/gif']
+    if (!validTypes.includes(file.type)) {
+      showToast('รองรับเฉพาะไฟล์รูปภาพ JPG, PNG, GIF เท่านั้น', 'warning')
+      if (brandLogoInputRef.current) brandLogoInputRef.current.value = ''
+      return
+    }
+
+    setIsUploadingBrandLogo(true)
+    const res = await uploadBrandLogo(file)
+    setIsUploadingBrandLogo(false)
+    if (brandLogoInputRef.current) brandLogoInputRef.current.value = ''
+
+    if (res.success) {
+      showSuccess('สำเร็จ', 'เปลี่ยนโลโก้ของทีมเรียบร้อยแล้ว!')
+    } else {
+      showError('อัปโหลดไม่สำเร็จ', res.error || 'ไม่สามารถอัปโหลดโลโก้ได้')
+    }
+  }
+
+  const handleResetBrandLogo = async () => {
+    const confirmed = await showConfirm(
+      'กลับไปใช้โลโก้เริ่มต้น?',
+      'โลโก้ที่อัปโหลดไว้จะถูกแทนที่ด้วยโลโก้มาตรฐานของระบบ'
+    )
+    if (!confirmed.isConfirmed) return
+
+    setIsUploadingBrandLogo(true)
+    const res = await updateBranding({
+      company_name: companyName,
+      company_tagline: companyTagline,
+      brand_logo_url: '',
+      registration_mode: registrationMode,
+    })
+    setIsUploadingBrandLogo(false)
+
+    if (res.success) {
+      showSuccess('สำเร็จ', 'รีเซ็ตโลโก้กลับเป็นค่าเริ่มต้นแล้ว')
+    } else {
+      showError('เกิดข้อผิดพลาด', res.error || 'ไม่สามารถรีเซ็ตโลโก้ได้')
     }
   }
 
@@ -1044,7 +1108,6 @@ export default function ProfilePage() {
             iconRing="ring-violet-200/60"
             title="เมนูหลักของระบบ"
             subtitle="เปิด/ปิด และจัดลำดับรายการในแถบเมนูด้านข้าง"
-            badge={`${enabledMainCount} เมนูเปิดใช้งาน`}
           >
             <div className="space-y-2">
               {filteredMenuItems.map((item, idx, arr) => {
@@ -1153,7 +1216,6 @@ export default function ProfilePage() {
             iconRing="ring-sky-200/60"
             title="ควิกลิ้งค์ (Quick Links)"
             subtitle="ทางลัดเข้าสู่ระบบงานหรือเว็บไซต์ แสดงในแถบเมนูข้าง"
-            badge={`${quickLinks.length} รายการ`}
             action={
               <button
                 type="button"
@@ -1374,28 +1436,82 @@ export default function ProfilePage() {
                   </div>
                 </div>
 
-                {/* Live Preview Box */}
+                {/* Logo + Live Preview Box */}
                 <div className="rounded-xl border border-black/[0.06] bg-[#f5f5f7]/60 p-4">
                   <span className="text-[11.5px] font-bold text-[#86868b] uppercase tracking-wider block mb-2">
-                    ตัวอย่างการแสดงผลบนแถบเมนูด้านข้าง (Live Preview)
+                    โลโก้และตัวอย่างการแสดงผลบนแถบเมนูด้านข้าง (Live Preview)
                   </span>
-                  <div className="inline-flex items-center gap-3 rounded-2xl bg-white/90 p-3 shadow-xs border border-black/[0.06] max-w-sm">
-                    <Image
-                      src={brandLogoUrl || '/art-workspace-mark.svg'}
-                      alt=""
-                      width={36}
-                      height={36}
-                      className="h-9 w-9 rounded-xl object-contain shrink-0"
-                    />
-                    <div className="min-w-0">
-                      <div className="truncate text-[14px] font-bold text-[#1d1d1f]">
-                        {formCompanyName.trim() || 'ชื่อทีมของคุณ'}
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="inline-flex items-center gap-3 rounded-2xl bg-white/90 p-3 shadow-xs border border-black/[0.06] max-w-sm">
+                      <div className="relative shrink-0">
+                        <Image
+                          src={brandLogoUrl || '/art-workspace-mark.svg'}
+                          alt={brandLogoUrl ? 'โลโก้ของทีม' : 'โลโก้เริ่มต้นของระบบ'}
+                          width={36}
+                          height={36}
+                          className="h-9 w-9 rounded-xl object-contain"
+                        />
+                        {isUploadingBrandLogo && (
+                          <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-black/40">
+                            <Loader2 size={14} className="animate-spin text-white" />
+                          </div>
+                        )}
                       </div>
-                      <div className="truncate text-[11px] text-[#86868b]">
-                        {formCompanyTagline.trim() || 'Workspace'}
+                      <div className="min-w-0">
+                        <div className="truncate text-[14px] font-bold text-[#1d1d1f]">
+                          {formCompanyName.trim() || 'ชื่อทีมของคุณ'}
+                        </div>
+                        <div className="truncate text-[11px] text-[#86868b]">
+                          {formCompanyTagline.trim() || 'Workspace'}
+                        </div>
                       </div>
                     </div>
+
+                    {isAdmin && (
+                      <div className="flex flex-wrap items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => brandLogoInputRef.current?.click()}
+                          disabled={isUploadingBrandLogo || isSavingBranding}
+                          className="inline-flex items-center gap-1.5 rounded-full bg-[#0066cc] px-3.5 py-1.5 text-[11.5px] font-bold text-white shadow-xs transition-all hover:bg-[#0071e3] active:scale-95 disabled:opacity-50"
+                        >
+                          {isUploadingBrandLogo ? (
+                            <Loader2 size={13} className="animate-spin" aria-hidden="true" />
+                          ) : (
+                            <Upload size={13} aria-hidden="true" />
+                          )}
+                          {isUploadingBrandLogo
+                            ? 'กำลังอัปโหลด...'
+                            : brandLogoUrl
+                              ? 'เปลี่ยนโลโก้'
+                              : 'อัปโหลดโลโก้'}
+                        </button>
+                        {brandLogoUrl && (
+                          <button
+                            type="button"
+                            onClick={handleResetBrandLogo}
+                            disabled={isUploadingBrandLogo || isSavingBranding}
+                            className="inline-flex items-center gap-1.5 rounded-full bg-white px-3.5 py-1.5 text-[11.5px] font-bold text-[#475569] ring-1 ring-black/[0.08] transition-all hover:bg-slate-50 active:scale-95 disabled:opacity-50"
+                          >
+                            ใช้โลโก้เริ่มต้น
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </div>
+
+                  <input
+                    ref={brandLogoInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/gif"
+                    onChange={handleBrandLogoFileSelect}
+                    className="hidden"
+                    aria-label="เลือกรูปโลโก้ของทีม"
+                  />
+                  <p className="mt-2.5 text-[11px] leading-relaxed text-[#86868b]">
+                    รองรับ PNG, JPG หรือ GIF ขนาดไม่เกิน 1MB — ระบบจะย่อและแปลงเป็น WebP ให้อัตโนมัติ
+                    และแสดงบนแถบเมนูข้าง หน้าเข้าสู่ระบบ และหัวเว็บ
+                  </p>
                 </div>
 
                 {isAdmin ? (

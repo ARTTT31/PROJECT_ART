@@ -18,6 +18,7 @@ interface BrandingContextValue {
   isLoading: boolean
   refreshBranding: () => Promise<void>
   updateBranding: (branding: Partial<BrandingInfo>) => Promise<{ success: boolean; error?: string }>
+  uploadBrandLogo: (file: File) => Promise<{ success: boolean; error?: string }>
 }
 
 const DEFAULT_BRANDING: BrandingInfo = {
@@ -37,6 +38,7 @@ const BrandingContext = createContext<BrandingContextValue>({
   isLoading: false,
   refreshBranding: async () => {},
   updateBranding: async () => ({ success: false }),
+  uploadBrandLogo: async () => ({ success: false }),
 })
 
 export function BrandingProvider({ children }: { children: React.ReactNode }) {
@@ -89,6 +91,48 @@ export function BrandingProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     refreshBranding()
   }, [refreshBranding])
+
+  /** Keep state + cache in sync with a branding payload from the API. */
+  const applyBranding = useCallback((next: BrandingInfo) => {
+    setBranding(next)
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
+    } catch {
+      // ignore storage errors
+    }
+  }, [])
+
+  const uploadBrandLogo = useCallback(
+    async (file: File): Promise<{ success: boolean; error?: string }> => {
+      setIsLoading(true)
+      try {
+        const formData = new FormData()
+        formData.append('file', file)
+        const res = await fetchWithAuth('/api/v1/system/branding/logo', {
+          method: 'POST',
+          body: formData,
+        })
+        const data = await res.json().catch(() => ({}))
+        if (!res.ok) {
+          const msg = data?.detail || data?.message || 'ไม่สามารถอัปโหลดโลโก้ได้'
+          return { success: false, error: typeof msg === 'string' ? msg : JSON.stringify(msg) }
+        }
+        applyBranding({
+          company_name: data.company_name || DEFAULT_BRANDING.company_name,
+          company_tagline: data.company_tagline ?? DEFAULT_BRANDING.company_tagline,
+          brand_logo_url: data.brand_logo_url || '',
+          registration_mode: data.registration_mode || 'approval',
+        })
+        return { success: true }
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : 'เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์'
+        return { success: false, error: msg }
+      } finally {
+        setIsLoading(false)
+      }
+    },
+    [applyBranding],
+  )
 
   const updateBranding = async (newValues: Partial<BrandingInfo>) => {
     setIsLoading(true)
@@ -144,6 +188,7 @@ export function BrandingProvider({ children }: { children: React.ReactNode }) {
         isLoading,
         refreshBranding,
         updateBranding,
+        uploadBrandLogo,
       }}
     >
       {children}

@@ -1,6 +1,22 @@
 """Tests for Company/Team Branding endpoints in system.py"""
 
+import io
+
 import pytest
+from PIL import Image
+
+
+def _png_bytes(size: tuple[int, int] = (64, 64)) -> bytes:
+    buffer = io.BytesIO()
+    Image.new("RGB", size, (0, 102, 204)).save(buffer, format="PNG")
+    return buffer.getvalue()
+
+
+async def _csrf_header(client) -> dict[str, str]:
+    token = client.cookies.get("csrf_token")
+    if not token:
+        token = (await client.get("/api/v1/auth/csrf")).json()["data"]["csrf_token"]
+    return {"X-CSRF-Token": token}
 
 
 @pytest.mark.asyncio
@@ -147,3 +163,41 @@ async def test_branding_rejects_an_unknown_registration_mode(client, logged_in_a
     )
     assert resp.status_code == 422
     assert "closed, approval" in resp.text
+
+
+@pytest.mark.asyncio
+async def test_brand_logo_upload_requires_admin(client, logged_in_user):
+    """Only admins may replace the workspace logo."""
+    resp = await client.post(
+        "/api/v1/system/branding/logo",
+        files={"file": ("logo.png", _png_bytes(), "image/png")},
+        headers=await _csrf_header(client),
+    )
+    assert resp.status_code == 403, resp.text
+
+
+@pytest.mark.asyncio
+async def test_admin_can_upload_brand_logo(client, logged_in_admin_user):
+    """An uploaded logo is normalised to a small WebP data URL and published."""
+    resp = await client.post(
+        "/api/v1/system/branding/logo",
+        files={"file": ("logo.png", _png_bytes(), "image/png")},
+        headers=await _csrf_header(client),
+    )
+    assert resp.status_code == 200, resp.text
+    logo = resp.json()["brand_logo_url"]
+    assert logo.startswith("data:image/webp;base64,")
+
+    public = await client.get("/api/v1/system/branding")
+    assert public.json()["brand_logo_url"] == logo
+
+
+@pytest.mark.asyncio
+async def test_brand_logo_upload_rejects_non_image(client, logged_in_admin_user):
+    """Magic-byte sniffing refuses a payload that only claims to be a PNG."""
+    resp = await client.post(
+        "/api/v1/system/branding/logo",
+        files={"file": ("logo.png", b"<script>alert(1)</script>", "image/png")},
+        headers=await _csrf_header(client),
+    )
+    assert resp.status_code == 400, resp.text

@@ -17,6 +17,22 @@ const modalDefaults = {
   customClass: sweetAlertClasses,
 }
 
+// Gradient icon badge used by the notification dialogs (success / error / warning / info)
+type AlertIcon = 'success' | 'error' | 'warning' | 'info'
+
+const iconGlyphs: Record<AlertIcon, string> = {
+  success: '<path d="M5.5 12.4l4.3 4.3 8.7-9.2" />',
+  error: '<path d="M7.2 7.2l9.6 9.6" /><path d="M16.8 7.2l-9.6 9.6" />',
+  warning: '<path d="M12 6.9v7.2" /><path d="M12 17.6h.01" />',
+  info: '<path d="M12 11.1v7" /><path d="M12 7.2h.01" />',
+}
+
+const iconBadge = (type: AlertIcon) => ({
+  icon: type,
+  iconHtml: `<svg class="art-swal-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${iconGlyphs[type]}</svg>`,
+  customClass: { ...sweetAlertClasses, icon: `art-swal-icon art-swal-icon-${type}` },
+})
+
 // Toast notification (มุมขวาบน)
 export const showToast = (title: string, icon: 'success' | 'error' | 'warning' | 'info' = 'success') => {
   const Toast = Swal.mixin({
@@ -44,7 +60,7 @@ export const showToast = (title: string, icon: 'success' | 'error' | 'warning' |
 export const showSuccess = (title: string, text?: string) => {
   return Swal.fire({
     ...modalDefaults,
-    icon: 'success',
+    ...iconBadge('success'),
     title,
     text,
     confirmButtonText: 'ตกลง',
@@ -55,7 +71,7 @@ export const showSuccess = (title: string, text?: string) => {
 export const showError = (title: string, text?: string) => {
   return Swal.fire({
     ...modalDefaults,
-    icon: 'error',
+    ...iconBadge('error'),
     title,
     text,
     confirmButtonText: 'ตกลง',
@@ -66,7 +82,7 @@ export const showError = (title: string, text?: string) => {
 export const showWarning = (title: string, text?: string) => {
   return Swal.fire({
     ...modalDefaults,
-    icon: 'warning',
+    ...iconBadge('warning'),
     title,
     text,
     confirmButtonText: 'ตกลง',
@@ -77,7 +93,7 @@ export const showWarning = (title: string, text?: string) => {
 export const showInfo = (title: string, text?: string) => {
   return Swal.fire({
     ...modalDefaults,
-    icon: 'info',
+    ...iconBadge('info'),
     title,
     text,
     confirmButtonText: 'ตกลง',

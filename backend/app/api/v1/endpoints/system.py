@@ -2,18 +2,27 @@
 System Health & Settings API
 """
 
+import base64
 import logging
+import os
 import time
 from typing import Optional
 
 import psutil
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
 from pydantic import BaseModel
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_current_admin_user
+from app.api.v1.endpoints.profile import (
+    AVATAR_MAX_BYTES,
+    _normalise_avatar_image,
+    _validate_avatar_content,
+)
+from app.core.config import settings
 from app.core.database import get_db
+from app.core.rate_limit import get_real_client_ip, limiter
 from app.core.utils import utcnow
 from app.models.system_setting import SystemSetting
 from app.schemas.system import BrandingResponse, BrandingUpdate
@@ -24,6 +33,31 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 START_TIME = time.time()
+
+_UPLOAD_LIMIT = f"{settings.RATE_LIMIT_UPLOAD_PER_MINUTE}/minute"
+
+BRANDING_KEYS = ["company_name", "company_tagline", "brand_logo_url", "registration_mode"]
+
+
+def _logo_data_url(webp_bytes: bytes) -> str:
+    """Wrap normalised WebP bytes as a data URL (what the UI renders)."""
+    encoded = base64.b64encode(webp_bytes).decode("utf-8")
+    return f"data:image/webp;base64,{encoded}"
+
+
+async def _branding_response(db: AsyncSession) -> BrandingResponse:
+    """Read the stored branding rows back into the public response shape."""
+    result = await db.execute(
+        select(SystemSetting).where(SystemSetting.key.in_(BRANDING_KEYS))
+    )
+    settings_map = {s.key: s.value for s in result.scalars().all()}
+    return BrandingResponse(
+        company_name=settings_map.get("company_name") or "ART Workspace",
+        company_tagline=settings_map.get("company_tagline")
+        or "จัดการวันทำงานของคุณให้ง่ายขึ้น",
+        brand_logo_url=settings_map.get("brand_logo_url") or "",
+        registration_mode=await get_effective_registration_mode(db),
+    )
 
 
 class ServiceStatus(BaseModel):
@@ -151,3 +185,66 @@ async def update_branding(
         brand_logo_url=brand_logo_url,
         registration_mode=await get_effective_registration_mode(db),
     )
+
+
+@router.post("/branding/logo", response_model=BrandingResponse)
+@limiter.limit(_UPLOAD_LIMIT)
+async def upload_branding_logo(
+    request: Request,
+    file: UploadFile = File(...),
+    current_admin=Depends(get_current_admin_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Admin-only upload for the workspace logo.
+
+    The logo is stored the same way avatars are: the audited upload pipeline
+    sniffs the magic bytes, refuses anything that is not a real JPEG/PNG/GIF,
+    then downscales and re-encodes to a small WebP before it is written to
+    ``system_settings`` as a data URL. Client bytes never reach the DB.
+    """
+    ext = os.path.splitext(file.filename or "")[1].lower()
+    if ext not in [".jpg", ".jpeg", ".png", ".gif"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="รองรับเฉพาะไฟล์รูปภาพ (jpg, jpeg, png, gif)",
+        )
+
+    # Bounded read: one byte past the cap is enough to reject an oversized file
+    # without pulling the whole body into memory first.
+    contents = await file.read(AVATAR_MAX_BYTES + 1)
+    if len(contents) > AVATAR_MAX_BYTES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="ขนาดไฟล์รูปภาพห้ามเกิน 1MB",
+        )
+
+    _validate_avatar_content(
+        contents, (file.content_type or "").split(";")[0].strip().lower()
+    )
+    logo_data_url = _logo_data_url(_normalise_avatar_image(contents))
+
+    current_time = utcnow()
+    setting = await db.get(SystemSetting, "brand_logo_url")
+    if setting:
+        setting.value = logo_data_url
+        setting.updated_at = current_time
+    else:
+        db.add(
+            SystemSetting(
+                key="brand_logo_url",
+                value=logo_data_url,
+                created_at=current_time,
+                updated_at=current_time,
+            )
+        )
+
+    await AuditService(db).log_action(
+        action="UPLOAD_BRAND_LOGO",
+        user_id=current_admin.id,
+        details="Admin uploaded a new workspace logo",
+        ip_address=get_real_client_ip(request),
+        user_agent=request.headers.get("user-agent"),
+    )
+    await db.commit()
+
+    return await _branding_response(db)
