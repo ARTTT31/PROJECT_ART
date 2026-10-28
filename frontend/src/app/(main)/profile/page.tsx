@@ -856,7 +856,7 @@ export default function ProfilePage() {
             </div>
 
             <div className="lg:col-span-2">
-              <BrandingCard />
+              <BrandingCard isAdmin={isAdmin} />
             </div>
           </motion.div>
         )}
@@ -874,10 +874,6 @@ export default function ProfilePage() {
             className="space-y-4 min-h-[600px]"
           >
             <RegistrationPolicyCard />
-
-            {/* The sign-in page and every account default show the workspace
-                branding; personal overrides live on the profile tab. */}
-            <BrandingCard scope="workspace" />
 
             {/* User Management Component */}
             <UserManagement />

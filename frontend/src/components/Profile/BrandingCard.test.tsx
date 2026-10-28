@@ -18,8 +18,27 @@ const uploadBrandLogo = vi.fn();
 const updateWorkspaceBranding = vi.fn();
 const updateBranding = vi.fn();
 
-function renderCard(scope: 'personal' | 'workspace' = 'personal') {
-  return render(<BrandingCard scope={scope} />);
+function mockBranding(overrides: Record<string, unknown> = {}) {
+  branding.useBranding.mockReturnValue({
+    companyName: 'ART Workspace',
+    companyTagline: 'จัดการวันทำงานของคุณให้ง่ายขึ้น',
+    brandLogoUrl: '',
+    registrationMode: 'approval',
+    workspaceName: '',
+    workspaceTagline: '',
+    workspaceLogo: '',
+    isLoading: false,
+    refreshBranding: vi.fn(),
+    updateBranding,
+    uploadBrandLogo,
+    updateWorkspaceBranding,
+    uploadWorkspaceLogo,
+    ...overrides,
+  });
+}
+
+function renderCard(isAdmin = false) {
+  return render(<BrandingCard isAdmin={isAdmin} />);
 }
 
 function logoInput(): HTMLInputElement {
@@ -36,21 +55,11 @@ describe('BrandingCard', () => {
     uploadBrandLogo.mockReset().mockResolvedValue({ success: true });
     updateWorkspaceBranding.mockReset().mockResolvedValue({ success: true });
     updateBranding.mockReset().mockResolvedValue({ success: true });
-    branding.useBranding.mockReturnValue({
-      companyName: 'ART Workspace',
-      companyTagline: 'จัดการวันทำงานของคุณให้ง่ายขึ้น',
-      brandLogoUrl: '',
-      registrationMode: 'approval',
-      workspaceName: '',
-      workspaceTagline: '',
-      workspaceLogo: '',
-      isLoading: false,
-      refreshBranding: vi.fn(),
-      updateBranding,
-      uploadBrandLogo,
-      updateWorkspaceBranding,
-      uploadWorkspaceLogo,
-    });
+    swal.showToast.mockReset();
+    swal.showSuccess.mockReset();
+    swal.showError.mockReset();
+    swal.showConfirm.mockReset();
+    mockBranding();
   });
 
   it('saves a personal workspace name without resending the logo', async () => {
@@ -70,15 +79,31 @@ describe('BrandingCard', () => {
     expect(updateBranding).not.toHaveBeenCalled();
   });
 
-  it('saves the workspace-wide branding through the global endpoint', async () => {
-    renderCard('workspace');
+  it('saves the workspace-wide branding through the global endpoint for an admin', async () => {
+    renderCard(true);
 
-    fireEvent.click(screen.getByRole('button', { name: /บันทึกแบรนด์ส่วนกลาง/ }));
+    fireEvent.click(screen.getByRole('button', { name: /บันทึกชื่อทีมและโลโก้/ }));
 
     await waitFor(() =>
       expect(updateBranding).toHaveBeenCalledWith({
         company_name: 'ART Workspace',
         company_tagline: 'จัดการวันทำงานของคุณให้ง่ายขึ้น',
+      }),
+    );
+    // No personal override was set, so there is nothing to clear.
+    expect(updateWorkspaceBranding).not.toHaveBeenCalled();
+  });
+
+  it('clears an admin leftover personal name so the new workspace value shows', async () => {
+    mockBranding({ workspaceName: 'ทีมเก่า', workspaceTagline: 'สโลแกนเก่า' });
+    renderCard(true);
+
+    fireEvent.click(screen.getByRole('button', { name: /บันทึกชื่อทีมและโลโก้/ }));
+
+    await waitFor(() =>
+      expect(updateWorkspaceBranding).toHaveBeenCalledWith({
+        workspace_name: '',
+        workspace_tagline: '',
       }),
     );
   });
@@ -93,14 +118,25 @@ describe('BrandingCard', () => {
     expect(uploadBrandLogo).not.toHaveBeenCalled();
   });
 
-  it('uploads a workspace logo through the global endpoint', async () => {
-    renderCard('workspace');
+  it('uploads a workspace logo through the global endpoint for an admin', async () => {
+    renderCard(true);
     const file = pngFile();
 
     fireEvent.change(logoInput(), { target: { files: [file] } });
 
     await waitFor(() => expect(uploadBrandLogo).toHaveBeenCalledWith(file));
     expect(uploadWorkspaceLogo).not.toHaveBeenCalled();
+  });
+
+  it('clears an admin leftover personal logo after a workspace upload', async () => {
+    mockBranding({ workspaceLogo: 'data:image/webp;base64,OLD' });
+    renderCard(true);
+
+    fireEvent.change(logoInput(), { target: { files: [pngFile()] } });
+
+    await waitFor(() =>
+      expect(updateWorkspaceBranding).toHaveBeenCalledWith({ workspace_logo: '' }),
+    );
   });
 
   it('refuses a file larger than 1MB without calling the API', async () => {
@@ -132,20 +168,10 @@ describe('BrandingCard', () => {
   });
 
   it('resets a personal logo back to the workspace default', async () => {
-    branding.useBranding.mockReturnValue({
-      companyName: 'ART Workspace',
-      companyTagline: 'จัดการวันทำงานของคุณให้ง่ายขึ้น',
+    mockBranding({
       brandLogoUrl: 'data:image/webp;base64,AAA',
-      registrationMode: 'approval',
       workspaceName: 'ทีมของฉัน',
-      workspaceTagline: '',
       workspaceLogo: 'data:image/webp;base64,AAA',
-      isLoading: false,
-      refreshBranding: vi.fn(),
-      updateBranding,
-      uploadBrandLogo,
-      updateWorkspaceBranding,
-      uploadWorkspaceLogo,
     });
     swal.showConfirm.mockResolvedValue({ isConfirmed: true });
 
@@ -155,5 +181,16 @@ describe('BrandingCard', () => {
     await waitFor(() =>
       expect(updateWorkspaceBranding).toHaveBeenCalledWith({ workspace_logo: '' }),
     );
+    expect(updateBranding).not.toHaveBeenCalled();
+  });
+
+  it('resets the workspace logo through the global endpoint for an admin', async () => {
+    mockBranding({ brandLogoUrl: 'data:image/webp;base64,AAA' });
+    swal.showConfirm.mockResolvedValue({ isConfirmed: true });
+
+    renderCard(true);
+    fireEvent.click(screen.getByRole('button', { name: 'ใช้โลโก้เริ่มต้น' }));
+
+    await waitFor(() => expect(updateBranding).toHaveBeenCalledWith({ brand_logo_url: '' }));
   });
 });

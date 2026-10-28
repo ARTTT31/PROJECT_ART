@@ -34,12 +34,12 @@ const COPY = {
     resetDone: 'รีเซ็ตโลโก้กลับเป็นค่าเริ่มต้นแล้ว',
   },
   workspace: {
-    title: 'แบรนด์ส่วนกลาง (หน้าเข้าสู่ระบบ)',
-    subtitle: 'ชื่อและโลโก้ที่ทุกคนเห็นบนหน้าเข้าสู่ระบบ และเป็นค่าเริ่มต้นของทุกบัญชี',
+    title: 'ชื่อทีมและโลโก้',
+    subtitle: 'ชื่อและโลโก้ของทีม ใช้ทั้งแถบเมนู หน้าเข้าสู่ระบบ และเป็นค่าเริ่มต้นของทุกบัญชี',
     nameLabel: 'ชื่อทีม / บริษัท / ครอบครัว',
     namePlaceholder: 'เช่น ทีม Dev ART หรือ ครอบครัวใจดี',
-    saveLabel: 'บันทึกแบรนด์ส่วนกลาง',
-    savedMessage: 'บันทึกแบรนด์ส่วนกลางเรียบร้อยแล้ว!',
+    saveLabel: 'บันทึกชื่อทีมและโลโก้',
+    savedMessage: 'บันทึกชื่อทีมและโลโก้เรียบร้อยแล้ว!',
     resetConfirm: 'กลับไปใช้โลโก้เริ่มต้นของระบบ?',
     resetBody: 'โลโก้ที่อัปโหลดไว้จะถูกแทนที่ด้วยโลโก้มาตรฐานของระบบ',
     resetDone: 'รีเซ็ตโลโก้กลับเป็นค่าเริ่มต้นแล้ว',
@@ -47,28 +47,45 @@ const COPY = {
 } as const;
 
 /**
- * Workspace branding card, used in two scopes:
- * - `personal` (default): the signed-in account's own name/tagline/logo.
- * - `workspace`: the workspace-wide branding shown on the sign-in page; the
- *   profile page only renders this one inside the admin tab.
+ * Workspace branding card — one card for everyone.
+ *
+ * An ordinary account edits its own name/tagline/logo, which only changes what
+ * that account sees. An admin edits the workspace-wide branding instead, so the
+ * sidebar, the sign-in page and the default for new accounts all follow from
+ * this single card.
  */
-export function BrandingCard({ scope = 'personal' }: { scope?: 'personal' | 'workspace' }) {
+export function BrandingCard({ isAdmin = false }: { isAdmin?: boolean }) {
   const {
     companyName,
     companyTagline,
     brandLogoUrl,
     workspaceName,
     workspaceTagline,
+    workspaceLogo,
     updateBranding,
     uploadBrandLogo,
     updateWorkspaceBranding,
     uploadWorkspaceLogo,
   } = useBranding();
 
-  const isPersonal = scope === 'personal';
-  const copy = COPY[scope];
-  const initialName = isPersonal ? workspaceName : companyName;
-  const initialTagline = isPersonal ? workspaceTagline : companyTagline;
+  const copy = isAdmin ? COPY.workspace : COPY.personal;
+  const initialName = isAdmin ? companyName : workspaceName;
+  const initialTagline = isAdmin ? companyTagline : workspaceTagline;
+
+  // An admin edit goes to the workspace branding, so a leftover personal
+  // override from an earlier session has to be cleared or it would keep
+  // shadowing the new value in this account's own sidebar.
+  const clearPersonal = async (fields: { name?: boolean; tagline?: boolean; logo?: boolean }) => {
+    const payload: {
+      workspace_name?: string;
+      workspace_tagline?: string;
+      workspace_logo?: string;
+    } = {};
+    if (fields.name && workspaceName) payload.workspace_name = '';
+    if (fields.tagline && workspaceTagline) payload.workspace_tagline = '';
+    if (fields.logo && workspaceLogo) payload.workspace_logo = '';
+    if (Object.keys(payload).length > 0) await updateWorkspaceBranding(payload);
+  };
 
   const [formCompanyName, setFormCompanyName] = useState(initialName);
   const [formCompanyTagline, setFormCompanyTagline] = useState(initialTagline);
@@ -94,15 +111,16 @@ export function BrandingCard({ scope = 'personal' }: { scope?: 'personal' | 'wor
     setIsSavingBranding(true);
     // The logo has its own immediate-save flow; sending it here would re-upload
     // a 20–40KB data URL on every name change.
-    const res = isPersonal
-      ? await updateWorkspaceBranding({
-          workspace_name: name,
-          workspace_tagline: formCompanyTagline.trim(),
-        })
-      : await updateBranding({
+    const res = isAdmin
+      ? await updateBranding({
           company_name: name,
           company_tagline: formCompanyTagline.trim(),
+        })
+      : await updateWorkspaceBranding({
+          workspace_name: name,
+          workspace_tagline: formCompanyTagline.trim(),
         });
+    if (res.success && isAdmin) await clearPersonal({ name: true, tagline: true });
     setIsSavingBranding(false);
 
     if (res.success) {
@@ -120,7 +138,8 @@ export function BrandingCard({ scope = 'personal' }: { scope?: 'personal' | 'wor
     }
 
     setIsUploadingBrandLogo(true);
-    const res = isPersonal ? await uploadWorkspaceLogo(file) : await uploadBrandLogo(file);
+    const res = isAdmin ? await uploadBrandLogo(file) : await uploadWorkspaceLogo(file);
+    if (res.success && isAdmin) await clearPersonal({ logo: true });
     setIsUploadingBrandLogo(false);
     if (brandLogoInputRef.current) brandLogoInputRef.current.value = '';
 
@@ -149,9 +168,10 @@ export function BrandingCard({ scope = 'personal' }: { scope?: 'personal' | 'wor
     if (!confirmed.isConfirmed) return;
 
     setIsUploadingBrandLogo(true);
-    const res = isPersonal
-      ? await updateWorkspaceBranding({ workspace_logo: '' })
-      : await updateBranding({ brand_logo_url: '' });
+    const res = isAdmin
+      ? await updateBranding({ brand_logo_url: '' })
+      : await updateWorkspaceBranding({ workspace_logo: '' });
+    if (res.success && isAdmin) await clearPersonal({ logo: true });
     setIsUploadingBrandLogo(false);
 
     if (res.success) {
