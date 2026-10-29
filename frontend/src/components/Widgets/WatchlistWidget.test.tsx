@@ -1,6 +1,5 @@
-import { render, screen, waitFor, within } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { vi, type Mock } from 'vitest';
+import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import WatchlistWidget from './WatchlistWidget';
 
 // Mock the fetchWithAuth module
@@ -142,11 +141,11 @@ describe('WatchlistWidget', () => {
 
     // Find and fill the input
     const input = screen.getByLabelText(/เพิ่มสัญลักษณ์ในรายการติดตาม/i);
-    await userEvent.type(input, 'AAPL');
+    fireEvent.change(input, { target: { value: 'AAPL' } });
 
     // Click add button
     const addButton = screen.getByRole('button', { name: /เพิ่มสัญลักษณ์/i });
-    await userEvent.click(addButton);
+    fireEvent.click(addButton);
 
     // Should call PUT to save
     await waitFor(() => {
@@ -178,10 +177,10 @@ describe('WatchlistWidget', () => {
     });
 
     const input = screen.getByLabelText(/เพิ่มสัญลักษณ์ในรายการติดตาม/i);
-    await userEvent.type(input, 'invalid-symbol!@#');
+    fireEvent.change(input, { target: { value: 'invalid-symbol!@#' } });
 
     const addButton = screen.getByRole('button', { name: /เพิ่มสัญลักษณ์/i });
-    await userEvent.click(addButton);
+    fireEvent.click(addButton);
 
     expect(screen.getByRole('alert')).toHaveTextContent('ชื่อย่อต้องเป็นตัวอักษรหรือตัวเลข');
   });
@@ -204,10 +203,10 @@ describe('WatchlistWidget', () => {
     });
 
     const input = screen.getByLabelText(/เพิ่มสัญลักษณ์ในรายการติดตาม/i);
-    await userEvent.type(input, 'AAPL');
+    fireEvent.change(input, { target: { value: 'AAPL' } });
 
     const addButton = screen.getByRole('button', { name: /เพิ่มสัญลักษณ์/i });
-    await userEvent.click(addButton);
+    fireEvent.click(addButton);
 
     expect(screen.getByRole('alert')).toHaveTextContent('มีรายการนี้อยู่แล้ว');
   });
@@ -238,7 +237,7 @@ describe('WatchlistWidget', () => {
 
     // Find and click trash button
     const trashButton = screen.getAllByRole('button', { name: /เลิกติดตาม/i })[0];
-    await userEvent.click(trashButton);
+    fireEvent.click(trashButton);
 
     // Should call PUT to save without the removed symbol
     await waitFor(() => {
@@ -275,7 +274,7 @@ describe('WatchlistWidget', () => {
 
     // Click refresh button
     const refreshButton = screen.getByRole('button', { name: /รีเฟรชราคา/i });
-    await userEvent.click(refreshButton);
+    fireEvent.click(refreshButton);
 
     // Should show loading indicator
     expect(screen.getByRole('img', { name: /กำลังโหลด/i })).toBeInTheDocument();
@@ -305,10 +304,10 @@ describe('WatchlistWidget', () => {
     });
 
     const input = screen.getByLabelText(/เพิ่มสัญลักษณ์ในรายการติดตาม/i);
-    await userEvent.type(input, 'EXTRA');
+    fireEvent.change(input, { target: { value: 'EXTRA' } });
 
     const addButton = screen.getByRole('button', { name: /เพิ่มสัญลักษณ์/i });
-    await userEvent.click(addButton);
+    fireEvent.click(addButton);
 
     expect(screen.getByRole('alert')).toHaveTextContent('ติดตามได้สูงสุด 12 รายการ');
   });

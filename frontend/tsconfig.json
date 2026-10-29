@@ -39,6 +39,10 @@
     "node_modules",
     ".next",
     "playwright.config.ts",
-    "tests/**/*"
+    "vitest.config.mts",
+    "vitest.setup.ts",
+    "tests/**/*",
+    "**/*.test.ts",
+    "**/*.test.tsx"
   ]
 }
