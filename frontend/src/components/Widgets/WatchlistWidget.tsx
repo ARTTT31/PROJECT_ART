@@ -212,7 +212,10 @@ export default function WatchlistWidget({
         </p>
       )}
 
-      <ul className="mt-3 min-h-0 flex-1 space-y-1.5 overflow-y-auto pr-0.5" aria-label="รายการติดตาม">
+      <ul
+        className="mt-3 max-h-[248px] min-h-0 flex-1 space-y-1.5 overflow-y-auto pr-0.5"
+        aria-label="รายการติดตาม"
+      >
         {symbols.length === 0 ? (
           <li className="flex min-h-[110px] flex-col items-center justify-center rounded-[14px] border border-dashed border-black/[0.08] bg-[#f8f8fa] px-3.5 py-5 text-center text-[12.5px] text-[#86868b]">
             <TrendingUp size={20} className="mb-2 text-[#a1a1a6]" aria-hidden="true" />

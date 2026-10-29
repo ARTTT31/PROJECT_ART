@@ -412,7 +412,11 @@ export default function DashboardPage() {
           items={visibleWidgets.map((w) => w.id)}
           strategy={verticalListSortingStrategy}
         >
-          <div className="grid auto-rows-fr grid-cols-1 items-stretch gap-4 sm:gap-5 md:grid-cols-12">
+          {/* No `auto-rows-fr`: that forced every row to match the tallest one
+              (the market widget with its chart), stretching the short cards far
+              past their content. `items-stretch` still keeps the cards inside a
+              single row equal height. */}
+          <div className="grid grid-cols-1 items-stretch gap-4 sm:gap-5 md:grid-cols-12">
             {visibleWidgets.map((widget, index) => (
               <SortableWidget
                 key={widget.id}

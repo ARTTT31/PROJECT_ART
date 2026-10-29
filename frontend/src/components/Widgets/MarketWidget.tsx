@@ -574,7 +574,7 @@ export default function MarketWidget({
       </div>
       <div
         ref={chartRef}
-        className="tradingview-widget-container mt-2 h-[320px] w-full overflow-hidden rounded-[14px] bg-white ring-1 ring-black/[0.06] sm:h-[380px]"
+        className="tradingview-widget-container mt-2 h-[280px] w-full overflow-hidden rounded-[14px] bg-white ring-1 ring-black/[0.06] sm:h-[320px]"
         aria-label={`กราฟแท่งเทียน ${chartSymbol}`}
       />
 
