@@ -10,11 +10,11 @@ export function DashboardPageSkeleton() {
         </div>
         <div className="h-10 w-36 rounded-full bg-[#f2f2f7]" />
       </div>
-      <div className="grid grid-cols-1 gap-4 sm:gap-5 md:grid-cols-12">
+      <div className="grid auto-rows-fr grid-cols-1 items-stretch gap-4 sm:gap-5 md:grid-cols-12">
         {[0, 1, 2, 3, 4, 5].map((item) => (
           <div
             key={item}
-            className={`min-h-[280px] animate-pulse rounded-[18px] border border-black/[0.06] bg-white p-5 ${item === 2 ? 'col-span-full md:col-span-8' : 'col-span-full md:col-span-6'}`}
+            className={`min-h-[300px] animate-pulse rounded-[18px] border border-black/[0.06] bg-white p-5 ${item === 2 ? 'col-span-full md:col-span-8' : 'col-span-full md:col-span-6'}`}
             style={{ animationDelay: `${item * 70}ms` }}
           >
             <div className="mb-6 flex items-center gap-3">
@@ -38,7 +38,7 @@ export function DashboardPageSkeleton() {
 
 export function WeatherSkeleton() {
   return (
-    <div className="flex h-full min-h-[300px] flex-col justify-between rounded-[18px] bg-white p-5 border border-black/[0.06]">
+    <div className="flex h-full min-h-[300px] flex-col justify-between rounded-[18px] border border-black/[0.06] bg-white p-5">
       <div>
         <div className="flex items-start justify-between gap-3 mb-4">
           <div className="flex items-start gap-3">
@@ -78,7 +78,7 @@ export function WeatherSkeleton() {
 
 export function HolidaySkeleton() {
   return (
-    <div className="flex h-full min-h-[300px] flex-col justify-between rounded-[18px] bg-white p-5 border border-black/[0.06]">
+    <div className="flex h-full min-h-[300px] flex-col justify-between rounded-[18px] border border-black/[0.06] bg-white p-5">
       <div>
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-start gap-3">
@@ -121,7 +121,7 @@ export function HolidaySkeleton() {
 
 export function OilPriceSkeleton() {
   return (
-    <div className="flex h-full min-h-[300px] flex-col justify-between rounded-[18px] bg-white p-5 border border-black/[0.06]">
+    <div className="flex h-full min-h-[300px] flex-col justify-between rounded-[18px] border border-black/[0.06] bg-white p-5">
       <div className="flex items-start justify-between gap-3 mb-6">
         <div className="flex items-start gap-3">
           <div className="h-10 w-10 shrink-0 rounded-[12px] skeleton-shimmer" />
@@ -150,7 +150,7 @@ export function OilPriceSkeleton() {
 
 export function QuickNotesSkeleton() {
   return (
-    <div className="flex h-full min-h-[300px] flex-col rounded-[18px] bg-white p-5 border border-black/[0.06]">
+    <div className="flex h-full min-h-[300px] flex-col rounded-[18px] border border-black/[0.06] bg-white p-5">
       <div className="flex items-start justify-between gap-3 mb-4">
         <div className="flex items-start gap-3">
           <div className="h-10 w-10 shrink-0 rounded-[12px] skeleton-shimmer" />
@@ -175,7 +175,7 @@ export function QuickNotesSkeleton() {
 
 export function PriceCalcSkeleton() {
   return (
-    <div className="flex h-full min-h-[300px] flex-col rounded-[18px] bg-white p-5 border border-black/[0.06]">
+    <div className="flex h-full min-h-[300px] flex-col rounded-[18px] border border-black/[0.06] bg-white p-5">
       <div className="flex items-start justify-between gap-3 mb-4">
         <div className="flex items-start gap-3">
           <div className="h-10 w-10 shrink-0 rounded-[12px] skeleton-shimmer" />
@@ -203,7 +203,7 @@ export function PriceCalcSkeleton() {
 
 export function MarketSkeleton() {
   return (
-    <div className="flex h-full min-h-[300px] flex-col rounded-[18px] bg-white p-5 border border-black/[0.06]">
+    <div className="flex h-full min-h-[300px] flex-col rounded-[18px] border border-black/[0.06] bg-white p-5">
       <div className="flex items-start justify-between gap-3 mb-4">
         <div className="flex items-start gap-3">
           <div className="h-10 w-10 shrink-0 rounded-[12px] skeleton-shimmer" />
@@ -226,7 +226,7 @@ export function MarketSkeleton() {
 
 export function QRCodeSkeleton() {
   return (
-    <div className="flex h-full min-h-[300px] flex-col justify-between rounded-[18px] bg-white p-5 border border-black/[0.06]">
+    <div className="flex h-full min-h-[300px] flex-col justify-between rounded-[18px] border border-black/[0.06] bg-white p-5">
       <div className="flex items-start justify-between gap-3 mb-4">
         <div className="flex items-start gap-3">
           <div className="h-10 w-10 shrink-0 rounded-[12px] skeleton-shimmer" />

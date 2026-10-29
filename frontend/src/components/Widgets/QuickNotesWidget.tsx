@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Check, ListTodo, Loader2, Plus, Trash2 } from 'lucide-react';
+import { AlertCircle, Check, ListTodo, Loader2, Plus, RotateCw, Trash2 } from 'lucide-react';
 import WidgetSizeToggle from './WidgetSizeToggle';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
 
@@ -27,6 +27,35 @@ function newId(): string {
   return `n-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
+function apiErrorMessage(status: number, body: unknown, requestId: string | null): string {
+  const payload = body as { detail?: unknown; code?: unknown } | null;
+  const suffix = requestId ? ` · รหัสคำขอ ${requestId}` : '';
+
+  if (payload?.code === 'csrf_failed') {
+    return `ตรวจสอบความปลอดภัยไม่สำเร็จ กรุณารีเฟรชหน้าแล้วลองอีกครั้ง${suffix}`;
+  }
+  if (status === 401) return `เซสชันหมดอายุ กรุณาเข้าสู่ระบบอีกครั้ง${suffix}`;
+  if (status === 403) return `บัญชีนี้ไม่มีสิทธิ์บันทึกรายการ${suffix}`;
+  if (status >= 500) return `เซิร์ฟเวอร์บันทึกไม่สำเร็จ (HTTP ${status})${suffix}`;
+
+  if (Array.isArray(payload?.detail)) {
+    const messages = payload.detail
+      .map((issue) => (issue && typeof issue === 'object' ? (issue as { msg?: unknown }).msg : null))
+      .filter((message): message is string => typeof message === 'string');
+    if (messages.length) return `ข้อมูลไม่ถูกต้อง: ${messages.join(' · ')}${suffix}`;
+  }
+  if (typeof payload?.detail === 'string') return `${payload.detail}${suffix}`;
+  return `บันทึกไม่สำเร็จ (HTTP ${status})${suffix}`;
+}
+
+function requestErrorMessage(error: unknown): string {
+  if (error instanceof Error && error.message === 'Request timeout') {
+    return 'การเชื่อมต่อใช้เวลานานเกินไป ตรวจสอบอินเทอร์เน็ตแล้วลองอีกครั้ง';
+  }
+  if (error instanceof TypeError) return 'เชื่อมต่อระบบบันทึกไม่ได้ ตรวจสอบอินเทอร์เน็ตแล้วลองอีกครั้ง';
+  return error instanceof Error && error.message ? error.message : 'เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ';
+}
+
 export default function QuickNotesWidget({
   width = 1,
   onResize,
@@ -39,24 +68,30 @@ export default function QuickNotesWidget({
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [justSaved, setJustSaved] = useState(false);
 
   const pendingRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latestRef = useRef<QuickNote[]>([]);
-  const abortRef = useRef<AbortController | null>(null);
+  const saveQueueRef = useRef<Promise<void>>(Promise.resolve());
+  const saveSequenceRef = useRef(0);
 
   const load = useCallback(async () => {
     setLoading(true);
-    setError(null);
+    setLoadError(null);
     try {
       const res = await fetchWithAuth('/api/v1/profile/quick-notes');
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error(apiErrorMessage(res.status, body, res.headers.get('X-Request-ID')));
+      }
       const data = (await res.json()) as NotesResponse;
       const loaded = Array.isArray(data.notes) ? data.notes : [];
       latestRef.current = loaded;
       setNotes(loaded);
-    } catch {
-      setError('โหลดรายการไม่สำเร็จ');
+    } catch (err) {
+      setLoadError(`โหลดรายการไม่สำเร็จ: ${requestErrorMessage(err)}`);
     } finally {
       setLoading(false);
     }
@@ -66,38 +101,46 @@ export default function QuickNotesWidget({
     void load();
     return () => {
       if (pendingRef.current) clearTimeout(pendingRef.current);
-      abortRef.current?.abort();
+      if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
     };
   }, [load]);
 
-  const persist = useCallback(async (next: QuickNote[]) => {
+  const persist = useCallback((next: QuickNote[]) => {
+    const sequence = ++saveSequenceRef.current;
     setSaving(true);
-    abortRef.current?.abort();
-    const controller = new AbortController();
-    abortRef.current = controller;
-    try {
-      const res = await fetchWithAuth('/api/v1/profile/quick-notes', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ notes: next }),
-        signal: controller.signal,
-      });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        const detail = (body as { detail?: unknown })?.detail;
-        throw new Error(typeof detail === 'string' ? detail : `HTTP ${res.status}`);
+
+    // Do not abort a write that may already have reached the database. Queue
+    // snapshots in order so a slower earlier request cannot overwrite newer edits.
+    const save = async () => {
+      try {
+        const res = await fetchWithAuth('/api/v1/profile/quick-notes', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ notes: next }),
+        });
+        if (!res.ok) {
+          const body = await res.json().catch(() => null);
+          throw new Error(apiErrorMessage(res.status, body, res.headers.get('X-Request-ID')));
+        }
+        if (sequence === saveSequenceRef.current) {
+          setError(null);
+          setJustSaved(true);
+          if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+          savedTimerRef.current = setTimeout(() => setJustSaved(false), 1800);
+        }
+      } catch (err) {
+        if (sequence === saveSequenceRef.current) setError(requestErrorMessage(err));
+      } finally {
+        if (sequence === saveSequenceRef.current) setSaving(false);
       }
-      setError(null);
-      setJustSaved(true);
-      setTimeout(() => setJustSaved(false), 1800);
-    } catch (err) {
-      if ((err as { name?: string })?.name === 'AbortError') return;
-      // Keep the optimistic list: the items are still on screen, and the next
-      // edit retries the whole list (the endpoint replaces it wholesale).
-      setError('บันทึกไม่สำเร็จ ลองแก้อีกครั้ง');
-    } finally {
-      setSaving(false);
-    }
+    };
+
+    const queuedSave = saveQueueRef.current.then(save, save);
+    saveQueueRef.current = queuedSave.then(
+      () => undefined,
+      () => undefined,
+    );
+    return queuedSave;
   }, []);
 
   /** Apply a change locally, then save it after the user stops typing. */
@@ -105,6 +148,8 @@ export default function QuickNotesWidget({
     (next: QuickNote[]) => {
       latestRef.current = next;
       setNotes(next);
+      setError(null);
+      setJustSaved(false);
       if (pendingRef.current) clearTimeout(pendingRef.current);
       pendingRef.current = setTimeout(() => {
         void persist(latestRef.current);
@@ -142,7 +187,7 @@ export default function QuickNotesWidget({
   if (loading) {
     return (
       <div
-        className="flex min-h-[300px] items-center justify-center rounded-[18px] border border-black/[0.06] bg-white p-5"
+        className="flex h-full min-h-[300px] items-center justify-center rounded-[18px] border border-black/[0.06] bg-white p-5"
         role="status"
         aria-live="polite"
         aria-label="กำลังโหลดโน้ตด่วน"
@@ -152,9 +197,34 @@ export default function QuickNotesWidget({
     );
   }
 
+  if (loadError) {
+    return (
+      <section className="flex h-full flex-col rounded-[18px] border border-black/[0.06] bg-white p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[#34c759]/10 text-[#248a3d]">
+            <ListTodo size={20} aria-hidden="true" />
+          </div>
+          <div>
+            <h3 className="text-[16px] font-bold tracking-tight text-[#1d1d1f]">โน้ตด่วน / To-do วันนี้</h3>
+            <p className="mt-0.5 text-[12px] text-[#86868b]">ตรวจสอบรายการที่บันทึกไว้</p>
+          </div>
+        </div>
+        <div role="alert" className="mt-5 rounded-[14px] border border-[#ff3b30]/15 bg-[#ff3b30]/[0.06] p-4 text-[13px] leading-relaxed text-[#b42318]">
+          <div className="flex items-start gap-2.5">
+            <AlertCircle size={17} className="mt-0.5 shrink-0" aria-hidden="true" />
+            <span>{loadError}</span>
+          </div>
+          <button type="button" onClick={() => void load()} className="mt-3 inline-flex items-center gap-1.5 font-semibold text-[#0066cc] hover:underline">
+            <RotateCw size={14} aria-hidden="true" /> ลองโหลดอีกครั้ง
+          </button>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section
-      className="flex h-full flex-col rounded-[18px] border border-black/[0.06] bg-white p-5"
+      className="flex h-full flex-col rounded-[18px] border border-black/[0.06] bg-white p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)]"
       aria-labelledby="quick-notes-title"
     >
       <div className="flex items-start justify-between gap-3">
@@ -183,14 +253,17 @@ export default function QuickNotesWidget({
       </div>
 
       {error && (
-        <div className="mt-3 flex items-center justify-between gap-2 rounded-[12px] bg-[#ff3b30]/10 px-3 py-2 text-[12px] font-medium text-[#ff3b30]">
-          <span className="truncate">{error}</span>
+        <div role="alert" className="mt-3 flex items-start justify-between gap-3 rounded-[14px] border border-[#ff3b30]/15 bg-[#ff3b30]/[0.06] px-3.5 py-3 text-[12px] font-medium leading-relaxed text-[#b42318]">
+          <span className="flex min-w-0 items-start gap-2">
+            <AlertCircle size={15} className="mt-0.5 shrink-0" aria-hidden="true" />
+            <span>{error}</span>
+          </span>
           <button
             type="button"
             onClick={() => void persist(latestRef.current)}
-            className="shrink-0 font-bold underline"
+            className="shrink-0 rounded-full px-2 py-1 font-semibold text-[#0066cc] hover:bg-white"
           >
-            ลองใหม่
+            ลองอีกครั้ง
           </button>
         </div>
       )}
@@ -221,10 +294,12 @@ export default function QuickNotesWidget({
         </button>
       </form>
 
-      <ul className="mt-3 flex-1 space-y-1.5 overflow-y-auto pr-0.5" aria-label="รายการที่ต้องทำ">
+      <ul className="mt-3 min-h-0 flex-1 space-y-1.5 overflow-y-auto pr-0.5" aria-label="รายการที่ต้องทำ">
         {notes.length === 0 && (
-          <li className="rounded-[14px] bg-[#f5f5f7] px-3.5 py-6 text-center text-[12.5px] text-[#86868b]">
-            ยังไม่มีรายการ — พิมพ์ด้านบนเพื่อเริ่มต้น
+          <li className="flex min-h-[104px] flex-col items-center justify-center rounded-[14px] border border-dashed border-black/[0.08] bg-[#f8f8fa] px-3.5 py-5 text-center text-[12.5px] text-[#86868b]">
+            <ListTodo size={20} className="mb-2 text-[#a1a1a6]" aria-hidden="true" />
+            <span>ยังไม่มีรายการ</span>
+            <span className="mt-0.5 text-[11px]">พิมพ์รายการด้านบนเพื่อเริ่มต้น</span>
           </li>
         )}
 

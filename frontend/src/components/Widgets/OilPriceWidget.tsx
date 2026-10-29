@@ -292,7 +292,7 @@ export default function OilPriceWidget({
   if (loading && !data) {
     return (
       <div
-        className="flex min-h-[220px] items-center justify-center rounded-2xl bg-white p-5 ring-1 ring-black/[0.06]"
+        className="flex h-full min-h-[300px] items-center justify-center rounded-2xl bg-white p-5 ring-1 ring-black/[0.06]"
         role="status"
         aria-live="polite"
         aria-label="กำลังโหลดราคาน้ำมัน"

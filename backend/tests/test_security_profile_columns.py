@@ -26,7 +26,13 @@ from app.api.v1.endpoints.profile import (
     _normalise_avatar_image,
 )
 
-PROFILE_COLUMNS = ("avatar", "quick_links", "dashboard_layout", "camera_config")
+PROFILE_COLUMNS = (
+    "avatar",
+    "quick_links",
+    "dashboard_layout",
+    "camera_config",
+    "quick_notes",
+)
 
 
 @contextmanager

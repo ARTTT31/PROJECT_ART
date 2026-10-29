@@ -19,10 +19,16 @@ from app.core.security import get_password_hash, verify_password
 from app.core.utils import utcnow
 
 
-# Columns excluded from the per-request authentication lookup. They are the
-# large ones (a base64 avatar plus three 100KB JSON blobs) and are only needed by
-# the handful of endpoints that actually serve them.
-AUTH_DEFERRED_COLUMNS = ("avatar", "quick_links", "dashboard_layout", "camera_config")
+# Columns excluded from the per-request authentication lookup. They are larger
+# profile payloads (avatar, preference JSON, and quick notes) only needed by the
+# handful of endpoints that actually serve them.
+AUTH_DEFERRED_COLUMNS = (
+    "avatar",
+    "quick_links",
+    "dashboard_layout",
+    "camera_config",
+    "quick_notes",
+)
 
 
 def _defer_profile_columns() -> list:
@@ -84,8 +90,8 @@ class UserService:
 
         ``resolve_user_from_token`` runs on every authenticated request but only
         reads ``is_active`` / ``is_locked`` / ``role``. Dragging the avatar and
-        the 100KB JSON blobs along cost megabytes per request, so they are
-        deferred here and re-selected explicitly by the endpoints that serve
+        100KB JSON blobs along would transfer unnecessary data on every request,
+        so they are deferred here and re-selected explicitly by the endpoints that serve
         them (see ``app.api.dependencies.load_profile_columns``).
         """
         result = await self.db.execute(

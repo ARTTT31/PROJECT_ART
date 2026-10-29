@@ -98,7 +98,7 @@ function WidgetErrorFallback({
   const isChunkError =
     error?.name === 'ChunkLoadError' || error?.message?.includes('Failed to load chunk');
   return (
-    <div className="flex min-h-[220px] flex-col items-center justify-center rounded-[18px] border border-black/[0.06] bg-white p-6">
+    <div className="flex h-full min-h-[300px] w-full flex-col items-center justify-center rounded-[18px] border border-black/[0.06] bg-white p-6">
       <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-red-100/50">
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -163,8 +163,12 @@ function SortableWidget({
   };
 
   return (
-    <div ref={setNodeRef} style={style} className={`group relative ${getColSpanClass(widget.w)}`}>
-      <div className="widget-enter" style={{ animationDelay: `${index * 70}ms` }}>
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`group relative flex self-stretch ${getColSpanClass(widget.w)}`}
+    >
+      <div className="widget-enter flex w-full flex-1" style={{ animationDelay: `${index * 70}ms` }}>
         {/* Drag handle — visible on hover, sits above widget */}
         <div
           {...attributes}
@@ -342,7 +346,7 @@ export default function DashboardPage() {
           items={visibleWidgets.map((w) => w.id)}
           strategy={verticalListSortingStrategy}
         >
-          <div className="grid grid-cols-1 gap-4 sm:gap-5 md:grid-cols-12">
+          <div className="grid auto-rows-fr grid-cols-1 items-stretch gap-4 sm:gap-5 md:grid-cols-12">
             {visibleWidgets.map((widget, index) => (
               <SortableWidget
                 key={widget.id}

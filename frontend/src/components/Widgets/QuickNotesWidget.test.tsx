@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { act, render, screen, fireEvent, waitFor } from '@testing-library/react';
 import QuickNotesWidget from './QuickNotesWidget';
 
 const api = vi.hoisted(() => ({ fetchWithAuth: vi.fn() }));
@@ -87,9 +87,59 @@ describe('QuickNotesWidget', () => {
     );
   });
 
-  it('shows an error banner when the save fails', async () => {
+  it('queues saves so a later edit is written after an earlier request finishes', async () => {
+    let resolveFirstSave: ((value: ReturnType<typeof jsonResponse>) => void) | undefined;
+    let writeCount = 0;
+    api.fetchWithAuth.mockImplementation(async (_url: string, init?: RequestInit) => {
+      if (init?.method === 'PUT') {
+        writeCount += 1;
+        if (writeCount === 1) {
+          return new Promise((resolve) => {
+            resolveFirstSave = resolve;
+          });
+        }
+        return jsonResponse({ notes: JSON.parse(String(init.body)).notes });
+      }
+      return jsonResponse({ notes: [] });
+    });
+    render(<QuickNotesWidget />);
+    await waitFor(() => expect(screen.queryByLabelText('กำลังโหลดโน้ตด่วน')).toBeNull());
+
+    vi.useFakeTimers();
+    try {
+      const input = screen.getByLabelText('รายการที่ต้องทำใหม่');
+      fireEvent.change(input, { target: { value: 'รายการที่กำลังบันทึก' } });
+      fireEvent.submit(input.closest('form') as HTMLFormElement);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(700);
+      });
+      expect(writeCount).toBe(1);
+
+      fireEvent.click(screen.getByLabelText('ทำเสร็จ รายการที่กำลังบันทึก'));
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(700);
+      });
+      expect(writeCount).toBe(1);
+
+      resolveFirstSave?.(jsonResponse({ notes: [{ id: 'n1', text: 'รายการที่กำลังบันทึก', done: false }] }));
+      vi.useRealTimers();
+      await waitFor(() => expect(writeCount).toBe(2));
+      expect(lastPutBody().notes[0].done).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('shows an actionable server error with its request id when saving fails', async () => {
     api.fetchWithAuth.mockImplementation(async (url: string, init?: RequestInit) => {
-      if (init?.method === 'PUT') return { ok: false, json: async () => ({}) };
+      if (init?.method === 'PUT') {
+        return {
+          ok: false,
+          status: 503,
+          headers: new Headers({ 'X-Request-ID': 'req-123' }),
+          json: async () => ({ detail: 'database unavailable' }),
+        };
+      }
       return jsonResponse({ notes: [] });
     });
     render(<QuickNotesWidget />);
@@ -99,6 +149,28 @@ describe('QuickNotesWidget', () => {
     fireEvent.change(input, { target: { value: 'งานที่บันทึกไม่ผ่าน' } });
     fireEvent.submit(input.closest('form') as HTMLFormElement);
 
-    await screen.findByText(/บันทึกไม่สำเร็จ/, undefined, { timeout: 3000 });
+    await screen.findByText(/เซิร์ฟเวอร์บันทึกไม่สำเร็จ \(HTTP 503\).*req-123/, undefined, { timeout: 3000 });
+  });
+
+  it('reports a stale CSRF token clearly', async () => {
+    api.fetchWithAuth.mockImplementation(async (url: string, init?: RequestInit) => {
+      if (init?.method === 'PUT') {
+        return {
+          ok: false,
+          status: 403,
+          headers: new Headers(),
+          json: async () => ({ code: 'csrf_failed' }),
+        };
+      }
+      return jsonResponse({ notes: [] });
+    });
+    render(<QuickNotesWidget />);
+    await waitFor(() => expect(screen.queryByLabelText('กำลังโหลดโน้ตด่วน')).toBeNull());
+
+    const input = screen.getByLabelText('รายการที่ต้องทำใหม่');
+    fireEvent.change(input, { target: { value: 'รายการทดสอบ CSRF' } });
+    fireEvent.submit(input.closest('form') as HTMLFormElement);
+
+    await screen.findByText(/ตรวจสอบความปลอดภัยไม่สำเร็จ/, undefined, { timeout: 3000 });
   });
 });

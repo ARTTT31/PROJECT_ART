@@ -845,6 +845,10 @@ async def update_quick_notes(
     db: AsyncSession = Depends(get_db),
 ):
     """Replace the account's quick notes with the list in the request."""
-    current_user.quick_notes = serialize_quick_notes(payload.notes)
+    saved_notes = serialize_quick_notes(payload.notes)
+    current_user.quick_notes = saved_notes
     await db.commit()
-    return _quick_notes_response(current_user.quick_notes)
+    # ``quick_notes`` is deferred on auth lookups and commit expires ORM fields.
+    # Use the value we just persisted rather than triggering an async lazy load
+    # while building the response (which raises MissingGreenlet).
+    return _quick_notes_response(saved_notes)
