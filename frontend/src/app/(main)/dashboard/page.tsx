@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { GripHorizontal, SlidersHorizontal } from 'lucide-react';
 import { WidgetConfig } from '@/types';
-import DashboardLayout from '@/components/Layout/DashboardLayout';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { getGreeting } from '@/utils/greeting';
 
@@ -35,8 +34,8 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 
 import dynamic from 'next/dynamic';
-import { motion, AnimatePresence } from 'framer-motion';
 import {
+  DashboardPageSkeleton,
   WeatherSkeleton,
   HolidaySkeleton,
   OilPriceSkeleton,
@@ -144,9 +143,11 @@ function WidgetErrorFallback({
 
 function SortableWidget({
   widget,
+  index,
   onResize,
 }: {
   widget: WidgetConfig;
+  index: number;
   onResize: (id: string, newWidth: number) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -163,83 +164,91 @@ function SortableWidget({
 
   return (
     <div ref={setNodeRef} style={style} className={`group relative ${getColSpanClass(widget.w)}`}>
-      {/* Drag handle — visible on hover, sits above widget */}
-      <div
-        {...attributes}
-        {...listeners}
-        className="absolute inset-x-0 top-0 z-10 flex h-10 cursor-grab items-center justify-center opacity-100 transition-opacity duration-200 active:cursor-grabbing touch-none md:opacity-0 md:group-hover:opacity-100"
-        aria-label={`ย้ายวิดเจ็ต ${widgetNames[widget.id]}`}
-      >
-        <span className="flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1 shadow-md ring-1 ring-black/[0.08] backdrop-blur-md">
-          <GripHorizontal className="h-3.5 w-3.5 text-[#6e6e73]" aria-hidden="true" />
-          <span className="text-[11px] font-semibold text-[#6e6e73]">จัดลำดับ</span>
-        </span>
-      </div>
+      <div className="widget-enter" style={{ animationDelay: `${index * 70}ms` }}>
+        {/* Drag handle — visible on hover, sits above widget */}
+        <div
+          {...attributes}
+          {...listeners}
+          className="absolute inset-x-0 top-0 z-10 flex h-10 cursor-grab items-center justify-center opacity-100 transition-opacity duration-200 active:cursor-grabbing touch-none md:opacity-0 md:group-hover:opacity-100"
+          aria-label={`ย้ายวิดเจ็ต ${widgetNames[widget.id]}`}
+        >
+          <span className="flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1 shadow-md ring-1 ring-black/[0.08] backdrop-blur-md">
+            <GripHorizontal className="h-3.5 w-3.5 text-[#6e6e73]" aria-hidden="true" />
+            <span className="text-[11px] font-semibold text-[#6e6e73]">จัดลำดับ</span>
+          </span>
+        </div>
 
-      {/* Widget content */}
-      {widget.id === 'notes' && (
-        <ErrorBoundary
-          fallback={(err, reset) => (
-            <WidgetErrorFallback name="โน้ตด่วน" error={err} reset={reset} />
-          )}
-        >
-          <QuickNotesWidget width={widget.w} onResize={(newSize) => onResize(widget.id, newSize)} />
-        </ErrorBoundary>
-      )}
-      {widget.id === 'calc' && (
-        <ErrorBoundary
-          fallback={(err, reset) => (
-            <WidgetErrorFallback name="คิดราคา / กำไร" error={err} reset={reset} />
-          )}
-        >
-          <PriceCalcWidget width={widget.w} onResize={(newSize) => onResize(widget.id, newSize)} />
-        </ErrorBoundary>
-      )}
-      {widget.id === 'market' && (
-        <ErrorBoundary
-          fallback={(err, reset) => (
-            <WidgetErrorFallback name="ค่าเงิน · ทอง · SET" error={err} reset={reset} />
-          )}
-        >
-          <MarketWidget width={widget.w} onResize={(newSize) => onResize(widget.id, newSize)} />
-        </ErrorBoundary>
-      )}
-      {widget.id === 'holidays' && (
-        <ErrorBoundary
-          fallback={(err, reset) => (
-            <WidgetErrorFallback name="วันหยุดนักขัตฤกษ์" error={err} reset={reset} />
-          )}
-        >
-          <HolidayWidget width={widget.w} onResize={(newSize) => onResize(widget.id, newSize)} />
-        </ErrorBoundary>
-      )}
-      {widget.id === 'weather' && (
-        <ErrorBoundary
-          fallback={(err, reset) => (
-            <WidgetErrorFallback name="สภาพอากาศ" error={err} reset={reset} />
-          )}
-        >
-          <WeatherWidget width={widget.w} onResize={(newSize) => onResize(widget.id, newSize)} />
-        </ErrorBoundary>
-      )}
-      {widget.id === 'oilprice' && (
-        <ErrorBoundary
-          fallback={(err, reset) => (
-            <WidgetErrorFallback name="ราคาน้ำมัน" error={err} reset={reset} />
-          )}
-        >
-          <OilPriceWidget width={widget.w} onResize={(newSize) => onResize(widget.id, newSize)} />
-        </ErrorBoundary>
-      )}
-      {widget.id === 'qrcode' && (
-        <ErrorBoundary
-          fallback={(err, reset) => (
-            <WidgetErrorFallback name="QR Code" error={err} reset={reset} />
-          )}
-        >
-          <QRCodeWidget width={widget.w} onResize={(newSize) => onResize(widget.id, newSize)} />
-        </ErrorBoundary>
-      )}
+        {/* Widget content */}
+        {widget.id === 'notes' && (
+          <ErrorBoundary
+            fallback={(err, reset) => (
+              <WidgetErrorFallback name="โน้ตด่วน" error={err} reset={reset} />
+            )}
+          >
+            <QuickNotesWidget
+              width={widget.w}
+              onResize={(newSize) => onResize(widget.id, newSize)}
+            />
+          </ErrorBoundary>
+        )}
+        {widget.id === 'calc' && (
+          <ErrorBoundary
+            fallback={(err, reset) => (
+              <WidgetErrorFallback name="คิดราคา / กำไร" error={err} reset={reset} />
+            )}
+          >
+            <PriceCalcWidget
+              width={widget.w}
+              onResize={(newSize) => onResize(widget.id, newSize)}
+            />
+          </ErrorBoundary>
+        )}
+        {widget.id === 'market' && (
+          <ErrorBoundary
+            fallback={(err, reset) => (
+              <WidgetErrorFallback name="ค่าเงิน · ทอง · SET" error={err} reset={reset} />
+            )}
+          >
+            <MarketWidget width={widget.w} onResize={(newSize) => onResize(widget.id, newSize)} />
+          </ErrorBoundary>
+        )}
+        {widget.id === 'holidays' && (
+          <ErrorBoundary
+            fallback={(err, reset) => (
+              <WidgetErrorFallback name="วันหยุดนักขัตฤกษ์" error={err} reset={reset} />
+            )}
+          >
+            <HolidayWidget width={widget.w} onResize={(newSize) => onResize(widget.id, newSize)} />
+          </ErrorBoundary>
+        )}
+        {widget.id === 'weather' && (
+          <ErrorBoundary
+            fallback={(err, reset) => (
+              <WidgetErrorFallback name="สภาพอากาศ" error={err} reset={reset} />
+            )}
+          >
+            <WeatherWidget width={widget.w} onResize={(newSize) => onResize(widget.id, newSize)} />
+          </ErrorBoundary>
+        )}
+        {widget.id === 'oilprice' && (
+          <ErrorBoundary
+            fallback={(err, reset) => (
+              <WidgetErrorFallback name="ราคาน้ำมัน" error={err} reset={reset} />
+            )}
+          >
+            <OilPriceWidget width={widget.w} onResize={(newSize) => onResize(widget.id, newSize)} />
+          </ErrorBoundary>
+        )}
+        {widget.id === 'qrcode' && (
+          <ErrorBoundary
+            fallback={(err, reset) => (
+              <WidgetErrorFallback name="QR Code" error={err} reset={reset} />
+            )}
+          >
+            <QRCodeWidget width={widget.w} onResize={(newSize) => onResize(widget.id, newSize)} />
+          </ErrorBoundary>
+        )}
+      </div>
     </div>
   );
 }
@@ -289,13 +298,7 @@ export default function DashboardPage() {
   // ── Loading state ────────────────────────────────────────────────────────
 
   if (!user || !isClient) {
-    return (
-      <>
-        <div className="flex min-h-[60vh] items-center justify-center">
-          <div className="h-11 w-11 animate-spin rounded-full border-[3px] border-[#f5f5f7] border-t-[#0066cc]" />
-        </div>
-      </>
-    );
+    return <DashboardPageSkeleton />;
   }
 
   // ── Render ───────────────────────────────────────────────────────────────
@@ -340,8 +343,13 @@ export default function DashboardPage() {
           strategy={verticalListSortingStrategy}
         >
           <div className="grid grid-cols-1 gap-4 sm:gap-5 md:grid-cols-12">
-            {visibleWidgets.map((widget) => (
-              <SortableWidget key={widget.id} widget={widget} onResize={handleResize} />
+            {visibleWidgets.map((widget, index) => (
+              <SortableWidget
+                key={widget.id}
+                widget={widget}
+                index={index}
+                onResize={handleResize}
+              />
             ))}
           </div>
         </SortableContext>

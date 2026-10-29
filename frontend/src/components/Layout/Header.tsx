@@ -66,11 +66,7 @@ export default function Header({ user, onMenuClick, sidebarCollapsed = false }: 
                   return (
                     <span key={`${c.label}-${idx}`} className="flex items-center gap-1.5">
                       {c.href ? (
-                        <Link
-                          href={c.href}
-                          prefetch={false}
-                          className="transition-colors hover:text-[#1d1d1f]"
-                        >
+                        <Link href={c.href} className="transition-colors hover:text-[#1d1d1f]">
                           {c.label}
                         </Link>
                       ) : (

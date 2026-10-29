@@ -1,5 +1,41 @@
 'use client';
 
+export function DashboardPageSkeleton() {
+  return (
+    <div className="space-y-5" aria-label="กำลังโหลดหน้าหลัก" aria-busy="true">
+      <div className="flex min-h-[142px] animate-pulse flex-col justify-between gap-5 rounded-[18px] border border-black/[0.06] bg-white p-6 sm:flex-row sm:items-center sm:p-7">
+        <div className="space-y-3">
+          <div className="h-8 w-64 max-w-full rounded-full bg-[#e5e5ea]" />
+          <div className="h-4 w-48 rounded-full bg-[#f2f2f7]" />
+        </div>
+        <div className="h-10 w-36 rounded-full bg-[#f2f2f7]" />
+      </div>
+      <div className="grid grid-cols-1 gap-4 sm:gap-5 md:grid-cols-12">
+        {[0, 1, 2, 3, 4, 5].map((item) => (
+          <div
+            key={item}
+            className={`min-h-[280px] animate-pulse rounded-[18px] border border-black/[0.06] bg-white p-5 ${item === 2 ? 'col-span-full md:col-span-8' : 'col-span-full md:col-span-6'}`}
+            style={{ animationDelay: `${item * 70}ms` }}
+          >
+            <div className="mb-6 flex items-center gap-3">
+              <div className="h-10 w-10 rounded-[12px] bg-[#f2f2f7]" />
+              <div className="space-y-2">
+                <div className="h-4 w-32 rounded-full bg-[#e5e5ea]" />
+                <div className="h-3 w-40 rounded-full bg-[#f2f2f7]" />
+              </div>
+            </div>
+            <div className="space-y-3">
+              <div className="h-12 rounded-xl bg-[#f5f5f7]" />
+              <div className="h-12 rounded-xl bg-[#f5f5f7]" />
+              <div className="h-12 rounded-xl bg-[#f5f5f7]" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function WeatherSkeleton() {
   return (
     <div className="flex h-full min-h-[300px] flex-col justify-between rounded-[18px] bg-white p-5 border border-black/[0.06]">
