@@ -19,7 +19,7 @@ from zoneinfo import ZoneInfo
 
 import httpx
 from urllib.parse import quote
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 
 from app.api.dependencies import get_current_user
@@ -366,6 +366,134 @@ async def market_quotes(
 
     quotes = await asyncio.gather(*(_fetch_quote(s) for s in wanted), return_exceptions=True)
     return [quote for quote in quotes if isinstance(quote, QuoteItem)]
+
+
+# ── Candles ────────────────────────────────────────────────────
+# The chart used to be a TradingView embed, but that script is blocked on
+# several Thai networks (ERR_CONNECTION_RESET), which left the card empty. The
+# chart is drawn in-app instead, from Yahoo's OHLC payload for exactly the
+# instruments this widget already tracks. The symbol set is a whitelist, so the
+# proxy can never be bent into fetching an arbitrary upstream URL.
+CANDLE_URL = "https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?interval={interval}&range={range}"
+CANDLE_TTL = 10 * 60
+
+# widget id -> (yahoo symbol, label)
+CANDLE_SYMBOLS: dict[str, tuple[str, str]] = {
+    "gold": ("GC=F", "ทองคำ COMEX · USD/oz"),
+    "USD": ("THB=X", "ดอลลาร์สหรัฐ → บาท"),
+    "EUR": ("EURTHB=X", "ยูโร → บาท"),
+    "GBP": ("GBPTHB=X", "ปอนด์อังกฤษ → บาท"),
+    "JPY": ("JPYTHB=X", "เยนญี่ปุ่น → บาท"),
+}
+
+# The upstream caps how far back each interval may reach.
+CANDLE_INTERVALS: dict[str, str] = {
+    "15m": "1mo",
+    "60m": "3mo",
+    "1d": "1y",
+    "1wk": "5y",
+}
+
+
+class CandlePoint(BaseModel):
+    t: datetime
+    o: float
+    h: float
+    l: float
+    c: float
+
+
+class CandleSeries(BaseModel):
+    symbol: str
+    label: str
+    interval: str
+    source: str = "Yahoo Finance"
+    updated_at: Optional[str] = None
+    points: list[CandlePoint] = Field(default_factory=list)
+
+
+async def _fetch_candles(symbol_id: str, interval: str) -> dict[str, Any]:
+    """OHLC bars for one whitelisted instrument."""
+    yahoo_symbol, label = CANDLE_SYMBOLS[symbol_id]
+    url = CANDLE_URL.format(
+        symbol=quote(yahoo_symbol, safe=""),
+        interval=interval,
+        range=CANDLE_INTERVALS[interval],
+    )
+    async with httpx.AsyncClient(timeout=12, headers=SET_HEADERS) as client:
+        response = await client.get(url)
+        response.raise_for_status()
+        body = response.json()
+
+    result = (body.get("chart") or {}).get("result") or []
+    if not result:
+        raise ValueError("candle payload has no result")
+
+    row = result[0]
+    stamps = row.get("timestamp") or []
+    quote_block = ((row.get("indicators") or {}).get("quote") or [{}])[0]
+    opens = quote_block.get("open") or []
+    highs = quote_block.get("high") or []
+    lows = quote_block.get("low") or []
+    closes = quote_block.get("close") or []
+
+    points: list[dict[str, Any]] = []
+    for index, stamp in enumerate(stamps):
+        if index >= min(len(opens), len(highs), len(lows), len(closes)):
+            break
+        values = (opens[index], highs[index], lows[index], closes[index])
+        if any(value is None for value in values):
+            continue
+        open_, high, low, close = (float(value) for value in values)
+        points.append(
+            {
+                "t": datetime.fromtimestamp(int(stamp), tz=BANGKOK),
+                "o": open_,
+                "h": high,
+                "l": low,
+                "c": close,
+            }
+        )
+
+    if not points:
+        raise ValueError("candle payload has no usable bars")
+
+    return {
+        "symbol": symbol_id,
+        "label": label,
+        "interval": interval,
+        "updated_at": points[-1]["t"].isoformat(),
+        "points": points,
+    }
+
+
+@router.get("/candles", response_model=CandleSeries)
+@limiter.limit(_GENERAL_LIMIT)
+async def market_candles(
+    request: Request,
+    symbol: str = Query(..., max_length=12),
+    interval: str = Query("1d", max_length=4),
+    current_user: User = Depends(get_current_user),
+):
+    """OHLC bars for the dashboard's candlestick chart.
+
+    Authenticated like the summary endpoint: this is a proxy to a public API and
+    should not become an open relay. An unknown symbol is a 404, not a fetch of
+    whatever the caller typed.
+    """
+    key = symbol.strip()
+    if key not in CANDLE_SYMBOLS:
+        raise HTTPException(status_code=404, detail="ไม่พบสินทรัพย์กราฟที่เลือก")
+    chosen = interval if interval in CANDLE_INTERVALS else "1d"
+
+    payload, _stale = await _cached(
+        f"candles:{key}:{chosen}",
+        CANDLE_TTL,
+        lambda: _fetch_candles(key, chosen),
+    )
+    if not payload:
+        raise HTTPException(status_code=503, detail="ดึงข้อมูลกราฟไม่สำเร็จ")
+    return CandleSeries(**payload)
 
 
 @router.get("/summary", response_model=MarketSummary)

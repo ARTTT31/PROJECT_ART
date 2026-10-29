@@ -233,3 +233,76 @@ def test_frankfurter_rows_and_provider_selection(monkeypatch):
     assert next(row for row in blended["rates"] if row["code"] == "USD")["thb"] == 33.77
     assert requested[0][1]["base"] == "THB"
     assert requested[1][1]["providers"] == "ecb"
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Candles — the chart is drawn in-app, so the proxy has to hand back real bars.
+# ═══════════════════════════════════════════════════════════════════════════════
+CANDLE_PAYLOAD = {
+    "symbol": "gold",
+    "label": "ทองคำ COMEX · USD/oz",
+    "interval": "1d",
+    "updated_at": "2026-10-28T15:40:00+07:00",
+    "points": [
+        {"t": "2026-10-27T00:00:00+07:00", "o": 4000.0, "h": 4050.0, "l": 3980.0, "c": 4040.0},
+        {"t": "2026-10-28T00:00:00+07:00", "o": 4040.0, "h": 4090.0, "l": 4020.0, "c": 4025.0},
+    ],
+}
+
+
+@pytest.mark.asyncio
+async def test_candles_require_auth(client):
+    assert (await client.get("/api/v1/market/candles?symbol=gold")).status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_candles_reject_an_unknown_symbol(client, logged_in_user):
+    """The whitelist is what stops this being an open relay to Yahoo."""
+    response = await client.get("/api/v1/market/candles?symbol=DOGEUSDT")
+    assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_candles_return_bars(client, logged_in_user, monkeypatch):
+    async def _load(symbol, interval):
+        assert symbol == "gold"
+        assert interval == "1d"
+        return CANDLE_PAYLOAD
+
+    monkeypatch.setattr(market, "_fetch_candles", _load)
+
+    response = await client.get("/api/v1/market/candles?symbol=gold&interval=1d")
+    assert response.status_code == 200, response.text
+    body = response.json()
+
+    assert body["symbol"] == "gold"
+    assert body["source"] == "Yahoo Finance"
+    assert [point["c"] for point in body["points"]] == [4040.0, 4025.0]
+
+
+@pytest.mark.asyncio
+async def test_candles_fall_back_to_daily_for_an_unknown_interval(
+    client, logged_in_user, monkeypatch
+):
+    seen = {}
+
+    async def _load(symbol, interval):
+        seen["interval"] = interval
+        return CANDLE_PAYLOAD
+
+    monkeypatch.setattr(market, "_fetch_candles", _load)
+
+    response = await client.get("/api/v1/market/candles?symbol=gold&interval=5y")
+    assert response.status_code == 200
+    assert seen["interval"] == "1d"
+
+
+@pytest.mark.asyncio
+async def test_candles_report_an_unavailable_source(client, logged_in_user, monkeypatch):
+    async def _load(symbol, interval):
+        raise RuntimeError("yahoo down")
+
+    monkeypatch.setattr(market, "_fetch_candles", _load)
+
+    response = await client.get("/api/v1/market/candles?symbol=USD&interval=1d")
+    assert response.status_code == 503

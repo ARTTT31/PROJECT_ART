@@ -86,40 +86,57 @@ describe('MarketWidget', () => {
     expect(screen.getByText(/COMEX Gold Futures · USD\/oz/)).toBeTruthy();
   });
 
-  it('renders selectable TradingView candlestick charts for gold and currencies', async () => {
-    api.fetchWithAuth.mockResolvedValue({ ok: true, json: async () => marketSummary });
-    render(<MarketWidget />);
-
-    await screen.findByRole('combobox', { name: 'เลือกสกุลเงิน' });
-    await waitFor(() => {
-      const script = document.querySelector<HTMLScriptElement>(
-        'script[src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js"]',
-      );
-      expect(script).toBeTruthy();
-      expect(JSON.parse(script!.text).symbol).toBe('OANDA:XAUUSD');
-      expect(JSON.parse(script!.text).style).toBe('1');
+  it('draws its own candlestick chart from the proxied OHLC bars', async () => {
+    // The TradingView embed this used to load is blocked on several Thai
+    // networks, so the chart is now drawn from `/market/candles`.
+    api.fetchWithAuth.mockImplementation(async (url: string) => {
+      if (url.includes('/market/candles')) {
+        return {
+          ok: true,
+          json: async () => ({
+            symbol: 'gold',
+            label: 'ทองคำ COMEX · USD/oz',
+            interval: '1d',
+            source: 'Yahoo Finance',
+            updated_at: '2026-10-28T00:00:00+07:00',
+            points: [
+              { t: '2026-10-26T00:00:00+07:00', o: 4000, h: 4050, l: 3980, c: 4040 },
+              { t: '2026-10-27T00:00:00+07:00', o: 4040, h: 4090, l: 4020, c: 4025 },
+            ],
+          }),
+        };
+      }
+      return { ok: true, json: async () => marketSummary };
     });
+
+    render(<MarketWidget />);
+    await screen.findByRole('combobox', { name: 'เลือกสกุลเงิน' });
+
+    const chart = await screen.findByRole('img', { name: /กราฟแท่งเทียน/ });
+    expect(chart.querySelectorAll('rect').length).toBeGreaterThan(0);
+    expect(api.fetchWithAuth).toHaveBeenCalledWith(
+      expect.stringContaining('/api/v1/market/candles?symbol=gold&interval=1d'),
+      expect.anything(),
+    );
 
     fireEvent.change(screen.getByRole('combobox', { name: 'เลือกสินทรัพย์ในกราฟ' }), {
       target: { value: 'USD' },
     });
-
     await waitFor(() => {
-      const script = document.querySelector<HTMLScriptElement>(
-        'script[src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js"]',
+      expect(api.fetchWithAuth).toHaveBeenCalledWith(
+        expect.stringContaining('symbol=USD'),
+        expect.anything(),
       );
-      expect(script).toBeTruthy();
-      expect(JSON.parse(script!.text).symbol).toBe('FX_IDC:USDTHB');
     });
 
     fireEvent.change(screen.getByRole('combobox', { name: 'เลือกช่วงเวลาแท่งเทียน' }), {
-      target: { value: '60' },
+      target: { value: '60m' },
     });
     await waitFor(() => {
-      const script = document.querySelector<HTMLScriptElement>(
-        'script[src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js"]',
+      expect(api.fetchWithAuth).toHaveBeenCalledWith(
+        expect.stringContaining('interval=60m'),
+        expect.anything(),
       );
-      expect(JSON.parse(script!.text).interval).toBe('60');
     });
   });
 });

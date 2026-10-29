@@ -12,6 +12,7 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import WidgetSizeToggle from './WidgetSizeToggle';
+import CandleChart, { type Candle } from './CandleChart';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
 
 interface CurrencyRate {
@@ -110,25 +111,31 @@ const money = new Intl.NumberFormat('th-TH', {
 });
 const plain = new Intl.NumberFormat('th-TH', { maximumFractionDigits: 2 });
 
-const CURRENCIES: Array<[string, string]> = [
-  ['USD', 'ดอลลาร์สหรัฐ'],
-  ['EUR', 'ยูโร'],
-  ['GBP', 'ปอนด์อังกฤษ'],
-  ['CNY', 'หยวนจีน'],
-  ['JPY', 'เยนญี่ปุ่น'],
+// The backend serves candles only for these instruments; anything else is a
+// 404 there, so the picker offers exactly the supported set.
+const CHART_ASSETS: Array<[string, string]> = [
+  ['gold', 'ทองคำ COMEX · USD/oz'],
+  ['USD', 'ดอลลาร์สหรัฐ → บาท'],
+  ['EUR', 'ยูโร → บาท'],
+  ['GBP', 'ปอนด์อังกฤษ → บาท'],
+  ['JPY', 'เยนญี่ปุ่น → บาท'],
 ];
 
-const CURRENCY_CHARTS: Record<string, string> = {
-  USD: 'FX_IDC:USDTHB',
-  EUR: 'FX_IDC:EURTHB',
-  GBP: 'FX_IDC:GBPTHB',
-  CNY: 'FX_IDC:CNYTHB',
-  JPY: 'FX_IDC:JPYTHB',
-};
-const GOLD_CHARTS: Record<string, string> = {
-  thai_gold: 'OANDA:XAUUSD',
-  comex_gold: 'COMEX:GC1!',
-};
+const CHART_INTERVALS: Array<[string, string]> = [
+  ['15m', '15 นาที'],
+  ['60m', '1 ชั่วโมง'],
+  ['1d', '1 วัน'],
+  ['1wk', '1 สัปดาห์'],
+];
+
+interface CandleSeries {
+  symbol: string;
+  label: string;
+  interval: string;
+  source: string;
+  updated_at: string | null;
+  points: Candle[];
+}
 
 function loadCache(): { savedAt: number; data: MarketSummary } | null {
   if (typeof window === 'undefined') return null;
@@ -177,9 +184,11 @@ export default function MarketWidget({
   const [currencySourceId, setCurrencySourceId] = useState('frankfurter');
   const [currencyCode, setCurrencyCode] = useState('USD');
   const [goldSourceId, setGoldSourceId] = useState('thai_gold');
-  const [chartAsset, setChartAsset] = useState('XAUUSD');
-  const [chartInterval, setChartInterval] = useState('D');
-  const chartRef = useRef<HTMLDivElement | null>(null);
+  const [chartAsset, setChartAsset] = useState('gold');
+  const [chartInterval, setChartInterval] = useState('1d');
+  const [candles, setCandles] = useState<Candle[]>([]);
+  const [candleLabel, setCandleLabel] = useState('');
+  const [candlesLoading, setCandlesLoading] = useState(true);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -237,45 +246,33 @@ export default function MarketWidget({
   const rates = currency?.rates ?? [];
   const selectedRate = rates.find((rate) => rate.code === currencyCode) ?? rates[0];
   const selectedCurrencyCode = selectedRate?.code ?? currencyCode;
-  const chartSymbol =
-    chartAsset === 'XAUUSD' || chartAsset === 'comex_gold'
-      ? GOLD_CHARTS[chartAsset === 'XAUUSD' ? 'thai_gold' : 'comex_gold']
-      : (CURRENCY_CHARTS[chartAsset] ?? CURRENCY_CHARTS.USD);
-
+  // Chart data is fetched separately from the snapshot: changing the interval
+  // should only reload the bars, not the rate cards.
   useEffect(() => {
-    const host = chartRef.current;
-    if (loading || !host) return;
+    const controller = new AbortController();
+    setCandlesLoading(true);
 
-    host.replaceChildren();
-    const chartContainer = document.createElement('div');
-    chartContainer.className = 'tradingview-widget-container__widget h-full w-full';
-    host.appendChild(chartContainer);
+    (async () => {
+      try {
+        const res = await fetchWithAuth(
+          `/api/v1/market/candles?symbol=${encodeURIComponent(chartAsset)}&interval=${encodeURIComponent(chartInterval)}`,
+          { signal: controller.signal },
+        );
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const payload = (await res.json()) as CandleSeries;
+        setCandles(Array.isArray(payload.points) ? payload.points : []);
+        setCandleLabel(payload.label ?? '');
+      } catch (err) {
+        if ((err as { name?: string })?.name === 'AbortError') return;
+        setCandles([]);
+        setCandleLabel('');
+      } finally {
+        if (!controller.signal.aborted) setCandlesLoading(false);
+      }
+    })();
 
-    const script = document.createElement('script');
-    script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';
-    script.async = true;
-    script.type = 'text/javascript';
-    script.text = JSON.stringify({
-      autosize: true,
-      symbol: chartSymbol,
-      interval: chartInterval,
-      timezone: 'Asia/Bangkok',
-      theme: 'light',
-      style: '1',
-      locale: 'th',
-      allow_symbol_change: false,
-      withdateranges: true,
-      hide_side_toolbar: false,
-      save_image: false,
-      calendar: false,
-      support_host: 'https://www.tradingview.com',
-    });
-    host.appendChild(script);
-
-    return () => {
-      host.replaceChildren();
-    };
-  }, [chartSymbol, chartInterval, loading]);
+    return () => controller.abort();
+  }, [chartAsset, chartInterval]);
 
   if (loading && !data) {
     return (
@@ -296,7 +293,7 @@ export default function MarketWidget({
 
   const setIndex = data?.set_index ?? null;
   const setUp = (setIndex?.change ?? 0) >= 0;
-  const isGoldChart = chartAsset === 'XAUUSD' || chartAsset === 'comex_gold';
+
 
   return (
     <section
@@ -364,11 +361,7 @@ export default function MarketWidget({
             id="market-gold-source"
             ariaLabel="เลือกแหล่งราคาทอง"
             value={gold?.id ?? goldSourceId}
-            onChange={(event) => {
-              const sourceId = event.target.value;
-              setGoldSourceId(sourceId);
-              setChartAsset(sourceId === 'comex_gold' ? 'comex_gold' : 'XAUUSD');
-            }}
+            onChange={(event) => setGoldSourceId(event.target.value)}
             className="mt-2.5"
           >
             {goldSources.map((source) => (
@@ -542,41 +535,43 @@ export default function MarketWidget({
             value={chartAsset}
             onChange={(event) => setChartAsset(event.target.value)}
           >
-            <optgroup label="ทองคำ">
-              <option value="XAUUSD">ทองคำ Spot · XAU/USD</option>
-              <option value="comex_gold">COMEX Gold Futures</option>
-            </optgroup>
-            <optgroup label="ค่าเงินเทียบบาท">
-              {CURRENCIES.map(([code, name]) => (
-                <option key={code} value={code}>
-                  {code}/THB · {name}
-                </option>
-              ))}
-            </optgroup>
+            {CHART_ASSETS.map(([value, name]) => (
+              <option key={value} value={value}>
+                {name}
+              </option>
+            ))}
           </MarketSelect>
           <MarketSelect
             ariaLabel="เลือกช่วงเวลาแท่งเทียน"
             value={chartInterval}
             onChange={(event) => setChartInterval(event.target.value)}
           >
-            <option value="15">15 นาที</option>
-            <option value="60">1 ชั่วโมง</option>
-            <option value="D">1 วัน</option>
-            <option value="W">1 สัปดาห์</option>
-            <option value="M">1 เดือน</option>
+            {CHART_INTERVALS.map(([value, name]) => (
+              <option key={value} value={value}>
+                {name}
+              </option>
+            ))}
           </MarketSelect>
         </div>
         <span className="text-[10px] text-[#86868b]">
-          {isGoldChart
-            ? 'กราฟ XAU/USD หรือ COMEX ไม่ใช่ราคาทองแท่งไทย'
-            : 'ข้อมูลกราฟจาก TradingView'}
+          {candleLabel ? `${candleLabel} · ` : ''}กราฟจาก Yahoo Finance
         </span>
       </div>
-      <div
-        ref={chartRef}
-        className="tradingview-widget-container mt-2 h-[280px] w-full overflow-hidden rounded-[14px] bg-white ring-1 ring-black/[0.06] sm:h-[320px]"
-        aria-label={`กราฟแท่งเทียน ${chartSymbol}`}
-      />
+      <div className="mt-2 h-[280px] w-full overflow-hidden rounded-[14px] bg-white ring-1 ring-black/[0.06] sm:h-[320px]">
+        {candlesLoading && candles.length === 0 ? (
+          <div className="flex h-full animate-pulse flex-col justify-end gap-1 px-3 pb-6">
+            {[38, 62, 45, 78, 52, 70, 40, 58].map((height, index) => (
+              <div
+                key={index}
+                className="w-full rounded-sm bg-[#f2f2f7]"
+                style={{ height: `${height}%` }}
+              />
+            ))}
+          </div>
+        ) : (
+          <CandleChart points={candles} interval={chartInterval} label={candleLabel} />
+        )}
+      </div>
 
       <div className="mt-2 flex items-center justify-between gap-2 text-[10px] text-[#475569]">
         <span>
@@ -584,7 +579,7 @@ export default function MarketWidget({
           <a href="https://frankfurter.dev/" target="_blank" rel="noreferrer" className="underline">
             Frankfurter
           </a>
-          {' · กราฟจาก TradingView · ทองแท่งไทยจากสมาคมค้าทองคำ'}
+          {' · กราฟจาก Yahoo Finance · ทองแท่งไทยจากสมาคมค้าทองคำ'}
         </span>
         {refreshing && <Loader2 size={10} className="animate-spin" aria-hidden="true" />}
       </div>
