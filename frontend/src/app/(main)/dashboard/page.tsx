@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { GripVertical, SlidersHorizontal } from 'lucide-react';
+import { SlidersHorizontal } from 'lucide-react';
 import { WidgetConfig } from '@/types';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { getGreeting } from '@/utils/greeting';
@@ -189,18 +189,23 @@ function SortableWidget({
       className={`group relative min-w-0 self-stretch ${getColSpanClass(widget.w)}`}
     >
       <div className="widget-enter h-full" style={{ animationDelay: `${index * 70}ms` }}>
-        {/* Drag handle — a small grip that lives inside the card's left padding,
-            so it never overlaps header controls or spills outside the widget. */}
-        <div className="pointer-events-none absolute inset-y-0 left-0 z-10 flex w-7 items-center justify-center">
+        {/* Drag handle — a slim grip pill centred on the card's top edge. It sits
+            in the 4–17px band, above the card's 20px content padding, so it can
+            never cover a header control or spill past the widget's border. */}
+        <div className="pointer-events-none absolute inset-x-0 top-1 z-10 flex justify-center">
           <button
             {...attributes}
             {...listeners}
             type="button"
             aria-label={`ย้ายวิดเจ็ต ${widgetNames[widget.id]}`}
             title="ลากเพื่อจัดลำดับ"
-            className="pointer-events-auto flex h-12 w-[18px] cursor-grab touch-none items-center justify-center rounded-full bg-[#f2f2f7] text-[#a1a1a6] opacity-100 transition-colors duration-150 hover:bg-[#e5e5ea] hover:text-[#6e6e73] active:cursor-grabbing focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#0066cc] md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100"
+            className="pointer-events-auto flex cursor-grab touch-none items-center justify-center rounded-full p-1.5 text-[#9a9aa0] opacity-0 transition-opacity duration-150 hover:opacity-100 active:cursor-grabbing group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#0066cc]/40 [@media(hover:none)]:opacity-60"
           >
-            <GripVertical size={13} aria-hidden="true" />
+            <span className="flex h-[13px] w-9 items-center justify-center gap-[3px] rounded-full bg-[#e9e9ee]/90 shadow-[0_1px_2px_rgba(0,0,0,0.06)] transition-colors hover:bg-[#dedee4] hover:text-[#6e6e73]">
+              <span className="h-[3px] w-[3px] rounded-full bg-current" />
+              <span className="h-[3px] w-[3px] rounded-full bg-current" />
+              <span className="h-[3px] w-[3px] rounded-full bg-current" />
+            </span>
           </button>
         </div>
 
