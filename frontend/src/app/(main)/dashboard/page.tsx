@@ -166,17 +166,20 @@ function SortableWidget({
     <div
       ref={setNodeRef}
       style={style}
-      className={`group relative flex self-stretch ${getColSpanClass(widget.w)}`}
+      className={`group relative min-w-0 self-stretch ${getColSpanClass(widget.w)}`}
     >
-      <div className="widget-enter flex w-full flex-1" style={{ animationDelay: `${index * 70}ms` }}>
+      <div className="widget-enter h-full" style={{ animationDelay: `${index * 70}ms` }}>
         {/* Drag handle — visible on hover, sits above widget */}
-        <div
-          {...attributes}
-          {...listeners}
-          className="absolute inset-x-0 top-0 z-10 flex h-10 cursor-grab items-center justify-center opacity-100 transition-opacity duration-200 active:cursor-grabbing touch-none md:opacity-0 md:group-hover:opacity-100"
-          aria-label={`ย้ายวิดเจ็ต ${widgetNames[widget.id]}`}
-        >
-          <span className="flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1 shadow-md ring-1 ring-black/[0.08] backdrop-blur-md">
+        {/* The band itself must not swallow clicks: the widget header (including
+            the S/M/L size toggle) sits in the same top strip. Only the chip is
+            draggable, so header controls stay clickable. */}
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex h-10 items-center justify-center">
+          <span
+            {...attributes}
+            {...listeners}
+            aria-label={`ย้ายวิดเจ็ต ${widgetNames[widget.id]}`}
+            className="pointer-events-auto flex cursor-grab touch-none items-center gap-1.5 rounded-full bg-white/95 px-3 py-1 shadow-md ring-1 ring-black/[0.08] backdrop-blur-md transition-opacity duration-200 active:cursor-grabbing md:pointer-events-none md:opacity-0 md:group-hover:pointer-events-auto md:group-hover:opacity-100"
+          >
             <GripHorizontal className="h-3.5 w-3.5 text-[#6e6e73]" aria-hidden="true" />
             <span className="text-[11px] font-semibold text-[#6e6e73]">จัดลำดับ</span>
           </span>
