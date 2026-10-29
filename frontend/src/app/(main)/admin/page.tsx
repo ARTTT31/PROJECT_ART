@@ -15,6 +15,7 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
 import { RegistrationPolicyCard } from '@/components/Admin/RegistrationPolicyCard';
+import { SystemHealthCard } from '@/components/Admin/SystemHealthCard';
 import UserManagement from '@/components/Admin/UserManagement';
 
 interface Stat {
@@ -169,6 +170,9 @@ export default function AdminPage() {
           ข้อมูลอัปเดตเมื่อเปิดหน้านี้ — กดรีเฟรชเพื่อดูใหม่
         </div>
       </section>
+
+      {/* ── System health ────────────────────────────────────────── */}
+      <SystemHealthCard />
 
       {/* ── Sign-up policy ───────────────────────────────────────── */}
       <RegistrationPolicyCard />
