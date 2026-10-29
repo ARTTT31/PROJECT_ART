@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel
@@ -50,20 +50,27 @@ async def list_audit_logs_paginated(
     request: Request,
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=100),
+    action: Optional[str] = Query(None, max_length=100),
+    q: Optional[str] = Query(None, max_length=100),
     current_user: User = Depends(get_current_admin_user),
     db: AsyncSession = Depends(get_db),
 ):
     """
-    List audit logs with pagination (Admin only)
+    List audit logs with pagination and optional filters (Admin only).
+
+    ``action`` filters an exact action key, ``q`` searches the details and the
+    actor's name/email.
     """
     audit_service = AuditService(db)
     skip = (page - 1) * size
-    logs = await audit_service.get_logs(skip=skip, limit=size + 1)
+    logs = await audit_service.get_logs(
+        skip=skip, limit=size + 1, action=action, q=q
+    )
     has_next = len(logs) > size
     if has_next:
         logs = logs[:size]
 
-    total = await audit_service.count_logs()
+    total = await audit_service.count_logs(action=action, q=q)
 
     return PaginatedAuditLogsResponse(
         items=logs,

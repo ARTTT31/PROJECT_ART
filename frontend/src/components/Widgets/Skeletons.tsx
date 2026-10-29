@@ -173,6 +173,31 @@ export function QuickNotesSkeleton() {
   );
 }
 
+export function ListWidgetSkeleton() {
+  return (
+    <div className="flex h-full min-h-[300px] flex-col rounded-[18px] border border-black/[0.06] bg-white p-5">
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div className="flex items-start gap-3">
+          <div className="h-10 w-10 shrink-0 rounded-[12px] skeleton-shimmer" />
+          <div className="space-y-2 py-1">
+            <div className="h-4 w-32 rounded-full skeleton-shimmer" />
+            <div className="h-3 w-40 rounded-full skeleton-shimmer" />
+          </div>
+        </div>
+        <div className="h-8 w-16 rounded-full skeleton-shimmer" />
+      </div>
+
+      <div className="h-9 w-full rounded-xl skeleton-shimmer" />
+
+      <div className="mt-3 space-y-2">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="h-10 w-full rounded-[12px] skeleton-shimmer" />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function PriceCalcSkeleton() {
   return (
     <div className="flex h-full min-h-[300px] flex-col rounded-[18px] border border-black/[0.06] bg-white p-5">

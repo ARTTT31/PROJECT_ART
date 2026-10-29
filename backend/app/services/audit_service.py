@@ -1,8 +1,9 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import joinedload
 from app.models.audit_log import AuditLog
-from typing import Optional
+from app.models.user import User
+from typing import List, Optional
 
 
 class AuditService:
@@ -36,17 +37,61 @@ class AuditService:
         # Note: No commit() here — caller handles the transaction
         return db_log
 
-    async def get_logs(self, skip: int = 0, limit: int = 100):
-        result = await self.db.execute(
+    @staticmethod
+    def _filters(
+        action: Optional[str] = None, q: Optional[str] = None
+    ) -> List:
+        """WHERE clauses shared by the listing and its total count.
+
+        The admin page filters by action and by a free-text term that matches the
+        details, the actor's name or the actor's email; both halves have to use
+        the same clauses or the paging totals stop matching the rows.
+        """
+        conditions: List = []
+        if action:
+            conditions.append(AuditLog.action == action)
+        term = (q or "").strip()
+        if term:
+            pattern = f"%{term.lower()}%"
+            conditions.append(
+                or_(
+                    func.lower(AuditLog.details).like(pattern),
+                    func.lower(User.name).like(pattern),
+                    func.lower(User.email).like(pattern),
+                )
+            )
+        return conditions
+
+    async def get_logs(
+        self,
+        skip: int = 0,
+        limit: int = 100,
+        *,
+        action: Optional[str] = None,
+        q: Optional[str] = None,
+    ):
+        statement = (
             select(AuditLog)
             .options(joinedload(AuditLog.user))
+            .outerjoin(User, AuditLog.user_id == User.id)
             .order_by(AuditLog.created_at.desc())
             .offset(skip)
             .limit(limit)
         )
+        conditions = self._filters(action, q)
+        if conditions:
+            statement = statement.where(*conditions)
+        result = await self.db.execute(statement)
         return result.scalars().all()
 
-    async def count_logs(self) -> int:
-        from sqlalchemy import func
-        result = await self.db.execute(select(func.count(AuditLog.id)))
+    async def count_logs(
+        self, *, action: Optional[str] = None, q: Optional[str] = None
+    ) -> int:
+        statement = select(func.count(AuditLog.id)).outerjoin(
+            User, AuditLog.user_id == User.id
+        )
+        conditions = self._filters(action, q)
+        if conditions:
+            statement = statement.where(*conditions)
+        result = await self.db.execute(statement)
         return result.scalar() or 0

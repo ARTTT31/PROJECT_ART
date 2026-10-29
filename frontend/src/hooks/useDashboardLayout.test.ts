@@ -17,7 +17,19 @@ import type { WidgetConfig } from '@/types';
 let mockUser: { dashboard_layout?: string | null } | null = null;
 const mockUpdateUser = vi.fn();
 
-const DEFAULT_IDS = ['notes', 'calc', 'market', 'holidays', 'weather', 'oilprice', 'qrcode'];
+const DEFAULT_IDS = [
+  'notes',
+  'calc',
+  'market',
+  'finance',
+  'watchlist',
+  'converter',
+  'quicklinks',
+  'holidays',
+  'weather',
+  'oilprice',
+  'qrcode',
+];
 
 beforeEach(() => {
   mockUser = null;
@@ -53,12 +65,11 @@ describe('useDashboardLayout — initialization', () => {
     expect(result.current.widgets).toEqual(expect.arrayContaining(saved));
     // Order is preserved from storage, then the missing defaults are prepended
     // as one group, in default order.
-    expect(result.current.widgets.map((w) => w.id).slice(0, 5)).toEqual([
-      'notes',
-      'calc',
-      'market',
-      'holidays',
-      'oilprice',
+    const missingDefaults = DEFAULT_IDS.filter((id) => !saved.some((s) => s.id === id));
+    expect(result.current.widgets.map((w) => w.id)).toEqual([
+      ...missingDefaults,
+      'weather',
+      'qrcode',
     ]);
     expect(result.current.visibleWidgetIds).toContain('weather');
     expect(result.current.visibleWidgetIds).toContain('qrcode');

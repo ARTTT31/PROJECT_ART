@@ -91,6 +91,8 @@ export default function Sidebar({
   // same parser) as the server-side gate in app/api/dependencies.py.
   const enabledMainItems = mainMenuConfig.filter((item) => {
     if (!item.enabled) return false;
+    // Admin-only pages (e.g. the activity log) never appear for regular accounts.
+    if (item.adminOnly && user?.role !== 'admin') return false;
     return canAccessPage(user, item.id);
   });
 

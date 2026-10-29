@@ -28,8 +28,20 @@ from app.schemas.user import (
     QuickNotesUpdate,
     QuickNotesResponse,
     QuickNote,
+    FinanceEntry,
+    FinanceUpdate,
+    FinanceResponse,
+    WatchlistItem,
+    WatchlistUpdate,
+    WatchlistResponse,
 )
 from app.core.quick_notes import parse_quick_notes, serialize_quick_notes
+from app.core.personal_lists import (
+    parse_finance_entries,
+    serialize_finance_entries,
+    parse_watchlist,
+    serialize_watchlist,
+)
 from app.core.brand_logo import (
     LOGO_ALLOWED_EXTENSIONS,
     LOGO_SUPPORTED_HINT,
@@ -852,3 +864,77 @@ async def update_quick_notes(
     # Use the value we just persisted rather than triggering an async lazy load
     # while building the response (which raises MissingGreenlet).
     return _quick_notes_response(saved_notes)
+
+
+# ── Finance widget (income / expense) ────────────────────────────────────────
+# Same contract as the notes widget: the list lives in one JSON-as-text column
+# and the widget always saves its whole state, so last write wins per account.
+
+
+def _finance_response(raw: str | None) -> FinanceResponse:
+    return FinanceResponse(
+        entries=[FinanceEntry(**entry) for entry in parse_finance_entries(raw)]
+    )
+
+
+@router.get("/finance", response_model=FinanceResponse)
+@limiter.limit(_GENERAL_LIMIT)
+async def get_finance_entries(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """The signed-in account's income/expense entries (empty when never used)."""
+    user = await load_profile_columns(db, current_user, "finance_entries")
+    return _finance_response(user.finance_entries)
+
+
+@router.put("/finance", response_model=FinanceResponse)
+@limiter.limit(_GENERAL_LIMIT)
+async def update_finance_entries(
+    request: Request,
+    payload: FinanceUpdate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Replace the account's entries with the list in the request."""
+    saved = serialize_finance_entries(payload.entries)
+    current_user.finance_entries = saved
+    await db.commit()
+    return _finance_response(saved)
+
+
+# ── Watchlist widget ─────────────────────────────────────────────────────────
+
+
+def _watchlist_response(raw: str | None) -> WatchlistResponse:
+    return WatchlistResponse(
+        symbols=[WatchlistItem(**item) for item in parse_watchlist(raw)]
+    )
+
+
+@router.get("/watchlist", response_model=WatchlistResponse)
+@limiter.limit(_GENERAL_LIMIT)
+async def get_watchlist(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Symbols this account follows in the watchlist widget."""
+    user = await load_profile_columns(db, current_user, "watchlist")
+    return _watchlist_response(user.watchlist)
+
+
+@router.put("/watchlist", response_model=WatchlistResponse)
+@limiter.limit(_GENERAL_LIMIT)
+async def update_watchlist(
+    request: Request,
+    payload: WatchlistUpdate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Replace the followed symbols with the list in the request."""
+    saved = serialize_watchlist(payload.symbols)
+    current_user.watchlist = saved
+    await db.commit()
+    return _watchlist_response(saved)

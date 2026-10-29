@@ -208,6 +208,42 @@ class QuickNotesResponse(BaseModel):
     notes: list[QuickNote] = Field(default_factory=list)
 
 
+class FinanceEntry(BaseModel):
+    """One income/expense row of the dashboard finance widget."""
+
+    id: str = Field(..., min_length=1, max_length=64)
+    type: Literal["income", "expense"]
+    label: str = Field("", max_length=60)
+    amount: float = Field(..., gt=0, le=1_000_000_000)
+    # Local calendar day (YYYY-MM-DD); the widget groups by day, not by instant.
+    date: str = Field(..., pattern=r"^\d{4}-\d{2}-\d{2}$")
+
+
+class FinanceUpdate(BaseModel):
+    """Replace the whole entry list — the widget saves its current state."""
+
+    entries: list[FinanceEntry] = Field(default_factory=list, max_length=200)
+
+
+class FinanceResponse(BaseModel):
+    entries: list[FinanceEntry] = Field(default_factory=list)
+
+
+class WatchlistItem(BaseModel):
+    """A symbol followed by the watchlist widget (e.g. PTT.BK, BTC-USD)."""
+
+    symbol: str = Field(..., min_length=1, max_length=24)
+    label: Optional[str] = Field(None, max_length=40)
+
+
+class WatchlistUpdate(BaseModel):
+    symbols: list[WatchlistItem] = Field(default_factory=list, max_length=30)
+
+
+class WatchlistResponse(BaseModel):
+    symbols: list[WatchlistItem] = Field(default_factory=list)
+
+
 class UserPasswordChange(BaseModel):
     """Schema for changing password"""
 

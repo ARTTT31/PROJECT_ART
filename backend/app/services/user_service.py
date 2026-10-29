@@ -28,6 +28,8 @@ AUTH_DEFERRED_COLUMNS = (
     "dashboard_layout",
     "camera_config",
     "quick_notes",
+    "finance_entries",
+    "watchlist",
 )
 
 

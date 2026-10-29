@@ -24,6 +24,13 @@ export default function Header({ user, onMenuClick, sidebarCollapsed = false }: 
       };
     }
 
+    if (pathname.startsWith('/audit')) {
+      return {
+        title: 'บันทึกกิจกรรม',
+        crumbs: [{ label: 'หน้าหลัก', href: '/dashboard' }, { label: 'บันทึกกิจกรรม' }],
+      };
+    }
+
     if (pathname.startsWith('/profile')) {
       return {
         title: 'โปรไฟล์',

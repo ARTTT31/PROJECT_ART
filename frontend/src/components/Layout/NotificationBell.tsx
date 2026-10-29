@@ -38,6 +38,8 @@ export function pushNotifications(items: Notification[]) {
 }
 
 import { getHolidaysWithDiff } from '@/utils/holidays';
+import { useAuth } from '@/hooks/useAuth';
+import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
 
 /*
  * Late-subscriber guarantee: when a second <NotificationBell/> (e.g. soft
@@ -125,6 +127,7 @@ export function resolveNotificationsWsUrl(location: { protocol: string; host: st
 }
 
 export default function NotificationBell() {
+  const { user } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([...store]);
   const [open, setOpen] = useState(false);
   const [readIds, setReadIds] = useState<Set<string>>(() => {
@@ -265,6 +268,45 @@ export default function NotificationBell() {
       pushNotifications(smartAlerts);
     }
   }, []);
+
+  // Server-side events: an admin opening the app should see sign-up requests
+  // waiting for a decision, even before the next WebSocket broadcast.
+  useEffect(() => {
+    if (user?.role !== 'admin') return;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetchWithAuth('/api/v1/users/pending?skip=0&limit=100');
+        if (!res.ok) return;
+        const total = Number.parseInt(res.headers.get('X-Total-Count') ?? '', 10);
+        const body = (await res.json()) as unknown;
+        const count = Number.isFinite(total)
+          ? total
+          : Array.isArray(body)
+            ? body.length
+            : 0;
+        if (cancelled || count <= 0) return;
+
+        pushNotifications([
+          {
+            id: `admin-pending-${count}`,
+            type: 'system',
+            level: 'warning',
+            title: `มีคำขอสมัครใหม่รออนุมัติ ${count} รายการ`,
+            body: 'เปิดหน้าจัดการผู้ใช้เพื่อตรวจสอบและอนุมัติสมาชิกใหม่',
+            at: new Date(),
+          },
+        ]);
+      } catch {
+        // An offline bell is not worth surfacing as an error.
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.role]);
 
   // Subscribe to store updates & WebSocket
   useEffect(() => {

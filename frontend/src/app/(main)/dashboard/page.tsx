@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { GripHorizontal, SlidersHorizontal } from 'lucide-react';
+import { GripVertical, SlidersHorizontal } from 'lucide-react';
 import { WidgetConfig } from '@/types';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { getGreeting } from '@/utils/greeting';
@@ -43,6 +43,7 @@ import {
   QuickNotesSkeleton,
   PriceCalcSkeleton,
   MarketSkeleton,
+  ListWidgetSkeleton,
 } from '@/components/Widgets/Skeletons';
 
 const OilPriceWidget = dynamic(() => import('@/components/Widgets/OilPriceWidget'), {
@@ -72,6 +73,22 @@ const PriceCalcWidget = dynamic(() => import('@/components/Widgets/PriceCalcWidg
 const MarketWidget = dynamic(() => import('@/components/Widgets/MarketWidget'), {
   ssr: false,
   loading: () => <MarketSkeleton />,
+});
+const FinanceWidget = dynamic(() => import('@/components/Widgets/FinanceWidget'), {
+  ssr: false,
+  loading: () => <ListWidgetSkeleton />,
+});
+const WatchlistWidget = dynamic(() => import('@/components/Widgets/WatchlistWidget'), {
+  ssr: false,
+  loading: () => <ListWidgetSkeleton />,
+});
+const CurrencyConverterWidget = dynamic(() => import('@/components/Widgets/CurrencyConverterWidget'), {
+  ssr: false,
+  loading: () => <ListWidgetSkeleton />,
+});
+const QuickLinksWidget = dynamic(() => import('@/components/Widgets/QuickLinksWidget'), {
+  ssr: false,
+  loading: () => <ListWidgetSkeleton />,
 });
 
 import { useDashboardLayout, widgetNames, widgetDescriptions } from '@/hooks/useDashboardLayout';
@@ -156,7 +173,10 @@ function SortableWidget({
 
   const style = {
     transform: CSS.Translate.toString(transform),
-    transition: transition || (isDragging ? 'none' : 'all 0.3s ease'),
+    // Only transform is animated (dnd-kit's own transition wins while sorting).
+    // `all` used to animate width/height too, which made the card look like it
+    // shifted whenever anything inside it changed size.
+    transition: transition || (isDragging ? 'none' : 'transform 0.3s ease'),
     opacity: isDragging ? 0.8 : 1,
     zIndex: isDragging ? 50 : 1,
     scale: isDragging ? '0.98' : '1', // Add visual scale down on drag start
@@ -169,20 +189,19 @@ function SortableWidget({
       className={`group relative min-w-0 self-stretch ${getColSpanClass(widget.w)}`}
     >
       <div className="widget-enter h-full" style={{ animationDelay: `${index * 70}ms` }}>
-        {/* Drag handle — visible on hover, sits above widget */}
-        {/* The band itself must not swallow clicks: the widget header (including
-            the S/M/L size toggle) sits in the same top strip. Only the chip is
-            draggable, so header controls stay clickable. */}
-        <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex h-10 items-center justify-center">
-          <span
+        {/* Drag handle — a small grip that lives inside the card's left padding,
+            so it never overlaps header controls or spills outside the widget. */}
+        <div className="pointer-events-none absolute inset-y-0 left-0 z-10 flex w-7 items-center justify-center">
+          <button
             {...attributes}
             {...listeners}
+            type="button"
             aria-label={`ย้ายวิดเจ็ต ${widgetNames[widget.id]}`}
-            className="pointer-events-auto flex cursor-grab touch-none items-center gap-1.5 rounded-full bg-white/95 px-3 py-1 shadow-md ring-1 ring-black/[0.08] backdrop-blur-md transition-opacity duration-200 active:cursor-grabbing md:pointer-events-none md:opacity-0 md:group-hover:pointer-events-auto md:group-hover:opacity-100"
+            title="ลากเพื่อจัดลำดับ"
+            className="pointer-events-auto flex h-12 w-[18px] cursor-grab touch-none items-center justify-center rounded-full bg-[#f2f2f7] text-[#a1a1a6] opacity-100 transition-colors duration-150 hover:bg-[#e5e5ea] hover:text-[#6e6e73] active:cursor-grabbing focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#0066cc] md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100"
           >
-            <GripHorizontal className="h-3.5 w-3.5 text-[#6e6e73]" aria-hidden="true" />
-            <span className="text-[11px] font-semibold text-[#6e6e73]">จัดลำดับ</span>
-          </span>
+            <GripVertical size={13} aria-hidden="true" />
+          </button>
         </div>
 
         {/* Widget content */}
@@ -244,6 +263,45 @@ function SortableWidget({
             )}
           >
             <OilPriceWidget width={widget.w} onResize={(newSize) => onResize(widget.id, newSize)} />
+          </ErrorBoundary>
+        )}
+        {widget.id === 'finance' && (
+          <ErrorBoundary
+            fallback={(err, reset) => (
+              <WidgetErrorFallback name="รายรับ – รายจ่าย" error={err} reset={reset} />
+            )}
+          >
+            <FinanceWidget width={widget.w} onResize={(newSize) => onResize(widget.id, newSize)} />
+          </ErrorBoundary>
+        )}
+        {widget.id === 'watchlist' && (
+          <ErrorBoundary
+            fallback={(err, reset) => (
+              <WidgetErrorFallback name="รายการติดตาม" error={err} reset={reset} />
+            )}
+          >
+            <WatchlistWidget width={widget.w} onResize={(newSize) => onResize(widget.id, newSize)} />
+          </ErrorBoundary>
+        )}
+        {widget.id === 'converter' && (
+          <ErrorBoundary
+            fallback={(err, reset) => (
+              <WidgetErrorFallback name="แปลงสกุลเงิน" error={err} reset={reset} />
+            )}
+          >
+            <CurrencyConverterWidget
+              width={widget.w}
+              onResize={(newSize) => onResize(widget.id, newSize)}
+            />
+          </ErrorBoundary>
+        )}
+        {widget.id === 'quicklinks' && (
+          <ErrorBoundary
+            fallback={(err, reset) => (
+              <WidgetErrorFallback name="ลิงก์ด่วน" error={err} reset={reset} />
+            )}
+          >
+            <QuickLinksWidget width={widget.w} onResize={(newSize) => onResize(widget.id, newSize)} />
           </ErrorBoundary>
         )}
         {widget.id === 'qrcode' && (

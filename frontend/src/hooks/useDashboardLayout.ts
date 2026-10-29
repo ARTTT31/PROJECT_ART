@@ -7,6 +7,10 @@ const defaultWidgets: WidgetConfig[] = [
   { id: 'notes', w: 1 },
   { id: 'calc', w: 1 },
   { id: 'market', w: 2 },
+  { id: 'finance', w: 1 },
+  { id: 'watchlist', w: 1 },
+  { id: 'converter', w: 1 },
+  { id: 'quicklinks', w: 1 },
   { id: 'holidays', w: 1 },
   { id: 'weather', w: 1 },
   { id: 'oilprice', w: 1 },
@@ -21,6 +25,10 @@ export const widgetNames: Record<string, string> = {
   weather: 'สภาพอากาศ & PM 2.5',
   oilprice: 'ราคาน้ำมัน',
   qrcode: 'สร้าง QR Code',
+  finance: 'รายรับ – รายจ่ายวันนี้',
+  watchlist: 'รายการติดตาม',
+  converter: 'แปลงสกุลเงิน',
+  quicklinks: 'ลิงก์ด่วน',
 };
 
 export const widgetDescriptions: Record<string, string> = {
@@ -31,6 +39,10 @@ export const widgetDescriptions: Record<string, string> = {
   weather: 'ตรวจสอบสภาพอากาศ อุณหภูมิ และดัชนีฝุ่น PM 2.5 รายวัน',
   oilprice: 'ติดตามราคาน้ำมันล่าสุดในหน้าแดชบอร์ด',
   qrcode: 'เปิดเครื่องมือสร้าง QR Code อย่างรวดเร็ว',
+  finance: 'บันทึกรายรับรายจ่ายของวันนี้ พร้อมยอดคงเหลือ',
+  watchlist: 'ติดตามหุ้น คริปโต หรือค่าเงินที่สนใจ พร้อมราคาล่าสุด',
+  converter: 'แปลงเงินบาทเป็นสกุลอื่นด้วยอัตราอ้างอิงรายวัน',
+  quicklinks: 'ทางลัดไปยังเว็บและเครื่องมือที่คุณบันทึกไว้',
 };
 
 export function useDashboardLayout() {

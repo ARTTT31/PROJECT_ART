@@ -41,6 +41,12 @@ class User(Base, TimestampMixin):
     # NULL means "never used", which the API reports as an empty list.
     quick_notes: Mapped[str | None] = mapped_column(Text)
 
+    # Income/expense entries for the finance widget (JSON array as text).
+    finance_entries: Mapped[str | None] = mapped_column(Text)
+
+    # Symbols followed by the watchlist widget (JSON array as text).
+    watchlist: Mapped[str | None] = mapped_column(Text)
+
     # Camera streams configuration (JSON stored as text)
     camera_config: Mapped[str | None] = mapped_column(Text)
     accessible_pages: Mapped[str | None] = mapped_column(Text)

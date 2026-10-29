@@ -23,6 +23,8 @@ export interface MainMenuItemConfig {
   isWip?: boolean;
   wipLabel?: string;
   required?: boolean;
+  /** Only accounts with the admin role see this item in the sidebar. */
+  adminOnly?: boolean;
   description?: string;
 }
 
@@ -56,6 +58,15 @@ export const DEFAULT_MAIN_MENU_ITEMS: MainMenuItemConfig[] = [
     icon: 'camera',
     enabled: true,
     description: 'ระบบมอนิเตอร์กล้อง CCTV สดและ Snapshot',
+  },
+  {
+    id: 'audit',
+    name: 'บันทึกกิจกรรม',
+    href: '/audit',
+    icon: 'file',
+    enabled: true,
+    adminOnly: true,
+    description: 'ตรวจสอบประวัติการใช้งานของผู้ดูแลระบบและสมาชิก',
   },
   {
     id: 'profile',

@@ -3,6 +3,12 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 
 import NotificationBell, { resolveNotificationsWsUrl } from './NotificationBell';
 
+// The bell reads the session only to add admin-only alerts; the socket behaviour
+// below is the same for every signed-in account, so mount as a plain member.
+vi.mock('@/hooks/useAuth', () => ({
+  useAuth: () => ({ user: { id: 1, role: 'user' }, updateUser: vi.fn() }),
+}));
+
 /**
  * The bell is the only live channel in the app: it opens the authenticated
  * WebSocket feed, reconnects with backoff, and gives up when the server says the

@@ -30,8 +30,10 @@ PROFILE_COLUMNS = (
     "camera_config",
     # Holds a data URL (up to ~40KB) like avatar, so it stays deferred too.
     "workspace_logo",
-    # A JSON list that grows with use; only the notes widget reads it.
+    # JSON lists that grow with use; only their widgets read them.
     "quick_notes",
+    "finance_entries",
+    "watchlist",
 )
 
 # ── Page-level access (users.accessible_pages) ───────────────────────────

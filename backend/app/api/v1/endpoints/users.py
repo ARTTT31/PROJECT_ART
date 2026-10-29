@@ -403,12 +403,15 @@ async def update_user(
     try:
         updated_user = await user_service.admin_update_user(user_id, user_update)
 
+        changed_fields = [
+            key for key, value in user_update.model_dump(exclude_unset=True).items() if value is not None
+        ]
         await audit_service.log_action(
             action="ADMIN_USER_UPDATE",
             user_id=current_user.id,
             details=(
-                f"Admin updated user {updated_user.email or updated_user.username} (ID: {user_id}). "
-                f"Fields: {', '.join([k for k, v in user_update.model_dump(exclude_unset=True).items() if v is not None])}"
+                f"Admin updated user {updated_user.email or updated_user.username} "
+                f"(ID: {user_id}). Fields: {', '.join(changed_fields)}"
             ),
             ip_address=client_ip,
             user_agent=user_agent,
