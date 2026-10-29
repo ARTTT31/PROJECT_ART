@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { act, render, screen, fireEvent, waitFor } from '@testing-library/react';
-import QuickNotesWidget from './QuickNotesWidget';
+import QuickNotesWidget, { resetQuickNotesCache } from './QuickNotesWidget';
 
 const api = vi.hoisted(() => ({ fetchWithAuth: vi.fn() }));
 vi.mock('@/lib/api/fetchWithAuth', () => ({ fetchWithAuth: api.fetchWithAuth }));
@@ -29,6 +29,20 @@ async function renderWith(notes: Array<{ id: string; text: string; done: boolean
 describe('QuickNotesWidget', () => {
   beforeEach(() => {
     api.fetchWithAuth.mockReset();
+    resetQuickNotesCache();
+  });
+
+  it('paints the cached list on a remount instead of loading again', async () => {
+    const notes = [{ id: 'n1', text: 'งานที่ค้าง', done: false }];
+    api.fetchWithAuth.mockResolvedValue(jsonResponse({ notes }));
+
+    const first = render(<QuickNotesWidget />);
+    await screen.findByText('งานที่ค้าง');
+    first.unmount();
+
+    render(<QuickNotesWidget />);
+    expect(screen.queryByLabelText('กำลังโหลดโน้ตด่วน')).toBeNull();
+    expect(screen.getByText('งานที่ค้าง')).toBeTruthy();
   });
 
   it('shows the empty state for a new account', async () => {

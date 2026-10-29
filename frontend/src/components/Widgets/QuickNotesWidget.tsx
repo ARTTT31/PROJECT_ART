@@ -20,6 +20,16 @@ interface NotesResponse {
   notes?: QuickNote[];
 }
 
+// Module-level cache. Opening the dashboard remounts this widget, and refetching
+// on every mount made the card flash its spinner each time. Keeping the last
+// list here lets a remount paint instantly and then revalidate in the background.
+let notesCache: QuickNote[] | null = null;
+
+/** Test helper: clear the cache so each case starts from a clean slate. */
+export function resetQuickNotesCache() {
+  notesCache = null;
+}
+
 function newId(): string {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
     return crypto.randomUUID();
@@ -63,9 +73,10 @@ export default function QuickNotesWidget({
   width?: number;
   onResize?: (size: number) => void;
 }) {
-  const [notes, setNotes] = useState<QuickNote[]>([]);
+  const [notes, setNotes] = useState<QuickNote[]>(() => notesCache ?? []);
   const [draft, setDraft] = useState('');
-  const [loading, setLoading] = useState(true);
+  // With a cached list there is nothing to wait for: render it right away.
+  const [loading, setLoading] = useState(() => notesCache === null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -73,12 +84,14 @@ export default function QuickNotesWidget({
 
   const pendingRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const latestRef = useRef<QuickNote[]>([]);
+  const latestRef = useRef<QuickNote[]>(notesCache ?? []);
   const saveQueueRef = useRef<Promise<void>>(Promise.resolve());
   const saveSequenceRef = useRef(0);
 
   const load = useCallback(async () => {
-    setLoading(true);
+    // Only the first visit (no cache yet) needs the spinner; later mounts keep
+    // the previous list on screen and refresh it silently.
+    if (notesCache === null) setLoading(true);
     setLoadError(null);
     try {
       const res = await fetchWithAuth('/api/v1/profile/quick-notes');
@@ -88,6 +101,7 @@ export default function QuickNotesWidget({
       }
       const data = (await res.json()) as NotesResponse;
       const loaded = Array.isArray(data.notes) ? data.notes : [];
+      notesCache = loaded;
       latestRef.current = loaded;
       setNotes(loaded);
     } catch (err) {
@@ -123,6 +137,7 @@ export default function QuickNotesWidget({
           throw new Error(apiErrorMessage(res.status, body, res.headers.get('X-Request-ID')));
         }
         if (sequence === saveSequenceRef.current) {
+          notesCache = next;
           setError(null);
           setJustSaved(true);
           if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
@@ -147,6 +162,9 @@ export default function QuickNotesWidget({
   const update = useCallback(
     (next: QuickNote[]) => {
       latestRef.current = next;
+      // Keep the cache in step with the optimistic update, so leaving and
+      // returning before the debounced save finishes shows the edited list.
+      notesCache = next;
       setNotes(next);
       setError(null);
       setJustSaved(false);
@@ -313,13 +331,13 @@ export default function QuickNotesWidget({
               onClick={() => toggleNote(note.id)}
               aria-pressed={note.done}
               aria-label={note.done ? `ยกเลิกทำ ${note.text}` : `ทำเสร็จ ${note.text}`}
-              className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-all ${
+              className={`flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border transition-all duration-150 ${
                 note.done
                   ? 'border-[#34c759] bg-[#34c759] text-white'
-                  : 'border-black/15 bg-white text-transparent hover:border-[#0066cc]'
+                  : 'border-[#c7c7cc] bg-white text-transparent hover:border-[#0066cc]'
               }`}
             >
-              <Check size={12} aria-hidden="true" />
+              <Check size={10} strokeWidth={3.5} aria-hidden="true" />
             </button>
 
             <span
