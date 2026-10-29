@@ -18,7 +18,8 @@ from typing import Any, Awaitable, Callable, Optional
 from zoneinfo import ZoneInfo
 
 import httpx
-from fastapi import APIRouter, Depends, Request
+from urllib.parse import quote
+from fastapi import APIRouter, Depends, Query, Request
 from pydantic import BaseModel, Field
 
 from app.api.dependencies import get_current_user
@@ -35,8 +36,9 @@ _GENERAL_LIMIT = f"{settings.RATE_LIMIT_GENERAL_PER_MINUTE}/minute"
 # ═══════════════════════════════════════════════════════════════════════════════
 # Upstream providers (all public, no API key)
 # ═══════════════════════════════════════════════════════════════════════════════
-CURRENCY_URL = "https://open.er-api.com/v6/latest/THB"
+FRANKFURTER_URL = "https://api.frankfurter.dev/v2/rates"
 GOLD_URL = "https://api.chnwt.dev/thai-gold-api/latest"
+GOLD_FUTURES_URL = "https://query1.finance.yahoo.com/v8/finance/chart/GC%3DF?interval=1d&range=5d"
 SET_INDEX_URL = "https://query1.finance.yahoo.com/v8/finance/chart/%5ESET.BK?interval=1d&range=5d"
 SET_HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; ARTWorkspace/1.0)"}
 
@@ -101,36 +103,60 @@ def reset_cache() -> None:
 # ═══════════════════════════════════════════════════════════════════════════════
 # Providers
 # ═══════════════════════════════════════════════════════════════════════════════
-async def _fetch_currency() -> dict[str, Any]:
-    """THB → foreign rates, inverted to "how many baht per unit" for display."""
-    async with httpx.AsyncClient(timeout=10) as client:
-        response = await client.get(CURRENCY_URL)
-        response.raise_for_status()
-        body = response.json()
-
-    rates = body.get("rates") or {}
+def _currency_rows(rates: dict[str, Any]) -> list[dict[str, Any]]:
+    """Convert provider THB→foreign quotes to the dashboard's baht units."""
     rows: list[dict[str, Any]] = []
     for code, name, unit in CURRENCIES:
         rate = rates.get(code)
-        if not rate:
-            continue
-        rows.append(
-            {
-                "code": code,
-                "name": name,
-                "unit": unit,
-                # `rate` is foreign units per 1 THB, so inverting gives THB per
-                # unit; multiplying by `unit` quotes e.g. 100 yen at once.
-                "thb": round(unit / float(rate), 2),
-            }
-        )
+        if rate:
+            rows.append(
+                {
+                    "code": code,
+                    "name": name,
+                    "unit": unit,
+                    "thb": round(unit / float(rate), 2),
+                }
+            )
     if not rows:
         raise ValueError("no supported currency rates in the payload")
-    return {
-        "source": "exchangerate-api.com",
-        "updated_at": body.get("time_last_update_utc"),
-        "rates": rows,
+    return rows
+
+
+async def _fetch_frankfurter(provider: str | None = None) -> dict[str, Any]:
+    """Daily blended or ECB-only central-bank reference rates."""
+    params = {
+        "base": "THB",
+        "quotes": ",".join(code for code, _, _ in CURRENCIES),
     }
+    if provider:
+        params["providers"] = provider
+
+    async with httpx.AsyncClient(timeout=10) as client:
+        response = await client.get(FRANKFURTER_URL, params=params)
+        response.raise_for_status()
+        body = response.json()
+
+    rates: dict[str, float] = {}
+    updated_at = None
+    for row in body:
+        if isinstance(row, dict) and row.get("quote") and row.get("rate"):
+            rates[row["quote"]] = float(row["rate"])
+            updated_at = max(updated_at or "", str(row.get("date") or "")) or None
+
+    return {
+        "id": "ecb" if provider == "ecb" else "frankfurter",
+        "source": "Frankfurter · ECB" if provider == "ecb" else "Frankfurter · blended central-bank rates",
+        "updated_at": updated_at,
+        "rates": _currency_rows(rates),
+    }
+
+
+async def _fetch_currency() -> dict[str, Any]:
+    return await _fetch_frankfurter()
+
+
+async def _fetch_currency_ecb() -> dict[str, Any]:
+    return await _fetch_frankfurter("ecb")
 
 
 async def _fetch_gold() -> dict[str, Any]:
@@ -149,10 +175,44 @@ async def _fetch_gold() -> dict[str, Any]:
     update_date = (body.get("response") or {}).get("update_date") or ""
     update_time = (body.get("response") or {}).get("update_time") or ""
     return {
-        "source": "สมาคมค้าทองคำ",
+        "id": "thai_gold",
+        "source": "สมาคมค้าทองคำ · ทองคำแท่ง 96.5%",
+        "market": "ทองคำแท่งไทย 96.5% · บาททองคำ",
         "updated_at": " ".join(part for part in (update_date, update_time) if part).strip(),
         "buy": buy,
         "sell": sell,
+    }
+
+
+async def _fetch_gold_futures() -> dict[str, Any]:
+    """COMEX gold futures quote; distinct from Thai retail bullion/spot gold."""
+    async with httpx.AsyncClient(timeout=10, headers=SET_HEADERS) as client:
+        response = await client.get(GOLD_FUTURES_URL)
+        response.raise_for_status()
+        body = response.json()
+
+    result = (body.get("chart") or {}).get("result") or []
+    if not result:
+        raise ValueError("gold futures payload has no result")
+    meta = result[0].get("meta") or {}
+    value = float(meta["regularMarketPrice"])
+    previous = float(meta.get("chartPreviousClose") or meta.get("previousClose") or value)
+    change = value - previous
+    market_time = meta.get("regularMarketTime")
+    updated_at = (
+        datetime.fromtimestamp(int(market_time), tz=BANGKOK).isoformat()
+        if market_time
+        else None
+    )
+    return {
+        "id": "comex_gold",
+        "source": "Yahoo Finance · COMEX Gold Futures (GC=F)",
+        "market": "COMEX Gold Futures · USD/oz · อาจมีความล่าช้า",
+        "updated_at": updated_at,
+        "value": round(value, 2),
+        "change": round(change, 2),
+        "change_percent": round((change / previous * 100) if previous else 0.0, 2),
+        "currency": meta.get("currency") or "USD",
     }
 
 
@@ -198,16 +258,23 @@ class CurrencyRate(BaseModel):
 
 
 class CurrencyBlock(BaseModel):
+    id: str = "frankfurter"
     source: str
     updated_at: Optional[str] = None
     rates: list[CurrencyRate]
 
 
 class GoldBlock(BaseModel):
+    id: str = "thai_gold"
     source: str
+    market: Optional[str] = None
     updated_at: Optional[str] = None
-    buy: float
-    sell: float
+    buy: Optional[float] = None
+    sell: Optional[float] = None
+    value: Optional[float] = None
+    change: Optional[float] = None
+    change_percent: Optional[float] = None
+    currency: Optional[str] = None
 
 
 class SetIndexBlock(BaseModel):
@@ -222,7 +289,9 @@ class MarketSummary(BaseModel):
     """Any block may be ``null``: a provider that is down must not fail the rest."""
 
     currency: Optional[CurrencyBlock] = None
+    currency_sources: list[CurrencyBlock] = Field(default_factory=list)
     gold: Optional[GoldBlock] = None
+    gold_sources: list[GoldBlock] = Field(default_factory=list)
     set_index: Optional[SetIndexBlock] = None
     fetched_at: datetime
     is_stale: bool = False
@@ -231,6 +300,74 @@ class MarketSummary(BaseModel):
 # ═══════════════════════════════════════════════════════════════════════════════
 # Endpoint
 # ═══════════════════════════════════════════════════════════════════════════════
+# ── Watchlist quotes ─────────────────────────────────────────────────────
+# One symbol = one upstream chart call, so the list is capped and every call is
+# isolated: a delisted symbol must not blank out the whole widget.
+QUOTE_URL = "https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?interval=1d&range=5d"
+MAX_QUOTE_SYMBOLS = 12
+
+
+class QuoteItem(BaseModel):
+    symbol: str
+    price: Optional[float] = None
+    change: Optional[float] = None
+    change_percent: Optional[float] = None
+    currency: Optional[str] = None
+    name: Optional[str] = None
+
+
+async def _fetch_quote(symbol: str) -> Optional[QuoteItem]:
+    """Latest price + day change for one symbol, or ``None`` when unavailable."""
+    try:
+        async with httpx.AsyncClient(timeout=8, headers=SET_HEADERS) as client:
+            response = await client.get(QUOTE_URL.format(symbol=quote(symbol, safe="")))
+            response.raise_for_status()
+            body = response.json()
+
+        result = (body.get("chart") or {}).get("result") or []
+        if not result:
+            return None
+        meta = result[0].get("meta") or {}
+        price = meta.get("regularMarketPrice")
+        if price is None:
+            return None
+
+        previous = meta.get("chartPreviousClose") or meta.get("previousClose") or price
+        price = float(price)
+        previous = float(previous)
+        change = price - previous
+        return QuoteItem(
+            symbol=symbol,
+            price=round(price, 4),
+            change=round(change, 4),
+            change_percent=round((change / previous * 100) if previous else 0.0, 2),
+            currency=meta.get("currency"),
+            name=meta.get("shortName") or meta.get("symbol"),
+        )
+    except Exception as exc:  # noqa: BLE001 - a bad symbol is data, not a crash
+        logger.info("quote lookup failed for %s: %s", symbol, exc)
+        return None
+
+
+@router.get("/quotes", response_model=list[QuoteItem])
+@limiter.limit(_GENERAL_LIMIT)
+async def market_quotes(
+    request: Request,
+    symbols: str = Query(..., max_length=400),
+    current_user: User = Depends(get_current_user),
+):
+    """Quotes for the watchlist widget. Unknown symbols are simply omitted."""
+    wanted: list[str] = []
+    for raw in symbols.split(","):
+        symbol = raw.strip().upper()
+        if symbol and symbol not in wanted:
+            wanted.append(symbol)
+    wanted = wanted[:MAX_QUOTE_SYMBOLS]
+
+    quotes = await asyncio.gather(*(_fetch_quote(s) for s in wanted), return_exceptions=True)
+    return [quote for quote in quotes if isinstance(quote, QuoteItem)]
+
+
 @router.get("/summary", response_model=MarketSummary)
 @limiter.limit(_GENERAL_LIMIT)
 async def market_summary(
@@ -242,19 +379,38 @@ async def market_summary(
     Authenticated on purpose: the widget only renders inside the dashboard, and
     requiring a session keeps this from being an open relay to three providers.
     """
-    (currency, currency_stale), (gold, gold_stale), (set_index, set_stale) = await asyncio.gather(
-        _cached("currency", CURRENCY_TTL, _fetch_currency),
-        _cached("gold", GOLD_TTL, _fetch_gold),
+    (
+        (frankfurter, frankfurter_stale),
+        (ecb, ecb_stale),
+        (thai_gold, thai_gold_stale),
+        (comex_gold, comex_gold_stale),
+        (set_index, set_stale),
+    ) = await asyncio.gather(
+        _cached("currency:frankfurter", CURRENCY_TTL, _fetch_currency),
+        _cached("currency:ecb", CURRENCY_TTL, _fetch_currency_ecb),
+        _cached("gold:thai_gold", GOLD_TTL, _fetch_gold),
+        _cached("gold:comex", SET_TTL, _fetch_gold_futures),
         _cached("set", SET_TTL, _fetch_set_index),
     )
 
+    currency_sources = [
+        CurrencyBlock(**source)
+        for source in (frankfurter, ecb)
+        if source
+    ]
+    gold_sources = [
+        GoldBlock(**source) for source in (thai_gold, comex_gold) if source
+    ]
+
     return MarketSummary(
-        # Rebuilding the models here both satisfies the type checker and
-        # validates whatever the provider returned (a shape change upstream
-        # becomes a 500 the error boundary can catch, not a broken render).
-        currency=CurrencyBlock(**currency) if currency else None,
-        gold=GoldBlock(**gold) if gold else None,
+        # Keep the original primary fields for compatibility with older clients.
+        currency=currency_sources[0] if currency_sources else None,
+        currency_sources=currency_sources,
+        gold=gold_sources[0] if gold_sources else None,
+        gold_sources=gold_sources,
         set_index=SetIndexBlock(**set_index) if set_index else None,
         fetched_at=utcnow(),
-        is_stale=currency_stale or gold_stale or set_stale,
+        is_stale=any(
+            (frankfurter_stale, ecb_stale, thai_gold_stale, comex_gold_stale, set_stale)
+        ),
     )
