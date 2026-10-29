@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -17,6 +18,8 @@ import {
   ShieldAlert,
   Sliders,
   Camera,
+  FileText,
+  ArrowRight,
   Loader2,
 } from 'lucide-react';
 import { showDeleteConfirm, showToast, showSuccess, showError } from '@/utils/sweetalert';
@@ -874,6 +877,32 @@ export default function ProfilePage() {
             className="space-y-4 min-h-[600px]"
           >
             <RegistrationPolicyCard />
+
+            {/* Audit trail entry point. It used to sit in the sidebar, which is
+                for the pages a member visits daily; an admin's history review
+                belongs here next to the other admin controls. */}
+            <SectionCard
+              icon={<FileText size={20} aria-hidden="true" />}
+              iconBg="bg-[#0066cc]/10"
+              iconColor="text-[#0066cc]"
+              iconRing="ring-[#0066cc]/15"
+              title="บันทึกกิจกรรม"
+              subtitle="ประวัติการใช้งานของผู้ดูแลระบบและสมาชิก"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <p className="max-w-md text-[13px] leading-relaxed text-[#6e6e73]">
+                  ดูว่าใครเข้าสู่ระบบ แก้ไขข้อมูล หรืออนุมัติสมาชิกเมื่อไหร่ พร้อมที่อยู่ IP
+                  และอุปกรณ์ที่ใช้
+                </p>
+                <Link
+                  href="/audit"
+                  className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[#f2f2f7] px-4 py-2 text-[13px] font-semibold text-[#1d1d1f] transition-all duration-150 hover:bg-[#e5e5ea] active:scale-95 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#0066cc]"
+                >
+                  เปิดบันทึกกิจกรรม
+                  <ArrowRight size={14} aria-hidden="true" />
+                </Link>
+              </div>
+            </SectionCard>
 
             {/* User Management Component */}
             <UserManagement />

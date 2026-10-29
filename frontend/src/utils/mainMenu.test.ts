@@ -44,7 +44,6 @@ describe('parseMainMenuConfig', () => {
       'profile',
       'dashboard',
       'camera',
-      'audit',
     ]);
   });
 
@@ -99,7 +98,6 @@ describe('serializeMainMenuConfig', () => {
     expect(JSON.parse(serializeMainMenuConfig(DEFAULT_MAIN_MENU_ITEMS))).toEqual([
       { id: 'dashboard', enabled: true },
       { id: 'camera', enabled: true },
-      { id: 'audit', enabled: true },
       { id: 'profile', enabled: true },
     ]);
   });
