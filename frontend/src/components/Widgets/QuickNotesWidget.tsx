@@ -334,13 +334,13 @@ export default function QuickNotesWidget({
               onClick={() => toggleNote(note.id)}
               aria-pressed={note.done}
               aria-label={note.done ? `ยกเลิกทำ ${note.text}` : `ทำเสร็จ ${note.text}`}
-              className={`flex h-[13px] w-[13px] shrink-0 items-center justify-center rounded-full border transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0066cc]/35 focus-visible:ring-offset-1 ${
+              className={`flex h-[12px] w-[12px] shrink-0 items-center justify-center rounded-full border transition-all duration-150 hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0066cc]/35 focus-visible:ring-offset-1 ${
                 note.done
                   ? 'border-[#29a84a] bg-gradient-to-b from-[#4cd964] to-[#24ab45] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.5),0_1px_2px_rgba(36,171,69,0.35)]'
                   : 'border-[#c9c9ce] bg-gradient-to-b from-white to-[#edeef1] text-transparent shadow-[inset_0_1px_1px_rgba(255,255,255,0.95),inset_0_-1px_2px_rgba(0,0,0,0.07)] hover:border-[#0066cc] hover:shadow-[inset_0_1px_1px_rgba(255,255,255,0.95),0_0_0_3px_rgba(0,102,204,0.10)] active:scale-90'
               }`}
             >
-              <Check size={8} strokeWidth={4.5} aria-hidden="true" />
+              <Check size={7} strokeWidth={4.5} aria-hidden="true" />
             </button>
 
             <span
