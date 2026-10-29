@@ -1,5 +1,6 @@
 """API endpoint tests for ART Workspace backend."""
 import json
+import logging
 from contextlib import contextmanager
 from urllib.parse import unquote
 
@@ -79,6 +80,12 @@ class TestHealthCheck:
         assert resp.status_code == 200
         data = resp.json()
         assert data["status"] == "healthy"
+
+    async def test_root_and_health_accept_head(self, client):
+        """Render's boot probe sends HEAD /; a GET-only route answered 405."""
+        for path in ("/", "/health", "/health/ready"):
+            resp = await client.head(path)
+            assert resp.status_code in (200, 503), path
 
 
 # ── Auth API Tests ────────────────────────────────────────
@@ -1330,6 +1337,36 @@ class TestHealthProbes:
         assert resp.status_code == 503
         assert resp.json()["status"] == "not_ready"
         assert resp.json()["database"]["status"] == "down"
+
+    async def test_health_timeout_is_reported_as_degraded(
+        self, client, monkeypatch, caplog
+    ):
+        """A cancelled ping used to log a blank message (TimeoutError has no str)."""
+        import asyncio
+
+        from app import main
+
+        class _SlowEngine:
+            def connect(self):
+                class _Ctx:
+                    async def __aenter__(self):
+                        await asyncio.sleep(10)
+                        raise AssertionError("timeout should have cancelled the ping")
+
+                    async def __aexit__(self, *args):
+                        return False
+
+                return _Ctx()
+
+        monkeypatch.setattr(main, "engine", _SlowEngine())
+        monkeypatch.setattr(main, "HEALTH_DB_TIMEOUT_SECONDS", 0.05)
+
+        with caplog.at_level(logging.WARNING, logger="app.main"):
+            resp = await client.get("/health")
+
+        assert resp.status_code == 200
+        assert resp.json()["status"] == "degraded"
+        assert "TimeoutError" in caplog.text
 
 
 # ── Request correlation ───────────────────────────────────

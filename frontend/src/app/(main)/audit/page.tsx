@@ -12,6 +12,7 @@ import {
   Search,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import Select from '@/components/ui/Select';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
 
 interface AuditLogEntry {
@@ -208,19 +209,17 @@ export default function AuditPage() {
               className="w-full rounded-xl border border-black/10 bg-white py-2 pl-9 pr-3 text-[13px] text-[#1d1d1f] placeholder:text-[#86868b] focus:border-[#0066cc] focus:outline-hidden focus:ring-2 focus:ring-[#0066cc]/20"
             />
           </div>
-          <select
+          <Select
             value={action}
-            onChange={(event) => setAction(event.target.value)}
-            aria-label="กรองตามประเภทกิจกรรม"
-            className="rounded-xl border border-black/10 bg-white px-3 py-2 text-[13px] text-[#1d1d1f] sm:w-60"
-          >
-            <option value="">ทุกประเภทกิจกรรม</option>
-            {ACTION_OPTIONS.map((key) => (
-              <option key={key} value={key}>
-                {ACTION_LABELS[key]}
-              </option>
-            ))}
-          </select>
+            onChange={setAction}
+            ariaLabel="กรองตามประเภทกิจกรรม"
+            size="md"
+            options={[
+              { value: '', label: 'ทุกประเภทกิจกรรม' },
+              ...ACTION_OPTIONS.map((key) => ({ value: key, label: ACTION_LABELS[key] })),
+            ]}
+            className="w-full sm:w-60"
+          />
         </div>
       </section>
 

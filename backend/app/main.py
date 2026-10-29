@@ -432,9 +432,14 @@ app.add_middleware(
 app.add_middleware(RequestIDMiddleware)
 
 
-@app.get("/", tags=["Root"])
+@app.api_route("/", methods=["GET", "HEAD"], tags=["Root"])
 async def root():
-    """Root endpoint - Health check"""
+    """Root endpoint - Health check.
+
+    HEAD is included because platform deploy probes (Render) send ``HEAD /``
+    before they switch to the configured health path; a GET-only route answers
+    405 and looks like a failed boot in the logs.
+    """
     return {
         "message": "ART Workspace API",
         "version": settings.APP_VERSION,
@@ -443,10 +448,16 @@ async def root():
     }
 
 
-# Long enough for a healthy database round-trip, short enough that a hung
-# database cannot make the liveness probe itself hang (a probe that never answers
-# looks exactly like a crashed process to most platforms).
-HEALTH_DB_TIMEOUT_SECONDS = 2.0
+# Long enough for a TLS round-trip to a managed Postgres on a small instance,
+# short enough that a hung database cannot make the liveness probe itself hang
+# (a probe that never answers looks exactly like a crashed process).
+HEALTH_DB_TIMEOUT_SECONDS = 5.0
+
+
+def _format_ping_failure(exc: BaseException) -> str:
+    """``TimeoutError`` and some driver errors have an empty ``str()``."""
+    detail = str(exc).strip()
+    return f"{type(exc).__name__}: {detail}" if detail else type(exc).__name__
 
 
 async def _ping_database() -> tuple[bool, float | None]:
@@ -454,18 +465,19 @@ async def _ping_database() -> tuple[bool, float | None]:
     async def _ping() -> None:
         async with engine.connect() as conn:
             await conn.execute(text("SELECT 1"))
+            await conn.commit()
 
     started = time.perf_counter()
     try:
         # wait_for (not asyncio.timeout) keeps the 3.10 floor declared in the docs.
         await asyncio.wait_for(_ping(), timeout=HEALTH_DB_TIMEOUT_SECONDS)
     except Exception as exc:
-        logger.warning("Health-check database ping failed: %s", exc)
+        logger.warning("Health-check database ping failed: %s", _format_ping_failure(exc))
         return False, None
     return True, round((time.perf_counter() - started) * 1000, 2)
 
 
-@app.get("/health", tags=["Health"])
+@app.api_route("/health", methods=["GET", "HEAD"], tags=["Health"])
 async def health_check():
     """Liveness probe: the process is up, and reports whether the database is reachable.
 
@@ -490,7 +502,7 @@ async def health_check():
     )
 
 
-@app.get("/health/ready", tags=["Health"])
+@app.api_route("/health/ready", methods=["GET", "HEAD"], tags=["Health"])
 async def readiness_check():
     """Readiness probe: ``200`` only when the database answers."""
     db_ok, latency_ms = await _ping_database()

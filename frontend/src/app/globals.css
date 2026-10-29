@@ -1,6 +1,6 @@
 @import 'tailwindcss';
 /* Design tokens stay in the JS config and are loaded through @config. */
-@config "../../tailwind.config.ts";
+@config "../../tailwind.config.mts";
 
 /* Tailwind v4 changed the default border color from gray-200 to currentColor.
    The existing screens rely on the v3 default for every colour-less `border`,

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ArrowLeftRight, Loader2, RefreshCw, Wallet } from 'lucide-react';
+import Select from '@/components/ui/Select';
 import WidgetSizeToggle from './WidgetSizeToggle';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
 
@@ -126,21 +127,17 @@ export default function CurrencyConverterWidget({
         </label>
 
         <div className="grid grid-cols-[1fr_auto_1fr] items-end gap-2">
-          <label className="block">
+          <div className="block">
             <span className="mb-1 block text-[12px] font-semibold text-[#6e6e73]">จาก</span>
-            <select
+            <Select
               value={from}
-              onChange={(event) => setFrom(event.target.value)}
-              aria-label="สกุลเงินต้นทาง"
-              className="w-full rounded-xl border border-black/10 bg-white px-2 py-2 text-[13px] text-[#1d1d1f]"
-            >
-              {options.map((option) => (
-                <option key={`from-${option.code}`} value={option.code}>
-                  {option.code}
-                </option>
-              ))}
-            </select>
-          </label>
+              onChange={setFrom}
+              ariaLabel="สกุลเงินต้นทาง"
+              size="md"
+              options={options.map((option) => ({ value: option.code, label: option.code }))}
+              className="w-full"
+            />
+          </div>
 
           <button
             type="button"
@@ -151,21 +148,17 @@ export default function CurrencyConverterWidget({
             <ArrowLeftRight size={15} aria-hidden="true" />
           </button>
 
-          <label className="block">
+          <div className="block">
             <span className="mb-1 block text-[12px] font-semibold text-[#6e6e73]">เป็น</span>
-            <select
+            <Select
               value={to}
-              onChange={(event) => setTo(event.target.value)}
-              aria-label="สกุลเงินปลายทาง"
-              className="w-full rounded-xl border border-black/10 bg-white px-2 py-2 text-[13px] text-[#1d1d1f]"
-            >
-              {options.map((option) => (
-                <option key={`to-${option.code}`} value={option.code}>
-                  {option.code}
-                </option>
-              ))}
-            </select>
-          </label>
+              onChange={setTo}
+              ariaLabel="สกุลเงินปลายทาง"
+              size="md"
+              options={options.map((option) => ({ value: option.code, label: option.code }))}
+              className="w-full"
+            />
+          </div>
         </div>
       </div>
 

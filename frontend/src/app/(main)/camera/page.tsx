@@ -18,6 +18,7 @@ import {
   Check,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import Select from '@/components/ui/Select';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
 import { CameraStreamConfig, CameraStreamType } from '@/types';
 import { sanitizeCameraStreams, stripCameraCredentials } from '@/utils/cameraUrl';
@@ -750,17 +751,20 @@ export default function CameraPage() {
                     <label className="block text-xs font-semibold text-slate-700">
                       รอบการรีเฟรชภาพนิ่ง (วินาที)
                     </label>
-                    <select
-                      value={formRefreshInterval}
-                      onChange={(e) => setFormRefreshInterval(Number(e.target.value))}
-                      className="mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 transition-colors focus:border-[#0066cc] focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-[#0066cc]/20"
-                    >
-                      <option value={1}>ทุก 1 วินาที (เร็ว)</option>
-                      <option value={2}>ทุก 2 วินาที</option>
-                      <option value={3}>ทุก 3 วินาที (แนะนำ)</option>
-                      <option value={5}>ทุก 5 วินาที</option>
-                      <option value={10}>ทุก 10 วินาที</option>
-                    </select>
+                    <Select
+                      ariaLabel="รอบการรีเฟรชภาพนิ่ง (วินาที)"
+                      value={String(formRefreshInterval)}
+                      onChange={(next) => setFormRefreshInterval(Number(next))}
+                      size="md"
+                      options={[
+                        { value: '1', label: 'ทุก 1 วินาที (เร็ว)' },
+                        { value: '2', label: 'ทุก 2 วินาที' },
+                        { value: '3', label: 'ทุก 3 วินาที (แนะนำ)' },
+                        { value: '5', label: 'ทุก 5 วินาที' },
+                        { value: '10', label: 'ทุก 10 วินาที' },
+                      ]}
+                      className="mt-1 w-full"
+                    />
                   </div>
                 )}
 

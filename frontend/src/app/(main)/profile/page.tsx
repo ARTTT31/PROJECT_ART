@@ -20,13 +20,13 @@ import {
   Camera,
   FileText,
   ArrowRight,
+  ShieldCheck,
   Loader2,
 } from 'lucide-react';
 import { showDeleteConfirm, showToast, showSuccess, showError } from '@/utils/sweetalert';
 import { canAccessPage } from '@/utils/accessiblePages';
 import { useAuth } from '@/hooks/useAuth';
-import UserManagement from '@/components/Admin/UserManagement';
-import { RegistrationPolicyCard } from '@/components/Admin/RegistrationPolicyCard';
+
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
 import { InsetField, SectionCard } from '@/components/Profile/SectionCard';
 import { MainMenuCard } from '@/components/Profile/MainMenuCard';
@@ -916,36 +916,38 @@ export default function ProfilePage() {
             transition={{ duration: 0.16, ease: 'easeOut' }}
             className="space-y-4 min-h-[600px]"
           >
-            <RegistrationPolicyCard />
-
-            {/* Audit trail entry point. It used to sit in the sidebar, which is
-                for the pages a member visits daily; an admin's history review
-                belongs here next to the other admin controls. */}
+            {/* The tools themselves live on /admin so there is one obvious
+                place for admin work; this tab stays as the link that the
+                sign-up alert email points at. */}
             <SectionCard
-              icon={<FileText size={20} aria-hidden="true" />}
-              iconBg="bg-[#0066cc]/10"
-              iconColor="text-[#0066cc]"
-              iconRing="ring-[#0066cc]/15"
-              title="บันทึกกิจกรรม"
-              subtitle="ประวัติการใช้งานของผู้ดูแลระบบและสมาชิก"
+              icon={<ShieldCheck size={20} aria-hidden="true" />}
+              iconBg="bg-[#5856d6]/10"
+              iconColor="text-[#4b49bd]"
+              iconRing="ring-[#5856d6]/15"
+              title="ศูนย์ผู้ดูแลระบบ"
+              subtitle="จัดการสมาชิก นโยบายรับสมัคร และประวัติการใช้งาน"
             >
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <p className="max-w-md text-[13px] leading-relaxed text-[#6e6e73]">
-                  ดูว่าใครเข้าสู่ระบบ แก้ไขข้อมูล หรืออนุมัติสมาชิกเมื่อไหร่ พร้อมที่อยู่ IP
-                  และอุปกรณ์ที่ใช้
-                </p>
+              <p className="max-w-lg text-[13px] leading-relaxed text-[#6e6e73]">
+                เครื่องมือของผู้ดูแลระบบย้ายไปรวมไว้ที่เดียวแล้ว — อนุมัติสมาชิก
+                ตั้งนโยบายการรับสมัคร และดูบันทึกกิจกรรมได้จากที่นั่น
+              </p>
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+                <Link
+                  href="/admin"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-[#0066cc] px-4 py-2 text-[13px] font-semibold text-white shadow-[0_2px_8px_-2px_rgba(0,102,204,0.5)] transition-all duration-150 hover:bg-[#0071e3] active:scale-95 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#0066cc] focus-visible:ring-offset-2"
+                >
+                  เปิดศูนย์ผู้ดูแลระบบ
+                  <ArrowRight size={14} aria-hidden="true" />
+                </Link>
                 <Link
                   href="/audit"
-                  className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[#f2f2f7] px-4 py-2 text-[13px] font-semibold text-[#1d1d1f] transition-all duration-150 hover:bg-[#e5e5ea] active:scale-95 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#0066cc]"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-[#f2f2f7] px-4 py-2 text-[13px] font-semibold text-[#1d1d1f] transition-all duration-150 hover:bg-[#e5e5ea] active:scale-95 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#0066cc]"
                 >
-                  เปิดบันทึกกิจกรรม
-                  <ArrowRight size={14} aria-hidden="true" />
+                  <FileText size={14} aria-hidden="true" />
+                  บันทึกกิจกรรม
                 </Link>
               </div>
             </SectionCard>
-
-            {/* User Management Component */}
-            <UserManagement />
           </motion.div>
         )}
       </AnimatePresence>

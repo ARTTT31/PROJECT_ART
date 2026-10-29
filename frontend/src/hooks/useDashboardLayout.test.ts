@@ -24,7 +24,6 @@ const DEFAULT_IDS = [
   'finance',
   'watchlist',
   'converter',
-  'quicklinks',
   'holidays',
   'weather',
   'oilprice',

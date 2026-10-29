@@ -65,23 +65,27 @@ const marketSummary = {
   is_stale: false,
 };
 
+/** The dropdowns are custom (button + listbox), so pick a value by clicking. */
+async function choose(combobox: string, option: string | RegExp) {
+  fireEvent.click(screen.getByRole('combobox', { name: combobox }));
+  fireEvent.click(await screen.findByRole('option', { name: option }));
+}
+
 describe('MarketWidget', () => {
   it('allows choosing a daily rate source and gold market', async () => {
     api.fetchWithAuth.mockResolvedValue({ ok: true, json: async () => marketSummary });
     render(<MarketWidget />);
 
     await screen.findByRole('combobox', { name: 'เลือกสกุลเงิน' });
-    expect(screen.getByRole('option', { name: 'Frankfurter · ECB' })).toBeTruthy();
-    expect(screen.getByRole('option', { name: 'COMEX Gold Futures (USD/oz)' })).toBeTruthy();
 
-    fireEvent.change(screen.getByRole('combobox', { name: 'เลือกแหล่งข้อมูลค่าเงิน' }), {
-      target: { value: 'ecb' },
-    });
+    fireEvent.click(screen.getByRole('combobox', { name: 'เลือกแหล่งข้อมูลค่าเงิน' }));
+    expect(screen.getByRole('option', { name: 'Frankfurter · ECB' })).toBeTruthy();
+    fireEvent.keyDown(screen.getByRole('listbox'), { key: 'Escape' });
+
+    await choose('เลือกแหล่งข้อมูลค่าเงิน', 'Frankfurter · ECB');
     expect(screen.getByText('34.01')).toBeTruthy();
 
-    fireEvent.change(screen.getByRole('combobox', { name: 'เลือกแหล่งราคาทอง' }), {
-      target: { value: 'comex_gold' },
-    });
+    await choose('เลือกแหล่งราคาทอง', 'COMEX Gold Futures (USD/oz)');
     expect(screen.getByText('4,062.30')).toBeTruthy();
     expect(screen.getByText(/COMEX Gold Futures · USD\/oz/)).toBeTruthy();
   });
@@ -119,9 +123,7 @@ describe('MarketWidget', () => {
       expect.anything(),
     );
 
-    fireEvent.change(screen.getByRole('combobox', { name: 'เลือกสินทรัพย์ในกราฟ' }), {
-      target: { value: 'USD' },
-    });
+    await choose('เลือกสินทรัพย์ในกราฟ', 'ดอลลาร์สหรัฐ → บาท');
     await waitFor(() => {
       expect(api.fetchWithAuth).toHaveBeenCalledWith(
         expect.stringContaining('symbol=USD'),
@@ -129,9 +131,7 @@ describe('MarketWidget', () => {
       );
     });
 
-    fireEvent.change(screen.getByRole('combobox', { name: 'เลือกช่วงเวลาแท่งเทียน' }), {
-      target: { value: '60m' },
-    });
+    await choose('เลือกช่วงเวลาแท่งเทียน', '1 ชั่วโมง');
     await waitFor(() => {
       expect(api.fetchWithAuth).toHaveBeenCalledWith(
         expect.stringContaining('interval=60m'),

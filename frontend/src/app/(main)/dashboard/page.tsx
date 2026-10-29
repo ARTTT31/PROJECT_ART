@@ -86,10 +86,6 @@ const CurrencyConverterWidget = dynamic(() => import('@/components/Widgets/Curre
   ssr: false,
   loading: () => <ListWidgetSkeleton />,
 });
-const QuickLinksWidget = dynamic(() => import('@/components/Widgets/QuickLinksWidget'), {
-  ssr: false,
-  loading: () => <ListWidgetSkeleton />,
-});
 
 import { useDashboardLayout, widgetNames, widgetDescriptions } from '@/hooks/useDashboardLayout';
 
@@ -298,15 +294,6 @@ function SortableWidget({
               width={widget.w}
               onResize={(newSize) => onResize(widget.id, newSize)}
             />
-          </ErrorBoundary>
-        )}
-        {widget.id === 'quicklinks' && (
-          <ErrorBoundary
-            fallback={(err, reset) => (
-              <WidgetErrorFallback name="ลิงก์ด่วน" error={err} reset={reset} />
-            )}
-          >
-            <QuickLinksWidget width={widget.w} onResize={(newSize) => onResize(widget.id, newSize)} />
           </ErrorBoundary>
         )}
         {widget.id === 'qrcode' && (

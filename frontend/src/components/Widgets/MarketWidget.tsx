@@ -1,16 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { ChangeEventHandler, ReactNode } from 'react';
-import {
-  AlertCircle,
-  Banknote,
-  ChevronDown,
-  Coins,
-  Loader2,
-  TrendingDown,
-  TrendingUp,
-} from 'lucide-react';
+import { AlertCircle, Banknote, Coins, Loader2, TrendingDown, TrendingUp } from 'lucide-react';
+import Select from '@/components/ui/Select';
 import WidgetSizeToggle from './WidgetSizeToggle';
 import CandleChart, { type Candle } from './CandleChart';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
@@ -58,47 +50,6 @@ interface MarketSummary {
   set_index: SetBlock | null;
   fetched_at: string;
   is_stale: boolean;
-}
-
-/**
- * A native <select> dressed up as a compact dropdown: the browser chrome is
- * stripped, a chevron is drawn over it, and hover/focus match the dashboard.
- * Staying a real <select> keeps the native mobile picker and keyboard support.
- */
-function MarketSelect({
-  id,
-  ariaLabel,
-  value,
-  onChange,
-  children,
-  className = '',
-}: {
-  id?: string;
-  ariaLabel: string;
-  value: string;
-  onChange: ChangeEventHandler<HTMLSelectElement>;
-  children: ReactNode;
-  className?: string;
-}) {
-  return (
-    <div className={`relative ${className}`}>
-      <select
-        id={id}
-        aria-label={ariaLabel}
-        value={value}
-        onChange={onChange}
-        className="w-full appearance-none truncate rounded-[10px] border border-black/[0.08] bg-white py-1.5 pl-2.5 pr-6 text-[11px] font-medium text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-colors hover:border-black/[0.16] focus-visible:border-[#0066cc]/50 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#0066cc]/25"
-      >
-        {children}
-      </select>
-      <ChevronDown
-        size={12}
-        strokeWidth={2.5}
-        aria-hidden="true"
-        className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 text-[#86868b]"
-      />
-    </div>
-  );
 }
 
 const CACHE_KEY = 'artMarketCacheV2';
@@ -357,19 +308,17 @@ export default function MarketWidget({
               ทองคำ
             </label>
           </div>
-          <MarketSelect
+          <Select
             id="market-gold-source"
             ariaLabel="เลือกแหล่งราคาทอง"
             value={gold?.id ?? goldSourceId}
-            onChange={(event) => setGoldSourceId(event.target.value)}
-            className="mt-2.5"
-          >
-            {goldSources.map((source) => (
-              <option key={source.id} value={source.id}>
-                {source.id === 'comex_gold' ? 'COMEX Gold Futures (USD/oz)' : 'ทองคำแท่งไทย 96.5%'}
-              </option>
-            ))}
-          </MarketSelect>
+            onChange={setGoldSourceId}
+            options={goldSources.map((source) => ({
+              value: source.id,
+              label: source.id === 'comex_gold' ? 'COMEX Gold Futures (USD/oz)' : 'ทองคำแท่งไทย 96.5%',
+            }))}
+            className="mt-2.5 w-full"
+          />
           {gold ? (
             <>
               {gold.buy != null && gold.sell != null ? (
@@ -469,20 +418,17 @@ export default function MarketWidget({
               ค่าเงิน
             </label>
           </div>
-          <MarketSelect
+          <Select
             id="market-currency"
             ariaLabel="เลือกสกุลเงิน"
             value={selectedCurrencyCode}
-            onChange={(event) => setCurrencyCode(event.target.value)}
-            className="mt-2.5"
-          >
-            {rates.map((rate) => (
-              <option key={rate.code} value={rate.code}>
-                {rate.code} · {rate.name}
-                {rate.unit > 1 ? ` (ต่อ ${rate.unit})` : ''}
-              </option>
-            ))}
-          </MarketSelect>
+            onChange={setCurrencyCode}
+            options={rates.map((rate) => ({
+              value: rate.code,
+              label: `${rate.code} · ${rate.name}${rate.unit > 1 ? ` (ต่อ ${rate.unit})` : ''}`,
+            }))}
+            className="mt-2.5 w-full"
+          />
           {selectedRate ? (
             <div className="mt-2.5">
               <div className="flex items-baseline gap-1">
@@ -504,19 +450,17 @@ export default function MarketWidget({
           >
             แหล่งข้อมูล
           </label>
-          <MarketSelect
+          <Select
             id="market-currency-source"
             ariaLabel="เลือกแหล่งข้อมูลค่าเงิน"
             value={currency?.id ?? ''}
-            onChange={(event) => setCurrencySourceId(event.target.value)}
-            className="mt-1"
-          >
-            {currencySources.map((source) => (
-              <option key={source.id} value={source.id}>
-                {source.source}
-              </option>
-            ))}
-          </MarketSelect>
+            onChange={setCurrencySourceId}
+            options={currencySources.map((source) => ({
+              value: source.id,
+              label: source.source,
+            }))}
+            className="mt-1 w-full"
+          />
         </div>
       </div>
 
@@ -529,29 +473,19 @@ export default function MarketWidget({
             <TrendingUp size={12} aria-hidden="true" />
             กราฟแท่งเทียน
           </label>
-          <MarketSelect
+          <Select
             id="market-chart-asset"
             ariaLabel="เลือกสินทรัพย์ในกราฟ"
             value={chartAsset}
-            onChange={(event) => setChartAsset(event.target.value)}
-          >
-            {CHART_ASSETS.map(([value, name]) => (
-              <option key={value} value={value}>
-                {name}
-              </option>
-            ))}
-          </MarketSelect>
-          <MarketSelect
+            onChange={setChartAsset}
+            options={CHART_ASSETS.map(([value, name]) => ({ value, label: name }))}
+          />
+          <Select
             ariaLabel="เลือกช่วงเวลาแท่งเทียน"
             value={chartInterval}
-            onChange={(event) => setChartInterval(event.target.value)}
-          >
-            {CHART_INTERVALS.map(([value, name]) => (
-              <option key={value} value={value}>
-                {name}
-              </option>
-            ))}
-          </MarketSelect>
+            onChange={setChartInterval}
+            options={CHART_INTERVALS.map(([value, name]) => ({ value, label: name }))}
+          />
         </div>
         <span className="text-[10px] text-[#86868b]">
           {candleLabel ? `${candleLabel} · ` : ''}กราฟจาก Yahoo Finance

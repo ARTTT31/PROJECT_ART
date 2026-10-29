@@ -60,6 +60,15 @@ export const DEFAULT_MAIN_MENU_ITEMS: MainMenuItemConfig[] = [
     description: 'ระบบมอนิเตอร์กล้อง CCTV สดและ Snapshot',
   },
   {
+    id: 'admin',
+    name: 'ผู้ดูแลระบบ',
+    href: '/admin',
+    icon: 'shield',
+    enabled: true,
+    adminOnly: true,
+    description: 'รวมเครื่องมือของผู้ดูแลระบบไว้ที่เดียว',
+  },
+  {
     id: 'profile',
     name: 'โปรไฟล์',
     href: '/profile',
