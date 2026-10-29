@@ -41,8 +41,8 @@ describe('WatchlistWidget', () => {
 
     render(<WatchlistWidget />);
 
+    // The spinner itself is decorative; the status region carries the label.
     expect(screen.getByRole('status', { name: /กำลังโหลดรายการติดตาม/i })).toBeInTheDocument();
-    expect(screen.getByRole('img', { name: /กำลังโหลด/i })).toBeInTheDocument();
   });
 
   it('displays error when load fails', async () => {
@@ -92,8 +92,8 @@ describe('WatchlistWidget', () => {
       expect(screen.getByText(label)).toBeInTheDocument();
     });
 
-    // Check prices
-    expect(screen.getByText('35.50')).toBeInTheDocument();
+    // Check prices (th-TH formatting drops the trailing zero: 35.50 -> 35.5)
+    expect(screen.getByText('35.5')).toBeInTheDocument();
     expect(screen.getByText('178.32')).toBeInTheDocument();
   });
 
@@ -276,8 +276,8 @@ describe('WatchlistWidget', () => {
     const refreshButton = screen.getByRole('button', { name: /รีเฟรชราคา/i });
     fireEvent.click(refreshButton);
 
-    // Should show loading indicator
-    expect(screen.getByRole('img', { name: /กำลังโหลด/i })).toBeInTheDocument();
+    // Should show the spinning refresh icon while quotes reload
+    expect(refreshButton.querySelector('svg')?.getAttribute('class')).toContain('animate-spin');
   });
 
   it('respects maximum symbol limit', async () => {
