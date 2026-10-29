@@ -1,7 +1,16 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AlertCircle, Banknote, Coins, Loader2, TrendingDown, TrendingUp } from 'lucide-react';
+import type { ChangeEventHandler, ReactNode } from 'react';
+import {
+  AlertCircle,
+  Banknote,
+  ChevronDown,
+  Coins,
+  Loader2,
+  TrendingDown,
+  TrendingUp,
+} from 'lucide-react';
 import WidgetSizeToggle from './WidgetSizeToggle';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
 
@@ -48,6 +57,47 @@ interface MarketSummary {
   set_index: SetBlock | null;
   fetched_at: string;
   is_stale: boolean;
+}
+
+/**
+ * A native <select> dressed up as a compact dropdown: the browser chrome is
+ * stripped, a chevron is drawn over it, and hover/focus match the dashboard.
+ * Staying a real <select> keeps the native mobile picker and keyboard support.
+ */
+function MarketSelect({
+  id,
+  ariaLabel,
+  value,
+  onChange,
+  children,
+  className = '',
+}: {
+  id?: string;
+  ariaLabel: string;
+  value: string;
+  onChange: ChangeEventHandler<HTMLSelectElement>;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={`relative ${className}`}>
+      <select
+        id={id}
+        aria-label={ariaLabel}
+        value={value}
+        onChange={onChange}
+        className="w-full appearance-none truncate rounded-[10px] border border-black/[0.08] bg-white py-1.5 pl-2.5 pr-6 text-[11px] font-medium text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-colors hover:border-black/[0.16] focus-visible:border-[#0066cc]/50 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#0066cc]/25"
+      >
+        {children}
+      </select>
+      <ChevronDown
+        size={12}
+        strokeWidth={2.5}
+        aria-hidden="true"
+        className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 text-[#86868b]"
+      />
+    </div>
+  );
 }
 
 const CACHE_KEY = 'artMarketCacheV2';
@@ -298,28 +348,35 @@ export default function MarketWidget({
 
       <div className="mt-4 grid grid-cols-1 gap-2.5 sm:grid-cols-3">
         {/* ── Gold ─────────────────────────────────────────────────────── */}
-        <div className="flex flex-col justify-between rounded-[18px] bg-[#f5f5f7] p-3.5">
-          <div className="flex items-center gap-1.5 text-[11.5px] font-semibold text-[#6e6e73]">
-            <Coins size={13} aria-hidden="true" />
-            <label htmlFor="market-gold-source">ทองคำ</label>
+        <div className="flex flex-col justify-between rounded-[16px] border border-black/[0.05] bg-gradient-to-b from-[#fbfbfd] to-[#f4f4f6] p-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]">
+          <div className="flex items-center gap-2">
+            <span className="flex h-6 w-6 items-center justify-center rounded-[8px] bg-[#c77700]/10 text-[#c77700]">
+              <Coins size={12} aria-hidden="true" />
+            </span>
+            <label
+              htmlFor="market-gold-source"
+              className="text-[11px] font-semibold tracking-wide text-[#6e6e73]"
+            >
+              ทองคำ
+            </label>
           </div>
-          <select
+          <MarketSelect
             id="market-gold-source"
-            aria-label="เลือกแหล่งราคาทอง"
+            ariaLabel="เลือกแหล่งราคาทอง"
             value={gold?.id ?? goldSourceId}
             onChange={(event) => {
               const sourceId = event.target.value;
               setGoldSourceId(sourceId);
               setChartAsset(sourceId === 'comex_gold' ? 'comex_gold' : 'XAUUSD');
             }}
-            className="mt-2 w-full rounded-lg border border-black/10 bg-white px-2 py-1.5 text-[11px] text-[#1d1d1f]"
+            className="mt-2.5"
           >
             {goldSources.map((source) => (
               <option key={source.id} value={source.id}>
                 {source.id === 'comex_gold' ? 'COMEX Gold Futures (USD/oz)' : 'ทองคำแท่งไทย 96.5%'}
               </option>
             ))}
-          </select>
+          </MarketSelect>
           {gold ? (
             <>
               {gold.buy != null && gold.sell != null ? (
@@ -347,7 +404,11 @@ export default function MarketWidget({
                   </div>
                   {gold.change != null && (
                     <div
-                      className={`mt-1 text-[11px] font-bold ${gold.change >= 0 ? 'text-emerald-700' : 'text-red-600'}`}
+                      className={`mt-1.5 inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10.5px] font-bold tabular-nums ${
+                        gold.change >= 0
+                          ? 'bg-emerald-100/80 text-emerald-700'
+                          : 'bg-red-100/80 text-red-600'
+                      }`}
                     >
                       {gold.change >= 0 ? '+' : ''}
                       {gold.change.toFixed(2)} ({gold.change_percent?.toFixed(2)}%)
@@ -365,10 +426,12 @@ export default function MarketWidget({
         </div>
 
         {/* ── SET index ────────────────────────────────────────────────── */}
-        <div className="flex flex-col justify-between rounded-[18px] bg-[#f5f5f7] p-3.5">
-          <div className="flex items-center gap-1.5 text-[11.5px] font-semibold text-[#6e6e73]">
-            <TrendingUp size={13} aria-hidden="true" />
-            ดัชนี SET
+        <div className="flex flex-col justify-between rounded-[16px] border border-black/[0.05] bg-gradient-to-b from-[#fbfbfd] to-[#f4f4f6] p-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]">
+          <div className="flex items-center gap-2">
+            <span className="flex h-6 w-6 items-center justify-center rounded-[8px] bg-[#0066cc]/10 text-[#0066cc]">
+              <TrendingUp size={12} aria-hidden="true" />
+            </span>
+            <span className="text-[11px] font-semibold tracking-wide text-[#6e6e73]">ดัชนี SET</span>
           </div>
           {setIndex ? (
             <>
@@ -401,17 +464,24 @@ export default function MarketWidget({
         </div>
 
         {/* ── Currency ─────────────────────────────────────────────────── */}
-        <div className="flex flex-col rounded-[18px] bg-[#f5f5f7] p-3.5">
-          <div className="flex items-center gap-1.5 text-[11.5px] font-semibold text-[#6e6e73]">
-            <Banknote size={13} aria-hidden="true" />
-            <label htmlFor="market-currency">ค่าเงิน (อ้างอิงรายวัน)</label>
+        <div className="flex flex-col rounded-[16px] border border-black/[0.05] bg-gradient-to-b from-[#fbfbfd] to-[#f4f4f6] p-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]">
+          <div className="flex items-center gap-2">
+            <span className="flex h-6 w-6 items-center justify-center rounded-[8px] bg-[#34c759]/12 text-[#1f9d45]">
+              <Banknote size={12} aria-hidden="true" />
+            </span>
+            <label
+              htmlFor="market-currency"
+              className="text-[11px] font-semibold tracking-wide text-[#6e6e73]"
+            >
+              ค่าเงิน
+            </label>
           </div>
-          <select
+          <MarketSelect
             id="market-currency"
-            aria-label="เลือกสกุลเงิน"
+            ariaLabel="เลือกสกุลเงิน"
             value={selectedCurrencyCode}
             onChange={(event) => setCurrencyCode(event.target.value)}
-            className="mt-2 w-full rounded-lg border border-black/10 bg-white px-2 py-1.5 text-[11px] text-[#1d1d1f]"
+            className="mt-2.5"
           >
             {rates.map((rate) => (
               <option key={rate.code} value={rate.code}>
@@ -419,17 +489,17 @@ export default function MarketWidget({
                 {rate.unit > 1 ? ` (ต่อ ${rate.unit})` : ''}
               </option>
             ))}
-          </select>
+          </MarketSelect>
           {selectedRate ? (
-            <div className="mt-3">
-              <div className="tabular-nums text-[21px] font-extrabold leading-none text-[#1d1d1f]">
-                {money.format(selectedRate.thb)}
-                <span className="ml-1 text-[11px] font-medium">
-                  บาท / {selectedRate.unit} {selectedRate.code}
+            <div className="mt-2.5">
+              <div className="flex items-baseline gap-1">
+                <span className="tabular-nums text-[21px] font-extrabold leading-none tracking-tight text-[#1d1d1f]">
+                  {money.format(selectedRate.thb)}
                 </span>
+                <span className="text-[10.5px] font-medium text-[#6e6e73]">บาท</span>
               </div>
-              <p className="mt-2 text-[10px] text-[#86868b]">
-                {selectedRate.unit} {selectedRate.code} ≈ {money.format(selectedRate.thb)} บาท
+              <p className="mt-1.5 text-[10px] text-[#86868b]">
+                ต่อ {selectedRate.unit} {selectedRate.code} · {selectedRate.name}
               </p>
             </div>
           ) : (
@@ -437,37 +507,40 @@ export default function MarketWidget({
           )}
           <label
             htmlFor="market-currency-source"
-            className="mt-auto pt-3 text-[10px] text-[#6e6e73]"
+            className="mt-auto pt-3 text-[9.5px] font-medium uppercase tracking-[0.08em] text-[#a1a1a6]"
           >
             แหล่งข้อมูล
           </label>
-          <select
+          <MarketSelect
             id="market-currency-source"
-            aria-label="เลือกแหล่งข้อมูลค่าเงิน"
+            ariaLabel="เลือกแหล่งข้อมูลค่าเงิน"
             value={currency?.id ?? ''}
             onChange={(event) => setCurrencySourceId(event.target.value)}
-            className="mt-1 w-full rounded-lg border border-black/10 bg-white px-2 py-1.5 text-[10px] text-[#1d1d1f]"
+            className="mt-1"
           >
             {currencySources.map((source) => (
               <option key={source.id} value={source.id}>
                 {source.source}
               </option>
             ))}
-          </select>
+          </MarketSelect>
         </div>
       </div>
 
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-black/[0.05] pt-3">
-        <div className="flex items-center gap-2">
-          <label htmlFor="market-chart-asset" className="text-[11px] font-semibold text-[#6e6e73]">
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-[14px] bg-[#f5f5f7]/70 px-3 py-2.5 ring-1 ring-black/[0.04]">
+        <div className="flex flex-wrap items-center gap-2">
+          <label
+            htmlFor="market-chart-asset"
+            className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#6e6e73]"
+          >
+            <TrendingUp size={12} aria-hidden="true" />
             กราฟแท่งเทียน
           </label>
-          <select
+          <MarketSelect
             id="market-chart-asset"
-            aria-label="เลือกสินทรัพย์ในกราฟ"
+            ariaLabel="เลือกสินทรัพย์ในกราฟ"
             value={chartAsset}
             onChange={(event) => setChartAsset(event.target.value)}
-            className="rounded-lg border border-black/10 bg-white px-2 py-1.5 text-[11px] text-[#1d1d1f]"
           >
             <optgroup label="ทองคำ">
               <option value="XAUUSD">ทองคำ Spot · XAU/USD</option>
@@ -480,19 +553,18 @@ export default function MarketWidget({
                 </option>
               ))}
             </optgroup>
-          </select>
-          <select
-            aria-label="เลือกช่วงเวลาแท่งเทียน"
+          </MarketSelect>
+          <MarketSelect
+            ariaLabel="เลือกช่วงเวลาแท่งเทียน"
             value={chartInterval}
             onChange={(event) => setChartInterval(event.target.value)}
-            className="rounded-lg border border-black/10 bg-white px-2 py-1.5 text-[11px] text-[#1d1d1f]"
           >
             <option value="15">15 นาที</option>
             <option value="60">1 ชั่วโมง</option>
             <option value="D">1 วัน</option>
             <option value="W">1 สัปดาห์</option>
             <option value="M">1 เดือน</option>
-          </select>
+          </MarketSelect>
         </div>
         <span className="text-[10px] text-[#86868b]">
           {isGoldChart
@@ -502,7 +574,7 @@ export default function MarketWidget({
       </div>
       <div
         ref={chartRef}
-        className="tradingview-widget-container mt-2 h-[320px] w-full overflow-hidden rounded-[14px] border border-black/[0.06] bg-white sm:h-[380px]"
+        className="tradingview-widget-container mt-2 h-[320px] w-full overflow-hidden rounded-[14px] bg-white ring-1 ring-black/[0.06] sm:h-[380px]"
         aria-label={`กราฟแท่งเทียน ${chartSymbol}`}
       />
 
