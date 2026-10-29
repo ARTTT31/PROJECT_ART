@@ -61,12 +61,12 @@ export const DEFAULT_MAIN_MENU_ITEMS: MainMenuItemConfig[] = [
   },
   {
     id: 'admin',
-    name: 'ผู้ดูแลระบบ',
+    name: 'จัดการระบบ',
     href: '/admin',
     icon: 'shield',
     enabled: true,
     adminOnly: true,
-    description: 'รวมเครื่องมือของผู้ดูแลระบบไว้ที่เดียว',
+    description: 'รวมเครื่องมือจัดการระบบไว้ที่เดียว',
   },
   {
     id: 'profile',

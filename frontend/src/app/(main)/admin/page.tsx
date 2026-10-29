@@ -15,7 +15,6 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
 import { RegistrationPolicyCard } from '@/components/Admin/RegistrationPolicyCard';
-import { SystemHealthCard } from '@/components/Admin/SystemHealthCard';
 import UserManagement from '@/components/Admin/UserManagement';
 
 interface Stat {
@@ -105,7 +104,7 @@ export default function AdminPage() {
             </div>
             <div className="min-w-0">
               <h1 className="text-[16px] font-bold tracking-tight text-[#1d1d1f]">
-                ผู้ดูแลระบบ
+                จัดการระบบ
               </h1>
               <p className="mt-0.5 text-[12px] leading-snug text-[#6e6e73]">
                 คำขอสมัคร สิทธิ์การใช้งาน และประวัติกิจกรรมของทั้ง workspace
@@ -170,9 +169,6 @@ export default function AdminPage() {
           ข้อมูลอัปเดตเมื่อเปิดหน้านี้ — กดรีเฟรชเพื่อดูใหม่
         </div>
       </section>
-
-      {/* ── System health ────────────────────────────────────────── */}
-      <SystemHealthCard />
 
       {/* ── Sign-up policy ───────────────────────────────────────── */}
       <RegistrationPolicyCard />

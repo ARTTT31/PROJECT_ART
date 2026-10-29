@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -18,9 +17,6 @@ import {
   ShieldAlert,
   Sliders,
   Camera,
-  FileText,
-  ArrowRight,
-  ShieldCheck,
   Loader2,
 } from 'lucide-react';
 import { showDeleteConfirm, showToast, showSuccess, showError } from '@/utils/sweetalert';
@@ -64,7 +60,7 @@ function apiMessage(data: unknown, fallback: string): string {
 // Main Profile Page Component
 // ─────────────────────────────────────────────────────────────
 
-type TabKey = 'profile' | 'preferences' | 'admin';
+type TabKey = 'profile' | 'preferences';
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -105,22 +101,16 @@ export default function ProfilePage() {
 
   const isAdmin = user?.role === 'admin';
 
-  // Sync the tab with the URL. `?tab=admin` is what the new-sign-up alert
-  // email links to, while `#admin` is kept for old bookmarks and manual links.
+  // Sync the tab with the URL so a shared `?tab=preferences` link opens the
+  // right section. Older `?tab=admin` links simply fall back to the profile tab.
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
     const applyTabFromUrl = () => {
       const params = new URLSearchParams(window.location.search);
       const requested = params.get('tab') || window.location.hash.replace('#', '');
-      const tab = requested as TabKey;
-      if (tab !== 'profile' && tab !== 'preferences' && tab !== 'admin') return;
-
-      if (tab === 'admin' && authUser?.role !== 'admin') {
-        setActiveTab('profile');
-        return;
-      }
-      setActiveTab(tab);
+      if (requested !== 'profile' && requested !== 'preferences') return;
+      setActiveTab(requested);
     };
 
     applyTabFromUrl();
@@ -130,7 +120,7 @@ export default function ProfilePage() {
       window.removeEventListener('popstate', applyTabFromUrl);
       window.removeEventListener('hashchange', applyTabFromUrl);
     };
-  }, [authUser]);
+  }, []);
 
   // The account's saved menu outranks this browser's cache, so a layout arranged
   // on another device shows up here. Accounts that still only have a local
@@ -552,7 +542,7 @@ export default function ProfilePage() {
                 </h1>
                 {isAdmin ? (
                   <span className="inline-flex items-center gap-1 rounded-full bg-purple-50 px-2.5 py-0.5 text-[11px] font-bold text-purple-700 ring-1 ring-purple-600/20">
-                    <ShieldAlert size={11} /> ผู้ดูแลระบบ (Admin)
+                    <ShieldAlert size={11} /> จัดการระบบ (Admin)
                   </span>
                 ) : (
                   <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-bold text-slate-600 ring-1 ring-slate-500/20">
@@ -610,24 +600,6 @@ export default function ProfilePage() {
           <Sliders size={15} />
           <span>ทางลัด &amp; ปรับแต่งเมนู</span>
         </button>
-
-        {isAdmin && (
-          <button
-            type="button"
-            onClick={() => handleTabChange('admin')}
-            className={`flex flex-1 sm:flex-initial items-center justify-center gap-2 px-4 py-2.5 rounded-[13px] text-[13px] font-bold whitespace-nowrap transition-all duration-200 active:scale-[0.98] ${
-              activeTab === 'admin'
-                ? 'bg-white text-purple-700 shadow-[0_2px_8px_rgba(0,0,0,0.06)]'
-                : 'text-[#6e6e73] hover:text-[#1d1d1f] hover:bg-white/50'
-            }`}
-          >
-            <ShieldAlert
-              size={15}
-              className={activeTab === 'admin' ? 'text-purple-600' : 'text-[#86868b]'}
-            />
-            <span>จัดการผู้ใช้งาน</span>
-          </button>
-        )}
       </nav>
 
       {/* ══════════════════════════════════════════════════
@@ -904,52 +876,6 @@ export default function ProfilePage() {
           </motion.div>
         )}
 
-        {/* ══════════════════════════════════════════════════
-          TAB 3: การจัดการผู้ใช้งาน (Admin Panel)
-          ══════════════════════════════════════════════════ */}
-        {activeTab === 'admin' && isAdmin && (
-          <motion.div
-            key="admin"
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -6 }}
-            transition={{ duration: 0.16, ease: 'easeOut' }}
-            className="space-y-4 min-h-[600px]"
-          >
-            {/* The tools themselves live on /admin so there is one obvious
-                place for admin work; this tab stays as the link that the
-                sign-up alert email points at. */}
-            <SectionCard
-              icon={<ShieldCheck size={20} aria-hidden="true" />}
-              iconBg="bg-[#5856d6]/10"
-              iconColor="text-[#4b49bd]"
-              iconRing="ring-[#5856d6]/15"
-              title="ศูนย์ผู้ดูแลระบบ"
-              subtitle="จัดการสมาชิก นโยบายรับสมัคร และประวัติการใช้งาน"
-            >
-              <p className="max-w-lg text-[13px] leading-relaxed text-[#6e6e73]">
-                เครื่องมือของผู้ดูแลระบบย้ายไปรวมไว้ที่เดียวแล้ว — อนุมัติสมาชิก
-                ตั้งนโยบายการรับสมัคร และดูบันทึกกิจกรรมได้จากที่นั่น
-              </p>
-              <div className="mt-4 flex flex-wrap items-center gap-2">
-                <Link
-                  href="/admin"
-                  className="inline-flex items-center gap-1.5 rounded-full bg-[#0066cc] px-4 py-2 text-[13px] font-semibold text-white shadow-[0_2px_8px_-2px_rgba(0,102,204,0.5)] transition-all duration-150 hover:bg-[#0071e3] active:scale-95 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#0066cc] focus-visible:ring-offset-2"
-                >
-                  เปิดศูนย์ผู้ดูแลระบบ
-                  <ArrowRight size={14} aria-hidden="true" />
-                </Link>
-                <Link
-                  href="/audit"
-                  className="inline-flex items-center gap-1.5 rounded-full bg-[#f2f2f7] px-4 py-2 text-[13px] font-semibold text-[#1d1d1f] transition-all duration-150 hover:bg-[#e5e5ea] active:scale-95 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#0066cc]"
-                >
-                  <FileText size={14} aria-hidden="true" />
-                  บันทึกกิจกรรม
-                </Link>
-              </div>
-            </SectionCard>
-          </motion.div>
-        )}
       </AnimatePresence>
 
       <QuickLinkDialog

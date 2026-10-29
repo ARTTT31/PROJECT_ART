@@ -26,8 +26,8 @@ export default function Header({ user, onMenuClick, sidebarCollapsed = false }: 
 
     if (pathname.startsWith('/admin')) {
       return {
-        title: 'ผู้ดูแลระบบ',
-        crumbs: [{ label: 'หน้าหลัก', href: '/dashboard' }, { label: 'ผู้ดูแลระบบ' }],
+        title: 'จัดการระบบ',
+        crumbs: [{ label: 'หน้าหลัก', href: '/dashboard' }, { label: 'จัดการระบบ' }],
       };
     }
 
