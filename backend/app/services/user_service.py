@@ -496,6 +496,17 @@ class UserService:
 
         await self.db.commit()
 
+    async def update_main_menu(self, user_id: int, main_menu: str) -> None:
+        """Replace the account's sidebar menu config (order + visibility)."""
+        user = await self.get_user_by_id(user_id)
+        if not user:
+            raise ValueError("ไม่พบผู้ใช้")
+
+        user.main_menu = main_menu
+        user.updated_at = utcnow()
+
+        await self.db.commit()
+
     async def update_dashboard_layout(self, user_id: int, dashboard_layout: str) -> None:
         """Update user dashboard layout"""
         user = await self.get_user_by_id(user_id)

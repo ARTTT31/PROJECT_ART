@@ -141,6 +141,12 @@ class UserQuickLinksUpdate(BaseModel):
     quick_links: str = Field(..., min_length=0, max_length=100_000)
 
 
+class UserMainMenuUpdate(BaseModel):
+    """Schema for updating the sidebar menu config (JSON array as text)"""
+
+    main_menu: str = Field(..., min_length=0, max_length=20_000)
+
+
 class UserDashboardLayoutUpdate(BaseModel):
     """Schema for updating user dashboard layout"""
 

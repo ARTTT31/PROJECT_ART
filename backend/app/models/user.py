@@ -47,6 +47,11 @@ class User(Base, TimestampMixin):
     # Symbols followed by the watchlist widget (JSON array as text).
     watchlist: Mapped[str | None] = mapped_column(Text)
 
+    # Sidebar order and which pages are switched on (JSON array as text). Kept
+    # per account so arranging the menu on one device follows the user to the
+    # next one instead of dying with that browser's localStorage.
+    main_menu: Mapped[str | None] = mapped_column(Text)
+
     # Camera streams configuration (JSON stored as text)
     camera_config: Mapped[str | None] = mapped_column(Text)
     accessible_pages: Mapped[str | None] = mapped_column(Text)

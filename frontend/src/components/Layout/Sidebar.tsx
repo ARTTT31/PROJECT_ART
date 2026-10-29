@@ -48,11 +48,24 @@ export default function Sidebar({
   const pathname = usePathname();
   const { companyName, companyTagline, brandLogoUrl } = useBranding();
 
+  // The account's config wins: it is the value that travels between devices.
+  // localStorage is only a fast first paint / offline fallback.
+  const resolveMenu = () => {
+    if (user?.main_menu) return parseMainMenuConfig(user.main_menu);
+    if (typeof window === 'undefined') return parseMainMenuConfig(null);
+    return parseMainMenuConfig(localStorage.getItem(MAIN_MENU_STORAGE_KEY));
+  };
+
   const [mainMenuConfig, setMainMenuConfig] = useState<MainMenuItemConfig[]>(() => {
     if (typeof window === 'undefined') return parseMainMenuConfig(null);
     const saved = localStorage.getItem(MAIN_MENU_STORAGE_KEY);
     return parseMainMenuConfig(saved);
   });
+
+  useEffect(() => {
+    setMainMenuConfig(resolveMenu());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.main_menu]);
 
   // Listen for changes from Profile Page
   useEffect(() => {

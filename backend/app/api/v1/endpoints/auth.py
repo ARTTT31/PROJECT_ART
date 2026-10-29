@@ -765,6 +765,7 @@ async def refresh_token(
                     "role": user.role,
                     "avatar": getattr(user, "avatar", None),
                     "quick_links": getattr(user, "quick_links", None),
+                    "main_menu": getattr(user, "main_menu", None),
                     "accessible_pages": getattr(user, "accessible_pages", None),
                 }
                 response.set_cookie(
@@ -1153,6 +1154,7 @@ async def google_verify_token(
         "role": user.role,
         "avatar": user.avatar,
         "quick_links": user.quick_links,
+        "main_menu": getattr(user, "main_menu", None),
         "accessible_pages": getattr(user, "accessible_pages", None),
     }
 
@@ -1312,6 +1314,7 @@ async def _finish_google_callback(
         "role": user.role,
         "avatar": user.avatar,
         "quick_links": user.quick_links,
+        "main_menu": getattr(user, "main_menu", None),
         "accessible_pages": getattr(user, "accessible_pages", None),
     }
 
@@ -1460,7 +1463,7 @@ async def get_session(request: Request, db: AsyncSession = Depends(get_db)):
 
     # The auth lookup defers the large profile columns; this endpoint serves the
     # avatar and quick links, so they are re-selected here.
-    await load_profile_columns(db, user, "avatar", "quick_links")
+    await load_profile_columns(db, user, "avatar", "quick_links", "main_menu")
 
     user_data = {
         "id": user.id,
@@ -1469,6 +1472,7 @@ async def get_session(request: Request, db: AsyncSession = Depends(get_db)):
         "role": user.role,
         "avatar": getattr(user, "avatar", None),
         "quick_links": getattr(user, "quick_links", None),
+        "main_menu": getattr(user, "main_menu", None),
         "accessible_pages": getattr(user, "accessible_pages", None),
     }
 

@@ -34,6 +34,7 @@ PROFILE_COLUMNS = (
     "quick_notes",
     "finance_entries",
     "watchlist",
+    "main_menu",
 )
 
 # ── Page-level access (users.accessible_pages) ───────────────────────────

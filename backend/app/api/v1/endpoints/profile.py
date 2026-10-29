@@ -21,6 +21,7 @@ from app.schemas.user import (
     UserUpdate,
     UserPasswordChange,
     UserQuickLinksUpdate,
+    UserMainMenuUpdate,
     UserDashboardLayoutUpdate,
     UserCameraConfigUpdate,
     WorkspaceBrandingUpdate,
@@ -426,6 +427,34 @@ async def update_quick_links(
         )
 
 
+@router.post("/main-menu", response_model=ResponseModel)
+@limiter.limit(_GENERAL_LIMIT)
+async def update_main_menu(
+    request: Request,
+    menu_update: UserMainMenuUpdate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Save this account's sidebar order and page visibility (JSON string).
+
+    Without this the menu lived in localStorage, so arranging it on a laptop
+    never reached the phone the same person signs in from.
+    """
+    user_service = UserService(db)
+
+    try:
+        await user_service.update_main_menu(current_user.id, menu_update.main_menu)
+
+        return ResponseModel(result="success", message="บันทึกเมนูหลักสำเร็จ")
+
+    except Exception:
+        profile_logger.exception("profile persistence error")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="เกิดข้อผิดพลาดภายในระบบ กรุณาลองอีกครั้งภายหลัง",
+        )
+
+
 @router.post("/dashboard-layout", response_model=ResponseModel)
 @limiter.limit(_GENERAL_LIMIT)
 async def update_dashboard_layout(
@@ -633,6 +662,7 @@ async def export_my_data(
         "profile": {
             "avatar": getattr(current_user, "avatar", None),
             "quick_links": getattr(current_user, "quick_links", None),
+            "main_menu": getattr(current_user, "main_menu", None),
             "dashboard_layout": getattr(current_user, "dashboard_layout", None),
             "camera_config": getattr(current_user, "camera_config", None),
             "accessible_pages": current_user.accessible_pages,

@@ -132,6 +132,34 @@ export default function ProfilePage() {
     };
   }, [authUser]);
 
+  // The account's saved menu outranks this browser's cache, so a layout arranged
+  // on another device shows up here. Accounts that still only have a local
+  // config (everything saved before this column existed) push it up once.
+  useEffect(() => {
+    if (!authUser) return;
+
+    if (authUser.main_menu) {
+      const fromAccount = parseMainMenuConfig(authUser.main_menu);
+      setMainMenuConfig(fromAccount);
+      localStorage.setItem(MAIN_MENU_STORAGE_KEY, serializeMainMenuConfig(fromAccount));
+      window.dispatchEvent(new Event('art-main-menu-updated'));
+      return;
+    }
+
+    const localOnly = localStorage.getItem(MAIN_MENU_STORAGE_KEY);
+    if (!localOnly) return;
+    void fetchWithAuth('/api/v1/profile/main-menu', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ main_menu: localOnly }),
+    })
+      .then(() => updateUser({ main_menu: localOnly }))
+      .catch(() => {
+        /* the next visit retries; nothing to show the user for a silent sync */
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authUser?.main_menu, authUser?.id]);
+
   const handleTabChange = (tab: TabKey) => {
     setActiveTab(tab);
     if (typeof window !== 'undefined') {
@@ -150,9 +178,21 @@ export default function ProfilePage() {
 
   const saveMainMenu = (items: MainMenuItemConfig[]) => {
     const serialized = serializeMainMenuConfig(items);
+    // localStorage stays as an instant local cache (the sidebar reads it before
+    // any network round-trip); the account row is what makes the choice follow
+    // the user to another browser or device.
     localStorage.setItem(MAIN_MENU_STORAGE_KEY, serialized);
     window.dispatchEvent(new Event('art-main-menu-updated'));
     setMainMenuConfig(items);
+    updateUser({ main_menu: serialized });
+
+    void fetchWithAuth('/api/v1/profile/main-menu', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ main_menu: serialized }),
+    }).catch(() => {
+      showError('บันทึกเมนูไม่สำเร็จ', 'การเปลี่ยนแปลงถูกเก็บไว้ในเครื่องนี้ แต่ยังไม่ซิงก์ขึ้นเซิร์ฟเวอร์');
+    });
   };
 
   const toggleMainMenuItem = (id: string) => {

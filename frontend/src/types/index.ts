@@ -17,6 +17,8 @@ export interface AuthUser {
   display_name?: string | null;
   username?: string | null;
   quick_links?: string | null;
+  /** Sidebar order and page visibility, as serialized JSON (synced per account). */
+  main_menu?: string | null;
   dashboard_layout?: string | null;
   camera_config?: string | null;
   accessible_pages?: string | null;
