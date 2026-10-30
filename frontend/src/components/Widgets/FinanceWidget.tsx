@@ -1,8 +1,17 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowDownCircle, ArrowUpCircle, Loader2, Plus, Trash2, Wallet } from 'lucide-react';
+import {
+  ArrowDownCircle,
+  ArrowUpCircle,
+  BarChart3,
+  Loader2,
+  Plus,
+  Trash2,
+  Wallet,
+} from 'lucide-react';
 import WidgetSizeToggle from './WidgetSizeToggle';
+import FinanceSummaryDialog from './FinanceSummaryDialog';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
 
 type EntryType = 'income' | 'expense';
@@ -45,6 +54,7 @@ export default function FinanceWidget({
   const [type, setType] = useState<EntryType>('expense');
   const [label, setLabel] = useState('');
   const [amount, setAmount] = useState('');
+  const [summaryOpen, setSummaryOpen] = useState(false);
   const pendingRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latestRef = useRef<FinanceEntry[]>([]);
   const saveQueueRef = useRef<Promise<void>>(Promise.resolve());
@@ -196,7 +206,19 @@ export default function FinanceWidget({
           </div>
         </div>
 
-        {onResize && <WidgetSizeToggle value={width} onChange={onResize} sizes={[1, 2, 3]} />}
+        <div className="flex shrink-0 items-center gap-1">
+          <button
+            type="button"
+            onClick={() => setSummaryOpen(true)}
+            aria-label="ดูภาพรวมรายรับรายจ่าย"
+            title="ดูภาพรวมทุกเดือน"
+            className="inline-flex items-center gap-1 rounded-full bg-[#f5f5f7] px-2.5 py-1.5 text-[11px] font-semibold text-[#6e6e73] transition-colors hover:bg-[#e5e5ea] hover:text-[#1d1d1f] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#0066cc]"
+          >
+            <BarChart3 size={13} aria-hidden="true" />
+            <span className="hidden sm:inline">ภาพรวม</span>
+          </button>
+          {onResize && <WidgetSizeToggle value={width} onChange={onResize} sizes={[1, 2, 3]} />}
+        </div>
       </div>
 
       <div className="mt-4 grid grid-cols-3 gap-2.5">
@@ -336,6 +358,8 @@ export default function FinanceWidget({
           {saving ? 'กำลังบันทึก...' : `${entries.length}/${MAX_ENTRIES}`}
         </span>
       </div>
+
+      <FinanceSummaryDialog open={summaryOpen} onOpenChange={setSummaryOpen} entries={entries} />
     </section>
   );
 }
