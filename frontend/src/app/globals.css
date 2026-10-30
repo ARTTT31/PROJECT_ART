@@ -813,7 +813,8 @@ input[type='radio'],
 
 /* Page styles live in:
    - src/styles/pages/login.css   (sign-in screen)
-   - src/styles/global-error.css  (App Router global error boundary) */
+   The App Router global error boundary is self-contained: its styles are
+   inlined in src/app/global-error.tsx so it never depends on a stylesheet. */
 
 /* SweetAlert2 follows the shared alert, modal, and button system. */
 .swal2-container {

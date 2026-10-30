@@ -254,9 +254,10 @@ that could be fixed and verified from a local checkout.
 6. **The App Router has a global error boundary.**
    - Sentry warned at startup that no global handler existed. `error.tsx` only covers
      errors *below* the root layout, so a render failure in the layout itself produced
-     a blank page nobody would ever see in Sentry. Added `src/app/global-error.tsx` and
-     `src/styles/global-error.css` (imported by the boundary itself, because it replaces
-     the layout and cannot rely on `globals.css`).
+     a blank page nobody would ever see in Sentry. Added `src/app/global-error.tsx`,
+     whose styles are inlined in a `<style>` tag (it replaces the layout and cannot
+     rely on `globals.css`). Inlining also avoids Next emitting an unused CSS preload
+     on every route for a stylesheet only the error boundary used.
    - Verified by temporarily throwing inside `RootLayout`: the fallback rendered with
      the Thai copy, `<html lang="th">`, `#f5f5f7` body, 18px card and the `#0066cc` pill
      button. In dev the Next overlay covers the screen, so the assertions were made
