@@ -6,10 +6,24 @@
   namespace is capped (oldest rows deleted first).
 """
 
+import pytest
 from sqlalchemy import select
 
 from app.models.weather_cache import WeatherCacheEntry
 from app.services import weather_cache
+
+
+@pytest.fixture(autouse=True)
+async def _authenticated(logged_in_user):
+    """The forecast proxy requires a signed-in user now.
+
+    Also reset the process cache: the shared app keeps it between tests, and a
+    leftover row would make an upstream call look like a cache hit.
+    """
+    from app.api.v1.endpoints import weather as w
+
+    w._WEATHER_CACHE.clear()
+    return logged_in_user
 
 
 FAKE_FORECAST = {

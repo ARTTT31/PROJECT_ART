@@ -4,10 +4,12 @@
  */
 
 import { parseJsonWithSchema, type ResponseModelParsed } from './schemas';
+import { getApiBaseUrl } from './apiBase';
 import type { z } from 'zod';
 
-// Leave this empty in browser deployments to use the same-origin /api rewrite.
-const API_URL = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '');
+// Empty in the default browser deployment, which means the same-origin /api
+// rewrite (first-party cookies). `getApiBaseUrl()` explains the escape hatch.
+const API_URL = getApiBaseUrl();
 
 // When the API lives on another origin its cookies belong to that origin, so a
 // `csrf_token` in `document.cookie` here is unrelated (and may be stale from an

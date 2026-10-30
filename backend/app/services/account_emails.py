@@ -14,8 +14,10 @@ from typing import cast, Optional
 from sqlalchemy import CursorResult, delete as sa_delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.utils import utcnow
 from app.models.email_token import EmailToken
+from app.services import email_service
 
 
 PURPOSE_PASSWORD_RESET = "password_reset"
@@ -70,3 +72,39 @@ async def purge_expired_tokens(db: AsyncSession) -> int:
     cutoff = utcnow() - timedelta(days=1)
     result = await db.execute(sa_delete(EmailToken).where(EmailToken.expires_at < cutoff))
     return int(cast("CursorResult", result).rowcount or 0)
+
+
+async def send_verification_email(db: AsyncSession, user: object) -> None:
+    """Issue a fresh verification token and mail the link.
+
+    Kept here instead of in one endpoint so registration, resend, and the
+    profile email-change path all use the same token TTL and route.
+    """
+    raw = await issue_token(
+        db,
+        int(getattr(user, "id")),
+        PURPOSE_EMAIL_VERIFY,
+        settings.EMAIL_VERIFY_TOKEN_MINUTES,
+    )
+    link = f"{settings.FRONTEND_BASE_URL}/verify-email?token={raw}"
+    await email_service.get_email_service().send(
+        email_service.verify_email_message(
+            getattr(user, "email", None) or "", getattr(user, "name", None) or "", link
+        )
+    )
+
+
+async def send_password_reset_email(db: AsyncSession, user: object) -> None:
+    """Issue a single-use reset token and mail the link."""
+    raw = await issue_token(
+        db,
+        int(getattr(user, "id")),
+        PURPOSE_PASSWORD_RESET,
+        settings.PASSWORD_RESET_TOKEN_MINUTES,
+    )
+    link = f"{settings.FRONTEND_BASE_URL}/reset-password?token={raw}"
+    await email_service.get_email_service().send(
+        email_service.password_reset_email(
+            getattr(user, "email", None) or "", getattr(user, "name", None) or "", link
+        )
+    )

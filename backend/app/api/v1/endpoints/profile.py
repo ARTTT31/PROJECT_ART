@@ -13,7 +13,7 @@ from sqlalchemy import select
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.rate_limit import get_real_client_ip, limiter
-from app.core.security import verify_password
+from app.core.security import decode_token, verify_password
 from app.core.utils import utcnow
 from app.schemas.user import (
     SelfDeleteRequest,
@@ -51,6 +51,7 @@ from app.core.brand_logo import (
     validate_logo_content,
 )
 from app.schemas.response import ResponseModel
+from app.services import account_emails
 from app.services.user_service import UserService, retention_days
 from app.api.dependencies import (
     PROFILE_COLUMNS,
@@ -232,7 +233,17 @@ async def update_my_profile(
     user_agent = request.headers.get("user-agent")
 
     try:
+        email_changed = bool(
+            user_update.email
+            and user_update.email.lower() != (current_user.email or "").lower()
+        )
         updated_user = await user_service.update_user(current_user.id, user_update)
+
+        # The new mailbox has not proved ownership yet; send the verification
+        # link after the update so the account cannot silently reset a password
+        # through an address it never confirmed.
+        if email_changed:
+            await account_emails.send_verification_email(db, updated_user)
 
         await audit_service.log_action(
             action="PROFILE_UPDATE",
@@ -298,10 +309,23 @@ async def change_password(
                 detail="รหัสผ่านเดิมไม่ถูกต้อง",
             )
 
+        # A password change must evict every other device. Keep this tab's
+        # session (its access token carries the same sid) so the user is not
+        # logged out of the screen that just confirmed the change.
+        access_payload = decode_token(request.cookies.get("access_token") or "")
+        current_session_id = (
+            access_payload.get("sid")
+            if access_payload and access_payload.get("type") == "access"
+            else None
+        )
+        revoked = await user_service.revoke_sessions(
+            current_user.id, except_session_id=current_session_id
+        )
+
         await audit_service.log_action(
             action="PASSWORD_CHANGE",
             user_id=current_user.id,
-            details="User successfully changed password",
+            details=f"User changed password; {revoked} other session(s) revoked",
             ip_address=client_ip,
             user_agent=user_agent,
         )

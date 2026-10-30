@@ -20,22 +20,24 @@ import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.dependencies import get_current_user
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.rate_limit import limiter
 from app.core.utils import utcnow
+from app.models.user import User
 from app.services import weather_cache
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
-# These proxies are intentionally reachable without authentication so the login
-# page can still show weather, but that makes them a free relay to third-party
-# APIs for anyone who finds the URL. Rate limiting bounds that abuse without
-# breaking the unauthenticated widget.
+# These proxies require a signed-in account: they are a relay to third-party
+# APIs, and the widget only exists behind the auth guard. Keeping the address
+# key space bounded plus the tighter limit makes an account unable to use the
+# deployment as a free weather/geocode service.
 _GENERAL_LIMIT = f"{settings.RATE_LIMIT_GENERAL_PER_MINUTE}/minute"
-# The weather proxies are unauthenticated and keyed by unbounded coordinates;
-# their tight limit is separate from the general one.
+# The weather proxies are keyed by user-supplied coordinates; keep their tighter
+# limit separate from the general one.
 _WEATHER_LIMIT = f"{settings.RATE_LIMIT_WEATHER_PER_MINUTE}/minute"
 
 
@@ -526,6 +528,7 @@ async def _fetch_secondary_forecast(
 @limiter.limit(_WEATHER_LIMIT)
 async def get_forecast_proxy(
     request: Request,
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
     latitude: float = Query(..., ge=-90.0, le=90.0, description="Latitude in decimal degrees"),
     longitude: float = Query(..., ge=-180.0, le=180.0, description="Longitude in decimal degrees"),
@@ -590,6 +593,7 @@ async def get_forecast_proxy(
 @limiter.limit(_WEATHER_LIMIT)
 async def get_air_quality_proxy(
     request: Request,
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
     latitude: float = Query(..., ge=-90.0, le=90.0),
     longitude: float = Query(..., ge=-180.0, le=180.0),
@@ -674,6 +678,7 @@ async def _fetch_secondary_geocode(
 @limiter.limit(_WEATHER_LIMIT)
 async def get_reverse_geocode_proxy(
     request: Request,
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
     latitude: float = Query(..., ge=-90.0, le=90.0),
     longitude: float = Query(..., ge=-180.0, le=180.0),

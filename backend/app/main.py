@@ -80,6 +80,34 @@ SHARED_STATE_NOTICE = (
 )
 
 
+def log_email_delivery_configuration() -> None:
+    """Make a production deployment with no mail transport impossible to miss.
+
+    Console mode is the right default for tests and local development, but in
+    production it means reset/verification links are written to the logs and
+    never reach the user. Log loudly instead of failing startup: an operator
+    may still be completing provider setup, and a boot loop would be worse.
+    """
+    if settings.DEBUG:
+        return
+    backend = (settings.EMAIL_BACKEND or "console").strip().lower()
+    if backend == "console":
+        logger.warning(
+            "EMAIL_BACKEND=console in production: password-reset and email-verification "
+            "links will NOT be delivered. Set EMAIL_BACKEND=resend or smtp."
+        )
+    elif backend == "resend" and not (settings.RESEND_API_KEY or "").strip():
+        logger.warning("EMAIL_BACKEND=resend but RESEND_API_KEY is empty; email will not send.")
+    elif backend == "smtp" and not (settings.SMTP_HOST or "").strip():
+        logger.warning("EMAIL_BACKEND=smtp but SMTP_HOST is empty; email will not send.")
+
+    if settings.GOOGLE_SIGNUP_ENABLED and not settings.GOOGLE_ALLOWED_DOMAINS:
+        logger.warning(
+            "GOOGLE_SIGNUP_ENABLED=true with an empty GOOGLE_ALLOWED_DOMAINS: any "
+            "verified Google address can create an account and bypass approval."
+        )
+
+
 def log_shared_state_limitations() -> None:
     """Surface the single-instance assumptions instead of failing silently.
 
@@ -149,6 +177,7 @@ async def lifespan(app: FastAPI):
     # is set), then report which single-instance assumptions still apply.
     await broadcast_bus.start(ws_manager.broadcast)
     log_shared_state_limitations()
+    log_email_delivery_configuration()
 
     cleanup_task: "asyncio.Task[None] | None" = None
     if settings.SESSION_CLEANUP_INTERVAL_HOURS > 0:

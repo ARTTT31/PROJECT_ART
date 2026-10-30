@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { AuthUserSchema } from '@/lib/api/schemas';
+import { getApiBaseUrl } from '@/lib/api/apiBase';
 import { readUserCookie } from '@/lib/api/userCookie';
 
 export default function LoginSuccessPage() {
@@ -41,7 +42,7 @@ export default function LoginSuccessPage() {
         }
 
         // Step 2: Fallback to verify and fetch session details from backend via HTTP-only cookies
-        const API_URL = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '');
+        const API_URL = getApiBaseUrl();
         const res = await fetch(`${API_URL}/api/v1/auth/session`, {
           credentials: 'include', // Ensure cookies are sent
         });

@@ -12,6 +12,7 @@ development read back through :func:`outbox_messages`.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import smtplib
 from dataclasses import dataclass
@@ -96,7 +97,7 @@ class EmailService:
                 )
                 return True
             if backend == "smtp":
-                return self._send_smtp(message)
+                return await self._send_smtp(message)
             if backend == "resend":
                 return await self._send_resend(message)
 
@@ -110,7 +111,14 @@ class EmailService:
             logger.exception("Email delivery failed for %s", message.to)
             return False
 
-    def _send_smtp(self, message: EmailMessage) -> bool:
+    async def _send_smtp(self, message: EmailMessage) -> bool:
+        """Deliver over SMTP without blocking the application's event loop.
+
+        smtplib is synchronous and a relay can take seconds to answer; calling it
+        directly inside this async method stalled every concurrent request on
+        the process. ``asyncio.to_thread`` keeps the connection work off-loop
+        while preserving the same failure-to-False contract.
+        """
         host = (settings.SMTP_HOST or "").strip()
         if not host:
             logger.warning(
@@ -119,6 +127,10 @@ class EmailService:
             )
             return False
 
+        return await asyncio.to_thread(self._smtp_deliver, message, host)
+
+    @staticmethod
+    def _smtp_deliver(message: EmailMessage, host: str) -> bool:
         with smtplib.SMTP(host, settings.SMTP_PORT, timeout=SMTP_TIMEOUT_SECONDS) as smtp:
             if settings.SMTP_STARTTLS:
                 smtp.starttls()

@@ -174,11 +174,12 @@ async def test_a_trashed_account_is_hidden_and_locked_out(fk_env):
             await _user_id(fk_env, ADMIN_EMAIL)
         ], "a trashed account must not appear in the user list"
 
-        # The token they were holding a moment ago is dead too: the account now
-        # fails the is_active check in the auth dependency (403, not a 200).
+        # The token they were holding a moment ago is dead too: deleting the
+        # account revokes its sessions, so the embedded session id no longer
+        # resolves (401, not a 200).
         me = await victim_client.get("/api/v1/profile/me")
-        assert me.status_code == 403, me.text
-        assert "Inactive" in me.json()["detail"]
+        assert me.status_code == 401, me.text
+        assert "revoked" in me.json()["detail"].lower()
 
         # Signing in again is refused as well — the account is inactive, so the
         # login flow stops it before any token is minted.

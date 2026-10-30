@@ -109,7 +109,12 @@ async def resolve_user_from_token(token: str, db: AsyncSession) -> User:
 
     Shared by the HTTP dependency and the WebSocket handshake so both enforce
     exactly the same account-state rules (expired token, deleted user, inactive
-    account, lockout). Raises ``HTTPException`` on rejection.
+    account, lockout, session revoked). Raises ``HTTPException`` on rejection.
+
+    Access tokens must name the session that issued them. That ``sid`` is
+    checked in the same query as the user lookup, so logout/password-change/
+    admin-deactivation revoke an access token immediately rather than waiting
+    for its 30-minute expiry.
     """
     payload = decode_token(token)
     if payload is None:
@@ -122,21 +127,19 @@ async def resolve_user_from_token(token: str, db: AsyncSession) -> User:
         raise _unauthorized("Invalid token type")
 
     user_id: Optional[int] = payload.get("user_id")
-    email: Optional[str] = payload.get("sub")
+    session_id = payload.get("sid")
+
+    # Tokens minted before sessions were embedded cannot be checked against the
+    # session table, so they are refused rather than silently bypassing logout.
+    if user_id is None or not isinstance(session_id, str) or not session_id:
+        raise _unauthorized("Invalid token session")
 
     user_service = UserService(db)
-    user: Optional[User] = None
-
-    if user_id is not None:
-        # Deferred lookup: this runs on EVERY authenticated request, so the
-        # megabytes of avatar/quick-links/dashboard-layout/camera-config are not
-        # part of it (see UserService.get_user_for_auth).
-        user = await user_service.get_user_for_auth(user_id)
-    elif email is not None:
-        user = await user_service.get_user_for_auth_by_email(email)
+    # One deferred JOIN lookup: the large profile blobs are not part of it.
+    user = await user_service.get_user_for_auth_with_session(user_id, session_id)
 
     if user is None:
-        raise _unauthorized("User not found")
+        raise _unauthorized("Session revoked or user not found")
 
     if not user.is_active:
         raise HTTPException(

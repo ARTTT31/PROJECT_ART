@@ -9,6 +9,12 @@ a tz=Tokyo request later reads. The timezone must also be a valid IANA name
 import pytest
 
 
+@pytest.fixture(autouse=True)
+async def _authenticated(logged_in_user):
+    """The forecast proxy requires a signed-in user now."""
+    return logged_in_user
+
+
 FAKE_FORECAST = {
     "latitude": 0.0, "longitude": 0.0, "timezone": "Asia/Bangkok",
     "current": {}, "hourly": {}, "daily": {},

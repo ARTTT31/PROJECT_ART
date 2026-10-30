@@ -22,6 +22,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useBranding } from '@/context/BrandingContext';
 import TurnstileWidget from '@/components/Auth/TurnstileWidget';
 import { useToast } from '@/components/Toast/ToastProvider';
+import { getApiBaseUrl } from '@/lib/api/apiBase';
 
 /** Thai date, short month (e.g. "วันพฤหัสบดีที่ 9 ต.ค. 2569") */
 const dateFormatter = new Intl.DateTimeFormat('th-TH', {
@@ -40,7 +41,7 @@ const timeFormatter = new Intl.DateTimeFormat('th-TH', {
 const formatDate = (date: Date) => dateFormatter.format(date);
 const formatTime = (date: Date) => timeFormatter.format(date);
 
-const apiBaseUrl = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '');
+const apiBaseUrl = getApiBaseUrl();
 const REGISTER_ENDPOINT = `${apiBaseUrl}/api/v1/auth/register`;
 const REGISTRATION_MODE_ENDPOINT = `${apiBaseUrl}/api/v1/auth/registration-mode`;
 

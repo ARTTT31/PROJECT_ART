@@ -19,10 +19,12 @@ from fastapi import APIRouter, Depends, Request
 import httpx
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.dependencies import get_current_user
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.rate_limit import limiter
 from app.core.utils import utcnow
+from app.models.user import User
 from app.services import weather_cache
 
 logger = logging.getLogger(__name__)
@@ -148,7 +150,9 @@ async def _stale_from_l2(db: AsyncSession) -> Optional[dict]:
 
 @router.get("/health", response_model=dict)
 @limiter.limit(_GENERAL_LIMIT)
-async def check_oil_prices_health(request: Request):
+async def check_oil_prices_health(
+    request: Request, current_user: User = Depends(get_current_user)
+):
     """
     Health check endpoint to verify oil price providers accessibility
     """
@@ -204,7 +208,11 @@ async def check_oil_prices_health(request: Request):
 
 @router.get("/oil-prices", response_model=dict)
 @limiter.limit(_GENERAL_LIMIT)
-async def get_oil_prices(request: Request, db: AsyncSession = Depends(get_db)):
+async def get_oil_prices(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
     """
     Fetch current retail fuel prices from Bangchak API (with fallback cache).
 

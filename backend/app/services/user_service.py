@@ -116,6 +116,35 @@ class UserService:
         )
         return result.scalar_one_or_none()
 
+    async def get_user_for_auth_with_session(
+        self, user_id: int, session_id: str
+    ) -> Optional[User]:
+        """Resolve the user only while its access-token session is still live.
+
+        Access tokens carry the session id that issued them. Checking it here
+        (in the same query as the user lookup, so logout does not add a second
+        database round-trip) is what makes a logout, password change, or
+        admin deactivation take effect immediately for an already-issued access
+        token instead of waiting for its 30-minute expiry.
+        """
+        now = utcnow()
+        result = await self.db.execute(
+            select(User)
+            .join(UserSession, UserSession.user_id == User.id)
+            .options(*_defer_profile_columns())
+            .where(
+                User.id == user_id,
+                UserSession.session_id == session_id,
+                UserSession.user_id == user_id,
+                UserSession.is_active.is_(True),
+                or_(
+                    UserSession.expires_at.is_(None),
+                    UserSession.expires_at > now,
+                ),
+            )
+        )
+        return result.scalar_one_or_none()
+
     async def get_user_by_email(self, email: str) -> Optional[User]:
         """Get user by email"""
         result = await self.db.execute(select(User).where(User.email == email.lower()))
@@ -424,12 +453,15 @@ class UserService:
         if not user:
             raise ValueError("ไม่พบผู้ใช้")
 
-        # Check if new email already exists
-        if user_update.email and user_update.email != user.email:
+        # Check if new email already exists. Changing the address invalidates
+        # its previous verification: the new mailbox has not proved ownership
+        # yet, so password-reset/notification mail must not treat it as trusted.
+        if user_update.email and user_update.email.lower() != (user.email or "").lower():
             existing_user = await self.get_user_by_email(user_update.email)
             if existing_user:
                 raise ValueError("อีเมลนี้ถูกใช้งานแล้ว")
             user.email = user_update.email.lower()
+            user.email_verified_at = None
 
         # Update fields
         if user_update.name is not None:
@@ -554,13 +586,19 @@ class UserService:
 
         return True
 
-    async def revoke_sessions(self, user_id: int) -> int:
-        """Drop every session row of a user, ending their sign-ins immediately."""
-        sessions = (
-            await self.db.execute(
-                select(UserSession).where(UserSession.user_id == user_id)
-            )
-        ).scalars().all()
+    async def revoke_sessions(
+        self, user_id: int, *, except_session_id: Optional[str] = None
+    ) -> int:
+        """Drop a user's session rows, optionally keeping the current one.
+
+        Keeping ``except_session_id`` lets a password change revoke every other
+        device while the tab that made the change keeps working. The access
+        token embeds ``sid``, so the deleted rows stop working immediately.
+        """
+        statement = select(UserSession).where(UserSession.user_id == user_id)
+        if except_session_id:
+            statement = statement.where(UserSession.session_id != except_session_id)
+        sessions = (await self.db.execute(statement)).scalars().all()
 
         for session in sessions:
             await self.db.delete(session)

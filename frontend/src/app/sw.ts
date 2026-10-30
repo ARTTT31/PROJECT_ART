@@ -29,6 +29,18 @@ const serwist = new Serwist({
   clientsClaim: true,
   navigationPreload: true,
   runtimeCaching: [...apiNeverCached, ...defaultCache],
+  // A navigation that cannot reach the network (or a cached page) gets the
+  // small, self-contained offline shell instead of the browser's error page.
+  // `public/offline.html` is included in the precache manifest by the default
+  // public glob.
+  fallbacks: {
+    entries: [
+      {
+        url: '/offline.html',
+        matcher: ({ request }) => request.mode === 'navigate',
+      },
+    ],
+  },
 });
 
 serwist.addEventListeners();

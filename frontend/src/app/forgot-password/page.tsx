@@ -5,9 +5,10 @@ import Link from 'next/link';
 import { AlertCircle, ArrowRight, Loader2, Mail } from 'lucide-react';
 import AuthPageShell from '@/components/Auth/AuthPageShell';
 import TurnstileWidget from '@/components/Auth/TurnstileWidget';
+import { getApiBaseUrl } from '@/lib/api/apiBase';
 import '../../styles/pages/login.css';
 
-const apiBaseUrl = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '');
+const apiBaseUrl = getApiBaseUrl();
 const FORGOT_ENDPOINT = `${apiBaseUrl}/api/v1/auth/forgot-password`;
 
 export default function ForgotPasswordPage() {

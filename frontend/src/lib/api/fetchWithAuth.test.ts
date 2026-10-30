@@ -63,6 +63,7 @@ afterEach(() => {
 describe('fetchWithAuth CSRF token source', () => {
   it('prefers the token issued by the API over a stale cookie on this origin', async () => {
     vi.stubEnv('NEXT_PUBLIC_API_URL', 'https://api.example.com');
+    vi.stubEnv('NEXT_PUBLIC_USE_SAME_ORIGIN_API', 'false');
     setCookie('csrf_token', 'stale-local');
     const calls = installFetch((url) =>
       url.endsWith(CSRF_ENDPOINT)
@@ -90,5 +91,19 @@ describe('fetchWithAuth CSRF token source', () => {
       'same-origin-token',
     );
     expect(calls.some((call) => call.url.includes(CSRF_ENDPOINT))).toBe(false);
+  });
+
+  it('ignores a configured API origin unless direct-API mode is explicit', async () => {
+    vi.stubEnv('NEXT_PUBLIC_API_URL', 'https://api.example.com');
+    setCookie('csrf_token', 'same-origin-token');
+    const calls = installFetch(() => jsonResponse({ result: 'success', data: {} }));
+
+    const { fetchWithAuth } = await import('./fetchWithAuth');
+    await fetchWithAuth('/api/v1/system/branding', { method: 'PUT', body: '{}' });
+
+    expect(csrfHeaderOf(calls.find((call) => call.init?.method === 'PUT'))).toBe(
+      'same-origin-token',
+    );
+    expect(calls.some((call) => call.url.startsWith('https://api.example.com'))).toBe(false);
   });
 });

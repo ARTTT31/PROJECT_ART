@@ -101,30 +101,12 @@ async def _create_user_session(
 
 async def _send_verification_email(db: AsyncSession, user: Any) -> None:
     """Issue a fresh verification token and mail the link."""
-    raw = await account_emails.issue_token(
-        db,
-        user.id,
-        account_emails.PURPOSE_EMAIL_VERIFY,
-        settings.EMAIL_VERIFY_TOKEN_MINUTES,
-    )
-    link = f"{settings.FRONTEND_BASE_URL}/verify-email?token={raw}"
-    await email_service.get_email_service().send(
-        email_service.verify_email_message(user.email or "", user.name or "", link)
-    )
+    await account_emails.send_verification_email(db, user)
 
 
 async def _send_password_reset_email(db: AsyncSession, user: Any) -> None:
     """Issue a single-use reset token and mail the link."""
-    raw = await account_emails.issue_token(
-        db,
-        user.id,
-        account_emails.PURPOSE_PASSWORD_RESET,
-        settings.PASSWORD_RESET_TOKEN_MINUTES,
-    )
-    link = f"{settings.FRONTEND_BASE_URL}/reset-password?token={raw}"
-    await email_service.get_email_service().send(
-        email_service.password_reset_email(user.email or "", user.name or "", link)
-    )
+    await account_emails.send_password_reset_email(db, user)
 
 
 async def _notify_admins_of_request(db: AsyncSession, applicant: Any) -> None:
@@ -865,8 +847,8 @@ def _get_allowed_google_domains() -> List[str]:
     """Domains allowed for Google AUTO-PROVISIONING (owner policy, T13).
 
     Read at call time from ``GOOGLE_ALLOWED_DOMAINS`` (comma-separated). An
-    empty list keeps the historic behaviour (any verified Google email may be
-    provisioned) — production MUST configure it per the owner's decision.
+    empty list means no domain restriction; that is only acceptable when
+    ``GOOGLE_SIGNUP_ENABLED`` is intentionally on for an open deployment.
     """
     multi = os.getenv("GOOGLE_ALLOWED_DOMAINS", "").strip()
     return [d.strip().lower() for d in multi.split(",") if d.strip()]
@@ -880,7 +862,7 @@ def _check_google_provisioning_domain(
     The email domain must be in the allow-list, and when the token carries an
     ``hd`` claim (Workspace accounts) that claim must agree with the list too,
     so a Workspace user cannot claim an address whose domain merely LOOKS allowed.
-    Empty ``allowed_domains`` keeps the historic open policy.
+    Empty ``allowed_domains`` means the deployment has no domain policy.
     """
     if not allowed_domains:
         return
@@ -907,11 +889,10 @@ async def _provision_google_user(
 ) -> Any:
     """Create the account a first Google sign-in implies.
 
-    While ``GOOGLE_SIGNUP_ENABLED`` is true (the default) this keeps the
-    historic behaviour: the account is created usable, whatever
-    ``REGISTRATION_MODE`` says. With the flag false, creation follows the mode —
-    ``approval`` creates the row inactive and pending so the caller refuses to
-    sign in and the admin sees the request, and ``closed`` never reaches here
+    With ``GOOGLE_SIGNUP_ENABLED`` true the account is created usable, whatever
+    ``REGISTRATION_MODE`` says. The default (false) makes creation follow the
+    mode: ``approval`` creates the row inactive and pending so the caller refuses
+    to sign in and the admin sees the request, and ``closed`` never reaches here
     (the caller refused it first).
 
     The insert can lose a race with a concurrent sign-in for the same address,
@@ -942,11 +923,11 @@ async def _provision_google_user(
 def _assert_google_provisioning_allowed() -> None:
     """Refuse to CREATE an account from a Google sign-in when signups are off.
 
-    Only consulted for a first sign-in (no account exists yet). While
-    ``GOOGLE_SIGNUP_ENABLED`` is true (the default) Google keeps creating
-    accounts in every mode — set it to false to make Google creation follow
-    ``REGISTRATION_MODE`` instead (``closed`` refuses, ``approval`` queues the
-    request). Existing accounts can always sign in, in every mode.
+    Only consulted for a first sign-in (no account exists yet). The default
+    (``GOOGLE_SIGNUP_ENABLED=false``) makes Google creation follow
+    ``REGISTRATION_MODE`` (``closed`` refuses, ``approval`` queues the request);
+    set it to true only when Google-driven signup is intended. Existing accounts
+    can always sign in, in every mode.
     """
     if settings.GOOGLE_SIGNUP_ENABLED:
         return
@@ -1140,7 +1121,9 @@ async def google_verify_token(
     session_id = await _create_user_session(
         db, user, client_ip_tok, user_agent_tok, refresh_jti
     )
-    access_jwt = create_access_token(data={"sub": user.email, "user_id": user.id})
+    access_jwt = create_access_token(
+        data={"sub": user.email, "user_id": user.id, "sid": session_id}
+    )
     refresh_jwt = create_refresh_token(
         data={"sub": user.email, "user_id": user.id, "sid": session_id},
         jti=refresh_jti,
@@ -1301,7 +1284,9 @@ async def _finish_google_callback(
         request.headers.get("user-agent"),
         refresh_jti,
     )
-    access_jwt = create_access_token(data={"sub": user.email, "user_id": user.id})
+    access_jwt = create_access_token(
+        data={"sub": user.email, "user_id": user.id, "sid": session_id}
+    )
     refresh_jwt = create_refresh_token(
         data={"sub": user.email, "user_id": user.id, "sid": session_id},
         jti=refresh_jti,

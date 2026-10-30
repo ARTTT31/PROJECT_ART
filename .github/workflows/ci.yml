@@ -133,7 +133,14 @@ jobs:
       - name: Build
         run: npm run build
         env:
-          NEXT_PUBLIC_API_URL: http://localhost:8080
+          API_INTERNAL_URL: http://localhost:8080
+          NEXT_PUBLIC_USE_SAME_ORIGIN_API: "true"
+
+      # Serwist only generates the PWA worker through webpack. A production
+      # build that silently falls back to Turbopack ships /sw.js as a 404, so
+      # fail here instead of discovering it from the browser console.
+      - name: Verify PWA worker was generated
+        run: test -s public/sw.js
 
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium

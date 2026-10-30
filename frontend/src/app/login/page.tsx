@@ -14,6 +14,7 @@ import {
   User,
 } from 'lucide-react';
 import Link from 'next/link';
+import { getApiBaseUrl } from '@/lib/api/apiBase';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useAuth } from '@/hooks/useAuth';
@@ -49,7 +50,7 @@ function safeInternalPath(raw: string | null): string | null {
   return raw;
 }
 
-const apiBaseUrl = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '');
+const apiBaseUrl = getApiBaseUrl();
 const LOGIN_ENDPOINT = `${apiBaseUrl}/api/v1/auth/login`;
 const REGISTER_ENDPOINT = `${apiBaseUrl}/api/v1/auth/register`;
 const REGISTRATION_MODE_ENDPOINT = `${apiBaseUrl}/api/v1/auth/registration-mode`;

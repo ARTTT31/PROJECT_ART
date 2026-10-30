@@ -16,7 +16,7 @@
 | หัวข้อ | ค่าแนะนำ | หมายเหตุ |
 |---|---|---|
 | โหมดสมัครสมาชิก | `REGISTRATION_MODE=approval` | คนทั่วไปขอสมัครได้ แต่ต้องรอแอดมินอนุมัติ (ปลอดภัยสุดสำหรับเปิดสาธารณะ) ใช้ `open` เมื่อพร้อมรับคนเยอะจริงๆ |
-| Google sign-in | `GOOGLE_SIGNUP_ENABLED=true` (ค่าเริ่มต้น) | true = Google สมัครได้ทุกโหมดเหมือนเดิม; ตั้ง `false` เมื่อต้องการให้ Google เข้าเกณฑ์ approval/closed |
+| Google sign-in | `GOOGLE_SIGNUP_ENABLED=false` (ค่าเริ่มต้น) | false = การสร้างบัญชีผ่าน Google ใช้ `REGISTRATION_MODE` (approval = เข้าคิวอนุมัติ, closed = ปฏิเสธ); ตั้ง `true` เฉพาะเมื่อต้องการเปิด Google signup และควรคู่กับ `GOOGLE_ALLOWED_DOMAINS` |
 | จำกัดโดเมน Google | `GOOGLE_ALLOWED_DOMAINS` | เว้นว่าง = รับทุกโดเมน (เฉพาะคนที่สร้างบัญชีใหม่); บัญชีที่มีอยู่เข้าได้เสมอไม่ว่าโหมดไหน |
 | ลายเซ็นอีเมล | `EMAIL_BACKEND`, `EMAIL_FROM`, provider key/SMTP | ดูข้อ 2 |
 | ยืนยันอีเมล | `REQUIRE_EMAIL_VERIFICATION=false` ก่อน → `true` เมื่ออีเมลใช้งานได้จริง | false = สมัครแล้วเข้าได้เลย; true = ต้องกดลิงก์ในอีเมลก่อน |

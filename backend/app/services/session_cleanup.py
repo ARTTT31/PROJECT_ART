@@ -24,9 +24,11 @@ from sqlalchemy import CursorResult, delete
 from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.database import to_sync_database_url
 from app.models.session import UserSession
 from app.core.utils import utcnow
+from app.models.audit_log import AuditLog
 from app.models.email_token import EmailToken
 
 logger = logging.getLogger(__name__)
@@ -61,6 +63,17 @@ def cleanup_expired_sessions(db: Session, max_age_days: int = DEFAULT_MAX_AGE_DA
         .filter(_expired_filter(now, cutoff_date))
         .delete(synchronize_session="fetch")
     )
+
+    if settings.AUDIT_LOG_RETENTION_DAYS > 0:
+        audit_cutoff = now - timedelta(days=settings.AUDIT_LOG_RETENTION_DAYS)
+        audit_total = (
+            db.query(AuditLog)
+            .filter(AuditLog.created_at < audit_cutoff)
+            .delete(synchronize_session="fetch")
+        )
+        if audit_total:
+            logger.info("Removed %d audit rows past retention", audit_total)
+
     db.commit()
 
     if total > 0:
@@ -102,6 +115,16 @@ async def cleanup_expired_sessions_async(
     token_total = int(cast(CursorResult[Any], token_result).rowcount or 0)
     if token_total > 0:
         logger.info("Removed %d expired email tokens", token_total)
+
+    if settings.AUDIT_LOG_RETENTION_DAYS > 0:
+        audit_cutoff = now - timedelta(days=settings.AUDIT_LOG_RETENTION_DAYS)
+        audit_result = await db.execute(
+            delete(AuditLog).where(AuditLog.created_at < audit_cutoff)
+        )
+        audit_total = int(cast(CursorResult[Any], audit_result).rowcount or 0)
+        if audit_total > 0:
+            logger.info("Removed %d audit rows past retention", audit_total)
+
     await db.commit()
     return total
 

@@ -6,9 +6,9 @@ Two rules are pinned here:
   gates used to run before the account lookup, so ``closed`` refused even
   accounts that already existed — that regression broke the production login
   and is the main thing these tests guard.
-- CREATING an account follows ``GOOGLE_SIGNUP_ENABLED`` (default true = the
-  historic behaviour, anyone with a verified Google email gets an account).
-  With the flag off, creation follows ``REGISTRATION_MODE``.
+- CREATING an account follows ``GOOGLE_SIGNUP_ENABLED`` (default false).
+  With the flag off, creation follows ``REGISTRATION_MODE``; enabling it is an
+  explicit decision to let a verified Google email create a working account.
 
 Both Google entry points are covered: POST /google/verify-token and the
 GET /google → /google/callback redirect flow.
@@ -139,8 +139,9 @@ async def test_existing_account_ignores_the_provisioning_domain_allowlist(
 # ── first sign-in (account creation) ────────────────────────────────────────
 
 
-async def test_first_signin_creates_an_account_by_default(client, db_session, make_user, monkeypatch):
-    """GOOGLE_SIGNUP_ENABLED defaults to true: Google keeps working as before."""
+async def test_first_signin_creates_an_account_when_explicitly_enabled(client, db_session, make_user, monkeypatch):
+    """Enabling GOOGLE_SIGNUP_ENABLED keeps the historic open-Google behaviour."""
+    monkeypatch.setattr(settings, "GOOGLE_SIGNUP_ENABLED", True)
     monkeypatch.setattr(settings, "REGISTRATION_MODE", "closed")  # strictest mode
     _google_checks(
         monkeypatch,
@@ -161,6 +162,33 @@ async def test_first_signin_creates_an_account_by_default(client, db_session, ma
     assert created is not None and created.is_active is True
     # Google verified the address, so the account never needs the email flow.
     assert created.email_verified_at is not None
+
+
+async def test_first_signin_cannot_bypass_approval_by_default(
+    client, db_session, make_user, monkeypatch
+):
+    """The secure default queues a first Google sign-in instead of admitting it."""
+    monkeypatch.setattr(settings, "REGISTRATION_MODE", "approval")
+    monkeypatch.setattr(settings, "GOOGLE_SIGNUP_ENABLED", False)
+    _google_checks(
+        monkeypatch,
+        {
+            "aud": "legit.apps.googleusercontent.com",
+            "email": "pending@gmail.com",
+            "email_verified": True,
+            "name": "Pending",
+        },
+    )
+
+    r = await client.post("/api/v1/auth/google/verify-token", json={"id_token": "x.y.z"})
+
+    assert r.status_code == 403, r.text
+    created = (
+        await db_session.execute(select(User).where(User.email == "pending@gmail.com"))
+    ).scalars().one_or_none()
+    assert created is not None
+    assert created.is_active is False
+    assert created.status == "pending"
 
 
 async def test_creation_refused_when_flag_off_and_mode_closed(client, db_session, make_user, monkeypatch):

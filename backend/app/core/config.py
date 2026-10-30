@@ -118,6 +118,11 @@ class Settings(BaseSettings):
     # it off (then run `python -m app.services.session_cleanup` from cron).
     SESSION_CLEANUP_INTERVAL_HOURS: int = 6
 
+    # Audit rows contain actor ids, IP addresses, and sometimes masked emails.
+    # Keep a bounded forensic window instead of growing the table forever; set
+    # 0 to retain indefinitely (check the PDPA policy before doing that).
+    AUDIT_LOG_RETENTION_DAYS: int = 365
+
     # ── Horizontal scaling ─────────────────────────────────────────────────
     # Redis pub/sub channel used to fan WebSocket broadcasts out to every
     # instance. Empty (the default) keeps broadcasts process-local, which is
@@ -238,12 +243,22 @@ class Settings(BaseSettings):
 
     # ── Google account creation ─────────────────────────────────────────────
     # Whether a FIRST Google sign-in may create an account, independent of
-    # REGISTRATION_MODE. True (the default) keeps the historic behaviour: anyone
-    # with a verified Google email (subject to GOOGLE_ALLOWED_DOMAINS) gets a
-    # working account. Set it to false to make Google creation follow
-    # REGISTRATION_MODE instead (closed refuses, approval queues the request).
-    # Existing accounts can always sign in with Google in every mode.
-    GOOGLE_SIGNUP_ENABLED: bool = True
+    # REGISTRATION_MODE. The default is CLOSED: Google creation follows
+    # REGISTRATION_MODE (approval queues the request, closed refuses). Set it to
+    # true only when the deployment intentionally allows Google-driven signups;
+    # combine that with GOOGLE_ALLOWED_DOMAINS so a verified Google address from
+    # any domain cannot bypass the approval policy. Existing accounts can always
+    # sign in with Google in every mode.
+    GOOGLE_SIGNUP_ENABLED: bool = False
+
+    # Domains allowed to CREATE an account through Google, comma-separated
+    # (e.g. "example.co.th,example.com"). Empty means "no domain restriction"
+    # and is only safe for an explicitly open deployment. This value is read at
+    # call time in the auth endpoint so a deployment can change it without a
+    # code change; the property exists for startup diagnostics and docs.
+    @property
+    def GOOGLE_ALLOWED_DOMAINS(self) -> str:
+        return os.getenv("GOOGLE_ALLOWED_DOMAINS", "").strip()
 
     # ── Terms / PDPA consent ────────────────────────────────────────────────
     # Version string recorded on an account when it accepts the terms. Bump it
@@ -252,7 +267,9 @@ class Settings(BaseSettings):
 
     # ── Transactional email ─────────────────────────────────────────────────
     # console (default): messages are logged + kept in an in-memory outbox — the
-    #   safe choice for local work and for deployments with no provider yet.
+    #   safe choice for local work and for deployments with no provider yet. A
+    #   production deployment must set smtp/resend: console means no user ever
+    #   receives a reset/verification link (and the link is written to logs).
     # smtp: any relay (Brevo, Gmail app password, SES, ...). resend: Resend API.
     EMAIL_BACKEND: Literal["console", "smtp", "resend"] = "console"
     # RFC 5322 From header, e.g. "ART Workspace <no-reply@example.com>".

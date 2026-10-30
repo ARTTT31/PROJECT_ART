@@ -117,10 +117,14 @@ class UserUpdate(BaseModel):
 
     name: Optional[str] = Field(None, min_length=1, max_length=255)
     email: Optional[EmailStr] = None
-    avatar: Optional[str] = None
-    quick_links: Optional[str] = None
-    dashboard_layout: Optional[str] = None
-    camera_config: Optional[str] = None
+    # This endpoint must not be a way around the dedicated endpoints' caps. The
+    # avatar cap matches the 1MB upload path after base64 expansion; the three
+    # JSON blobs match their dedicated schemas. Without these, a caller could
+    # persist megabytes that every /profile/me response then loads.
+    avatar: Optional[str] = Field(None, max_length=2_000_000)
+    quick_links: Optional[str] = Field(None, max_length=100_000)
+    dashboard_layout: Optional[str] = Field(None, max_length=100_000)
+    camera_config: Optional[str] = Field(None, max_length=100_000)
 
 
 class UserAdminUpdate(BaseModel):
@@ -131,8 +135,8 @@ class UserAdminUpdate(BaseModel):
     role: Optional[str] = None
     is_active: Optional[bool] = None
     is_locked: Optional[bool] = None
-    accessible_pages: Optional[str] = None
-    password: Optional[str] = None
+    accessible_pages: Optional[str] = Field(None, max_length=10_000)
+    password: Optional[str] = Field(None, min_length=8, max_length=100)
 
 
 class UserQuickLinksUpdate(BaseModel):

@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
+import { getApiBaseUrl } from '@/lib/api/apiBase';
 
 export interface BrandingInfo {
   company_name: string;
@@ -53,6 +54,10 @@ const DEFAULT_BRANDING: BrandingInfo = {
 const EMPTY_PERSONAL: WorkspaceBrandingInfo = { name: '', tagline: '', logo: '' };
 
 const STORAGE_KEY = 'art_workspace_branding';
+const STORAGE_AT_KEY = 'art_workspace_branding_at';
+// Branding changes rarely; a page load does not need another ~2s backend trip
+// to rediscover the same values. Admin saves call applyBranding() and reset it.
+const CACHE_TTL_MS = 5 * 60 * 1000;
 
 const BrandingContext = createContext<BrandingContextValue>({
   companyName: DEFAULT_BRANDING.company_name,
@@ -108,13 +113,14 @@ export function BrandingProvider({ children }: { children: React.ReactNode }) {
   const [personal, setPersonal] = useState<WorkspaceBrandingInfo>(EMPTY_PERSONAL);
   const [isLoading, setIsLoading] = useState(false);
 
-  const apiBaseUrl = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '');
+  const apiBaseUrl = getApiBaseUrl();
 
   /** Keep state + cache in sync with a branding payload from the API. */
   const applyBranding = useCallback((next: BrandingInfo) => {
     setBranding(next);
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      localStorage.setItem(STORAGE_AT_KEY, String(Date.now()));
     } catch {
       // ignore storage errors
     }
@@ -132,7 +138,15 @@ export function BrandingProvider({ children }: { children: React.ReactNode }) {
   }, [apiBaseUrl, applyBranding]);
 
   useEffect(() => {
-    refreshBranding();
+    let cachedAt = 0;
+    try {
+      cachedAt = Number(localStorage.getItem(STORAGE_AT_KEY) || 0);
+    } catch {
+      // private mode / storage disabled: fall through and fetch
+    }
+    if (!cachedAt || Date.now() - cachedAt > CACHE_TTL_MS) {
+      void refreshBranding();
+    }
   }, [refreshBranding]);
 
   /**
@@ -154,10 +168,22 @@ export function BrandingProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    void refreshWorkspaceBranding();
+    // The login/register pages have no session yet. Calling the authenticated
+    // endpoint there only produced a 401 in the console and an extra backend
+    // round-trip on every visit; wait for an actual local session instead.
+    const hasLocalSession = () => {
+      if (typeof window === 'undefined') return false;
+      return (
+        localStorage.getItem('user') !== null ||
+        document.cookie.split('; ').some((cookie) => cookie.startsWith('user='))
+      );
+    };
+
+    if (hasLocalSession()) void refreshWorkspaceBranding();
 
     const handleAuthChange = () => {
-      void refreshWorkspaceBranding();
+      if (hasLocalSession()) void refreshWorkspaceBranding();
+      else setPersonal(EMPTY_PERSONAL);
     };
     window.addEventListener('auth-login', handleAuthChange);
     window.addEventListener('auth-logout', handleAuthChange);

@@ -1,0 +1,60 @@
+# Render Blueprint for the ART Workspace API.
+#
+# This file documents the production shape; it is NOT applied automatically to
+# an existing service. Create a new Blueprint environment from it, or copy the
+# build/start/health values into the existing Render service. Secrets are
+# intentionally `sync: false`: fill them in the Render dashboard, never here.
+services:
+  - type: web
+    name: art-workspace-api
+    runtime: python
+    rootDir: backend
+    # Keep this region aligned with the Aiven database. Cross-region database
+    # round-trips were measured at ~1.5s per query in production.
+    region: singapore
+    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
+    preDeployCommand: alembic upgrade head
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health/ready
+    autoDeploy: true
+    envVars:
+      - key: DEBUG
+        value: "false"
+      - key: AUTO_CREATE_TABLES
+        value: "false"
+      - key: ENABLE_API_DOCS
+        value: "false"
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: COOKIE_SAMESITE
+        value: "none"
+      - key: REGISTRATION_MODE
+        value: approval
+      # Secure default: Google account creation follows REGISTRATION_MODE.
+      # Enable only together with a real domain allow-list.
+      - key: GOOGLE_SIGNUP_ENABLED
+        value: "false"
+      - key: GOOGLE_ALLOWED_DOMAINS
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: SECRET_KEY
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_REDIRECT_URI
+        sync: false
+      - key: EMAIL_BACKEND
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: SENTRY_DSN
+        sync: false

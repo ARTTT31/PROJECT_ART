@@ -169,10 +169,17 @@ class TestAuthAPI:
 
     async def test_logout_success(self, client, logged_in_user):
         session_id = logged_in_user["data"]["session_id"]
+        # Keep the already-issued access token: logout must revoke it in the
+        # database, not merely delete the browser cookie.
+        access_token = client.cookies.get("access_token")
         resp = await client.post("/api/v1/auth/logout", params={"session_id": session_id})
         assert resp.status_code == 200
         data = resp.json()
         assert data["result"] == "success"
+
+        client.cookies.set("access_token", access_token)
+        me = await client.get("/api/v1/profile/me")
+        assert me.status_code == 401, me.text
 
 
 # ── Profile API Tests ─────────────────────────────────────
@@ -302,20 +309,29 @@ def reset_ws_manager():
     manager.max_per_user = settings.WS_MAX_CONNECTIONS_PER_USER
 
 
+WS_SESSION_ID = "ws-test-session"
+
+
 @pytest.fixture
 async def ws_user(db_session):
-    """An ordinary active account to authenticate the socket with."""
+    """An ordinary active account with a live session for its socket token."""
+    from app.models.session import UserSession
     from app.schemas.user import UserCreate
     from app.services.user_service import UserService
 
-    return await UserService(db_session).create_user(UserCreate(
+    user = await UserService(db_session).create_user(UserCreate(
         email="ws@example.com", password="SecretPass123", name="WS User"))
+    db_session.add(UserSession(session_id=WS_SESSION_ID, user_id=user.id))
+    await db_session.commit()
+    return user
 
 
 def _token_for(user) -> str:
     from app.core.security import create_access_token
 
-    return create_access_token(data={"sub": user.email, "user_id": user.id})
+    return create_access_token(data={
+        "sub": user.email, "user_id": user.id, "sid": WS_SESSION_ID,
+    })
 
 
 class TestWebsocketAuthentication:
@@ -494,6 +510,7 @@ class TestWebsocketHandshake:
         import asyncio
 
         from app.core.security import create_access_token
+        from app.models.session import UserSession
         from app.models.user import User
 
         async def seed():
@@ -514,13 +531,19 @@ class TestWebsocketHandshake:
                     )
                     session.add(user)
                     await session.commit()
+                    session.add(UserSession(session_id="handshake-session", user_id=user.id))
+                    await session.commit()
                     return user.id
             finally:
                 await engine.dispose()
 
         user_id = asyncio.run(seed())
         return user_id, create_access_token(
-            data={"sub": "handshake@example.com", "user_id": user_id}
+            data={
+                "sub": "handshake@example.com",
+                "user_id": user_id,
+                "sid": "handshake-session",
+            }
         )
 
     @staticmethod
@@ -730,6 +753,11 @@ def limited_client(client):
 
 
 class TestPublicProxyRateLimit:
+    @pytest.fixture(autouse=True)
+    async def _authenticated(self, logged_in_user):
+        """The proxies now require a signed-in user (they are no longer public)."""
+        return logged_in_user
+
     async def test_weather_forecast_is_rate_limited(self, limited_client):
         codes = []
         for i in range(9):
@@ -916,6 +944,10 @@ async def _no_sleep(_seconds):
 
 
 class TestWeatherUpstreamResilience:
+    @pytest.fixture(autouse=True)
+    async def _authenticated(self, logged_in_user):
+        return logged_in_user
+
     async def test_retries_then_succeeds_on_429(self, monkeypatch):
         """A throttled 429 must be retried, not surfaced to the user."""
         from app.api.v1.endpoints.weather import _upstream_get
@@ -1079,6 +1111,10 @@ class TestWeatherUpstreamResilience:
 # keeps the stale fallback alive across restarts and redeploys.
 
 class TestWeatherPersistentCache:
+    @pytest.fixture(autouse=True)
+    async def _authenticated(self, logged_in_user):
+        return logged_in_user
+
     async def _forecast(self, client, **overrides):
         params = {"latitude": 13.7563, "longitude": 100.5018, "forecast_days": 2}
         params.update(overrides)
@@ -1542,6 +1578,10 @@ class TestOilPriceCacheLayers:
     OIL_URL = "/api/v1/oil-prices/oil-prices"
 
     @pytest.fixture(autouse=True)
+    async def _authenticated(self, logged_in_user):
+        return logged_in_user
+
+    @pytest.fixture(autouse=True)
     def _clean_process_cache(self):
         from app.api.v1.endpoints import oil_prices as oil
 
@@ -1831,6 +1871,33 @@ class TestAuditTrailPersistence:
             )
         ).scalars().all()
         assert rows, "PASSWORD_CHANGE succeeded but its audit row was rolled back"
+
+    async def test_password_change_revokes_other_sessions_but_keeps_this_one(
+        self, client, logged_in_user, db_session
+    ):
+        from app.core.security import create_access_token
+        from app.models.session import UserSession
+
+        user = logged_in_user["data"]["user"]
+        other_sid = "other-device-session"
+        db_session.add(UserSession(session_id=other_sid, user_id=user["id"]))
+        await db_session.commit()
+        other_token = create_access_token(
+            data={"sub": user["email"], "user_id": user["id"], "sid": other_sid}
+        )
+        current_token = client.cookies.get("access_token")
+
+        resp = await client.post(
+            "/api/v1/profile/change-password",
+            json={"old_password": "SecretPass123", "new_password": "NewSecret456"},
+        )
+        assert resp.status_code == 200, resp.text
+
+        client.cookies.set("access_token", other_token)
+        assert (await client.get("/api/v1/profile/me")).status_code == 401
+
+        client.cookies.set("access_token", current_token)
+        assert (await client.get("/api/v1/profile/me")).status_code == 200
 
     async def test_avatar_update_persists_audit_row(
         self, client, logged_in_user, db_session

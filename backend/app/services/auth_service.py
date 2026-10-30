@@ -337,6 +337,19 @@ class AuthService:
         ).scalar_one_or_none()
 
         if existing_session:
+            # A client may send a session id (two tabs sharing one login). It
+            # must never be another account's id: reusing that row would rewrite
+            # the victim's refresh-token generation and let the caller drive
+            # their session into a replay/revocation state.
+            if existing_session.user_id != user.id:
+                logger.warning(
+                    "Login refused: session %s belongs to another account",
+                    session_id,
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Invalid session",
+                )
             existing_session.is_active = True
             existing_session.last_activity = datetime.now(timezone.utc).replace(
                 tzinfo=None
@@ -369,7 +382,11 @@ class AuthService:
         # session_id is embedded in the refresh token so that refresh can verify
         # the session is still active in the DB (supports real revocation on logout).
         access_token = create_access_token(
-            data={"sub": user.email or user.username, "user_id": user.id}
+            data={
+                "sub": user.email or user.username,
+                "user_id": user.id,
+                "sid": session_id,
+            }
         )
         refresh_token = create_refresh_token(
             data={
@@ -549,7 +566,9 @@ class AuthService:
         await self.db.commit()
 
         # Preserve session_id across refreshes so revocation keeps working.
-        access_token = create_access_token(data={"sub": sub, "user_id": user_id})
+        access_token = create_access_token(
+            data={"sub": sub, "user_id": user_id, "sid": session_id}
+        )
         new_refresh_token = create_refresh_token(
             data={"sub": sub, "user_id": user_id, "sid": session_id},
             jti=new_jti,

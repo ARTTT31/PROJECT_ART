@@ -3,20 +3,12 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { fetchWithAuth, fetchWithAuthJson, refreshSessionToken } from '@/lib/api/fetchWithAuth';
-import { AuthUserSchema, makeEnvelopeSchema } from '@/lib/api/schemas';
+import { AuthUserSchema } from '@/lib/api/schemas';
 import { readUserCookie } from '@/lib/api/userCookie';
 import type { AuthUser, AuthRole } from '@/types';
-import { z, ZodError } from 'zod';
+import { ZodError } from 'zod';
 
 export type { AuthUser, AuthRole };
-
-// Auth endpoints return { result, message, data: { user, session_id? } }.
-const AuthEnvelopeSchema = makeEnvelopeSchema(
-  z.object({
-    user: AuthUserSchema,
-    session_id: z.string().optional(),
-  }),
-);
 
 type AuthStatus = 'loading' | 'authenticated' | 'anonymous';
 
@@ -65,10 +57,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!refreshResult.success && refreshResult.isUnauthenticated) return false;
     if (!refreshResult.success) return true; // transient failure — keep session
     try {
-      const json = await fetchWithAuthJson('/api/v1/auth/session', {}, AuthEnvelopeSchema);
-      const sessionData = json?.data as unknown as Record<string, unknown> | undefined;
-      if (sessionData?.user) return true;
-      // Network error or other issue - assume valid to avoid false negatives
+      // /profile/me already carries every field AuthUserSchema needs, so it is
+      // the single session probe. Calling both it and /auth/session doubled the
+      // backend + database work on every mount for the same user.
+      const user = await fetchWithAuthJson('/api/v1/profile/me', {}, AuthUserSchema);
+      if (user) return true;
       return true;
     } catch (err) {
       if (err instanceof Error) {
@@ -142,43 +135,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return;
         }
 
-        const [sessionJson, profileJson] = await Promise.all([
-          fetchWithAuthJson('/api/v1/auth/session', {}, AuthEnvelopeSchema).catch((e) => {
-            if ((e as Error & { status?: number }).status === 401) throw e;
-            return null;
-          }),
-          // /profile/me returns the user object directly, not the standard envelope.
-          fetchWithAuthJson('/api/v1/profile/me', {}, AuthUserSchema).catch(() => null),
-        ]);
+        // One authenticated profile read is enough to verify the session and
+        // hydrate the user. It returns the user object directly, not the
+        // standard envelope.
+        const profileJson = await fetchWithAuthJson(
+          '/api/v1/profile/me',
+          {},
+          AuthUserSchema,
+        );
+        const parsedProfile = AuthUserSchema.safeParse(profileJson);
 
-        let sessionUser: AuthUser | null = null;
-        if (sessionJson) {
-          const sessionData = sessionJson?.data as unknown as Record<string, unknown> | undefined;
-          const rawSessionUser = sessionData?.user;
-          const parsed = AuthUserSchema.safeParse(rawSessionUser);
-          if (parsed.success) sessionUser = parsed.data;
-        }
-
-        let profileData = null;
-        if (profileJson) {
-          const parsed = AuthUserSchema.safeParse(profileJson);
-          if (parsed.success) profileData = parsed.data;
-        }
-
-        if (sessionUser) {
-          const mergedUser = profileData ? { ...sessionUser, ...profileData } : sessionUser;
-          setUser(mergedUser);
-          localStorage.setItem('user', JSON.stringify(mergedUser));
+        if (parsedProfile.success) {
+          setUser(parsedProfile.data);
+          localStorage.setItem('user', JSON.stringify(parsedProfile.data));
           setStatus('authenticated');
-        } else {
-          // sessionUser is null but no explicit 401 thrown yet — only clear if no local user
-          // (network errors / schema parse failures should NOT logout a locally authenticated user)
-          if (!localUser) {
-            setUser(null);
-            localStorage.removeItem('user');
-            localStorage.removeItem('session_id');
-            setStatus('anonymous');
-          }
+        } else if (!localUser) {
+          // Network errors / schema parse failures should NOT log out a locally
+          // authenticated user; only clear when there was no cached user.
+          setUser(null);
+          localStorage.removeItem('user');
+          localStorage.removeItem('session_id');
+          setStatus('anonymous');
         }
       } catch (e) {
         // Explicit 401 from backend (refresh token invalid / session revoked) → clear auth regardless of local state
@@ -232,7 +209,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             window.dispatchEvent(new Event('auth-logout'));
             return;
           }
-          await fetchWithAuth('/api/v1/auth/session');
+          await fetchWithAuth('/api/v1/profile/me');
         } catch (e) {
           console.warn('Background session keep-alive ping:', e);
         }
@@ -253,7 +230,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               window.dispatchEvent(new Event('auth-logout'));
               return;
             }
-            await fetchWithAuth('/api/v1/auth/session');
+            await fetchWithAuth('/api/v1/profile/me');
           } catch (e) {
             console.warn('Visibility session check:', e);
           }
