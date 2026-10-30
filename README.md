@@ -8,9 +8,11 @@ Production URL: configure this in your deployment environment; do not commit a p
 
 The GitHub Actions pipeline (`ci.yml`) runs on every push and pull request to `main`:
 
-- **Backend:** Python 3.11 — flake8 7.4 lint (`--max-line-length=120`) + mypy 2.4 type check + `alembic upgrade head` and `alembic check` against a throwaway SQLite database + pytest (448 tests, coverage 86.55%, gate 40%)
-- **Frontend:** Node 26 — ESLint + TypeScript type-check + 181 Vitest unit tests + Next.js production build + Playwright smoke tests
+- **Backend:** Python 3.11 — flake8 7.4 lint (`--max-line-length=120`) + mypy 2.4 type check + `alembic upgrade head` and `alembic check` against a throwaway SQLite database + pytest (**454 passed, 1 skipped**, coverage **75.37%**)
+- **Frontend:** Node 26 — ESLint + TypeScript type-check + **208** Vitest unit tests + Next.js production build + Playwright smoke tests (3)
 - **Dependency audit (blocking):** `pip-audit` gates every push and pull request and re-runs weekly (`cron: 0 2 * * 1`, Mondays 02:00 UTC). The pinned backend set currently reports no known advisories; Dependabot opens the upgrade pull requests (see `.github/dependabot.yml`).
+
+> ⚠️ The backend coverage gate in `backend/pytest.ini` is `--cov-fail-under=80`, so the current 75.37% fails that step. The suite itself is green; raising coverage (or lowering the gate deliberately) is still open — see [Project Analysis](docs/internal/project-analysis.md).
 
 The migration step matters: the test suite builds its schema from the models, so a broken or forgotten Alembic revision used to pass CI and only fail against production. `alembic check` additionally fails when the models drift from the migration head.
 
@@ -204,6 +206,8 @@ PROJECT_ART/
 │       │   ├── ui/              # Dialog.tsx — Radix UI primitives
 │       │   └── Widgets/         # Dashboard widgets (dnd-kit sortable)
 │       ├── hooks/               # useAuth.ts, useDashboardLayout.ts
+│       ├── lib/                 # finance summary helpers (pure, unit-tested),
+│       │                        # api/fetchWithAuth.ts
 │       └── utils/               # quickLinks, mainMenu, sweetalert, userAgent
 ├── backend/                     # FastAPI
 │   └── app/

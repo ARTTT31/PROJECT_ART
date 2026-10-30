@@ -40,7 +40,7 @@ npm run dev
 cd frontend
 npm run type-check
 npm run lint
-npm test                              # Vitest unit/component tests (181 tests)
+npm test                              # Vitest unit/component tests (208 tests)
 npm run build
 npm run test:smoke                    # Playwright; runs on port 3000
 ```
@@ -53,7 +53,7 @@ npm run test:smoke                    # Playwright; runs on port 3000
 cd backend
 .\venv\Scripts\python.exe -m flake8 app --max-line-length=120 --exclude=__pycache__
 .\venv\Scripts\python.exe -m mypy app
-.\venv\Scripts\python.exe -m pytest -q --tb=short      # Pytest (448 tests, 86.55% coverage)
+.\venv\Scripts\python.exe -m pytest -q --tb=short      # Pytest (454 passed, 1 skipped; 75.37% coverage)
 ```
 
 ## Common Tasks

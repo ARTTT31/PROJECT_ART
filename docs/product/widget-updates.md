@@ -1,114 +1,70 @@
-# Widget Updates Summary
+# Dashboard Widgets
 
-> [!NOTE]
-> **Current Dashboard Active Widgets (2026-10-30):**
-> - 📝 `QuickNotesWidget` - Per-account to-do list with autosave
-> - 🧮 `PriceCalcWidget` - Selling price, discount, profit and margin
-> - 📈 `MarketWidget` - Currency rates, Thai/COMEX gold, SET index and candles
-> - 💰 `FinanceWidget` - Today's income/expense entries and balance, plus a per-month summary view (categories, 6-month trend, CSV export, monthly budget, edit/backdate and undo delete)
-> - ⭐ `WatchlistWidget` - Followed symbols with latest quotes
-> - 🔄 `CurrencyConverterWidget` - Daily reference-rate conversion
-> - 🌤️ `WeatherWidget` - Real-time weather, forecast & GPS
-> - 🇹🇭 `HolidayWidget` - Thai official holidays for the current year
-> - ⛽ `OilPriceWidget` - Fuel prices from Bangchak with cached fallback
-> - 📱 `QRCodeWidget` - Dynamic QR code & barcode generator
-> 
-> *Note: Legacy Calendar and SharePoint-based TaskList widgets have been removed.*
+Current state only. Removed widgets (Calendar, SharePoint TaskList) and the
+per-widget style tweaks they left behind are not documented here — git history
+has them.
 
-## 🌤️ Weather Widget  
-### Changes:
-- ✅ **Reduced M/L buttons size** - From `w-7 h-7` to `w-6 h-6`
-- ✅ **Reduced font size** - From `text-[10px]` to `text-[9px]`
-- ✅ **Disabled Hover Color Effect** - Removed `hover:text-white hover:bg-white/10`
-- ✅ **Added CSS Override** - Force button not to change color on hover
+## Active widgets (2026-10-30)
 
-### Button States:
-- **Active (selected)**: `bg-white text-sky-600 shadow-sm`
-- **Inactive**: `text-white/80` (Doesn't change on hover)
-- **Hover**: No color change
+| Widget | Size | Data | Notes |
+|---|---|---|---|
+| หน้าหลัก greeting / widget manager | — | Local | Drag to reorder (dnd-kit), show/hide per account |
+| 📝 `QuickNotesWidget` | S/M/L | `/profile/quick-notes` | Autosave, flushed on unmount, cache keyed per account |
+| 🧮 `PriceCalcWidget` | S/M/L | Client-side | Selling price, discount, profit, margin |
+| 📈 `MarketWidget` | S/M/L | `/market/*` | Currency, Thai/COMEX gold, SET, in-app candles |
+| 💰 `FinanceWidget` | S/M/L | `/profile/finance` | Income/expense tracker — see below |
+| ⭐ `WatchlistWidget` | S/M/L | `/market/quotes` | Followed symbols, queued saves |
+| 🔄 `CurrencyConverterWidget` | S/M/L | `/market/summary` | Daily reference rates |
+| 🌤️ `WeatherWidget` | S/M/L | Open-Meteo + MET Norway, Open-Meteo AQI | GPS + district-level Thai names |
+| 🇹🇭 `HolidayWidget` | S/M/L | Bundled Thai calendars (2026, 2027) | No network needed |
+| ⛽ `OilPriceWidget` | S/M/L | Bangchak API via backend | Cached fallback when upstream throttles |
+| 📱 `QRCodeWidget` | S/M/L | Client-side | QR and barcode generation |
 
-### Features Retained:
-- ✅ Location selector
-- ✅ GPS button
-- ✅ Refresh button (Has hover effect)
-- ✅ Drag handle
-- ✅ M/L buttons for resizing (does not change color on hover)
-- ✅ Weather animations
-- ✅ Forecast display
+## 💰 Finance widget (October 2026)
 
-### Resilience & Upstream Failover (October 2026):
-- ✅ **Automated Secondary Forecast Provider**: Seamless failover to MET Norway (`api.met.no`) Locationforecast 2.0 whenever Open-Meteo throttles Render's shared egress IP (`HTTP 429`) or returns `5xx`.
-- ✅ **Automated Secondary Geocoding Provider**: Seamless failover to OpenStreetMap (Nominatim) whenever BigDataCloud throttles or fails, resolving accurate Thai district and city names (e.g. `เขตลาดพร้าว, กรุงเทพมหานคร`).
-- ✅ **Graceful Coordinate Fallback**: Never returns HTTP 502 to the browser even if external geocoding providers are unreachable.
-- ✅ **Multi-Tier Caching**: In-memory L1 cache and PostgreSQL L2 database cache (`weather_cache`).
+Quick capture lives on the dashboard; analysis lives in the summary dialog
+opened from the widget header ("ภาพรวม").
 
----
+**Dashboard card**
 
-## 📋 TaskList Widget — REMOVED
+- Add income/expense with a label, amount, **date** (backdating is allowed), and
+  an optional **category** (free text with suggestions).
+- Today's totals stay in sync after midnight without a reload.
+- Edit any entry (including its date) with the pencil button; delete with an
+  inline **undo** bar (8 seconds) instead of a blocking confirm dialog.
+- Monthly budget bar with an over-budget warning, when a budget is set.
+- Saves are whole-list PUTs, so each save first merges entries another tab or
+  device added instead of overwriting them. Failed saves retry when the
+  connection returns.
 
-> ❌ **This widget no longer exists.** Personal tasks were dropped (Alembic
-> `20260921_2300_remove_personal_tasks`), the component is gone from
-> `frontend/src/components/Widgets/`, and `useDashboardLayout` filters the retired
-> `tasks` id out of any saved layout. Everything below is kept as history.
+**Summary dialog**
 
-### Changes:
-- ✅ **Kept Refresh button**
-- ✅ **Kept Filter badges**
-- ⚠️ **No S/M/L buttons** - Removed in a previous update
+- Period picker: any month that has entries (current month first), plus
+  **ทุกเดือน (สะสม)**.
+- Totals for the period (income, expense, balance, count), a six-month
+  income/expense bar chart, and a per-category breakdown.
+- Search by label/category and filter by type (ทั้งหมด / รายรับ / รายจ่าย).
+- Entries grouped by day ("วันนี้", "เมื่อวาน", then dated).
+- **CSV export** of the selected period (UTF-8 with BOM so Excel reads Thai).
+- Set or clear the monthly budget and see the current usage against it.
 
-### Features (as they were before removal):
-- ✅ Refresh button
-- ✅ Filter (All, IMACD, Thanyapong)
-- ✅ Search functionality
-- ✅ Calendar events display
+**Storage and limits**
 
----
+- One JSON-as-text column per account (`users.finance_entries`), with the budget
+  in `users.finance_budget`. Both are validated on write and on read: a corrupt
+  row reads as empty instead of breaking the widget.
+- Cap: **2,000 entries** per account (client and server agree). Amounts must be
+  above 0 and at most 1,000,000,000.
+- Deletions made on one device are still "last write wins" for another device
+  that never saw them; only added entries are merged.
 
-## 🎨 CSS Updates
+## 🌤️ Weather resilience (October 2026)
 
-### Added to globals.css:
-```css
-/* Weather Widget - Disable hover color change on resize buttons */
-.weather-card button[aria-label*="Resize"]:not(:disabled) {
-  background-color: transparent !important;
-}
-
-.weather-card button[aria-label*="Resize"]:not(:disabled):hover {
-  background-color: transparent !important;
-  transform: none !important;
-}
-
-.weather-card button[aria-label*="Resize"].bg-white:not(:disabled) {
-  background-color: white !important;
-}
-
-.weather-card button[aria-label*="Resize"].bg-white:not(:disabled):hover {
-  background-color: white !important;
-}
-```
-
----
-
-## 🎯 Summary
-
-| Widget | Fullscreen Button | Resize Buttons (M/L) | Hover Effect on Resize |
-|--------|-------------------|----------------------|------------------------|
-| Calendar | ❌ Removed | ✅ Kept | ✅ Has hover |
-| Weather | N/A | ✅ Kept (smaller) | ❌ No hover |
-| ~~TaskList~~ | N/A | ❌ Widget removed from the app | N/A |
-
----
-
-## ✅ Testing Checklist
-
-- [ ] Calendar widget: Fullscreen button is gone
-- [ ] Calendar widget: M/L buttons are still usable
-- [ ] Weather widget: M/L buttons are smaller
-- [ ] Weather widget: Hovering on M/L buttons does not change color
-- [ ] Weather widget: Selected button displays normally in white
-- [ ] All widgets display correctly on desktop and mobile
-
----
-
-**Last Updated**: October 6, 2026 (TaskList marked as removed)  
-**Version**: 2.1
+- Automatic failover to MET Norway (`api.met.no` Locationforecast 2.0) when
+  Open-Meteo returns `429` (Render's shared egress IP is throttled) or `5xx`.
+- Automatic failover to OpenStreetMap Nominatim when BigDataCloud geocoding
+  fails, so Thai districts and cities keep resolving.
+- Coordinates are returned even when every geocoder is down — the endpoint never
+  answers `502` for this widget.
+- Two cache tiers: in-process L1 and the `weather_cache` table, so the last known
+  good payload survives restarts and cold starts.

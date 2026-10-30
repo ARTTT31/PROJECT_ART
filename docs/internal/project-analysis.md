@@ -423,3 +423,54 @@ is still process-local until Redis is provisioned; the Playwright smoke suite
 still runs without a live backend; UI remains Thai-only; and the readable
 `user` cookie is still unsigned (it is re-verified against `/auth/session`).
 Email delivery was deliberately out of scope for this pass.
+
+---
+
+## October 30, 2026 — Finance widget pass (current state)
+
+Scope: the finance widget review — the 7 defects found in the audit and the 6
+features that were missing around them.
+
+**Verified after the pass**
+- Backend: **454 passed, 1 skipped** (`pytest -q`); `flake8 app` and `mypy app`
+  clean; the Alembic chain applies and `alembic check` reports no drift.
+- Frontend: **208 Vitest tests** passing; `tsc --noEmit`, `eslint`, `prettier
+  --check` and `next build` clean.
+- Coverage: **75.37%**. Note that `backend/pytest.ini` gates at
+  `--cov-fail-under=80`, so the coverage step fails even though every test
+  passes. This predates this pass (75.16% before it); the earlier "86.55%"
+  figure in this document no longer matches the suite and is left as history.
+
+**Defects fixed**
+1. The 200-entry cap stopped new entries for good after roughly six weeks of
+   normal use. Raised to 2,000 on both sides (client constant, `FinanceUpdate`
+   `max_length`, serializer cap) — about a year at five entries a day.
+2. Dates could not be edited or backdated: the add form always wrote "today".
+   The add form now has a date field and a new edit dialog covers every field.
+3. Deleting was immediate and permanent. An inline undo bar replaced it.
+4. "Today" was frozen inside a `useMemo`, so an always-on dashboard kept showing
+   yesterday's rows under the "วันนี้" heading. A minute tick plus
+   `visibilitychange`/`focus` listeners keep it current.
+5. `parseFloat` accepted `"12abc"` as 12. `parseAmountInput` now requires a
+   strict numeric shape and enforces the server's amount bounds.
+6. Whole-list PUTs erased entries added by another tab or device. Each save now
+   reads the server copy first and merges in entries it never saw (deletions are
+   remembered so the merge cannot resurrect them).
+7. A failed save was lost. It now retries on `online` and on a 15-second timer.
+
+**Features added**
+- Edit/backdate, categories (with suggestions), per-category breakdown, CSV
+  export, search and type filter, undo delete, and a monthly budget
+  (`users.finance_budget`, new Alembic revision `20261030_finance_budget`) with
+  a progress bar and over-budget warning.
+
+**Still open**
+- Deletions across devices remain last-write-wins; only additions merge. A
+  version/updated_at column would be the real fix.
+- The budget is a single monthly number shared by every month, not a per-month
+  history (the stored JSON can grow into that without a migration).
+- Coverage gate vs. actual coverage (above) needs a decision: raise coverage or
+  lower the gate deliberately.
+- No browser pass on the widget: the summary/edit dialogs, CSV download and
+  budget bar were verified by unit/integration tests and a production build only,
+  since reaching them requires a running backend and a signed-in account.

@@ -332,7 +332,7 @@ curl http://localhost:8080/api/v1/oil-prices/health
 ✅ **Quick Notes / To-do Widget** - จดรายการที่ต้องทำวันนี้ ติ๊กเสร็จแล้วบันทึกอัตโนมัติ
 ✅ **Price Calculator Widget** - คิดราคาขายหลังหักส่วนลด พร้อมกำไรและเปอร์เซ็นต์
 ✅ **Market Widget** - อัตราแลกเปลี่ยน ราคาทองคำแท่ง ดัชนี SET และกราฟแท่งเทียน
-✅ **Finance Widget** - บันทึกรายรับ–รายจ่ายวันนี้ พร้อมยอดคงเหลือ
+✅ **Finance Widget** - บันทึกรายรับ–รายจ่ายวันนี้ พร้อมยอดคงเหลือ, แก้ไข/ลงรายการย้อนหลัง, หมวดหมู่, งบรายเดือน, และหน้าภาพรวมรายเดือน/6 เดือนล่าสุด/ส่งออก CSV
 ✅ **Watchlist Widget** - ติดตามหุ้น คริปโต หรือค่าเงินพร้อมราคาล่าสุด
 ✅ **Currency Converter Widget** - แปลงสกุลเงินด้วยอัตราอ้างอิงรายวัน
 ✅ **Quick Links** - ลิงก์ด่วนในแถบเมนูด้านข้าง ตั้งค่าได้ที่หน้าโปรไฟล์
@@ -370,7 +370,7 @@ curl http://localhost:8080/api/v1/oil-prices/health
 | โน้ตด่วน / To-do วันนี้ | S/M/L | backend (per-account JSON) |
 | คิดราคา / กำไร | S/M/L | client-side |
 | ค่าเงิน · ทอง · SET | S/M/L | Frankfurter, Thai Gold API, Yahoo Finance (ผ่าน backend) |
-| รายรับ – รายจ่ายวันนี้ | S/M/L | backend (per-account JSON) |
+| รายรับ – รายจ่ายวันนี้ | S/M/L | backend (per-account JSON) + งบรายเดือน, หมวดหมู่, ภาพรวมรายเดือน, ส่งออก CSV |
 | รายการติดตาม | S/M/L | Yahoo Finance quotes (ผ่าน backend) |
 | แปลงสกุลเงิน | S/M/L | Frankfurter (ผ่าน backend) |
 | วันหยุดนักขัตฤกษ์ | S/M/L | ข้อมูลคงที่ (ไทย) |
