@@ -34,7 +34,8 @@ router = APIRouter()
 _GENERAL_LIMIT = f"{settings.RATE_LIMIT_GENERAL_PER_MINUTE}/minute"
 
 
-@router.get("/", response_model=List[UserResponse])
+@router.get("", response_model=List[UserResponse])
+@router.get("/", response_model=List[UserResponse], include_in_schema=False)
 @limiter.limit(_GENERAL_LIMIT)
 async def list_users(
     request: Request,
@@ -253,7 +254,8 @@ async def get_user(
     return user
 
 
-@router.post("/", response_model=ResponseModel, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=ResponseModel, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=ResponseModel, status_code=status.HTTP_201_CREATED, include_in_schema=False)
 @limiter.limit(_GENERAL_LIMIT)
 async def create_user(
     user_create: UserCreate,
