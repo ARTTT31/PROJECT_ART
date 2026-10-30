@@ -6,6 +6,8 @@
 - Login: `http://localhost:3000/login`
 - Dashboard: `http://localhost:3000/dashboard`
 - Profile: `http://localhost:3000/profile`
+- Admin console: `http://localhost:3000/admin` (admin role)
+- Audit log: `http://localhost:3000/audit` (admin role)
 - Backend API: `http://localhost:8080`
 - Swagger: `http://localhost:8080/docs`
 - Health (liveness + database status): `http://localhost:8080/health`
@@ -38,7 +40,7 @@ npm run dev
 cd frontend
 npm run type-check
 npm run lint
-npm test                              # Vitest unit/component tests (86 tests)
+npm test                              # Vitest unit/component tests (181 tests)
 npm run build
 npm run test:smoke                    # Playwright; runs on port 3000
 ```
@@ -51,7 +53,7 @@ npm run test:smoke                    # Playwright; runs on port 3000
 cd backend
 .\venv\Scripts\python.exe -m flake8 app --max-line-length=120 --exclude=__pycache__
 .\venv\Scripts\python.exe -m mypy app
-.\venv\Scripts\python.exe -m pytest -q --tb=short      # Pytest (162 tests, 76.57% coverage)
+.\venv\Scripts\python.exe -m pytest -q --tb=short      # Pytest (448 tests, 86.55% coverage)
 ```
 
 ## Common Tasks
@@ -120,5 +122,5 @@ never collects them.
 
 - Production URLs must come from deployment environment variables, not hardcoded personal URLs.
 - **Alembic is the only owner of the schema.** Run `alembic upgrade head` on every release; the legacy startup `ALTER TABLE` repair has been removed. `AUTO_CREATE_TABLES=True` is a throwaway-local-database convenience and must stay `False` in production.
-- Current dashboard routes in this repo are `/dashboard`, `/camera`, and `/profile`.
+- Current app routes in this repo are `/dashboard`, `/camera`, `/profile`, `/admin`, `/audit`, plus the auth pages (`/login`, `/register`, `/forgot-password`, `/reset-password`, `/verify-email`).
 - Live notifications (`/api/v1/ws/notifications`) require a signed-in session — the handshake authenticates with the `access_token` cookie and is rejected with close code `1008` otherwise. See the README's Security section.

@@ -32,6 +32,27 @@ describe('QuickNotesWidget', () => {
     resetQuickNotesCache();
   });
 
+  it('does not show one account\'s cached notes to another account', async () => {
+    const notes = [{ id: 'n1', text: 'งานของบัญชีแรก', done: false }];
+    api.fetchWithAuth.mockResolvedValue(jsonResponse({ notes }));
+    document.cookie = `user=${encodeURIComponent(JSON.stringify({ id: 'user-a' }))}; path=/`;
+
+    const first = render(<QuickNotesWidget />);
+    await screen.findByText('งานของบัญชีแรก');
+    first.unmount();
+
+    // Same tab, different signed-in account: the module cache must be ignored
+    // until this account's own list arrives.
+    document.cookie = `user=${encodeURIComponent(JSON.stringify({ id: 'user-b' }))}; path=/`;
+    api.fetchWithAuth.mockReturnValue(new Promise(() => {}));
+    render(<QuickNotesWidget />);
+
+    expect(screen.queryByText('งานของบัญชีแรก')).toBeNull();
+    expect(screen.getByLabelText('กำลังโหลดโน้ตด่วน')).toBeTruthy();
+
+    document.cookie = 'user=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+  });
+
   it('paints the cached list on a remount instead of loading again', async () => {
     const notes = [{ id: 'n1', text: 'งานที่ค้าง', done: false }];
     api.fetchWithAuth.mockResolvedValue(jsonResponse({ notes }));

@@ -3,7 +3,7 @@ User Schemas
 """
 
 from typing import Literal, Optional
-from datetime import datetime
+from datetime import date, datetime
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 from app.core.brand_logo import clean_logo_value
@@ -220,9 +220,23 @@ class FinanceEntry(BaseModel):
     id: str = Field(..., min_length=1, max_length=64)
     type: Literal["income", "expense"]
     label: str = Field("", max_length=60)
-    amount: float = Field(..., gt=0, le=1_000_000_000)
+    amount: float = Field(..., gt=0, le=1_000_000_000, allow_inf_nan=False)
     # Local calendar day (YYYY-MM-DD); the widget groups by day, not by instant.
     date: str = Field(..., pattern=r"^\d{4}-\d{2}-\d{2}$")
+
+    @field_validator("date")
+    @classmethod
+    def validate_calendar_date(cls, value: str) -> str:
+        """Reject well-shaped but impossible days (2026-02-31) at the edge.
+
+        The JSON reader also validates stored rows, but a bad request should
+        return 422 instead of being silently dropped from the saved list.
+        """
+        try:
+            date.fromisoformat(value)
+        except ValueError as exc:
+            raise ValueError("date must be a real calendar day") from exc
+        return value
 
 
 class FinanceUpdate(BaseModel):
@@ -238,8 +252,16 @@ class FinanceResponse(BaseModel):
 class WatchlistItem(BaseModel):
     """A symbol followed by the watchlist widget (e.g. PTT.BK, BTC-USD)."""
 
-    symbol: str = Field(..., min_length=1, max_length=24)
+    # Same character set the serializer accepts; a malformed symbol is a 422
+    # instead of silently disappearing from the saved list.
+    symbol: str = Field(..., min_length=1, max_length=24, pattern=r"^[A-Za-z0-9.^=\-]+$")
     label: Optional[str] = Field(None, max_length=40)
+
+    @field_validator("symbol", mode="before")
+    @classmethod
+    def normalise_symbol(cls, value: object) -> object:
+        """Trim and upper-case before the character-set check runs."""
+        return value.strip().upper() if isinstance(value, str) else value
 
 
 class WatchlistUpdate(BaseModel):

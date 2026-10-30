@@ -1,14 +1,16 @@
 # ART Workspace Project Analysis
 
-**Last updated:** October 12, 2026  
-**Scope:** Full-stack repository review, local validation, dependency hardening pass, Pydantic v2 modernization, and automated secondary providers for weather forecast (MET Norway) and reverse-geocoding (OpenStreetMap Nominatim)  
+**Last updated:** October 30, 2026
+
+**Scope:** Full-stack repository review, local validation, dependency hardening pass, Pydantic v2 modernization, automated secondary providers for weather forecast (MET Norway) and reverse-geocoding (OpenStreetMap Nominatim), and the October 30 bug-fix pass
+
 **Repository path:** `D:\Program\Project\PROJECT_ART`
 
 ## Executive Summary
 
 ART Workspace is a Thai-language personal productivity dashboard built as a modern full-stack web application. The architecture consists of a Next.js 16 frontend (App Router, webpack dev server), a FastAPI backend, and a PostgreSQL database target (Aiven for PostgreSQL in production, in-memory SQLite for tests).
 
-Current verified state (all commands run from the repository on October 9, 2026):
+Verified state at the time of that pass (October 9, 2026); the current numbers are in the October 30 section at the end:
 - **Backend Tests:** 162/162 pytest tests passing, coverage **76.57%** (gate 40%).
 - **Backend Linting / Typing:** `flake8 app` 0 errors; `mypy app` clean across 40 modules.
 - **Database Migrations:** the full Alembic chain applies to an empty database, and `alembic check` reports no drift from the models (both steps now run in CI).
@@ -367,3 +369,60 @@ build` succeeds. All changes pushed to `origin/main`.
 - **Frontend coverage is still partial.** 92 unit tests cover pure logic plus the notification bell; most components and widgets remain untested, and the 3 Playwright smoke tests still run without a live backend, so they would not catch a broken login against the real API.
 - **Thai-only UI.** All copy is hardcoded Thai; there is no i18n layer.
 - **The `user` cookie is unsigned.** It is readable and editable client-side by design (fast-path hydration); the frontend already Zod-validates its shape, but nothing binds its value to the backend — a persisted user would need to re-verify against `/auth/session`. An HMAC signature (or dropping user-editable fields from the cookie entirely) would be the defence-in-depth next step.
+
+## Bug-fix and Documentation Pass (October 30, 2026)
+
+Started from the question "what else needs to be done?" and fixed every locally
+verifiable item except email delivery. Deployment-only checks and
+infrastructure decisions remain at the end of this section.
+
+1. **Finance and watchlist saves were broken at the serialiser boundary.**
+   `serialize_finance_entries` and `serialize_watchlist` were written for dicts,
+   but every `PUT` hands them pydantic models. Finance therefore returned `200`
+   while persisting `[]` (all entries silently lost), and watchlist raised
+   `TypeError: Object of type WatchlistItem is not JSON serializable` — a `500`
+   on every save. Both now normalise via `model_dump()` through `_entry_data`,
+   and the finance cleaner rejects non-finite amounts (`NaN` passed both range
+   comparisons before).
+2. **Request validation matches the serialisers.** `FinanceEntry` now rejects
+   impossible calendar dates (`2026-02-31`) and non-finite amounts at the edge;
+   `WatchlistItem` trims/upper-cases symbols and rejects characters the
+   serialiser would silently drop. A bad payload is a `422`, not a disappearing
+   field.
+3. **Regression coverage added.** New `tests/test_finance_watchlist.py` (22 tests)
+   covers both serialisers, non-finite amounts, bad dates/symbols, corrupt
+   stored JSON, per-account isolation, both HTTP endpoints, caps and the two
+   original regressions. `personal_lists.py` went from 25% to 92% covered.
+4. **Quick Notes cache no longer leaks between accounts.** The module-level
+   cache was a plain array and survived sign-out, so a second user on the same
+   tab could see the previous account's notes before background revalidation.
+   It is now keyed by the `user` cookie's id. The widget also flushes its
+   debounced save on unmount instead of dropping the last edit.
+5. **Save races closed.** Watchlist PUTs and finance PUTs are queued so a slow
+   earlier request cannot overwrite a newer list; finance's debounce is flushed
+   on unmount. Finance gained a focused test file (3 tests).
+6. **Deferred-column drift fixed.** `workspace_logo` and `main_menu` were listed
+   in `PROFILE_COLUMNS` and documented as deferred, but were missing from
+   `AUTH_DEFERRED_COLUMNS`: every authenticated request re-read the (up to
+   400 KB) logo data URL and sidebar JSON. Both are deferred now, and
+   `update_workspace_branding` explicitly re-selects the logo it returns.
+7. **Unused React Query removed.** `@tanstack/react-query` was installed and
+   provided but no component called `useQuery`/`useMutation`; the provider and
+   dependency are gone, leaving `fetchWithAuth` as the single data layer.
+8. **Documentation refreshed to match the code.** README test counts, project
+   structure, the `/admin` move and the removed TanStack Query line; roadmap /
+   quick-start / quick-reference widget and page inventories; the
+   production-readiness PDPA section now reflects the removed `/terms` and
+   `/privacy` pages; the frontend architecture review's status note no longer
+   lists React Query as open.
+
+**Verified after the pass:** backend 448 tests passing at **86.55%** coverage,
+`flake8 app` and `mypy app` clean; Alembic chain applies and `alembic check` is
+clean; frontend 181 tests passing, `tsc --noEmit`, ESLint and `next build` clean.
+
+**Still open after this pass:** the production WebSocket origin and the
+post-deploy CSP/CORS check (both need the deployed environment); rate limiting
+is still process-local until Redis is provisioned; the Playwright smoke suite
+still runs without a live backend; UI remains Thai-only; and the readable
+`user` cookie is still unsigned (it is re-verified against `/auth/session`).
+Email delivery was deliberately out of scope for this pass.

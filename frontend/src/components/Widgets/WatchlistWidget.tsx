@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Loader2, Plus, RefreshCw, Trash2, TrendingUp } from 'lucide-react';
 import WidgetSizeToggle from './WidgetSizeToggle';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
@@ -42,6 +42,8 @@ export default function WatchlistWidget({
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [draft, setDraft] = useState('');
+  // A slow PUT must not land after a newer one and resurrect a removed symbol.
+  const saveQueueRef = useRef<Promise<void>>(Promise.resolve());
 
   const loadQuotes = useCallback(async (list: WatchlistSymbol[]) => {
     if (list.length === 0) {
@@ -87,19 +89,28 @@ export default function WatchlistWidget({
     void load();
   }, [load]);
 
-  const persist = async (next: WatchlistSymbol[]) => {
-    try {
-      const res = await fetchWithAuth('/api/v1/profile/watchlist', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ symbols: next }),
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      setError(null);
-    } catch {
-      setError('บันทึกรายการติดตามไม่สำเร็จ');
-    }
-  };
+  const persist = useCallback((next: WatchlistSymbol[]) => {
+    const save = async () => {
+      try {
+        const res = await fetchWithAuth('/api/v1/profile/watchlist', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ symbols: next }),
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        setError(null);
+      } catch {
+        setError('บันทึกรายการติดตามไม่สำเร็จ');
+      }
+    };
+
+    const queued = saveQueueRef.current.then(save, save);
+    saveQueueRef.current = queued.then(
+      () => undefined,
+      () => undefined,
+    );
+    return queued;
+  }, []);
 
   const addSymbol = () => {
     const symbol = draft.trim().toUpperCase();

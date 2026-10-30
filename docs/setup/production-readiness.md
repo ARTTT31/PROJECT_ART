@@ -1,12 +1,13 @@
 # 🚀 Production Readiness — เปิดใช้งานหลายคน / สาธารณะ
 
-**Last updated:** 20 October 2026
+**Last updated:** 30 October 2026
 
 เอกสารนี้คือ checklist สำหรับ deploy ระบบให้คนทั่วไปใช้งาน ครอบคลุมสิ่งที่ต้องตั้งค่า
 ขั้นตอนทดสอบ และสิ่งที่ยังต้องทำด้วยมือ (บัญชีผู้ให้บริการ, โดเมน, การแจ้งเตือน)
 
-> ส่วนที่ implement แล้วในโค้ด (อีเมล, ลืมรหัสผ่าน, ยืนยันอีเมล, PDPA, Turnstile,
+> ส่วนที่ implement แล้วในโค้ด (อีเมล, ลืมรหัสผ่าน, ยืนยันอีเมล, Turnstile,
 > approval workflow) ทำงานได้ทันทีเมื่อตั้งค่า environment variable ด้านล่าง
+> ส่วนหน้า `/terms` / `/privacy` ถูกถอดออกแล้ว — ดูสถานะล่าสุดในข้อ 7
 
 ---
 
@@ -20,7 +21,7 @@
 | ลายเซ็นอีเมล | `EMAIL_BACKEND`, `EMAIL_FROM`, provider key/SMTP | ดูข้อ 2 |
 | ยืนยันอีเมล | `REQUIRE_EMAIL_VERIFICATION=false` ก่อน → `true` เมื่ออีเมลใช้งานได้จริง | false = สมัครแล้วเข้าได้เลย; true = ต้องกดลิงก์ในอีเมลก่อน |
 | CAPTCHA | `TURNSTILE_SECRET_KEY` + `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | Cloudflare Turnstile ฟรี; ว่าง = ปิดการตรวจ (ระบบยังทำงานปกติ) |
-| ข้อตกลง/PDPA | เติม `[กรอก...]` ในหน้า `/terms` และ `/privacy` | มี consent checkbox + บันทึก `terms_version` ที่หน้าสมัครแล้ว |
+| ข้อตกลง/PDPA | ยังไม่มีหน้า `/terms` หรือ `/privacy` ในโค้ด (ถอดออก 27 ต.ค. 2026) | ฟอร์มสมัครยังส่ง `accepted_terms=true` และ backend ยังบันทึก `terms_version`; ก่อนเปิดสาธารณะต้องเพิ่มหน้านโยบายจริงหรือเอา consent ออกให้ตรงกัน |
 | Redis (ถ้ามีหลาย instance) | `SLOWAPI_STORAGE_URI`, `WS_BROADCAST_REDIS_URL` | ดูข้อ 4 |
 | Secret | `SECRET_KEY` (≥32 ตัวอักษร) | ระบบจะปฏิเสธการ start ถ้าใช้ค่า placeholder ตอน `DEBUG=False` |
 | Database (Aiven) | `DATABASE_URL`, `SSL_CA_CERT_PATH` | Aiven บังคับ TLS และ CA ของ Aiven ไม่อยู่ใน certifi — ดาวน์โหลด CA จาก Console (Service → Overview → CA certificate) วางบน host แล้วชี้ path ไปที่ไฟล์นั้น |
@@ -128,27 +129,24 @@ Production ใช้ **Aiven for PostgreSQL** (project `thanyapong-8a15`, servic
 
 ---
 
-## 7. PDPA ที่ต้องทำด้วยมือ (โค้ดเตรียมไว้ให้แล้ว)
+## 7. PDPA / เอกสารนโยบาย (สถานะปัจจุบัน)
 
-- [ ] เติมช่อง `[กรอกอีเมลผู้ดูแลระบบ]`, `[กรอกที่อยู่/หน่วยงาน]` ในหน้า `/terms` และ `/privacy`
-- [ ] ตรวจว่าเนื้อหานโยบายตรงกับผู้ให้บริการจริงที่ใช้ (Aiven/Vercel/Render/Sentry/อีเมล/Turnstile)
-- [ ] กำหนดนโยบาย retention ของ audit log (ค่าเริ่มต้น: เก็บต่อเนื่อง — ระบุจำนวนเดือนที่ยอมรับได้)
-- [ ] จัดทำขั้นตอนแจ้งเหตุละเมิดข้อมูลภายใน 72 ชม. (ใครรับผิดชอบ, ช่องทางแจ้ง สคส.)
-- [ ] ประกาศเวอร์ชันข้อตกลง (`TERMS_VERSION`) และเมื่อแก้ข้อตกลงให้ bump ค่านี้
-
-**สิทธิ์ที่ผู้ใช้ทำเองได้แล้ว:** ดาวน์โหลดข้อมูล (หน้าโปรไฟล์ → ส่งออกข้อมูลของฉัน),
-ลบบัญชี (หน้าโปรไฟล์ → ลบบัญชีของฉัน, รหัสผ่านยืนยัน, กู้คืนได้ 30 วัน)
+- หน้า `/terms` และ `/privacy` ถูกถอดออกจากโค้ดเมื่อ 27 ต.ค. 2026 พร้อมส่วน PDPA ในหน้าโปรไฟล์
+- ฟอร์มสมัครยังส่ง `accepted_terms=true` และ backend ยังบันทึก `terms_version` — ถ้าไม่มีหน้านโยบายจริง ต้องตัดสินใจว่าจะคืนหน้าเหล่านั้นหรือเอา consent ออก
+- ถ้าจะเปิดสาธารณะ ควรมี: หน้านโยบาย + ลิงก์จากฟอร์มสมัคร, เจ้าของข้อมูล/ช่องทางติดต่อ, นโยบาย retention ของ audit log, และขั้นตอนแจ้งเหตุละเมิดภายใน 72 ชม.
+- API ยังมี `GET /api/v1/profile/export` และ `DELETE /api/v1/profile/me` แต่ยังไม่มีปุ่มใน UI หลังการถอดส่วนนั้น; ถ้าจะให้ผู้ใช้ใช้เองต้องเพิ่มปุ่มกลับเข้าไป
+- ก่อนแก้ข้อตกลง ให้ bump `TERMS_VERSION` เพื่อให้บันทึก consent แยกเวอร์ชันได้
 
 ---
 
 ## 8. Checklist ก่อนเปิดสาธารณะ
 
-- [ ] `alembic upgrade head` บน production แล้ว (migration `20261020_email_tokens`)
+- [ ] `alembic upgrade head` บน production แล้ว (head ปัจจุบัน `20261029_user_main_menu`)
 - [ ] ตั้ง env ครบตามข้อ 1 บน Render (backend) และ Vercel (frontend)
 - [ ] `CORS_ORIGINS` = โดเมน frontend จริงเท่านั้น (ห้าม `*`)
 - [ ] `FRONTEND_URL` = โดเมน frontend จริง (ใช้สร้างลิงก์ในอีเมล)
 - [ ] `COOKIE_SECURE=true`, `DEBUG=false`, `ENABLE_API_DOCS=false`
-- [ ] ทดสอบ flow จริง: สมัคร → อีเมลแจ้งแอดมิน → อนุมัติ → ผู้สมัครได้อีเมล → เข้าสู่ระบบ → ลืมรหัสผ่าน → ตั้งรหัสใหม่
+- [ ] ทดสอบ flow จริง: สมัคร → แอดมินเห็นคำขอใน `/admin` → อนุมัติ → ผู้สมัครได้อีเมล → เข้าสู่ระบบ → ลืมรหัสผ่าน → ตั้งรหัสใหม่
 - [ ] ทดสอบ Google login ด้วยบัญชีที่มีอยู่ (ต้องเข้าได้ทุกโหมด) และบัญชีใหม่ตามนโยบายที่เลือก
 - [ ] Uptime monitor + Sentry alert ทำงาน
 - [ ] ซ้อม restore ฐานข้อมูล 1 ครั้ง

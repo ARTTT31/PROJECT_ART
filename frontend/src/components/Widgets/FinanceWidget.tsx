@@ -46,6 +46,9 @@ export default function FinanceWidget({
   const [label, setLabel] = useState('');
   const [amount, setAmount] = useState('');
   const pendingRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const latestRef = useRef<FinanceEntry[]>([]);
+  const saveQueueRef = useRef<Promise<void>>(Promise.resolve());
+  const saveSequenceRef = useRef(0);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -54,7 +57,9 @@ export default function FinanceWidget({
       const res = await fetchWithAuth('/api/v1/profile/finance');
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = (await res.json()) as { entries?: FinanceEntry[] };
-      setEntries(Array.isArray(data.entries) ? data.entries : []);
+      const loaded = Array.isArray(data.entries) ? data.entries : [];
+      latestRef.current = loaded;
+      setEntries(loaded);
     } catch {
       setError('โหลดรายการไม่สำเร็จ');
     } finally {
@@ -62,34 +67,60 @@ export default function FinanceWidget({
     }
   }, []);
 
+  const persist = useCallback((next: FinanceEntry[]) => {
+    const sequence = ++saveSequenceRef.current;
+    setSaving(true);
+
+    // Queue writes so a slower earlier request cannot overwrite a newer list,
+    // and so the payload order matches the order the user made the edits.
+    const save = async () => {
+      try {
+        const res = await fetchWithAuth('/api/v1/profile/finance', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ entries: next }),
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        if (sequence === saveSequenceRef.current) setError(null);
+      } catch {
+        if (sequence === saveSequenceRef.current) {
+          setError('บันทึกไม่สำเร็จ ลองอีกครั้ง');
+        }
+      } finally {
+        if (sequence === saveSequenceRef.current) setSaving(false);
+      }
+    };
+
+    const queued = saveQueueRef.current.then(save, save);
+    saveQueueRef.current = queued.then(
+      () => undefined,
+      () => undefined,
+    );
+    return queued;
+  }, []);
+
   useEffect(() => {
     void load();
     return () => {
-      if (pendingRef.current) clearTimeout(pendingRef.current);
+      // Leaving the dashboard must not drop an edit made inside the debounce
+      // window. Flush only when a save is still pending; a fired timer is
+      // cleared when it runs, so this cannot double-save.
+      if (pendingRef.current) {
+        clearTimeout(pendingRef.current);
+        pendingRef.current = null;
+        void persist(latestRef.current);
+      }
     };
-  }, [load]);
-
-  const persist = useCallback(async (next: FinanceEntry[]) => {
-    setSaving(true);
-    try {
-      const res = await fetchWithAuth('/api/v1/profile/finance', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ entries: next }),
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      setError(null);
-    } catch {
-      setError('บันทึกไม่สำเร็จ ลองอีกครั้ง');
-    } finally {
-      setSaving(false);
-    }
-  }, []);
+  }, [load, persist]);
 
   const update = (next: FinanceEntry[]) => {
+    latestRef.current = next;
     setEntries(next);
     if (pendingRef.current) clearTimeout(pendingRef.current);
-    pendingRef.current = setTimeout(() => void persist(next), 400);
+    pendingRef.current = setTimeout(() => {
+      pendingRef.current = null;
+      void persist(latestRef.current);
+    }, 400);
   };
 
   const addEntry = () => {
@@ -98,7 +129,7 @@ export default function FinanceWidget({
       setError('กรอกจำนวนเงินให้ถูกต้อง');
       return;
     }
-    if (entries.length >= MAX_ENTRIES) {
+    if (latestRef.current.length >= MAX_ENTRIES) {
       setError(`เก็บได้สูงสุด ${MAX_ENTRIES} รายการ`);
       return;
     }
@@ -113,11 +144,12 @@ export default function FinanceWidget({
         amount: Math.round(value * 100) / 100,
         date: today(),
       },
-      ...entries,
+      ...latestRef.current,
     ]);
   };
 
-  const removeEntry = (id: string) => update(entries.filter((entry) => entry.id !== id));
+  const removeEntry = (id: string) =>
+    update(latestRef.current.filter((entry) => entry.id !== id));
 
   const todayEntries = useMemo(
     () => entries.filter((entry) => entry.date === today()),

@@ -799,6 +799,9 @@ async def update_workspace_branding(
     Only the fields present in the request are touched, and an empty string
     clears the override instead of storing an empty name.
     """
+    # ``workspace_logo`` is deferred on auth lookups; the response always reads
+    # it, even when this request only changes the name or tagline.
+    await load_profile_columns(db, current_user, "workspace_logo")
     supplied = payload.model_fields_set
     if "workspace_name" in supplied:
         current_user.workspace_name = (payload.workspace_name or "").strip() or None

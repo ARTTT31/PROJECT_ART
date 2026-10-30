@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { AlertCircle, Check, ListTodo, Loader2, Plus, RotateCw, Trash2 } from 'lucide-react';
 import WidgetSizeToggle from './WidgetSizeToggle';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
+import { readUserCookie } from '@/lib/api/userCookie';
 
 // Mirrors the backend caps (app/schemas/user.py) so a hopeless save is refused
 // before it leaves the browser.
@@ -23,7 +24,30 @@ interface NotesResponse {
 // Module-level cache. Opening the dashboard remounts this widget, and refetching
 // on every mount made the card flash its spinner each time. Keeping the last
 // list here lets a remount paint instantly and then revalidate in the background.
-let notesCache: QuickNote[] | null = null;
+//
+// The cache is scoped to the signed-in account: a module-level array used to
+// survive sign-out, so a second user on the same tab could see (and, before the
+// background revalidation, even save) the previous account's notes.
+let notesCache: { userId: string; notes: QuickNote[] } | null = null;
+
+function currentUserId(): string {
+  const cookie = readUserCookie();
+  if (cookie && typeof cookie === 'object' && !Array.isArray(cookie)) {
+    const id = (cookie as { id?: unknown }).id;
+    if (typeof id === 'string' && id) return id;
+  }
+  // Before the cookie exists (tests, first paint) a single local bucket is fine;
+  // a real account switch always comes with a different id.
+  return 'local';
+}
+
+function readNotesCache(): QuickNote[] | null {
+  return notesCache && notesCache.userId === currentUserId() ? notesCache.notes : null;
+}
+
+function writeNotesCache(notes: QuickNote[]) {
+  notesCache = { userId: currentUserId(), notes };
+}
 
 /** Test helper: clear the cache so each case starts from a clean slate. */
 export function resetQuickNotesCache() {
@@ -73,10 +97,10 @@ export default function QuickNotesWidget({
   width?: number;
   onResize?: (size: number) => void;
 }) {
-  const [notes, setNotes] = useState<QuickNote[]>(() => notesCache ?? []);
+  const [notes, setNotes] = useState<QuickNote[]>(() => readNotesCache() ?? []);
   const [draft, setDraft] = useState('');
   // With a cached list there is nothing to wait for: render it right away.
-  const [loading, setLoading] = useState(() => notesCache === null);
+  const [loading, setLoading] = useState(() => readNotesCache() === null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -84,14 +108,18 @@ export default function QuickNotesWidget({
 
   const pendingRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const latestRef = useRef<QuickNote[]>(notesCache ?? []);
+  const latestRef = useRef<QuickNote[]>(notes);
   const saveQueueRef = useRef<Promise<void>>(Promise.resolve());
   const saveSequenceRef = useRef(0);
+  // Bumped by every local edit and every completed save. A background load
+  // that started before one of those must not replace the newer local list.
+  const revisionRef = useRef(0);
 
   const load = useCallback(async () => {
+    const startedAtRevision = revisionRef.current;
     // Only the first visit (no cache yet) needs the spinner; later mounts keep
     // the previous list on screen and refresh it silently.
-    if (notesCache === null) setLoading(true);
+    if (readNotesCache() === null) setLoading(true);
     setLoadError(null);
     try {
       const res = await fetchWithAuth('/api/v1/profile/quick-notes');
@@ -100,8 +128,11 @@ export default function QuickNotesWidget({
         throw new Error(apiErrorMessage(res.status, body, res.headers.get('X-Request-ID')));
       }
       const data = (await res.json()) as NotesResponse;
+      // The user edited (or another save completed) while this request was in
+      // flight; its response is already stale.
+      if (revisionRef.current !== startedAtRevision) return;
       const loaded = Array.isArray(data.notes) ? data.notes : [];
-      notesCache = loaded;
+      writeNotesCache(loaded);
       latestRef.current = loaded;
       setNotes(loaded);
     } catch (err) {
@@ -110,14 +141,6 @@ export default function QuickNotesWidget({
       setLoading(false);
     }
   }, []);
-
-  useEffect(() => {
-    void load();
-    return () => {
-      if (pendingRef.current) clearTimeout(pendingRef.current);
-      if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
-    };
-  }, [load]);
 
   const persist = useCallback((next: QuickNote[]) => {
     const sequence = ++saveSequenceRef.current;
@@ -137,7 +160,8 @@ export default function QuickNotesWidget({
           throw new Error(apiErrorMessage(res.status, body, res.headers.get('X-Request-ID')));
         }
         if (sequence === saveSequenceRef.current) {
-          notesCache = next;
+          revisionRef.current += 1;
+          writeNotesCache(next);
           setError(null);
           setJustSaved(true);
           if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
@@ -158,18 +182,34 @@ export default function QuickNotesWidget({
     return queuedSave;
   }, []);
 
+  useEffect(() => {
+    void load();
+    return () => {
+      // Flush an edit made inside the debounce window when the widget unmounts;
+      // the optimistic list in the cache is not on the server until this runs.
+      if (pendingRef.current) {
+        clearTimeout(pendingRef.current);
+        pendingRef.current = null;
+        void persist(latestRef.current);
+      }
+      if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+    };
+  }, [load, persist]);
+
   /** Apply a change locally, then save it after the user stops typing. */
   const update = useCallback(
     (next: QuickNote[]) => {
+      revisionRef.current += 1;
       latestRef.current = next;
       // Keep the cache in step with the optimistic update, so leaving and
       // returning before the debounced save finishes shows the edited list.
-      notesCache = next;
+      writeNotesCache(next);
       setNotes(next);
       setError(null);
       setJustSaved(false);
       if (pendingRef.current) clearTimeout(pendingRef.current);
       pendingRef.current = setTimeout(() => {
+        pendingRef.current = null;
         void persist(latestRef.current);
       }, 700);
     },

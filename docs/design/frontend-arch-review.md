@@ -10,10 +10,11 @@ Scope reviewed: `frontend/src/app/*`, `frontend/src/components/*`, `frontend/src
 > `/api/v1/api/v1/...` double-prefix bug of §3.2 is not reproducible, the
 > `AuthProvider` + `AuthGuard` pair the review asked for in §3.1 now exists,
 > `login.module.css` was deleted, the widget-manager dialog has an entrypoint
-> (`dashboard/page.tsx`), and the DnD layer is `@dnd-kit`. Still open as of that
-> date: React Query is installed and provided but no component calls
-> `useQuery`/`useMutation` (§3.5), and the component-primitive work of §3.4 remains
-> partial. Items not listed here were not re-verified.
+> (`dashboard/page.tsx`), and the DnD layer is `@dnd-kit`. React Query was
+> removed on 2026-10-30 because no component ever called `useQuery`/`useMutation`
+> (§3.5), so data fetching is the single `fetchWithAuth` wrapper. The
+> component-primitive work of §3.4 remains partial. Items not listed here were
+> not re-verified.
 
 ---
 

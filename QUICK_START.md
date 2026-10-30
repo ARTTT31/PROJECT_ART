@@ -334,10 +334,18 @@ curl http://localhost:8080/api/v1/oil-prices/health
 ✅ **Oil Prices Widget** - แสดงราคาน้ำมันจาก Bangchak (ผ่าน backend, มี cache + fallback)
 ✅ **Weather & AQI Widget** - สภาพอากาศและค่าฝุ่น PM 2.5 แบบ real-time
 ✅ **Holiday Widget** - ปฏิทินวันหยุดนักขัตฤกษ์ไทย (ปีปัจจุบัน dynamic)
-✅ **QR Code Widget** - สร้าง QR Code
+✅ **QR Code Widget** - สร้าง QR Code และ barcode
+✅ **Quick Notes / To-do Widget** - จดรายการที่ต้องทำวันนี้ ติ๊กเสร็จแล้วบันทึกอัตโนมัติ
+✅ **Price Calculator Widget** - คิดราคาขายหลังหักส่วนลด พร้อมกำไรและเปอร์เซ็นต์
+✅ **Market Widget** - อัตราแลกเปลี่ยน ราคาทองคำแท่ง ดัชนี SET และกราฟแท่งเทียน
+✅ **Finance Widget** - บันทึกรายรับ–รายจ่ายวันนี้ พร้อมยอดคงเหลือ
+✅ **Watchlist Widget** - ติดตามหุ้น คริปโต หรือค่าเงินพร้อมราคาล่าสุด
+✅ **Currency Converter Widget** - แปลงสกุลเงินด้วยอัตราอ้างอิงรายวัน
 ✅ **Quick Links** - ลิงก์ด่วนในแถบเมนูด้านข้าง ตั้งค่าได้ที่หน้าโปรไฟล์
-✅ **Notification Bell** - แจ้งเตือนอัตโนมัติ (วันหยุด, สภาพอากาศ, ราคาน้ำมัน)
-✅ **Profile Page** - แก้ไขชื่อ, อีเมล, รหัสผ่าน และ Quick Links
+✅ **Notification Bell** - แจ้งเตือนอัตโนมัติ (วันหยุด, สภาพอากาศ, ราคาน้ำมัน, คำขอสมัครสำหรับแอดมิน)
+✅ **Profile Page** - แก้ไขชื่อ, อีเมล, รหัสผ่าน, Quick Links, เมนูหลัก และ branding ส่วนตัว
+✅ **Admin Console (`/admin`)** - จัดการผู้ใช้ คำขอสมัคร และสิทธิ์การเข้าถึง
+✅ **Audit Log (`/audit`)** - ประวัติกิจกรรมทั้งหมดสำหรับผู้ดูแลระบบ
 ✅ **Auto-commit Scripts** - Commit อัตโนมัติ (Bash, Batch, PowerShell)
 ✅ **Health Check Endpoints** - ตรวจสอบ API status
 ✅ **Graceful Fallbacks** - ระบบทำงานต่อได้แม้ API ล่ม
@@ -355,14 +363,24 @@ curl http://localhost:8080/api/v1/oil-prices/health
 | หน้า | URL | คำอธิบาย |
 |------|-----|----------|
 | Login | `/login` | หน้าเข้าสู่ระบบ (Email/Password + Google) |
+| Register | `/register` | สมัครสมาชิกตามโหมดที่ผู้ดูแลตั้งไว้ |
 | Dashboard | `/dashboard` | หน้าหลักพร้อมวิดเจ็ต drag-and-drop |
-| Profile | `/profile` | ตั้งค่าข้อมูลส่วนตัว, รหัสผ่าน, Quick Links, เมนูหลัก |
+| Profile | `/profile` | ตั้งค่าข้อมูลส่วนตัว, รหัสผ่าน, Quick Links, เมนูหลัก, branding |
+| Admin | `/admin` | จัดการผู้ใช้ คำขอสมัคร และนโยบายการสมัคร (แอดมินเท่านั้น) |
+| Audit | `/audit` | ค้นหา/กรองบันทึกกิจกรรม (แอดมินเท่านั้น) |
+| Camera | `/camera` | มอนิเตอร์กล้อง CCTV ตามสิทธิ์ที่ได้รับ |
 
 ### Widgets (Dashboard)
 | Widget | ขนาด (S/M/L) | ข้อมูลจาก |
 |--------|-------------|----------|
+| โน้ตด่วน / To-do วันนี้ | S/M/L | backend (per-account JSON) |
+| คิดราคา / กำไร | S/M/L | client-side |
+| ค่าเงิน · ทอง · SET | S/M/L | Frankfurter, Thai Gold API, Yahoo Finance (ผ่าน backend) |
+| รายรับ – รายจ่ายวันนี้ | S/M/L | backend (per-account JSON) |
+| รายการติดตาม | S/M/L | Yahoo Finance quotes (ผ่าน backend) |
+| แปลงสกุลเงิน | S/M/L | Frankfurter (ผ่าน backend) |
 | วันหยุดนักขัตฤกษ์ | S/M/L | ข้อมูลคงที่ (ไทย) |
-| สภาพอากาศ & PM 2.5 | S/M/L | open-meteo.com |
+| สภาพอากาศ & PM 2.5 | S/M/L | open-meteo.com / MET Norway |
 | ราคาน้ำมัน | S/M/L | Bangchak API (ผ่าน backend) |
 | สร้าง QR Code | S/M/L | client-side |
 

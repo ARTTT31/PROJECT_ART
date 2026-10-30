@@ -1,7 +1,13 @@
 # Widget Updates Summary
 
 > [!NOTE]
-> **Current Dashboard Active Widgets:**
+> **Current Dashboard Active Widgets (2026-10-30):**
+> - 📝 `QuickNotesWidget` - Per-account to-do list with autosave
+> - 🧮 `PriceCalcWidget` - Selling price, discount, profit and margin
+> - 📈 `MarketWidget` - Currency rates, Thai/COMEX gold, SET index and candles
+> - 💰 `FinanceWidget` - Today's income/expense entries and balance
+> - ⭐ `WatchlistWidget` - Followed symbols with latest quotes
+> - 🔄 `CurrencyConverterWidget` - Daily reference-rate conversion
 > - 🌤️ `WeatherWidget` - Real-time weather, forecast & GPS
 > - 🇹🇭 `HolidayWidget` - Thai official holidays for the current year
 > - ⛽ `OilPriceWidget` - Fuel prices from Bangchak with cached fallback

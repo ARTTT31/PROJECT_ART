@@ -8,8 +8,8 @@ Production URL: configure this in your deployment environment; do not commit a p
 
 The GitHub Actions pipeline (`ci.yml`) runs on every push and pull request to `main`:
 
-- **Backend:** Python 3.11 — flake8 7.4 lint (`--max-line-length=120`) + mypy 2.4 type check + `alembic upgrade head` and `alembic check` against a throwaway SQLite database + pytest (383 tests, coverage 88.44%, gate 40%)
-- **Frontend:** Node 26 — ESLint + TypeScript type-check + 140 Vitest unit tests + Next.js production build + Playwright smoke tests
+- **Backend:** Python 3.11 — flake8 7.4 lint (`--max-line-length=120`) + mypy 2.4 type check + `alembic upgrade head` and `alembic check` against a throwaway SQLite database + pytest (448 tests, coverage 86.55%, gate 40%)
+- **Frontend:** Node 26 — ESLint + TypeScript type-check + 181 Vitest unit tests + Next.js production build + Playwright smoke tests
 - **Dependency audit (blocking):** `pip-audit` gates every push and pull request and re-runs weekly (`cron: 0 2 * * 1`, Mondays 02:00 UTC). The pinned backend set currently reports no known advisories; Dependabot opens the upgrade pull requests (see `.github/dependabot.yml`).
 
 The migration step matters: the test suite builds its schema from the models, so a broken or forgotten Alembic revision used to pass CI and only fail against production. `alembic check` additionally fails when the models drift from the migration head.
@@ -50,7 +50,7 @@ The migration step matters: the test suite builds its schema from the models, so
 - **PWA Support:** `@serwist/next`
 - **Error Tracking:** `@sentry/nextjs`
 - **E2E Testing:** Playwright smoke tests run in CI
-- **Data Fetching:** TanStack Query v5
+- **Data Fetching:** `fetchWithAuth` wrapper (credentials + CSRF + single-flight refresh); no query-cache layer
 - **Auth Client:** `AuthProvider` (centralized context) + `useAuth` hook
 - **Alerts:** SweetAlert2 + custom `useToast` hook
 
@@ -196,19 +196,20 @@ py -m pytest -q --tb=short
 PROJECT_ART/
 ├── frontend/                    # Next.js 16 App Router
 │   └── src/
-│       ├── app/                 # Pages (dashboard, login, profile, camera)
+│       ├── app/                 # Pages (dashboard, admin, audit, profile, camera, auth)
 │       ├── components/
 │       │   ├── Auth/            # AuthProvider — centralized session context
 │       │   ├── Layout/          # DashboardLayout (header + sidebar)
 │       │   ├── Toast/           # useToast hook + ToastProvider
 │       │   ├── ui/              # Dialog.tsx — Radix UI primitives
 │       │   └── Widgets/         # Dashboard widgets (dnd-kit sortable)
-│       ├── hooks/               # useAuth.ts
-│       └── utils/               # quickLinks, sweetalert, userAgent
+│       ├── hooks/               # useAuth.ts, useDashboardLayout.ts
+│       └── utils/               # quickLinks, mainMenu, sweetalert, userAgent
 ├── backend/                     # FastAPI
 │   └── app/
-│       ├── api/v1/endpoints/    # auth, profile, oil_prices, users, audit, system
-│       └── core/                # config.py, database.py, security.py
+│       ├── api/v1/endpoints/    # auth, profile, users, audit, system, market, weather,
+│       │                        # oil_prices, websockets
+│       └── core/                # config.py, database.py, security.py, personal_lists.py
 ├── design-system/art-workspace/ # MASTER.md + page overrides
 └── .github/workflows/ci.yml     # CI: flake8 + pytest + ESLint + build
 ```
@@ -273,7 +274,7 @@ Every response carries an `X-Request-ID` header: a caller-supplied id is reused 
 
 ### Admin User Management
 
-[`frontend/src/components/Admin/UserManagement.tsx`](frontend/src/components/Admin/UserManagement.tsx) drives `GET/POST/PUT/DELETE /api/v1/users` from the profile page.
+[`frontend/src/components/Admin/UserManagement.tsx`](frontend/src/components/Admin/UserManagement.tsx) drives `GET/POST/PUT/DELETE /api/v1/users` from the `/admin` console (จัดการระบบ). The same page hosts the registration policy and audit-log entry point; every endpoint it calls is admin-gated server-side.
 
 | Capability | How |
 |---|---|
