@@ -39,7 +39,7 @@
 | โน้ตด่วน / To-do วันนี้ (notes) | S/M/L | Per-account JSON via `/profile/quick-notes` |
 | คิดราคา / กำไร (calc) | S/M/L | Client-side |
 | ค่าเงิน · ทอง · SET (market) | S/M/L | Frankfurter, Thai Gold API, Yahoo Finance, via the backend proxy; candle chart drawn in-app |
-| รายรับ – รายจ่ายวันนี้ (finance) | S/M/L | Per-account JSON via `/profile/finance` |
+| รายรับ – รายจ่ายวันนี้ (finance) | S/M/L | Per-account JSON via `/profile/finance`; summary dialog with monthly/all-time totals, categories, 6-month trend, CSV export, undo and a monthly budget |
 | รายการติดตาม (watchlist) | S/M/L | Yahoo Finance quotes via `/market/quotes` |
 | แปลงสกุลเงิน (converter) | S/M/L | Frankfurter rates via `/market/summary` |
 | วันหยุดนักขัตฤกษ์ (holidays) | S/M/L | Confirmed Thai calendars bundled in the repo (2026, 2027) |

@@ -38,7 +38,9 @@ from app.schemas.user import (
 )
 from app.core.quick_notes import parse_quick_notes, serialize_quick_notes
 from app.core.personal_lists import (
+    parse_finance_budget,
     parse_finance_entries,
+    serialize_finance_budget,
     serialize_finance_entries,
     parse_watchlist,
     serialize_watchlist,
@@ -928,13 +930,17 @@ async def update_quick_notes(
 # and the widget always saves its whole state, so last write wins per account.
 
 
-def _finance_response(raw: str | None) -> FinanceResponse:
+def _finance_response(raw: str | None, budget_raw: str | None = None) -> FinanceResponse:
     return FinanceResponse(
-        entries=[FinanceEntry(**entry) for entry in parse_finance_entries(raw)]
+        entries=[FinanceEntry(**entry) for entry in parse_finance_entries(raw)],
+        budget=parse_finance_budget(budget_raw),
     )
 
 
-@router.get("/finance", response_model=FinanceResponse)
+# ``exclude_none`` keeps the payload identical to what it was before categories
+# and budgets existed: an entry with no category has no ``category`` key at all,
+# and an unset budget is omitted rather than sent as ``null``.
+@router.get("/finance", response_model=FinanceResponse, response_model_exclude_none=True)
 @limiter.limit(_GENERAL_LIMIT)
 async def get_finance_entries(
     request: Request,
@@ -942,11 +948,13 @@ async def get_finance_entries(
     db: AsyncSession = Depends(get_db),
 ):
     """The signed-in account's income/expense entries (empty when never used)."""
-    user = await load_profile_columns(db, current_user, "finance_entries")
-    return _finance_response(user.finance_entries)
+    user = await load_profile_columns(
+        db, current_user, "finance_entries", "finance_budget"
+    )
+    return _finance_response(user.finance_entries, user.finance_budget)
 
 
-@router.put("/finance", response_model=FinanceResponse)
+@router.put("/finance", response_model=FinanceResponse, response_model_exclude_none=True)
 @limiter.limit(_GENERAL_LIMIT)
 async def update_finance_entries(
     request: Request,
@@ -954,11 +962,15 @@ async def update_finance_entries(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Replace the account's entries with the list in the request."""
+    """Replace the account's entries (and budget) with the request body."""
     saved = serialize_finance_entries(payload.entries)
+    saved_budget = serialize_finance_budget(payload.budget)
     current_user.finance_entries = saved
+    current_user.finance_budget = saved_budget
     await db.commit()
-    return _finance_response(saved)
+    # Commit expires ORM attributes; answer from the values just persisted so
+    # building the response cannot trigger an async lazy load.
+    return _finance_response(saved, saved_budget)
 
 
 # ── Watchlist widget ─────────────────────────────────────────────────────────

@@ -14,8 +14,10 @@ from pydantic import ValidationError
 from app.core.personal_lists import (
     MAX_FINANCE_ENTRIES,
     MAX_WATCHLIST_SYMBOLS,
+    parse_finance_budget,
     parse_finance_entries,
     parse_watchlist,
+    serialize_finance_budget,
     serialize_finance_entries,
     serialize_watchlist,
 )
@@ -95,6 +97,49 @@ def test_finance_parser_drops_invalid_rows_but_keeps_good_ones():
     )
 
     assert [entry["id"] for entry in parse_finance_entries(raw)] == ["f1"]
+
+
+def test_finance_serialiser_keeps_a_category_and_omits_an_empty_one():
+    saved = json.loads(
+        serialize_finance_entries(
+            [
+                {
+                    "id": "a",
+                    "type": "expense",
+                    "label": "ข้าวผัด",
+                    "amount": 60,
+                    "date": "2026-10-29",
+                    "category": "  อาหาร  ",
+                },
+                {
+                    "id": "b",
+                    "type": "expense",
+                    "label": "",
+                    "amount": 10,
+                    "date": "2026-10-29",
+                    "category": "",
+                },
+            ]
+        )
+    )
+
+    assert saved[0]["category"] == "อาหาร"
+    # Rows without a category must serialise exactly like pre-category rows.
+    assert "category" not in saved[1]
+
+
+def test_finance_budget_round_trip_and_clear():
+    assert parse_finance_budget(serialize_finance_budget(15000)) == 15000
+    assert parse_finance_budget(serialize_finance_budget(None)) is None
+    # 0 means "clear it", not "a budget of zero".
+    assert serialize_finance_budget(0) is None
+
+
+def test_finance_budget_ignores_corrupt_values():
+    assert parse_finance_budget("{not json") is None
+    assert parse_finance_budget("42") is None
+    assert parse_finance_budget(json.dumps({"monthly": -5})) is None
+    assert parse_finance_budget(json.dumps({"monthly": True})) is None
 
 
 def test_watchlist_parser_dedupes_and_normalises():
@@ -206,6 +251,56 @@ async def test_watchlist_dedupes_on_save(client, logged_in_user):
 
     assert response.status_code == 200, response.text
     assert [item["symbol"] for item in response.json()["symbols"]] == ["PTT.BK", "AAPL"]
+
+
+@pytest.mark.asyncio
+async def test_finance_category_and_budget_round_trip(client, logged_in_user):
+    csrf = await _csrf_header(client)
+    payload = {
+        "entries": [
+            {
+                "id": "c1",
+                "type": "expense",
+                "label": "ข้าวผัด",
+                "amount": 60,
+                "date": "2026-10-29",
+                "category": "อาหาร",
+            }
+        ],
+        "budget": 12000,
+    }
+
+    saved = await client.put("/api/v1/profile/finance", json=payload, headers=csrf)
+    assert saved.status_code == 200, saved.text
+    assert saved.json()["entries"][0]["category"] == "อาหาร"
+    assert saved.json()["budget"] == 12000
+
+    fetched = (await client.get("/api/v1/profile/finance")).json()
+    assert fetched["entries"][0]["category"] == "อาหาร"
+    assert fetched["budget"] == 12000
+
+    # Sending no budget clears it; an entry without a category has no key.
+    cleared = await client.put(
+        "/api/v1/profile/finance",
+        json={"entries": [dict(payload["entries"][0], category=None)], "budget": None},
+        headers=csrf,
+    )
+    assert cleared.status_code == 200, cleared.text
+    assert "category" not in cleared.json()["entries"][0]
+    assert "budget" not in cleared.json()
+
+
+@pytest.mark.asyncio
+async def test_old_entries_without_a_category_are_unchanged(
+    client, logged_in_user, registered_user, db_session
+):
+    """Rows written before categories existed keep their exact shape on read."""
+    user = await db_session.get(User, registered_user["data"]["user_id"])
+    user.finance_entries = json.dumps(FINANCE_ENTRIES)
+    await db_session.commit()
+
+    entries = (await client.get("/api/v1/profile/finance")).json()["entries"]
+    assert entries == FINANCE_ENTRIES
 
 
 @pytest.mark.asyncio

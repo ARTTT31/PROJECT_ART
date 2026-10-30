@@ -5,7 +5,7 @@
 > - 📝 `QuickNotesWidget` - Per-account to-do list with autosave
 > - 🧮 `PriceCalcWidget` - Selling price, discount, profit and margin
 > - 📈 `MarketWidget` - Currency rates, Thai/COMEX gold, SET index and candles
-> - 💰 `FinanceWidget` - Today's income/expense entries and balance
+> - 💰 `FinanceWidget` - Today's income/expense entries and balance, plus a per-month summary view (categories, 6-month trend, CSV export, monthly budget, edit/backdate and undo delete)
 > - ⭐ `WatchlistWidget` - Followed symbols with latest quotes
 > - 🔄 `CurrencyConverterWidget` - Daily reference-rate conversion
 > - 🌤️ `WeatherWidget` - Real-time weather, forecast & GPS

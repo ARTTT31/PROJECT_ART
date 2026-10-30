@@ -33,6 +33,7 @@ PROFILE_COLUMNS = (
     # JSON lists that grow with use; only their widgets read them.
     "quick_notes",
     "finance_entries",
+    "finance_budget",
     "watchlist",
     "main_menu",
 )

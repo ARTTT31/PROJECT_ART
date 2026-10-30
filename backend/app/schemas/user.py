@@ -227,6 +227,9 @@ class FinanceEntry(BaseModel):
     amount: float = Field(..., gt=0, le=1_000_000_000, allow_inf_nan=False)
     # Local calendar day (YYYY-MM-DD); the widget groups by day, not by instant.
     date: str = Field(..., pattern=r"^\d{4}-\d{2}-\d{2}$")
+    # Free-text spending category ("อาหาร", "เดินทาง", ...). Optional: rows
+    # saved before categories existed simply have no value.
+    category: Optional[str] = Field(None, max_length=40)
 
     @field_validator("date")
     @classmethod
@@ -246,11 +249,16 @@ class FinanceEntry(BaseModel):
 class FinanceUpdate(BaseModel):
     """Replace the whole entry list — the widget saves its current state."""
 
-    entries: list[FinanceEntry] = Field(default_factory=list, max_length=200)
+    entries: list[FinanceEntry] = Field(default_factory=list, max_length=2000)
+    # Monthly spending budget; omitted/null leaves the stored value untouched
+    # only when the client never sends the field — the widget always sends it so
+    # clearing the input clears the budget.
+    budget: Optional[float] = Field(None, ge=0, le=1_000_000_000, allow_inf_nan=False)
 
 
 class FinanceResponse(BaseModel):
     entries: list[FinanceEntry] = Field(default_factory=list)
+    budget: Optional[float] = None
 
 
 class WatchlistItem(BaseModel):

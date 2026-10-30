@@ -44,6 +44,10 @@ class User(Base, TimestampMixin):
     # Income/expense entries for the finance widget (JSON array as text).
     finance_entries: Mapped[str | None] = mapped_column(Text)
 
+    # Monthly spending budget for the finance widget (JSON object as text).
+    # NULL means "no budget set", so an untouched account needs no backfill.
+    finance_budget: Mapped[str | None] = mapped_column(Text)
+
     # Symbols followed by the watchlist widget (JSON array as text).
     watchlist: Mapped[str | None] = mapped_column(Text)
 

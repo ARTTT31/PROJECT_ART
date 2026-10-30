@@ -15,9 +15,15 @@ from typing import Any, Iterable
 
 logger = logging.getLogger(__name__)
 
-MAX_FINANCE_ENTRIES = 200
+# 200 entries filled up in about six weeks at five entries a day, after which
+# the widget refused new rows — the history it was built to keep stopped growing.
+# 2000 is roughly a year of that usage (~200KB of JSON), still far from the
+# column's practical limit.
+MAX_FINANCE_ENTRIES = 2000
 MAX_FINANCE_LABEL = 60
+MAX_FINANCE_CATEGORY = 40
 MAX_MONEY = 1_000_000_000
+MAX_FINANCE_BUDGET = 1_000_000_000
 MAX_WATCHLIST_SYMBOLS = 30
 MAX_SYMBOL_LENGTH = 24
 
@@ -71,6 +77,14 @@ def _clean_finance_entry(entry: Any) -> dict[str, Any] | None:
 
     label = str(data.get("label") or "").strip()[:MAX_FINANCE_LABEL]
 
+    # Optional on purpose: rows written before categories existed have no key,
+    # and an empty category is stored as "no key" so old rows and new rows with
+    # no category serialise identically.
+    raw_category = data.get("category")
+    category = (
+        raw_category.strip()[:MAX_FINANCE_CATEGORY] if isinstance(raw_category, str) else ""
+    )
+
     raw_amount = data.get("amount")
     # Legacy rows stored the amount as a string; pydantic sends a number. A
     # bool is an int subclass and would silently become 1.0, so reject it.
@@ -94,13 +108,16 @@ def _clean_finance_entry(entry: Any) -> dict[str, Any] | None:
     except ValueError:
         return None
 
-    return {
+    cleaned = {
         "id": entry_id.strip()[:64],
         "type": entry_type,
         "label": label,
         "amount": round(amount, 2),
         "date": raw_date,
     }
+    if category:
+        cleaned["category"] = category
+    return cleaned
 
 
 def parse_finance_entries(raw: str | None) -> list[dict[str, Any]]:
@@ -113,6 +130,44 @@ def serialize_finance_entries(entries: Iterable[Any]) -> str:
     """Store the validated request list as compact JSON text."""
     cleaned = [item for item in map(_clean_finance_entry, entries) if item]
     return json.dumps(cleaned[:MAX_FINANCE_ENTRIES], ensure_ascii=False, separators=(",", ":"))
+
+
+# ── Finance budget ───────────────────────────────────────────────────────────
+# The monthly budget for the finance widget. Stored as a tiny JSON object rather
+# than a number so a per-month value can be added later without a migration;
+# NULL (or an unreadable value) simply means "no budget set".
+
+
+def parse_finance_budget(raw: str | None) -> float | None:
+    """The account's monthly budget, or None when unset/unreadable."""
+    if not raw:
+        return None
+    try:
+        parsed = json.loads(raw)
+    except (TypeError, ValueError):
+        logger.warning("finance_budget column holds invalid JSON; treating as unset")
+        return None
+    if not isinstance(parsed, dict):
+        return None
+
+    value = parsed.get("monthly")
+    # bool is an int subclass, so reject it before the numeric check.
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    amount = float(value)
+    if not math.isfinite(amount) or amount <= 0 or amount > MAX_FINANCE_BUDGET:
+        return None
+    return round(amount, 2)
+
+
+def serialize_finance_budget(value: float | None) -> str | None:
+    """Store the monthly budget; ``None`` clears it."""
+    if value is None:
+        return None
+    amount = float(value)
+    if not math.isfinite(amount) or amount <= 0 or amount > MAX_FINANCE_BUDGET:
+        return None
+    return json.dumps({"monthly": round(amount, 2)}, separators=(",", ":"))
 
 
 # ── Watchlist ────────────────────────────────────────────────────────────────
