@@ -29,7 +29,7 @@ Security and resilience improvements including automated secondary provider fail
 | Styling | Tailwind CSS, Apple HIG Design Tokens | Dashboard, login, profile, widgets |
 | UI libraries | Lucide React, Radix Dialog, SweetAlert2 | Icons, dialogs, notifications |
 | Backend | FastAPI 0.162, SQLAlchemy 2.1 async, Alembic | REST API and database access |
-| Auth | PyJWT access/refresh tokens in HTTP-only cookies | Standard login and Google OAuth |
+| Auth | PyJWT access/refresh tokens in HTTP-only cookies | Standard email/password login |
 | Database | PostgreSQL target, SQLite for tests | Aiven for PostgreSQL in production |
 | External data | Open-Meteo & MET Norway (weather), Open-Meteo (air quality), Bangchak (oil price), BigDataCloud & OpenStreetMap Nominatim (geocode) | Dashboard widgets and GPS reverse-geocoding |
 
@@ -307,11 +307,7 @@ All findings below were fixed, verified locally, and pushed as commits `4f21596`
    against JPEG/PNG/GIF magic numbers, refuses declared types outside the
    allow-list, and rejects files whose declared MIME disagrees with the sniffed
    one. The stored data URL uses the *sniffed* MIME, not the client's claim.
-5. **Google OAuth calls are async.** `auth.py` used blocking `requests` calls
-   (10s timeout) inside the event loop for the userinfo, tokeninfo and token
-   exchange endpoints; all three now use `httpx.AsyncClient`, which no longer
-   stalls every concurrent request for the full timeout.
-6. **500 responses no longer echo exception text.** Several handlers returned
+5. **500 responses no longer echo exception text.** Several handlers returned
    `detail=str(e)`, which can leak internals (library paths, DB messages). All
    of them now log the traceback server-side via `logger.exception` and return
    a generic Thai message to the client.

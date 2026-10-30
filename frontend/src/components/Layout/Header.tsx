@@ -112,11 +112,11 @@ export default function Header({ user, onMenuClick, sidebarCollapsed = false }: 
   );
 }
 
-/** Isolated clock component – only this subtree re-renders every minute */
+/** Isolated clock component – only this subtree re-renders every second */
 const ClockTime = memo(function ClockTime() {
   const [time, setTime] = useState(new Date());
   useEffect(() => {
-    const id = setInterval(() => setTime(new Date()), 60_000);
+    const id = setInterval(() => setTime(new Date()), 1_000);
     return () => clearInterval(id);
   }, []);
   const formatted = time.toLocaleString('th-TH', {
@@ -126,6 +126,7 @@ const ClockTime = memo(function ClockTime() {
     year: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
+    second: '2-digit',
   });
   return (
     <>

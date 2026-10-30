@@ -16,8 +16,6 @@
 | หัวข้อ | ค่าแนะนำ | หมายเหตุ |
 |---|---|---|
 | โหมดสมัครสมาชิก | `REGISTRATION_MODE=approval` | คนทั่วไปขอสมัครได้ แต่ต้องรอแอดมินอนุมัติ (ปลอดภัยสุดสำหรับเปิดสาธารณะ) ใช้ `open` เมื่อพร้อมรับคนเยอะจริงๆ |
-| Google sign-in | `GOOGLE_SIGNUP_ENABLED=false` (ค่าเริ่มต้น) | false = การสร้างบัญชีผ่าน Google ใช้ `REGISTRATION_MODE` (approval = เข้าคิวอนุมัติ, closed = ปฏิเสธ); ตั้ง `true` เฉพาะเมื่อต้องการเปิด Google signup และควรคู่กับ `GOOGLE_ALLOWED_DOMAINS` |
-| จำกัดโดเมน Google | `GOOGLE_ALLOWED_DOMAINS` | เว้นว่าง = รับทุกโดเมน (เฉพาะคนที่สร้างบัญชีใหม่); บัญชีที่มีอยู่เข้าได้เสมอไม่ว่าโหมดไหน |
 | ลายเซ็นอีเมล | `EMAIL_BACKEND`, `EMAIL_FROM`, provider key/SMTP | ดูข้อ 2 |
 | ยืนยันอีเมล | `REQUIRE_EMAIL_VERIFICATION=false` ก่อน → `true` เมื่ออีเมลใช้งานได้จริง | false = สมัครแล้วเข้าได้เลย; true = ต้องกดลิงก์ในอีเมลก่อน |
 | CAPTCHA | `TURNSTILE_SECRET_KEY` + `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | Cloudflare Turnstile ฟรี; ว่าง = ปิดการตรวจ (ระบบยังทำงานปกติ) |
@@ -147,7 +145,6 @@ Production ใช้ **Aiven for PostgreSQL** (project `thanyapong-8a15`, servic
 - [ ] `FRONTEND_URL` = โดเมน frontend จริง (ใช้สร้างลิงก์ในอีเมล)
 - [ ] `COOKIE_SECURE=true`, `DEBUG=false`, `ENABLE_API_DOCS=false`
 - [ ] ทดสอบ flow จริง: สมัคร → แอดมินเห็นคำขอใน `/admin` → อนุมัติ → ผู้สมัครได้อีเมล → เข้าสู่ระบบ → ลืมรหัสผ่าน → ตั้งรหัสใหม่
-- [ ] ทดสอบ Google login ด้วยบัญชีที่มีอยู่ (ต้องเข้าได้ทุกโหมด) และบัญชีใหม่ตามนโยบายที่เลือก
 - [ ] Uptime monitor + Sentry alert ทำงาน
 - [ ] ซ้อม restore ฐานข้อมูล 1 ครั้ง
 - [ ] Load test บน staging เสร็จ รู้ว่า capacity เท่าไร

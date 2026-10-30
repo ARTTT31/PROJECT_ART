@@ -109,7 +109,7 @@ function saveCache(data: MarketSummary) {
   }
 }
 
-/** Show only HH:mm in Bangkok time for ISO timestamps; other strings pass through. */
+/** Show HH:mm:ss in Bangkok time for ISO timestamps; other strings pass through. */
 function formatUpdated(value: string | null | undefined): string {
   if (!value) return '';
   const date = new Date(value);
@@ -120,6 +120,7 @@ function formatUpdated(value: string | null | undefined): string {
   return date.toLocaleTimeString('th-TH', {
     hour: '2-digit',
     minute: '2-digit',
+    second: '2-digit',
     timeZone: 'Asia/Bangkok',
   });
 }

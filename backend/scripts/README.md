@@ -50,7 +50,7 @@ backend/scripts/
 
 ## ⚠️ Do's & Don'ts
 
-- ✅ **Do**: ใช้ `promote_admin.py` เมื่อต้องการให้บัญชีจริง (เช่น บัญชี Google ของเจ้าของ) เป็น admin
+- ✅ **Do**: ใช้ `promote_admin.py` เมื่อต้องการให้บัญชีจริงของเจ้าของเป็น admin
 - ✅ **Do**: ใช้ `create_admin_auto.py` สำหรับ bootstrap production ครั้งแรก
 - ✅ **Do**: ใช้ `reset_user.py` เมื่อ user ล็อกบัญชีจาก login ผิด 5 ครั้ง
 - ❌ **Don't**: commit test output หรือ passwords จาก script เหล่านี้

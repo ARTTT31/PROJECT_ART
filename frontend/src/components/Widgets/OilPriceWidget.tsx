@@ -347,7 +347,7 @@ export default function OilPriceWidget({
                   : cacheNote
                     ? cacheNote
                     : data
-                      ? `อัปเดต ${data.update_date || lastUpdate.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}`
+                      ? `อัปเดต ${data.update_date || lastUpdate.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`
                       : ''}
               </p>
 

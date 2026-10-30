@@ -79,6 +79,10 @@ describe('LoginPage', () => {
     const registerLink = screen.getByRole('link', { name: /สมัครสมาชิก/i });
     expect(registerLink).toBeDefined();
     expect(registerLink.getAttribute('href')).toBe('/register');
+
+    // Google sign-in and the forgot-password link were removed from this page.
+    expect(screen.queryByRole('button', { name: /google/i })).toBeNull();
+    expect(screen.queryByRole('link', { name: /ลืมรหัสผ่าน/ })).toBeNull();
   });
 
   it('returns to the ?next page once a session is restored', async () => {

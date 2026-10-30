@@ -56,24 +56,13 @@ py scripts/admin/create_test_user.py
 
 Other admin helpers live in `backend/scripts/admin/` (see `backend/scripts/README.md`).
 
-## Google Sign-In (Authorization-Code Flow)
-
-Google login is handled by the backend — the browser never receives an OAuth token:
-
-1. The login page navigates to `GET /api/v1/auth/google`.
-2. The backend redirects to Google's consent screen (`response_type=code`).
-3. Google redirects back to `GET /api/v1/auth/google/callback?code=...`.
-4. The backend exchanges the code, verifies the `id_token` (signature + audience), finds or creates the user, sets the session cookies and redirects to `${FRONTEND_URL}/login-success`.
-
-Required backend variables: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`, `FRONTEND_URL`.
-
 ## CSRF Protection
 
 Authenticated browser writes (`POST`/`PUT`/`PATCH`/`DELETE` under `/api/`) must echo the readable `csrf_token` cookie in the `X-CSRF-Token` header:
 
 - The backend issues the cookie on any response when it is missing; `GET /api/v1/auth/csrf` returns the same value in the body for cross-site deployments where the cookie is not readable from the frontend origin.
 - Missing/invalid values return `403 {"code":"csrf_failed"}`.
-- `/login`, `/register`, `/refresh`, `/google*` and `/csrf` are exempt, so a session can always be established or renewed.
+- `/login`, `/register`, `/refresh` and `/csrf` are exempt, so a session can always be established or renewed.
 - The frontend helper `frontend/src/lib/api/fetchWithAuth.ts` attaches the header automatically and retries once on failure.
 - Disable only for non-browser clients via `CSRF_PROTECTION_ENABLED=False`.
 
@@ -174,8 +163,6 @@ Port 3000                   Port 8080                   PostgreSQL (Aiven) in
 - `POST /api/v1/auth/refresh` - Refresh access token
 - `POST /api/v1/auth/logout` - Logout (invalidate session)
 - `GET  /api/v1/auth/session` - Current session/user
-- `GET  /api/v1/auth/google` - Start Google OAuth (redirect)
-- `GET  /api/v1/auth/google/callback` - Google OAuth callback
 - `GET  /api/v1/ws/notifications` - WebSocket: live notifications (**requires a session**; `1008` when unauthenticated, `1013` when the instance is at capacity)
 - `POST /api/v1/ws/broadcast` - Admin-only broadcast to every connected client
 - `GET  /health` - Health check

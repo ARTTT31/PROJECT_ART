@@ -75,7 +75,14 @@ const formatDateTime = (value: string): string => {
   const iso = /[zZ]|[+-]\d\d:\d\d$/.test(value) ? value : `${value}Z`;
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' });
+  return date.toLocaleString('th-TH', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  });
 };
 
 /** Short Thai title for an HTTP failure, shared by the action handlers. */

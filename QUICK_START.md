@@ -90,18 +90,12 @@ ACCESS_TOKEN_EXPIRE_MINUTES=30
 # CORS
 CORS_ORIGINS=http://localhost:3000,http://localhost:3001
 
-# Google OAuth (Optional)
-GOOGLE_CLIENT_ID=your-google-client-id
-GOOGLE_CLIENT_SECRET=your-google-client-secret
 ```
 
 ### Frontend Environment Variables (`.env.local`)
 ```env
 # API URL
 NEXT_PUBLIC_API_URL=http://localhost:8080
-
-# Google Sign-In (Optional)
-NEXT_PUBLIC_GOOGLE_CLIENT_ID=your-google-client-id
 ```
 
 ---
@@ -362,7 +356,7 @@ curl http://localhost:8080/api/v1/oil-prices/health
 ### Pages
 | หน้า | URL | คำอธิบาย |
 |------|-----|----------|
-| Login | `/login` | หน้าเข้าสู่ระบบ (Email/Password + Google) |
+| Login | `/login` | หน้าเข้าสู่ระบบด้วยอีเมลและรหัสผ่าน |
 | Register | `/register` | สมัครสมาชิกตามโหมดที่ผู้ดูแลตั้งไว้ |
 | Dashboard | `/dashboard` | หน้าหลักพร้อมวิดเจ็ต drag-and-drop |
 | Profile | `/profile` | ตั้งค่าข้อมูลส่วนตัว, รหัสผ่าน, Quick Links, เมนูหลัก, branding |

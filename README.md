@@ -221,7 +221,7 @@ PROJECT_ART/
 - Root directory: `backend`
 - Build command: `pip install -r requirements.txt`
 - Start command: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
-- Set `DATABASE_URL` (the Aiven service URI), `SSL_CA_CERT_PATH` (the downloaded Aiven CA), a long random `SECRET_KEY`, OAuth values, `FRONTEND_URL`, and the exact `CORS_ORIGINS` frontend URL in Render environment variables.
+- Set `DATABASE_URL` (the Aiven service URI), `SSL_CA_CERT_PATH` (the downloaded Aiven CA), a long random `SECRET_KEY`, `FRONTEND_URL`, and the exact `CORS_ORIGINS` frontend URL in Render environment variables.
 - Keep `DEBUG=False` and `AUTO_CREATE_TABLES=False` in production. Alembic is the only owner of the schema: run `alembic upgrade head` for every release.
 
 ### Vercel Frontend
@@ -232,7 +232,6 @@ PROJECT_ART/
 - Set `NEXT_PUBLIC_API_URL` to the public API URL, or leave it unset to route browser requests through `/api`.
 - When using the `/api` rewrite, set `API_INTERNAL_URL` to the backend URL. This server-only variable keeps the backend address out of browser bundles.
 - The notification WebSocket follows `NEXT_PUBLIC_WS_URL` → `NEXT_PUBLIC_API_URL` → this origin. If the deployment's rewrite forwards plain HTTP requests but drops the WebSocket upgrade, set `NEXT_PUBLIC_WS_URL` to the backend origin (`wss://…`); the session cookie is already `SameSite=None; Secure`, so it is sent cross-site.
-- Google Sign-In is handled entirely by the backend authorization-code flow; no `NEXT_PUBLIC_GOOGLE_CLIENT_ID` is needed in the frontend.
 - Sentry source-map upload only runs when `SENTRY_AUTH_TOKEN`, `SENTRY_ORG` and `SENTRY_PROJECT` are all set.
 
 ### Release Checklist
@@ -242,21 +241,6 @@ PROJECT_ART/
 3. Set the frontend URLs above in the deployment environment; do not rely on a URL embedded in source code.
 4. Run the validation commands in this document and verify login, profile editing, dashboard widgets, and the production `/api` rewrite after deployment.
 5. Point the platform health check at `/health/ready` (it answers `503` when the database is unreachable) and keep an external uptime monitor on `/health`.
-
-### Google OAuth
-
-Sign-in uses the server-side authorization-code flow — no OAuth token ever reaches the browser URL:
-
-1. The login page sends the browser to `GET /api/v1/auth/google`.
-2. The backend builds the Google consent URL; Google redirects back to `GET /api/v1/auth/google/callback` with a `code`.
-3. The backend exchanges the code, verifies the `id_token` audience/signature, finds or creates the user, sets the session cookies and redirects to `${FRONTEND_URL}/login-success`.
-
-Configure these in Google Cloud Console:
-
-- Authorized JavaScript origins: the Vercel frontend URL
-- Authorized redirect URIs: the Render callback URL, ending with `/api/v1/auth/google/callback`
-
-Backend OAuth variables: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI` and `FRONTEND_URL` (the post-login redirect target).
 
 ### Health Endpoints
 
@@ -292,7 +276,7 @@ There is no cron in this deployment: expired trash rows are purged opportunistic
 
 ## Security
 
-- **CSRF (double-submit cookie).** Authenticated browser writes (`POST`/`PUT`/`PATCH`/`DELETE` under `/api/`) must echo the readable `csrf_token` cookie in the `X-CSRF-Token` header. Requests without any session cookie keep their normal 401, and `/login`, `/register`, `/refresh`, `/google*` and `/csrf` are exempt so a session can always be established or renewed. Failed checks return `403 {"code":"csrf_failed"}`.
+- **CSRF (double-submit cookie).** Authenticated browser writes (`POST`/`PUT`/`PATCH`/`DELETE` under `/api/`) must echo the readable `csrf_token` cookie in the `X-CSRF-Token` header. Requests without any session cookie keep their normal 401, and `/login`, `/register`, `/refresh` and `/csrf` are exempt so a session can always be established or renewed. Failed checks return `403 {"code":"csrf_failed"}`.
 - **Frontend handling.** [`frontend/src/lib/api/fetchWithAuth.ts`](frontend/src/lib/api/fetchWithAuth.ts) reads the cookie (or bootstraps one from `GET /api/v1/auth/csrf`), attaches the header on mutating calls, and retries once on `csrf_failed`. Set `CSRF_PROTECTION_ENABLED=False` only for non-browser clients.
 - **API documentation.** `/docs`, `/redoc` and `/openapi.json` are served only when `DEBUG=True` or `ENABLE_API_DOCS=True`.
 - **Security headers.** The backend sends a strict CSP (`connect-src` is built from `CORS_ORIGINS`), `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`, `Permissions-Policy`, and HSTS (two years, `includeSubDomains; preload`) outside `DEBUG`.

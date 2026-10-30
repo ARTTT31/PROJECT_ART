@@ -17,9 +17,6 @@ The system is designed and separated into parts for easy scaling and maintenance
 
 ### 2.1 Environment Variables Configuration
 For the code on Render to communicate with external services correctly, important Environment Variables were configured as follows:
-* `BACKEND_GOOGLE_CLIENT_ID`: Client ID from Google Cloud Console
-* `BACKEND_GOOGLE_CLIENT_SECRET`: Secret from Google Cloud Console
-* `BACKEND_GOOGLE_REDIRECT`: URL to receive callbacks from Google, must point to Render's domain (e.g., `https://<render-domain>/api/v1/auth/google/callback`)
 * `DATABASE_URL`: the Aiven service URI (Console → Overview → Connection information), in the async form `postgresql+asyncpg://…`
 * `SSL_CA_CERT_PATH`: path to the Aiven project CA on the backend host. Without it `asyncpg` falls back to certifi, which does not include that CA, and the connection fails certificate verification.
 * `FRONTEND_URL`: URL of the frontend running on Vercel, used to redirect back with data after a successful login
@@ -37,11 +34,10 @@ To prevent Event Loop Blocked issues on FastAPI, we changed the database connect
 
 ### 2.3 Authentication Hardening (2026-10)
 The API now ships with several security defaults that deployments must be aware of:
-* `CSRF_PROTECTION_ENABLED` (default `True`): cookie-authenticated writes must send the `X-CSRF-Token` header echoing the readable `csrf_token` cookie. Login/register/refresh/Google endpoints stay exempt so a session can always be established or renewed.
+* `CSRF_PROTECTION_ENABLED` (default `True`): cookie-authenticated writes must send the `X-CSRF-Token` header echoing the readable `csrf_token` cookie. Login/register/refresh endpoints stay exempt so a session can always be established or renewed.
 * `ENABLE_API_DOCS` (default `False`): `/docs`, `/redoc` and `/openapi.json` are only served when this is `True` (or when `DEBUG=True`).
 * `SECRET_KEY` must be at least 32 characters and must not be a placeholder when `DEBUG=False`, otherwise the API refuses to start.
 * Security headers: strict CSP with `connect-src` derived from `CORS_ORIGINS`, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy`, `Permissions-Policy`, and HSTS with `includeSubDomains; preload` outside `DEBUG`.
-* Google Sign-In uses the authorization-code flow (`/api/v1/auth/google` → `/api/v1/auth/google/callback`) instead of implicit tokens in the browser URL.
 
 ### 2.4 Health Checks and Release Verification
 The backend answers two probes; which one a platform points at changes what a database outage does to traffic:
@@ -63,31 +59,23 @@ Connecting to a managed database such as Aiven requires data transmission throug
 
 During the cloud migration, the main issues encountered and successfully resolved are as follows:
 
-### 🔴 Issue 1: `Error 400: redirect_uri_mismatch` (Google OAuth side)
-* **Cause:** The source and destination URLs for OAuth did not match those in the system.
-* **Solution:** Configured in the Google Cloud Console (API & Services > Credentials) to update **Authorized JavaScript origins** to match the Vercel domain and **Authorized redirect URIs** to match the Render path (`/api/v1/auth/google/callback`).
-
-### 🔴 Issue 2: `connection is insecure (try using sslmode=require)`
+### 🔴 Issue 1: `connection is insecure (try using sslmode=require)`
 * **Cause:** Python's `asyncpg` driver does not allow connecting to the Aiven database without encryption.
 * **Solution:** Removed the `?sslmode=require` query string from the end of the original `DATABASE_URL` and enabled the `{"ssl": True}` option in `connect_args` when creating `create_async_engine` instead.
 
-### 🔴 Issue 3: `InvalidPasswordError` (Database connection)
+### 🔴 Issue 2: `InvalidPasswordError` (Database connection)
 * **Cause:** Incorrect password or connection string, or not using the pooling credentials.
 * **Solution:** Cleaned up the connection string and switched to the service URI copied from the Aiven Console (or the PgBouncer URI when going through the pooler).
 
-### 🔴 Issue 4: `AttributeError: 'AsyncSession' object has no attribute 'query'`
+### 🔴 Issue 3: `AttributeError: 'AsyncSession' object has no attribute 'query'`
 * **Cause:** Calling the `.query()` method is a Syntax for Synchronous sessions, which is not supported on `AsyncSession`.
 * **Solution:** Refactored the query syntax in the sub-services (e.g., `user_service.py`), switched to using SQLAlchemy 2.0's `select(...)` statement instead, and executed data via `await db.execute(...)`.
 
-### 🔴 Issue 5: `AttributeError: 'coroutine' object has no attribute 'email'`
+### 🔴 Issue 4: `AttributeError: 'coroutine' object has no attribute 'email'`
 * **Cause:** An asynchronous/coroutine user checking function (e.g., `get_user_by_email`) was called, but the `await` keyword was forgotten to wait for the result, causing the returned data to remain a Coroutine object.
 * **Solution:** Added the `await` keyword before asynchronous function calls in `auth.py` and all Service files to properly unpack the Model data before using it to generate a JWT Token.
 
-### 🔴 Issue 6: "App not verified" warning screen during Google login
-* **Cause:** The OAuth project on Google Cloud was still restricted to Testing mode.
-* **Solution:** Changed the Publishing Status within the OAuth Consent Screen menu from **Testing** to **In Production** to unlock access for general Google accounts.
-
-### 🔴 Issue 7: `HTTP 502 Bad Gateway` on Weather Forecast and GPS Reverse-Geocode
+### 🔴 Issue 5: `HTTP 502 Bad Gateway` on Weather Forecast and GPS Reverse-Geocode
 * **Cause:** Render shared egress IPs are rate-limited / throttled by external free API tiers (Open-Meteo for weather forecast, BigDataCloud for reverse geocoding), resulting in 429/502 errors when querying uncached coordinates.
 * **Solution:**
   * Added automated failover to **MET Norway (`api.met.no`)** Locationforecast 2.0 when Open-Meteo fails.
@@ -100,7 +88,7 @@ During the cloud migration, the main issues encountered and successfully resolve
 ✅ **Status:** **LIVE (Production Ready)**
 * The project can be successfully built and deployed 100% on both frontend (Vercel) and backend (Render) services.
 * The API system is operating and ready to handle loads (Green Status).
-* The login workflow (OAuth Callback Sequence) can communicate seamlessly between Vercel, Render, and Google.
+* The email/password login workflow communicates seamlessly between Vercel and Render.
 * The database connection creates/saves user data and issues JWT Token security tickets to authorize secure dashboard access.
 
 ---

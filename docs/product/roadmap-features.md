@@ -24,7 +24,7 @@
 
 | Route | Purpose |
 |---|---|
-| `/login`, `/login-success` | Email/password and Google sign-in (authorization-code flow) |
+| `/login` | Email/password sign-in |
 | `/register`, `/forgot-password`, `/reset-password`, `/verify-email` | Registration policy, password self-service, email verification |
 | `/dashboard` | Widget grid — rearrange, resize (S/M/L), show/hide |
 | `/profile` | Name/email/password, Quick Links, main-menu config, camera config, per-account branding |
@@ -50,7 +50,7 @@
 ### Platform
 
 - **Auth:** PyJWT access/refresh in HTTP-only cookies, CSRF double-submit token, account lockout
-  (5 attempts -> 30 min), session tracking (IP / user agent / device), Google OAuth.
+  (5 attempts -> 30 min), session tracking (IP / user agent / device).
 - **Authorisation:** `role` plus per-user `accessible_pages`; the sidebar and profile page hide
   what a user cannot reach, and the backend enforces page access for page-scoped APIs.
 - **Admin:** a dedicated `/admin` console for user management, page-permission editing,

@@ -30,10 +30,11 @@ const dateFormatter = new Intl.DateTimeFormat('th-TH', {
   year: 'numeric',
 });
 
-/** Hour + minute only (e.g. "14:23") — seconds are noise on a login screen. */
+/** Hour, minute and second (e.g. "14:23:45"). */
 const timeFormatter = new Intl.DateTimeFormat('th-TH', {
   hour: '2-digit',
   minute: '2-digit',
+  second: '2-digit',
   hour12: false,
 });
 
@@ -172,29 +173,6 @@ function LoginContent() {
     }
   }, [status, router, nextPath]);
 
-  /**
-   * Authorization-code flow: hand off to the backend, which builds the Google
-   * consent URL, exchanges the code server-side and then redirects back to
-   * /login-success with the session cookies already set. No OAuth tokens ever
-   * touch the browser URL or client-side code.
-   */
-  const handleGoogleSignIn = () => {
-    setIsSubmitting(true);
-    setError('');
-    // The OAuth round trip leaves this SPA, so the destination is parked in
-    // sessionStorage and picked up by /login-success after the callback.
-    if (nextPath) {
-      sessionStorage.setItem('post_login_redirect', nextPath);
-    } else {
-      sessionStorage.removeItem('post_login_redirect');
-    }
-    toast.info('กำลังนำคุณไปยัง Google...');
-    // Full-page navigation is required so the browser follows the backend's
-    // 302 redirect to Google; a router push would stay inside Next.js.
-    const googleAuthUrl = new URL(`${apiBaseUrl}/api/v1/auth/google`, window.location.origin);
-    window.location.href = googleAuthUrl.toString();
-  };
-
   useEffect(() => {
     setIsClient(true);
     const rememberedEmail = localStorage.getItem('remembered_email');
@@ -206,24 +184,8 @@ function LoginContent() {
       setTimeout(() => emailRef.current?.focus(), 100);
     }
 
-    // Surface refusals handed back by the backend's OAuth callback and by the
-    // provider itself. The callback sends the readable reason as `google_error`
-    // (sign-ups closed, account awaiting approval, ...) so the person sees why
-    // they were turned away instead of a raw JSON page on the API origin.
-    const params = new URLSearchParams(window.location.search);
-    const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
-    const googleError =
-      params.get('google_error') || params.get('error') || hashParams.get('error');
-    if (googleError) {
-      const reason =
-        googleError === 'access_denied' ? 'คุณยกเลิกการเข้าสู่ระบบด้วย Google' : googleError;
-      toast.error('เข้าสู่ระบบด้วย Google ไม่สำเร็จ', reason);
-      window.history.replaceState(null, '', window.location.pathname);
-    }
-
-    // Tick every second but only store a new Date when the displayed minute
-    // actually changes, so the clock stays accurate without re-rendering the
-    // form 60 times a minute.
+    // Tick every second; the form re-renders only when the displayed second
+    // changes, so the clock stays accurate without needless renders.
     const timer = window.setInterval(() => {
       setNow((previous) => {
         const next = new Date();
@@ -648,9 +610,6 @@ function LoginContent() {
                 </span>
                 <span className="login-remember-text">จดจำฉันไว้</span>
               </label>
-              <Link href="/forgot-password" className="login-forgot">
-                ลืมรหัสผ่าน?
-              </Link>
             </div>
 
             {error && (
@@ -688,47 +647,6 @@ function LoginContent() {
                 </>
               )}
             </button>
-
-            <div className="login-divider">หรือ</div>
-
-            <div className="google-auth-wrapper">
-              <button
-                type="button"
-                onClick={() => handleGoogleSignIn()}
-                disabled={isSubmitting || rateLimitSeconds > 0}
-                className={`google-btn${isSubmitting || rateLimitSeconds > 0 ? ' google-btn--disabled' : ''}`}
-                aria-label="ดำเนินการต่อด้วย Google"
-              >
-                <span className="google-btn-mark" aria-hidden="true">
-                  <svg
-                    className="google-btn-icon"
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    width="20"
-                    height="20"
-                    focusable="false"
-                  >
-                    <path
-                      fill="#4285F4"
-                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                    />
-                    <path
-                      fill="#34A853"
-                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                    />
-                    <path
-                      fill="#FBBC05"
-                      d="M5.84 14.1c-.22-.66-.35-1.36-.35-2.1s.13-1.44.35-2.1V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l3.66-2.84z"
-                    />
-                    <path
-                      fill="#EA4335"
-                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06L5.84 9.9c.87-2.6 3.3-4.52 6.16-4.52z"
-                    />
-                  </svg>
-                </span>
-                <span className="google-text">ดำเนินการต่อด้วย Google</span>
-              </button>
-            </div>
 
             {/* Dedicated prominent registration box */}
             <div className="pt-4 mt-3 border-t border-black/[0.08] text-center">

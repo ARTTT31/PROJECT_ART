@@ -35,6 +35,7 @@ const dateFormatter = new Intl.DateTimeFormat('th-TH', {
 const timeFormatter = new Intl.DateTimeFormat('th-TH', {
   hour: '2-digit',
   minute: '2-digit',
+  second: '2-digit',
   hour12: false,
 });
 

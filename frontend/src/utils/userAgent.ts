@@ -106,7 +106,7 @@ export function formatRelativeTime(isoDate: string | null | undefined): {
   }
 
   const absolute =
-    date.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) +
+    date.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) +
     ' ' +
     date.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
 
