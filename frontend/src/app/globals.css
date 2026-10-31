@@ -23,7 +23,7 @@
 }
 
 :root {
-  /* Enforce light mode (anti-reference: no dark mode) */
+  /* Light is the default; html[data-theme='dark'] below switches the palette. */
   color-scheme: light;
 
   /* ── Apple Showcase Tokens (v2.0) ──────────────────────────────────────────
@@ -130,6 +130,245 @@
   --line-snug: 1.35;
   --line-normal: 1.5;
   --line-relaxed: 1.65;
+
+  /* ── Theme tokens ─────────────────────────────────────────────────────────
+     The /profile theme card writes data-theme="light|dark" and data-accent on
+     <html>; every surface, ink and accent below reacts to those attributes.
+     Components reference these through arbitrary values, e.g.
+     bg-[var(--surface)] or text-[var(--ink-muted)].
+  ─────────────────────────────────────────────────────────────────────────── */
+  --surface: #ffffff; /* cards, dialogs, inputs */
+  --surface-elevated: #ffffff; /* raised surfaces inside a card */
+  --surface-grouped: #f5f5f7; /* page background + grouped rows */
+  --surface-grouped-2: #f2f2f7;
+  --surface-subtle: #fbfbfd;
+  --surface-chip: #e5e5ea; /* chips, progress tracks */
+  --surface-chip-2: #e8e8ed;
+  --surface-inverse: #1d1d1f; /* dark toast on a light page */
+  --ink-inverse: #ffffff; /* text on --surface-inverse */
+
+  --ink: #1d1d1f; /* headings and body copy */
+  --ink-secondary: #475569;
+  --ink-muted: #6e6e73;
+  --ink-tertiary: #86868b;
+  --ink-faint: #a1a1a6;
+  --ink-divider: #c7c7cc;
+
+  --hairline-soft: rgba(0, 0, 0, 0.04);
+  --hairline: rgba(0, 0, 0, 0.06);
+  --hairline-strong: rgba(0, 0, 0, 0.1);
+
+  --glass-95: rgba(255, 255, 255, 0.95);
+  --glass-80: rgba(255, 255, 255, 0.8);
+  --glass-60: rgba(255, 255, 255, 0.6);
+  --glass-40: rgba(255, 255, 255, 0.4);
+  --glass-20: rgba(255, 255, 255, 0.2);
+  --glass-10: rgba(255, 255, 255, 0.1);
+
+  --danger: #ff3b30;
+  --danger-ink: #b42318;
+  --danger-soft: rgba(255, 59, 48, 0.1);
+  --success: #34c759;
+  --success-ink: #248a3d;
+  --success-soft: rgba(52, 199, 89, 0.1);
+  --warning: #ff9500;
+  --warning-ink: #c77700;
+  --warning-soft: rgba(255, 149, 0, 0.1);
+  --info-soft: rgba(88, 86, 214, 0.1);
+  --info-ink: #4b49bd;
+
+  /* Accent: defaults to Apple blue, overridden by html[data-accent='…']. */
+  --accent: #0066cc;
+  --accent-hover: #0071e3;
+  --accent-text: var(--accent);
+  --accent-soft: color-mix(in srgb, var(--accent) 12%, transparent);
+  --accent-soft-weak: color-mix(in srgb, var(--accent) 6%, transparent);
+  --accent-ring: color-mix(in srgb, var(--accent) 24%, transparent);
+  --accent-border: color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+/* Accent presets offered by the theme card. */
+:root[data-accent='teal'] {
+  --accent: #0f766e;
+  --accent-hover: #0d9488;
+}
+:root[data-accent='indigo'] {
+  --accent: #4f46e5;
+  --accent-hover: #6366f1;
+}
+:root[data-accent='purple'] {
+  --accent: #7c3aed;
+  --accent-hover: #8b5cf6;
+}
+:root[data-accent='pink'] {
+  --accent: #db2777;
+  --accent-hover: #ec4899;
+}
+:root[data-accent='orange'] {
+  --accent: #c2410c;
+  --accent-hover: #ea580c;
+}
+:root[data-accent='green'] {
+  --accent: #15803d;
+  --accent-hover: #16a34a;
+}
+:root[data-accent='graphite'] {
+  --accent: #1d1d1f;
+  --accent-hover: #3a3a3c;
+}
+
+/* ── Dark theme ──────────────────────────────────────────────────────────────
+   Surfaces get darker, ink flips, hairlines become light, and the accent is
+   brightened wherever it is used as text so it stays legible on a dark wall.
+────────────────────────────────────────────────────────────────────────────── */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --surface: #1c1c1e;
+  --surface-elevated: #26262a;
+  --surface-grouped: #121214;
+  --surface-grouped-2: #17171a;
+  --surface-subtle: #19191b;
+  --surface-chip: #2c2c2e;
+  --surface-chip-2: #3a3a3c;
+  --surface-inverse: #f5f5f7;
+  --ink-inverse: #1d1d1f;
+
+  --ink: #f5f5f7;
+  --ink-secondary: #c7c7cc;
+  --ink-muted: #a1a1a6;
+  --ink-tertiary: #8e8e93;
+  --ink-faint: #6e6e73;
+  --ink-divider: #48484a;
+
+  --hairline-soft: rgba(255, 255, 255, 0.07);
+  --hairline: rgba(255, 255, 255, 0.1);
+  --hairline-strong: rgba(255, 255, 255, 0.16);
+
+  --glass-95: rgba(28, 28, 30, 0.95);
+  --glass-80: rgba(28, 28, 30, 0.8);
+  --glass-60: rgba(28, 28, 30, 0.6);
+  --glass-40: rgba(28, 28, 30, 0.4);
+  --glass-20: rgba(28, 28, 30, 0.2);
+  --glass-10: rgba(28, 28, 30, 0.1);
+
+  --danger: #ff453a;
+  --danger-ink: #ff8a80;
+  --danger-soft: rgba(255, 69, 58, 0.16);
+  --success: #30d158;
+  --success-ink: #86e8a8;
+  --success-soft: rgba(48, 209, 88, 0.16);
+  --warning: #ff9f0a;
+  --warning-ink: #ffd08a;
+  --warning-soft: rgba(255, 159, 10, 0.16);
+  --info-soft: rgba(124, 131, 255, 0.18);
+  --info-ink: #b9bcff;
+
+  /* Accent used as text needs more luminance on a dark wall. */
+  --accent-text: color-mix(in srgb, var(--accent) 55%, white);
+  --accent-soft: color-mix(in srgb, var(--accent) 26%, transparent);
+  --accent-soft-weak: color-mix(in srgb, var(--accent) 14%, transparent);
+  --accent-ring: color-mix(in srgb, var(--accent) 38%, transparent);
+  --accent-border: color-mix(in srgb, var(--accent) 62%, transparent);
+
+  /* Legacy token names used by the custom CSS further down this file. */
+  --apple-ink: var(--ink);
+  --apple-muted: var(--ink-muted);
+  --apple-bg: var(--surface-grouped);
+  --apple-surface: var(--surface);
+  --apple-blue: var(--accent);
+  --apple-blue-hover: var(--accent-hover);
+  --apple-nav-bg: rgba(28, 28, 30, 0.82);
+  --apple-nav-border: rgba(255, 255, 255, 0.1);
+
+  --art-primary: var(--accent);
+  --art-primary-dark: var(--accent-hover);
+  --art-blue: var(--accent);
+  --art-ink: var(--ink);
+  --art-muted: var(--ink-muted);
+  --art-shell: var(--surface-grouped);
+  --art-page-bg: var(--surface-grouped);
+  --art-border: rgba(255, 255, 255, 0.14);
+  --art-border-strong: rgba(255, 255, 255, 0.24);
+}
+
+/* Tailwind's pastel scales, re-toned for the dark theme.
+   Utilities such as bg-emerald-50 or text-rose-700 compile to
+   var(--color-emerald-50), so overriding the ramp here re-colours every widget
+   tint without touching the components. 50–400 become dark washes of the same
+   hue; 600+ become light text colours on those washes. */
+:root[data-theme='dark'] {
+  --color-slate-50: oklch(20% 0.003 247.858);
+  --color-slate-100: oklch(25% 0.007 247.896);
+  --color-slate-200: oklch(31% 0.013 255.508);
+  --color-slate-300: oklch(40% 0.022 252.894);
+  --color-slate-400: oklch(56% 0.04 256.788);
+  --color-slate-600: oklch(70% 0.043 257.281);
+  --color-slate-700: oklch(78% 0.044 257.287);
+  --color-slate-800: oklch(85% 0.041 260.031);
+  --color-slate-900: oklch(90% 0.042 265.755);
+  --color-slate-950: oklch(94% 0.042 264.695);
+  --color-gray-200: oklch(31% 0.006 264.531);
+
+  --color-red-50: oklch(20% 0.013 17.38);
+  --color-red-100: oklch(25% 0.032 17.717);
+  --color-red-600: oklch(70% 0.13 27.325);
+  --color-red-700: oklch(78% 0.12 27.518);
+
+  --color-rose-50: oklch(20% 0.015 12.422);
+  --color-rose-100: oklch(25% 0.03 12.58);
+  --color-rose-200: oklch(31% 0.058 10.001);
+  --color-rose-600: oklch(70% 0.13 17.585);
+  --color-rose-700: oklch(78% 0.12 16.935);
+  --color-rose-800: oklch(85% 0.1 13.697);
+
+  --color-orange-50: oklch(20% 0.016 73.684);
+  --color-orange-200: oklch(31% 0.076 70.697);
+  --color-orange-700: oklch(78% 0.12 38.402);
+
+  --color-amber-50: oklch(20% 0.022 95.277);
+  --color-amber-100: oklch(25% 0.059 95.617);
+  --color-amber-200: oklch(31% 0.09 95.746);
+  --color-amber-600: oklch(70% 0.13 58.318);
+  --color-amber-700: oklch(78% 0.12 48.998);
+  --color-amber-800: oklch(85% 0.1 46.201);
+  --color-amber-900: oklch(90% 0.07 45.904);
+  --color-amber-950: oklch(94% 0.05 45.635);
+
+  --color-lime-700: oklch(78% 0.12 131.589);
+
+  --color-emerald-50: oklch(20% 0.021 166.113);
+  --color-emerald-100: oklch(25% 0.052 163.051);
+  --color-emerald-200: oklch(31% 0.09 164.15);
+  --color-emerald-600: oklch(70% 0.13 163.225);
+  --color-emerald-700: oklch(78% 0.118 165.612);
+
+  --color-teal-700: oklch(78% 0.096 186.391);
+
+  --color-sky-50: oklch(20% 0.013 236.62);
+  --color-sky-100: oklch(25% 0.026 236.824);
+  --color-sky-200: oklch(31% 0.058 230.902);
+  --color-sky-400: oklch(56% 0.1 232.661);
+  --color-sky-600: oklch(70% 0.13 241.966);
+  --color-sky-700: oklch(78% 0.12 242.749);
+  --color-sky-800: oklch(85% 0.1 240.79);
+
+  --color-blue-50: oklch(20% 0.014 254.604);
+  --color-blue-100: oklch(25% 0.032 255.585);
+  --color-blue-600: oklch(70% 0.13 262.881);
+
+  --color-indigo-50: oklch(20% 0.018 272.314);
+  --color-indigo-200: oklch(31% 0.065 274.039);
+  --color-indigo-600: oklch(70% 0.13 276.966);
+
+  --color-violet-50: oklch(20% 0.016 293.756);
+  --color-violet-200: oklch(31% 0.057 293.283);
+  --color-violet-600: oklch(70% 0.13 293.009);
+  --color-violet-700: oklch(78% 0.12 292.581);
+
+  --color-purple-50: oklch(20% 0.014 308.299);
+  --color-purple-600: oklch(70% 0.13 302.321);
+  --color-purple-700: oklch(78% 0.12 301.924);
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -227,7 +466,7 @@
     display: block;
     font-size: var(--type-sm);
     font-weight: 600;
-    color: #334155;
+    color: var(--ink-secondary);
     margin-bottom: 0.5rem;
   }
 }
@@ -253,7 +492,7 @@
     min-height: 48px;
     padding: 0.75rem 1rem;
     border-radius: 11px;
-    border: 1.5px solid #cbd5e1;
+    border: 1.5px solid var(--hairline-strong);
     background: white;
     color: var(--art-ink);
     font-weight: 500;
@@ -267,7 +506,7 @@
   input[type='password']::placeholder,
   input[type='search']::placeholder,
   textarea::placeholder {
-    color: #6b7280;
+    color: var(--ink-muted);
     font-weight: 500;
   }
 
@@ -278,8 +517,8 @@
   input[type='number']:hover,
   textarea:hover,
   select:hover {
-    border-color: #a1aec8;
-    background: #fafbfc;
+    border-color: var(--hairline-strong);
+    background: var(--surface-subtle);
   }
 
   input[type='text']:focus,
@@ -293,7 +532,7 @@
     border-color: var(--art-primary);
     background: white;
     box-shadow:
-      0 0 0 3px rgba(0, 102, 204, 0.1),
+      0 0 0 3px var(--accent-ring),
       0 0 0 1px var(--art-primary);
   }
 
@@ -306,8 +545,8 @@
   select:disabled {
     opacity: 0.5;
     cursor: not-allowed;
-    background: #f1f5f9;
-    border-color: #e2e8f0;
+    background: var(--surface-chip);
+    border-color: var(--surface-chip);
   }
 }
 
@@ -406,9 +645,9 @@
 
 .art-soft-button,
 .action-btn {
-  border: 1px solid rgba(203, 213, 225, 0.85);
+  border: 1px solid var(--hairline-strong);
   background: white;
-  color: #334155;
+  color: var(--ink-secondary);
   box-shadow: var(--shadow-glass-sm);
 }
 
@@ -419,10 +658,10 @@
 
 .art-soft-button:hover:not(:disabled),
 .action-btn:hover:not(:disabled) {
-  border-color: rgba(0, 102, 204, 0.45);
+  border-color: var(--accent-border);
   background: white;
   color: var(--art-primary-dark);
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+  box-shadow: 0 1px 3px var(--hairline);
 }
 
 .art-soft-button:disabled {
@@ -471,28 +710,28 @@
 
 /* Success state: 4.5:1 contrast */
 .alert-success {
-  background: #dcfce7;
-  border: 1px solid #bbf7d0;
-  color: #15803d;
+  background: var(--success-soft);
+  border: 1px solid var(--success-soft);
+  color: var(--success-ink);
 }
 
 /* Warning state: 4.5:1 contrast */
 .alert-warning {
-  background: #fef3c7;
-  border: 1px solid #fde68a;
-  color: #92400e;
+  background: var(--warning-soft);
+  border: 1px solid var(--warning-soft);
+  color: var(--warning-ink);
 }
 
 /* Info state: 4.5:1 contrast */
 .alert-info {
-  background: #dbeafe;
-  border: 1px solid #bfdbfe;
-  color: #0c4a6e;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-soft);
+  color: var(--accent-text);
 }
 
 /* Skeleton Loading */
 .skeleton {
-  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background: linear-gradient(90deg, var(--surface-chip) 25%, var(--surface-chip) 50%, var(--surface-chip) 75%);
   background-size: 200% 100%;
   animation: skeleton-loading 1.5s ease-in-out infinite;
   border-radius: 8px;
@@ -674,7 +913,7 @@ button:focus-visible {
   position: absolute;
   top: -40px;
   left: 0;
-  background: var(--art-primary, #0066cc);
+  background: var(--art-primary, var(--accent));
   color: white;
   padding: 10px 20px;
   text-decoration: none;
@@ -851,10 +1090,10 @@ input[type='radio'],
 .art-swal-popup {
   width: min(28rem, calc(100vw - 2rem)) !important;
   border-radius: 28px !important;
-  border: 1px solid rgba(15, 23, 42, 0.06) !important;
+  border: 1px solid var(--hairline) !important;
   background:
-    radial-gradient(120% 70% at 50% -12%, rgba(0, 102, 204, 0.07), rgba(255, 255, 255, 0) 62%),
-    #ffffff !important;
+    radial-gradient(120% 70% at 50% -12%, var(--accent-soft-weak), rgba(255, 255, 255, 0) 62%),
+    var(--surface) !important;
   color: var(--art-ink) !important;
   box-shadow:
     0 40px 90px -24px rgba(15, 23, 42, 0.32),
@@ -878,7 +1117,7 @@ input[type='radio'],
   align-items: center !important;
   justify-content: center !important;
   line-height: 1 !important;
-  color: #fff !important;
+  color: #ffffff !important;
   background: linear-gradient(155deg, #34d399 0%, #10b981 48%, #059669 100%) !important;
   box-shadow:
     0 0 0 9px rgba(16, 185, 129, 0.09),
@@ -901,7 +1140,7 @@ input[type='radio'],
 }
 
 .art-swal-popup .art-swal-icon-error {
-  background: linear-gradient(155deg, #f87171 0%, #ef4444 48%, #dc2626 100%) !important;
+  background: linear-gradient(155deg, #f87171 0%, #ef4444 48%, var(--danger) 100%) !important;
   box-shadow:
     0 0 0 9px rgba(239, 68, 68, 0.09),
     0 16px 28px -12px rgba(220, 38, 38, 0.5) !important;
@@ -923,8 +1162,8 @@ input[type='radio'],
 
 /* Confirm / input dialogs keep the default icon, softened to match the card */
 .art-swal-popup .swal2-icon.swal2-question {
-  border-color: rgba(0, 102, 204, 0.2) !important;
-  background: rgba(0, 102, 204, 0.05) !important;
+  border-color: var(--accent-ring) !important;
+  background: var(--accent-soft-weak) !important;
   color: var(--art-primary) !important;
   margin: 0 auto 1.375rem !important;
 }
@@ -954,7 +1193,7 @@ input[type='radio'],
   margin-inline: auto !important;
   padding: 0 !important;
   max-width: 22rem;
-  color: #5a6472 !important;
+  color: var(--ink-muted) !important;
   font-size: 0.9375rem !important;
   font-weight: 500 !important;
   line-height: 1.6 !important;
@@ -993,7 +1232,7 @@ input[type='radio'],
 .art-swal-confirm {
   min-width: 9.5rem !important;
   border: 1px solid transparent !important;
-  background: linear-gradient(180deg, #0a7cdf 0%, #0066cc 100%) !important;
+  background: linear-gradient(180deg, var(--accent-hover) 0%, var(--accent) 100%) !important;
   color: white !important;
   box-shadow:
     0 10px 22px -10px rgba(0, 102, 204, 0.75),
@@ -1001,7 +1240,7 @@ input[type='radio'],
 }
 
 .art-swal-confirm:hover {
-  background: linear-gradient(180deg, #1683e6 0%, #0071e3 100%) !important;
+  background: linear-gradient(180deg, var(--accent-hover) 0%, var(--accent-hover) 100%) !important;
   transform: translateY(-1px) !important;
   box-shadow:
     0 14px 26px -10px rgba(0, 102, 204, 0.8),
@@ -1014,21 +1253,21 @@ input[type='radio'],
 
 .art-swal-confirm.art-swal-danger {
   border-color: rgba(220, 38, 38, 0.42) !important;
-  background: #dc2626 !important;
+  background: var(--danger) !important;
   box-shadow: 0 6px 14px rgba(220, 38, 38, 0.18) !important;
 }
 
 .art-swal-cancel,
 .art-swal-deny {
-  border: 1px solid rgba(203, 213, 225, 0.85) !important;
+  border: 1px solid var(--hairline-strong) !important;
   background: white !important;
-  color: #334155 !important;
+  color: var(--ink-secondary) !important;
   box-shadow: var(--shadow-glass-sm) !important;
 }
 
 .art-swal-cancel:hover,
 .art-swal-deny:hover {
-  border-color: rgba(0, 102, 204, 0.45) !important;
+  border-color: var(--accent-border) !important;
   color: var(--art-primary-dark) !important;
   transform: translateY(-1px) !important;
   box-shadow: 0 6px 14px rgba(15, 23, 42, 0.08) !important;
@@ -1044,14 +1283,14 @@ input[type='radio'],
 
 .art-swal-input {
   border-radius: var(--art-radius-lg) !important;
-  border: 1.5px solid rgba(203, 213, 225, 0.7) !important;
+  border: 1.5px solid var(--hairline-strong) !important;
   box-shadow: var(--shadow-glass-sm) !important;
   color: var(--art-ink) !important;
 }
 
 .swal2-toast {
   background: rgba(255, 255, 255, 0.96) !important;
-  border: 1px solid rgba(203, 213, 225, 0.75) !important;
+  border: 1px solid var(--hairline-strong) !important;
   box-shadow: var(--shadow-glass) !important;
   border-radius: var(--art-radius-lg) !important;
   padding: 0.875rem 1rem !important;
@@ -1137,7 +1376,7 @@ input[type='radio'],
 
 /* Apple HIG Shimmer Skeleton */
 .skeleton-shimmer {
-  background: linear-gradient(90deg, #f2f2f7 25%, #e5e5ea 50%, #f2f2f7 75%);
+  background: linear-gradient(90deg, var(--surface-grouped-2) 25%, var(--surface-chip) 50%, var(--surface-grouped-2) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite linear;
 }

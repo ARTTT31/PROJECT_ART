@@ -69,25 +69,25 @@ export function RegistrationPolicyCard() {
               onClick={() => setMode(opt.value)}
               className={`flex flex-col rounded-xl border p-3.5 text-left transition-all ${
                 mode === opt.value
-                  ? 'border-[#0066cc] bg-[#0066cc]/[0.04] ring-2 ring-[#0066cc]/20'
-                  : 'border-black/10 bg-white hover:bg-slate-50'
+                  ? 'border-[var(--accent)] bg-[var(--accent-soft-weak)] ring-2 ring-[var(--accent-ring)]'
+                  : 'border-[var(--hairline-strong)] bg-[var(--surface)] hover:bg-slate-50'
               } disabled:cursor-not-allowed disabled:opacity-50`}
             >
               <div className="mb-1 flex w-full items-center justify-between gap-2">
-                <span className="text-[13px] font-bold text-[#1d1d1f]">{opt.label}</span>
+                <span className="text-[13px] font-bold text-[var(--ink)]">{opt.label}</span>
                 {opt.badge && (
-                  <span className="shrink-0 rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-bold text-[#0066cc]">
+                  <span className="shrink-0 rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-bold text-[var(--accent-text)]">
                     {opt.badge}
                   </span>
                 )}
               </div>
-              <span className="text-[11.5px] leading-relaxed text-[#6e6e73]">{opt.desc}</span>
+              <span className="text-[11.5px] leading-relaxed text-[var(--ink-muted)]">{opt.desc}</span>
             </button>
           ))}
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-          <p className="flex items-center gap-1.5 text-[11.5px] text-[#86868b]">
+          <p className="flex items-center gap-1.5 text-[11.5px] text-[var(--ink-tertiary)]">
             <Info size={13} className="shrink-0" aria-hidden="true" />
             มีผลกับหน้าเข้าสู่ระบบของทุกคนทันทีหลังบันทึก
           </p>
@@ -95,7 +95,7 @@ export function RegistrationPolicyCard() {
             type="button"
             onClick={handleSave}
             disabled={isSaving || mode === (registrationMode || 'approval')}
-            className="inline-flex items-center gap-2 rounded-full bg-[#0066cc] px-5 py-2 text-[13px] font-bold text-white shadow-xs transition-all hover:bg-[#0071e3] active:scale-95 disabled:opacity-40"
+            className="inline-flex items-center gap-2 rounded-full bg-[var(--accent)] px-5 py-2 text-[13px] font-bold text-white shadow-xs transition-all hover:bg-[var(--accent-hover)] active:scale-95 disabled:opacity-40"
           >
             {isSaving ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
             <span>{isSaving ? 'กำลังบันทึก...' : 'บันทึกนโยบาย'}</span>

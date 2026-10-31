@@ -6,13 +6,23 @@ ART Workspace uses a refined Web/Desktop UI based on Apple Human Interface Guide
 
 ## Color
 
-- Primary: `#0066cc` (Apple Action Blue) — primary actions, active states, focus rings.
-- Hover / Focus: `#0071e3` — button hover and keyboard focus.
-- On dark surfaces: `#2997ff` (Sky Link Blue) for inline links.
-- Ink: `#1d1d1f` — body text and headings (high contrast).
-- Muted: `#6e6e73` — secondary labels and metadata.
-- Surfaces: pure white `#ffffff` for cards and widgets; `#f5f5f7` for the page background.
-- State colors: success `#34c759`, error `#ff3b30`, warning `#ff9500`.
+Colours are declared once as CSS custom properties in `frontend/src/app/globals.css` and consumed through arbitrary Tailwind values (`bg-[var(--surface)]`, `text-[var(--ink-muted)]`, `bg-[var(--accent)]`). Do not hard-code a light-mode hex in a component: it would stay light in dark mode and ignore the accent the user picked.
+
+- Accent: `--accent` (`#0066cc`, Apple Action Blue by default) — primary actions, active states, focus rings. `--accent-hover` is the hover tone, `--accent-text` is the accent used as text (brightened automatically in dark mode).
+- Ink: `--ink` `#1d1d1f` — body text and headings; `--ink-secondary`, `--ink-muted` `#6e6e73`, `--ink-tertiary`, `--ink-faint` for lower emphasis.
+- Surfaces: `--surface` `#ffffff` for cards and widgets, `--surface-grouped` `#f5f5f7` for the page background, plus `--surface-subtle`, `--surface-chip` and the `--glass-*` translucent fills.
+- Hairlines: `--hairline`, `--hairline-soft`, `--hairline-strong` (they flip from black-alpha to white-alpha in dark mode).
+- State colors: `--success` `#34c759`, `--danger` `#ff3b30`, `--warning` `#ff9500`, each with a `*-ink` text tone and a `*-soft` fill.
+
+## Theme (light / dark + accent)
+
+The user picks a mode and an accent in **โปรไฟล์ → ทางลัด & ปรับแต่งเมนู → ธีมและการแสดงผล**. The card writes `data-theme="light|dark"` and `data-accent="…"` on `<html>`; `globals.css` reacts to both. A pre-paint script in `app/layout.tsx` applies the saved choice before the first paint, so a dark reload never flashes white.
+
+- Modes: `system` (follows `prefers-color-scheme`), `light`, `dark`. Default is `system`.
+- Accents: ฟ้า (default), เขียวน้ำทะเล, คราม, ม่วง, ชมพู, ส้ม, เขียว, ดำเทา. Every accent keeps WCAG AA contrast with white button text.
+- The choice is stored per browser (`localStorage: art_theme_settings`) — it is a display preference, not workspace data.
+- Tailwind's pastel scales used by widgets (`bg-emerald-50`, `text-rose-700`, …) are re-toned inside `:root[data-theme='dark']`, so widget tints follow the theme without per-component classes.
+- New components must use the tokens above; a hard-coded hex is a bug because it breaks both dark mode and accent switching.
 
 ## Typography
 

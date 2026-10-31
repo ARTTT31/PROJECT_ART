@@ -130,13 +130,13 @@ export default function Sidebar({
 
   return (
     <aside
-      className={`fixed left-0 top-0 z-40 h-screen w-[80vw] max-w-64 border-r border-black/[0.06] bg-[rgba(255,255,255,0.82)] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.04)] text-[#1d1d1f] transition-transform duration-300 ease-out ${
+      className={`fixed left-0 top-0 z-40 h-screen w-[80vw] max-w-64 border-r border-[var(--hairline)] bg-[rgba(255,255,255,0.82)] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.04)] text-[var(--ink)] transition-transform duration-300 ease-out ${
         isOpen ? 'translate-x-0' : '-translate-x-full'
       } ${isCollapsed ? 'lg:-translate-x-full' : 'lg:translate-x-0'}`}
     >
       <div className="flex h-full flex-col">
         {/* Brand Header */}
-        <div className="flex items-center gap-3 px-4 py-3.5 border-b border-black/[0.06] bg-white/40">
+        <div className="flex items-center gap-3 px-4 py-3.5 border-b border-[var(--hairline)] bg-[var(--glass-40)]">
           <Image
             src={brandLogoUrl || '/art-workspace-mark.svg'}
             alt={companyName}
@@ -146,10 +146,10 @@ export default function Sidebar({
             priority
           />
           <div className="min-w-0 flex-1">
-            <h2 className="truncate text-[13.5px] font-bold text-[#1d1d1f] tracking-tight">
+            <h2 className="truncate text-[13.5px] font-bold text-[var(--ink)] tracking-tight">
               {companyName}
             </h2>
-            <p className="truncate text-[11px] text-[#86868b]">{companyTagline || 'Workspace'}</p>
+            <p className="truncate text-[11px] text-[var(--ink-tertiary)]">{companyTagline || 'Workspace'}</p>
           </div>
         </div>
 
@@ -158,7 +158,7 @@ export default function Sidebar({
           <div className="space-y-6">
             {menuSections.map((section) => (
               <div key={section.title}>
-                <div className="mb-1.5 px-3 text-[11px] font-semibold tracking-wide text-[#86868b]">
+                <div className="mb-1.5 px-3 text-[11px] font-semibold tracking-wide text-[var(--ink-tertiary)]">
                   {section.title}
                 </div>
                 <ul className="space-y-1">
@@ -174,16 +174,16 @@ export default function Sidebar({
                           rel={item.external ? 'noopener noreferrer' : undefined}
                           className={`group flex min-h-[48px] items-center gap-2.5 rounded-[11px] px-3 py-2 text-[14px] font-semibold transition-all duration-150 active:scale-[0.95] ${
                             isActive
-                              ? 'bg-[#0066cc] text-white'
-                              : 'text-[#1d1d1f] hover:bg-black/[0.05] hover:text-[#1d1d1f]'
+                              ? 'bg-[var(--accent)] text-white'
+                              : 'text-[var(--ink)] hover:bg-black/[0.05] hover:text-[var(--ink)]'
                           }`}
                           onClick={() => !item.external && onClose()}
                         >
                           <span
                             className={`flex h-7 w-7 items-center justify-center rounded-[8px] transition-colors ${
                               isActive
-                                ? 'bg-white/20 text-white'
-                                : 'text-[#6e6e73] group-hover:text-[#1d1d1f]'
+                                ? 'bg-[var(--glass-20)] text-white'
+                                : 'text-[var(--ink-muted)] group-hover:text-[var(--ink)]'
                             }`}
                           >
                             {item.icon}
@@ -195,8 +195,8 @@ export default function Sidebar({
                             <span
                               className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
                                 isActive
-                                  ? 'bg-white/20 text-white'
-                                  : 'bg-[#ff9500]/10 text-[#ff9500]'
+                                  ? 'bg-[var(--glass-20)] text-white'
+                                  : 'bg-[var(--warning-soft)] text-[var(--warning)]'
                               }`}
                             >
                               {item.wipLabel || 'WIP'}
@@ -207,7 +207,7 @@ export default function Sidebar({
                             <ExternalLink
                               size={12}
                               aria-hidden="true"
-                              className={isActive ? 'text-white/70' : 'text-[#86868b]'}
+                              className={isActive ? 'text-white/70' : 'text-[var(--ink-tertiary)]'}
                             />
                           )}
                         </ItemComponent>
@@ -221,17 +221,17 @@ export default function Sidebar({
         </nav>
 
         {/* Logout Button */}
-        <div className="border-t border-black/[0.06] p-3.5">
+        <div className="border-t border-[var(--hairline)] p-3.5">
           <button
             type="button"
             onClick={() => {
               onClose();
               onLogout();
             }}
-            className="flex min-h-[48px] w-full items-center gap-2.5 rounded-[11px] px-3 py-2 text-[14px] font-semibold text-[#ff3b30] transition-all duration-150 hover:bg-[#ff3b30]/10 active:scale-[0.95] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#ff3b30]"
+            className="flex min-h-[48px] w-full items-center gap-2.5 rounded-[11px] px-3 py-2 text-[14px] font-semibold text-[var(--danger)] transition-all duration-150 hover:bg-[var(--danger-soft)] active:scale-[0.95] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--danger)]"
             aria-label="ออกจากระบบ"
           >
-            <span className="flex h-7 w-7 items-center justify-center rounded-[8px] bg-[#ff3b30]/10 text-[#ff3b30]">
+            <span className="flex h-7 w-7 items-center justify-center rounded-[8px] bg-[var(--danger-soft)] text-[var(--danger)]">
               <LogOut size={16} aria-hidden="true" />
             </span>
             <span>ออกจากระบบ</span>

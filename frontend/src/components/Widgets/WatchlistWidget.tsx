@@ -148,31 +148,31 @@ export default function WatchlistWidget({
   if (loading) {
     return (
       <div
-        className="flex h-full min-h-[300px] items-center justify-center rounded-[18px] border border-black/[0.06] bg-white p-5"
+        className="flex h-full min-h-[300px] items-center justify-center rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] p-5"
         role="status"
         aria-live="polite"
         aria-label="กำลังโหลดรายการติดตาม"
       >
-        <Loader2 className="h-5 w-5 animate-spin text-[#0066cc]" aria-hidden="true" />
+        <Loader2 className="h-5 w-5 animate-spin text-[var(--accent-text)]" aria-hidden="true" />
       </div>
     );
   }
 
   return (
     <section
-      className="flex h-full flex-col rounded-[18px] border border-black/[0.06] bg-white p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)]"
+      className="flex h-full flex-col rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)]"
       aria-labelledby="watchlist-title"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[#5856d6]/10 text-[#4b49bd]">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[var(--info-soft)] text-[var(--info-ink)]">
             <TrendingUp size={20} aria-hidden="true" />
           </div>
           <div className="min-w-0">
-            <h3 id="watchlist-title" className="truncate text-[16px] font-bold tracking-tight text-[#1d1d1f]">
+            <h3 id="watchlist-title" className="truncate text-[16px] font-bold tracking-tight text-[var(--ink)]">
               รายการติดตาม
             </h3>
-            <p className="mt-0.5 truncate text-[12px] text-[#86868b]">
+            <p className="mt-0.5 truncate text-[12px] text-[var(--ink-tertiary)]">
               {symbols.length > 0
                 ? `${symbols.length} สัญลักษณ์ · เพิ่มขึ้น ${up}`
                 : 'ติดตามหุ้น คริปโต หรือค่าเงินที่สนใจ'}
@@ -197,13 +197,13 @@ export default function WatchlistWidget({
           placeholder="เพิ่มสัญลักษณ์ เช่น PTT.BK"
           aria-label="เพิ่มสัญลักษณ์ในรายการติดตาม"
           maxLength={24}
-          className="min-w-0 flex-1 rounded-xl border border-black/10 bg-white px-3 py-2 text-[13px] uppercase text-[#1d1d1f] placeholder:normal-case placeholder:text-[#86868b] focus:border-[#0066cc] focus:outline-hidden focus:ring-2 focus:ring-[#0066cc]/20"
+          className="min-w-0 flex-1 rounded-xl border border-[var(--hairline-strong)] bg-[var(--surface)] px-3 py-2 text-[13px] uppercase text-[var(--ink)] placeholder:normal-case placeholder:text-[var(--ink-tertiary)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
         />
         <button
           type="submit"
           disabled={!draft.trim()}
           aria-label="เพิ่มสัญลักษณ์"
-          className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#0066cc] text-white transition-all hover:bg-[#0071e3] active:scale-95 disabled:opacity-40"
+          className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--accent)] text-white transition-all hover:bg-[var(--accent-hover)] active:scale-95 disabled:opacity-40"
         >
           <Plus size={16} aria-hidden="true" />
         </button>
@@ -211,14 +211,14 @@ export default function WatchlistWidget({
           type="button"
           onClick={() => void loadQuotes(symbols)}
           aria-label="รีเฟรชราคา"
-          className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#f2f2f7] text-[#1d1d1f] transition-colors hover:bg-[#e5e5ea]"
+          className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--surface-grouped-2)] text-[var(--ink)] transition-colors hover:bg-[var(--surface-chip)]"
         >
           <RefreshCw size={15} className={refreshing ? 'animate-spin' : undefined} aria-hidden="true" />
         </button>
       </form>
 
       {error && (
-        <p role="alert" className="mt-2.5 rounded-[10px] bg-[#ff3b30]/[0.07] px-3 py-1.5 text-[12px] text-[#b42318]">
+        <p role="alert" className="mt-2.5 rounded-[10px] bg-[var(--danger-soft)] px-3 py-1.5 text-[12px] text-[var(--danger-ink)]">
           {error}
         </p>
       )}
@@ -228,8 +228,8 @@ export default function WatchlistWidget({
         aria-label="รายการติดตาม"
       >
         {symbols.length === 0 ? (
-          <li className="flex min-h-[110px] flex-col items-center justify-center rounded-[14px] border border-dashed border-black/[0.08] bg-[#f8f8fa] px-3.5 py-5 text-center text-[12.5px] text-[#86868b]">
-            <TrendingUp size={20} className="mb-2 text-[#a1a1a6]" aria-hidden="true" />
+          <li className="flex min-h-[110px] flex-col items-center justify-center rounded-[14px] border border-dashed border-[var(--hairline)] bg-[var(--surface-subtle)] px-3.5 py-5 text-center text-[12.5px] text-[var(--ink-tertiary)]">
+            <TrendingUp size={20} className="mb-2 text-[var(--ink-faint)]" aria-hidden="true" />
             <span>ยังไม่มีรายการติดตาม</span>
             <span className="mt-0.5 text-[11px]">ลองพิมพ์ PTT.BK, AAPL หรือ BTC-USD</span>
           </li>
@@ -241,25 +241,25 @@ export default function WatchlistWidget({
             return (
               <li
                 key={item.symbol}
-                className="group flex items-center gap-2.5 rounded-[12px] bg-[#f5f5f7] px-3 py-2"
+                className="group flex items-center gap-2.5 rounded-[12px] bg-[var(--surface-grouped)] px-3 py-2"
               >
                 <div className="min-w-0 flex-1">
-                  <span className="block truncate text-[12.5px] font-bold text-[#1d1d1f]">
+                  <span className="block truncate text-[12.5px] font-bold text-[var(--ink)]">
                     {item.symbol}
                   </span>
                   {quote?.name && (
-                    <span className="block truncate text-[10.5px] text-[#86868b]">{quote.name}</span>
+                    <span className="block truncate text-[10.5px] text-[var(--ink-tertiary)]">{quote.name}</span>
                   )}
                 </div>
 
                 <div className="shrink-0 text-right">
-                  <span className="block tabular-nums text-[12.5px] font-bold text-[#1d1d1f]">
+                  <span className="block tabular-nums text-[12.5px] font-bold text-[var(--ink)]">
                     {quote?.price != null ? priceFormat.format(quote.price) : '—'}
                   </span>
                   {change != null && (
                     <span
                       className={`block tabular-nums text-[10.5px] font-semibold ${
-                        isUp ? 'text-[#248a3d]' : 'text-[#b42318]'
+                        isUp ? 'text-[var(--success-ink)]' : 'text-[var(--danger-ink)]'
                       }`}
                     >
                       {isUp ? '+' : ''}
@@ -272,7 +272,7 @@ export default function WatchlistWidget({
                   type="button"
                   onClick={() => removeSymbol(item.symbol)}
                   aria-label={`เลิกติดตาม ${item.symbol}`}
-                  className="shrink-0 rounded-full p-1 text-[#86868b] opacity-100 transition-colors hover:bg-white hover:text-[#ff3b30] md:opacity-0 md:group-hover:opacity-100"
+                  className="shrink-0 rounded-full p-1 text-[var(--ink-tertiary)] opacity-100 transition-colors hover:bg-[var(--surface)] hover:text-[var(--danger)] md:opacity-0 md:group-hover:opacity-100"
                 >
                   <Trash2 size={13} aria-hidden="true" />
                 </button>
@@ -282,7 +282,7 @@ export default function WatchlistWidget({
         )}
       </ul>
 
-      <div className="mt-3 flex items-center justify-between border-t border-black/[0.05] pt-2 text-[10px] text-[#475569]">
+      <div className="mt-3 flex items-center justify-between border-t border-[var(--hairline-soft)] pt-2 text-[10px] text-[var(--ink-secondary)]">
         <span>ราคาจาก Yahoo Finance · อาจล่าช้า</span>
         <span className="inline-flex items-center gap-1">
           {refreshing && <Loader2 size={10} className="animate-spin" aria-hidden="true" />}

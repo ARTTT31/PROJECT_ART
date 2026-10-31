@@ -88,7 +88,7 @@ export default function AdminPage() {
   if (!isClient || (user && !isAdmin)) {
     return (
       <div className="flex min-h-[480px] items-center justify-center" role="status">
-        <Loader2 size={22} className="animate-spin text-[#86868b]" aria-hidden="true" />
+        <Loader2 size={22} className="animate-spin text-[var(--ink-tertiary)]" aria-hidden="true" />
       </div>
     );
   }
@@ -96,24 +96,24 @@ export default function AdminPage() {
   return (
     <div className="space-y-4">
       {/* ── Overview ─────────────────────────────────────────────── */}
-      <section className="overflow-hidden rounded-[18px] border border-black/[0.06] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
-        <div className="flex flex-wrap items-start justify-between gap-3 border-b border-black/[0.05] bg-[#fafafc] px-5 py-4 sm:px-6">
+      <section className="overflow-hidden rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+        <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[var(--hairline-soft)] bg-[var(--surface-subtle)] px-5 py-4 sm:px-6">
           <div className="flex min-w-0 items-start gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[#5856d6]/10 text-[#4b49bd] ring-1 ring-[#5856d6]/15">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[var(--info-soft)] text-[var(--info-ink)] ring-1 ring-[var(--info-soft)]">
               <ShieldCheck size={20} aria-hidden="true" />
             </div>
             <div className="min-w-0">
-              <h1 className="text-[16px] font-bold tracking-tight text-[#1d1d1f]">
+              <h1 className="text-[16px] font-bold tracking-tight text-[var(--ink)]">
                 จัดการระบบ
               </h1>
-              <p className="mt-0.5 text-[12px] leading-snug text-[#6e6e73]">
+              <p className="mt-0.5 text-[12px] leading-snug text-[var(--ink-muted)]">
                 คำขอสมัคร สิทธิ์การใช้งาน และประวัติกิจกรรมของทั้ง workspace
               </p>
             </div>
           </div>
           <Link
             href="/profile?tab=preferences"
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-white px-3.5 py-2 text-[12.5px] font-semibold text-[#1d1d1f] shadow-xs ring-1 ring-black/[0.08] transition-all duration-150 hover:bg-[#f5f5f7] active:scale-95"
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[var(--surface)] px-3.5 py-2 text-[12.5px] font-semibold text-[var(--ink)] shadow-xs ring-1 ring-[var(--hairline)] transition-all duration-150 hover:bg-[var(--surface-grouped)] active:scale-95"
           >
             <SlidersHorizontal size={14} aria-hidden="true" />
             จัดการเมนูหลัก
@@ -123,48 +123,48 @@ export default function AdminPage() {
         <div className="grid grid-cols-1 gap-3 p-5 sm:grid-cols-2 sm:p-6">
           <Link
             href="/audit"
-            className="group flex items-center justify-between gap-3 rounded-[14px] border border-black/[0.06] bg-white px-4 py-3.5 transition-all duration-150 hover:-translate-y-px hover:border-[#0066cc]/25 hover:shadow-[0_8px_18px_-12px_rgba(0,0,0,0.4)]"
+            className="group flex items-center justify-between gap-3 rounded-[14px] border border-[var(--hairline)] bg-[var(--surface)] px-4 py-3.5 transition-all duration-150 hover:-translate-y-px hover:border-[var(--accent-border)] hover:shadow-[0_8px_18px_-12px_rgba(0,0,0,0.4)]"
           >
             <div className="min-w-0">
-              <p className="flex items-center gap-1.5 text-[12px] font-semibold text-[#6e6e73]">
+              <p className="flex items-center gap-1.5 text-[12px] font-semibold text-[var(--ink-muted)]">
                 <FileText size={13} aria-hidden="true" />
                 บันทึกกิจกรรม
               </p>
-              <p className="mt-1 text-[22px] font-extrabold leading-none tabular-nums text-[#1d1d1f]">
+              <p className="mt-1 text-[22px] font-extrabold leading-none tabular-nums text-[var(--ink)]">
                 {events.loading ? '—' : (events.value ?? '—')}
               </p>
-              <p className="mt-1 text-[11px] text-[#a1a1a6]">รายการที่บันทึกไว้ทั้งหมด</p>
+              <p className="mt-1 text-[11px] text-[var(--ink-faint)]">รายการที่บันทึกไว้ทั้งหมด</p>
             </div>
             <ArrowRight
               size={16}
               aria-hidden="true"
-              className="shrink-0 text-[#c7c7cc] transition-all group-hover:translate-x-0.5 group-hover:text-[#0066cc]"
+              className="shrink-0 text-[var(--ink-divider)] transition-all group-hover:translate-x-0.5 group-hover:text-[var(--accent-text)]"
             />
           </Link>
 
           <Link
             href="#approval-queue"
-            className="group flex items-center justify-between gap-3 rounded-[14px] border border-black/[0.06] bg-white px-4 py-3.5 transition-all duration-150 hover:-translate-y-px hover:border-[#0066cc]/25 hover:shadow-[0_8px_18px_-12px_rgba(0,0,0,0.4)]"
+            className="group flex items-center justify-between gap-3 rounded-[14px] border border-[var(--hairline)] bg-[var(--surface)] px-4 py-3.5 transition-all duration-150 hover:-translate-y-px hover:border-[var(--accent-border)] hover:shadow-[0_8px_18px_-12px_rgba(0,0,0,0.4)]"
           >
             <div className="min-w-0">
-              <p className="flex items-center gap-1.5 text-[12px] font-semibold text-[#6e6e73]">
+              <p className="flex items-center gap-1.5 text-[12px] font-semibold text-[var(--ink-muted)]">
                 <UserPlus size={13} aria-hidden="true" />
                 รออนุมัติ
               </p>
-              <p className="mt-1 text-[22px] font-extrabold leading-none tabular-nums text-[#1d1d1f]">
+              <p className="mt-1 text-[22px] font-extrabold leading-none tabular-nums text-[var(--ink)]">
                 {pending.loading ? '—' : (pending.value ?? '—')}
               </p>
-              <p className="mt-1 text-[11px] text-[#a1a1a6]">คำขอสมัครสมาชิกที่รอการตัดสินใจ</p>
+              <p className="mt-1 text-[11px] text-[var(--ink-faint)]">คำขอสมัครสมาชิกที่รอการตัดสินใจ</p>
             </div>
             <ArrowRight
               size={16}
               aria-hidden="true"
-              className="shrink-0 text-[#c7c7cc] transition-all group-hover:translate-x-0.5 group-hover:text-[#0066cc]"
+              className="shrink-0 text-[var(--ink-divider)] transition-all group-hover:translate-x-0.5 group-hover:text-[var(--accent-text)]"
             />
           </Link>
         </div>
 
-        <div className="flex items-center gap-1.5 border-t border-black/[0.05] px-5 py-2.5 text-[10.5px] text-[#a1a1a6] sm:px-6">
+        <div className="flex items-center gap-1.5 border-t border-[var(--hairline-soft)] px-5 py-2.5 text-[10.5px] text-[var(--ink-faint)] sm:px-6">
           <Clock3 size={11} aria-hidden="true" />
           ข้อมูลอัปเดตเมื่อเปิดหน้านี้ — กดรีเฟรชเพื่อดูใหม่
         </div>

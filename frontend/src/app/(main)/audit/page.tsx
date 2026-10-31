@@ -72,15 +72,15 @@ const ACTION_OPTIONS = Object.keys(ACTION_LABELS);
 
 function actionTone(action: string) {
   if (action.includes('FAIL') || action.includes('BLOCK') || action.includes('DELETE')) {
-    return 'bg-[#ff3b30]/10 text-[#b42318]';
+    return 'bg-[var(--danger-soft)] text-[var(--danger-ink)]';
   }
   if (action.includes('ADMIN') || action.includes('BRANDING')) {
-    return 'bg-[#5856d6]/10 text-[#4b49bd]';
+    return 'bg-[var(--info-soft)] text-[var(--info-ink)]';
   }
   if (action.startsWith('LOGIN') || action === 'LOGOUT') {
-    return 'bg-[#0066cc]/10 text-[#0055aa]';
+    return 'bg-[var(--accent-soft)] text-[var(--accent-text)]';
   }
-  return 'bg-[#34c759]/10 text-[#248a3d]';
+  return 'bg-[var(--success-soft)] text-[var(--success-ink)]';
 }
 
 function formatDate(value: string) {
@@ -171,15 +171,15 @@ export default function AuditPage() {
 
   return (
     <div className="space-y-5">
-      <section className="rounded-[18px] border border-black/[0.06] bg-white p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+      <section className="rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-start gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[#0066cc]/10 text-[#0066cc]">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[var(--accent-soft)] text-[var(--accent-text)]">
               <FileText size={20} aria-hidden="true" />
             </div>
             <div>
-              <h2 className="text-[17px] font-bold tracking-tight text-[#1d1d1f]">บันทึกกิจกรรม</h2>
-              <p className="mt-0.5 text-[12.5px] text-[#6e6e73]">
+              <h2 className="text-[17px] font-bold tracking-tight text-[var(--ink)]">บันทึกกิจกรรม</h2>
+              <p className="mt-0.5 text-[12.5px] text-[var(--ink-muted)]">
                 ประวัติการเข้าสู่ระบบ การแก้ไขข้อมูล และการจัดการบัญชี — เห็นเฉพาะผู้ดูแลระบบ
               </p>
             </div>
@@ -188,7 +188,7 @@ export default function AuditPage() {
           <button
             type="button"
             onClick={() => void load()}
-            className="inline-flex shrink-0 items-center gap-1.5 self-start rounded-full bg-[#f5f5f7] px-4 py-2 text-[13px] font-semibold text-[#1d1d1f] transition-colors hover:bg-[#e5e5ea] sm:self-auto"
+            className="inline-flex shrink-0 items-center gap-1.5 self-start rounded-full bg-[var(--surface-grouped)] px-4 py-2 text-[13px] font-semibold text-[var(--ink)] transition-colors hover:bg-[var(--surface-chip)] sm:self-auto"
           >
             <RotateCw size={14} aria-hidden="true" /> รีเฟรช
           </button>
@@ -198,7 +198,7 @@ export default function AuditPage() {
           <div className="relative flex-1">
             <Search
               size={15}
-              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#86868b]"
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--ink-tertiary)]"
               aria-hidden="true"
             />
             <input
@@ -207,7 +207,7 @@ export default function AuditPage() {
               onChange={(event) => setSearch(event.target.value)}
               placeholder="ค้นหารายละเอียด ชื่อ หรืออีเมล"
               aria-label="ค้นหาบันทึกกิจกรรม"
-              className="w-full rounded-xl border border-black/10 bg-white py-2 pl-9 pr-3 text-[13px] text-[#1d1d1f] placeholder:text-[#86868b] focus:border-[#0066cc] focus:outline-hidden focus:ring-2 focus:ring-[#0066cc]/20"
+              className="w-full rounded-xl border border-[var(--hairline-strong)] bg-[var(--surface)] py-2 pl-9 pr-3 text-[13px] text-[var(--ink)] placeholder:text-[var(--ink-tertiary)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
             />
           </div>
           <Select
@@ -224,26 +224,26 @@ export default function AuditPage() {
         </div>
       </section>
 
-      <section className="rounded-[18px] border border-black/[0.06] bg-white p-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)] sm:p-5">
+      <section className="rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] p-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)] sm:p-5">
         {loading ? (
           <div
             role="status"
             aria-live="polite"
             className="flex min-h-[240px] items-center justify-center"
           >
-            <Loader2 className="h-5 w-5 animate-spin text-[#0066cc]" aria-hidden="true" />
+            <Loader2 className="h-5 w-5 animate-spin text-[var(--accent-text)]" aria-hidden="true" />
           </div>
         ) : error ? (
           <div
             role="alert"
-            className="flex items-start gap-2 rounded-[14px] border border-[#ff3b30]/15 bg-[#ff3b30]/[0.06] p-4 text-[13px] text-[#b42318]"
+            className="flex items-start gap-2 rounded-[14px] border border-[var(--danger-soft)] bg-[var(--danger-soft)] p-4 text-[13px] text-[var(--danger-ink)]"
           >
             <AlertCircle size={16} className="mt-0.5 shrink-0" aria-hidden="true" />
             <span>{error}</span>
           </div>
         ) : items.length === 0 ? (
-          <div className="flex min-h-[200px] flex-col items-center justify-center rounded-[14px] border border-dashed border-black/[0.08] bg-[#f8f8fa] px-4 text-center text-[13px] text-[#86868b]">
-            <FileText size={22} className="mb-2 text-[#a1a1a6]" aria-hidden="true" />
+          <div className="flex min-h-[200px] flex-col items-center justify-center rounded-[14px] border border-dashed border-[var(--hairline)] bg-[var(--surface-subtle)] px-4 text-center text-[13px] text-[var(--ink-tertiary)]">
+            <FileText size={22} className="mb-2 text-[var(--ink-faint)]" aria-hidden="true" />
             <span>ไม่พบบันทึกกิจกรรมที่ตรงกับเงื่อนไข</span>
           </div>
         ) : (
@@ -251,7 +251,7 @@ export default function AuditPage() {
             {items.map((entry) => (
               <li
                 key={entry.id}
-                className="flex flex-col gap-2 rounded-[14px] bg-[#f8f8fa] p-3.5 sm:flex-row sm:items-center sm:justify-between"
+                className="flex flex-col gap-2 rounded-[14px] bg-[var(--surface-subtle)] p-3.5 sm:flex-row sm:items-center sm:justify-between"
               >
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
@@ -260,18 +260,18 @@ export default function AuditPage() {
                     >
                       {ACTION_LABELS[entry.action] ?? entry.action}
                     </span>
-                    <span className="text-[12px] font-semibold text-[#1d1d1f]">
+                    <span className="text-[12px] font-semibold text-[var(--ink)]">
                       {entry.user?.name || entry.user?.email || 'ระบบ'}
                     </span>
                   </div>
                   {entry.details && (
-                    <p className="mt-1 break-words text-[12.5px] leading-relaxed text-[#6e6e73]">
+                    <p className="mt-1 break-words text-[12.5px] leading-relaxed text-[var(--ink-muted)]">
                       {entry.details}
                     </p>
                   )}
                 </div>
 
-                <div className="shrink-0 text-left text-[11.5px] text-[#86868b] sm:text-right">
+                <div className="shrink-0 text-left text-[11.5px] text-[var(--ink-tertiary)] sm:text-right">
                   <div className="tabular-nums">{formatDate(entry.created_at)}</div>
                   {entry.ip_address && <div className="tabular-nums">{entry.ip_address}</div>}
                 </div>
@@ -280,14 +280,14 @@ export default function AuditPage() {
           </ul>
         )}
 
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-black/[0.06] pt-3 text-[12px] text-[#6e6e73]">
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-[var(--hairline)] pt-3 text-[12px] text-[var(--ink-muted)]">
           <span>{rangeLabel}</span>
           <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={() => setPage((current) => Math.max(1, current - 1))}
               disabled={!hasPrev || loading}
-              className="inline-flex items-center gap-1 rounded-full bg-[#f5f5f7] px-3 py-1.5 font-semibold text-[#1d1d1f] transition-colors hover:bg-[#e5e5ea] disabled:opacity-40"
+              className="inline-flex items-center gap-1 rounded-full bg-[var(--surface-grouped)] px-3 py-1.5 font-semibold text-[var(--ink)] transition-colors hover:bg-[var(--surface-chip)] disabled:opacity-40"
             >
               <ChevronLeft size={14} aria-hidden="true" /> ก่อนหน้า
             </button>
@@ -298,7 +298,7 @@ export default function AuditPage() {
               type="button"
               onClick={() => setPage((current) => current + 1)}
               disabled={!hasNext || loading}
-              className="inline-flex items-center gap-1 rounded-full bg-[#f5f5f7] px-3 py-1.5 font-semibold text-[#1d1d1f] transition-colors hover:bg-[#e5e5ea] disabled:opacity-40"
+              className="inline-flex items-center gap-1 rounded-full bg-[var(--surface-grouped)] px-3 py-1.5 font-semibold text-[var(--ink)] transition-colors hover:bg-[var(--surface-chip)] disabled:opacity-40"
             >
               ถัดไป <ChevronRight size={14} aria-hidden="true" />
             </button>

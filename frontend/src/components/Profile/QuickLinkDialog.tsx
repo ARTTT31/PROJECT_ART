@@ -115,11 +115,11 @@ export function QuickLinkDialog({ open, onOpenChange, link, onSubmit }: QuickLin
         <form onSubmit={handleSubmit}>
           <DialogBody className="space-y-4">
             {/* Preview card */}
-            <div className="rounded-[18px] bg-[#f5f5f7] p-3.5 ring-1 ring-black/[0.04]">
-              <div className="text-[10px] font-bold uppercase tracking-wider text-[#86868b] mb-2">
+            <div className="rounded-[18px] bg-[var(--surface-grouped)] p-3.5 ring-1 ring-black/[0.04]">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--ink-tertiary)] mb-2">
                 ตัวอย่างการแสดงผล
               </div>
-              <div className="flex items-center gap-3 rounded-2xl bg-white p-3 ring-1 ring-black/[0.06] shadow-xs">
+              <div className="flex items-center gap-3 rounded-2xl bg-[var(--surface)] p-3 ring-1 ring-[var(--hairline)] shadow-xs">
                 <div
                   className="flex h-10 w-10 items-center justify-center rounded-[14px]"
                   style={{ backgroundColor: `${color}15` }}
@@ -127,10 +127,10 @@ export function QuickLinkDialog({ open, onOpenChange, link, onSubmit }: QuickLin
                   <PreviewIcon size={17} aria-hidden="true" style={{ color }} />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <span className="block truncate text-[13.5px] font-bold tracking-tight text-[#1d1d1f]">
+                  <span className="block truncate text-[13.5px] font-bold tracking-tight text-[var(--ink)]">
                     {label || 'ชื่อลิงก์ (เช่น Gmail)'}
                   </span>
-                  <span className="mt-0.5 block truncate text-[11px] text-[#6e6e73]">
+                  <span className="mt-0.5 block truncate text-[11px] text-[var(--ink-muted)]">
                     {previewMeta.title}
                   </span>
                 </div>
@@ -172,13 +172,13 @@ export function QuickLinkDialog({ open, onOpenChange, link, onSubmit }: QuickLin
 
             {/* Icon Picker (with scroll container to avoid huge modal on laptops/phones) */}
             <div>
-              <label className="mb-1.5 ml-1 block text-[11px] font-bold tracking-wide uppercase text-[#6e6e73]">
+              <label className="mb-1.5 ml-1 block text-[11px] font-bold tracking-wide uppercase text-[var(--ink-muted)]">
                 ไอคอน ·{' '}
-                <span className="text-[#0066cc] font-normal normal-case tracking-normal">
+                <span className="text-[var(--accent-text)] font-normal normal-case tracking-normal">
                   {previewIconLabel}
                 </span>
               </label>
-              <div className="rounded-2xl bg-[#f8fafc] p-2 ring-1 ring-black/[0.04] max-h-44 overflow-y-auto">
+              <div className="rounded-2xl bg-[var(--surface-subtle)] p-2 ring-1 ring-black/[0.04] max-h-44 overflow-y-auto">
                 <div className="grid grid-cols-6 sm:grid-cols-8 gap-1.5">
                   {QUICK_LINK_ICON_OPTIONS.map((option) => {
                     const OptionIcon = QUICK_LINK_ICON_MAP[option.key];
@@ -193,14 +193,14 @@ export function QuickLinkDialog({ open, onOpenChange, link, onSubmit }: QuickLin
                         className={[
                           'relative flex h-9 w-9 items-center justify-center rounded-xl transition-all duration-150',
                           active
-                            ? 'bg-white shadow-xs ring-2 ring-[#0066cc]'
-                            : 'bg-white/50 hover:bg-white ring-1 ring-black/[0.04] hover:ring-black/[0.08]',
+                            ? 'bg-[var(--surface)] shadow-xs ring-2 ring-[var(--accent)]'
+                            : 'bg-[var(--glass-60)] hover:bg-[var(--surface)] ring-1 ring-black/[0.04] hover:ring-[var(--hairline)]',
                         ].join(' ')}
                       >
                         <OptionIcon
                           size={15}
                           aria-hidden="true"
-                          className={active ? 'text-[#0066cc]' : 'text-slate-500'}
+                          className={active ? 'text-[var(--accent-text)]' : 'text-slate-500'}
                         />
                       </button>
                     );
@@ -212,19 +212,19 @@ export function QuickLinkDialog({ open, onOpenChange, link, onSubmit }: QuickLin
             {/* Color Picker */}
             <div>
               <div className="mb-1.5 ml-1 flex items-center justify-between">
-                <label className="text-[11px] font-bold tracking-wide uppercase text-[#6e6e73]">
+                <label className="text-[11px] font-bold tracking-wide uppercase text-[var(--ink-muted)]">
                   สีของไอคอน
                 </label>
                 <div className="flex items-center gap-1.5">
                   <div
-                    className="h-4 w-4 rounded-md ring-1 ring-black/10"
+                    className="h-4 w-4 rounded-md ring-1 ring-[var(--hairline-strong)]"
                     style={{ backgroundColor: color }}
                     aria-hidden="true"
                   />
-                  <span className="text-[10px] font-mono text-[#6e6e73] uppercase">{color}</span>
+                  <span className="text-[10px] font-mono text-[var(--ink-muted)] uppercase">{color}</span>
                 </div>
               </div>
-              <div className="rounded-2xl bg-[#f8fafc] p-2.5 ring-1 ring-black/[0.04]">
+              <div className="rounded-2xl bg-[var(--surface-subtle)] p-2.5 ring-1 ring-black/[0.04]">
                 <div className="flex flex-wrap items-center gap-1.5">
                   {QUICK_LINK_COLOR_PRESETS.map((preset) => {
                     const active = color === preset;
@@ -237,14 +237,14 @@ export function QuickLinkDialog({ open, onOpenChange, link, onSubmit }: QuickLin
                         className={[
                           'h-7 w-7 rounded-lg transition-all duration-150 ring-offset-2',
                           active
-                            ? 'ring-2 ring-[#1d1d1f] scale-110 shadow-xs'
-                            : 'ring-1 ring-black/10 hover:scale-105',
+                            ? 'ring-2 ring-[var(--ink)] scale-110 shadow-xs'
+                            : 'ring-1 ring-[var(--hairline-strong)] hover:scale-105',
                         ].join(' ')}
                         style={{ backgroundColor: preset }}
                       />
                     );
                   })}
-                  <label className="group relative flex h-7 cursor-pointer items-center justify-center overflow-hidden rounded-lg bg-white text-slate-400 ring-1 ring-black/10 transition-all hover:text-slate-600 hover:scale-105 px-2">
+                  <label className="group relative flex h-7 cursor-pointer items-center justify-center overflow-hidden rounded-lg bg-[var(--surface)] text-slate-400 ring-1 ring-[var(--hairline-strong)] transition-all hover:text-slate-600 hover:scale-105 px-2">
                     <Palette size={13} aria-hidden="true" />
                     <span className="ml-1 text-[10px] font-bold">อื่นๆ</span>
                     <input
@@ -260,18 +260,18 @@ export function QuickLinkDialog({ open, onOpenChange, link, onSubmit }: QuickLin
             </div>
 
             {/* Validation Hint */}
-            <div className="flex items-start gap-2 rounded-2xl bg-slate-50 p-3 text-[11px] text-[#6e6e73] ring-1 ring-slate-200/60 leading-relaxed">
+            <div className="flex items-start gap-2 rounded-2xl bg-slate-50 p-3 text-[11px] text-[var(--ink-muted)] ring-1 ring-slate-200/60 leading-relaxed">
               <Info size={13} className="mt-0.5 shrink-0 text-slate-400" aria-hidden="true" />
               <div>
-                <strong className="font-bold text-[#475569]">รูปแบบลิงก์ที่รองรับ:</strong>
+                <strong className="font-bold text-[var(--ink-secondary)]">รูปแบบลิงก์ที่รองรับ:</strong>
                 <ul className="mt-0.5 ml-3 space-y-0.5 list-disc text-[10.5px]">
                   <li>
                     ภายนอก:{' '}
-                    <code className="px-1 py-0.2 rounded bg-white text-[#0066cc]">https://...</code>
+                    <code className="px-1 py-0.2 rounded bg-[var(--surface)] text-[var(--accent-text)]">https://...</code>
                   </li>
                   <li>
                     ภายใน:{' '}
-                    <code className="px-1 py-0.2 rounded bg-white text-[#0066cc]">/dashboard</code>
+                    <code className="px-1 py-0.2 rounded bg-[var(--surface)] text-[var(--accent-text)]">/dashboard</code>
                   </li>
                 </ul>
               </div>
@@ -282,14 +282,14 @@ export function QuickLinkDialog({ open, onOpenChange, link, onSubmit }: QuickLin
             <button
               type="button"
               onClick={() => onOpenChange(false)}
-              className="w-full sm:w-auto rounded-full bg-[#f5f5f7] px-5 py-2.5 text-[13px] font-bold text-[#1d1d1f] transition-all hover:bg-[#e8e8ed] active:scale-[0.95]"
+              className="w-full sm:w-auto rounded-full bg-[var(--surface-grouped)] px-5 py-2.5 text-[13px] font-bold text-[var(--ink)] transition-all hover:bg-[var(--surface-chip-2)] active:scale-[0.95]"
             >
               ยกเลิก
             </button>
             <button
               type="submit"
               disabled={isSaving}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-[#0066cc] px-6 py-2.5 text-[13px] font-bold text-white shadow-xs transition-all duration-150 hover:bg-[#0071e3] active:scale-[0.95] disabled:opacity-60"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-[var(--accent)] px-6 py-2.5 text-[13px] font-bold text-white shadow-xs transition-all duration-150 hover:bg-[var(--accent-hover)] active:scale-[0.95] disabled:opacity-60"
             >
               <Check size={14} aria-hidden="true" />
               {link ? 'บันทึกการแก้ไข' : 'สร้างลิงก์'}

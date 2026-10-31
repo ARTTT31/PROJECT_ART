@@ -123,14 +123,14 @@ export default function FinanceSummaryDialog({
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <div className="flex items-center gap-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[#34c759]/10 text-[#248a3d]">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[var(--success-soft)] text-[var(--success-ink)]">
               <BarChart3 size={20} aria-hidden="true" />
             </span>
             <div className="min-w-0">
-              <DialogTitle className="text-[17px] text-[#1d1d1f]">
+              <DialogTitle className="text-[17px] text-[var(--ink)]">
                 ภาพรวมรายรับ – รายจ่าย
               </DialogTitle>
-              <DialogDescription className="mt-0.5 text-[12px] text-[#86868b]">
+              <DialogDescription className="mt-0.5 text-[12px] text-[var(--ink-tertiary)]">
                 สรุปตามเดือน หมวดหมู่ และเทียบกับ 6 เดือนล่าสุด
               </DialogDescription>
             </div>
@@ -139,14 +139,14 @@ export default function FinanceSummaryDialog({
 
         <DialogBody className="space-y-4">
           <div className="flex flex-wrap items-center gap-2">
-            <label htmlFor="finance-period" className="text-[12px] font-semibold text-[#6e6e73]">
+            <label htmlFor="finance-period" className="text-[12px] font-semibold text-[var(--ink-muted)]">
               ช่วงเวลา
             </label>
             <select
               id="finance-period"
               value={period}
               onChange={(event) => setPeriod(event.target.value)}
-              className="min-w-0 flex-1 rounded-xl border border-black/10 bg-white px-3 py-1.5 text-[13px] font-semibold text-[#1d1d1f] focus:border-[#0066cc] focus:outline-hidden focus:ring-2 focus:ring-[#0066cc]/20"
+              className="min-w-0 flex-1 rounded-xl border border-[var(--hairline-strong)] bg-[var(--surface)] px-3 py-1.5 text-[13px] font-semibold text-[var(--ink)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
             >
               {options.map((option) => (
                 <option key={option.key} value={option.key}>
@@ -158,40 +158,40 @@ export default function FinanceSummaryDialog({
           </div>
 
           <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-            <div className="rounded-[14px] bg-[#34c759]/10 px-3 py-2.5">
-              <span className="block text-[11px] font-semibold text-[#248a3d]">รายรับ</span>
-              <span className="mt-0.5 block tabular-nums text-[15px] font-extrabold text-[#1d1d1f]">
+            <div className="rounded-[14px] bg-[var(--success-soft)] px-3 py-2.5">
+              <span className="block text-[11px] font-semibold text-[var(--success-ink)]">รายรับ</span>
+              <span className="mt-0.5 block tabular-nums text-[15px] font-extrabold text-[var(--ink)]">
                 {money.format(totals.income)}
               </span>
             </div>
-            <div className="rounded-[14px] bg-[#ff3b30]/10 px-3 py-2.5">
-              <span className="block text-[11px] font-semibold text-[#b42318]">รายจ่าย</span>
-              <span className="mt-0.5 block tabular-nums text-[15px] font-extrabold text-[#1d1d1f]">
+            <div className="rounded-[14px] bg-[var(--danger-soft)] px-3 py-2.5">
+              <span className="block text-[11px] font-semibold text-[var(--danger-ink)]">รายจ่าย</span>
+              <span className="mt-0.5 block tabular-nums text-[15px] font-extrabold text-[var(--ink)]">
                 {money.format(totals.expense)}
               </span>
             </div>
-            <div className="rounded-[14px] bg-[#f5f5f7] px-3 py-2.5">
-              <span className="block text-[11px] font-semibold text-[#6e6e73]">คงเหลือ</span>
+            <div className="rounded-[14px] bg-[var(--surface-grouped)] px-3 py-2.5">
+              <span className="block text-[11px] font-semibold text-[var(--ink-muted)]">คงเหลือ</span>
               <span
                 className={`mt-0.5 block tabular-nums text-[15px] font-extrabold ${
-                  totals.balance < 0 ? 'text-[#b42318]' : 'text-[#1d1d1f]'
+                  totals.balance < 0 ? 'text-[var(--danger-ink)]' : 'text-[var(--ink)]'
                 }`}
               >
                 {money.format(totals.balance)}
               </span>
             </div>
-            <div className="rounded-[14px] bg-[#f5f5f7] px-3 py-2.5">
-              <span className="block text-[11px] font-semibold text-[#6e6e73]">รายการ</span>
-              <span className="mt-0.5 block tabular-nums text-[15px] font-extrabold text-[#1d1d1f]">
+            <div className="rounded-[14px] bg-[var(--surface-grouped)] px-3 py-2.5">
+              <span className="block text-[11px] font-semibold text-[var(--ink-muted)]">รายการ</span>
+              <span className="mt-0.5 block tabular-nums text-[15px] font-extrabold text-[var(--ink)]">
                 {totals.count}
               </span>
             </div>
           </div>
 
           {isMonth && (
-            <div className="rounded-[14px] border border-black/[0.06] bg-white px-3 py-2.5">
+            <div className="rounded-[14px] border border-[var(--hairline)] bg-[var(--surface)] px-3 py-2.5">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className="text-[11.5px] font-semibold text-[#6e6e73]">
+                <span className="text-[11.5px] font-semibold text-[var(--ink-muted)]">
                   งบรายจ่ายต่อเดือน
                 </span>
                 <div className="flex items-center gap-1.5">
@@ -202,12 +202,12 @@ export default function FinanceSummaryDialog({
                     onChange={(event) => setBudgetDraft(event.target.value)}
                     placeholder="เช่น 15000"
                     aria-label="งบรายจ่ายต่อเดือน"
-                    className="w-[104px] rounded-lg border border-black/10 bg-white px-2 py-1 text-[12px] tabular-nums text-[#1d1d1f] focus:border-[#0066cc] focus:outline-hidden focus:ring-2 focus:ring-[#0066cc]/20"
+                    className="w-[104px] rounded-lg border border-[var(--hairline-strong)] bg-[var(--surface)] px-2 py-1 text-[12px] tabular-nums text-[var(--ink)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
                   />
                   <button
                     type="button"
                     onClick={saveBudget}
-                    className="rounded-full bg-[#0066cc] px-3 py-1 text-[11.5px] font-bold text-white transition-colors hover:bg-[#0071e3]"
+                    className="rounded-full bg-[var(--accent)] px-3 py-1 text-[11.5px] font-bold text-white transition-colors hover:bg-[var(--accent-hover)]"
                   >
                     บันทึกงบ
                   </button>
@@ -218,7 +218,7 @@ export default function FinanceSummaryDialog({
                         setBudgetDraft('');
                         onBudgetChange?.(null);
                       }}
-                      className="rounded-full bg-[#f5f5f7] px-2.5 py-1 text-[11.5px] font-semibold text-[#6e6e73] transition-colors hover:bg-[#e5e5ea]"
+                      className="rounded-full bg-[var(--surface-grouped)] px-2.5 py-1 text-[11.5px] font-semibold text-[var(--ink-muted)] transition-colors hover:bg-[var(--surface-chip)]"
                     >
                       ล้าง
                     </button>
@@ -229,31 +229,31 @@ export default function FinanceSummaryDialog({
               {budget !== null && budget > 0 && (
                 <div className="mt-2">
                   <div className="flex items-baseline justify-between gap-2 text-[11px]">
-                    <span className="text-[#86868b]">
+                    <span className="text-[var(--ink-tertiary)]">
                       รายจ่ายในช่วงนี้ {money.format(monthExpense)} จากงบ {money.format(budget)}
                     </span>
                     <span
                       className={`tabular-nums font-bold ${
-                        overBudget ? 'text-[#b42318]' : 'text-[#1d1d1f]'
+                        overBudget ? 'text-[var(--danger-ink)]' : 'text-[var(--ink)]'
                       }`}
                     >
                       {Math.round(budgetUsed)}%
                     </span>
                   </div>
-                  <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-[#e5e5ea]">
+                  <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-[var(--surface-chip)]">
                     <div
                       className={`h-full rounded-full transition-all duration-300 ${
                         overBudget
-                          ? 'bg-[#ff3b30]'
+                          ? 'bg-[var(--danger)]'
                           : budgetUsed > 80
-                            ? 'bg-[#ff9500]'
-                            : 'bg-[#34c759]'
+                            ? 'bg-[var(--warning)]'
+                            : 'bg-[var(--success)]'
                       }`}
                       style={{ width: `${Math.max(2, budgetUsed)}%` }}
                     />
                   </div>
                   {overBudget && (
-                    <p className="mt-1 text-[10.5px] font-semibold text-[#b42318]">
+                    <p className="mt-1 text-[10.5px] font-semibold text-[var(--danger-ink)]">
                       เกินงบไป {money.format(monthExpense - budget)} แล้ว
                     </p>
                   )}
@@ -263,16 +263,16 @@ export default function FinanceSummaryDialog({
           )}
 
           {/* Trend — always the last six months, independent of the picker. */}
-          <div className="rounded-[14px] border border-black/[0.06] bg-white px-3 py-3">
+          <div className="rounded-[14px] border border-[var(--hairline)] bg-[var(--surface)] px-3 py-3">
             <div className="flex items-center justify-between">
-              <span className="text-[11.5px] font-semibold text-[#6e6e73]">6 เดือนล่าสุด</span>
-              <div className="flex items-center gap-3 text-[10.5px] text-[#6e6e73]">
+              <span className="text-[11.5px] font-semibold text-[var(--ink-muted)]">6 เดือนล่าสุด</span>
+              <div className="flex items-center gap-3 text-[10.5px] text-[var(--ink-muted)]">
                 <span className="inline-flex items-center gap-1">
-                  <span className="h-2 w-2 rounded-full bg-[#34c759]" aria-hidden="true" />
+                  <span className="h-2 w-2 rounded-full bg-[var(--success)]" aria-hidden="true" />
                   รายรับ
                 </span>
                 <span className="inline-flex items-center gap-1">
-                  <span className="h-2 w-2 rounded-full bg-[#ff3b30]" aria-hidden="true" />
+                  <span className="h-2 w-2 rounded-full bg-[var(--danger)]" aria-hidden="true" />
                   รายจ่าย
                 </span>
               </div>
@@ -289,19 +289,19 @@ export default function FinanceSummaryDialog({
                 >
                   <div className="flex h-[64px] w-full items-end justify-center gap-1">
                     <span
-                      className="w-2.5 rounded-t-[3px] bg-[#34c759] transition-all duration-300"
+                      className="w-2.5 rounded-t-[3px] bg-[var(--success)] transition-all duration-300"
                       style={{
                         height: `${Math.max(point.income > 0 ? 4 : 0, (point.income / peak) * 100)}%`,
                       }}
                     />
                     <span
-                      className="w-2.5 rounded-t-[3px] bg-[#ff3b30] transition-all duration-300"
+                      className="w-2.5 rounded-t-[3px] bg-[var(--danger)] transition-all duration-300"
                       style={{
                         height: `${Math.max(point.expense > 0 ? 4 : 0, (point.expense / peak) * 100)}%`,
                       }}
                     />
                   </div>
-                  <span className="truncate text-[10px] text-[#86868b]">{point.label}</span>
+                  <span className="truncate text-[10px] text-[var(--ink-tertiary)]">{point.label}</span>
                 </div>
               ))}
             </div>
@@ -309,23 +309,23 @@ export default function FinanceSummaryDialog({
 
           {/* Category breakdown for the period. */}
           {categories.length > 0 && (
-            <div className="rounded-[14px] border border-black/[0.06] bg-white px-3 py-3">
-              <span className="text-[11.5px] font-semibold text-[#6e6e73]">
+            <div className="rounded-[14px] border border-[var(--hairline)] bg-[var(--surface)] px-3 py-3">
+              <span className="text-[11.5px] font-semibold text-[var(--ink-muted)]">
                 แยกตามหมวด ({typeFilter === 'income' ? 'รายรับ' : 'รายจ่าย'})
               </span>
               <ul className="mt-2 space-y-2">
                 {categories.map((row) => (
                   <li key={row.category}>
                     <div className="flex items-baseline justify-between gap-2 text-[11.5px]">
-                      <span className="min-w-0 truncate text-[#1d1d1f]">{row.category}</span>
-                      <span className="shrink-0 tabular-nums font-semibold text-[#6e6e73]">
+                      <span className="min-w-0 truncate text-[var(--ink)]">{row.category}</span>
+                      <span className="shrink-0 tabular-nums font-semibold text-[var(--ink-muted)]">
                         {money.format(row.total)}
-                        <span className="ml-1 text-[10px] text-[#a1a1a6]">({row.count})</span>
+                        <span className="ml-1 text-[10px] text-[var(--ink-faint)]">({row.count})</span>
                       </span>
                     </div>
-                    <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-[#f0f0f3]">
+                    <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-[var(--surface-chip)]">
                       <div
-                        className="h-full rounded-full bg-[#0066cc]"
+                        className="h-full rounded-full bg-[var(--accent)]"
                         style={{ width: `${Math.max(2, (row.total / categoryPeak) * 100)}%` }}
                       />
                     </div>
@@ -340,7 +340,7 @@ export default function FinanceSummaryDialog({
             <div className="relative min-w-0 flex-1">
               <Search
                 size={13}
-                className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-[#86868b]"
+                className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--ink-tertiary)]"
                 aria-hidden="true"
               />
               <input
@@ -349,11 +349,11 @@ export default function FinanceSummaryDialog({
                 onChange={(event) => setSearch(event.target.value)}
                 placeholder="ค้นหารายการหรือหมวดหมู่"
                 aria-label="ค้นหารายการ"
-                className="w-full rounded-xl border border-black/10 bg-white py-1.5 pl-8 pr-3 text-[12.5px] text-[#1d1d1f] placeholder:text-[#86868b] focus:border-[#0066cc] focus:outline-hidden focus:ring-2 focus:ring-[#0066cc]/20"
+                className="w-full rounded-xl border border-[var(--hairline-strong)] bg-[var(--surface)] py-1.5 pl-8 pr-3 text-[12.5px] text-[var(--ink)] placeholder:text-[var(--ink-tertiary)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
               />
             </div>
             <div
-              className="inline-flex rounded-full bg-[#e5e5ea] p-0.5"
+              className="inline-flex rounded-full bg-[var(--surface-chip)] p-0.5"
               role="group"
               aria-label="กรองประเภทรายการ"
             >
@@ -370,7 +370,7 @@ export default function FinanceSummaryDialog({
                   onClick={() => setTypeFilter(value)}
                   aria-pressed={typeFilter === value}
                   className={`rounded-full px-2.5 py-1 text-[11px] font-bold transition-colors ${
-                    typeFilter === value ? 'bg-white text-[#1d1d1f] shadow-xs' : 'text-[#6e6e73]'
+                    typeFilter === value ? 'bg-[var(--surface)] text-[var(--ink)] shadow-xs' : 'text-[var(--ink-muted)]'
                   }`}
                 >
                   {text}
@@ -382,18 +382,18 @@ export default function FinanceSummaryDialog({
           {/* Day-by-day list for the selected period. */}
           <div className="space-y-2">
             {days.length === 0 ? (
-              <div className="flex min-h-[92px] flex-col items-center justify-center rounded-[14px] border border-dashed border-black/[0.08] bg-[#f8f8fa] px-3 py-4 text-center text-[12.5px] text-[#86868b]">
-                <Wallet size={18} className="mb-1.5 text-[#a1a1a6]" aria-hidden="true" />
+              <div className="flex min-h-[92px] flex-col items-center justify-center rounded-[14px] border border-dashed border-[var(--hairline)] bg-[var(--surface-subtle)] px-3 py-4 text-center text-[12.5px] text-[var(--ink-tertiary)]">
+                <Wallet size={18} className="mb-1.5 text-[var(--ink-faint)]" aria-hidden="true" />
                 {periodEntries.length === 0
                   ? 'ยังไม่มีรายการในช่วงนี้'
                   : 'ไม่พบรายการที่ตรงกับเงื่อนไข'}
               </div>
             ) : (
               days.map((day) => (
-                <div key={day.date} className="rounded-[14px] bg-[#f8f8fa] px-3 py-2">
+                <div key={day.date} className="rounded-[14px] bg-[var(--surface-subtle)] px-3 py-2">
                   <div className="flex items-baseline justify-between gap-2 pb-1.5">
-                    <span className="text-[11.5px] font-bold text-[#6e6e73]">{day.label}</span>
-                    <span className="tabular-nums text-[11px] font-semibold text-[#86868b]">
+                    <span className="text-[11.5px] font-bold text-[var(--ink-muted)]">{day.label}</span>
+                    <span className="tabular-nums text-[11px] font-semibold text-[var(--ink-tertiary)]">
                       รับ {money.format(day.income)} · จ่าย {money.format(day.expense)}
                     </span>
                   </div>
@@ -403,27 +403,27 @@ export default function FinanceSummaryDialog({
                         {entry.type === 'income' ? (
                           <ArrowUpCircle
                             size={15}
-                            className="shrink-0 text-[#248a3d]"
+                            className="shrink-0 text-[var(--success-ink)]"
                             aria-hidden="true"
                           />
                         ) : (
                           <ArrowDownCircle
                             size={15}
-                            className="shrink-0 text-[#b42318]"
+                            className="shrink-0 text-[var(--danger-ink)]"
                             aria-hidden="true"
                           />
                         )}
-                        <span className="min-w-0 flex-1 truncate text-[12.5px] text-[#1d1d1f]">
+                        <span className="min-w-0 flex-1 truncate text-[12.5px] text-[var(--ink)]">
                           {entry.label || (entry.type === 'income' ? 'รายรับ' : 'รายจ่าย')}
                           {entry.category && (
-                            <span className="ml-1.5 rounded-full bg-white px-1.5 py-0.5 text-[10px] text-[#6e6e73] ring-1 ring-black/[0.05]">
+                            <span className="ml-1.5 rounded-full bg-[var(--surface)] px-1.5 py-0.5 text-[10px] text-[var(--ink-muted)] ring-1 ring-black/[0.05]">
                               {entry.category}
                             </span>
                           )}
                         </span>
                         <span
                           className={`shrink-0 tabular-nums text-[12.5px] font-bold ${
-                            entry.type === 'income' ? 'text-[#248a3d]' : 'text-[#1d1d1f]'
+                            entry.type === 'income' ? 'text-[var(--success-ink)]' : 'text-[var(--ink)]'
                           }`}
                         >
                           {entry.type === 'income' ? '+' : '−'}
@@ -443,7 +443,7 @@ export default function FinanceSummaryDialog({
             type="button"
             onClick={exportCsv}
             disabled={periodEntries.length === 0}
-            className="inline-flex items-center gap-1.5 rounded-full bg-[#f5f5f7] px-4 py-2 text-[12.5px] font-semibold text-[#1d1d1f] transition-colors hover:bg-[#e5e5ea] disabled:opacity-40"
+            className="inline-flex items-center gap-1.5 rounded-full bg-[var(--surface-grouped)] px-4 py-2 text-[12.5px] font-semibold text-[var(--ink)] transition-colors hover:bg-[var(--surface-chip)] disabled:opacity-40"
           >
             <Download size={13} aria-hidden="true" />
             ส่งออก CSV ({periodEntries.length})
@@ -451,7 +451,7 @@ export default function FinanceSummaryDialog({
           <button
             type="button"
             onClick={() => onOpenChange(false)}
-            className="rounded-full bg-[#0066cc] px-5 py-2 text-[13px] font-bold text-white transition-colors hover:bg-[#0071e3]"
+            className="rounded-full bg-[var(--accent)] px-5 py-2 text-[13px] font-bold text-white transition-colors hover:bg-[var(--accent-hover)]"
           >
             เสร็จสิ้น
           </button>

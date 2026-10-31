@@ -30,8 +30,8 @@ export function SectionCard({
   children,
 }: SectionCardProps) {
   return (
-    <section className="overflow-hidden rounded-[18px] bg-white border border-black/[0.06] shadow-xs transition-all duration-200">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-black/[0.05] bg-[#fafafc] px-5 sm:px-6 py-4">
+    <section className="overflow-hidden rounded-[18px] bg-[var(--surface)] border border-[var(--hairline)] shadow-xs transition-all duration-200">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--hairline-soft)] bg-[var(--surface-subtle)] px-5 sm:px-6 py-4">
         <div className="flex items-center gap-3 min-w-0">
           <div
             className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] ${iconBg} ${iconColor} ring-1 ${iconRing}`}
@@ -40,16 +40,16 @@ export function SectionCard({
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="text-[15px] sm:text-[16px] font-bold tracking-tight text-[#1d1d1f] leading-snug">
+              <h2 className="text-[15px] sm:text-[16px] font-bold tracking-tight text-[var(--ink)] leading-snug">
                 {title}
               </h2>
               {badge && (
-                <span className="rounded-full bg-white px-2.5 py-0.5 text-[11px] font-bold text-[#6e6e73] ring-1 ring-black/[0.06] shadow-2xs">
+                <span className="rounded-full bg-[var(--surface)] px-2.5 py-0.5 text-[11px] font-bold text-[var(--ink-muted)] ring-1 ring-[var(--hairline)] shadow-2xs">
                   {badge}
                 </span>
               )}
             </div>
-            <p className="text-[12px] leading-snug text-[#6e6e73] truncate max-w-xs sm:max-w-md">
+            <p className="text-[12px] leading-snug text-[var(--ink-muted)] truncate max-w-xs sm:max-w-md">
               {subtitle}
             </p>
           </div>
@@ -101,14 +101,14 @@ export function InsetField({
       <div className="mb-1.5 ml-1 flex items-center justify-between">
         <label
           htmlFor={inputId}
-          className="block text-[12px] font-bold text-[#475569] cursor-pointer"
+          className="block text-[12px] font-bold text-[var(--ink-secondary)] cursor-pointer"
         >
           {label}
         </label>
-        {hint && <span className="text-[11px] font-medium text-[#86868b]">{hint}</span>}
+        {hint && <span className="text-[11px] font-medium text-[var(--ink-tertiary)]">{hint}</span>}
       </div>
       <div className="relative">
-        <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[#86868b]">
+        <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--ink-tertiary)]">
           {icon}
         </span>
         <input
@@ -121,10 +121,10 @@ export function InsetField({
           autoComplete={autoComplete}
           readOnly={readOnly}
           className={[
-            'w-full rounded-[14px] py-3 text-[16px] sm:text-[14px] font-medium text-[#1d1d1f] placeholder:text-[#86868b] transition-all duration-150',
+            'w-full rounded-[14px] py-3 text-[16px] sm:text-[14px] font-medium text-[var(--ink)] placeholder:text-[var(--ink-tertiary)] transition-all duration-150',
             readOnly
-              ? 'bg-[#f2f2f7]/60 cursor-default select-text'
-              : 'bg-[#f5f5f7] focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-[#0066cc] focus:shadow-xs',
+              ? 'bg-[var(--surface-grouped-2)] cursor-default select-text'
+              : 'bg-[var(--surface-grouped)] focus:bg-[var(--surface)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent)] focus:shadow-xs',
             trailing ? '!pr-12' : '!pr-4',
           ].join(' ')}
           style={{ paddingLeft: '2.75rem' }}

@@ -347,7 +347,7 @@ export default function CameraPage() {
     return (
       <>
         <div className="flex min-h-[400px] items-center justify-center">
-          <div className="h-10 w-10 animate-spin rounded-full border-[3px] border-[#f5f5f7] border-t-[#0066cc]" />
+          <div className="h-10 w-10 animate-spin rounded-full border-[3px] border-[var(--surface-grouped)] border-t-[#0066cc]" />
         </div>
       </>
     );
@@ -363,9 +363,9 @@ export default function CameraPage() {
     <PageAccessGuard page="camera">
       <div className="flex flex-col gap-5">
         {/* ── Page header ────────────────────────────────────────────── */}
-        <header className="flex flex-wrap items-center justify-between gap-4 border-b border-black/[0.06] pb-5">
+        <header className="flex flex-wrap items-center justify-between gap-4 border-b border-[var(--hairline)] pb-5">
           <div>
-            <h1 className="text-[22px] font-extrabold tracking-[-0.03em] text-[#1d1d1f]">
+            <h1 className="text-[22px] font-extrabold tracking-[-0.03em] text-[var(--ink)]">
               กล้องวงจรปิด
             </h1>
           </div>
@@ -373,7 +373,7 @@ export default function CameraPage() {
           <div className="flex items-center gap-2">
             <button
               onClick={openAddDialog}
-              className="inline-flex items-center gap-2 rounded-full bg-[#0066cc] px-4 py-2 text-[13px] font-semibold text-white  transition-all duration-150 hover:bg-[#0071e3]  focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#0066cc] focus-visible:ring-offset-2 active:scale-[0.95]"
+              className="inline-flex items-center gap-2 rounded-full bg-[var(--accent)] px-4 py-2 text-[13px] font-semibold text-white  transition-all duration-150 hover:bg-[var(--accent-hover)]  focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 active:scale-[0.95]"
               aria-label="เพิ่มกล้องใหม่"
             >
               <Plus size={15} aria-hidden="true" />
@@ -383,12 +383,12 @@ export default function CameraPage() {
             <button
               onClick={handleRefresh}
               disabled={refreshing}
-              className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-[13px] font-semibold text-[#1d1d1f] ring-1 ring-black/[0.08] transition-all duration-150 hover:bg-[#f5f5f7] hover:shadow-xs disabled:opacity-50 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#0066cc] focus-visible:ring-offset-2 active:scale-[0.95]"
+              className="inline-flex items-center gap-2 rounded-full bg-[var(--surface)] px-4 py-2 text-[13px] font-semibold text-[var(--ink)] ring-1 ring-[var(--hairline)] transition-all duration-150 hover:bg-[var(--surface-grouped)] hover:shadow-xs disabled:opacity-50 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 active:scale-[0.95]"
               aria-label="รีเฟรชสถานะกล้อง"
             >
               <RefreshCw
                 size={13}
-                className={refreshing ? 'animate-spin text-[#0066cc]' : ''}
+                className={refreshing ? 'animate-spin text-[var(--accent-text)]' : ''}
                 aria-hidden="true"
               />
               รีเฟรชสถานะ
@@ -402,7 +402,7 @@ export default function CameraPage() {
           <div className="lg:col-span-2">
             <div
               ref={videoContainerRef}
-              className="relative aspect-video overflow-hidden rounded-2xl bg-slate-950 ring-1 ring-black/[0.08] shadow-[0_8px_32px_rgba(15,23,42,0.12)]"
+              className="relative aspect-video overflow-hidden rounded-2xl bg-slate-950 ring-1 ring-[var(--hairline)] shadow-[0_8px_32px_rgba(15,23,42,0.12)]"
             >
               {activeCamera?.status === 'online' ? (
                 <div className="relative h-full w-full">
@@ -471,7 +471,7 @@ export default function CameraPage() {
                     <div className="pointer-events-auto flex items-center justify-between">
                       <span className="flex items-center gap-2 rounded-full bg-red-600/90 px-3 py-1 text-[11px] font-bold text-white shadow-xs backdrop-blur-md">
                         <span
-                          className="h-1.5 w-1.5 animate-ping rounded-full bg-white"
+                          className="h-1.5 w-1.5 animate-ping rounded-full bg-[var(--surface)]"
                           aria-hidden="true"
                         />
                         LIVE
@@ -494,7 +494,7 @@ export default function CameraPage() {
                           <p className="text-base font-bold text-white">{activeCamera.name}</p>
                           <button
                             onClick={() => openEditDialog(activeCamera)}
-                            className="rounded-full bg-white/20 p-1 text-white hover:bg-white/30 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-white"
+                            className="rounded-full bg-[var(--glass-20)] p-1 text-white hover:bg-[var(--glass-40)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-white"
                             aria-label="แก้ไขข้อมูลกล้องนี้"
                           >
                             <Pencil size={12} />
@@ -506,7 +506,7 @@ export default function CameraPage() {
                       <div className="flex items-center gap-2">
                         <button
                           onClick={toggleFullscreen}
-                          className="rounded-full bg-white/20 p-2 text-white transition-colors hover:bg-white/30 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-white/60"
+                          className="rounded-full bg-[var(--glass-20)] p-2 text-white transition-colors hover:bg-[var(--glass-40)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-white/60"
                           aria-label={isFullscreen ? 'ย่อหน้าจอ' : 'ขยายเต็มจอ'}
                         >
                           {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
@@ -530,14 +530,14 @@ export default function CameraPage() {
                   <div className="mt-2 flex items-center gap-2">
                     <button
                       onClick={handleRefresh}
-                      className="rounded-full bg-white/10 px-4 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-white/20"
+                      className="rounded-full bg-[var(--glass-10)] px-4 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-[var(--glass-20)]"
                     >
                       ลองใหม่
                     </button>
                     {activeCamera && (
                       <button
                         onClick={() => openEditDialog(activeCamera)}
-                        className="rounded-full bg-[#0066cc] px-4 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-[#0071e3]"
+                        className="rounded-full bg-[var(--accent)] px-4 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-[var(--accent-hover)]"
                       >
                         แก้ไขการตั้งค่า
                       </button>
@@ -550,11 +550,11 @@ export default function CameraPage() {
 
           {/* Camera List Sidebar */}
           <div className="flex flex-col gap-3">
-            <div className="rounded-2xl bg-white p-5 ring-1 ring-black/[0.06] shadow-[0_8px_32px_rgba(15,23,42,0.06)]">
+            <div className="rounded-2xl bg-[var(--surface)] p-5 ring-1 ring-[var(--hairline)] shadow-[0_8px_32px_rgba(15,23,42,0.06)]">
               <div className="mb-4 flex items-center justify-between">
-                <h2 className="flex items-center gap-2.5 text-[15px] font-bold text-[#1d1d1f]">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-[#f5f5f7]">
-                    <Shield size={15} className="text-[#1d1d1f]" aria-hidden="true" />
+                <h2 className="flex items-center gap-2.5 text-[15px] font-bold text-[var(--ink)]">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-[var(--surface-grouped)]">
+                    <Shield size={15} className="text-[var(--ink)]" aria-hidden="true" />
                   </div>
                   รายการกล้องทั้งหมด ({streams.length})
                 </h2>
@@ -569,8 +569,8 @@ export default function CameraPage() {
                         className={[
                           'flex w-full items-center justify-between rounded-xl p-3 text-left transition-all duration-150',
                           isSelected
-                            ? 'bg-[#0066cc]/[0.07] ring-1 ring-[#0066cc]/25 shadow-[0_2px_8px_rgba(0,102,204,0.08)]'
-                            : 'bg-[#f5f5f7] hover:bg-white hover:ring-1 hover:ring-black/[0.06] hover:shadow-[0_2px_8px_rgba(15,23,42,0.05)]',
+                            ? 'bg-[var(--accent-soft)] ring-1 ring-[var(--accent-ring)] shadow-[0_2px_8px_rgba(0,102,204,0.08)]'
+                            : 'bg-[var(--surface-grouped)] hover:bg-[var(--surface)] hover:ring-1 hover:ring-[var(--hairline)] hover:shadow-[0_2px_8px_rgba(15,23,42,0.05)]',
                         ].join(' ')}
                       >
                         <button
@@ -595,10 +595,10 @@ export default function CameraPage() {
                           </div>
 
                           <div className="min-w-0 flex-1">
-                            <p className="truncate text-[13px] font-semibold text-[#1d1d1f]">
+                            <p className="truncate text-[13px] font-semibold text-[var(--ink)]">
                               {cam.name}
                             </p>
-                            <p className="mt-0.5 truncate text-[11px] text-[#6e6e73]">
+                            <p className="mt-0.5 truncate text-[11px] text-[var(--ink-muted)]">
                               {cam.location}
                             </p>
                           </div>
@@ -672,7 +672,7 @@ export default function CameraPage() {
                     value={formName}
                     onChange={(e) => setFormName(e.target.value)}
                     placeholder="เช่น หน้าบ้าน (Front Entrance)"
-                    className="mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 transition-colors focus:border-[#0066cc] focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-[#0066cc]/20"
+                    className="mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 transition-colors focus:border-[var(--accent)] focus:bg-[var(--surface)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
                   />
                 </div>
 
@@ -685,7 +685,7 @@ export default function CameraPage() {
                     value={formLocation}
                     onChange={(e) => setFormLocation(e.target.value)}
                     placeholder="เช่น ภายนอก — ประตูหลัก"
-                    className="mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 transition-colors focus:border-[#0066cc] focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-[#0066cc]/20"
+                    className="mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 transition-colors focus:border-[var(--accent)] focus:bg-[var(--surface)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
                   />
                 </div>
 
@@ -709,13 +709,13 @@ export default function CameraPage() {
                           className={[
                             'flex items-center gap-2 rounded-xl p-2.5 text-left text-xs font-medium transition-all',
                             isChecked
-                              ? 'bg-[#0066cc]/10 font-semibold text-[#0066cc] ring-1 ring-[#0066cc]'
+                              ? 'bg-[var(--accent-soft)] font-semibold text-[var(--accent-text)] ring-1 ring-[var(--accent)]'
                               : 'bg-slate-50 text-slate-700 hover:bg-slate-100',
                           ].join(' ')}
                         >
                           <Icon
                             size={14}
-                            className={isChecked ? 'text-[#0066cc]' : 'text-slate-400'}
+                            className={isChecked ? 'text-[var(--accent-text)]' : 'text-slate-400'}
                           />
                           {opt.label}
                         </button>
@@ -741,7 +741,7 @@ export default function CameraPage() {
                             ? 'http://192.168.1.50:8080/video.mjpg'
                             : 'https://homeassistant.local/lovelace/cctv'
                       }
-                      className="mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 font-mono text-xs text-slate-900 transition-colors focus:border-[#0066cc] focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-[#0066cc]/20"
+                      className="mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 font-mono text-xs text-slate-900 transition-colors focus:border-[var(--accent)] focus:bg-[var(--surface)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
                     />
                   </div>
                 )}
@@ -778,7 +778,7 @@ export default function CameraPage() {
                       value={formResolution}
                       onChange={(e) => setFormResolution(e.target.value)}
                       placeholder="1920x1080"
-                      className="mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 transition-colors focus:border-[#0066cc] focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-[#0066cc]/20"
+                      className="mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 transition-colors focus:border-[var(--accent)] focus:bg-[var(--surface)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
                     />
                   </div>
                   <div>
@@ -791,7 +791,7 @@ export default function CameraPage() {
                       max={60}
                       value={formFps}
                       onChange={(e) => setFormFps(Number(e.target.value))}
-                      className="mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 transition-colors focus:border-[#0066cc] focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-[#0066cc]/20"
+                      className="mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 transition-colors focus:border-[var(--accent)] focus:bg-[var(--surface)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
                     />
                   </div>
                 </div>
@@ -808,7 +808,7 @@ export default function CameraPage() {
                 <button
                   type="submit"
                   disabled={isSaving}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-[#0066cc] px-5 py-2 text-xs font-semibold text-white shadow-xs transition-colors hover:bg-[#0071e3] disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-[var(--accent)] px-5 py-2 text-xs font-semibold text-white shadow-xs transition-colors hover:bg-[var(--accent-hover)] disabled:opacity-50"
                 >
                   {isSaving ? (
                     <RefreshCw size={13} className="animate-spin" />

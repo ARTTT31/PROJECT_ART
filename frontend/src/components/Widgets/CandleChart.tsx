@@ -136,7 +136,7 @@ export default function CandleChart({
 
   if (!chart) {
     return (
-      <div className="flex h-full items-center justify-center text-[12px] text-[#86868b]">
+      <div className="flex h-full items-center justify-center text-[12px] text-[var(--ink-tertiary)]">
         ยังไม่มีข้อมูลกราฟ
       </div>
     );

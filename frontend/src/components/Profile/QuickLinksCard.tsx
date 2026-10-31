@@ -39,7 +39,7 @@ export function QuickLinksCard({ links, onAdd, onEdit, onDelete, onMove }: Quick
         <button
           type="button"
           onClick={onAdd}
-          className="inline-flex items-center gap-1.5 rounded-full bg-[#0066cc] px-3.5 py-1.5 text-[11.5px] font-bold text-white shadow-xs transition-all hover:bg-[#0071e3] active:scale-95"
+          className="inline-flex items-center gap-1.5 rounded-full bg-[var(--accent)] px-3.5 py-1.5 text-[11.5px] font-bold text-white shadow-xs transition-all hover:bg-[var(--accent-hover)] active:scale-95"
         >
           <Plus size={13} aria-hidden="true" />
           เพิ่มลิงก์
@@ -48,17 +48,17 @@ export function QuickLinksCard({ links, onAdd, onEdit, onDelete, onMove }: Quick
     >
       {links.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 p-8 text-center">
-          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-sky-600 shadow-xs ring-1 ring-black/[0.06]">
+          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--surface)] text-sky-600 shadow-xs ring-1 ring-[var(--hairline)]">
             <Link2 size={20} aria-hidden="true" />
           </div>
-          <h3 className="text-[14px] font-bold text-[#1d1d1f]">ยังไม่มีควิกลิ้งค์</h3>
-          <p className="mx-auto mt-1 max-w-xs text-[12px] text-[#6e6e73] leading-relaxed">
+          <h3 className="text-[14px] font-bold text-[var(--ink)]">ยังไม่มีควิกลิ้งค์</h3>
+          <p className="mx-auto mt-1 max-w-xs text-[12px] text-[var(--ink-muted)] leading-relaxed">
             เพิ่มทางลัดสำหรับเปิดเว็บไซต์ที่ใช้บ่อย เพื่อความสะดวกรวดเร็ว
           </p>
           <button
             type="button"
             onClick={onAdd}
-            className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-[#0066cc] px-4 py-2 text-[12px] font-bold text-white shadow-xs transition-all hover:bg-[#0071e3]"
+            className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-[var(--accent)] px-4 py-2 text-[12px] font-bold text-white shadow-xs transition-all hover:bg-[var(--accent-hover)]"
           >
             <Plus size={13} aria-hidden="true" />
             สร้างควิกลิ้งค์แรก
@@ -73,11 +73,11 @@ export function QuickLinksCard({ links, onAdd, onEdit, onDelete, onMove }: Quick
             return (
               <div
                 key={link.id}
-                className="group flex items-center gap-3 rounded-2xl bg-white p-2.5 sm:p-3 ring-1 ring-black/[0.05] transition-all hover:bg-[#f8fafc] shadow-2xs"
+                className="group flex items-center gap-3 rounded-2xl bg-[var(--surface)] p-2.5 sm:p-3 ring-1 ring-black/[0.05] transition-all hover:bg-[var(--surface-subtle)] shadow-2xs"
               >
                 <div className="shrink-0">
                   <div
-                    className="flex h-10 w-10 items-center justify-center rounded-[14px] shadow-2xs ring-1 ring-black/[0.06]"
+                    className="flex h-10 w-10 items-center justify-center rounded-[14px] shadow-2xs ring-1 ring-[var(--hairline)]"
                     style={{ backgroundColor: `${link.color || '#0066cc'}15` }}
                   >
                     <Icon size={17} aria-hidden="true" style={{ color: link.color || '#0066cc' }} />
@@ -86,7 +86,7 @@ export function QuickLinksCard({ links, onAdd, onEdit, onDelete, onMove }: Quick
 
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="truncate text-[13.5px] font-bold tracking-tight text-[#1d1d1f]">
+                    <span className="truncate text-[13.5px] font-bold tracking-tight text-[var(--ink)]">
                       {link.label}
                     </span>
                     <span
@@ -99,7 +99,7 @@ export function QuickLinksCard({ links, onAdd, onEdit, onDelete, onMove }: Quick
                       {linkMeta.tone}
                     </span>
                   </div>
-                  <p className="mt-0.5 truncate text-[11px] text-[#6e6e73]">{link.url}</p>
+                  <p className="mt-0.5 truncate text-[11px] text-[var(--ink-muted)]">{link.url}</p>
                 </div>
 
                 <div className="flex items-center gap-1 shrink-0">

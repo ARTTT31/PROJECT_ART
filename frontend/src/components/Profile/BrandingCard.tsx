@@ -2,9 +2,10 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
-import { Building2, Loader2, Save, Upload } from 'lucide-react';
+import { Building2, Check, Loader2, Save, Upload } from 'lucide-react';
 import { SectionCard } from './SectionCard';
 import { useBranding } from '@/context/BrandingContext';
+import { BRAND_PRESETS, type BrandPreset } from '@/lib/brandingPresets';
 import { showConfirm, showError, showSuccess, showToast } from '@/utils/sweetalert';
 
 const MAX_LOGO_BYTES = 1 * 1024 * 1024;
@@ -150,6 +151,38 @@ export function BrandingCard({ isAdmin = false }: { isAdmin?: boolean }) {
     }
   };
 
+  /**
+   * A ready-made preset saves the name, tagline and logo in one request. The
+   * logo is a PNG data URL, so it goes through the same fields as a manual
+   * upload — no extra endpoint involved.
+   */
+  const applyPreset = async (preset: BrandPreset) => {
+    if (isBusyLogo) return;
+
+    setIsSavingBranding(true);
+    const res = isAdmin
+      ? await updateBranding({
+          company_name: preset.name,
+          company_tagline: preset.tagline,
+          brand_logo_url: preset.logo,
+        })
+      : await updateWorkspaceBranding({
+          workspace_name: preset.name,
+          workspace_tagline: preset.tagline,
+          workspace_logo: preset.logo,
+        });
+    if (res.success && isAdmin) await clearPersonal({ name: true, tagline: true, logo: true });
+    setIsSavingBranding(false);
+
+    if (res.success) {
+      setFormCompanyName(preset.name);
+      setFormCompanyTagline(preset.tagline);
+      showSuccess('ใช้ชุดสำเร็จรูปแล้ว', `ตั้งชื่อและโลโก้เป็น “${preset.name}” เรียบร้อย`);
+    } else {
+      showError('เกิดข้อผิดพลาด', res.error || 'ไม่สามารถบันทึกชุดที่เลือกได้');
+    }
+  };
+
   const handleLogoFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -195,7 +228,7 @@ export function BrandingCard({ isAdmin = false }: { isAdmin?: boolean }) {
       <form onSubmit={handleSaveBranding} className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-[13px] font-semibold text-[#1d1d1f] mb-1.5">
+            <label className="block text-[13px] font-semibold text-[var(--ink)] mb-1.5">
               {copy.nameLabel} <span className="text-rose-500">*</span>
             </label>
             <input
@@ -205,12 +238,12 @@ export function BrandingCard({ isAdmin = false }: { isAdmin?: boolean }) {
               placeholder={copy.namePlaceholder}
               disabled={isSavingBranding}
               required
-              className="w-full rounded-xl border border-black/10 bg-white px-3.5 py-2.5 text-[14px] text-[#1d1d1f] shadow-2xs placeholder:text-[#86868b] focus:border-[#0066cc] focus:outline-hidden focus:ring-2 focus:ring-[#0066cc]/20 disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed"
+              className="w-full rounded-xl border border-[var(--hairline-strong)] bg-[var(--surface)] px-3.5 py-2.5 text-[14px] text-[var(--ink)] shadow-2xs placeholder:text-[var(--ink-tertiary)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)] disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed"
             />
           </div>
 
           <div>
-            <label className="block text-[13px] font-semibold text-[#1d1d1f] mb-1.5">
+            <label className="block text-[13px] font-semibold text-[var(--ink)] mb-1.5">
               คำโปรย (ไม่บังคับ)
             </label>
             <input
@@ -219,8 +252,60 @@ export function BrandingCard({ isAdmin = false }: { isAdmin?: boolean }) {
               onChange={(e) => setFormCompanyTagline(e.target.value)}
               placeholder="เช่น ทำงานให้ง่ายขึ้นทุกวัน"
               disabled={isSavingBranding}
-              className="w-full rounded-xl border border-black/10 bg-white px-3.5 py-2.5 text-[14px] text-[#1d1d1f] shadow-2xs placeholder:text-[#86868b] focus:border-[#0066cc] focus:outline-hidden focus:ring-2 focus:ring-[#0066cc]/20 disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed"
+              className="w-full rounded-xl border border-[var(--hairline-strong)] bg-[var(--surface)] px-3.5 py-2.5 text-[14px] text-[var(--ink)] shadow-2xs placeholder:text-[var(--ink-tertiary)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)] disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed"
             />
+          </div>
+        </div>
+
+        {/* Ready-made name + logo combinations */}
+        <div className="rounded-xl border border-[var(--hairline)] bg-[var(--surface-subtle)] p-3.5">
+          <div className="mb-2.5 flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1">
+            <span className="text-[11.5px] font-bold uppercase tracking-wider text-[var(--ink-tertiary)]">
+              ชุดชื่อและโลโก้สำเร็จรูป
+            </span>
+            <span className="text-[11px] text-[var(--ink-tertiary)]">
+              เลือกแล้วบันทึกให้ทันที
+            </span>
+          </div>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {BRAND_PRESETS.map((preset) => {
+              const active =
+                formCompanyName.trim() === preset.name && brandLogoUrl === preset.logo;
+              return (
+                <button
+                  key={preset.id}
+                  type="button"
+                  onClick={() => applyPreset(preset)}
+                  disabled={isBusyLogo}
+                  aria-pressed={active}
+                  aria-label={`ใช้ชุด ${preset.name}`}
+                  className={`flex items-center gap-2 rounded-[12px] border px-2.5 py-2 text-left transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 ${
+                    active
+                      ? 'border-[var(--accent)] bg-[var(--accent-soft)] ring-2 ring-[var(--accent-ring)]'
+                      : 'border-[var(--hairline)] bg-[var(--surface)] hover:border-[var(--hairline-strong)]'
+                  }`}
+                >
+                  <Image
+                    src={preset.logo}
+                    alt=""
+                    width={26}
+                    height={26}
+                    aria-hidden="true"
+                    className="h-[26px] w-[26px] shrink-0 rounded-[8px]"
+                  />
+                  <span className="min-w-0 flex-1 truncate text-[12px] font-semibold text-[var(--ink)]">
+                    {preset.name}
+                  </span>
+                  {active && (
+                    <Check
+                      size={13}
+                      className="shrink-0 text-[var(--accent-text)]"
+                      aria-hidden="true"
+                    />
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -234,17 +319,17 @@ export function BrandingCard({ isAdmin = false }: { isAdmin?: boolean }) {
           }}
           onDragLeave={() => setIsDraggingLogo(false)}
           onDrop={handleLogoDrop}
-          className={`rounded-xl border bg-[#f5f5f7]/60 p-4 transition-all ${
+          className={`rounded-xl border bg-[var(--surface-grouped)] p-4 transition-all ${
             isDraggingLogo
-              ? 'border-[#0066cc] bg-[#0066cc]/[0.06] ring-2 ring-[#0066cc]/30'
-              : 'border-black/[0.06]'
+              ? 'border-[var(--accent)] bg-[var(--accent-soft)] ring-2 ring-[var(--accent-ring)]'
+              : 'border-[var(--hairline)]'
           }`}
         >
-          <span className="text-[11.5px] font-bold text-[#86868b] uppercase tracking-wider block mb-2">
+          <span className="text-[11.5px] font-bold text-[var(--ink-tertiary)] uppercase tracking-wider block mb-2">
             ตัวอย่างในเมนูด้านข้าง
           </span>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="inline-flex items-center gap-3 rounded-2xl bg-white/90 p-3 shadow-xs border border-black/[0.06] max-w-sm">
+            <div className="inline-flex items-center gap-3 rounded-2xl bg-[var(--glass-95)] p-3 shadow-xs border border-[var(--hairline)] max-w-sm">
               <div className="relative shrink-0">
                 <Image
                   src={brandLogoUrl || '/art-workspace-mark.svg'}
@@ -260,10 +345,10 @@ export function BrandingCard({ isAdmin = false }: { isAdmin?: boolean }) {
                 )}
               </div>
               <div className="min-w-0">
-                <div className="truncate text-[14px] font-bold text-[#1d1d1f]">
+                <div className="truncate text-[14px] font-bold text-[var(--ink)]">
                   {formCompanyName.trim() || companyName || 'ชื่อของคุณ'}
                 </div>
-                <div className="truncate text-[11px] text-[#86868b]">
+                <div className="truncate text-[11px] text-[var(--ink-tertiary)]">
                   {formCompanyTagline.trim() || companyTagline || 'พร้อมใช้งาน'}
                 </div>
               </div>
@@ -275,7 +360,7 @@ export function BrandingCard({ isAdmin = false }: { isAdmin?: boolean }) {
                 onClick={() => brandLogoInputRef.current?.click()}
                 disabled={isBusyLogo}
                 title="PNG, JPG, GIF หรือ WebP ขนาดไม่เกิน 1MB"
-                className="inline-flex items-center gap-1.5 rounded-full bg-[#0066cc] px-3.5 py-1.5 text-[11.5px] font-bold text-white shadow-xs transition-all hover:bg-[#0071e3] active:scale-95 disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 rounded-full bg-[var(--accent)] px-3.5 py-1.5 text-[11.5px] font-bold text-white shadow-xs transition-all hover:bg-[var(--accent-hover)] active:scale-95 disabled:opacity-50"
               >
                 {isUploadingBrandLogo ? (
                   <Loader2 size={13} className="animate-spin" aria-hidden="true" />
@@ -293,7 +378,7 @@ export function BrandingCard({ isAdmin = false }: { isAdmin?: boolean }) {
                   type="button"
                   onClick={handleResetBrandLogo}
                   disabled={isBusyLogo}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-white px-3.5 py-1.5 text-[11.5px] font-bold text-[#475569] ring-1 ring-black/[0.08] transition-all hover:bg-slate-50 active:scale-95 disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-[var(--surface)] px-3.5 py-1.5 text-[11.5px] font-bold text-[var(--ink-secondary)] ring-1 ring-[var(--hairline)] transition-all hover:bg-slate-50 active:scale-95 disabled:opacity-50"
                 >
                   ใช้โลโก้เดิม
                 </button>
@@ -315,7 +400,7 @@ export function BrandingCard({ isAdmin = false }: { isAdmin?: boolean }) {
           <button
             type="submit"
             disabled={isSavingBranding}
-            className="inline-flex items-center gap-2 rounded-full bg-[#0066cc] px-5 py-2 text-[13px] font-bold text-white shadow-xs transition-all hover:bg-[#0071e3] active:scale-95 disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-full bg-[var(--accent)] px-5 py-2 text-[13px] font-bold text-white shadow-xs transition-all hover:bg-[var(--accent-hover)] active:scale-95 disabled:opacity-50"
           >
             {isSavingBranding ? (
               <>

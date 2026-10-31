@@ -32,7 +32,7 @@ describe('cn', () => {
   });
 
   it('keeps classes that do not actually conflict', () => {
-    const merged = cn('text-sm text-[#6e6e73]', 'font-bold');
+    const merged = cn('text-sm text-[var(--ink-muted)]', 'font-bold');
 
     expect(merged).toContain('text-sm');
     expect(merged).toContain('font-bold');

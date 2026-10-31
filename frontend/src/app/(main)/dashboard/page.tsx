@@ -111,7 +111,7 @@ function WidgetErrorFallback({
   const isChunkError =
     error?.name === 'ChunkLoadError' || error?.message?.includes('Failed to load chunk');
   return (
-    <div className="flex h-full min-h-[300px] w-full flex-col items-center justify-center rounded-[18px] border border-black/[0.06] bg-white p-6">
+    <div className="flex h-full min-h-[300px] w-full flex-col items-center justify-center rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] p-6">
       <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-red-100/50">
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -129,8 +129,8 @@ function WidgetErrorFallback({
         </svg>
       </div>
       <div className="text-center">
-        <p className="text-[15px] font-semibold text-[#1d1d1f]">วิดเจ็ต{name}ไม่พร้อมใช้งาน</p>
-        <p className="mt-1 text-[13px] text-[#6e6e73]">
+        <p className="text-[15px] font-semibold text-[var(--ink)]">วิดเจ็ต{name}ไม่พร้อมใช้งาน</p>
+        <p className="mt-1 text-[13px] text-[var(--ink-muted)]">
           {isChunkError
             ? 'มีการอัปเดตเวอร์ชันใหม่ กรุณารีเฟรชหน้าเว็บ'
             : 'ไม่สามารถโหลดข้อมูลวิดเจ็ตนี้ได้ในขณะนี้'}
@@ -143,7 +143,7 @@ function WidgetErrorFallback({
               reset();
             }
           }}
-          className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-[#f2f2f7] px-4 py-2 text-[13px] font-semibold text-[#1d1d1f] transition-all duration-200 hover:bg-[#e5e5ea] active:scale-95 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#0066cc]"
+          className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-[var(--surface-grouped-2)] px-4 py-2 text-[13px] font-semibold text-[var(--ink)] transition-all duration-200 hover:bg-[var(--surface-chip)] active:scale-95 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
         >
           {isChunkError ? 'รีเฟรชหน้าเว็บ' : 'ลองใหม่อีกครั้ง'}
         </button>
@@ -195,9 +195,9 @@ function SortableWidget({
             type="button"
             aria-label={`ย้ายวิดเจ็ต ${widgetNames[widget.id]}`}
             title="ลากเพื่อจัดลำดับ"
-            className="pointer-events-auto flex cursor-grab touch-none items-center justify-center rounded-full p-1.5 text-[#9a9aa0] opacity-0 transition-opacity duration-150 hover:opacity-100 active:cursor-grabbing group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#0066cc]/40 [@media(hover:none)]:opacity-60"
+            className="pointer-events-auto flex cursor-grab touch-none items-center justify-center rounded-full p-1.5 text-[var(--ink-tertiary)] opacity-0 transition-opacity duration-150 hover:opacity-100 active:cursor-grabbing group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent-border)] [@media(hover:none)]:opacity-60"
           >
-            <span className="flex h-[13px] w-9 items-center justify-center gap-[3px] rounded-full bg-[#e9e9ee]/90 shadow-[0_1px_2px_rgba(0,0,0,0.06)] transition-colors hover:bg-[#dedee4] hover:text-[#6e6e73]">
+            <span className="flex h-[13px] w-9 items-center justify-center gap-[3px] rounded-full bg-[var(--surface-chip)] shadow-[0_1px_2px_rgba(0,0,0,0.06)] transition-colors hover:bg-[var(--surface-chip-2)] hover:text-[var(--ink-muted)]">
               <span className="h-[3px] w-[3px] rounded-full bg-current" />
               <span className="h-[3px] w-[3px] rounded-full bg-current" />
               <span className="h-[3px] w-[3px] rounded-full bg-current" />
@@ -365,15 +365,15 @@ export default function DashboardPage() {
       {/* ── Apple HIG Hero Welcome Banner ───────────────────────────────── */}
       <section
         aria-label="การทักทายและสถานะประจำวัน"
-        className="relative mb-6 overflow-hidden rounded-[18px] border border-black/[0.06] bg-white p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04)] sm:p-7"
+        className="relative mb-6 overflow-hidden rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04)] sm:p-7"
       >
         <div className="relative z-10 flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
           <div className="space-y-1.5">
-            <h1 className="text-2xl font-semibold tracking-tight text-[#1d1d1f] sm:text-3xl">
+            <h1 className="text-2xl font-semibold tracking-tight text-[var(--ink)] sm:text-3xl">
               {greeting},{' '}
-              <span className="text-[#0066cc]">{user.display_name || user.username}</span> 👋
+              <span className="text-[var(--accent-text)]">{user.display_name || user.username}</span> 👋
             </h1>
-            <p className="text-[13px] font-medium text-[#6e6e73]">
+            <p className="text-[13px] font-medium text-[var(--ink-muted)]">
               ภาพรวมข้อมูลสำคัญของคุณสำหรับวันนี้
             </p>
           </div>
@@ -383,10 +383,10 @@ export default function DashboardPage() {
               type="button"
               onClick={() => setShowConfigModal(true)}
               data-testid="manage-widgets-button"
-              className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-[13px] font-semibold text-[#1d1d1f] shadow-xs ring-1 ring-black/[0.08] transition-all duration-150 hover:bg-[#f5f5f7] hover:shadow-md focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#0066cc] focus-visible:ring-offset-2 active:scale-[0.95]"
+              className="inline-flex items-center gap-2 rounded-full bg-[var(--surface)] px-4 py-2 text-[13px] font-semibold text-[var(--ink)] shadow-xs ring-1 ring-[var(--hairline)] transition-all duration-150 hover:bg-[var(--surface-grouped)] hover:shadow-md focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 active:scale-[0.95]"
               aria-label="จัดการวิดเจ็ต"
             >
-              <SlidersHorizontal className="h-3.5 w-3.5 text-[#475569]" aria-hidden="true" />
+              <SlidersHorizontal className="h-3.5 w-3.5 text-[var(--ink-secondary)]" aria-hidden="true" />
               จัดการวิดเจ็ต
             </button>
           </div>
@@ -427,7 +427,7 @@ export default function DashboardPage() {
           </DialogHeader>
 
           <DialogBody>
-            <div className="rounded-2xl bg-[#f5f5f7] p-2 space-y-1.5">
+            <div className="rounded-2xl bg-[var(--surface-grouped)] p-2 space-y-1.5">
               {defaultWidgets
                 .filter((widget) => widget.id !== 'syshealth' || user?.role === 'admin')
                 .map((widget) => {
@@ -438,15 +438,15 @@ export default function DashboardPage() {
                       key={widget.id}
                       className={`flex items-center gap-3 rounded-xl p-3.5 transition-all duration-150 ${
                         isVisible
-                          ? 'bg-white shadow-xs ring-1 ring-black/[0.06]'
-                          : 'hover:bg-white/70'
+                          ? 'bg-[var(--surface)] shadow-xs ring-1 ring-[var(--hairline)]'
+                          : 'hover:bg-[var(--glass-80)]'
                       }`}
                     >
                       <div className="min-w-0 flex-1">
-                        <span className="block truncate text-[14px] font-semibold text-[#1d1d1f]">
+                        <span className="block truncate text-[14px] font-semibold text-[var(--ink)]">
                           {widgetNames[widget.id]}
                         </span>
-                        <span className="mt-0.5 block text-[12px] leading-[1.4] text-[#6e6e73]">
+                        <span className="mt-0.5 block text-[12px] leading-[1.4] text-[var(--ink-muted)]">
                           {widgetDescriptions[widget.id]}
                         </span>
                       </div>
@@ -468,9 +468,9 @@ export default function DashboardPage() {
                           alignItems: 'center',
                           justifyContent: 'flex-start',
                         }}
-                        className={`relative shrink-0 cursor-pointer rounded-full transition-colors duration-200 ease-in-out focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#0066cc] focus-visible:ring-offset-2 disabled:cursor-not-allowed ${
+                        className={`relative shrink-0 cursor-pointer rounded-full transition-colors duration-200 ease-in-out focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 disabled:cursor-not-allowed ${
                           isLocked ? 'opacity-50' : ''
-                        } ${isVisible ? 'bg-[#0066cc]' : 'bg-[#e5e5ea]'}`}
+                        } ${isVisible ? 'bg-[var(--accent)]' : 'bg-[var(--surface-chip)]'}`}
                       >
                         <span className="sr-only">สลับวิดเจ็ต {widgetNames[widget.id]}</span>
                         <span
@@ -480,7 +480,7 @@ export default function DashboardPage() {
                             height: '24px',
                             transform: isVisible ? 'translateX(16px)' : 'translateX(0px)',
                           }}
-                          className="pointer-events-none inline-block rounded-full bg-white shadow-[0_2px_4px_rgba(0,0,0,0.15),0_0_1px_rgba(0,0,0,0.1)] transition-transform duration-200 ease-in-out"
+                          className="pointer-events-none inline-block rounded-full bg-[var(--surface)] shadow-[0_2px_4px_rgba(0,0,0,0.15),0_0_1px_rgba(0,0,0,0.1)] transition-transform duration-200 ease-in-out"
                         />
                       </button>
                     </div>
@@ -492,7 +492,7 @@ export default function DashboardPage() {
           <DialogFooter>
             <button
               onClick={() => setShowConfigModal(false)}
-              className="inline-flex items-center justify-center rounded-full bg-[#0066cc] px-6 py-2.5 text-[15px] font-semibold text-white transition-all duration-150 hover:bg-[#0071e3]  focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#0066cc] focus-visible:ring-offset-2 active:scale-[0.95]"
+              className="inline-flex items-center justify-center rounded-full bg-[var(--accent)] px-6 py-2.5 text-[15px] font-semibold text-white transition-all duration-150 hover:bg-[var(--accent-hover)]  focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 active:scale-[0.95]"
             >
               เสร็จสิ้น
             </button>

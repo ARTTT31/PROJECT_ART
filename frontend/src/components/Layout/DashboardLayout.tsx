@@ -34,7 +34,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   return (
     <AuthGuard>
-      <div className="art-app-shell relative overflow-x-hidden bg-[#f5f5f7] min-h-[100dvh] text-[#1d1d1f]">
+      <div className="art-app-shell relative overflow-x-hidden bg-[var(--surface-grouped)] min-h-[100dvh] text-[var(--ink)]">
         {/* Sidebar wrapper */}
         <div className="relative z-20">
           <Sidebar

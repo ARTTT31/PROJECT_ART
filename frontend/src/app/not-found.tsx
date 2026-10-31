@@ -19,16 +19,16 @@ export default function NotFound() {
 
       <div id="main-content" className="flex min-h-[100dvh] items-center justify-center px-4 py-10">
         <section
-          className={`w-full max-w-5xl overflow-hidden rounded-[var(--art-radius-xl)] border border-black/[0.08] bg-white shadow-glass transition-all duration-700 ease-out lg:grid lg:grid-cols-[0.92fr_1.08fr] ${
+          className={`w-full max-w-5xl overflow-hidden rounded-[var(--art-radius-xl)] border border-[var(--hairline)] bg-[var(--surface)] shadow-glass transition-all duration-700 ease-out lg:grid lg:grid-cols-[0.92fr_1.08fr] ${
             mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
           }`}
           role="alert"
           aria-live="polite"
         >
           {/* Left: Visual Panel */}
-          <div className="relative min-h-[320px] overflow-hidden bg-[#0b63ce] p-8 text-white sm:p-10">
+          <div className="relative min-h-[320px] overflow-hidden bg-[var(--accent-hover)] p-8 text-white sm:p-10">
             <div className="relative flex h-full min-h-[260px] flex-col justify-between">
-              <div className="inline-flex h-16 w-16 items-center justify-center rounded-[11px] border border-white/24 bg-white/18">
+              <div className="inline-flex h-16 w-16 items-center justify-center rounded-[11px] border border-white/24 bg-[var(--glass-20)]">
                 <SearchX size={32} aria-hidden="true" />
               </div>
               <div>

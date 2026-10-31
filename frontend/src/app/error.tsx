@@ -26,7 +26,7 @@ export default function ErrorPage({ error, reset }: ErrorPageProps) {
       role="alert"
       aria-live="assertive"
     >
-      <div className="w-full max-w-lg overflow-hidden rounded-[var(--art-radius-xl)] border border-white/30 bg-white/80 backdrop-blur-[24px] shadow-glass-xl">
+      <div className="w-full max-w-lg overflow-hidden rounded-[var(--art-radius-xl)] border border-white/30 bg-[var(--glass-80)] backdrop-blur-[24px] shadow-glass-xl">
         {/* Header */}
         <div className="flex items-center gap-3 border-b border-slate-200/50 bg-red-50/50 px-6 py-5">
           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-red-100 text-red-600">

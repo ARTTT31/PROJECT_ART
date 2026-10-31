@@ -238,8 +238,8 @@ export default function RegisterPage() {
           {/* Loading mode state */}
           {isCheckingMode ? (
             <div className="flex flex-col items-center justify-center py-12 gap-3">
-              <Loader2 size={28} className="animate-spin text-[#0066cc]" />
-              <p className="text-[13px] text-[#86868b]">กำลังตรวจสอบระบบการรับสมัคร...</p>
+              <Loader2 size={28} className="animate-spin text-[var(--accent-text)]" />
+              <p className="text-[13px] text-[var(--ink-tertiary)]">กำลังตรวจสอบระบบการรับสมัคร...</p>
             </div>
           ) : isPendingSuccess ? (
             /* Success awaiting approval state */
@@ -254,7 +254,7 @@ export default function RegisterPage() {
                 <p className="text-[13.5px] text-amber-800/90 leading-relaxed max-w-sm">
                   เราได้รับคำขอสมัครของ <strong>{registeredEmail}</strong> เรียบร้อยแล้ว
                 </p>
-                <div className="mt-3 p-3 rounded-xl bg-white/80 border border-amber-200/60 text-[12.5px] text-slate-700 leading-relaxed text-left w-full">
+                <div className="mt-3 p-3 rounded-xl bg-[var(--glass-80)] border border-amber-200/60 text-[12.5px] text-slate-700 leading-relaxed text-left w-full">
                   <div className="font-semibold text-slate-900 mb-1 flex items-center gap-1.5">
                     <Shield size={14} className="text-amber-600" />
                     ระบบนี้กำหนดให้แอดมินอนุมัติก่อนเข้าใช้งาน

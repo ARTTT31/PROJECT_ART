@@ -39,21 +39,21 @@ export default function PageAccessGuard({
       <section
         role="status"
         aria-live="polite"
-        className="mx-auto flex max-w-md flex-col items-center gap-3 rounded-[18px] border border-black/[0.06] bg-white px-6 py-10 text-center"
+        className="mx-auto flex max-w-md flex-col items-center gap-3 rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] px-6 py-10 text-center"
       >
         <span
           aria-hidden="true"
-          className="flex h-12 w-12 items-center justify-center rounded-full bg-[#f5f5f7] text-[#6e6e73]"
+          className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--surface-grouped)] text-[var(--ink-muted)]"
         >
           <Lock size={22} />
         </span>
-        <h2 className="text-[17px] font-bold text-[#1d1d1f]">คุณไม่มีสิทธิ์เข้าถึงหน้านี้</h2>
-        <p className="text-[13.5px] leading-relaxed text-[#6e6e73]">
+        <h2 className="text-[17px] font-bold text-[var(--ink)]">คุณไม่มีสิทธิ์เข้าถึงหน้านี้</h2>
+        <p className="text-[13.5px] leading-relaxed text-[var(--ink-muted)]">
           บัญชีของคุณไม่ได้รับสิทธิ์ในหน้านี้ กรุณาติดต่อผู้ดูแลระบบหากต้องการเข้าใช้งาน
         </p>
         <Link
           href="/dashboard"
-          className="mt-1 inline-flex min-h-[44px] items-center rounded-full bg-[#0066cc] px-6 text-[13.5px] font-semibold text-white transition-colors hover:bg-[#0071e3] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#0066cc] focus-visible:ring-offset-2 active:scale-[0.95]"
+          className="mt-1 inline-flex min-h-[44px] items-center rounded-full bg-[var(--accent)] px-6 text-[13.5px] font-semibold text-white transition-colors hover:bg-[var(--accent-hover)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 active:scale-[0.95]"
         >
           กลับหน้าหลัก
         </Link>

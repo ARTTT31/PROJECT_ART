@@ -324,34 +324,34 @@ export default function FinanceWidget({
   if (loading) {
     return (
       <div
-        className="flex h-full min-h-[300px] items-center justify-center rounded-[18px] border border-black/[0.06] bg-white p-5"
+        className="flex h-full min-h-[300px] items-center justify-center rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] p-5"
         role="status"
         aria-live="polite"
         aria-label="กำลังโหลดรายรับรายจ่าย"
       >
-        <Loader2 className="h-5 w-5 animate-spin text-[#0066cc]" aria-hidden="true" />
+        <Loader2 className="h-5 w-5 animate-spin text-[var(--accent-text)]" aria-hidden="true" />
       </div>
     );
   }
 
   return (
     <section
-      className="flex h-full flex-col rounded-[18px] border border-black/[0.06] bg-white p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)]"
+      className="flex h-full flex-col rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)]"
       aria-labelledby="finance-title"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[#34c759]/10 text-[#248a3d]">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[var(--success-soft)] text-[var(--success-ink)]">
             <Wallet size={20} aria-hidden="true" />
           </div>
           <div className="min-w-0">
             <h3
               id="finance-title"
-              className="truncate text-[16px] font-bold tracking-tight text-[#1d1d1f]"
+              className="truncate text-[16px] font-bold tracking-tight text-[var(--ink)]"
             >
               รายรับ – รายจ่ายวันนี้
             </h3>
-            <p className="mt-0.5 truncate text-[12px] text-[#86868b]">
+            <p className="mt-0.5 truncate text-[12px] text-[var(--ink-tertiary)]">
               {todayEntries.length > 0
                 ? `${todayEntries.length} รายการวันนี้`
                 : 'บันทึกรายการแรกของวัน'}
@@ -365,7 +365,7 @@ export default function FinanceWidget({
             onClick={() => setSummaryOpen(true)}
             aria-label="ดูภาพรวมรายรับรายจ่าย"
             title="ดูภาพรวมทุกเดือน"
-            className="inline-flex items-center gap-1 rounded-full bg-[#f5f5f7] px-2.5 py-1.5 text-[11px] font-semibold text-[#6e6e73] transition-colors hover:bg-[#e5e5ea] hover:text-[#1d1d1f] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#0066cc]"
+            className="inline-flex items-center gap-1 rounded-full bg-[var(--surface-grouped)] px-2.5 py-1.5 text-[11px] font-semibold text-[var(--ink-muted)] transition-colors hover:bg-[var(--surface-chip)] hover:text-[var(--ink)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
           >
             <BarChart3 size={13} aria-hidden="true" />
             <span className="hidden sm:inline">ภาพรวม</span>
@@ -375,23 +375,23 @@ export default function FinanceWidget({
       </div>
 
       <div className="mt-4 grid grid-cols-3 gap-2.5">
-        <div className="rounded-[14px] bg-[#34c759]/10 px-3 py-2.5">
-          <span className="block text-[11px] font-semibold text-[#248a3d]">รายรับ</span>
-          <span className="mt-0.5 block tabular-nums text-[15px] font-extrabold text-[#1d1d1f]">
+        <div className="rounded-[14px] bg-[var(--success-soft)] px-3 py-2.5">
+          <span className="block text-[11px] font-semibold text-[var(--success-ink)]">รายรับ</span>
+          <span className="mt-0.5 block tabular-nums text-[15px] font-extrabold text-[var(--ink)]">
             {money.format(income)}
           </span>
         </div>
-        <div className="rounded-[14px] bg-[#ff3b30]/10 px-3 py-2.5">
-          <span className="block text-[11px] font-semibold text-[#b42318]">รายจ่าย</span>
-          <span className="mt-0.5 block tabular-nums text-[15px] font-extrabold text-[#1d1d1f]">
+        <div className="rounded-[14px] bg-[var(--danger-soft)] px-3 py-2.5">
+          <span className="block text-[11px] font-semibold text-[var(--danger-ink)]">รายจ่าย</span>
+          <span className="mt-0.5 block tabular-nums text-[15px] font-extrabold text-[var(--ink)]">
             {money.format(expense)}
           </span>
         </div>
-        <div className="rounded-[14px] bg-[#f5f5f7] px-3 py-2.5">
-          <span className="block text-[11px] font-semibold text-[#6e6e73]">คงเหลือ</span>
+        <div className="rounded-[14px] bg-[var(--surface-grouped)] px-3 py-2.5">
+          <span className="block text-[11px] font-semibold text-[var(--ink-muted)]">คงเหลือ</span>
           <span
             className={`mt-0.5 block tabular-nums text-[15px] font-extrabold ${
-              balance < 0 ? 'text-[#b42318]' : 'text-[#1d1d1f]'
+              balance < 0 ? 'text-[var(--danger-ink)]' : 'text-[var(--ink)]'
             }`}
           >
             {money.format(balance)}
@@ -400,25 +400,25 @@ export default function FinanceWidget({
       </div>
 
       {budget !== null && (
-        <div className="mt-2.5 rounded-[12px] bg-[#f8f8fa] px-3 py-2">
+        <div className="mt-2.5 rounded-[12px] bg-[var(--surface-subtle)] px-3 py-2">
           <div className="flex items-baseline justify-between gap-2 text-[11px]">
-            <span className="font-semibold text-[#6e6e73]">งบเดือนนี้</span>
+            <span className="font-semibold text-[var(--ink-muted)]">งบเดือนนี้</span>
             <span
-              className={`tabular-nums font-bold ${overBudget ? 'text-[#b42318]' : 'text-[#1d1d1f]'}`}
+              className={`tabular-nums font-bold ${overBudget ? 'text-[var(--danger-ink)]' : 'text-[var(--ink)]'}`}
             >
               {money.format(monthExpense)} / {money.format(budget)}
             </span>
           </div>
-          <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-[#e5e5ea]">
+          <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-[var(--surface-chip)]">
             <div
               className={`h-full rounded-full transition-all duration-300 ${
-                overBudget ? 'bg-[#ff3b30]' : budgetUsed > 80 ? 'bg-[#ff9500]' : 'bg-[#34c759]'
+                overBudget ? 'bg-[var(--danger)]' : budgetUsed > 80 ? 'bg-[var(--warning)]' : 'bg-[var(--success)]'
               }`}
               style={{ width: `${Math.max(2, budgetUsed)}%` }}
             />
           </div>
           {overBudget && (
-            <p className="mt-1 text-[10.5px] font-semibold text-[#b42318]">
+            <p className="mt-1 text-[10.5px] font-semibold text-[var(--danger-ink)]">
               เกินงบไป {money.format(monthExpense - budget)} แล้ว
             </p>
           )}
@@ -428,7 +428,7 @@ export default function FinanceWidget({
       {error && (
         <p
           role="alert"
-          className="mt-2.5 rounded-[10px] bg-[#ff3b30]/[0.07] px-3 py-1.5 text-[12px] text-[#b42318]"
+          className="mt-2.5 rounded-[10px] bg-[var(--danger-soft)] px-3 py-1.5 text-[12px] text-[var(--danger-ink)]"
         >
           {error}
         </p>
@@ -437,7 +437,7 @@ export default function FinanceWidget({
       {undo && (
         <div
           role="status"
-          className="mt-2.5 flex items-center justify-between gap-2 rounded-[10px] bg-[#1d1d1f] px-3 py-1.5 text-[11.5px] text-white"
+          className="mt-2.5 flex items-center justify-between gap-2 rounded-[10px] bg-[var(--surface-inverse)] px-3 py-1.5 text-[11.5px] text-[var(--ink-inverse)]"
         >
           <span className="min-w-0 truncate">
             ลบ “{undo.label || (undo.type === 'income' ? 'รายรับ' : 'รายจ่าย')}” แล้ว
@@ -445,7 +445,7 @@ export default function FinanceWidget({
           <button
             type="button"
             onClick={undoDelete}
-            className="shrink-0 rounded-full bg-white/20 px-2.5 py-0.5 text-[11px] font-bold text-white transition-colors hover:bg-white/30"
+            className="shrink-0 rounded-full bg-[var(--glass-20)] px-2.5 py-0.5 text-[11px] font-bold text-[var(--ink-inverse)] transition-colors hover:bg-[var(--glass-40)]"
           >
             เลิกทำ
           </button>
@@ -461,7 +461,7 @@ export default function FinanceWidget({
       >
         <div className="flex gap-2">
           <div
-            className="inline-flex rounded-full bg-[#e5e5ea] p-0.5"
+            className="inline-flex rounded-full bg-[var(--surface-chip)] p-0.5"
             role="group"
             aria-label="ประเภทรายการ"
           >
@@ -472,7 +472,7 @@ export default function FinanceWidget({
                 onClick={() => setType(option)}
                 aria-pressed={type === option}
                 className={`rounded-full px-3 py-1 text-[11.5px] font-bold transition-colors ${
-                  type === option ? 'bg-white text-[#1d1d1f] shadow-xs' : 'text-[#6e6e73]'
+                  type === option ? 'bg-[var(--surface)] text-[var(--ink)] shadow-xs' : 'text-[var(--ink-muted)]'
                 }`}
               >
                 {option === 'expense' ? 'รายจ่าย' : 'รายรับ'}
@@ -486,7 +486,7 @@ export default function FinanceWidget({
             placeholder="รายการ เช่น ค่ากาแฟ"
             aria-label="ชื่อรายการ"
             maxLength={MAX_FINANCE_LABEL}
-            className="min-w-0 flex-1 rounded-xl border border-black/10 bg-white px-3 py-1.5 text-[12.5px] text-[#1d1d1f] placeholder:text-[#86868b] focus:border-[#0066cc] focus:outline-hidden focus:ring-2 focus:ring-[#0066cc]/20"
+            className="min-w-0 flex-1 rounded-xl border border-[var(--hairline-strong)] bg-[var(--surface)] px-3 py-1.5 text-[12.5px] text-[var(--ink)] placeholder:text-[var(--ink-tertiary)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
           />
         </div>
 
@@ -498,19 +498,19 @@ export default function FinanceWidget({
             onChange={(event) => setAmount(event.target.value)}
             placeholder="จำนวนเงิน"
             aria-label="จำนวนเงิน"
-            className="min-w-0 flex-1 rounded-xl border border-black/10 bg-white px-3 py-2 text-[13px] tabular-nums text-[#1d1d1f] placeholder:text-[#86868b] focus:border-[#0066cc] focus:outline-hidden focus:ring-2 focus:ring-[#0066cc]/20"
+            className="min-w-0 flex-1 rounded-xl border border-[var(--hairline-strong)] bg-[var(--surface)] px-3 py-2 text-[13px] tabular-nums text-[var(--ink)] placeholder:text-[var(--ink-tertiary)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
           />
           <input
             type="date"
             value={date}
             onChange={(event) => setDate(event.target.value)}
             aria-label="วันที่"
-            className="w-[136px] shrink-0 rounded-xl border border-black/10 bg-white px-2 py-2 text-[12px] text-[#1d1d1f] focus:border-[#0066cc] focus:outline-hidden focus:ring-2 focus:ring-[#0066cc]/20"
+            className="w-[136px] shrink-0 rounded-xl border border-[var(--hairline-strong)] bg-[var(--surface)] px-2 py-2 text-[12px] text-[var(--ink)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
           />
           <button
             type="submit"
             aria-label="เพิ่มรายการ"
-            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#0066cc] text-white transition-all hover:bg-[#0071e3] active:scale-95 disabled:opacity-40"
+            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--accent)] text-white transition-all hover:bg-[var(--accent-hover)] active:scale-95 disabled:opacity-40"
             disabled={!amount.trim()}
           >
             <Plus size={16} aria-hidden="true" />
@@ -525,7 +525,7 @@ export default function FinanceWidget({
           placeholder="หมวดหมู่ (ไม่บังคับ)"
           aria-label="หมวดหมู่"
           maxLength={40}
-          className="w-full rounded-xl border border-black/10 bg-white px-3 py-1.5 text-[12px] text-[#1d1d1f] placeholder:text-[#86868b] focus:border-[#0066cc] focus:outline-hidden focus:ring-2 focus:ring-[#0066cc]/20"
+          className="w-full rounded-xl border border-[var(--hairline-strong)] bg-[var(--surface)] px-3 py-1.5 text-[12px] text-[var(--ink)] placeholder:text-[var(--ink-tertiary)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
         />
         <datalist id="finance-categories">
           {FINANCE_CATEGORIES.map((option) => (
@@ -539,34 +539,34 @@ export default function FinanceWidget({
         aria-label="รายการวันนี้"
       >
         {todayEntries.length === 0 ? (
-          <li className="flex min-h-[92px] flex-col items-center justify-center rounded-[14px] border border-dashed border-black/[0.08] bg-[#f8f8fa] px-3 py-4 text-center text-[12.5px] text-[#86868b]">
-            <Wallet size={18} className="mb-1.5 text-[#a1a1a6]" aria-hidden="true" />
+          <li className="flex min-h-[92px] flex-col items-center justify-center rounded-[14px] border border-dashed border-[var(--hairline)] bg-[var(--surface-subtle)] px-3 py-4 text-center text-[12.5px] text-[var(--ink-tertiary)]">
+            <Wallet size={18} className="mb-1.5 text-[var(--ink-faint)]" aria-hidden="true" />
             ยังไม่มีรายการวันนี้
           </li>
         ) : (
           todayEntries.map((entry) => (
             <li
               key={entry.id}
-              className="group flex items-center gap-2.5 rounded-[12px] bg-[#f5f5f7] px-3 py-2"
+              className="group flex items-center gap-2.5 rounded-[12px] bg-[var(--surface-grouped)] px-3 py-2"
             >
               {entry.type === 'income' ? (
-                <ArrowUpCircle size={16} className="shrink-0 text-[#248a3d]" aria-hidden="true" />
+                <ArrowUpCircle size={16} className="shrink-0 text-[var(--success-ink)]" aria-hidden="true" />
               ) : (
-                <ArrowDownCircle size={16} className="shrink-0 text-[#b42318]" aria-hidden="true" />
+                <ArrowDownCircle size={16} className="shrink-0 text-[var(--danger-ink)]" aria-hidden="true" />
               )}
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-[12.5px] text-[#1d1d1f]">
+                <span className="block truncate text-[12.5px] text-[var(--ink)]">
                   {entry.label || (entry.type === 'income' ? 'รายรับ' : 'รายจ่าย')}
                 </span>
                 {entry.category && (
-                  <span className="block truncate text-[10.5px] text-[#86868b]">
+                  <span className="block truncate text-[10.5px] text-[var(--ink-tertiary)]">
                     {entry.category}
                   </span>
                 )}
               </span>
               <span
                 className={`shrink-0 tabular-nums text-[12.5px] font-bold ${
-                  entry.type === 'income' ? 'text-[#248a3d]' : 'text-[#1d1d1f]'
+                  entry.type === 'income' ? 'text-[var(--success-ink)]' : 'text-[var(--ink)]'
                 }`}
               >
                 {entry.type === 'income' ? '+' : '−'}
@@ -576,7 +576,7 @@ export default function FinanceWidget({
                 type="button"
                 onClick={() => setEditing(entry)}
                 aria-label={`แก้ไข ${entry.label || 'รายการ'}`}
-                className="shrink-0 rounded-full p-1 text-[#86868b] transition-colors hover:bg-white hover:text-[#0066cc] md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100"
+                className="shrink-0 rounded-full p-1 text-[var(--ink-tertiary)] transition-colors hover:bg-[var(--surface)] hover:text-[var(--accent-text)] md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100"
               >
                 <Pencil size={13} aria-hidden="true" />
               </button>
@@ -584,7 +584,7 @@ export default function FinanceWidget({
                 type="button"
                 onClick={() => removeEntry(entry)}
                 aria-label={`ลบ ${entry.label || 'รายการ'}`}
-                className="shrink-0 rounded-full p-1 text-[#86868b] opacity-100 transition-colors hover:bg-white hover:text-[#ff3b30] md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100"
+                className="shrink-0 rounded-full p-1 text-[var(--ink-tertiary)] opacity-100 transition-colors hover:bg-[var(--surface)] hover:text-[var(--danger)] md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100"
               >
                 <Trash2 size={13} aria-hidden="true" />
               </button>
@@ -593,7 +593,7 @@ export default function FinanceWidget({
         )}
       </ul>
 
-      <div className="mt-3 flex items-center justify-between border-t border-black/[0.05] pt-2 text-[10px] text-[#475569]">
+      <div className="mt-3 flex items-center justify-between border-t border-[var(--hairline-soft)] pt-2 text-[10px] text-[var(--ink-secondary)]">
         <span>บันทึกอัตโนมัติ</span>
         <span className="inline-flex items-center gap-1">
           {saving && <Loader2 size={10} className="animate-spin" aria-hidden="true" />}

@@ -60,13 +60,13 @@ const DialogContent = React.forwardRef<
         'w-[calc(100vw-2rem)] max-w-lg',
         'max-h-[calc(100dvh-2rem)]',
         // Apple HIG: 24px squircle radius, white surface, ring depth
-        'bg-white rounded-[18px] ring-1 ring-black/[0.08]',
+        'bg-[var(--surface)] rounded-[18px] ring-1 ring-[var(--hairline)]',
         // Shadow: Apple modal elevation
         'shadow-[0_32px_80px_rgba(0,0,0,0.14),0_8px_24px_rgba(0,0,0,0.06)]',
         // Overflow handling
         'overflow-hidden',
         // Focus styles
-        'focus:outline-hidden focus:ring-2 focus:ring-[#0066cc] focus:ring-offset-2',
+        'focus:outline-hidden focus:ring-2 focus:ring-[var(--accent)] focus:ring-offset-2',
         // Animations
         'data-[state=open]:animate-in data-[state=closed]:animate-out',
         'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
@@ -90,12 +90,12 @@ const DialogContent = React.forwardRef<
           'rounded-full',
           'inline-flex items-center justify-center',
           // Colors
-          'text-[#86868b] hover:text-[#1d1d1f]',
+          'text-[var(--ink-tertiary)] hover:text-[var(--ink)]',
           'hover:bg-black/[0.05]',
           // Transitions
           'transition-all duration-150 active:scale-[0.95]',
           // Focus ring
-          'focus:outline-hidden focus:ring-2 focus:ring-[#0066cc]',
+          'focus:outline-hidden focus:ring-2 focus:ring-[var(--accent)]',
           // Disabled state
           'disabled:pointer-events-none disabled:opacity-50',
         )}
@@ -116,7 +116,7 @@ const DialogHeader = ({ className, ...props }: React.HTMLAttributes<HTMLDivEleme
       // Spacing
       'px-6 pt-6 pb-4',
       // Border separator
-      'border-b border-black/[0.06]',
+      'border-b border-[var(--hairline)]',
       className,
     )}
     {...props}
@@ -132,7 +132,7 @@ const DialogFooter = ({ className, ...props }: React.HTMLAttributes<HTMLDivEleme
       // Spacing
       'gap-2 px-6 py-4',
       // Border separator
-      'border-t border-black/[0.06]',
+      'border-t border-[var(--hairline)]',
       className,
     )}
     {...props}

@@ -13,7 +13,12 @@ const anuphan = Anuphan({
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  themeColor: '#0066cc', // Apple Blue
+  // Matches the theme the theme card can switch to, so the browser chrome does
+  // not stay light behind a dark page.
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#0066cc' },
+    { media: '(prefers-color-scheme: dark)', color: '#121214' },
+  ],
 };
 
 export const metadata: Metadata = {
@@ -51,11 +56,19 @@ export const metadata: Metadata = {
   },
 };
 
+/**
+ * Applies the saved theme before the first paint. Without this, a dark-mode
+ * reload would render a white page until React hydrates and the theme provider
+ * writes the same attributes. Keep the key and the attribute names in sync with
+ * context/ThemeContext.tsx (THEME_STORAGE_KEY).
+ */
+const themeInitScript = `(function(){try{var s=JSON.parse(localStorage.getItem('art_theme_settings')||'{}');var m=s.mode==='light'||s.mode==='dark'?s.mode:'system';var a=typeof s.accent==='string'?s.accent:'blue';var d=m==='dark'||(m==='system'&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);var r=document.documentElement;r.dataset.theme=d?'dark':'light';r.dataset.accent=a;r.style.colorScheme=d?'dark':'light';}catch(e){}})();`;
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="th">
+    <html lang="th" suppressHydrationWarning>
       <body className={anuphan.variable}>
-        {/* Theme toggle removed */}
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
         <Providers>{children}</Providers>
       </body>
     </html>

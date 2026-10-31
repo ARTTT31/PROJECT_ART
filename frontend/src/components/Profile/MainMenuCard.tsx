@@ -32,13 +32,13 @@ export function MainMenuCard({ items, onToggle, onMove }: MainMenuCardProps) {
               key={item.id}
               className={`flex items-center gap-3 rounded-2xl p-3 ring-1 transition-all duration-150 ${
                 item.enabled
-                  ? 'bg-white ring-black/[0.06] shadow-2xs'
-                  : 'bg-[#f5f5f7] ring-transparent opacity-60'
+                  ? 'bg-[var(--surface)] ring-[var(--hairline)] shadow-2xs'
+                  : 'bg-[var(--surface-grouped)] ring-transparent opacity-60'
               }`}
             >
               <div
                 className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] ${
-                  item.enabled ? 'bg-[#0066cc]/10 text-[#0066cc]' : 'bg-slate-200 text-slate-400'
+                  item.enabled ? 'bg-[var(--accent-soft)] text-[var(--accent-text)]' : 'bg-slate-200 text-slate-400'
                 }`}
               >
                 <Icon size={18} aria-hidden="true" />
@@ -46,7 +46,7 @@ export function MainMenuCard({ items, onToggle, onMove }: MainMenuCardProps) {
 
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-[13.5px] font-bold tracking-tight text-[#1d1d1f]">
+                  <span className="text-[13.5px] font-bold tracking-tight text-[var(--ink)]">
                     {item.name}
                   </span>
                   {item.required && (
@@ -56,7 +56,7 @@ export function MainMenuCard({ items, onToggle, onMove }: MainMenuCardProps) {
                   )}
                 </div>
                 {item.description && (
-                  <p className="mt-0.5 truncate text-[11px] text-[#6e6e73]">{item.description}</p>
+                  <p className="mt-0.5 truncate text-[11px] text-[var(--ink-muted)]">{item.description}</p>
                 )}
               </div>
 
@@ -98,8 +98,8 @@ export function MainMenuCard({ items, onToggle, onMove }: MainMenuCardProps) {
                     alignItems: 'center',
                     justifyContent: 'flex-start',
                   }}
-                  className={`relative ml-1 shrink-0 cursor-pointer rounded-full transition-colors duration-200 ease-in-out focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#0066cc] disabled:cursor-not-allowed ${
-                    item.enabled ? 'bg-[#0066cc]' : 'bg-[#e5e5ea]'
+                  className={`relative ml-1 shrink-0 cursor-pointer rounded-full transition-colors duration-200 ease-in-out focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)] disabled:cursor-not-allowed ${
+                    item.enabled ? 'bg-[var(--accent)]' : 'bg-[var(--surface-chip)]'
                   } ${item.required ? 'opacity-70' : ''}`}
                 >
                   <span
@@ -108,7 +108,7 @@ export function MainMenuCard({ items, onToggle, onMove }: MainMenuCardProps) {
                       height: '24px',
                       transform: item.enabled ? 'translateX(16px)' : 'translateX(0px)',
                     }}
-                    className="pointer-events-none inline-block rounded-full bg-white shadow-[0_2px_4px_rgba(0,0,0,0.15),0_0_1px_rgba(0,0,0,0.1)] transition-transform duration-200 ease-in-out"
+                    className="pointer-events-none inline-block rounded-full bg-[var(--surface)] shadow-[0_2px_4px_rgba(0,0,0,0.15),0_0_1px_rgba(0,0,0,0.1)] transition-transform duration-200 ease-in-out"
                   />
                 </button>
               </div>

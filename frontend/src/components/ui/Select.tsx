@@ -212,16 +212,16 @@ export default function Select({
             }
           }
         }}
-        className={`inline-flex min-w-0 items-center justify-between gap-1.5 border border-black/[0.09] bg-white text-left font-medium text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all duration-150 hover:border-black/[0.16] hover:shadow-[0_2px_6px_rgba(0,0,0,0.06)] focus-visible:border-[#0066cc]/50 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#0066cc]/25 disabled:cursor-not-allowed disabled:opacity-50 ${triggerSize} ${className}`}
+        className={`inline-flex min-w-0 items-center justify-between gap-1.5 border border-[var(--hairline)] bg-[var(--surface)] text-left font-medium text-[var(--ink)] shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all duration-150 hover:border-[var(--hairline-strong)] hover:shadow-[0_2px_6px_rgba(0,0,0,0.06)] focus-visible:border-[var(--accent-border)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent-ring)] disabled:cursor-not-allowed disabled:opacity-50 ${triggerSize} ${className}`}
       >
-        <span className={`truncate ${selected ? '' : 'text-[#86868b]'}`}>
+        <span className={`truncate ${selected ? '' : 'text-[var(--ink-tertiary)]'}`}>
           {selected?.label ?? placeholder}
         </span>
         <ChevronDown
           size={size === 'sm' ? 12 : 15}
           strokeWidth={2.4}
           aria-hidden="true"
-          className={`shrink-0 text-[#86868b] transition-transform duration-150 ${open ? 'rotate-180' : ''}`}
+          className={`shrink-0 text-[var(--ink-tertiary)] transition-transform duration-150 ${open ? 'rotate-180' : ''}`}
         />
       </button>
 
@@ -244,12 +244,12 @@ export default function Select({
               bottom: placement.bottom,
               maxHeight: MENU_MAX_HEIGHT,
             }}
-            className="z-[70] overflow-y-auto overscroll-contain rounded-[12px] border border-black/[0.08] bg-white/95 p-1 shadow-[0_16px_40px_-12px_rgba(0,0,0,0.28)] outline-hidden backdrop-blur-xl"
+            className="z-[70] overflow-y-auto overscroll-contain rounded-[12px] border border-[var(--hairline)] bg-[var(--glass-95)] p-1 shadow-[0_16px_40px_-12px_rgba(0,0,0,0.28)] outline-hidden backdrop-blur-xl"
           >
             {groups.map(([group, groupOptions]) => (
               <div key={group || 'default'} role="group" aria-label={group || undefined}>
                 {group && (
-                  <div className="px-2.5 pb-1 pt-2 text-[10px] font-bold uppercase tracking-[0.08em] text-[#a1a1a6]">
+                  <div className="px-2.5 pb-1 pt-2 text-[10px] font-bold uppercase tracking-[0.08em] text-[var(--ink-faint)]">
                     {group}
                   </div>
                 )}
@@ -269,8 +269,8 @@ export default function Select({
                       }}
                       onClick={() => commit(option)}
                       className={`flex w-full items-center justify-between gap-2 rounded-[8px] px-2.5 py-[7px] text-left text-[12.5px] transition-colors duration-100 disabled:cursor-not-allowed disabled:opacity-40 ${
-                        isActive && !option.disabled ? 'bg-[#0066cc]/[0.09]' : ''
-                      } ${isSelected ? 'font-semibold text-[#0066cc]' : 'text-[#1d1d1f]'}`}
+                        isActive && !option.disabled ? 'bg-[var(--accent-soft)]' : ''
+                      } ${isSelected ? 'font-semibold text-[var(--accent-text)]' : 'text-[var(--ink)]'}`}
                     >
                       <span className="truncate">{option.label}</span>
                       {isSelected && (

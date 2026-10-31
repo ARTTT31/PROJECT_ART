@@ -89,22 +89,22 @@ export default function CurrencyConverterWidget({
 
   return (
     <section
-      className="flex h-full flex-col rounded-[18px] border border-black/[0.06] bg-white p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)]"
+      className="flex h-full flex-col rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)]"
       aria-labelledby="currency-converter-title"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[#30b0c7]/10 text-[#0f7c8f]">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[var(--info-soft)] text-[#0f7c8f]">
             <Wallet size={20} aria-hidden="true" />
           </div>
           <div className="min-w-0">
             <h3
               id="currency-converter-title"
-              className="truncate text-[16px] font-bold tracking-tight text-[#1d1d1f]"
+              className="truncate text-[16px] font-bold tracking-tight text-[var(--ink)]"
             >
               แปลงสกุลเงิน
             </h3>
-            <p className="mt-0.5 truncate text-[12px] text-[#86868b]">
+            <p className="mt-0.5 truncate text-[12px] text-[var(--ink-tertiary)]">
               ใช้อัตราอ้างอิงรายวันจากธนาคารกลาง
             </p>
           </div>
@@ -115,20 +115,20 @@ export default function CurrencyConverterWidget({
 
       <div className="mt-4 space-y-3">
         <label className="block">
-          <span className="mb-1 block text-[12px] font-semibold text-[#6e6e73]">จำนวน</span>
+          <span className="mb-1 block text-[12px] font-semibold text-[var(--ink-muted)]">จำนวน</span>
           <input
             type="text"
             inputMode="decimal"
             value={amount}
             onChange={(event) => setAmount(event.target.value)}
             aria-label="จำนวนเงินที่ต้องการแปลง"
-            className="w-full rounded-xl border border-black/10 bg-white px-3 py-2 text-[14px] tabular-nums text-[#1d1d1f] focus:border-[#0066cc] focus:outline-hidden focus:ring-2 focus:ring-[#0066cc]/20"
+            className="w-full rounded-xl border border-[var(--hairline-strong)] bg-[var(--surface)] px-3 py-2 text-[14px] tabular-nums text-[var(--ink)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
           />
         </label>
 
         <div className="grid grid-cols-[1fr_auto_1fr] items-end gap-2">
           <div className="block">
-            <span className="mb-1 block text-[12px] font-semibold text-[#6e6e73]">จาก</span>
+            <span className="mb-1 block text-[12px] font-semibold text-[var(--ink-muted)]">จาก</span>
             <Select
               value={from}
               onChange={setFrom}
@@ -143,13 +143,13 @@ export default function CurrencyConverterWidget({
             type="button"
             onClick={swap}
             aria-label="สลับสกุลเงิน"
-            className="mb-0.5 flex h-9 w-9 items-center justify-center rounded-full bg-[#f2f2f7] text-[#6e6e73] transition-colors hover:bg-[#e5e5ea] hover:text-[#1d1d1f]"
+            className="mb-0.5 flex h-9 w-9 items-center justify-center rounded-full bg-[var(--surface-grouped-2)] text-[var(--ink-muted)] transition-colors hover:bg-[var(--surface-chip)] hover:text-[var(--ink)]"
           >
             <ArrowLeftRight size={15} aria-hidden="true" />
           </button>
 
           <div className="block">
-            <span className="mb-1 block text-[12px] font-semibold text-[#6e6e73]">เป็น</span>
+            <span className="mb-1 block text-[12px] font-semibold text-[var(--ink-muted)]">เป็น</span>
             <Select
               value={to}
               onChange={setTo}
@@ -162,36 +162,36 @@ export default function CurrencyConverterWidget({
         </div>
       </div>
 
-      <div className="mt-4 flex flex-1 flex-col justify-center rounded-[16px] bg-[#f5f5f7] px-4 py-3.5">
+      <div className="mt-4 flex flex-1 flex-col justify-center rounded-[16px] bg-[var(--surface-grouped)] px-4 py-3.5">
         {loading ? (
           <div role="status" className="flex items-center justify-center py-2">
-            <Loader2 size={16} className="animate-spin text-[#0066cc]" aria-hidden="true" />
+            <Loader2 size={16} className="animate-spin text-[var(--accent-text)]" aria-hidden="true" />
           </div>
         ) : error ? (
           <button
             type="button"
             onClick={() => void load()}
-            className="inline-flex items-center justify-center gap-1.5 text-[12.5px] font-semibold text-[#b42318]"
+            className="inline-flex items-center justify-center gap-1.5 text-[12.5px] font-semibold text-[var(--danger-ink)]"
           >
             <RefreshCw size={13} aria-hidden="true" /> {error} — ลองใหม่
           </button>
         ) : (
           <>
-            <span className="text-[11.5px] font-medium text-[#6e6e73]">
+            <span className="text-[11.5px] font-medium text-[var(--ink-muted)]">
               {numberFormat.format(numericAmount)} {from} =
             </span>
-            <span className="mt-0.5 tabular-nums text-[24px] font-extrabold leading-tight text-[#1d1d1f]">
+            <span className="mt-0.5 tabular-nums text-[24px] font-extrabold leading-tight text-[var(--ink)]">
               {numberFormat.format(converted)}{' '}
-              <span className="text-[13px] font-semibold text-[#6e6e73]">{to}</span>
+              <span className="text-[13px] font-semibold text-[var(--ink-muted)]">{to}</span>
             </span>
-            <span className="mt-1 text-[11px] text-[#86868b]">
+            <span className="mt-1 text-[11px] text-[var(--ink-tertiary)]">
               1 {to} ≈ {numberFormat.format(toRate / (fromRate || 1))} {from}
             </span>
           </>
         )}
       </div>
 
-      <p className="mt-3 border-t border-black/[0.05] pt-2 text-[10px] text-[#475569]">
+      <p className="mt-3 border-t border-[var(--hairline-soft)] pt-2 text-[10px] text-[var(--ink-secondary)]">
         อัตราอ้างอิงจาก Frankfurter · ข้อมูลรายวัน ไม่ใช่ราคาซื้อขายจริงของธนาคาร
       </p>
     </section>

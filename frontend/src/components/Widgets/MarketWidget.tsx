@@ -229,14 +229,14 @@ export default function MarketWidget({
   if (loading && !data) {
     return (
       <div
-        className="flex h-full min-h-[300px] items-center justify-center rounded-[18px] border border-black/[0.06] bg-white p-5"
+        className="flex h-full min-h-[300px] items-center justify-center rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] p-5"
         role="status"
         aria-live="polite"
         aria-label="กำลังโหลดข้อมูลตลาด"
       >
         <div className="grid w-full animate-pulse grid-cols-1 gap-3 sm:grid-cols-3">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-24 rounded-[18px] bg-[#f5f5f7]" />
+            <div key={i} className="h-24 rounded-[18px] bg-[var(--surface-grouped)]" />
           ))}
         </div>
       </div>
@@ -249,22 +249,22 @@ export default function MarketWidget({
 
   return (
     <section
-      className="flex h-full flex-col rounded-[18px] border border-black/[0.06] bg-white p-5"
+      className="flex h-full flex-col rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] p-5"
       aria-labelledby="market-title"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[#ff9500]/10 text-[#c77700]">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[var(--warning-soft)] text-[var(--warning-ink)]">
             <Coins size={20} aria-hidden="true" />
           </div>
           <div className="min-w-0">
             <h3
               id="market-title"
-              className="truncate text-[16px] font-bold tracking-tight text-[#1d1d1f]"
+              className="truncate text-[16px] font-bold tracking-tight text-[var(--ink)]"
             >
               ค่าเงิน · ทอง · SET
             </h3>
-            <p className="mt-0.5 truncate text-[12px] text-[#86868b]">
+            <p className="mt-0.5 truncate text-[12px] text-[var(--ink-tertiary)]">
               {refreshing
                 ? 'กำลังอัปเดต...'
                 : data?.is_stale
@@ -280,7 +280,7 @@ export default function MarketWidget({
       </div>
 
       {error && (
-        <div className="mt-3 flex items-center justify-between gap-2 rounded-[12px] bg-[#ff3b30]/10 px-3 py-2 text-[12px] font-medium text-[#ff3b30]">
+        <div className="mt-3 flex items-center justify-between gap-2 rounded-[12px] bg-[var(--danger-soft)] px-3 py-2 text-[12px] font-medium text-[var(--danger)]">
           <span className="flex min-w-0 items-center gap-1.5">
             <AlertCircle size={13} className="shrink-0" aria-hidden="true" />
             <span className="truncate">{error}</span>
@@ -297,14 +297,14 @@ export default function MarketWidget({
 
       <div className="mt-4 grid grid-cols-1 gap-2.5 sm:grid-cols-3">
         {/* ── Gold ─────────────────────────────────────────────────────── */}
-        <div className="flex flex-col justify-between rounded-[16px] border border-black/[0.05] bg-gradient-to-b from-[#fbfbfd] to-[#f4f4f6] p-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]">
+        <div className="flex flex-col justify-between rounded-[16px] border border-[var(--hairline-soft)] bg-gradient-to-b from-[var(--surface-subtle)] to-[var(--surface-grouped-2)] p-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]">
           <div className="flex items-center gap-2">
-            <span className="flex h-6 w-6 items-center justify-center rounded-[8px] bg-[#c77700]/10 text-[#c77700]">
+            <span className="flex h-6 w-6 items-center justify-center rounded-[8px] bg-[var(--warning-soft)] text-[var(--warning-ink)]">
               <Coins size={12} aria-hidden="true" />
             </span>
             <label
               htmlFor="market-gold-source"
-              className="text-[11px] font-semibold tracking-wide text-[#6e6e73]"
+              className="text-[11px] font-semibold tracking-wide text-[var(--ink-muted)]"
             >
               ทองคำ
             </label>
@@ -325,21 +325,21 @@ export default function MarketWidget({
               {gold.buy != null && gold.sell != null ? (
                 <div className="mt-2 space-y-1">
                   <div className="flex items-baseline justify-between gap-2">
-                    <span className="text-[11px] text-[#6e6e73]">รับซื้อ / บาททองคำ</span>
-                    <span className="tabular-nums text-[16px] font-extrabold leading-none text-[#1d1d1f]">
+                    <span className="text-[11px] text-[var(--ink-muted)]">รับซื้อ / บาททองคำ</span>
+                    <span className="tabular-nums text-[16px] font-extrabold leading-none text-[var(--ink)]">
                       {money.format(gold.buy)}
                     </span>
                   </div>
                   <div className="flex items-baseline justify-between gap-2">
-                    <span className="text-[11px] text-[#6e6e73]">ขายออก</span>
-                    <span className="tabular-nums text-[16px] font-extrabold leading-none text-[#c77700]">
+                    <span className="text-[11px] text-[var(--ink-muted)]">ขายออก</span>
+                    <span className="tabular-nums text-[16px] font-extrabold leading-none text-[var(--warning-ink)]">
                       {money.format(gold.sell)}
                     </span>
                   </div>
                 </div>
               ) : (
                 <div className="mt-2">
-                  <div className="tabular-nums text-[20px] font-extrabold leading-none text-[#1d1d1f]">
+                  <div className="tabular-nums text-[20px] font-extrabold leading-none text-[var(--ink)]">
                     {gold.value != null ? money.format(gold.value) : '—'}
                     <span className="ml-1 text-[10px] font-medium">
                       {gold.currency ?? 'USD'}/oz
@@ -359,27 +359,27 @@ export default function MarketWidget({
                   )}
                 </div>
               )}
-              <p className="mt-2 truncate text-[10px] text-[#86868b]" title={gold.updated_at ?? ''}>
+              <p className="mt-2 truncate text-[10px] text-[var(--ink-tertiary)]" title={gold.updated_at ?? ''}>
                 {gold.market || gold.updated_at || 'ราคาล่าสุด'}
               </p>
             </>
           ) : (
-            <p className="mt-3 text-[12px] text-[#86868b]">ยังไม่มีข้อมูลราคาทอง</p>
+            <p className="mt-3 text-[12px] text-[var(--ink-tertiary)]">ยังไม่มีข้อมูลราคาทอง</p>
           )}
         </div>
 
         {/* ── SET index ────────────────────────────────────────────────── */}
-        <div className="flex flex-col justify-between rounded-[16px] border border-black/[0.05] bg-gradient-to-b from-[#fbfbfd] to-[#f4f4f6] p-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]">
+        <div className="flex flex-col justify-between rounded-[16px] border border-[var(--hairline-soft)] bg-gradient-to-b from-[var(--surface-subtle)] to-[var(--surface-grouped-2)] p-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]">
           <div className="flex items-center gap-2">
-            <span className="flex h-6 w-6 items-center justify-center rounded-[8px] bg-[#0066cc]/10 text-[#0066cc]">
+            <span className="flex h-6 w-6 items-center justify-center rounded-[8px] bg-[var(--accent-soft)] text-[var(--accent-text)]">
               <TrendingUp size={12} aria-hidden="true" />
             </span>
-            <span className="text-[11px] font-semibold tracking-wide text-[#6e6e73]">ดัชนี SET</span>
+            <span className="text-[11px] font-semibold tracking-wide text-[var(--ink-muted)]">ดัชนี SET</span>
           </div>
           {setIndex ? (
             <>
               <div className="mt-2">
-                <div className="tabular-nums text-[20px] font-extrabold leading-none text-[#1d1d1f]">
+                <div className="tabular-nums text-[20px] font-extrabold leading-none text-[var(--ink)]">
                   {plain.format(setIndex.value)}
                 </div>
                 <div
@@ -397,24 +397,24 @@ export default function MarketWidget({
                   {setIndex.change_percent.toFixed(2)}%)
                 </div>
               </div>
-              <p className="mt-2 truncate text-[10px] text-[#86868b]">
+              <p className="mt-2 truncate text-[10px] text-[var(--ink-tertiary)]">
                 {formatUpdated(setIndex.updated_at) || 'ปิดตลาด'}
               </p>
             </>
           ) : (
-            <p className="mt-3 text-[12px] text-[#86868b]">ยังไม่มีข้อมูลดัชนี</p>
+            <p className="mt-3 text-[12px] text-[var(--ink-tertiary)]">ยังไม่มีข้อมูลดัชนี</p>
           )}
         </div>
 
         {/* ── Currency ─────────────────────────────────────────────────── */}
-        <div className="flex flex-col rounded-[16px] border border-black/[0.05] bg-gradient-to-b from-[#fbfbfd] to-[#f4f4f6] p-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]">
+        <div className="flex flex-col rounded-[16px] border border-[var(--hairline-soft)] bg-gradient-to-b from-[var(--surface-subtle)] to-[var(--surface-grouped-2)] p-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]">
           <div className="flex items-center gap-2">
-            <span className="flex h-6 w-6 items-center justify-center rounded-[8px] bg-[#34c759]/12 text-[#1f9d45]">
+            <span className="flex h-6 w-6 items-center justify-center rounded-[8px] bg-[var(--success-soft)] text-[var(--success-ink)]">
               <Banknote size={12} aria-hidden="true" />
             </span>
             <label
               htmlFor="market-currency"
-              className="text-[11px] font-semibold tracking-wide text-[#6e6e73]"
+              className="text-[11px] font-semibold tracking-wide text-[var(--ink-muted)]"
             >
               ค่าเงิน
             </label>
@@ -433,21 +433,21 @@ export default function MarketWidget({
           {selectedRate ? (
             <div className="mt-2.5">
               <div className="flex items-baseline gap-1">
-                <span className="tabular-nums text-[21px] font-extrabold leading-none tracking-tight text-[#1d1d1f]">
+                <span className="tabular-nums text-[21px] font-extrabold leading-none tracking-tight text-[var(--ink)]">
                   {money.format(selectedRate.thb)}
                 </span>
-                <span className="text-[10.5px] font-medium text-[#6e6e73]">บาท</span>
+                <span className="text-[10.5px] font-medium text-[var(--ink-muted)]">บาท</span>
               </div>
-              <p className="mt-1.5 text-[10px] text-[#86868b]">
+              <p className="mt-1.5 text-[10px] text-[var(--ink-tertiary)]">
                 ต่อ {selectedRate.unit} {selectedRate.code} · {selectedRate.name}
               </p>
             </div>
           ) : (
-            <p className="mt-3 text-[12px] text-[#86868b]">ยังไม่มีข้อมูลอัตราแลกเปลี่ยน</p>
+            <p className="mt-3 text-[12px] text-[var(--ink-tertiary)]">ยังไม่มีข้อมูลอัตราแลกเปลี่ยน</p>
           )}
           <label
             htmlFor="market-currency-source"
-            className="mt-auto pt-3 text-[9.5px] font-medium uppercase tracking-[0.08em] text-[#a1a1a6]"
+            className="mt-auto pt-3 text-[9.5px] font-medium uppercase tracking-[0.08em] text-[var(--ink-faint)]"
           >
             แหล่งข้อมูล
           </label>
@@ -465,11 +465,11 @@ export default function MarketWidget({
         </div>
       </div>
 
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-[14px] bg-[#f5f5f7]/70 px-3 py-2.5 ring-1 ring-black/[0.04]">
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-[14px] bg-[var(--surface-grouped)] px-3 py-2.5 ring-1 ring-black/[0.04]">
         <div className="flex flex-wrap items-center gap-2">
           <label
             htmlFor="market-chart-asset"
-            className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#6e6e73]"
+            className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[var(--ink-muted)]"
           >
             <TrendingUp size={12} aria-hidden="true" />
             กราฟแท่งเทียน
@@ -488,17 +488,17 @@ export default function MarketWidget({
             options={CHART_INTERVALS.map(([value, name]) => ({ value, label: name }))}
           />
         </div>
-        <span className="text-[10px] text-[#86868b]">
+        <span className="text-[10px] text-[var(--ink-tertiary)]">
           {candleLabel ? `${candleLabel} · ` : ''}กราฟจาก Yahoo Finance
         </span>
       </div>
-      <div className="mt-2 h-[280px] w-full overflow-hidden rounded-[14px] bg-white ring-1 ring-black/[0.06] sm:h-[320px]">
+      <div className="mt-2 h-[280px] w-full overflow-hidden rounded-[14px] bg-[var(--surface)] ring-1 ring-[var(--hairline)] sm:h-[320px]">
         {candlesLoading && candles.length === 0 ? (
           <div className="flex h-full animate-pulse flex-col justify-end gap-1 px-3 pb-6">
             {[38, 62, 45, 78, 52, 70, 40, 58].map((height, index) => (
               <div
                 key={index}
-                className="w-full rounded-sm bg-[#f2f2f7]"
+                className="w-full rounded-sm bg-[var(--surface-grouped-2)]"
                 style={{ height: `${height}%` }}
               />
             ))}
@@ -508,7 +508,7 @@ export default function MarketWidget({
         )}
       </div>
 
-      <div className="mt-2 flex items-center justify-between gap-2 text-[10px] text-[#475569]">
+      <div className="mt-2 flex items-center justify-between gap-2 text-[10px] text-[var(--ink-secondary)]">
         <span>
           อัตราค่าเงิน:{' '}
           <a href="https://frankfurter.dev/" target="_blank" rel="noreferrer" className="underline">

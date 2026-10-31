@@ -462,33 +462,33 @@ export default function NotificationBell() {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="relative flex h-9 w-9 items-center justify-center rounded-full text-[#1d1d1f] transition-all duration-150 hover:bg-black/[0.05] active:scale-[0.95] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#0066cc]"
+        className="relative flex h-9 w-9 items-center justify-center rounded-full text-[var(--ink)] transition-all duration-150 hover:bg-black/[0.05] active:scale-[0.95] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
         aria-label={`การแจ้งเตือน${unreadCount > 0 ? ` (${unreadCount} รายการใหม่)` : ''}`}
         aria-haspopup="true"
         aria-expanded={open}
       >
         <Bell size={19} />
         {unreadCount > 0 && (
-          <span className="absolute -right-0.5 -top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#ff3b30] px-1 text-[10px] font-bold text-white shadow-xs ring-2 ring-white">
+          <span className="absolute -right-0.5 -top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[var(--danger)] px-1 text-[10px] font-bold text-white shadow-xs ring-2 ring-white">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
       </button>
 
       {open && (
-        <div className="absolute right-0 z-50 mt-2.5 w-[min(calc(100vw-2rem),26rem)] overflow-hidden rounded-[22px] border border-black/[0.08] bg-[rgba(255,255,255,0.92)] backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.14)] animate-in fade-in zoom-in-95 duration-150">
+        <div className="absolute right-0 z-50 mt-2.5 w-[min(calc(100vw-2rem),26rem)] overflow-hidden rounded-[22px] border border-[var(--hairline)] bg-[rgba(255,255,255,0.92)] backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.14)] animate-in fade-in zoom-in-95 duration-150">
           {/* Panel Header */}
-          <div className="flex items-start justify-between gap-4 border-b border-black/[0.06] px-5 py-4 bg-white/40">
+          <div className="flex items-start justify-between gap-4 border-b border-[var(--hairline)] px-5 py-4 bg-[var(--glass-40)]">
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-[16px] font-bold text-[#1d1d1f]">การแจ้งเตือน</span>
+                <span className="text-[16px] font-bold text-[var(--ink)]">การแจ้งเตือน</span>
                 {unreadCount > 0 && (
-                  <span className="rounded-full bg-[#ff3b30]/10 px-2 py-0.5 text-[11px] font-bold text-[#ff3b30]">
+                  <span className="rounded-full bg-[var(--danger-soft)] px-2 py-0.5 text-[11px] font-bold text-[var(--danger)]">
                     {unreadCount} ใหม่
                   </span>
                 )}
               </div>
-              <p className="mt-0.5 text-[12px] text-[#86868b]">
+              <p className="mt-0.5 text-[12px] text-[var(--ink-tertiary)]">
                 {notifications.length > 0
                   ? `ทั้งหมด ${notifications.length} รายการ`
                   : 'ไม่มีการแจ้งเตือนในขณะนี้'}
@@ -501,7 +501,7 @@ export default function NotificationBell() {
                   <button
                     type="button"
                     onClick={markAllRead}
-                    className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-[12px] font-semibold text-[#0066cc] hover:bg-[#0066cc]/10 transition-colors"
+                    className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-[12px] font-semibold text-[var(--accent-text)] hover:bg-[var(--accent-soft)] transition-colors"
                     title="ทำเครื่องหมายว่าอ่านแล้วทั้งหมด"
                   >
                     <CheckCheck size={14} />
@@ -510,7 +510,7 @@ export default function NotificationBell() {
                   <button
                     type="button"
                     onClick={clearAllNotifications}
-                    className="inline-flex items-center justify-center rounded-full h-7 w-7 text-[#86868b] hover:text-[#ff3b30] hover:bg-[#ff3b30]/10 transition-colors"
+                    className="inline-flex items-center justify-center rounded-full h-7 w-7 text-[var(--ink-tertiary)] hover:text-[var(--danger)] hover:bg-[var(--danger-soft)] transition-colors"
                     title="ล้างการแจ้งเตือนทั้งหมด"
                     aria-label="ล้างทั้งหมด"
                   >
@@ -524,12 +524,12 @@ export default function NotificationBell() {
           {/* Notification List */}
           <div className="max-h-[26rem] overflow-y-auto p-3 space-y-2.5">
             {notifications.length === 0 ? (
-              <div className="flex flex-col items-center justify-center rounded-[16px] border border-dashed border-black/[0.08] bg-[#f5f5f7]/60 px-6 py-10 text-center text-[#86868b]">
-                <div className="mb-2.5 flex h-10 w-10 items-center justify-center rounded-full bg-white text-[#86868b] shadow-xs ring-1 ring-black/[0.04]">
+              <div className="flex flex-col items-center justify-center rounded-[16px] border border-dashed border-[var(--hairline)] bg-[var(--surface-grouped)] px-6 py-10 text-center text-[var(--ink-tertiary)]">
+                <div className="mb-2.5 flex h-10 w-10 items-center justify-center rounded-full bg-[var(--surface)] text-[var(--ink-tertiary)] shadow-xs ring-1 ring-black/[0.04]">
                   <Bell size={20} />
                 </div>
-                <span className="text-[13px] font-bold text-[#1d1d1f]">ไม่มีการแจ้งเตือนใหม่</span>
-                <p className="mt-0.5 text-[12px] text-[#86868b]">
+                <span className="text-[13px] font-bold text-[var(--ink)]">ไม่มีการแจ้งเตือนใหม่</span>
+                <p className="mt-0.5 text-[12px] text-[var(--ink-tertiary)]">
                   ระบบจะแจ้งเตือนอัตโนมัติเมื่อใกล้ถึงวันหยุด มีข้อมูลสภาพอากาศสำคัญ
                   หรือราคาน้ำมันเปลี่ยนแปลง
                 </p>
@@ -547,7 +547,7 @@ export default function NotificationBell() {
                   >
                     {!isRead && (
                       <span
-                        className="absolute right-3.5 top-3.5 h-2 w-2 rounded-full bg-[#0066cc]"
+                        className="absolute right-3.5 top-3.5 h-2 w-2 rounded-full bg-[var(--accent)]"
                         aria-label="ยังไม่ได้อ่าน"
                       />
                     )}
@@ -560,7 +560,7 @@ export default function NotificationBell() {
 
                     <div className="min-w-0 flex-1 pr-6">
                       <div className="mb-1 flex flex-wrap items-center gap-1.5">
-                        <span className="inline-flex items-center gap-1 rounded-full bg-white px-2 py-0.5 text-[10px] font-bold text-[#1d1d1f] shadow-2xs ring-1 ring-black/[0.04]">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-[var(--surface)] px-2 py-0.5 text-[10px] font-bold text-[var(--ink)] shadow-2xs ring-1 ring-black/[0.04]">
                           {typeIcon[n.type]}
                           <span>{typeLabel[n.type]}</span>
                         </span>
@@ -571,12 +571,12 @@ export default function NotificationBell() {
                         </span>
                       </div>
 
-                      <h4 className="text-[13px] font-bold leading-snug text-[#1d1d1f]">
+                      <h4 className="text-[13px] font-bold leading-snug text-[var(--ink)]">
                         {n.title}
                       </h4>
-                      <p className="mt-0.5 text-[12px] leading-relaxed text-[#6e6e73]">{n.body}</p>
+                      <p className="mt-0.5 text-[12px] leading-relaxed text-[var(--ink-muted)]">{n.body}</p>
 
-                      <span className="mt-1.5 block text-[11px] font-medium text-[#86868b]">
+                      <span className="mt-1.5 block text-[11px] font-medium text-[var(--ink-tertiary)]">
                         {formatTime(n.at)} น.
                       </span>
                     </div>
@@ -584,7 +584,7 @@ export default function NotificationBell() {
                     <button
                       type="button"
                       onClick={() => dismiss(n.id)}
-                      className="absolute right-2.5 top-8 rounded-full p-1 text-[#86868b] hover:text-[#1d1d1f] hover:bg-black/[0.05] transition-colors"
+                      className="absolute right-2.5 top-8 rounded-full p-1 text-[var(--ink-tertiary)] hover:text-[var(--ink)] hover:bg-black/[0.05] transition-colors"
                       aria-label="ปิดการแจ้งเตือนนี้"
                     >
                       <X size={13} />

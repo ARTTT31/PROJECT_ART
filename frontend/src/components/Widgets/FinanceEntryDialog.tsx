@@ -87,15 +87,15 @@ export default function FinanceEntryDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-[17px] text-[#1d1d1f]">แก้ไขรายการ</DialogTitle>
-          <DialogDescription className="text-[12px] text-[#86868b]">
+          <DialogTitle className="text-[17px] text-[var(--ink)]">แก้ไขรายการ</DialogTitle>
+          <DialogDescription className="text-[12px] text-[var(--ink-tertiary)]">
             แก้ชื่อ จำนวนเงิน หมวด หรือเลื่อนวันที่ของรายการนี้
           </DialogDescription>
         </DialogHeader>
 
         <DialogBody className="space-y-3">
           <div
-            className="inline-flex rounded-full bg-[#e5e5ea] p-0.5"
+            className="inline-flex rounded-full bg-[var(--surface-chip)] p-0.5"
             role="group"
             aria-label="ประเภทรายการ"
           >
@@ -106,7 +106,7 @@ export default function FinanceEntryDialog({
                 onClick={() => setType(option)}
                 aria-pressed={type === option}
                 className={`rounded-full px-3 py-1 text-[11.5px] font-bold transition-colors ${
-                  type === option ? 'bg-white text-[#1d1d1f] shadow-xs' : 'text-[#6e6e73]'
+                  type === option ? 'bg-[var(--surface)] text-[var(--ink)] shadow-xs' : 'text-[var(--ink-muted)]'
                 }`}
               >
                 {option === 'expense' ? 'รายจ่าย' : 'รายรับ'}
@@ -115,20 +115,20 @@ export default function FinanceEntryDialog({
           </div>
 
           <label className="block">
-            <span className="mb-1 block text-[11.5px] font-semibold text-[#6e6e73]">รายการ</span>
+            <span className="mb-1 block text-[11.5px] font-semibold text-[var(--ink-muted)]">รายการ</span>
             <input
               type="text"
               value={label}
               onChange={(event) => setLabel(event.target.value)}
               placeholder="เช่น ค่ากาแฟ"
               maxLength={MAX_FINANCE_LABEL}
-              className="w-full rounded-xl border border-black/10 bg-white px-3 py-2 text-[13px] text-[#1d1d1f] placeholder:text-[#86868b] focus:border-[#0066cc] focus:outline-hidden focus:ring-2 focus:ring-[#0066cc]/20"
+              className="w-full rounded-xl border border-[var(--hairline-strong)] bg-[var(--surface)] px-3 py-2 text-[13px] text-[var(--ink)] placeholder:text-[var(--ink-tertiary)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
             />
           </label>
 
           <div className="grid grid-cols-2 gap-2">
             <label className="block">
-              <span className="mb-1 block text-[11.5px] font-semibold text-[#6e6e73]">
+              <span className="mb-1 block text-[11.5px] font-semibold text-[var(--ink-muted)]">
                 จำนวนเงิน
               </span>
               <input
@@ -136,22 +136,22 @@ export default function FinanceEntryDialog({
                 inputMode="decimal"
                 value={amount}
                 onChange={(event) => setAmount(event.target.value)}
-                className="w-full rounded-xl border border-black/10 bg-white px-3 py-2 text-[13px] tabular-nums text-[#1d1d1f] focus:border-[#0066cc] focus:outline-hidden focus:ring-2 focus:ring-[#0066cc]/20"
+                className="w-full rounded-xl border border-[var(--hairline-strong)] bg-[var(--surface)] px-3 py-2 text-[13px] tabular-nums text-[var(--ink)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
               />
             </label>
             <label className="block">
-              <span className="mb-1 block text-[11.5px] font-semibold text-[#6e6e73]">วันที่</span>
+              <span className="mb-1 block text-[11.5px] font-semibold text-[var(--ink-muted)]">วันที่</span>
               <input
                 type="date"
                 value={date}
                 onChange={(event) => setDate(event.target.value)}
-                className="w-full rounded-xl border border-black/10 bg-white px-3 py-2 text-[13px] text-[#1d1d1f] focus:border-[#0066cc] focus:outline-hidden focus:ring-2 focus:ring-[#0066cc]/20"
+                className="w-full rounded-xl border border-[var(--hairline-strong)] bg-[var(--surface)] px-3 py-2 text-[13px] text-[var(--ink)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
               />
             </label>
           </div>
 
           <label className="block">
-            <span className="mb-1 block text-[11.5px] font-semibold text-[#6e6e73]">หมวดหมู่</span>
+            <span className="mb-1 block text-[11.5px] font-semibold text-[var(--ink-muted)]">หมวดหมู่</span>
             <input
               type="text"
               list="finance-categories-edit"
@@ -159,7 +159,7 @@ export default function FinanceEntryDialog({
               onChange={(event) => setCategory(event.target.value)}
               placeholder="เช่น อาหาร"
               maxLength={40}
-              className="w-full rounded-xl border border-black/10 bg-white px-3 py-2 text-[13px] text-[#1d1d1f] placeholder:text-[#86868b] focus:border-[#0066cc] focus:outline-hidden focus:ring-2 focus:ring-[#0066cc]/20"
+              className="w-full rounded-xl border border-[var(--hairline-strong)] bg-[var(--surface)] px-3 py-2 text-[13px] text-[var(--ink)] placeholder:text-[var(--ink-tertiary)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
             />
             <datalist id="finance-categories-edit">
               {FINANCE_CATEGORIES.map((option) => (
@@ -171,7 +171,7 @@ export default function FinanceEntryDialog({
           {error && (
             <p
               role="alert"
-              className="rounded-[10px] bg-[#ff3b30]/[0.07] px-3 py-1.5 text-[12px] text-[#b42318]"
+              className="rounded-[10px] bg-[var(--danger-soft)] px-3 py-1.5 text-[12px] text-[var(--danger-ink)]"
             >
               {error}
             </p>
@@ -182,14 +182,14 @@ export default function FinanceEntryDialog({
           <button
             type="button"
             onClick={() => onOpenChange(false)}
-            className="rounded-full bg-[#f5f5f7] px-5 py-2 text-[13px] font-semibold text-[#1d1d1f] transition-colors hover:bg-[#e5e5ea]"
+            className="rounded-full bg-[var(--surface-grouped)] px-5 py-2 text-[13px] font-semibold text-[var(--ink)] transition-colors hover:bg-[var(--surface-chip)]"
           >
             ยกเลิก
           </button>
           <button
             type="button"
             onClick={submit}
-            className="rounded-full bg-[#0066cc] px-5 py-2 text-[13px] font-bold text-white transition-colors hover:bg-[#0071e3] active:scale-[0.97]"
+            className="rounded-full bg-[var(--accent)] px-5 py-2 text-[13px] font-bold text-white transition-colors hover:bg-[var(--accent-hover)] active:scale-[0.97]"
           >
             บันทึกการแก้ไข
           </button>

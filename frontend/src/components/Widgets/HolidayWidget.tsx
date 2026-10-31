@@ -60,7 +60,7 @@ export default function HolidayWidget({
 
   return (
     <section
-      className="flex h-full flex-col justify-between rounded-[18px] bg-white p-5 border border-black/[0.06] transition-all duration-200"
+      className="flex h-full flex-col justify-between rounded-[18px] bg-[var(--surface)] p-5 border border-[var(--hairline)] transition-all duration-200"
       aria-labelledby="holiday-widget-title"
     >
       <div>
@@ -68,22 +68,22 @@ export default function HolidayWidget({
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-start gap-3 min-w-0">
             {/* Icon badge */}
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[#0066cc]/10 text-[#0066cc]">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[var(--accent-soft)] text-[var(--accent-text)]">
               <Palmtree size={20} aria-hidden="true" />
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <h2
                   id="holiday-widget-title"
-                  className="text-[16px] font-bold tracking-tight text-[#1d1d1f] truncate"
+                  className="text-[16px] font-bold tracking-tight text-[var(--ink)] truncate"
                 >
                   วันหยุดนักขัตฤกษ์
                 </h2>
-                <span className="shrink-0 rounded-full bg-[#f2f2f7] px-2 py-0.5 text-[11px] font-bold text-[#6e6e73]">
+                <span className="shrink-0 rounded-full bg-[var(--surface-grouped-2)] px-2 py-0.5 text-[11px] font-bold text-[var(--ink-muted)]">
                   {hasCalendar ? `ปี ${calendarYear + 543}` : 'ยังไม่พร้อม'}
                 </span>
               </div>
-              <p className="mt-0.5 text-[12px] text-[#86868b] truncate">
+              <p className="mt-0.5 text-[12px] text-[var(--ink-tertiary)] truncate">
                 ปฏิทินวันหยุดราชการและวันหยุดตามประเพณี
               </p>
             </div>
@@ -93,12 +93,12 @@ export default function HolidayWidget({
         </div>
 
         {!hasCalendar && (
-          <div className="mt-4 rounded-[18px] border border-dashed border-[#0066cc]/30 bg-[#0066cc]/5 p-4 text-center">
-            <CalendarHeart className="mx-auto text-[#0066cc]" size={22} aria-hidden="true" />
-            <p className="mt-2 text-[13px] font-bold text-[#1d1d1f]">
+          <div className="mt-4 rounded-[18px] border border-dashed border-[var(--accent-border)] bg-[var(--accent-soft-weak)] p-4 text-center">
+            <CalendarHeart className="mx-auto text-[var(--accent-text)]" size={22} aria-hidden="true" />
+            <p className="mt-2 text-[13px] font-bold text-[var(--ink)]">
               ยังไม่มีปฏิทินวันหยุดปี {calendarYear + 543}
             </p>
-            <p className="mt-1 text-[11px] text-[#86868b]">
+            <p className="mt-1 text-[11px] text-[var(--ink-tertiary)]">
               จะแสดงข้อมูลเมื่อเพิ่มปฏิทินที่ยืนยันแล้ว
             </p>
           </div>
@@ -106,18 +106,18 @@ export default function HolidayWidget({
 
         {/* ── Upcoming Holiday Hero Card ───────────────────────────────── */}
         {nextHoliday && (
-          <div className="mt-4 overflow-hidden rounded-[11px] bg-[#0066cc]/10 p-4 border border-[#0066cc]/20">
+          <div className="mt-4 overflow-hidden rounded-[11px] bg-[var(--accent-soft)] p-4 border border-[var(--accent-border)]">
             <div className="flex items-start justify-between gap-2">
               <div>
-                <span className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-[#0066cc]">
+                <span className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-[var(--accent-text)]">
                   <Clock size={12} />
                   <span>วันหยุดรอบถัดไป</span>
                 </span>
-                <h3 className="mt-1 text-[16px] font-extrabold text-[#1d1d1f] sm:text-[18px]">
+                <h3 className="mt-1 text-[16px] font-extrabold text-[var(--ink)] sm:text-[18px]">
                   {nextHoliday.title}
                 </h3>
                 {nextHoliday.description && (
-                  <p className="mt-0.5 text-[12px] text-[#6e6e73] line-clamp-1">
+                  <p className="mt-0.5 text-[12px] text-[var(--ink-muted)] line-clamp-1">
                     {nextHoliday.description}
                   </p>
                 )}
@@ -126,14 +126,14 @@ export default function HolidayWidget({
               {/* Countdown badge */}
               <div className="shrink-0 text-right">
                 {nextHoliday.isToday ? (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-[#34c759] px-3 py-1 text-xs font-bold text-white shadow-xs animate-pulse">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-[var(--success)] px-3 py-1 text-xs font-bold text-white shadow-xs animate-pulse">
                     <Sparkles size={12} />
                     <span>วันนี้เป็นวันหยุด!</span>
                   </span>
                 ) : (
-                  <div className="rounded-[12px] bg-white/95 px-3 py-1.5 text-center shadow-xs ring-1 ring-black/[0.06]">
-                    <span className="block text-[10px] font-semibold text-[#86868b]">เหลืออีก</span>
-                    <span className="text-[15px] font-extrabold text-[#0066cc] sm:text-[17px]">
+                  <div className="rounded-[12px] bg-[var(--glass-95)] px-3 py-1.5 text-center shadow-xs ring-1 ring-[var(--hairline)]">
+                    <span className="block text-[10px] font-semibold text-[var(--ink-tertiary)]">เหลืออีก</span>
+                    <span className="text-[15px] font-extrabold text-[var(--accent-text)] sm:text-[17px]">
                       {nextHoliday.daysLeft} วัน
                     </span>
                   </div>
@@ -142,8 +142,8 @@ export default function HolidayWidget({
             </div>
 
             {/* Date bar */}
-            <div className="mt-3 flex items-center gap-2 border-t border-[#0066cc]/15 pt-2 text-[12px] font-semibold text-[#1d1d1f]">
-              <span className="text-[#0066cc]">{nextHoliday.dayOfWeek}</span>
+            <div className="mt-3 flex items-center gap-2 border-t border-[var(--accent-border)] pt-2 text-[12px] font-semibold text-[var(--ink)]">
+              <span className="text-[var(--accent-text)]">{nextHoliday.dayOfWeek}</span>
               <span className="text-black/20">•</span>
               <span>
                 {nextHoliday.day} {nextHoliday.monthName} {nextHoliday.year + 543}
@@ -157,7 +157,7 @@ export default function HolidayWidget({
           className={`mt-4 flex items-center justify-between gap-2 ${hasCalendar ? '' : 'hidden'}`}
         >
           <div
-            className="inline-flex rounded-full bg-[#e5e5ea] p-0.5"
+            className="inline-flex rounded-full bg-[var(--surface-chip)] p-0.5"
             role="group"
             aria-label="ตัวกรองวันหยุด"
           >
@@ -167,8 +167,8 @@ export default function HolidayWidget({
               aria-pressed={filterMode === 'upcoming'}
               className={`rounded-full px-3 py-1 text-[11px] font-bold transition-all duration-150 ${
                 filterMode === 'upcoming'
-                  ? 'bg-white text-[#1d1d1f] shadow-[0_1px_3px_rgba(0,0,0,0.12)]'
-                  : 'text-[#6e6e73] hover:text-[#1d1d1f]'
+                  ? 'bg-[var(--surface)] text-[var(--ink)] shadow-[0_1px_3px_rgba(0,0,0,0.12)]'
+                  : 'text-[var(--ink-muted)] hover:text-[var(--ink)]'
               }`}
             >
               กำลังจะมาถึง ({holidaysWithDiff.filter((h) => h.daysLeft >= 0).length})
@@ -179,15 +179,15 @@ export default function HolidayWidget({
               aria-pressed={filterMode === 'all'}
               className={`rounded-full px-3 py-1 text-[11px] font-bold transition-all duration-150 ${
                 filterMode === 'all'
-                  ? 'bg-white text-[#1d1d1f] shadow-[0_1px_3px_rgba(0,0,0,0.12)]'
-                  : 'text-[#6e6e73] hover:text-[#1d1d1f]'
+                  ? 'bg-[var(--surface)] text-[var(--ink)] shadow-[0_1px_3px_rgba(0,0,0,0.12)]'
+                  : 'text-[var(--ink-muted)] hover:text-[var(--ink)]'
               }`}
             >
               ทั้งหมด ({holidaysWithDiff.length} วัน)
             </button>
           </div>
 
-          <span className="text-[11px] font-medium text-[#86868b]">
+          <span className="text-[11px] font-medium text-[var(--ink-tertiary)]">
             {displayedHolidays.length} รายการ
           </span>
         </div>
@@ -207,10 +207,10 @@ export default function HolidayWidget({
               key={item.id}
               className={`flex items-center justify-between gap-3 p-2.5 transition-all rounded-[14px] border ${
                 item.id === nextHoliday?.id
-                  ? 'bg-[#0066cc]/[0.03] border-[#0066cc]/20 shadow-[0_2px_8px_rgba(0,102,204,0.06)]'
+                  ? 'bg-[var(--accent-soft-weak)] border-[var(--accent-border)] shadow-[0_2px_8px_rgba(0,102,204,0.06)]'
                   : item.isPast
-                    ? 'border-transparent opacity-60 hover:bg-[#f5f5f7]'
-                    : 'border-transparent hover:bg-[#f5f5f7]'
+                    ? 'border-transparent opacity-60 hover:bg-[var(--surface-grouped)]'
+                    : 'border-transparent hover:bg-[var(--surface-grouped)]'
               }`}
             >
               <div className="flex items-center gap-3 min-w-0">
@@ -218,10 +218,10 @@ export default function HolidayWidget({
                 <div
                   className={`flex h-[42px] w-[42px] shrink-0 flex-col items-center justify-center rounded-[12px] font-bold text-center ${
                     item.id === nextHoliday?.id
-                      ? 'bg-[#0066cc] text-white shadow-xs'
+                      ? 'bg-[var(--accent)] text-white shadow-xs'
                       : item.isPast
-                        ? 'bg-[#e5e5ea] text-[#8e8e93]'
-                        : 'bg-[#f2f2f7] text-[#1d1d1f]'
+                        ? 'bg-[var(--surface-chip)] text-[var(--ink-tertiary)]'
+                        : 'bg-[var(--surface-grouped-2)] text-[var(--ink)]'
                   }`}
                 >
                   <span className="text-[10px] leading-none opacity-90 mb-0.5 uppercase tracking-wider">
@@ -233,11 +233,11 @@ export default function HolidayWidget({
                 {/* Holiday details */}
                 <div className="min-w-0">
                   <p
-                    className={`truncate text-[13px] font-bold ${item.id === nextHoliday?.id ? 'text-[#0066cc]' : 'text-[#1d1d1f]'}`}
+                    className={`truncate text-[13px] font-bold ${item.id === nextHoliday?.id ? 'text-[var(--accent-text)]' : 'text-[var(--ink)]'}`}
                   >
                     {item.title}
                   </p>
-                  <p className="mt-0.5 text-[11px] text-[#86868b]">
+                  <p className="mt-0.5 text-[11px] text-[var(--ink-tertiary)]">
                     {item.dayOfWeek}, {item.day} {item.monthName}
                   </p>
                 </div>
@@ -246,12 +246,12 @@ export default function HolidayWidget({
               {/* Status indicator */}
               <div className="shrink-0 text-right">
                 {item.isPast ? (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-[#f2f2f7] px-2.5 py-1 text-[10px] font-medium text-[#86868b]">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-[var(--surface-grouped-2)] px-2.5 py-1 text-[10px] font-medium text-[var(--ink-tertiary)]">
                     <CheckCircle2 size={12} />
                     <span>ผ่านแล้ว</span>
                   </span>
                 ) : item.isToday ? (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-[#34c759]/10 px-2.5 py-1 text-[10px] font-bold text-[#34c759]">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-[var(--success-soft)] px-2.5 py-1 text-[10px] font-bold text-[var(--success)]">
                     <Sparkles size={12} />
                     <span>วันนี้</span>
                   </span>
@@ -259,8 +259,8 @@ export default function HolidayWidget({
                   <span
                     className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-semibold ${
                       item.id === nextHoliday?.id
-                        ? 'bg-[#0066cc]/10 text-[#0066cc]'
-                        : 'bg-[#f2f2f7] text-[#6e6e73]'
+                        ? 'bg-[var(--accent-soft)] text-[var(--accent-text)]'
+                        : 'bg-[var(--surface-grouped-2)] text-[var(--ink-muted)]'
                     }`}
                   >
                     อีก {item.daysLeft} วัน
@@ -273,7 +273,7 @@ export default function HolidayWidget({
       </div>
 
       {/* ── Footer ─────────────────────────────────────────────────────────── */}
-      <footer className="mt-3 flex items-center justify-between border-t border-black/[0.06] pt-2.5 text-[11px] text-[#86868b]">
+      <footer className="mt-3 flex items-center justify-between border-t border-[var(--hairline)] pt-2.5 text-[11px] text-[var(--ink-tertiary)]">
         <span>
           {hasCalendar
             ? `ข้อมูลวันหยุดราชการประจำปี ${calendarYear + 543}`

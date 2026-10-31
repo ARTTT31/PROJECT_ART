@@ -153,12 +153,12 @@ function buildOilPriceNotification(changes: PriceChange[]): Notification | null 
 // red #ff3b30, orange #ff9500, and Apple blue for diesel — arbitrary raw
 // Tailwind shades used to disagree with the rest of the dashboard.
 const fuelDotColor: Record<string, string> = {
-  benzene_95: 'bg-[#ff3b30]',
-  gasohol_95: 'bg-[#ff9500]',
+  benzene_95: 'bg-[var(--danger)]',
+  gasohol_95: 'bg-[var(--warning)]',
   gasohol_91: 'bg-[#ffcc00]',
-  gasohol_e20: 'bg-[#34c759]',
-  gasohol_e85: 'bg-[#34c759]',
-  diesel: 'bg-[#0066cc]',
+  gasohol_e20: 'bg-[var(--success)]',
+  gasohol_e85: 'bg-[var(--success)]',
+  diesel: 'bg-[var(--accent)]',
 };
 const defaultDotColor = 'bg-slate-400';
 
@@ -292,14 +292,14 @@ export default function OilPriceWidget({
   if (loading && !data) {
     return (
       <div
-        className="flex h-full min-h-[300px] items-center justify-center rounded-2xl bg-white p-5 ring-1 ring-black/[0.06]"
+        className="flex h-full min-h-[300px] items-center justify-center rounded-2xl bg-[var(--surface)] p-5 ring-1 ring-[var(--hairline)]"
         role="status"
         aria-live="polite"
         aria-label="กำลังโหลดราคาน้ำมัน"
       >
         <div className="grid w-full animate-pulse grid-cols-2 gap-3 sm:grid-cols-3">
           {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div key={i} className="flex flex-col items-center gap-2 rounded-2xl bg-[#f5f5f7] p-4">
+            <div key={i} className="flex flex-col items-center gap-2 rounded-2xl bg-[var(--surface-grouped)] p-4">
               <div className="flex items-center gap-2">
                 <div className="h-2.5 w-2.5 rounded-full bg-slate-200" />
                 <div className="h-3.5 w-14 rounded-full bg-slate-200" />
@@ -321,27 +321,27 @@ export default function OilPriceWidget({
 
   return (
     <section
-      className="flex h-full flex-col justify-between rounded-[18px] bg-white p-5 border border-black/[0.06] transition-all duration-200"
+      className="flex h-full flex-col justify-between rounded-[18px] bg-[var(--surface)] p-5 border border-[var(--hairline)] transition-all duration-200"
       aria-labelledby="oil-price-title"
     >
       <div className="flex flex-1 flex-col gap-4">
         {/* ── Header ────────────────────────────────────────────────────── */}
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-start gap-3 min-w-0">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[#ff9500]/10 text-[#ff9500]">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[var(--warning-soft)] text-[var(--warning)]">
               <Fuel size={20} aria-hidden="true" />
             </div>
 
             <div className="min-w-0">
               <h3
                 id="oil-price-title"
-                className="text-[16px] font-bold tracking-tight text-[#1d1d1f] truncate"
+                className="text-[16px] font-bold tracking-tight text-[var(--ink)] truncate"
               >
                 ราคาน้ำมัน
               </h3>
 
               {/* Meta line */}
-              <p className="mt-0.5 text-[12px] text-[#86868b] truncate">
+              <p className="mt-0.5 text-[12px] text-[var(--ink-tertiary)] truncate">
                 {loading || refreshing
                   ? 'กำลังอัปเดต...'
                   : cacheNote
@@ -353,7 +353,7 @@ export default function OilPriceWidget({
 
               {/* Stale warning */}
               {data?.is_stale && (
-                <p className="mt-0.5 flex items-center gap-1 text-[11px] font-medium text-[#ff9500]">
+                <p className="mt-0.5 flex items-center gap-1 text-[11px] font-medium text-[var(--warning)]">
                   <AlertCircle size={10} aria-hidden="true" />
                   ข้อมูลอาจไม่เป็นปัจจุบัน
                 </p>
@@ -366,7 +366,7 @@ export default function OilPriceWidget({
 
         {/* ── Error banner ──────────────────────────────────────────────── */}
         {error && (
-          <div className="flex items-center justify-between gap-2 rounded-[14px] bg-[#ff3b30]/10 px-3.5 py-2.5 text-[12px] font-medium text-[#ff3b30]">
+          <div className="flex items-center justify-between gap-2 rounded-[14px] bg-[var(--danger-soft)] px-3.5 py-2.5 text-[12px] font-medium text-[var(--danger)]">
             <div className="flex items-center gap-2 min-w-0">
               <AlertCircle size={14} className="shrink-0" aria-hidden="true" />
               <span className="truncate">{error}</span>
@@ -374,7 +374,7 @@ export default function OilPriceWidget({
             <button
               type="button"
               onClick={() => fetchPrices({ refresh: true })}
-              className="shrink-0 font-bold underline hover:text-[#ff3b30]"
+              className="shrink-0 font-bold underline hover:text-[var(--danger)]"
             >
               ลองใหม่
             </button>
@@ -389,7 +389,7 @@ export default function OilPriceWidget({
               return (
                 <div
                   key={item.key || idx}
-                  className="flex cursor-default flex-col items-center justify-center gap-1.5 rounded-[18px] bg-[#f5f5f7] px-3 py-3.5 transition-all duration-150 hover:bg-white hover:shadow-md hover:ring-1 hover:ring-black/[0.06]"
+                  className="flex cursor-default flex-col items-center justify-center gap-1.5 rounded-[18px] bg-[var(--surface-grouped)] px-3 py-3.5 transition-all duration-150 hover:bg-[var(--surface)] hover:shadow-md hover:ring-1 hover:ring-[var(--hairline)]"
                 >
                   {/* Dot + name */}
                   <div className="flex items-center gap-1.5">
@@ -397,13 +397,13 @@ export default function OilPriceWidget({
                       className={`h-2.5 w-2.5 shrink-0 rounded-full ${fuelDotColor[item.key] ?? defaultDotColor}`}
                       aria-hidden="true"
                     />
-                    <span className="text-center text-xs font-bold leading-tight text-[#1d1d1f] sm:text-sm">
+                    <span className="text-center text-xs font-bold leading-tight text-[var(--ink)] sm:text-sm">
                       {shortName[item.key] ?? item.name}
                     </span>
                   </div>
 
                   {/* Price */}
-                  <span className="tabular-nums text-xl font-extrabold leading-none tracking-tight text-[#1d1d1f] sm:text-2xl lg:text-3xl">
+                  <span className="tabular-nums text-xl font-extrabold leading-none tracking-tight text-[var(--ink)] sm:text-2xl lg:text-3xl">
                     {item.price.toFixed(2)}
                   </span>
 
@@ -427,7 +427,7 @@ export default function OilPriceWidget({
                     </span>
                   ) : (
                     /* Unit */
-                    <span className="text-[11px] font-medium text-[#475569]">{item.unit}</span>
+                    <span className="text-[11px] font-medium text-[var(--ink-secondary)]">{item.unit}</span>
                   )}
                 </div>
               );
@@ -435,15 +435,15 @@ export default function OilPriceWidget({
           </div>
         ) : (
           !error && (
-            <div className="flex flex-1 items-center justify-center text-sm text-[#475569]">
+            <div className="flex flex-1 items-center justify-center text-sm text-[var(--ink-secondary)]">
               ไม่มีข้อมูลราคาน้ำมัน
             </div>
           )
         )}
 
         {/* ── Footer ────────────────────────────────────────────────────── */}
-        <div className="border-t border-black/[0.05] pt-2">
-          <span className="text-[10px] text-[#475569]">แหล่งข้อมูล: Bangchak</span>
+        <div className="border-t border-[var(--hairline-soft)] pt-2">
+          <span className="text-[10px] text-[var(--ink-secondary)]">แหล่งข้อมูล: Bangchak</span>
         </div>
       </div>
     </section>

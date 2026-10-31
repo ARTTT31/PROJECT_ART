@@ -649,18 +649,18 @@ function LoginContent() {
             </button>
 
             {/* Dedicated prominent registration box */}
-            <div className="pt-4 mt-3 border-t border-black/[0.08] text-center">
-              <p className="text-[13.5px] text-[#6e6e73] mb-2.5">ยังไม่มีบัญชีสำหรับใช้งาน?</p>
+            <div className="pt-4 mt-3 border-t border-[var(--hairline)] text-center">
+              <p className="text-[13.5px] text-[var(--ink-muted)] mb-2.5">ยังไม่มีบัญชีสำหรับใช้งาน?</p>
               <Link
                 href="/register"
-                className="inline-flex items-center justify-center gap-1.5 w-full py-2.5 px-4 rounded-xl border border-[#0066cc]/30 bg-[#0066cc]/5 text-[#0066cc] font-bold text-[13.5px] hover:bg-[#0066cc]/10 hover:border-[#0066cc]/50 transition-all active:scale-[0.98]"
+                className="inline-flex items-center justify-center gap-1.5 w-full py-2.5 px-4 rounded-xl border border-[var(--accent-border)] bg-[var(--accent-soft-weak)] text-[var(--accent-text)] font-bold text-[13.5px] hover:bg-[var(--accent-soft)] hover:border-[var(--accent-border)] transition-all active:scale-[0.98]"
               >
                 <span>สมัครสมาชิก</span>
                 <ArrowRight size={15} aria-hidden="true" />
               </Link>
 
               {registrationMode === 'closed' && (
-                <span className="text-[11.5px] text-[#86868b] block mt-1.5">
+                <span className="text-[11.5px] text-[var(--ink-tertiary)] block mt-1.5">
                   ระบบปิดรับสมัครสมาชิกใหม่ กรุณาติดต่อผู้ดูแลระบบเพื่อขอสิทธิ์เข้าใช้งาน
                 </span>
               )}

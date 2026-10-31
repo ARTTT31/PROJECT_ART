@@ -11,9 +11,9 @@ interface WidgetSizeToggleProps {
 
 /**
  * ปุ่มสลับขนาดวิดเจ็ต — Apple Design System v2.0
- * Container: white pill with ring-1 ring-black/[0.06]
- * Active:    bg-[#1d1d1f] text-white
- * Default:   text-[#6e6e73] hover:bg-[#f5f5f7]
+ * Container: white pill with ring-1 ring-[var(--hairline)]
+ * Active:    bg-[var(--ink)] text-white
+ * Default:   text-[var(--ink-muted)] hover:bg-[var(--surface-grouped)]
  */
 const sizeDescriptions: Record<number, string> = {
   1: 'ขนาดเล็ก (1 คอลัมน์)',
@@ -30,7 +30,7 @@ export default function WidgetSizeToggle({
   return (
     <div
       className={clsx(
-        'inline-flex items-center gap-0.5 rounded-full bg-[#e5e5ea] p-0.5',
+        'inline-flex items-center gap-0.5 rounded-full bg-[var(--surface-chip)] p-0.5',
         className,
       )}
       role="group"
@@ -50,10 +50,10 @@ export default function WidgetSizeToggle({
             title={description}
             className={clsx(
               'h-6 min-w-[26px] rounded-full px-2 text-[11px] font-bold transition-all duration-150 active:scale-[0.95]',
-              'focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#0066cc]',
+              'focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)]',
               isActive
-                ? 'bg-white text-[#1d1d1f] shadow-[0_1px_3px_rgba(0,0,0,0.12)]'
-                : 'bg-transparent text-[#6e6e73] hover:text-[#1d1d1f]',
+                ? 'bg-[var(--surface)] text-[var(--ink)] shadow-[0_1px_3px_rgba(0,0,0,0.12)]'
+                : 'bg-transparent text-[var(--ink-muted)] hover:text-[var(--ink)]',
             )}
           >
             {label}

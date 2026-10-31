@@ -56,7 +56,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
           role="alert"
           aria-live="assertive"
         >
-          <div className="w-full max-w-md overflow-hidden rounded-[var(--art-radius-lg)] border border-white/30 bg-white/80 backdrop-blur-[24px] shadow-glass-lg">
+          <div className="w-full max-w-md overflow-hidden rounded-[var(--art-radius-lg)] border border-white/30 bg-[var(--glass-80)] backdrop-blur-[24px] shadow-glass-lg">
             {/* Header */}
             <div className="flex items-center gap-3 border-b border-slate-200/50 bg-red-50/50 px-6 py-4">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-100 text-red-600">

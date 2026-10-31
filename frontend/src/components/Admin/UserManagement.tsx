@@ -119,13 +119,13 @@ interface FilterOption {
 }
 
 const ROLE_OPTIONS: FilterOption[] = [
-  { value: '', label: 'ทุกสิทธิ์', icon: <User size={13} className="text-[#86868b]" /> },
+  { value: '', label: 'ทุกสิทธิ์', icon: <User size={13} className="text-[var(--ink-tertiary)]" /> },
   { value: 'admin', label: 'Admin', icon: <ShieldAlert size={13} className="text-purple-600" /> },
   { value: 'user', label: 'User', icon: <User size={13} className="text-slate-600" /> },
 ];
 
 const STATUS_OPTIONS: FilterOption[] = [
-  { value: '', label: 'ทุกสถานะ', icon: <Circle size={13} className="text-[#86868b]" /> },
+  { value: '', label: 'ทุกสถานะ', icon: <Circle size={13} className="text-[var(--ink-tertiary)]" /> },
   {
     value: 'active',
     label: 'ใช้งานปกติ',
@@ -199,10 +199,10 @@ function FilterDropdown({
         style={{ minHeight: '42px', height: '42px', borderRadius: '9999px' }}
         className={`w-full sm:w-auto inline-flex items-center justify-between gap-2.5 rounded-full border px-4 text-[13px] font-bold transition-all active:scale-[0.98] ${
           isOpen
-            ? 'border-[#0066cc] bg-white ring-2 ring-[#0066cc]/20 text-[#1d1d1f]'
+            ? 'border-[var(--accent)] bg-[var(--surface)] ring-2 ring-[var(--accent-ring)] text-[var(--ink)]'
             : value
-              ? 'border-[#0066cc]/40 bg-[#0066cc]/5 text-[#0066cc] hover:bg-[#0066cc]/10'
-              : 'border-black/[0.08] bg-[#f5f5f7] text-[#1d1d1f] hover:bg-[#e8e8ed]'
+              ? 'border-[var(--accent-border)] bg-[var(--accent-soft-weak)] text-[var(--accent-text)] hover:bg-[var(--accent-soft)]'
+              : 'border-[var(--hairline)] bg-[var(--surface-grouped)] text-[var(--ink)] hover:bg-[var(--surface-chip-2)]'
         }`}
       >
         <span className="inline-flex items-center gap-2 truncate">
@@ -212,7 +212,7 @@ function FilterDropdown({
         <ChevronDown
           size={14}
           className={`shrink-0 transition-transform duration-200 ${
-            isOpen ? 'rotate-180 text-[#0066cc]' : 'text-[#86868b]'
+            isOpen ? 'rotate-180 text-[var(--accent-text)]' : 'text-[var(--ink-tertiary)]'
           }`}
         />
       </button>
@@ -221,7 +221,7 @@ function FilterDropdown({
       {isOpen && (
         <div
           role="listbox"
-          className={`absolute top-[calc(100%+6px)] z-50 min-w-[175px] max-w-[240px] overflow-hidden rounded-[18px] border border-black/[0.08] bg-white/95 p-1.5 shadow-[0_12px_32px_rgba(0,0,0,0.12),0_2px_6px_rgba(0,0,0,0.04)] backdrop-blur-xl animate-in fade-in zoom-in-95 duration-150 ${
+          className={`absolute top-[calc(100%+6px)] z-50 min-w-[175px] max-w-[240px] overflow-hidden rounded-[18px] border border-[var(--hairline)] bg-[var(--glass-95)] p-1.5 shadow-[0_12px_32px_rgba(0,0,0,0.12),0_2px_6px_rgba(0,0,0,0.04)] backdrop-blur-xl animate-in fade-in zoom-in-95 duration-150 ${
             align === 'right' ? 'right-0 sm:left-0' : 'left-0'
           }`}
         >
@@ -242,15 +242,15 @@ function FilterDropdown({
                   }}
                   className={`flex w-full items-center justify-between gap-3 rounded-[12px] px-3.5 py-2.5 text-[13px] font-semibold transition-all duration-150 ${
                     isSelected
-                      ? 'bg-[#0066cc]/10 text-[#0066cc]'
-                      : 'text-[#1d1d1f] hover:bg-[#f5f5f7]'
+                      ? 'bg-[var(--accent-soft)] text-[var(--accent-text)]'
+                      : 'text-[var(--ink)] hover:bg-[var(--surface-grouped)]'
                   }`}
                 >
                   <span className="inline-flex items-center gap-2.5 truncate">
                     {opt.icon}
                     <span>{opt.label}</span>
                   </span>
-                  {isSelected && <Check size={14} className="shrink-0 text-[#0066cc]" />}
+                  {isSelected && <Check size={14} className="shrink-0 text-[var(--accent-text)]" />}
                 </button>
               );
             })}
@@ -771,7 +771,7 @@ export default function UserManagement() {
   if (initialLoading) {
     return (
       <div className="flex h-32 items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-[3px] border-[#f5f5f7] border-t-[#0066cc]" />
+        <div className="h-8 w-8 animate-spin rounded-full border-[3px] border-[var(--surface-grouped)] border-t-[#0066cc]" />
       </div>
     );
   }
@@ -779,24 +779,24 @@ export default function UserManagement() {
   return (
     <div className="space-y-4">
       {editingUser ? (
-        <div className="overflow-hidden rounded-[18px] bg-white ring-1 ring-black/[0.06]">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-black/[0.04] bg-[#fbfbfc] px-6 py-5">
+        <div className="overflow-hidden rounded-[18px] bg-[var(--surface)] ring-1 ring-[var(--hairline)]">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[var(--hairline-soft)] bg-[var(--surface-subtle)] px-6 py-5">
             <div className="flex items-center gap-3 mb-3 sm:mb-0">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#0066cc]/10 text-[#0066cc]">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--accent-soft)] text-[var(--accent-text)]">
                 <Edit size={18} />
               </div>
               <div>
-                <h3 className="text-[15px] font-bold tracking-tight text-[#1d1d1f]">
+                <h3 className="text-[15px] font-bold tracking-tight text-[var(--ink)]">
                   แก้ไขผู้ใช้งาน: {editingUser.name}
                 </h3>
-                <p className="text-[13px] text-[#6e6e73]">
+                <p className="text-[13px] text-[var(--ink-muted)]">
                   {editingUser.email || editingUser.username}
                 </p>
               </div>
             </div>
             <button
               onClick={closeEdit}
-              className="flex h-8 w-8 items-center justify-center rounded-full bg-black/5 text-[#6e6e73] transition-colors hover:bg-black/10 self-end sm:self-auto"
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-black/5 text-[var(--ink-muted)] transition-colors hover:bg-black/10 self-end sm:self-auto"
             >
               <X size={16} />
             </button>
@@ -805,23 +805,23 @@ export default function UserManagement() {
           <div className="p-6 space-y-6">
             {/* Status */}
             <div>
-              <label className="mb-2 block text-[12px] font-bold tracking-wide uppercase text-[#6e6e73]">
+              <label className="mb-2 block text-[12px] font-bold tracking-wide uppercase text-[var(--ink-muted)]">
                 สถานะการใช้งาน
               </label>
               <div
                 onClick={() => setEditIsActive(!editIsActive)}
-                className="group flex cursor-pointer items-center gap-3 rounded-2xl bg-[#f8fafc] p-4 ring-1 ring-black/[0.04] transition-all hover:bg-white hover:shadow-xs"
+                className="group flex cursor-pointer items-center gap-3 rounded-2xl bg-[var(--surface-subtle)] p-4 ring-1 ring-black/[0.04] transition-all hover:bg-[var(--surface)] hover:shadow-xs"
               >
                 {editIsActive ? (
-                  <CheckCircle2 size={22} className="text-[#0066cc]" />
+                  <CheckCircle2 size={22} className="text-[var(--accent-text)]" />
                 ) : (
                   <Circle size={22} className="text-slate-300 group-hover:text-slate-400" />
                 )}
                 <div>
-                  <span className="block text-[14px] font-semibold text-[#1d1d1f]">
+                  <span className="block text-[14px] font-semibold text-[var(--ink)]">
                     เปิดใช้งานบัญชี (Active)
                   </span>
-                  <span className="block text-[12px] text-[#6e6e73]">
+                  <span className="block text-[12px] text-[var(--ink-muted)]">
                     ผู้ใช้สามารถเข้าสู่ระบบและใช้งานได้ตามปกติ
                   </span>
                 </div>
@@ -830,7 +830,7 @@ export default function UserManagement() {
 
             {/* Role */}
             <div>
-              <label className="mb-2 block text-[12px] font-bold tracking-wide uppercase text-[#6e6e73]">
+              <label className="mb-2 block text-[12px] font-bold tracking-wide uppercase text-[var(--ink-muted)]">
                 สิทธิ์การใช้งาน (Role)
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -839,14 +839,14 @@ export default function UserManagement() {
                   onClick={() => setEditRole('user')}
                   className={`group relative flex cursor-pointer items-start gap-3 rounded-2xl p-4 transition-all duration-200 ${
                     editRole === 'user'
-                      ? 'bg-white ring-2 ring-[#0066cc] shadow-[0_4px_12px_rgba(0,102,204,0.12)]'
-                      : 'bg-[#f8fafc] ring-1 ring-black/[0.04] hover:bg-white hover:shadow-xs'
+                      ? 'bg-[var(--surface)] ring-2 ring-[var(--accent)] shadow-[0_4px_12px_rgba(0,102,204,0.12)]'
+                      : 'bg-[var(--surface-subtle)] ring-1 ring-black/[0.04] hover:bg-[var(--surface)] hover:shadow-xs'
                   }`}
                 >
                   <div
                     className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-all duration-200 ${
                       editRole === 'user'
-                        ? 'bg-[#0066cc] text-white scale-110'
+                        ? 'bg-[var(--accent)] text-white scale-110'
                         : 'bg-slate-100 text-slate-400 group-hover:text-slate-500'
                     }`}
                   >
@@ -855,17 +855,17 @@ export default function UserManagement() {
                   <div>
                     <span
                       className={`block text-[14px] font-semibold transition-colors ${
-                        editRole === 'user' ? 'text-[#0066cc]' : 'text-[#1d1d1f]'
+                        editRole === 'user' ? 'text-[var(--accent-text)]' : 'text-[var(--ink)]'
                       }`}
                     >
                       ผู้ใช้งานทั่วไป (User)
                     </span>
-                    <span className="block mt-0.5 text-[12px] text-[#6e6e73] leading-relaxed">
+                    <span className="block mt-0.5 text-[12px] text-[var(--ink-muted)] leading-relaxed">
                       เข้าถึงเฉพาะฟีเจอร์ที่ได้รับอนุญาต
                     </span>
                   </div>
                   {editRole === 'user' && (
-                    <div className="absolute right-4 top-4 text-[#0066cc] animate-in zoom-in duration-200">
+                    <div className="absolute right-4 top-4 text-[var(--accent-text)] animate-in zoom-in duration-200">
                       <CheckCircle2 size={20} />
                     </div>
                   )}
@@ -876,8 +876,8 @@ export default function UserManagement() {
                   onClick={() => setEditRole('admin')}
                   className={`group relative flex cursor-pointer items-start gap-3 rounded-2xl p-4 transition-all duration-200 ${
                     editRole === 'admin'
-                      ? 'bg-white ring-2 ring-purple-600 shadow-[0_4px_12px_rgba(147,51,234,0.12)]'
-                      : 'bg-[#f8fafc] ring-1 ring-black/[0.04] hover:bg-white hover:shadow-xs'
+                      ? 'bg-[var(--surface)] ring-2 ring-purple-600 shadow-[0_4px_12px_rgba(147,51,234,0.12)]'
+                      : 'bg-[var(--surface-subtle)] ring-1 ring-black/[0.04] hover:bg-[var(--surface)] hover:shadow-xs'
                   }`}
                 >
                   <div
@@ -892,12 +892,12 @@ export default function UserManagement() {
                   <div>
                     <span
                       className={`block text-[14px] font-semibold transition-colors ${
-                        editRole === 'admin' ? 'text-purple-700' : 'text-[#1d1d1f]'
+                        editRole === 'admin' ? 'text-purple-700' : 'text-[var(--ink)]'
                       }`}
                     >
                       ผู้ดูแลระบบ (Admin)
                     </span>
-                    <span className="block mt-0.5 text-[12px] text-[#6e6e73] leading-relaxed">
+                    <span className="block mt-0.5 text-[12px] text-[var(--ink-muted)] leading-relaxed">
                       มีสิทธิ์สูงสุดในการจัดการระบบทั้งหมด
                     </span>
                   </div>
@@ -912,25 +912,25 @@ export default function UserManagement() {
 
             {/* Accessible Pages */}
             <div>
-              <label className="mb-2 block text-[12px] font-bold tracking-wide uppercase text-[#6e6e73]">
+              <label className="mb-2 block text-[12px] font-bold tracking-wide uppercase text-[var(--ink-muted)]">
                 หน้าที่สามารถเข้าถึงได้ (Accessible Pages)
               </label>
-              <div className="overflow-hidden rounded-2xl ring-1 ring-black/[0.04] bg-[#f8fafc] divide-y divide-black/[0.04]">
+              <div className="overflow-hidden rounded-2xl ring-1 ring-black/[0.04] bg-[var(--surface-subtle)] divide-y divide-black/[0.04]">
                 {AVAILABLE_PAGES.map((page) => {
                   const isActive = editPages.includes(page.id);
                   return (
                     <div
                       key={page.id}
                       onClick={() => togglePage(page.id)}
-                      className="group flex cursor-pointer items-center gap-3 p-4 transition-all hover:bg-white"
+                      className="group flex cursor-pointer items-center gap-3 p-4 transition-all hover:bg-[var(--surface)]"
                     >
                       {isActive ? (
-                        <CheckCircle2 size={20} className="text-[#0066cc]" />
+                        <CheckCircle2 size={20} className="text-[var(--accent-text)]" />
                       ) : (
                         <Circle size={20} className="text-slate-300 group-hover:text-slate-400" />
                       )}
                       <span
-                        className={`text-[14px] ${isActive ? 'font-semibold text-[#1d1d1f]' : 'font-medium text-[#6e6e73]'}`}
+                        className={`text-[14px] ${isActive ? 'font-semibold text-[var(--ink)]' : 'font-medium text-[var(--ink-muted)]'}`}
                       >
                         {page.label}
                       </span>
@@ -941,17 +941,17 @@ export default function UserManagement() {
             </div>
           </div>
 
-          <div className="border-t border-black/[0.04] bg-[#fbfbfc] px-6 py-4 flex flex-col-reverse sm:flex-row justify-end gap-3">
+          <div className="border-t border-[var(--hairline-soft)] bg-[var(--surface-subtle)] px-6 py-4 flex flex-col-reverse sm:flex-row justify-end gap-3">
             <button
               onClick={closeEdit}
-              className="w-full sm:w-auto rounded-full bg-[#f5f5f7] px-5 py-2.5 text-[13px] font-bold text-[#1d1d1f] transition-all hover:bg-[#e8e8ed] active:scale-[0.95]"
+              className="w-full sm:w-auto rounded-full bg-[var(--surface-grouped)] px-5 py-2.5 text-[13px] font-bold text-[var(--ink)] transition-all hover:bg-[var(--surface-chip-2)] active:scale-[0.95]"
             >
               ยกเลิก
             </button>
             <button
               onClick={handleSave}
               disabled={isSaving}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-[#0066cc] px-6 py-2.5 text-[13px] font-bold text-white shadow-xs transition-all duration-150 hover:bg-[#0071e3]  active:scale-[0.95] disabled:opacity-50"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-[var(--accent)] px-6 py-2.5 text-[13px] font-bold text-white shadow-xs transition-all duration-150 hover:bg-[var(--accent-hover)]  active:scale-[0.95] disabled:opacity-50"
             >
               {isSaving ? (
                 'กำลังบันทึก...'
@@ -964,17 +964,17 @@ export default function UserManagement() {
           </div>
         </div>
       ) : isCreating ? (
-        <div className="overflow-hidden rounded-[18px] bg-white ring-1 ring-black/[0.06]">
-          <div className="flex items-center justify-between border-b border-black/[0.04] bg-[#fbfbfc] px-6 py-5">
+        <div className="overflow-hidden rounded-[18px] bg-[var(--surface)] ring-1 ring-[var(--hairline)]">
+          <div className="flex items-center justify-between border-b border-[var(--hairline-soft)] bg-[var(--surface-subtle)] px-6 py-5">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#0066cc]/10 text-[#0066cc]">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--accent-soft)] text-[var(--accent-text)]">
                 <UserPlus size={18} />
               </div>
               <div>
-                <h3 className="text-[15px] font-bold tracking-tight text-[#1d1d1f]">
+                <h3 className="text-[15px] font-bold tracking-tight text-[var(--ink)]">
                   สร้างผู้ใช้งานใหม่
                 </h3>
-                <p className="text-[13px] text-[#6e6e73]">
+                <p className="text-[13px] text-[var(--ink-muted)]">
                   บัญชีใช้งานได้ทันทีหลังสร้าง — แจ้งรหัสผ่านให้ผู้ใช้อย่างปลอดภัย
                 </p>
               </div>
@@ -982,7 +982,7 @@ export default function UserManagement() {
             <button
               onClick={() => setIsCreating(false)}
               aria-label="ปิดฟอร์มสร้างผู้ใช้"
-              className="flex h-8 w-8 items-center justify-center rounded-full bg-black/5 text-[#6e6e73] transition-colors hover:bg-black/10"
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-black/5 text-[var(--ink-muted)] transition-colors hover:bg-black/10"
             >
               <X size={16} />
             </button>
@@ -993,7 +993,7 @@ export default function UserManagement() {
               <div>
                 <label
                   htmlFor="create-username"
-                  className="mb-2 block text-[12px] font-bold tracking-wide uppercase text-[#6e6e73]"
+                  className="mb-2 block text-[12px] font-bold tracking-wide uppercase text-[var(--ink-muted)]"
                 >
                   ชื่อผู้ใช้ (Username) *
                 </label>
@@ -1003,13 +1003,13 @@ export default function UserManagement() {
                   onChange={(e) => setCreateForm((prev) => ({ ...prev, username: e.target.value }))}
                   placeholder="อย่างน้อย 3 ตัวอักษร"
                   autoComplete="off"
-                  className="w-full rounded-2xl border-0 bg-[#f8fafc] px-4 py-3 text-[14px] font-medium text-[#1d1d1f] outline-hidden ring-1 ring-black/[0.04] transition-all placeholder:text-[#86868b] focus:bg-white focus:ring-2 focus:ring-[#0066cc]"
+                  className="w-full rounded-2xl border-0 bg-[var(--surface-subtle)] px-4 py-3 text-[14px] font-medium text-[var(--ink)] outline-hidden ring-1 ring-black/[0.04] transition-all placeholder:text-[var(--ink-tertiary)] focus:bg-[var(--surface)] focus:ring-2 focus:ring-[var(--accent)]"
                 />
               </div>
               <div>
                 <label
                   htmlFor="create-display-name"
-                  className="mb-2 block text-[12px] font-bold tracking-wide uppercase text-[#6e6e73]"
+                  className="mb-2 block text-[12px] font-bold tracking-wide uppercase text-[var(--ink-muted)]"
                 >
                   ชื่อที่แสดง (Display name) *
                 </label>
@@ -1020,13 +1020,13 @@ export default function UserManagement() {
                     setCreateForm((prev) => ({ ...prev, display_name: e.target.value }))
                   }
                   placeholder="ชื่อ-นามสกุล"
-                  className="w-full rounded-2xl border-0 bg-[#f8fafc] px-4 py-3 text-[14px] font-medium text-[#1d1d1f] outline-hidden ring-1 ring-black/[0.04] transition-all placeholder:text-[#86868b] focus:bg-white focus:ring-2 focus:ring-[#0066cc]"
+                  className="w-full rounded-2xl border-0 bg-[var(--surface-subtle)] px-4 py-3 text-[14px] font-medium text-[var(--ink)] outline-hidden ring-1 ring-black/[0.04] transition-all placeholder:text-[var(--ink-tertiary)] focus:bg-[var(--surface)] focus:ring-2 focus:ring-[var(--accent)]"
                 />
               </div>
               <div>
                 <label
                   htmlFor="create-email"
-                  className="mb-2 block text-[12px] font-bold tracking-wide uppercase text-[#6e6e73]"
+                  className="mb-2 block text-[12px] font-bold tracking-wide uppercase text-[var(--ink-muted)]"
                 >
                   อีเมล (ไม่บังคับ)
                 </label>
@@ -1037,13 +1037,13 @@ export default function UserManagement() {
                   onChange={(e) => setCreateForm((prev) => ({ ...prev, email: e.target.value }))}
                   placeholder="name@example.com"
                   autoComplete="off"
-                  className="w-full rounded-2xl border-0 bg-[#f8fafc] px-4 py-3 text-[14px] font-medium text-[#1d1d1f] outline-hidden ring-1 ring-black/[0.04] transition-all placeholder:text-[#86868b] focus:bg-white focus:ring-2 focus:ring-[#0066cc]"
+                  className="w-full rounded-2xl border-0 bg-[var(--surface-subtle)] px-4 py-3 text-[14px] font-medium text-[var(--ink)] outline-hidden ring-1 ring-black/[0.04] transition-all placeholder:text-[var(--ink-tertiary)] focus:bg-[var(--surface)] focus:ring-2 focus:ring-[var(--accent)]"
                 />
               </div>
               <div>
                 <label
                   htmlFor="create-password"
-                  className="mb-2 block text-[12px] font-bold tracking-wide uppercase text-[#6e6e73]"
+                  className="mb-2 block text-[12px] font-bold tracking-wide uppercase text-[var(--ink-muted)]"
                 >
                   รหัสผ่าน *
                 </label>
@@ -1054,13 +1054,13 @@ export default function UserManagement() {
                   onChange={(e) => setCreateForm((prev) => ({ ...prev, password: e.target.value }))}
                   placeholder="อย่างน้อย 8 ตัวอักษร"
                   autoComplete="new-password"
-                  className="w-full rounded-2xl border-0 bg-[#f8fafc] px-4 py-3 text-[14px] font-medium text-[#1d1d1f] outline-hidden ring-1 ring-black/[0.04] transition-all placeholder:text-[#86868b] focus:bg-white focus:ring-2 focus:ring-[#0066cc]"
+                  className="w-full rounded-2xl border-0 bg-[var(--surface-subtle)] px-4 py-3 text-[14px] font-medium text-[var(--ink)] outline-hidden ring-1 ring-black/[0.04] transition-all placeholder:text-[var(--ink-tertiary)] focus:bg-[var(--surface)] focus:ring-2 focus:ring-[var(--accent)]"
                 />
               </div>
             </div>
 
             <div>
-              <label className="mb-2 block text-[12px] font-bold tracking-wide uppercase text-[#6e6e73]">
+              <label className="mb-2 block text-[12px] font-bold tracking-wide uppercase text-[var(--ink-muted)]">
                 สิทธิ์การใช้งาน (Role)
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1072,14 +1072,14 @@ export default function UserManagement() {
                     aria-pressed={createForm.role === role}
                     className={`group relative flex items-center gap-3 rounded-2xl p-4 text-left transition-all duration-200 ${
                       createForm.role === role
-                        ? 'bg-white ring-2 ring-[#0066cc] shadow-[0_4px_12px_rgba(0,102,204,0.12)]'
-                        : 'bg-[#f8fafc] ring-1 ring-black/[0.04] hover:bg-white hover:shadow-xs'
+                        ? 'bg-[var(--surface)] ring-2 ring-[var(--accent)] shadow-[0_4px_12px_rgba(0,102,204,0.12)]'
+                        : 'bg-[var(--surface-subtle)] ring-1 ring-black/[0.04] hover:bg-[var(--surface)] hover:shadow-xs'
                     }`}
                   >
                     <div
                       className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-all duration-200 ${
                         createForm.role === role
-                          ? 'bg-[#0066cc] text-white'
+                          ? 'bg-[var(--accent)] text-white'
                           : 'bg-slate-100 text-slate-400'
                       }`}
                     >
@@ -1090,17 +1090,17 @@ export default function UserManagement() {
                       )}
                     </div>
                     <div>
-                      <span className="block text-[14px] font-semibold text-[#1d1d1f]">
+                      <span className="block text-[14px] font-semibold text-[var(--ink)]">
                         {role === 'admin' ? 'ผู้ดูแลระบบ (Admin)' : 'ผู้ใช้งานทั่วไป (User)'}
                       </span>
-                      <span className="block mt-0.5 text-[12px] text-[#6e6e73] leading-relaxed">
+                      <span className="block mt-0.5 text-[12px] text-[var(--ink-muted)] leading-relaxed">
                         {role === 'admin'
                           ? 'มีสิทธิ์สูงสุดในการจัดการระบบทั้งหมด'
                           : 'เข้าถึงเฉพาะฟีเจอร์ที่ได้รับอนุญาต'}
                       </span>
                     </div>
                     {createForm.role === role && (
-                      <div className="absolute right-4 top-4 text-[#0066cc]">
+                      <div className="absolute right-4 top-4 text-[var(--accent-text)]">
                         <CheckCircle2 size={20} />
                       </div>
                     )}
@@ -1110,10 +1110,10 @@ export default function UserManagement() {
             </div>
 
             <div>
-              <label className="mb-2 block text-[12px] font-bold tracking-wide uppercase text-[#6e6e73]">
+              <label className="mb-2 block text-[12px] font-bold tracking-wide uppercase text-[var(--ink-muted)]">
                 หน้าที่สามารถเข้าถึงได้ (Accessible Pages)
               </label>
-              <div className="overflow-hidden rounded-2xl ring-1 ring-black/[0.04] bg-[#f8fafc] divide-y divide-black/[0.04]">
+              <div className="overflow-hidden rounded-2xl ring-1 ring-black/[0.04] bg-[var(--surface-subtle)] divide-y divide-black/[0.04]">
                 {AVAILABLE_PAGES.map((page) => {
                   const isActive = createForm.pages.includes(page.id);
                   return (
@@ -1122,15 +1122,15 @@ export default function UserManagement() {
                       type="button"
                       onClick={() => toggleCreatePage(page.id)}
                       aria-pressed={isActive}
-                      className="group flex w-full items-center gap-3 p-4 text-left transition-all hover:bg-white"
+                      className="group flex w-full items-center gap-3 p-4 text-left transition-all hover:bg-[var(--surface)]"
                     >
                       {isActive ? (
-                        <CheckCircle2 size={20} className="text-[#0066cc]" />
+                        <CheckCircle2 size={20} className="text-[var(--accent-text)]" />
                       ) : (
                         <Circle size={20} className="text-slate-300 group-hover:text-slate-400" />
                       )}
                       <span
-                        className={`text-[14px] ${isActive ? 'font-semibold text-[#1d1d1f]' : 'font-medium text-[#6e6e73]'}`}
+                        className={`text-[14px] ${isActive ? 'font-semibold text-[var(--ink)]' : 'font-medium text-[var(--ink-muted)]'}`}
                       >
                         {page.label}
                       </span>
@@ -1141,17 +1141,17 @@ export default function UserManagement() {
             </div>
           </div>
 
-          <div className="border-t border-black/[0.04] bg-[#fbfbfc] px-6 py-4 flex flex-col-reverse sm:flex-row justify-end gap-3">
+          <div className="border-t border-[var(--hairline-soft)] bg-[var(--surface-subtle)] px-6 py-4 flex flex-col-reverse sm:flex-row justify-end gap-3">
             <button
               onClick={() => setIsCreating(false)}
-              className="w-full sm:w-auto rounded-full bg-[#f5f5f7] px-5 py-2.5 text-[13px] font-bold text-[#1d1d1f] transition-all hover:bg-[#e8e8ed] active:scale-[0.95]"
+              className="w-full sm:w-auto rounded-full bg-[var(--surface-grouped)] px-5 py-2.5 text-[13px] font-bold text-[var(--ink)] transition-all hover:bg-[var(--surface-chip-2)] active:scale-[0.95]"
             >
               ยกเลิก
             </button>
             <button
               onClick={handleCreate}
               disabled={isCreatingSaving}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-[#0066cc] px-6 py-2.5 text-[13px] font-bold text-white shadow-xs transition-all duration-150 hover:bg-[#0071e3] active:scale-[0.95] disabled:opacity-50"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-[var(--accent)] px-6 py-2.5 text-[13px] font-bold text-white shadow-xs transition-all duration-150 hover:bg-[var(--accent-hover)] active:scale-[0.95] disabled:opacity-50"
             >
               {isCreatingSaving ? (
                 'กำลังสร้าง...'
@@ -1166,7 +1166,7 @@ export default function UserManagement() {
       ) : (
         <>
           {statusFilter !== 'pending' && pendingInView.length > 0 && (
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 rounded-2xl bg-amber-500/[0.08] border border-amber-500/25 text-[#1d1d1f]">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 rounded-2xl bg-amber-500/[0.08] border border-amber-500/25 text-[var(--ink)]">
               <div className="flex items-start gap-3">
                 <span className="p-2 rounded-xl bg-amber-500/15 text-amber-700 shrink-0 mt-0.5 sm:mt-0">
                   <Clock size={18} />
@@ -1196,18 +1196,18 @@ export default function UserManagement() {
             </div>
           )}
 
-          <div className="relative z-20 flex flex-col gap-3 rounded-[18px] border border-black/[0.06] bg-white p-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="relative z-20 flex flex-col gap-3 rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] p-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
               <label className="relative flex-1">
                 {isFetching ? (
                   <Loader2
                     size={15}
-                    className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 animate-spin text-[#0066cc]"
+                    className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 animate-spin text-[var(--accent-text)]"
                   />
                 ) : (
                   <Search
                     size={15}
-                    className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[#86868b]"
+                    className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--ink-tertiary)]"
                   />
                 )}
                 <input
@@ -1222,7 +1222,7 @@ export default function UserManagement() {
                     minHeight: '42px',
                     height: '42px',
                   }}
-                  className="w-full rounded-full border border-black/[0.08] bg-[#f5f5f7] pr-4 text-[13.5px] font-medium text-[#1d1d1f] outline-hidden transition-all placeholder:text-[#86868b] focus:bg-white focus:border-[#0066cc] focus:ring-2 focus:ring-[#0066cc]/20"
+                  className="w-full rounded-full border border-[var(--hairline)] bg-[var(--surface-grouped)] pr-4 text-[13.5px] font-medium text-[var(--ink)] outline-hidden transition-all placeholder:text-[var(--ink-tertiary)] focus:bg-[var(--surface)] focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-ring)]"
                 />
               </label>
               <div className="grid grid-cols-2 gap-2 w-full sm:w-auto sm:flex sm:items-center">
@@ -1254,31 +1254,31 @@ export default function UserManagement() {
             <button
               onClick={openCreate}
               style={{ minHeight: '42px', height: '42px' }}
-              className="w-full lg:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-[#0066cc] px-5 text-[13px] font-bold text-white shadow-xs transition-all hover:bg-[#0071e3] active:scale-95"
+              className="w-full lg:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-[var(--accent)] px-5 text-[13px] font-bold text-white shadow-xs transition-all hover:bg-[var(--accent-hover)] active:scale-95"
             >
               <UserPlus size={14} /> เพิ่มผู้ใช้
             </button>
           </div>
 
-          <div className="overflow-hidden rounded-[18px] border border-black/[0.06] bg-white min-h-[420px]">
+          <div className="overflow-hidden rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] min-h-[420px]">
             <div
-              className={`h-0.5 w-full bg-[#0066cc] transition-all duration-300 ${isFetching ? 'opacity-100 animate-pulse' : 'opacity-0'}`}
+              className={`h-0.5 w-full bg-[var(--accent)] transition-all duration-300 ${isFetching ? 'opacity-100 animate-pulse' : 'opacity-0'}`}
             />
             <div className="overflow-x-auto min-h-[340px]">
               <table className="w-full text-left text-sm whitespace-nowrap">
-                <thead className="bg-[#fbfbfc] text-[#6e6e73] text-[12px] font-bold uppercase tracking-wider">
+                <thead className="bg-[var(--surface-subtle)] text-[var(--ink-muted)] text-[12px] font-bold uppercase tracking-wider">
                   <tr>
-                    <th className="px-5 py-4 border-b border-black/[0.04]">ชื่อผู้ใช้</th>
-                    <th className="px-5 py-4 border-b border-black/[0.04]">สิทธิ์</th>
+                    <th className="px-5 py-4 border-b border-[var(--hairline-soft)]">ชื่อผู้ใช้</th>
+                    <th className="px-5 py-4 border-b border-[var(--hairline-soft)]">สิทธิ์</th>
                     {statusFilter === 'trash' ? (
                       <>
-                        <th className="px-5 py-4 border-b border-black/[0.04]">ลบเมื่อ</th>
-                        <th className="px-5 py-4 border-b border-black/[0.04]">เหลือเวลา</th>
+                        <th className="px-5 py-4 border-b border-[var(--hairline-soft)]">ลบเมื่อ</th>
+                        <th className="px-5 py-4 border-b border-[var(--hairline-soft)]">เหลือเวลา</th>
                       </>
                     ) : (
-                      <th className="px-5 py-4 border-b border-black/[0.04]">สถานะ</th>
+                      <th className="px-5 py-4 border-b border-[var(--hairline-soft)]">สถานะ</th>
                     )}
-                    <th className="px-5 py-4 border-b border-black/[0.04] text-right">จัดการ</th>
+                    <th className="px-5 py-4 border-b border-[var(--hairline-soft)] text-right">จัดการ</th>
                   </tr>
                 </thead>
                 <tbody
@@ -1288,8 +1288,8 @@ export default function UserManagement() {
                     ? filteredTrash.map((t) => (
                         <tr key={t.id} className="hover:bg-slate-50/50 transition-colors">
                           <td className="px-5 py-4">
-                            <div className="font-semibold text-[#1d1d1f] text-[14px]">{t.name}</div>
-                            <div className="text-[12.5px] text-[#6e6e73] mt-0.5">
+                            <div className="font-semibold text-[var(--ink)] text-[14px]">{t.name}</div>
+                            <div className="text-[12.5px] text-[var(--ink-muted)] mt-0.5">
                               {t.email || t.username}
                             </div>
                           </td>
@@ -1304,7 +1304,7 @@ export default function UserManagement() {
                               </span>
                             )}
                           </td>
-                          <td className="px-5 py-4 text-[12.5px] font-medium text-[#6e6e73]">
+                          <td className="px-5 py-4 text-[12.5px] font-medium text-[var(--ink-muted)]">
                             {formatDateTime(t.deleted_at)}
                           </td>
                           <td className="px-5 py-4">
@@ -1324,7 +1324,7 @@ export default function UserManagement() {
                                 onClick={() => handleRestore(t)}
                                 disabled={trashBusyId === t.id}
                                 aria-label={`กู้คืนผู้ใช้ ${displayLabel(t)}`}
-                                className="inline-flex items-center justify-center gap-1.5 rounded-full bg-[#0066cc]/10 px-3.5 py-1.5 text-[12px] font-bold text-[#0066cc] transition-all hover:bg-[#0066cc]/20 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+                                className="inline-flex items-center justify-center gap-1.5 rounded-full bg-[var(--accent-soft)] px-3.5 py-1.5 text-[12px] font-bold text-[var(--accent-text)] transition-all hover:bg-[var(--accent-soft)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
                               >
                                 {trashBusyId === t.id ? (
                                   <Loader2 size={12} className="animate-spin" />
@@ -1349,10 +1349,10 @@ export default function UserManagement() {
                       ? filteredPending.map((p) => (
                           <tr key={p.id} className="hover:bg-slate-50/50 transition-colors">
                             <td className="px-5 py-4">
-                              <div className="font-semibold text-[#1d1d1f] text-[14px]">
+                              <div className="font-semibold text-[var(--ink)] text-[14px]">
                                 {p.name}
                               </div>
-                              <div className="text-[12.5px] text-[#6e6e73] mt-0.5">
+                              <div className="text-[12.5px] text-[var(--ink-muted)] mt-0.5">
                                 {p.email || p.username}
                               </div>
                             </td>
@@ -1378,7 +1378,7 @@ export default function UserManagement() {
                                   onClick={() => handleApprove(p)}
                                   disabled={pendingBusyId === p.id}
                                   aria-label={`อนุมัติคำขอของ ${displayLabel(p)}`}
-                                  className="inline-flex items-center justify-center gap-1.5 rounded-full bg-[#0066cc] px-3.5 py-1.5 text-[12px] font-bold text-white transition-all hover:bg-[#0071e3] active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+                                  className="inline-flex items-center justify-center gap-1.5 rounded-full bg-[var(--accent)] px-3.5 py-1.5 text-[12px] font-bold text-white transition-all hover:bg-[var(--accent-hover)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
                                 >
                                   {pendingBusyId === p.id ? (
                                     <Loader2 size={12} className="animate-spin" />
@@ -1404,10 +1404,10 @@ export default function UserManagement() {
                           return (
                             <tr key={u.id} className="hover:bg-slate-50/50 transition-colors">
                               <td className="px-5 py-4">
-                                <div className="font-semibold text-[#1d1d1f] text-[14px]">
+                                <div className="font-semibold text-[var(--ink)] text-[14px]">
                                   {u.name}
                                 </div>
-                                <div className="text-[12.5px] text-[#6e6e73] mt-0.5">
+                                <div className="text-[12.5px] text-[var(--ink-muted)] mt-0.5">
                                   {u.email || u.username}
                                 </div>
                               </td>
@@ -1445,7 +1445,7 @@ export default function UserManagement() {
                                         onClick={() => handleApprove(u)}
                                         disabled={pendingBusyId === u.id}
                                         aria-label={`อนุมัติคำขอของ ${displayLabel(u)}`}
-                                        className="inline-flex items-center justify-center gap-1.5 rounded-full bg-[#0066cc] px-3.5 py-1.5 text-[12px] font-bold text-white transition-all hover:bg-[#0071e3] active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 shadow-xs"
+                                        className="inline-flex items-center justify-center gap-1.5 rounded-full bg-[var(--accent)] px-3.5 py-1.5 text-[12px] font-bold text-white transition-all hover:bg-[var(--accent-hover)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 shadow-xs"
                                       >
                                         {pendingBusyId === u.id ? (
                                           <Loader2 size={12} className="animate-spin" />
@@ -1467,7 +1467,7 @@ export default function UserManagement() {
                                     <>
                                       <button
                                         onClick={() => openEdit(u)}
-                                        className="inline-flex items-center justify-center gap-1.5 rounded-full bg-[#f5f5f7] px-3.5 py-1.5 text-[12px] font-bold text-[#1d1d1f] transition-all hover:bg-[#e8e8ed] active:scale-95"
+                                        className="inline-flex items-center justify-center gap-1.5 rounded-full bg-[var(--surface-grouped)] px-3.5 py-1.5 text-[12px] font-bold text-[var(--ink)] transition-all hover:bg-[var(--surface-chip-2)] active:scale-95"
                                       >
                                         <Settings size={12} /> ตั้งค่า
                                       </button>
@@ -1505,11 +1505,11 @@ export default function UserManagement() {
                         <tr>
                           <td
                             colSpan={5}
-                            className="px-5 py-10 text-center text-[13px] font-medium text-[#6e6e73]"
+                            className="px-5 py-10 text-center text-[13px] font-medium text-[var(--ink-muted)]"
                           >
                             {isFetching ? (
                               <span className="inline-flex items-center gap-2">
-                                <Loader2 size={15} className="animate-spin text-[#0066cc]" />{' '}
+                                <Loader2 size={15} className="animate-spin text-[var(--accent-text)]" />{' '}
                                 กำลังโหลดข้อมูล...
                               </span>
                             ) : debouncedQuery.trim() ? (
@@ -1525,11 +1525,11 @@ export default function UserManagement() {
                           <tr>
                             <td
                               colSpan={4}
-                              className="px-5 py-10 text-center text-[13px] font-medium text-[#6e6e73]"
+                              className="px-5 py-10 text-center text-[13px] font-medium text-[var(--ink-muted)]"
                             >
                               {isFetching ? (
                                 <span className="inline-flex items-center gap-2">
-                                  <Loader2 size={15} className="animate-spin text-[#0066cc]" />{' '}
+                                  <Loader2 size={15} className="animate-spin text-[var(--accent-text)]" />{' '}
                                   กำลังโหลดข้อมูล...
                                 </span>
                               ) : debouncedQuery.trim() ? (
@@ -1544,11 +1544,11 @@ export default function UserManagement() {
                           <tr>
                             <td
                               colSpan={4}
-                              className="px-5 py-10 text-center text-[13px] font-medium text-[#6e6e73]"
+                              className="px-5 py-10 text-center text-[13px] font-medium text-[var(--ink-muted)]"
                             >
                               {isFetching ? (
                                 <span className="inline-flex items-center gap-2">
-                                  <Loader2 size={15} className="animate-spin text-[#0066cc]" />{' '}
+                                  <Loader2 size={15} className="animate-spin text-[var(--accent-text)]" />{' '}
                                   กำลังโหลดข้อมูล...
                                 </span>
                               ) : isFiltered ? (
@@ -1565,8 +1565,8 @@ export default function UserManagement() {
           </div>
 
           {showPagination && (
-            <div className="flex flex-col gap-3 rounded-[18px] border border-black/[0.06] bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-              <span className="text-[12.5px] font-medium text-[#6e6e73]">
+            <div className="flex flex-col gap-3 rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+              <span className="text-[12.5px] font-medium text-[var(--ink-muted)]">
                 {statusFilter === 'trash'
                   ? debouncedQuery.trim()
                     ? `พบ ${filteredTrash.length} บัญชีในถังขยะ`
@@ -1581,7 +1581,7 @@ export default function UserManagement() {
                     onClick={() => setPage((prev) => Math.max(0, prev - 1))}
                     disabled={page === 0}
                     aria-label="หน้าก่อนหน้า"
-                    className="inline-flex items-center gap-1 rounded-full bg-[#f5f5f7] px-3.5 py-1.5 text-[12px] font-bold text-[#1d1d1f] transition-all hover:bg-[#e8e8ed] active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+                    className="inline-flex items-center gap-1 rounded-full bg-[var(--surface-grouped)] px-3.5 py-1.5 text-[12px] font-bold text-[var(--ink)] transition-all hover:bg-[var(--surface-chip-2)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     <ChevronLeft size={13} /> ก่อนหน้า
                   </button>
@@ -1589,7 +1589,7 @@ export default function UserManagement() {
                     onClick={() => setPage((prev) => prev + 1)}
                     disabled={!hasNextPage}
                     aria-label="หน้าถัดไป"
-                    className="inline-flex items-center gap-1 rounded-full bg-[#f5f5f7] px-3.5 py-1.5 text-[12px] font-bold text-[#1d1d1f] transition-all hover:bg-[#e8e8ed] active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+                    className="inline-flex items-center gap-1 rounded-full bg-[var(--surface-grouped)] px-3.5 py-1.5 text-[12px] font-bold text-[var(--ink)] transition-all hover:bg-[var(--surface-chip-2)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     ถัดไป <ChevronRight size={13} />
                   </button>

@@ -108,6 +108,36 @@ describe('BrandingCard', () => {
     );
   });
 
+  it('applies a ready-made name and logo combination in one save', async () => {
+    renderCard();
+
+    fireEvent.click(screen.getByRole('button', { name: 'ใช้ชุด Nova Team' }));
+
+    await waitFor(() =>
+      expect(updateWorkspaceBranding).toHaveBeenCalledWith({
+        workspace_name: 'Nova Team',
+        workspace_tagline: 'ทำงานเป็นทีมได้ลื่นไหล',
+        workspace_logo: expect.stringMatching(/^data:image\/png;base64,/),
+      }),
+    );
+    expect(uploadWorkspaceLogo).not.toHaveBeenCalled();
+  });
+
+  it('applies a preset to the workspace-wide branding for an admin', async () => {
+    renderCard(true);
+
+    fireEvent.click(screen.getByRole('button', { name: 'ใช้ชุด Green Office' }));
+
+    await waitFor(() =>
+      expect(updateBranding).toHaveBeenCalledWith({
+        company_name: 'Green Office',
+        company_tagline: 'ทำงานอย่างเป็นระเบียบทุกวัน',
+        brand_logo_url: expect.stringMatching(/^data:image\/png;base64,/),
+      }),
+    );
+    expect(uploadBrandLogo).not.toHaveBeenCalled();
+  });
+
   it('uploads a personal logo through the per-user endpoint', async () => {
     renderCard();
     const file = pngFile();

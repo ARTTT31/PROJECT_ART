@@ -29,6 +29,7 @@ import { MainMenuCard } from '@/components/Profile/MainMenuCard';
 import { QuickLinksCard } from '@/components/Profile/QuickLinksCard';
 import { QuickLinkDialog, type QuickLinkFormValues } from '@/components/Profile/QuickLinkDialog';
 import { BrandingCard } from '@/components/Profile/BrandingCard';
+import { ThemeCard } from '@/components/Profile/ThemeCard';
 import { type QuickLink, parseQuickLinks, serializeQuickLinks } from '@/utils/quickLinks';
 import {
   parseMainMenuConfig,
@@ -464,8 +465,8 @@ export default function ProfilePage() {
     return (
       <div className="flex min-h-[70vh] items-center justify-center">
         <div className="flex flex-col items-center gap-3">
-          <div className="h-10 w-10 animate-spin rounded-full border-[3px] border-[#f5f5f7] border-t-[#0066cc]" />
-          <span className="text-[13px] font-medium text-[#6e6e73]">กำลังโหลดข้อมูลโปรไฟล์…</span>
+          <div className="h-10 w-10 animate-spin rounded-full border-[3px] border-[var(--surface-grouped)] border-t-[#0066cc]" />
+          <span className="text-[13px] font-medium text-[var(--ink-muted)]">กำลังโหลดข้อมูลโปรไฟล์…</span>
         </div>
       </div>
     );
@@ -484,7 +485,7 @@ export default function ProfilePage() {
       {/* ══════════════════════════════════════════════════
           HERO IDENTITY CARD (Apple-style Header Banner)
           ══════════════════════════════════════════════════ */}
-      <section className="overflow-hidden rounded-[18px] bg-white border border-black/[0.06] p-5 sm:p-7 shadow-xs transition-all">
+      <section className="overflow-hidden rounded-[18px] bg-[var(--surface)] border border-[var(--hairline)] p-5 sm:p-7 shadow-xs transition-all">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5">
           {/* Left: Avatar + Identity */}
           <div className="flex items-center gap-4 sm:gap-5">
@@ -513,7 +514,7 @@ export default function ProfilePage() {
                   )}
                 </div>
               ) : (
-                <div className="relative flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-[22px] bg-gradient-to-tr from-[#0066cc] via-[#0077ed] to-[#38bdf8] text-2xl sm:text-3xl font-extrabold text-white shadow-md ring-4 ring-black/[0.03]">
+                <div className="relative flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-[22px] bg-gradient-to-tr from-[var(--accent)] via-[var(--accent-hover)] to-[#38bdf8] text-2xl sm:text-3xl font-extrabold text-white shadow-md ring-4 ring-black/[0.03]">
                   {isUploadingAvatar ? (
                     <Loader2 size={24} className="animate-spin text-white" />
                   ) : (
@@ -529,15 +530,15 @@ export default function ProfilePage() {
                 disabled={isUploadingAvatar}
                 title="เปลี่ยนรูปโปรไฟล์ (ไม่เกิน 1MB)"
                 aria-label="เปลี่ยนรูปโปรไฟล์"
-                className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full bg-white text-[#1d1d1f] shadow-md ring-1 ring-black/[0.08] transition-transform hover:scale-110 active:scale-95 disabled:opacity-50"
+                className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full bg-[var(--surface)] text-[var(--ink)] shadow-md ring-1 ring-[var(--hairline)] transition-transform hover:scale-110 active:scale-95 disabled:opacity-50"
               >
-                <Camera size={13} className="text-[#0066cc]" />
+                <Camera size={13} className="text-[var(--accent-text)]" />
               </button>
             </div>
 
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-xl sm:text-2xl font-black tracking-tight text-[#1d1d1f] truncate">
+                <h1 className="text-xl sm:text-2xl font-black tracking-tight text-[var(--ink)] truncate">
                   {user.name || 'ผู้ใช้งาน'}
                 </h1>
                 {isAdmin ? (
@@ -551,14 +552,14 @@ export default function ProfilePage() {
                 )}
               </div>
 
-              <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12.5px] text-[#6e6e73]">
+              <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12.5px] text-[var(--ink-muted)]">
                 <span className="inline-flex items-center gap-1">
-                  <Mail size={12} className="text-[#86868b]" />
+                  <Mail size={12} className="text-[var(--ink-tertiary)]" />
                   {user.email || 'ไม่ได้ระบุอีเมล'}
                 </span>
                 {user.username && (
                   <span className="inline-flex items-center gap-1">
-                    <AtSign size={12} className="text-[#86868b]" />
+                    <AtSign size={12} className="text-[var(--ink-tertiary)]" />
                     {user.username}
                   </span>
                 )}
@@ -573,15 +574,15 @@ export default function ProfilePage() {
           ══════════════════════════════════════════════════ */}
       <nav
         aria-label="แท็บตั้งค่าโปรไฟล์"
-        className="flex items-center gap-1.5 p-1.5 bg-[#eaebee]/80 backdrop-blur-md rounded-[18px] overflow-x-auto no-scrollbar border border-black/[0.04]"
+        className="flex items-center gap-1.5 p-1.5 bg-[var(--surface-chip)] backdrop-blur-md rounded-[18px] overflow-x-auto no-scrollbar border border-[var(--hairline-soft)]"
       >
         <button
           type="button"
           onClick={() => handleTabChange('profile')}
           className={`flex flex-1 sm:flex-initial items-center justify-center gap-2 px-4 py-2.5 rounded-[13px] text-[13px] font-bold whitespace-nowrap transition-all duration-200 active:scale-[0.98] ${
             activeTab === 'profile'
-              ? 'bg-white text-[#0066cc] shadow-[0_2px_8px_rgba(0,0,0,0.06)]'
-              : 'text-[#6e6e73] hover:text-[#1d1d1f] hover:bg-white/50'
+              ? 'bg-[var(--surface)] text-[var(--accent-text)] shadow-[0_2px_8px_rgba(0,0,0,0.06)]'
+              : 'text-[var(--ink-muted)] hover:text-[var(--ink)] hover:bg-[var(--glass-60)]'
           }`}
         >
           <User size={15} />
@@ -593,8 +594,8 @@ export default function ProfilePage() {
           onClick={() => handleTabChange('preferences')}
           className={`flex flex-1 sm:flex-initial items-center justify-center gap-2 px-4 py-2.5 rounded-[13px] text-[13px] font-bold whitespace-nowrap transition-all duration-200 active:scale-[0.98] ${
             activeTab === 'preferences'
-              ? 'bg-white text-[#0066cc] shadow-[0_2px_8px_rgba(0,0,0,0.06)]'
-              : 'text-[#6e6e73] hover:text-[#1d1d1f] hover:bg-white/50'
+              ? 'bg-[var(--surface)] text-[var(--accent-text)] shadow-[0_2px_8px_rgba(0,0,0,0.06)]'
+              : 'text-[var(--ink-muted)] hover:text-[var(--ink)] hover:bg-[var(--glass-60)]'
           }`}
         >
           <Sliders size={15} />
@@ -649,7 +650,7 @@ export default function ProfilePage() {
                   <button
                     type="submit"
                     disabled={isSavingProfile}
-                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-[#0066cc] px-6 py-2.5 text-[13px] font-bold text-white shadow-xs transition-all duration-150 hover:bg-[#0071e3] disabled:opacity-50 active:scale-[0.96] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#0066cc]"
+                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-[var(--accent)] px-6 py-2.5 text-[13px] font-bold text-white shadow-xs transition-all duration-150 hover:bg-[var(--accent-hover)] disabled:opacity-50 active:scale-[0.96] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
                   >
                     {isSavingProfile ? (
                       <div className="h-3.5 w-3.5 animate-spin rounded-full border-[2px] border-white/30 border-t-white" />
@@ -723,9 +724,9 @@ export default function ProfilePage() {
 
                 {/* Strength Meter */}
                 {newPassword && (
-                  <div className="-mt-1 rounded-2xl bg-[#f8fafc] p-3.5 ring-1 ring-black/[0.04]">
+                  <div className="-mt-1 rounded-2xl bg-[var(--surface-subtle)] p-3.5 ring-1 ring-black/[0.04]">
                     <div className="flex items-center justify-between text-[11.5px] mb-1.5">
-                      <span className="text-[#6e6e73]">ระดับความปลอดภัย</span>
+                      <span className="text-[var(--ink-muted)]">ระดับความปลอดภัย</span>
                       <span className={`font-bold ${strengthMeta.text}`}>{strengthMeta.label}</span>
                     </div>
                     <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
@@ -734,7 +735,7 @@ export default function ProfilePage() {
                         style={{ width: `${Math.min(100, (passwordStrength / 5) * 100)}%` }}
                       />
                     </div>
-                    <div className="mt-2.5 grid grid-cols-2 gap-x-3 gap-y-1 text-[11px] text-[#6e6e73]">
+                    <div className="mt-2.5 grid grid-cols-2 gap-x-3 gap-y-1 text-[11px] text-[var(--ink-muted)]">
                       <span
                         className={newPassword.length >= 8 ? 'text-emerald-600 font-semibold' : ''}
                       >
@@ -822,7 +823,7 @@ export default function ProfilePage() {
                   <button
                     type="submit"
                     disabled={isChangingPassword}
-                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-[#0066cc] px-6 py-2.5 text-[13px] font-bold text-white shadow-xs transition-all duration-150 hover:bg-[#0071e3] disabled:opacity-50 active:scale-[0.96] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#0066cc]"
+                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-[var(--accent)] px-6 py-2.5 text-[13px] font-bold text-white shadow-xs transition-all duration-150 hover:bg-[var(--accent-hover)] disabled:opacity-50 active:scale-[0.96] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
                   >
                     {isChangingPassword ? (
                       <div className="h-3.5 w-3.5 animate-spin rounded-full border-[2px] border-white/30 border-t-white" />
@@ -872,6 +873,10 @@ export default function ProfilePage() {
 
             <div className="lg:col-span-2">
               <BrandingCard isAdmin={isAdmin} />
+            </div>
+
+            <div className="lg:col-span-2">
+              <ThemeCard />
             </div>
           </motion.div>
         )}

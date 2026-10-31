@@ -147,7 +147,7 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: string) =
 
   return (
     <div
-      className="flex w-[min(90vw,400px)] items-center gap-3 rounded-[18px] border border-black/[0.08] bg-white p-3.5 shadow-[0_8px_30px_rgba(0,0,0,0.10)] animate-slide-in-top"
+      className="flex w-[min(90vw,400px)] items-center gap-3 rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] p-3.5 shadow-[0_8px_30px_rgba(0,0,0,0.10)] animate-slide-in-top"
       role="alert"
       aria-live="polite"
     >
@@ -157,16 +157,16 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: string) =
         {config.icon}
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-[15px] font-semibold tracking-tight text-[#1d1d1f]">{toast.title}</p>
+        <p className="text-[15px] font-semibold tracking-tight text-[var(--ink)]">{toast.title}</p>
         {toast.message && (
-          <p className="mt-0.5 text-[13px] font-medium leading-snug text-[#6e6e73] line-clamp-2">
+          <p className="mt-0.5 text-[13px] font-medium leading-snug text-[var(--ink-muted)] line-clamp-2">
             {toast.message}
           </p>
         )}
       </div>
       <button
         onClick={() => onRemove(toast.id)}
-        className="flex h-8 w-8 items-center justify-center rounded-full text-[#86868b] transition-colors hover:bg-black/5 hover:text-[#1d1d1f] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#0066cc]"
+        className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--ink-tertiary)] transition-colors hover:bg-black/5 hover:text-[var(--ink)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
         aria-label="ปิดการแจ้งเตือน"
       >
         <X size={16} aria-hidden="true" />
