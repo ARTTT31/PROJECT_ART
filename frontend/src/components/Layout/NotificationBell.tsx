@@ -200,15 +200,27 @@ export default function NotificationBell() {
         const cityName = parsed?.cityName || 'พื้นที่ของคุณ';
 
         if (typeof pm25 === 'number') {
-          if (pm25 >= 37.6) {
-            const id = 'weather-pm25-high';
+          if (pm25 >= 75) {
+            const id = 'weather-pm25-critical';
             if (!dismissedSet.has(id)) {
               smartAlerts.push({
                 id,
                 type: 'weather',
                 level: 'danger',
-                title: `แจ้งเตือนฝุ่น PM 2.5 สูงใน${cityName} ⚠️`,
-                body: `ค่าฝุ่น PM 2.5 อยู่ที่ ${pm25} µg/m³ (เริ่มมีผลกระทบต่อสุขภาพ) ควรสวมหน้ากากป้องกันเมื่อออกกลางแจ้ง`,
+                title: `วิกฤตฝุ่น PM 2.5 ใน${cityName} ระดับสีแดง 🔴`,
+                body: `ค่าฝุ่น PM 2.5 พุ่งสูงถึง ${pm25} µg/m³ ส่งผลกระทบต่อสุขภาพอย่างยิ่ง ควรสวมหน้ากาก N95 และหลีกเลี่ยงกิจกรรมกลางแจ้ง`,
+                at: now,
+              });
+            }
+          } else if (pm25 >= 37.6) {
+            const id = 'weather-pm25-high';
+            if (!dismissedSet.has(id)) {
+              smartAlerts.push({
+                id,
+                type: 'weather',
+                level: 'warning',
+                title: `แจ้งเตือนฝุ่น PM 2.5 ใน${cityName} ระดับสีส้ม 🟠`,
+                body: `ค่าฝุ่น PM 2.5 อยู่ที่ ${pm25} µg/m³ เริ่มมีผลกระทบต่อสุขภาพ กลุ่มเสี่ยงควรลดระยะเวลาทำกิจกรรมกลางแจ้ง`,
                 at: now,
               });
             }
@@ -243,7 +255,52 @@ export default function NotificationBell() {
       }
     } catch {}
 
-    // 3. System Welcome Notification — show only once (respect dismissed)
+    // 3. Check Oil Price Adjustments Alert
+    try {
+      const oilCacheRaw = localStorage.getItem('artOilPriceCacheV1');
+      const oilPrevRaw = localStorage.getItem('artOilPricePrevV1');
+      if (oilCacheRaw) {
+        const parsed = JSON.parse(oilCacheRaw);
+        const prices: Array<{ key: string; name: string; price: number }> =
+          parsed?.data?.prices || parsed?.data?.oil_prices || [];
+        const prevPrices: Record<string, number> = oilPrevRaw ? JSON.parse(oilPrevRaw) : {};
+
+        if (prices.length > 0) {
+          const changed: Array<{ name: string; diff: number }> = [];
+          for (const item of prices) {
+            const oldPrice = prevPrices[item.key];
+            if (oldPrice != null) {
+              const diff = +(item.price - oldPrice).toFixed(2);
+              if (diff !== 0) {
+                changed.push({ name: item.name, diff });
+              }
+            }
+          }
+
+          if (changed.length > 0) {
+            const id = `oil-change-${parsed.data?.update_date || now.toISOString().slice(0, 10)}`;
+            if (!dismissedSet.has(id)) {
+              const hasUp = changed.some((c) => c.diff > 0);
+              const summary = changed
+                .slice(0, 3)
+                .map((c) => `${c.name} ${c.diff > 0 ? '+' : ''}${c.diff} บาท`)
+                .join(', ');
+
+              smartAlerts.push({
+                id,
+                type: 'oilprice',
+                level: hasUp ? 'warning' : 'info',
+                title: `แจ้งเตือนการปรับราคาน้ำมัน ${hasUp ? '📈' : '📉'}`,
+                body: `ราคาน้ำมันมีการเปลี่ยนแปลง: ${summary}${changed.length > 3 ? ' และอื่นๆ' : ''}`,
+                at: now,
+              });
+            }
+          }
+        }
+      }
+    } catch {}
+
+    // 4. System Welcome Notification — show only once (respect dismissed)
     const sysId = 'system-workspace-ready';
     if (!dismissedSet.has(sysId)) {
       // Also check if already shown this session via sessionStorage to avoid re-showing on soft navigations

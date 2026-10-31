@@ -33,16 +33,28 @@ describe('WatchlistWidget', () => {
     'BTC-USD': { symbol: 'BTC-USD', price: 42150.00, change: 1250.00, change_percent: 3.06, currency: 'USD', name: 'Bitcoin' },
   };
 
-  it('renders loading state initially', () => {
-    mockFetchWithAuth.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ symbols: [] }),
-    } as Response);
+  it('renders loading state initially', async () => {
+    let resolvePromise!: (value: unknown) => void;
+    const pendingPromise = new Promise((resolve) => {
+      resolvePromise = resolve;
+    });
+
+    mockFetchWithAuth.mockReturnValueOnce(pendingPromise);
 
     render(<WatchlistWidget />);
 
     // The spinner itself is decorative; the status region carries the label.
     expect(screen.getByRole('status', { name: /กำลังโหลดรายการติดตาม/i })).toBeInTheDocument();
+
+    // Settle promise and wait for loader to disappear to prevent unhandled state update
+    resolvePromise({
+      ok: true,
+      json: async () => ({ symbols: [] }),
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByRole('status', { name: /กำลังโหลด/i })).not.toBeInTheDocument();
+    });
   });
 
   it('displays error when load fails', async () => {
@@ -278,6 +290,11 @@ describe('WatchlistWidget', () => {
 
     // Should show the spinning refresh icon while quotes reload
     expect(refreshButton.querySelector('svg')?.getAttribute('class')).toContain('animate-spin');
+
+    // Wait for reload to complete so state update is contained
+    await waitFor(() => {
+      expect(refreshButton.querySelector('svg')?.getAttribute('class')).not.toContain('animate-spin');
+    });
   });
 
   it('respects maximum symbol limit', async () => {

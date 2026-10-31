@@ -54,6 +54,11 @@ describe('BrandingContext', () => {
     expect(screen.getByTestId('company-tagline').textContent).toBe(
       'จัดการวันทำงานของคุณให้ง่ายขึ้น',
     );
+
+    // Wait for initial branding fetch to settle
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalled();
+    });
   });
 
   it('updates branding when updateBranding is called', async () => {

@@ -67,7 +67,7 @@ describe('LoginPage', () => {
     }) as unknown as typeof fetch;
   });
 
-  it('renders sign-in form along with permanent register link to /register', () => {
+  it('renders sign-in form along with permanent register link to /register', async () => {
     render(
       <BrandingProvider>
         <LoginPage />
@@ -83,6 +83,11 @@ describe('LoginPage', () => {
     // Google sign-in and the forgot-password link were removed from this page.
     expect(screen.queryByRole('button', { name: /google/i })).toBeNull();
     expect(screen.queryByRole('link', { name: /ลืมรหัสผ่าน/ })).toBeNull();
+
+    // Wait for on-mount fetches (branding + registration-mode) to settle
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalled();
+    });
   });
 
   it('returns to the ?next page once a session is restored', async () => {

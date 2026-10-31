@@ -188,4 +188,50 @@ describe('NotificationBell — live feed', () => {
     expect(socket.closed).toBe(true);
     expect(FakeWebSocket.instances).toHaveLength(1);
   });
+
+  it('generates smart alerts for critical PM2.5 and oil price adjustments', async () => {
+    localStorage.setItem(
+      'artWeatherCacheV7',
+      JSON.stringify({
+        airQuality: { pm25: 85 },
+        weather: { rainProb: 75 },
+        cityName: 'กรุงเทพฯ',
+      }),
+    );
+
+    localStorage.setItem(
+      'artOilPriceCacheV1',
+      JSON.stringify({
+        data: {
+          update_date: '2026-10-31',
+          prices: [
+            { key: 'diesel', name: 'ดีเซล', price: 33.94 },
+            { key: 'gasohol_95', name: 'แก๊สโซฮอล์ 95', price: 37.55 },
+          ],
+        },
+      }),
+    );
+
+    localStorage.setItem(
+      'artOilPricePrevV1',
+      JSON.stringify({
+        diesel: 32.94,
+        gasohol_95: 37.55,
+      }),
+    );
+
+    render(<NotificationBell />);
+
+    await act(async () => {
+      fireEvent.click(bellButton());
+    });
+
+    // PM2.5 critical red alert
+    expect(screen.getByText(/วิกฤตฝุ่น PM 2.5 ในกรุงเทพฯ ระดับสีแดง/)).toBeTruthy();
+    // Rain high alert
+    expect(screen.getByText(/โอกาสเกิดฝนตกสูง 75%/)).toBeTruthy();
+    // Oil price change alert
+    expect(screen.getByText(/แจ้งเตือนการปรับราคาน้ำมัน/)).toBeTruthy();
+    expect(screen.getByText(/ดีเซล \+1 บาท/)).toBeTruthy();
+  });
 });
