@@ -122,6 +122,41 @@ describe('QuickNotesWidget', () => {
     );
   });
 
+  it('renames a note inline instead of forcing a delete and retype', async () => {
+    await renderWith([{ id: 'n1', text: 'พิมพ์ผิด', done: false }]);
+
+    fireEvent.click(screen.getByLabelText('แก้ไข พิมพ์ผิด'));
+    const editor = screen.getByLabelText('แก้ไข พิมพ์ผิด') as HTMLInputElement;
+    fireEvent.change(editor, { target: { value: 'พิมพ์ถูก' } });
+    fireEvent.keyDown(editor, { key: 'Enter' });
+
+    expect(screen.getByText('พิมพ์ถูก')).toBeTruthy();
+    await waitFor(
+      () => {
+        expect(lastPutBody().notes[0].text).toBe('พิมพ์ถูก');
+      },
+      { timeout: 3000 },
+    );
+  });
+
+  it('clears finished items in one click', async () => {
+    await renderWith([
+      { id: 'n1', text: 'งานที่เสร็จแล้ว', done: true },
+      { id: 'n2', text: 'งานที่ยังค้าง', done: false },
+    ]);
+
+    fireEvent.click(screen.getByText('ล้างที่เสร็จแล้ว (1)'));
+
+    expect(screen.queryByText('งานที่เสร็จแล้ว')).toBeNull();
+    expect(screen.getByText('งานที่ยังค้าง')).toBeTruthy();
+    await waitFor(
+      () => {
+        expect(lastPutBody().notes.map((note) => note.text)).toEqual(['งานที่ยังค้าง']);
+      },
+      { timeout: 3000 },
+    );
+  });
+
   it('queues saves so a later edit is written after an earlier request finishes', async () => {
     let resolveFirstSave: ((value: ReturnType<typeof jsonResponse>) => void) | undefined;
     let writeCount = 0;
