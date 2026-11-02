@@ -2,7 +2,7 @@
 
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { fetchWithAuth, fetchWithAuthJson, refreshSessionToken } from '@/lib/api/fetchWithAuth';
+import { fetchWithAuth, fetchWithAuthJson, forgetCsrfToken, refreshSessionToken } from '@/lib/api/fetchWithAuth';
 import { AuthUserSchema } from '@/lib/api/schemas';
 import { readUserCookie } from '@/lib/api/userCookie';
 import type { AuthUser, AuthRole } from '@/types';
@@ -218,23 +218,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     );
 
     // ── Tab re-focus / visibility change handler ──
+    // Returning to the tab fires `focus` *and* `visibilitychange` for the same
+    // switch, and an unfocused window can regain focus many times a minute.
+    // Without a floor each of those refreshed the token (one rotation each) and
+    // re-read the profile, which is pure load on the backend and looks like
+    // abuse to the rate limiter.
+    const SESSION_CHECK_MIN_INTERVAL_MS = 60_000;
+    let lastSessionCheck = 0;
+    let sessionCheckInFlight = false;
+
     const onVisibilityChange = async () => {
-      if (document.visibilityState === 'visible') {
-        const u = safeParseUser(localStorage.getItem('user'));
-        if (u) {
-          try {
-            // Same as keep-alive: refresh before the session ping so an expired
-            // token doesn't surface a 401 in the browser console.
-            const refreshResult = await refreshSessionToken();
-            if (!refreshResult.success && refreshResult.isUnauthenticated) {
-              window.dispatchEvent(new Event('auth-logout'));
-              return;
-            }
-            await fetchWithAuth('/api/v1/profile/me');
-          } catch (e) {
-            console.warn('Visibility session check:', e);
-          }
+      if (document.visibilityState !== 'visible') return;
+      const u = safeParseUser(localStorage.getItem('user'));
+      if (!u) return;
+      if (sessionCheckInFlight) return;
+      if (Date.now() - lastSessionCheck < SESSION_CHECK_MIN_INTERVAL_MS) return;
+
+      lastSessionCheck = Date.now();
+      sessionCheckInFlight = true;
+      try {
+        // Same as keep-alive: refresh before the session ping so an expired
+        // token doesn't surface a 401 in the browser console.
+        const refreshResult = await refreshSessionToken();
+        if (!refreshResult.success && refreshResult.isUnauthenticated) {
+          window.dispatchEvent(new Event('auth-logout'));
+          return;
         }
+        await fetchWithAuth('/api/v1/profile/me');
+      } catch (e) {
+        console.warn('Visibility session check:', e);
+      } finally {
+        sessionCheckInFlight = false;
       }
     };
 
@@ -267,6 +281,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       localStorage.removeItem('session_id');
       localStorage.removeItem('user');
+      // The CSRF token belongs to the session being ended; the next account in
+      // this tab must not send it (see `forgetCsrfToken`).
+      forgetCsrfToken();
       document.cookie = 'user=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; max-age=0';
       document.cookie = 'access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; max-age=0';
       document.cookie = 'refresh_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; max-age=0';
