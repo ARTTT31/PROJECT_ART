@@ -117,7 +117,64 @@ async function refreshAccessToken(): Promise<{ success: boolean; isUnauthenticat
 function clearAuth() {
   localStorage.removeItem('user');
   localStorage.removeItem('session_id');
+  forgetCsrfToken();
   window.dispatchEvent(new Event('auth-logout'));
+}
+
+/**
+ * Drop the cached CSRF token.
+ *
+ * The cache outlives a session, and the next account in the same tab must not
+ * inherit it: a token issued to the previous session is at best useless and at
+ * worst costs every write one rejected request until the `csrf_failed` retry
+ * recovers. Callers are logout and the session-clearing paths.
+ */
+export function forgetCsrfToken(): void {
+  csrfTokenCache = null;
+  csrfTokenPromise = null;
+}
+
+/** Whether this browser still considers itself signed in. */
+function hasLocalSession(): boolean {
+  if (typeof window === 'undefined') return false;
+  return (
+    localStorage.getItem('user') !== null ||
+    document.cookie.split('; ').some((cookie) => cookie.startsWith('user='))
+  );
+}
+
+// ── Initial session priming ─────────────────────────────────
+// AuthProvider refreshes the access token on mount, but React runs the effects
+// of its children first: every widget fired its requests while the access token
+// (30 min) was still the expired one, so a page load after a break produced a
+// burst of 401s before the refresh landed. The first authenticated request of a
+// page load now waits for that same single-flight refresh, so the burst becomes
+// one refresh followed by healthy requests. Shared with AuthProvider's own call
+// (no extra network round-trip).
+let sessionPrimePromise: Promise<{ success: boolean; isUnauthenticated: boolean }> | null = null;
+
+function primeSession(): Promise<{ success: boolean; isUnauthenticated: boolean }> {
+  if (sessionPrimePromise) return sessionPrimePromise;
+
+  const primed = refreshSessionToken();
+  sessionPrimePromise = primed;
+
+  // Only a *successful* prime is worth remembering. Remembering a failed one
+  // would outlive the reason it failed: after a transient server error the user
+  // could stay stuck on synthetic 401s, and after a revoked session every
+  // request would keep answering 401 even once the user signed in again in the
+  // same tab (login is a client-side navigation, so this module state survives
+  // it) — until a full page reload. A later request simply primes again.
+  const forgetIfFailed = (result: { success: boolean }) => {
+    if (sessionPrimePromise === primed && !result.success) {
+      sessionPrimePromise = null;
+    }
+  };
+  primed.then(forgetIfFailed, () => {
+    if (sessionPrimePromise === primed) sessionPrimePromise = null;
+  });
+
+  return primed;
 }
 
 /**
@@ -147,13 +204,42 @@ export async function refreshSessionToken(): Promise<{
   };
 }
 
+const REQUEST_TIMEOUT_MS = 45000;
+
+/**
+ * One request attempt, bounded by the cold-start timeout *and* by the caller's
+ * own `AbortSignal`.
+ *
+ * Retries used to reassign `fetchOptions.signal` to a fresh controller, which
+ * replaced the caller's signal: a widget that aborted on unmount could not stop
+ * the retry, and when a caller passed a signal the 45s timeout did nothing at
+ * all because the timeout controller was never attached.
+ */
+async function requestWithTimeout(
+  url: string,
+  init: RequestInit,
+  callerSignal: AbortSignal | undefined,
+): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  const forwardAbort = () => controller.abort();
+  callerSignal?.addEventListener('abort', forwardAbort, { once: true });
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timeoutId);
+    callerSignal?.removeEventListener('abort', forwardAbort);
+  }
+}
+
 /**
  * Drop-in replacement for `fetch()` that:
  * 1. Automatically includes cookies with credentials: 'include'
  * 2. Attaches the X-CSRF-Token header on mutating requests (double-submit cookie)
- * 3. On 401, tries to refresh the token and retries once
- * 4. On 403 `csrf_failed`, refreshes the CSRF token and retries once
- * 5. If refresh also fails with 401, clears auth state
+ * 3. Refreshes an expired access token before the first request of a page load
+ * 4. On 401, tries to refresh the token and retries once
+ * 5. On 403 `csrf_failed`, refreshes the CSRF token and retries once
+ * 6. If refresh also fails with 401, clears auth state
  */
 export async function fetchWithAuth(path: string, options: RequestInit = {}): Promise<Response> {
   // Enforce credentials: 'include' to pass HTTP-only cookies
@@ -176,28 +262,37 @@ export async function fetchWithAuth(path: string, options: RequestInit = {}): Pr
     if (token) headers.set(CSRF_HEADER, token);
   }
 
-  const controller = new AbortController();
-  // 45-second timeout for requests to survive backend cold starts
-  const timeoutId = setTimeout(() => controller.abort(), 45000);
-
-  if (!fetchOptions.signal) {
-    fetchOptions.signal = controller.signal;
+  // Refresh an expired access token before the first authenticated request of
+  // a page load, instead of letting it 401 first (see `primeSession`). This
+  // runs before the request timeout below starts counting.
+  const primed = hasLocalSession() ? await primeSession() : null;
+  if (primed?.isUnauthenticated) {
+    // The refresh token itself is expired/revoked, so the API can only answer
+    // 401. Clear the stale session and reply the same way without spending a
+    // request (and without another red line in the console).
+    clearAuth();
+    // Same shape as the backend's own 401 (`{"detail": ...}`), so callers that
+    // parse the body (`fetchWithAuthJson`, error toasts) behave identically for
+    // this locally-minted rejection and a real one.
+    return new Response(JSON.stringify({ detail: 'Session expired' }), {
+      status: 401,
+      statusText: 'Unauthorized',
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 
+  // The caller's signal (widget unmount, navigation away) has to survive every
+  // attempt: see `requestWithTimeout`.
+  const callerSignal = fetchOptions.signal ?? undefined;
+
   try {
-    let response = await fetch(`${API_URL}${path}`, fetchOptions);
-    clearTimeout(timeoutId);
+    let response = await requestWithTimeout(`${API_URL}${path}`, fetchOptions, callerSignal);
 
     // ── Auto-refresh on 401 ──────────────────────────────────
     if (response.status === 401) {
       // Skip refresh entirely when there is no local session — avoids the
       // /api/v1/auth/refresh call firing on public pages like /login.
-      const hasLocalSession =
-        typeof window !== 'undefined' &&
-        (localStorage.getItem('user') !== null ||
-          document.cookie.split('; ').some((c) => c.startsWith('user=')));
-
-      if (!hasLocalSession) {
+      if (!hasLocalSession()) {
         return response;
       }
 
@@ -213,14 +308,7 @@ export async function fetchWithAuth(path: string, options: RequestInit = {}): Pr
 
       if (refreshResult?.success) {
         // Retry the original request (cookies are automatically attached)
-        const retryController = new AbortController();
-        const retryTimeoutId = setTimeout(() => retryController.abort(), 45000);
-        fetchOptions.signal = retryController.signal;
-        try {
-          response = await fetch(`${API_URL}${path}`, fetchOptions);
-        } finally {
-          clearTimeout(retryTimeoutId);
-        }
+        response = await requestWithTimeout(`${API_URL}${path}`, fetchOptions, callerSignal);
       } else if (refreshResult?.isUnauthenticated) {
         // ONLY clear auth if backend confirmed the refresh token is genuinely expired/invalid
         clearAuth();
@@ -248,23 +336,18 @@ export async function fetchWithAuth(path: string, options: RequestInit = {}): Pr
         if (freshToken) {
           csrfTokenCache = freshToken;
           headers.set(CSRF_HEADER, freshToken);
-
-          const csrfRetryController = new AbortController();
-          const csrfRetryTimeoutId = setTimeout(() => csrfRetryController.abort(), 45000);
-          fetchOptions.signal = csrfRetryController.signal;
-          try {
-            response = await fetch(`${API_URL}${path}`, fetchOptions);
-          } finally {
-            clearTimeout(csrfRetryTimeoutId);
-          }
+          response = await requestWithTimeout(`${API_URL}${path}`, fetchOptions, callerSignal);
         }
       }
     }
 
     return response;
   } catch (error: any) {
-    clearTimeout(timeoutId);
-    if (error.name === 'AbortError') {
+    if (error?.name === 'AbortError') {
+      // Tell the two aborts apart: our own 45s timeout, and the caller walking
+      // away (unmount/navigation). Reporting an unmount as "Request timeout"
+      // surfaced timeout errors for pages the user had already left.
+      if (callerSignal?.aborted) throw error;
       throw new Error('Request timeout');
     }
     throw error;
@@ -303,19 +386,25 @@ export async function fetchWithAuthJson<T extends z.ZodTypeAny>(
 ): Promise<ResponseModelParsed | z.infer<T>> {
   const res = await fetchWithAuth(path, options);
   if (!res.ok) {
+    // Read the error body without letting the read itself decide the result:
+    // the previous version built the rich error *and threw it from inside* this
+    // `try`, so the `catch` below swallowed it and replaced it with a bare Error.
+    // Every caller checking `error.status` (AuthProvider's 401 handling,
+    // QuickNotesWidget's message) therefore saw `undefined`.
+    let errData: { message?: string; detail?: string } | undefined;
     try {
-      const errData = await res.json();
-      const msg = errData?.message || errData?.detail || res.statusText;
-      const error = new Error(`Request failed: ${res.status} ${msg}`) as Error & {
-        status?: number;
-        data?: unknown;
-      };
-      error.status = res.status;
-      error.data = errData;
-      throw error;
+      errData = await res.json();
     } catch {
-      throw new Error(`Request failed: ${res.status} ${res.statusText}`);
+      errData = undefined;
     }
+    const msg = errData?.message || errData?.detail || res.statusText;
+    const error = new Error(`Request failed: ${res.status} ${msg}`) as Error & {
+      status?: number;
+      data?: unknown;
+    };
+    error.status = res.status;
+    error.data = errData;
+    throw error;
   }
   return parseJsonWithSchema(res, (schema || (await import('./schemas')).ResponseModelSchema) as T);
 }
