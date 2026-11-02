@@ -22,6 +22,7 @@ import {
   Clock,
 } from 'lucide-react';
 import WidgetSizeToggle from './WidgetSizeToggle';
+import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -100,7 +101,7 @@ function safeJsonParse<T>(raw: string | null): T | null {
 
 async function resolveLocationName(lat: number, lon: number): Promise<string> {
   try {
-    const res = await fetch(
+    const res = await fetchWithAuth(
       `/api/v1/weather/reverse-geocode?latitude=${lat}&longitude=${lon}&locality_language=th`,
     );
     if (res.ok) {
@@ -293,10 +294,15 @@ export default function WeatherWidget({
       const weatherUrl = `/api/v1/weather/forecast?latitude=${city.lat}&longitude=${city.lon}&timezone=Asia%2FBangkok&forecast_days=2`;
       const aqiUrl = `/api/v1/weather/air-quality?latitude=${city.lat}&longitude=${city.lon}&timezone=Asia%2FBangkok`;
 
+      // `fetchWithAuth` refreshes an expired access token and retries, so the
+      // card recovers instead of showing the "cannot load" error. The widget's
+      // own controller cannot cancel that retry, hence the aborted guard below.
       const [weatherRes, aqiRes] = await Promise.all([
-        fetch(weatherUrl, { signal: controller.signal }),
-        fetch(aqiUrl, { signal: controller.signal }),
+        fetchWithAuth(weatherUrl, { signal: controller.signal }),
+        fetchWithAuth(aqiUrl, { signal: controller.signal }),
       ]);
+
+      if (controller.signal.aborted) return;
 
       // The two endpoints fail independently — the forecast call is the one
       // Open-Meteo throttles — so each half is optional. Throwing because one
@@ -416,7 +422,9 @@ export default function WeatherWidget({
         localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
       }
     } catch (err: any) {
-      if (err.name === 'AbortError') return;
+      // `fetchWithAuth` reports an aborted caller signal as "Request timeout",
+      // so check the widget's own controller as well.
+      if (err.name === 'AbortError' || controller.signal.aborted) return;
       console.error('Weather fetch error:', err);
       if (dataRef.current.weather && dataRef.current.airQuality) {
         // Something is already on screen. Raising an alarm over a failed refresh
