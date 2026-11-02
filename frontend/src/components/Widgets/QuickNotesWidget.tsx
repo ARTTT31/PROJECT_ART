@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AlertCircle, Check, ListTodo, Loader2, Plus, RotateCw, Trash2 } from 'lucide-react';
+import { AlertCircle, ListTodo, Loader2, Plus, RotateCw, Trash2 } from 'lucide-react';
 import WidgetSizeToggle from './WidgetSizeToggle';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
 import { readUserCookie } from '@/lib/api/userCookie';
@@ -105,6 +105,12 @@ export default function QuickNotesWidget({
   const [error, setError] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [justSaved, setJustSaved] = useState(false);
+  // Inline rename. A note could previously only be added or deleted, so fixing a
+  // typo meant deleting the line and retyping it.
+  const [editing, setEditing] = useState<{ id: string; text: string } | null>(null);
+
+  const draftInputRef = useRef<HTMLInputElement | null>(null);
+  const editInputRef = useRef<HTMLInputElement | null>(null);
 
   const pendingRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -228,6 +234,9 @@ export default function QuickNotesWidget({
       ...latestRef.current,
       { id: newId(), text: text.slice(0, MAX_NOTE_LENGTH), done: false },
     ]);
+    // Keep the caret in the field: adding several items in a row should never
+    // need a click back into the input.
+    draftInputRef.current?.focus();
   };
 
   const toggleNote = (id: string) => {
@@ -237,10 +246,40 @@ export default function QuickNotesWidget({
   };
 
   const removeNote = (id: string) => {
+    if (editing?.id === id) setEditing(null);
     update(latestRef.current.filter((note) => note.id !== id));
   };
 
+  const startEdit = (note: QuickNote) => {
+    setEditing({ id: note.id, text: note.text });
+  };
+
+  const commitEdit = () => {
+    if (!editing) return;
+    const text = editing.text.trim().slice(0, MAX_NOTE_LENGTH);
+    const current = latestRef.current.find((note) => note.id === editing.id);
+    setEditing(null);
+    // Empty input means "never mind", not "delete my line".
+    if (text && current && text !== current.text) {
+      update(latestRef.current.map((note) => (note.id === editing.id ? { ...note, text } : note)));
+    }
+  };
+
+  const clearCompleted = () => {
+    const kept = latestRef.current.filter((note) => !note.done);
+    if (kept.length !== latestRef.current.length) update(kept);
+  };
+
+  /** Move the caret/cursor to the end of a note when its editor opens. */
+  const focusEditInput = (element: HTMLInputElement | null) => {
+    editInputRef.current = element;
+    if (!element) return;
+    element.focus();
+    element.setSelectionRange(element.value.length, element.value.length);
+  };
+
   const remaining = notes.filter((note) => !note.done).length;
+  const completed = notes.length - remaining;
 
   if (loading) {
     return (
@@ -282,7 +321,7 @@ export default function QuickNotesWidget({
 
   return (
     <section
-      className="flex h-full flex-col rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)]"
+      className="flex h-full flex-col justify-start rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)]"
       aria-labelledby="quick-notes-title"
     >
       <div className="flex items-start justify-between gap-3">
@@ -297,12 +336,23 @@ export default function QuickNotesWidget({
             >
               โน้ตด่วน / To-do วันนี้
             </h3>
-            <p className="mt-0.5 truncate text-[12px] text-[var(--ink-tertiary)]">
-              {notes.length === 0
-                ? 'เพิ่มรายการที่ต้องทำวันนี้'
-                : remaining > 0
-                  ? `เหลืออีก ${remaining} รายการ`
-                  : 'ทำครบทุกอย่างแล้ว 🎉'}
+            <p className="mt-0.5 flex items-center gap-1.5 text-[12px] text-[var(--ink-tertiary)]">
+              <span className="truncate">
+                {notes.length === 0
+                  ? 'เพิ่มรายการที่ต้องทำวันนี้'
+                  : remaining > 0
+                    ? `เหลืออีก ${remaining} รายการ`
+                    : 'ทำครบทุกอย่างแล้ว 🎉'}
+              </span>
+              <span className="shrink-0 tabular-nums text-[var(--ink-secondary)]">
+                {notes.length}/{MAX_NOTES}
+              </span>
+              {saving && (
+                <Loader2 size={10} className="shrink-0 animate-spin text-[var(--accent)]" aria-hidden="true" />
+              )}
+              {!saving && justSaved && (
+                <span className="shrink-0 font-medium text-[var(--success)]">บันทึกแล้ว</span>
+              )}
             </p>
           </div>
         </div>
@@ -334,6 +384,7 @@ export default function QuickNotesWidget({
         }}
       >
         <input
+          ref={draftInputRef}
           type="text"
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
@@ -352,8 +403,20 @@ export default function QuickNotesWidget({
         </button>
       </form>
 
+      {completed > 0 && (
+        <div className="mt-1.5 flex justify-end">
+          <button
+            type="button"
+            onClick={clearCompleted}
+            className="rounded-full px-2 py-[3px] text-[10px] font-semibold text-[var(--accent-text)] transition-colors hover:bg-[var(--accent)]/10"
+          >
+            ล้างที่เสร็จแล้ว ({completed})
+          </button>
+        </div>
+      )}
+
       <ul
-        className="mt-3 max-h-[248px] min-h-0 flex-1 space-y-1.5 overflow-y-auto pr-0.5"
+        className="mt-2 max-h-[268px] space-y-1.5 overflow-y-auto pr-0.5"
         aria-label="รายการที่ต้องทำ"
       >
         {notes.length === 0 && (
@@ -364,53 +427,105 @@ export default function QuickNotesWidget({
           </li>
         )}
 
-        {notes.map((note) => (
-          <li
-            key={note.id}
-            className="group flex items-center gap-2 rounded-[12px] bg-[var(--surface-grouped)] px-2.5 py-[7px]"
-          >
-            <button
-              type="button"
-              onClick={() => toggleNote(note.id)}
-              aria-pressed={note.done}
-              aria-label={note.done ? `ยกเลิกทำ ${note.text}` : `ทำเสร็จ ${note.text}`}
-              className={`relative flex h-[8px] w-[8px] shrink-0 items-center justify-center rounded-full border transition-all duration-150 hover:scale-110 before:absolute before:-inset-1.5 before:content-[''] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-border)] focus-visible:ring-offset-1 ${
-                note.done
-                  ? 'border-[var(--success)] bg-gradient-to-b from-[var(--success)] to-[#24ab45] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.5),0_1px_2px_rgba(36,171,69,0.35)]'
-                  : 'border-[var(--ink-divider)] bg-gradient-to-b from-white to-[var(--surface-chip-2)] text-transparent shadow-[inset_0_1px_1px_rgba(255,255,255,0.95),inset_0_-1px_2px_rgba(0,0,0,0.07)] hover:border-[var(--accent)] hover:shadow-[inset_0_1px_1px_rgba(255,255,255,0.95),0_0_0_3px_rgba(0,102,204,0.10)] active:scale-90'
+        {notes.map((note) => {
+          const isEditing = editing?.id === note.id;
+          return (
+            <li
+              key={note.id}
+              className={`group flex items-center gap-2 rounded-[12px] px-2 py-1.5 transition-colors ${
+                note.done ? 'bg-[var(--surface-subtle)]' : 'bg-[var(--surface-grouped)] hover:bg-[var(--surface-chip)]'
               }`}
             >
-              <Check size={5} strokeWidth={5} aria-hidden="true" />
-            </button>
+              {/* A 20px iOS-style box with the tick drawn on: the old control was
+                  an 8px circle whose icon was invisible in practice, and its
+                  real tap target was smaller than a fingertip. */}
+              <button
+                type="button"
+                onClick={() => toggleNote(note.id)}
+                aria-pressed={note.done}
+                aria-label={note.done ? `ยกเลิกทำ ${note.text}` : `ทำเสร็จ ${note.text}`}
+                className="-m-1 flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-ring)]"
+              >
+                <span
+                  className={`flex h-[20px] w-[20px] items-center justify-center rounded-[7px] border-[1.5px] transition-all duration-200 ${
+                    note.done
+                      ? 'border-[var(--success)] bg-gradient-to-b from-[var(--success)] to-[#22a447] shadow-[0_1px_3px_rgba(34,164,71,0.45)]'
+                      : 'border-[var(--ink-divider)] bg-[var(--surface)] shadow-[inset_0_1px_1px_rgba(255,255,255,0.9)] group-hover:border-[var(--accent)] group-hover:bg-[var(--accent)]/5'
+                  }`}
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    className="h-[13px] w-[13px]"
+                    fill="none"
+                    strokeWidth={3.5}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M5 13.5 9.5 18 19 6.5"
+                      style={{
+                        stroke: note.done ? '#ffffff' : 'transparent',
+                        strokeDasharray: 26,
+                        strokeDashoffset: note.done ? 0 : 26,
+                        transition: 'stroke-dashoffset 200ms ease-out, stroke 120ms linear',
+                      }}
+                    />
+                  </svg>
+                </span>
+              </button>
 
-            <span
-              className={`min-w-0 flex-1 truncate text-[13px] ${
-                note.done ? 'text-[var(--ink-tertiary)] line-through' : 'text-[var(--ink)]'
-              }`}
-              title={note.text}
-            >
-              {note.text}
-            </span>
+              {isEditing ? (
+                <input
+                  ref={focusEditInput}
+                  type="text"
+                  value={editing.text}
+                  onChange={(event) => setEditing({ id: editing.id, text: event.target.value })}
+                  onBlur={commitEdit}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') {
+                      event.preventDefault();
+                      commitEdit();
+                    }
+                    if (event.key === 'Escape') {
+                      event.preventDefault();
+                      setEditing(null);
+                    }
+                  }}
+                  maxLength={MAX_NOTE_LENGTH}
+                  aria-label={`แก้ไข ${note.text}`}
+                  className="min-w-0 flex-1 rounded-lg border border-[var(--accent)]/40 bg-[var(--surface)] px-2 py-[3px] text-[13px] text-[var(--ink)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
+                />
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => startEdit(note)}
+                  aria-label={`แก้ไข ${note.text}`}
+                  title="คลิกเพื่อแก้ไข"
+                  className="min-w-0 flex-1 rounded-md px-0.5 py-[3px] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-ring)]"
+                >
+                  <span
+                    className={`block break-words text-[13px] leading-snug ${
+                      note.done ? 'text-[var(--ink-tertiary)] line-through' : 'text-[var(--ink)]'
+                    }`}
+                  >
+                    {note.text}
+                  </span>
+                </button>
+              )}
 
-            <button
-              type="button"
-              onClick={() => removeNote(note.id)}
-              aria-label={`ลบ ${note.text}`}
-              className="shrink-0 rounded-full p-1 text-[var(--ink-tertiary)] opacity-100 transition-all hover:bg-[var(--surface)] hover:text-[var(--danger)] md:opacity-0 md:group-hover:opacity-100"
-            >
-              <Trash2 size={14} aria-hidden="true" />
-            </button>
-          </li>
-        ))}
+              <button
+                type="button"
+                onClick={() => removeNote(note.id)}
+                aria-label={`ลบ ${note.text}`}
+                className="shrink-0 rounded-full p-1.5 text-[var(--ink-tertiary)] transition-all hover:bg-[var(--surface)] hover:text-[var(--danger)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-ring)] md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100"
+              >
+                <Trash2 size={14} aria-hidden="true" />
+              </button>
+            </li>
+          );
+        })}
       </ul>
-
-      <div className="mt-3 flex items-center justify-between border-t border-[var(--hairline-soft)] pt-2 text-[10px] text-[var(--ink-secondary)]">
-        <span>บันทึกอัตโนมัติ</span>
-        <span className="inline-flex items-center gap-1">
-          {saving && <Loader2 size={10} className="animate-spin" aria-hidden="true" />}
-          {saving ? 'กำลังบันทึก...' : justSaved ? 'บันทึกแล้ว' : `${notes.length}/${MAX_NOTES}`}
-        </span>
-      </div>
     </section>
   );
 }
