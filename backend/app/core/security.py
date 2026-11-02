@@ -4,6 +4,7 @@ Security utilities for authentication and authorization
 
 from datetime import timedelta
 from typing import Optional
+import logging
 import secrets
 import jwt
 from jwt import InvalidTokenError
@@ -16,6 +17,8 @@ from app.core.utils import utcnow
 # Direct Argon2 password hasher (modern standard, avoids passlib deprecation warnings)
 _password_hasher = PasswordHasher()
 
+logger = logging.getLogger(__name__)
+
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a password against a hash"""
@@ -24,6 +27,10 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     except (VerifyMismatchError, VerificationError, InvalidHashError):
         return False
     except Exception:
+        # Still deny the login (a password check must never raise into the
+        # request), but a stored hash we cannot parse is a data bug, not a wrong
+        # password: log it so it stops looking like a user typo forever.
+        logger.warning("verify_password: unexpected error while verifying hash", exc_info=True)
         return False
 
 
