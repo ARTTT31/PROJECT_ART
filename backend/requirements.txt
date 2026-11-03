@@ -39,6 +39,11 @@ pillow==13.0.0
 
 # Utilities
 python-dotenv==1.2.4
+# IANA timezone data for `zoneinfo`. Linux usually has /usr/share/zoneinfo,
+# but Windows (and slim container images) do not, so `ZoneInfo("Asia/Bangkok")`
+# in app/api/v1/endpoints/market.py raised ZoneInfoNotFoundError during test
+# collection — pytest exited with code 4 before running a single test.
+tzdata==2026.6
 
 # Testing
 pytest==9.1.1

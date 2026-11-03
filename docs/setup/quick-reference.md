@@ -53,7 +53,7 @@ npm run test:smoke                    # Playwright; runs on port 3000
 cd backend
 .\venv\Scripts\python.exe -m flake8 app --max-line-length=120 --exclude=__pycache__
 .\venv\Scripts\python.exe -m mypy app
-.\venv\Scripts\python.exe -m pytest -q --tb=short      # Pytest (454 passed, 1 skipped; 75.37% coverage)
+.\venv\Scripts\python.exe -m pytest -q --tb=short      # Pytest (470 passed; 75.8% coverage on 3.11, the version CI runs)
 ```
 
 ## Common Tasks
