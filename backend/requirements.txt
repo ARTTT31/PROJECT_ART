@@ -24,8 +24,8 @@ alembic==1.20.1
 # HS256 in the same wire format, so sessions issued before the swap keep working.
 pyjwt==2.15.1
 argon2-cffi>=25.1.0
-pydantic[email]==2.14.1
-pydantic-settings==2.16.1
+pydantic[email]==2.14.2
+pydantic-settings==2.16.2
 
 # HTTP Requests
 requests==2.34.2
@@ -46,7 +46,7 @@ python-dotenv==1.2.4
 tzdata==2026.6
 
 # Testing
-pytest==9.1.1
+pytest==9.2.0
 pytest-asyncio==1.4.1
 aiosqlite==0.22.1
 pytest-cov==7.1.0
@@ -75,7 +75,7 @@ anyio>=4.15.1         # three advisories fixed in 4.14.2 (via fastapi/httpx)
 urllib3>=2.8.0        # three advisories fixed in 2.8.0 (via requests)
 
 # Development / Linting
-flake8==7.4.1
-mypy==2.4.0
+flake8==7.5.0
+mypy==2.4.1
 
 asyncpg==0.32.0
