@@ -87,23 +87,25 @@ async def test_profile_endpoints_still_serve_the_deferred_columns(client, logged
     )
     assert upload.status_code == 200, upload.text
 
-    links = await client.post(
-        "/api/v1/profile/quick-links", json={"quick_links": '["dashboard"]'}
-    )
+    # A realistic payload: entries are objects, and the server now validates the
+    # whole list (unsupported URL schemes, duplicates and non-objects are
+    # dropped), so a bare string list would legitimately store as `[]`.
+    stored = '[{"id":"dash","label":"Dashboard","url":"/dashboard","icon":"home"}]'
+    links = await client.post("/api/v1/profile/quick-links", json={"quick_links": stored})
     assert links.status_code == 200, links.text
 
     me = await client.get("/api/v1/profile/me")
     assert me.status_code == 200, me.text
     body = me.json()
     assert body["avatar"].startswith("data:image/webp;base64,")
-    assert body["quick_links"] == '["dashboard"]'
+    assert body["quick_links"] == stored
 
     # /auth/session resolves the user through resolve_user_from_token as well.
     session = await client.get("/api/v1/auth/session")
     assert session.status_code == 200, session.text
     session_user = session.json()["data"]["user"]
     assert session_user["avatar"].startswith("data:image/webp;base64,")
-    assert session_user["quick_links"] == '["dashboard"]'
+    assert session_user["quick_links"] == stored
 
 
 # ── Avatar normalisation ────────────────────────────────────────────────────

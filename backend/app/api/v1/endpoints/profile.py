@@ -434,9 +434,22 @@ async def update_quick_links(
     user_service = UserService(db)
 
     try:
-        await user_service.update_quick_links(
+        # The validator lives on the server: the dialog's checks are a
+        # convenience, not the boundary.
+        cleaned = await user_service.update_quick_links(
             current_user.id, quick_links_update.quick_links
         )
+
+        # Personal shortcuts are still workspace data: an admin reading the
+        # audit trail can see when an account's shortcut list changed size.
+        await AuditService(db).log_action(
+            action="UPDATE_QUICK_LINKS",
+            user_id=current_user.id,
+            details=f"บันทึกควิกลิ้งค์ {len(cleaned)} รายการ",
+            ip_address=get_real_client_ip(request),
+            user_agent=request.headers.get("user-agent"),
+        )
+        await db.commit()
 
         return ResponseModel(
             result="success",

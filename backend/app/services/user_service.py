@@ -17,6 +17,7 @@ from app.models.user import User
 from app.schemas.user import UserCreate, UserRegister, UserUpdate, UserAdminUpdate, UserAdminCreate
 from app.core.security import get_password_hash, verify_password
 from app.core.utils import utcnow
+from app.core.quick_links import default_quick_links, parse_quick_links, serialize_quick_links
 
 
 # Columns excluded from the per-request authentication lookup. They are larger
@@ -423,6 +424,11 @@ class UserService:
             hashed_password=hashed_password,
             role=user_create.role or "user",
             accessible_pages=user_create.accessible_pages,
+            # Start with the shortcuts this role can actually use instead of an
+            # empty list (a browser gives a new profile nothing at all).
+            quick_links=default_quick_links(
+                user_create.role or "user", user_create.accessible_pages
+            ),
         )
 
         try:
@@ -469,7 +475,7 @@ class UserService:
         if user_update.avatar is not None:
             user.avatar = user_update.avatar
         if user_update.quick_links is not None:
-            user.quick_links = user_update.quick_links
+            user.quick_links = serialize_quick_links(user_update.quick_links)
         if user_update.dashboard_layout is not None:
             user.dashboard_layout = user_update.dashboard_layout
         if user_update.camera_config is not None:
@@ -523,16 +529,24 @@ class UserService:
 
         await self.db.commit()
 
-    async def update_quick_links(self, user_id: int, quick_links: str) -> None:
-        """Update user quick links"""
+    async def update_quick_links(self, user_id: int, quick_links: str) -> list[dict]:
+        """Replace the account's shortcuts and return what was actually stored.
+
+        Validation happens here rather than in the endpoint so the other writer
+        (``update_user`` from ``PUT /profile/me``) cannot bypass it: both paths
+        run the same sanitiser that drops unsupported URL schemes, duplicate
+        ids and entries past the cap.
+        """
         user = await self.get_user_by_id(user_id)
         if not user:
             raise ValueError("ไม่พบผู้ใช้")
 
-        user.quick_links = quick_links
+        cleaned = parse_quick_links(quick_links)
+        user.quick_links = serialize_quick_links(cleaned)
         user.updated_at = utcnow()
 
         await self.db.commit()
+        return cleaned
 
     async def update_main_menu(self, user_id: int, main_menu: str) -> None:
         """Replace the account's sidebar menu config (order + visibility)."""

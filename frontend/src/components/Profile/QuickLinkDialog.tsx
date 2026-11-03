@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Bookmark, Check, Info, Link2, Palette } from 'lucide-react';
+import { Bookmark, Check, Info, Layers, Link2, Palette } from 'lucide-react';
 import {
   Dialog,
   DialogBody,
@@ -17,8 +17,9 @@ import {
   QUICK_LINK_ICON_MAP,
   QUICK_LINK_ICON_OPTIONS,
   describeQuickLink,
-  isExternalUrl,
+  isQuickLinkUrl,
   type QuickLink,
+  type QuickLinkEnvironment,
   type QuickLinkIconKey,
 } from '@/utils/quickLinks';
 
@@ -41,6 +42,8 @@ export interface QuickLinkFormValues {
   url: string;
   icon: QuickLinkIconKey;
   color: string;
+  /** Optional alternate destinations (internal tools only). */
+  envs?: Partial<Record<QuickLinkEnvironment, string>>;
 }
 
 interface QuickLinkDialogProps {
@@ -61,6 +64,8 @@ export function QuickLinkDialog({ open, onOpenChange, link, onSubmit }: QuickLin
   const [url, setUrl] = useState('');
   const [icon, setIcon] = useState<QuickLinkIconKey>('link');
   const [color, setColor] = useState('#0066cc');
+  const [stagingUrl, setStagingUrl] = useState('');
+  const [devUrl, setDevUrl] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
   // Reset the form each time the dialog opens (or the edited link changes).
@@ -70,6 +75,8 @@ export function QuickLinkDialog({ open, onOpenChange, link, onSubmit }: QuickLin
     setUrl(link?.url ?? '');
     setIcon(link?.icon ?? 'link');
     setColor(link?.color || '#0066cc');
+    setStagingUrl(link?.envs?.staging ?? '');
+    setDevUrl(link?.envs?.development ?? '');
   }, [open, link]);
 
   const previewMeta = useMemo(() => describeQuickLink(url), [url]);
@@ -89,13 +96,35 @@ export function QuickLinkDialog({ open, onOpenChange, link, onSubmit }: QuickLin
       showToast('กรุณากรอกลิงก์ปลายทาง', 'warning');
       return;
     }
-    if (!isExternalUrl(cleanUrl) && !cleanUrl.startsWith('/')) {
+    if (!isQuickLinkUrl(cleanUrl)) {
       showToast('ลิงก์ต้องขึ้นต้นด้วย http://, https:// หรือ /', 'warning');
       return;
     }
 
+    // Optional alternate destinations. An invalid one is rejected rather than
+    // dropped silently, because the user would never notice it disappeared.
+    const envs: Partial<Record<QuickLinkEnvironment, string>> = {};
+    for (const [key, value] of [
+      ['staging', stagingUrl],
+      ['development', devUrl],
+    ] as Array<[QuickLinkEnvironment, string]>) {
+      const clean = value.trim();
+      if (!clean) continue;
+      if (!isQuickLinkUrl(clean)) {
+        showToast(`ลิงก์ ${key} ต้องขึ้นต้นด้วย http://, https:// หรือ /`, 'warning');
+        return;
+      }
+      envs[key] = clean;
+    }
+
     setIsSaving(true);
-    const success = await onSubmit({ label: cleanLabel, url: cleanUrl, icon, color });
+    const success = await onSubmit({
+      label: cleanLabel,
+      url: cleanUrl,
+      icon,
+      color,
+      envs: Object.keys(envs).length > 0 ? envs : undefined,
+    });
     setIsSaving(false);
     if (success) onOpenChange(false);
   };
@@ -167,6 +196,22 @@ export function QuickLinkDialog({ open, onOpenChange, link, onSubmit }: QuickLin
                 placeholder="https://mail.google.com หรือ /dashboard"
                 icon={<Link2 size={16} aria-hidden="true" />}
                 required
+              />
+              <InsetField
+                id="ql-staging"
+                label="Staging URL (ไม่บังคับ)"
+                value={stagingUrl}
+                onChange={setStagingUrl}
+                placeholder="https://staging.example.com"
+                icon={<Layers size={16} aria-hidden="true" />}
+              />
+              <InsetField
+                id="ql-dev"
+                label="Dev URL (ไม่บังคับ)"
+                value={devUrl}
+                onChange={setDevUrl}
+                placeholder="https://dev.example.com"
+                icon={<Layers size={16} aria-hidden="true" />}
               />
             </div>
 

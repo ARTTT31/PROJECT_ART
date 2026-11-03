@@ -431,6 +431,7 @@ export default function ProfilePage() {
       url: values.url,
       icon: values.icon,
       color: values.color || undefined,
+      envs: values.envs,
     };
     const nextLinks = editingQuickLink
       ? quickLinks.map((l) => (l.id === editingQuickLink.id ? next : l))

@@ -5,7 +5,26 @@ import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { LogOut, ExternalLink, Sparkles } from 'lucide-react';
-import { isExternalUrl, parseQuickLinks, QUICK_LINK_ICON_MAP } from '@/utils/quickLinks';
+import {
+  QUICK_LINK_ENVIRONMENT_LABELS,
+  QUICK_LINK_ICON_MAP,
+  isExternalUrl,
+  isQuickLinkVisible,
+  newQuickLinkId,
+  parseQuickLinks,
+  quickLinkEnvironmentOptions,
+  resolveQuickLinkUrl,
+  type QuickLink,
+} from '@/utils/quickLinks';
+import { useQuickLinkEnvironment } from '@/hooks/useQuickLinkEnvironment';
+import {
+  dismissQuickLinkSuggestion,
+  findQuickLinkSuggestion,
+  recordPageVisit,
+  type PageVisits,
+} from '@/utils/quickLinkSuggestions';
+import { persistQuickLinks } from '@/lib/api/quickLinks';
+import { useAuth } from '@/hooks/useAuth';
 import {
   parseMainMenuConfig,
   MAIN_MENU_ICON_MAP,
@@ -31,6 +50,8 @@ interface MenuItem {
   external?: boolean;
   isWip?: boolean;
   wipLabel?: string;
+  /** Environment chip + switcher for links that offer more than one target. */
+  environments?: { label: string; onCycle: () => void };
 }
 
 interface MenuSection {
@@ -47,6 +68,7 @@ export default function Sidebar({
 }: SidebarProps) {
   const pathname = usePathname();
   const { companyName, companyTagline, brandLogoUrl } = useBranding();
+  const { updateUser } = useAuth();
 
   // The account's config wins: it is the value that travels between devices.
   // localStorage is only a fast first paint / offline fallback.
@@ -67,6 +89,15 @@ export default function Sidebar({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.main_menu]);
 
+  // Pages this browser opened, used to offer "save this page as a shortcut".
+  const [visits, setVisits] = useState<PageVisits>({});
+  const [hiddenSuggestions, setHiddenSuggestions] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (!pathname) return;
+    setVisits(recordPageVisit(pathname));
+  }, [pathname]);
+
   // Listen for changes from Profile Page
   useEffect(() => {
     const handleMenuUpdate = () => {
@@ -83,22 +114,72 @@ export default function Sidebar({
 
   const quickLinks = parseQuickLinks(user?.quick_links);
 
+  // An in-app quick link obeys the same page gate as the main menu. A bookmark
+  // in the browser cannot know this account may not open /camera — a shortcut
+  // that lives inside the workspace has no excuse.
+  const visibleQuickLinks = quickLinks.filter((ql) => isQuickLinkVisible(ql, user));
+  const { get: getEnvironment, select: selectEnvironment } = useQuickLinkEnvironment();
+
   const quickLinkSection: MenuSection | null =
-    quickLinks.length > 0
+    visibleQuickLinks.length > 0
       ? {
           title: 'ควิกลิ้งค์',
-          items: quickLinks.map((ql) => {
+          items: visibleQuickLinks.map((ql) => {
             const Icon = QUICK_LINK_ICON_MAP[ql.icon];
-            const external = isExternalUrl(ql.url);
+            const options = quickLinkEnvironmentOptions(ql);
+            const selected = getEnvironment(ql.id);
+            const target = resolveQuickLinkUrl(ql, selected);
             return {
               name: ql.label,
-              href: ql.url,
-              external,
+              href: target,
+              external: isExternalUrl(target),
+              environments:
+                options.length > 1
+                  ? {
+                      label: QUICK_LINK_ENVIRONMENT_LABELS[selected],
+                      onCycle: () => {
+                        const index = options.findIndex((option) => option.key === selected);
+                        selectEnvironment(ql.id, options[(index + 1) % options.length].key);
+                      },
+                    }
+                  : undefined,
               icon: <Icon size={20} aria-hidden="true" style={{ color: ql.color || undefined }} />,
             };
           }),
         }
       : null;
+
+  // "You keep opening this page" — offered only for pages that are not already
+  // one click away in the enabled menu.
+  const suggestion = findQuickLinkSuggestion({
+    visits,
+    links: quickLinks,
+    mainMenu: mainMenuConfig,
+    dismissed: hiddenSuggestions,
+  });
+
+  const closeSuggestion = (path: string) =>
+    setHiddenSuggestions((previous) => [...previous, path]);
+
+  const handleAcceptSuggestion = async () => {
+    if (!suggestion) return;
+    const next: QuickLink = {
+      id: newQuickLinkId(),
+      label: suggestion.label,
+      url: suggestion.path,
+      icon: suggestion.icon,
+    };
+    const raw = await persistQuickLinks([...quickLinks, next]);
+    if (!raw) return;
+    updateUser({ quick_links: raw });
+    closeSuggestion(suggestion.path);
+  };
+
+  const handleDismissSuggestion = () => {
+    if (!suggestion) return;
+    dismissQuickLinkSuggestion(suggestion.path);
+    closeSuggestion(suggestion.path);
+  };
 
   // Active Main Menu Items based on user configuration. The same rule (and the
   // same parser) as the server-side gate in app/api/dependencies.py.
@@ -167,12 +248,12 @@ export default function Sidebar({
                     const ItemComponent = item.external ? 'a' : Link;
 
                     return (
-                      <li key={item.name}>
+                      <li key={item.name} className="flex items-center gap-1">
                         <ItemComponent
                           href={item.href}
                           target={item.external ? '_blank' : undefined}
                           rel={item.external ? 'noopener noreferrer' : undefined}
-                          className={`group flex min-h-[48px] items-center gap-2.5 rounded-[11px] px-3 py-2 text-[14px] font-semibold transition-all duration-150 active:scale-[0.95] ${
+                          className={`group flex min-h-[48px] min-w-0 flex-1 items-center gap-2.5 rounded-[11px] px-3 py-2 text-[14px] font-semibold transition-all duration-150 active:scale-[0.95] ${
                             isActive
                               ? 'bg-[var(--accent)] text-white'
                               : 'text-[var(--ink)] hover:bg-black/[0.05] hover:text-[var(--ink)]'
@@ -211,6 +292,19 @@ export default function Sidebar({
                             />
                           )}
                         </ItemComponent>
+
+                        {/* Environment switcher: same shortcut, different target. */}
+                        {item.environments && (
+                          <button
+                            type="button"
+                            onClick={item.environments.onCycle}
+                            aria-label={`สลับสภาพแวดล้อม of ${item.name} (ตอนนี้ ${item.environments.label})`}
+                            title="สลับสภาพแวดล้อม"
+                            className="shrink-0 rounded-full bg-[var(--surface-grouped-2)] px-1.5 py-1 text-[9.5px] font-bold text-[var(--ink-muted)] ring-1 ring-black/[0.04] transition-colors hover:text-[var(--ink)]"
+                          >
+                            {item.environments.label}
+                          </button>
+                        )}
                       </li>
                     );
                   })}
@@ -218,6 +312,31 @@ export default function Sidebar({
               </div>
             ))}
           </div>
+
+          {suggestion && (
+            <div className="mt-4 rounded-[11px] border border-dashed border-[var(--hairline-strong)] bg-[var(--surface-subtle)] p-3">
+              <p className="text-[11px] leading-relaxed text-[var(--ink-muted)]">
+                คุณเปิด <span className="font-bold text-[var(--ink)]">{suggestion.path}</span>{' '}
+                {suggestion.count} ครั้งแล้ว — เก็บเป็นควิกลิ้งค์?
+              </p>
+              <div className="mt-2 flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={handleAcceptSuggestion}
+                  className="rounded-full bg-[var(--accent)] px-2.5 py-1 text-[10.5px] font-bold text-white transition-all hover:bg-[var(--accent-hover)] active:scale-95"
+                >
+                  เก็บไว้
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDismissSuggestion}
+                  className="rounded-full bg-[var(--surface-grouped-2)] px-2.5 py-1 text-[10.5px] font-bold text-[var(--ink-muted)] transition-all hover:bg-[var(--surface-chip)]"
+                >
+                  ไม่ต้อง
+                </button>
+              </div>
+            </div>
+          )}
         </nav>
 
         {/* Logout Button */}

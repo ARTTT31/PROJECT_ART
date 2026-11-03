@@ -98,6 +98,11 @@ export function QuickLinksCard({ links, onAdd, onEdit, onDelete, onMove }: Quick
                     >
                       {linkMeta.tone}
                     </span>
+                    {link.envs && Object.keys(link.envs).length > 0 && (
+                      <span className="rounded-full bg-[var(--surface-grouped-2)] px-1.5 py-[1px] text-[9.5px] font-bold text-[var(--ink-muted)] ring-1 ring-black/[0.04]">
+                        +{Object.keys(link.envs).length} env
+                      </span>
+                    )}
                   </div>
                   <p className="mt-0.5 truncate text-[11px] text-[var(--ink-muted)]">{link.url}</p>
                 </div>
