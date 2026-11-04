@@ -31,6 +31,7 @@ AUTH_DEFERRED_COLUMNS = (
     "quick_notes",
     "finance_entries",
     "watchlist",
+    "personal_reminders",
     # Both are in PROFILE_COLUMNS and were documented as deferred, but were
     # missing here: every authenticated request was dragging the (up to 400KB)
     # logo data URL and the sidebar JSON along. Endpoints that return them

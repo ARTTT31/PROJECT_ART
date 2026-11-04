@@ -14,6 +14,8 @@ from app.api.v1.endpoints import (
     system,
     weather,
     websockets,
+    planner,
+    notifications,
 )
 
 api_router = APIRouter()
@@ -27,4 +29,8 @@ api_router.include_router(oil_prices.router, prefix="/oil-prices", tags=["Oil Pr
 api_router.include_router(market.router, prefix="/market", tags=["Market Summary"])
 api_router.include_router(weather.router, prefix="/weather", tags=["Weather & Geocode"])
 api_router.include_router(system.router, prefix="/system", tags=["System"])
+api_router.include_router(planner.router, prefix="/planner", tags=["Planner"])
+api_router.include_router(
+    notifications.router, prefix="/notifications", tags=["Notifications"]
+)
 api_router.include_router(websockets.router, prefix="/ws", tags=["WebSockets"])

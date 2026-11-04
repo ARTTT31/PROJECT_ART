@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, useMemo } from 'react';
+import Link from 'next/link';
 import {
   Bell,
   X,
@@ -38,6 +39,7 @@ export function pushNotifications(items: Notification[]) {
 }
 
 import { getHolidaysWithDiff } from '@/utils/holidays';
+import { appendHistory, syncHistoryToServer } from '@/lib/notifications/history';
 import { useAuth } from '@/hooks/useAuth';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
 
@@ -468,6 +470,14 @@ export default function NotificationBell() {
     return () => document.removeEventListener('mousedown', handler);
   }, [open]);
 
+  // Archive everything the bell shows so the history page can list it after a
+  // reload; the archive is per account and capped.
+  useEffect(() => {
+    if (notifications.length === 0) return;
+    appendHistory(notifications);
+    void syncHistoryToServer(notifications);
+  }, [notifications]);
+
   const unreadCount = useMemo(() => {
     return notifications.filter((n) => !readIds.has(n.id)).length;
   }, [notifications, readIds]);
@@ -553,6 +563,13 @@ export default function NotificationBell() {
             </div>
 
             <div className="flex shrink-0 items-center gap-1.5">
+              <Link
+                href="/notifications"
+                onClick={() => setOpen(false)}
+                className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-[12px] font-semibold text-[var(--ink-muted)] transition-colors hover:bg-[var(--surface-grouped)] hover:text-[var(--ink)]"
+              >
+                ประวัติ
+              </Link>
               {notifications.length > 0 && (
                 <>
                   <button

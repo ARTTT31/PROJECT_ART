@@ -16,6 +16,21 @@ import { readUserCookie } from '@/lib/api/userCookie';
 
 const PREFIX = 'artOffline:v1';
 
+/**
+ * Fired whenever a cached copy or a queued write changes, so the global
+ * offline banner can show "N รายการรอซิงก์" without polling storage.
+ */
+export const OFFLINE_CHANGE_EVENT = 'art:offline-change';
+
+function notifyOfflineChange(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    window.dispatchEvent(new Event(OFFLINE_CHANGE_EVENT));
+  } catch {
+    // No listeners / older browser: the banner recomputes on the next event.
+  }
+}
+
 export interface CachedResource<T> {
   data: T;
   savedAt: number;
@@ -90,6 +105,7 @@ export function readPending<T>(name: string): PendingWrite<T> | null {
 
 export function writePending<T>(name: string, data: T): void {
   writeJson(scopedKey(`pending:${name}`), { data, updatedAt: Date.now() });
+  notifyOfflineChange();
 }
 
 export function clearPending(name: string): void {
@@ -100,6 +116,24 @@ export function clearPending(name: string): void {
   } catch {
     // Nothing to do: a stale marker only costs one extra save attempt.
   }
+  notifyOfflineChange();
+}
+
+/** Number of resources whose edits are still waiting for a connection. */
+export function pendingCount(): number {
+  const store = storage();
+  if (!store) return 0;
+  const marker = `${PREFIX}:${offlineScope()}:pending:`;
+  let count = 0;
+  try {
+    for (let index = 0; index < store.length; index += 1) {
+      const key = store.key(index);
+      if (key && key.startsWith(marker)) count += 1;
+    }
+  } catch {
+    return 0;
+  }
+  return count;
 }
 
 /** True when the browser knows it has no connection (server-render safe). */

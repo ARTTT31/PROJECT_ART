@@ -27,7 +27,9 @@ import {
   UserCheck,
   UserX,
   ArrowRight,
+  Download,
 } from 'lucide-react';
+import { datedFilename, downloadCsv, toCsv } from '@/lib/csv';
 
 // Define a simplified User type for admin management
 interface AdminUser {
@@ -295,6 +297,7 @@ export default function UserManagement() {
   // endpoint so the queue is visible without hunting for inactive accounts.
   const [pending, setPending] = useState<AdminUser[]>([]);
   const [pendingBusyId, setPendingBusyId] = useState<number | null>(null);
+  const [bulkApproving, setBulkApproving] = useState(false);
 
   const [editingUser, setEditingUser] = useState<AdminUser | null>(null);
 
@@ -1176,14 +1179,43 @@ export default function UserManagement() {
                   </p>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={() => setStatusFilter('pending')}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-amber-600 hover:bg-amber-700 active:scale-[0.98] text-white text-[12.5px] font-bold shadow-xs transition-all shrink-0 self-stretch sm:self-auto justify-center"
-              >
-                <span>กรองดูเฉพาะคำขอรออนุมัติ</span>
-                <ArrowRight size={14} />
-              </button>
+              <div className="flex shrink-0 flex-col items-stretch gap-2 sm:flex-row sm:items-center">
+                <button
+                  type="button"
+                  disabled={bulkApproving || pendingInView.length === 0}
+                  onClick={async () => {
+                    if (bulkApproving) return;
+                    setBulkApproving(true);
+                    try {
+                      for (const candidate of pendingInView) {
+                        await fetchWithAuth(`/api/v1/users/${candidate.id}/approve`, {
+                          method: 'POST',
+                        });
+                      }
+                    } finally {
+                      setBulkApproving(false);
+                      // Re-filtering is what refetches the list for this view.
+                      setStatusFilter('pending');
+                    }
+                  }}
+                  className="inline-flex items-center justify-center gap-1.5 rounded-full bg-emerald-600 px-4 py-2 text-[12.5px] font-bold text-white shadow-xs transition-all hover:bg-emerald-700 active:scale-[0.98] disabled:opacity-50"
+                >
+                  {bulkApproving ? (
+                    <Loader2 size={14} className="animate-spin" aria-hidden="true" />
+                  ) : (
+                    <Check size={14} aria-hidden="true" />
+                  )}
+                  อนุมัติทั้งหมด ({pendingInView.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStatusFilter('pending')}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-amber-600 hover:bg-amber-700 active:scale-[0.98] text-white text-[12.5px] font-bold shadow-xs transition-all shrink-0 self-stretch sm:self-auto justify-center"
+                >
+                  <span>กรองดูเฉพาะคำขอรออนุมัติ</span>
+                  <ArrowRight size={14} />
+                </button>
+              </div>
             </div>
           )}
 
@@ -1243,6 +1275,30 @@ export default function UserManagement() {
                 </button>
               )}
             </div>
+            <button
+              type="button"
+              onClick={() => {
+                const table = users as unknown as Array<Record<string, unknown>>;
+                const rows = table.map((entry) => [
+                  String(entry.name ?? ''),
+                  String(entry.username ?? ''),
+                  String(entry.email ?? ''),
+                  String(entry.role ?? ''),
+                  String(entry.status ?? 'active'),
+                  String(entry.created_at ?? ''),
+                ]);
+                downloadCsv(
+                  datedFilename('users'),
+                  toCsv(['ชื่อ', 'ชื่อผู้ใช้', 'อีเมล', 'สิทธิ์', 'สถานะ', 'สร้างเมื่อ'], rows),
+                );
+              }}
+              disabled={users.length === 0}
+              style={{ minHeight: '42px', height: '42px' }}
+              className="w-full lg:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-[var(--surface-grouped)] px-5 text-[13px] font-bold text-[var(--ink)] transition-all hover:bg-[var(--surface-chip)] active:scale-95 disabled:opacity-40"
+              title="ส่งออกรายชื่อตามตัวกรองที่เห็นอยู่"
+            >
+              <Download size={14} aria-hidden="true" /> ส่งออก CSV
+            </button>
             <button
               onClick={openCreate}
               style={{ minHeight: '42px', height: '42px' }}

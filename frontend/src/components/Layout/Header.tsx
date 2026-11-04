@@ -3,9 +3,10 @@
 import { memo, useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { Clock, Menu } from 'lucide-react';
+import { Clock, Menu, Search } from 'lucide-react';
 import { AuthUser } from '@/types';
 import NotificationBell from './NotificationBell';
+import { openCommandPalette } from './CommandPalette';
 
 interface HeaderProps {
   user?: AuthUser | null;
@@ -104,6 +105,20 @@ export default function Header({ user, onMenuClick, sidebarCollapsed = false }: 
           <div className="hidden min-h-[36px] items-center gap-2 rounded-full border border-[var(--hairline)] bg-[var(--glass-80)] px-3.5 py-1.5 text-[12px] font-semibold text-[var(--ink)] shadow-[0_1px_2px_rgba(0,0,0,0.04)] md:flex">
             <ClockTime />
           </div>
+
+          <button
+            type="button"
+            onClick={openCommandPalette}
+            aria-label="ค้นหาทั่วทั้งระบบ (Ctrl+K)"
+            title="ค้นหา (Ctrl+K)"
+            className="hidden h-9 shrink-0 items-center gap-2 rounded-full border border-[var(--hairline)] bg-[var(--glass-80)] px-3 text-[12px] font-medium text-[var(--ink-tertiary)] transition-colors hover:bg-[var(--surface-grouped)] hover:text-[var(--ink)] sm:inline-flex"
+          >
+            <Search size={14} aria-hidden="true" />
+            <span>ค้นหา</span>
+            <kbd className="rounded-md border border-[var(--hairline)] bg-[var(--surface)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--ink-muted)]">
+              Ctrl K
+            </kbd>
+          </button>
 
           <NotificationBell />
         </div>

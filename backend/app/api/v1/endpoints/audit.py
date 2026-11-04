@@ -1,5 +1,6 @@
+from datetime import date
 from typing import List, Optional
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel
 
@@ -52,6 +53,8 @@ async def list_audit_logs_paginated(
     size: int = Query(20, ge=1, le=100),
     action: Optional[str] = Query(None, max_length=100),
     q: Optional[str] = Query(None, max_length=100),
+    date_from: Optional[date] = Query(None, alias="dateFrom"),
+    date_to: Optional[date] = Query(None, alias="dateTo"),
     current_user: User = Depends(get_current_admin_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -59,18 +62,32 @@ async def list_audit_logs_paginated(
     List audit logs with pagination and optional filters (Admin only).
 
     ``action`` filters an exact action key, ``q`` searches the details and the
-    actor's name/email.
+    actor's name/email, and ``dateFrom``/``dateTo`` bound the calendar days
+    (inclusive).
     """
+    if date_from and date_to and date_from > date_to:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="วันที่เริ่มต้นต้องไม่มากกว่าวันที่สิ้นสุด",
+        )
+
     audit_service = AuditService(db)
     skip = (page - 1) * size
     logs = await audit_service.get_logs(
-        skip=skip, limit=size + 1, action=action, q=q
+        skip=skip,
+        limit=size + 1,
+        action=action,
+        q=q,
+        date_from=date_from,
+        date_to=date_to,
     )
     has_next = len(logs) > size
     if has_next:
         logs = logs[:size]
 
-    total = await audit_service.count_logs(action=action, q=q)
+    total = await audit_service.count_logs(
+        action=action, q=q, date_from=date_from, date_to=date_to
+    )
 
     return PaginatedAuditLogsResponse(
         items=logs,

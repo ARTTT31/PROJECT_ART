@@ -6,6 +6,7 @@ import {
   AlertCircle,
   ChevronLeft,
   ChevronRight,
+  Download,
   FileText,
   Loader2,
   RotateCw,
@@ -14,6 +15,7 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import Select from '@/components/ui/Select';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
+import { datedFilename, downloadCsv, toCsv } from '@/lib/csv';
 
 interface AuditLogEntry {
   id: number;
@@ -66,6 +68,9 @@ const ACTION_LABELS: Record<string, string> = {
   ADMIN_USER_RESTORE: 'แอดมินกู้คืนผู้ใช้',
   ADMIN_USER_APPROVE: 'อนุมัติสมาชิก',
   ADMIN_USER_REJECT: 'ปฏิเสธสมาชิก',
+  AUTH_UPDATE_COMPANY_HOLIDAYS: 'บันทึกวันหยุดบริษัท',
+  UPDATE_COMPANY_HOLIDAYS: 'บันทึกวันหยุดบริษัท',
+  DELETE_COMPANY_HOLIDAYS: 'ลบปฏิทินวันหยุดบริษัท',
 };
 
 const ACTION_OPTIONS = Object.keys(ACTION_LABELS);
@@ -109,6 +114,8 @@ export default function AuditPage() {
   const [action, setAction] = useState('');
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -126,7 +133,7 @@ export default function AuditPage() {
   // on an empty page 4 of a 2-page result.
   useEffect(() => {
     setPage(1);
-  }, [action, debouncedSearch]);
+  }, [action, debouncedSearch, dateFrom, dateTo]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -135,6 +142,8 @@ export default function AuditPage() {
       const params = new URLSearchParams({ page: String(page), size: String(PAGE_SIZE) });
       if (action) params.set('action', action);
       if (debouncedSearch) params.set('q', debouncedSearch);
+      if (dateFrom) params.set('dateFrom', dateFrom);
+      if (dateTo) params.set('dateTo', dateTo);
 
       const res = await fetchWithAuth(`/api/v1/audit/paginated?${params.toString()}`);
       if (!res.ok) {
@@ -153,7 +162,7 @@ export default function AuditPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, action, debouncedSearch]);
+  }, [page, action, debouncedSearch, dateFrom, dateTo]);
 
   useEffect(() => {
     if (!isClient || user?.role !== 'admin') return;
@@ -185,13 +194,36 @@ export default function AuditPage() {
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={() => void load()}
-            className="inline-flex shrink-0 items-center gap-1.5 self-start rounded-full bg-[var(--surface-grouped)] px-4 py-2 text-[13px] font-semibold text-[var(--ink)] transition-colors hover:bg-[var(--surface-chip)] sm:self-auto"
-          >
-            <RotateCw size={14} aria-hidden="true" /> รีเฟรช
-          </button>
+          <div className="flex shrink-0 items-center gap-2 self-start sm:self-auto">
+            <button
+              type="button"
+              onClick={() => {
+                const rows = items.map((entry) => [
+                  formatDate(entry.created_at),
+                  ACTION_LABELS[entry.action] ?? entry.action,
+                  entry.user?.name ?? entry.user?.email ?? 'ระบบ',
+                  entry.details ?? '',
+                  entry.ip_address ?? '',
+                ]);
+                downloadCsv(
+                  datedFilename('audit-log'),
+                  toCsv(['เวลา', 'กิจกรรม', 'ผู้ใช้', 'รายละเอียด', 'IP'], rows),
+                );
+              }}
+              disabled={items.length === 0}
+              className="inline-flex items-center gap-1.5 rounded-full bg-[var(--surface-grouped)] px-4 py-2 text-[13px] font-semibold text-[var(--ink)] transition-colors hover:bg-[var(--surface-chip)] disabled:opacity-40"
+              title="ส่งออกรายการในหน้านี้"
+            >
+              <Download size={14} aria-hidden="true" /> ส่งออก CSV
+            </button>
+            <button
+              type="button"
+              onClick={() => void load()}
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[var(--surface-grouped)] px-4 py-2 text-[13px] font-semibold text-[var(--ink)] transition-colors hover:bg-[var(--surface-chip)]"
+            >
+              <RotateCw size={14} aria-hidden="true" /> รีเฟรช
+            </button>
+          </div>
         </div>
 
         <div className="mt-5 flex flex-col gap-2.5 sm:flex-row">
@@ -221,6 +253,36 @@ export default function AuditPage() {
             ]}
             className="w-full sm:w-60"
           />
+
+          <div className="flex items-center gap-2">
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(event) => setDateFrom(event.target.value)}
+              aria-label="ตั้งแต่วันที่"
+              className="w-full rounded-xl border border-[var(--hairline-strong)] bg-[var(--surface)] px-3 py-2 text-[13px] text-[var(--ink)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)] sm:w-40"
+            />
+            <span className="text-[12px] text-[var(--ink-tertiary)]">ถึง</span>
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(event) => setDateTo(event.target.value)}
+              aria-label="ถึงวันที่"
+              className="w-full rounded-xl border border-[var(--hairline-strong)] bg-[var(--surface)] px-3 py-2 text-[13px] text-[var(--ink)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)] sm:w-40"
+            />
+            {(dateFrom || dateTo) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setDateFrom('');
+                  setDateTo('');
+                }}
+                className="shrink-0 rounded-full px-3 py-2 text-[12.5px] font-semibold text-[var(--ink-muted)] transition-colors hover:bg-[var(--surface-grouped)] hover:text-[var(--ink)]"
+              >
+                ล้างวันที่
+              </button>
+            )}
+          </div>
         </div>
       </section>
 

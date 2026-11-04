@@ -92,6 +92,66 @@ export interface HolidayWithDiff extends HolidayItem {
   isUpcoming: boolean;
 }
 
+export interface CompanyHolidayInput {
+  date: string;
+  title: string;
+  description?: string;
+}
+
+/**
+ * Merge the workspace calendar HR imported over the confirmed public list.
+ *
+ * The company document wins on a shared date: it is the one that says whether
+ * this workplace is actually closed, and HR sometimes relabels a public day.
+ */
+export function mergeHolidayItems(
+  year: number,
+  company: CompanyHolidayInput[] = [],
+): HolidayItem[] {
+  const merged = new Map<string, HolidayDefinition>();
+  for (const definition of THAI_HOLIDAY_CALENDARS[year] ?? []) {
+    merged.set(definition.date, definition);
+  }
+  for (const item of company) {
+    if (!item?.date || !item?.title) continue;
+    if (!item.date.startsWith(`${year}-`)) continue;
+    merged.set(item.date, {
+      date: item.date,
+      title: item.title,
+      description: item.description,
+    });
+  }
+  return Array.from(merged.values())
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .map(toHolidayItem);
+}
+
+/** Add countdown fields to an already-built list (bundled, company or both). */
+export function buildHolidayDiff(
+  items: HolidayItem[],
+  referenceDate: Date = new Date(),
+): HolidayWithDiff[] {
+  const today = new Date(
+    referenceDate.getFullYear(),
+    referenceDate.getMonth(),
+    referenceDate.getDate(),
+  );
+  return items.map((holiday) => {
+    const holidayDate = new Date(holiday.year, holiday.month - 1, holiday.day);
+    const daysLeft = Math.round(
+      (holidayDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
+    );
+    return {
+      ...holiday,
+      dateObj: holidayDate,
+      daysLeft,
+      isPast: daysLeft < 0,
+      isToday: daysLeft === 0,
+      isUpcoming: daysLeft > 0,
+    };
+  });
+}
+
 export function getHolidaysWithDiff(referenceDate: Date = new Date()): HolidayWithDiff[] {
   const today = new Date(
     referenceDate.getFullYear(),

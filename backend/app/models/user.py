@@ -51,6 +51,10 @@ class User(Base, TimestampMixin):
     # Symbols followed by the watchlist widget (JSON array as text).
     watchlist: Mapped[str | None] = mapped_column(Text)
 
+    # Personal planner entries: errands, leave days and other dated reminders
+    # shown next to the holiday calendar (JSON array as text).
+    personal_reminders: Mapped[str | None] = mapped_column(Text)
+
     # Sidebar order and which pages are switched on (JSON array as text). Kept
     # per account so arranging the menu on one device follows the user to the
     # next one instead of dying with that browser's localStorage.

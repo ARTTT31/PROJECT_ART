@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Header from './Header';
 import Sidebar from './Sidebar';
+import OfflineBanner from './OfflineBanner';
+import CommandPalette from './CommandPalette';
 import { showConfirm } from '@/utils/sweetalert';
 import AuthGuard from '@/components/Auth/AuthGuard';
 import { useAuth } from '@/hooks/useAuth';
@@ -35,6 +37,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
     <AuthGuard>
       <div className="art-app-shell relative overflow-x-hidden bg-[var(--surface-grouped)] min-h-[100dvh] text-[var(--ink)]">
+        <OfflineBanner />
         {/* Sidebar wrapper */}
         <div className="relative z-20">
           <Sidebar
@@ -72,6 +75,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             </div>
           </main>
         </div>
+
+        <CommandPalette />
 
         {/* Mobile Sidebar Overlay */}
         {sidebarOpen && (

@@ -1,3 +1,5 @@
+from datetime import date, datetime, time
+
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import joinedload
@@ -39,17 +41,29 @@ class AuditService:
 
     @staticmethod
     def _filters(
-        action: Optional[str] = None, q: Optional[str] = None
+        action: Optional[str] = None,
+        q: Optional[str] = None,
+        date_from: Optional[date] = None,
+        date_to: Optional[date] = None,
     ) -> List:
         """WHERE clauses shared by the listing and its total count.
 
-        The admin page filters by action and by a free-text term that matches the
-        details, the actor's name or the actor's email; both halves have to use
-        the same clauses or the paging totals stop matching the rows.
+        The admin page filters by action, by a free-text term that matches the
+        details, the actor's name or the actor's email, and by a calendar-day
+        range; both halves have to use the same clauses or the paging totals
+        stop matching the rows. ``date_to`` is inclusive.
         """
         conditions: List = []
         if action:
             conditions.append(AuditLog.action == action)
+        if date_from:
+            conditions.append(
+                AuditLog.created_at >= datetime.combine(date_from, time.min)
+            )
+        if date_to:
+            conditions.append(
+                AuditLog.created_at <= datetime.combine(date_to, time.max)
+            )
         term = (q or "").strip()
         if term:
             pattern = f"%{term.lower()}%"
@@ -69,6 +83,8 @@ class AuditService:
         *,
         action: Optional[str] = None,
         q: Optional[str] = None,
+        date_from: Optional[date] = None,
+        date_to: Optional[date] = None,
     ):
         statement = (
             select(AuditLog)
@@ -78,19 +94,24 @@ class AuditService:
             .offset(skip)
             .limit(limit)
         )
-        conditions = self._filters(action, q)
+        conditions = self._filters(action, q, date_from, date_to)
         if conditions:
             statement = statement.where(*conditions)
         result = await self.db.execute(statement)
         return result.scalars().all()
 
     async def count_logs(
-        self, *, action: Optional[str] = None, q: Optional[str] = None
+        self,
+        *,
+        action: Optional[str] = None,
+        q: Optional[str] = None,
+        date_from: Optional[date] = None,
+        date_to: Optional[date] = None,
     ) -> int:
         statement = select(func.count(AuditLog.id)).outerjoin(
             User, AuditLog.user_id == User.id
         )
-        conditions = self._filters(action, q)
+        conditions = self._filters(action, q, date_from, date_to)
         if conditions:
             statement = statement.where(*conditions)
         result = await self.db.execute(statement)

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   CalendarDays,
   Palmtree,
@@ -11,7 +11,12 @@ import {
   CalendarHeart,
 } from 'lucide-react';
 import WidgetSizeToggle from './WidgetSizeToggle';
-import { HolidayItem, getHolidaysWithDiff } from '@/utils/holidays';
+import PersonalReminders from './PersonalReminders';
+import { HolidayItem, buildHolidayDiff, mergeHolidayItems } from '@/utils/holidays';
+import type { CompanyHolidayInput } from '@/utils/holidays';
+import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
+import { readCached, writeCached } from '@/lib/offline/localStore';
+import { Building2 } from 'lucide-react';
 
 export type { HolidayItem };
 
@@ -23,6 +28,38 @@ export default function HolidayWidget({
   onResize?: (size: number) => void;
 }) {
   const [filterMode, setFilterMode] = useState<'upcoming' | 'all'>('upcoming');
+  const [companyHolidays, setCompanyHolidays] = useState<CompanyHolidayInput[]>([]);
+  const [companyYears, setCompanyYears] = useState<number[]>([]);
+
+  // The company calendar is workspace data, so it lives on the server; the last
+  // copy stays in the offline mirror so the widget still knows the days HR
+  // published when there is no connection.
+  useEffect(() => {
+    const cached = readCached<CompanyHolidayInput[]>('planner/holidays');
+    if (cached?.data) setCompanyHolidays(cached.data);
+
+    let cancelled = false;
+    (async () => {
+      if (typeof navigator !== 'undefined' && navigator.onLine === false) return;
+      try {
+        const res = await fetchWithAuth('/api/v1/planner/holidays');
+        if (!res.ok) return;
+        const body = (await res.json()) as { years?: Record<string, CompanyHolidayInput[]> };
+        const years = Object.keys(body.years ?? {}).map(Number).filter(Number.isFinite);
+        const flat = years.flatMap((year) => body.years?.[String(year)] ?? []);
+        if (cancelled) return;
+        setCompanyHolidays(flat);
+        setCompanyYears(years);
+        writeCached('planner/holidays', flat);
+      } catch {
+        // The bundled public calendar still renders.
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Calculate day difference relative to today
   const today = useMemo(() => {
@@ -32,8 +69,8 @@ export default function HolidayWidget({
   }, []);
 
   const holidaysWithDiff = useMemo(() => {
-    return getHolidaysWithDiff(today);
-  }, [today]);
+    return buildHolidayDiff(mergeHolidayItems(today.getFullYear(), companyHolidays), today);
+  }, [today, companyHolidays]);
   const calendarYear = today.getFullYear();
   const hasCalendar = holidaysWithDiff.length > 0;
 
@@ -273,11 +310,22 @@ export default function HolidayWidget({
       </div>
 
       {/* ── Footer ─────────────────────────────────────────────────────────── */}
+      <div className="mt-3">
+        <PersonalReminders />
+      </div>
+
       <footer className="mt-3 flex items-center justify-between border-t border-[var(--hairline)] pt-2.5 text-[11px] text-[var(--ink-tertiary)]">
         <span>
-          {hasCalendar
-            ? `ข้อมูลวันหยุดราชการประจำปี ${calendarYear + 543}`
-            : 'รออัปเดตปฏิทินที่ยืนยันแล้ว'}
+          {companyYears.includes(calendarYear) ? (
+            <span className="inline-flex items-center gap-1">
+              <Building2 size={11} aria-hidden="true" />
+              ปฏิทินบริษัท {calendarYear + 543}
+            </span>
+          ) : hasCalendar ? (
+            `ข้อมูลวันหยุดราชการประจำปี ${calendarYear + 543}`
+          ) : (
+            'รออัปเดตปฏิทินที่ยืนยันแล้ว'
+          )}
         </span>
         <span>{hasCalendar ? `รวมทั้งหมด ${holidaysWithDiff.length} วัน` : ''}</span>
       </footer>
