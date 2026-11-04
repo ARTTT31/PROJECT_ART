@@ -15,6 +15,8 @@ import { buildHolidayDiff, mergeHolidayItems } from '@/utils/holidays';
 import type { CompanyHolidayInput } from '@/utils/holidays';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
 import { readCached, writeCached } from '@/lib/offline/localStore';
+import { usePreferences } from '@/hooks/usePreferences';
+import { formatLongDate, formatMonthShort, formatWeekday, formatYear } from '@/utils/dateFormat';
 
 export type { HolidayItem } from '@/utils/holidays';
 
@@ -25,6 +27,7 @@ export default function HolidayWidget({
   width?: number;
   onResize?: (size: number) => void;
 }) {
+  const preferences = usePreferences();
   const [filterMode, setFilterMode] = useState<'upcoming' | 'all'>('upcoming');
   const [companyHolidays, setCompanyHolidays] = useState<CompanyHolidayInput[]>([]);
   const [companyYears, setCompanyYears] = useState<number[]>([]);
@@ -116,7 +119,7 @@ export default function HolidayWidget({
                 วันหยุดนักขัตฤกษ์
               </h2>
               <span className="shrink-0 rounded-full bg-[var(--surface-grouped-2)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--ink-muted)]">
-                {hasCalendar ? calendarYear + 543 : 'ยังไม่พร้อม'}
+                {hasCalendar ? formatYear(calendarYear, preferences) : 'ยังไม่พร้อม'}
               </span>
             </div>
             <p className="mt-0.5 truncate text-[11px] text-[var(--ink-tertiary)]">
@@ -138,7 +141,7 @@ export default function HolidayWidget({
         <div className="mt-3 rounded-[12px] border border-dashed border-[var(--accent-border)] bg-[var(--accent-soft-weak)] p-3 text-center">
           <CalendarHeart className="mx-auto text-[var(--accent-text)]" size={20} aria-hidden="true" />
           <p className="mt-1.5 text-[12.5px] font-bold text-[var(--ink)]">
-            ยังไม่มีปฏิทินวันหยุดปี {calendarYear + 543}
+            ยังไม่มีปฏิทินวันหยุดปี {formatYear(calendarYear, preferences)}
           </p>
           <p className="mt-0.5 text-[11px] text-[var(--ink-tertiary)]">
             จะแสดงข้อมูลเมื่อเพิ่มปฏิทินที่ยืนยันแล้ว
@@ -162,8 +165,7 @@ export default function HolidayWidget({
               {nextHoliday.title}
             </p>
             <p className="truncate text-[11px] text-[var(--ink-muted)]">
-              {nextHoliday.dayOfWeek} {nextHoliday.day} {nextHoliday.monthName}{' '}
-              {nextHoliday.year + 543}
+              {formatLongDate(nextHoliday.dateObj, preferences)}
             </p>
           </div>
           <span
@@ -240,7 +242,7 @@ export default function HolidayWidget({
                   }`}
                 >
                   <span className="text-[9px] font-semibold uppercase tracking-wide opacity-80">
-                    {item.monthName.slice(0, 3)}
+                    {formatMonthShort(item.dateObj, preferences)}
                   </span>
                   <span className="mt-0.5 text-[12.5px] font-bold">{item.day}</span>
                 </div>
@@ -253,7 +255,7 @@ export default function HolidayWidget({
                     {item.title}
                   </p>
                   <p className="truncate text-[10.5px] text-[var(--ink-tertiary)]">
-                    {item.dayOfWeek}
+                    {formatWeekday(item.dateObj, preferences)}
                   </p>
                 </div>
               </div>
@@ -280,9 +282,11 @@ export default function HolidayWidget({
         })}
       </div>
 
-      <div className="mt-auto pt-3">
-        <PersonalReminders />
-      </div>
+      {preferences.personalReminderAlerts && (
+        <div className="mt-auto pt-3">
+          <PersonalReminders />
+        </div>
+      )}
     </section>
   );
 }

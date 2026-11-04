@@ -30,15 +30,20 @@ const listeners = new Set<Listener>();
 let store: Notification[] = [];
 
 export function pushNotifications(items: Notification[]) {
+  const known = new Set(store.map((n) => n.id));
   const map = new Map(store.map((n) => [n.id, n]));
   items.forEach((n) => map.set(n.id, n));
   store = Array.from(map.values())
     .sort((a, b) => b.at.getTime() - a.at.getTime())
     .slice(0, 30);
+  // Only a genuinely new entry rings, not a re-push of the same holiday alert.
+  if (items.some((item) => !known.has(item.id))) playBellSound();
   listeners.forEach((fn) => fn([...store]));
 }
 
 import { getHolidaysWithDiff } from '@/utils/holidays';
+import { readPreferences } from '@/hooks/usePreferences';
+import { playBellSound } from '@/utils/sound';
 import { appendHistory, syncHistoryToServer } from '@/lib/notifications/history';
 import { useAuth } from '@/hooks/useAuth';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
@@ -157,8 +162,9 @@ export default function NotificationBell() {
       if (dismissedRaw) dismissedSet = new Set(JSON.parse(dismissedRaw));
     } catch {}
 
-    // 1. Check Thai Holidays Alert
-    const holidaysWithDiff = getHolidaysWithDiff(today);
+    // 1. Check Thai Holidays Alert — skipped when the account muted holidays
+    // in the notification settings card.
+    const holidaysWithDiff = readPreferences().holidayAlerts ? getHolidaysWithDiff(today) : [];
 
     const nextHoliday = holidaysWithDiff.find((h) => h.daysLeft >= 0);
     if (nextHoliday) {

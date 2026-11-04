@@ -19,6 +19,7 @@ import {
   LayoutGrid,
   Palette,
   Building2,
+  BellRing,
   Camera,
   Loader2,
 } from 'lucide-react';
@@ -33,6 +34,8 @@ import { QuickLinksCard } from '@/components/Profile/QuickLinksCard';
 import { QuickLinkDialog, type QuickLinkFormValues } from '@/components/Profile/QuickLinkDialog';
 import { BrandingCard } from '@/components/Profile/BrandingCard';
 import CompanyHolidayCard from '@/components/Profile/CompanyHolidayCard';
+import NotificationSettingsCard from '@/components/Profile/NotificationSettingsCard';
+import DateFormatCard from '@/components/Profile/DateFormatCard';
 import { ThemeCard } from '@/components/Profile/ThemeCard';
 import { type QuickLink, parseQuickLinks, serializeQuickLinks } from '@/utils/quickLinks';
 import {
@@ -894,6 +897,18 @@ export default function ProfilePage() {
 
             <div className="lg:col-span-2">
               <ThemeCard />
+            </div>
+
+            <PreferenceHeading icon={<BellRing size={13} aria-hidden="true" />}>
+              การแจ้งเตือนและรูปแบบ
+            </PreferenceHeading>
+
+            <div className="lg:col-span-2">
+              <NotificationSettingsCard />
+            </div>
+
+            <div className="lg:col-span-2">
+              <DateFormatCard />
             </div>
 
             <PreferenceHeading icon={<Building2 size={13} aria-hidden="true" />}>
