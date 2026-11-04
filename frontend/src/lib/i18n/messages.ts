@@ -64,6 +64,15 @@ const th = {
   'profile.group.alerts': 'การแจ้งเตือนและรูปแบบ',
   'profile.group.workspace': 'ข้อมูล workspace',
 
+  'profile.sub.account': 'ข้อมูลส่วนตัว',
+  'profile.sub.security': 'รหัสผ่าน & ความปลอดภัย',
+  'profile.sub.menu': 'เมนูและทางลัด',
+  'profile.sub.appearance': 'รูปลักษณ์',
+  'profile.sub.alerts': 'การแจ้งเตือนและรูปแบบ',
+  'profile.sub.workspace': 'ข้อมูล workspace',
+  'profile.sub.label.account': 'หัวข้อข้อมูลส่วนตัว',
+  'profile.sub.label.preferences': 'หัวข้อการปรับแต่ง',
+
   'card.mainMenu.title': 'เมนูหลักของระบบ',
   'card.mainMenu.subtitle': 'จัดลำดับรายการในแถบเมนูด้านข้าง',
   'card.quickLinks.title': 'ควิกลิ้งค์ (Quick Links)',
@@ -163,6 +172,15 @@ const en: Record<keyof typeof th, string> = {
   'profile.group.appearance': 'Appearance',
   'profile.group.alerts': 'Alerts & formats',
   'profile.group.workspace': 'Workspace data',
+
+  'profile.sub.account': 'Personal details',
+  'profile.sub.security': 'Password & security',
+  'profile.sub.menu': 'Menu & shortcuts',
+  'profile.sub.appearance': 'Appearance',
+  'profile.sub.alerts': 'Alerts & formats',
+  'profile.sub.workspace': 'Workspace data',
+  'profile.sub.label.account': 'Personal settings sections',
+  'profile.sub.label.preferences': 'Preference sections',
 
   'card.mainMenu.title': 'Main menu',
   'card.mainMenu.subtitle': 'Reorder the items in the sidebar',

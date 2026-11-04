@@ -51,19 +51,41 @@ import type { AuthUser } from '@/types';
 // Helpers
 // ─────────────────────────────────────────────────────────────
 
-/** Group label inside the preferences tab, so every card has a home. */
-function PreferenceHeading({
-  icon,
-  children,
+/**
+ * Sub-section switcher: each tab shows one group of cards at a time, so the
+ * preferences tab does not turn into a long wall of every setting at once.
+ */
+function SubNav<T extends string>({
+  label,
+  value,
+  options,
+  onChange,
 }: {
-  icon: React.ReactNode;
-  children: React.ReactNode;
+  label: string;
+  value: T;
+  options: Array<{ value: T; label: string; icon: React.ReactNode }>;
+  onChange: (next: T) => void;
 }) {
   return (
-    <h3 className="lg:col-span-2 mt-1 flex items-center gap-1.5 border-b border-[var(--hairline-soft)] pb-1.5 text-[11px] font-bold uppercase tracking-wider text-[var(--ink-muted)]">
-      {icon}
-      {children}
-    </h3>
+    <div className="flex gap-1.5 overflow-x-auto no-scrollbar" role="tablist" aria-label={label}>
+      {options.map((option) => (
+        <button
+          key={option.value}
+          type="button"
+          role="tab"
+          aria-selected={value === option.value}
+          onClick={() => onChange(option.value)}
+          className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-2 text-[12.5px] font-bold transition-all duration-150 active:scale-[0.98] ${
+            value === option.value
+              ? 'bg-[var(--surface)] text-[var(--accent-text)] shadow-xs ring-1 ring-[var(--hairline)]'
+              : 'bg-[var(--surface-grouped)] text-[var(--ink-muted)] hover:text-[var(--ink)]'
+          }`}
+        >
+          {option.icon}
+          {option.label}
+        </button>
+      ))}
+    </div>
   );
 }
 
@@ -86,6 +108,8 @@ function apiMessage(data: unknown, fallback: string): string {
 // ─────────────────────────────────────────────────────────────
 
 type TabKey = 'profile' | 'preferences';
+type AccountSection = 'account' | 'security';
+type PreferenceSection = 'menu' | 'appearance' | 'alerts' | 'workspace';
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -93,6 +117,8 @@ export default function ProfilePage() {
   const { t } = useI18n();
   const [user, setUser] = useState<AuthUser | null>(null);
   const [activeTab, setActiveTab] = useState<TabKey>('profile');
+  const [accountSection, setAccountSection] = useState<AccountSection>('account');
+  const [preferenceSection, setPreferenceSection] = useState<PreferenceSection>('menu');
 
   // Avatar Upload
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -622,6 +648,55 @@ export default function ProfilePage() {
         </button>
       </nav>
 
+      {/* Sub-sections: the cards of one group at a time. */}
+      {activeTab === 'profile' ? (
+        <SubNav
+          label={t('profile.sub.label.account')}
+          value={accountSection}
+          onChange={setAccountSection}
+          options={[
+            {
+              value: 'account',
+              label: t('profile.sub.account'),
+              icon: <User size={13} aria-hidden="true" />,
+            },
+            {
+              value: 'security',
+              label: t('profile.sub.security'),
+              icon: <Lock size={13} aria-hidden="true" />,
+            },
+          ]}
+        />
+      ) : (
+        <SubNav
+          label={t('profile.sub.label.preferences')}
+          value={preferenceSection}
+          onChange={setPreferenceSection}
+          options={[
+            {
+              value: 'menu',
+              label: t('profile.sub.menu'),
+              icon: <LayoutGrid size={13} aria-hidden="true" />,
+            },
+            {
+              value: 'appearance',
+              label: t('profile.sub.appearance'),
+              icon: <Palette size={13} aria-hidden="true" />,
+            },
+            {
+              value: 'alerts',
+              label: t('profile.sub.alerts'),
+              icon: <BellRing size={13} aria-hidden="true" />,
+            },
+            {
+              value: 'workspace',
+              label: t('profile.sub.workspace'),
+              icon: <Building2 size={13} aria-hidden="true" />,
+            },
+          ]}
+        />
+      )}
+
       {/* ══════════════════════════════════════════════════
           TAB 1: ข้อมูลส่วนตัว & ความปลอดภัย
           ══════════════════════════════════════════════════ */}
@@ -633,9 +708,10 @@ export default function ProfilePage() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -6 }}
             transition={{ duration: 0.16, ease: 'easeOut' }}
-            className="grid grid-cols-1 gap-5 lg:grid-cols-2 items-start min-h-[480px]"
+            className="min-h-[480px]"
           >
-            {/* Card 1.1: ข้อมูลส่วนตัว */}
+            <div hidden={accountSection !== 'account'}>
+              {/* Card 1.1: ข้อมูลส่วนตัว */}
             <SectionCard
               icon={<User size={19} aria-hidden="true" />}
               iconBg="bg-emerald-50"
@@ -682,7 +758,10 @@ export default function ProfilePage() {
               </form>
             </SectionCard>
 
-            {/* Card 1.2: รหัสผ่าน & ความปลอดภัย */}
+            </div>
+
+            <div hidden={accountSection !== 'security'}>
+              {/* Card 1.2: รหัสผ่าน & ความปลอดภัย */}
             <SectionCard
               icon={<Lock size={19} aria-hidden="true" />}
               iconBg="bg-rose-50"
@@ -854,6 +933,7 @@ export default function ProfilePage() {
                 </div>
               </form>
             </SectionCard>
+            </div>
           </motion.div>
         )}
 
@@ -867,63 +947,39 @@ export default function ProfilePage() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -6 }}
             transition={{ duration: 0.16, ease: 'easeOut' }}
-            className="grid grid-cols-1 gap-5 lg:grid-cols-2 items-start min-h-[480px]"
+            className="grid min-h-[480px] grid-cols-1 gap-5 items-start"
           >
-            <PreferenceHeading icon={<LayoutGrid size={13} aria-hidden="true" />}>
-              {t('profile.group.menu')}
-            </PreferenceHeading>
-
-            {/* Which pages exist in the sidebar is an admin decision: hiding
-                this card keeps ordinary users from rearranging (or hiding)
-                pages while the workspace is still being built. */}
-            {isAdmin && (
-              <MainMenuCard
-                items={filteredMenuItems}
-                onMove={moveMainMenuItem}
-              />
-            )}
-
-            <div className={isAdmin ? undefined : 'lg:col-span-2'}>
-              <QuickLinksCard
-                links={quickLinks}
-                onAdd={openCreateQuickLink}
-                onEdit={openEditQuickLink}
-                onDelete={handleDeleteQuickLink}
-                onMove={handleMoveQuickLink}
-              />
+            <div hidden={preferenceSection !== 'menu'} className="space-y-5">
+              {/* Which pages exist in the sidebar is an admin decision: hiding
+                  this card keeps ordinary users from rearranging (or hiding)
+                  pages while the workspace is still being built. */}
+              <div className={isAdmin ? 'grid gap-5 lg:grid-cols-2' : ''}>
+                {isAdmin && (
+                  <MainMenuCard items={filteredMenuItems} onMove={moveMainMenuItem} />
+                )}
+                <QuickLinksCard
+                  links={quickLinks}
+                  onAdd={openCreateQuickLink}
+                  onEdit={openEditQuickLink}
+                  onDelete={handleDeleteQuickLink}
+                  onMove={handleMoveQuickLink}
+                />
+              </div>
             </div>
 
-            <PreferenceHeading icon={<Palette size={13} aria-hidden="true" />}>
-              {t('profile.group.appearance')}
-            </PreferenceHeading>
-
-            <div className="lg:col-span-2">
+            <div hidden={preferenceSection !== 'appearance'}>
               <ThemeCard />
             </div>
 
-            <PreferenceHeading icon={<BellRing size={13} aria-hidden="true" />}>
-              {t('profile.group.alerts')}
-            </PreferenceHeading>
-
-            <div className="lg:col-span-2">
+            <div hidden={preferenceSection !== 'alerts'} className="space-y-5">
               <NotificationSettingsCard />
-            </div>
-
-            <div className="lg:col-span-2">
               <DateFormatCard />
             </div>
 
-            <PreferenceHeading icon={<Building2 size={13} aria-hidden="true" />}>
-              {t('profile.group.workspace')}
-            </PreferenceHeading>
-
-            <div className="lg:col-span-2">
+            <div hidden={preferenceSection !== 'workspace'} className="space-y-5">
               <BrandingCard isAdmin={isAdmin} />
-            </div>
-
-            {/* Company holidays live in general settings, not the admin console:
-                every member can read the calendar, only an admin can change it. */}
-            <div className="lg:col-span-2">
+              {/* Company holidays live in general settings, not the admin console:
+                  every member can read the calendar, only an admin can change it. */}
               <CompanyHolidayCard canEdit={isAdmin} />
             </div>
           </motion.div>
