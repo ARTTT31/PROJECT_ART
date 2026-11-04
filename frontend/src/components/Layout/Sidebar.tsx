@@ -32,6 +32,7 @@ import {
   MainMenuItemConfig,
 } from '@/utils/mainMenu';
 import { canAccessPage } from '@/utils/accessiblePages';
+import { isPageEnabled } from '@/hooks/useEnabledPages';
 import { AuthUser } from '@/types';
 import { useBranding } from '@/context/BrandingContext';
 
@@ -187,7 +188,9 @@ export default function Sidebar({
     if (!item.enabled) return false;
     // Admin-only pages (e.g. the activity log) never appear for regular accounts.
     if (item.adminOnly && user?.role !== 'admin') return false;
-    return canAccessPage(user, item.id);
+    // Two gates: the account's own grant, and whether the workspace has the
+    // page open at all (the admin page-switch card).
+    return canAccessPage(user, item.id) && isPageEnabled(item.id);
   });
 
   const mainMenuItemsSection: MenuSection = {

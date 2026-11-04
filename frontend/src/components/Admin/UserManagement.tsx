@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
 import { useToast } from '@/components/Toast/ToastProvider';
 import { useAuth } from '@/components/Auth/AuthProvider';
-import { showDeleteConfirm } from '@/utils/sweetalert';
+import { showConfirm, showDeleteConfirm } from '@/utils/sweetalert';
 import {
   Settings,
   Edit,
@@ -452,12 +452,6 @@ export default function UserManagement() {
     setEditingUser(null);
   };
 
-  const togglePage = (pageId: string) => {
-    setEditPages((prev) =>
-      prev.includes(pageId) ? prev.filter((p) => p !== pageId) : [...prev, pageId],
-    );
-  };
-
   const handleSave = async () => {
     if (!editingUser) return;
     setIsSaving(true);
@@ -555,15 +549,6 @@ export default function UserManagement() {
       pages: AVAILABLE_PAGES.map((p) => p.id),
     });
     setIsCreating(true);
-  };
-
-  const toggleCreatePage = (pageId: string) => {
-    setCreateForm((prev) => ({
-      ...prev,
-      pages: prev.pages.includes(pageId)
-        ? prev.pages.filter((p) => p !== pageId)
-        : [...prev.pages, pageId],
-    }));
   };
 
   const handleCreate = async () => {
@@ -904,35 +889,10 @@ export default function UserManagement() {
               </div>
             </div>
 
-            {/* Accessible Pages */}
-            <div>
-              <label className="mb-2 block text-[12px] font-bold tracking-wide uppercase text-[var(--ink-muted)]">
-                หน้าที่สามารถเข้าถึงได้ (Accessible Pages)
-              </label>
-              <div className="overflow-hidden rounded-2xl ring-1 ring-black/[0.04] bg-[var(--surface-subtle)] divide-y divide-black/[0.04]">
-                {AVAILABLE_PAGES.map((page) => {
-                  const isActive = editPages.includes(page.id);
-                  return (
-                    <div
-                      key={page.id}
-                      onClick={() => togglePage(page.id)}
-                      className="group flex cursor-pointer items-center gap-3 p-4 transition-all hover:bg-[var(--surface)]"
-                    >
-                      {isActive ? (
-                        <CheckCircle2 size={20} className="text-[var(--accent-text)]" />
-                      ) : (
-                        <Circle size={20} className="text-slate-300 group-hover:text-slate-400" />
-                      )}
-                      <span
-                        className={`text-[14px] ${isActive ? 'font-semibold text-[var(--ink)]' : 'font-medium text-[var(--ink-muted)]'}`}
-                      >
-                        {page.label}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+            <p className="rounded-2xl bg-[var(--surface-subtle)] px-4 py-3 text-[12px] leading-relaxed text-[var(--ink-muted)]">
+              การเปิด/ปิดหน้าของทั้ง workspace ตั้งค่าได้ที่การ์ด “เปิด/ปิดหน้าใช้งาน”
+              ด้านบนของหน้าจัดการระบบ
+            </p>
           </div>
 
           <div className="border-t border-[var(--hairline-soft)] bg-[var(--surface-subtle)] px-6 py-4 flex flex-col-reverse sm:flex-row justify-end gap-3">
@@ -1103,36 +1063,10 @@ export default function UserManagement() {
               </div>
             </div>
 
-            <div>
-              <label className="mb-2 block text-[12px] font-bold tracking-wide uppercase text-[var(--ink-muted)]">
-                หน้าที่สามารถเข้าถึงได้ (Accessible Pages)
-              </label>
-              <div className="overflow-hidden rounded-2xl ring-1 ring-black/[0.04] bg-[var(--surface-subtle)] divide-y divide-black/[0.04]">
-                {AVAILABLE_PAGES.map((page) => {
-                  const isActive = createForm.pages.includes(page.id);
-                  return (
-                    <button
-                      key={page.id}
-                      type="button"
-                      onClick={() => toggleCreatePage(page.id)}
-                      aria-pressed={isActive}
-                      className="group flex w-full items-center gap-3 p-4 text-left transition-all hover:bg-[var(--surface)]"
-                    >
-                      {isActive ? (
-                        <CheckCircle2 size={20} className="text-[var(--accent-text)]" />
-                      ) : (
-                        <Circle size={20} className="text-slate-300 group-hover:text-slate-400" />
-                      )}
-                      <span
-                        className={`text-[14px] ${isActive ? 'font-semibold text-[var(--ink)]' : 'font-medium text-[var(--ink-muted)]'}`}
-                      >
-                        {page.label}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+            <p className="rounded-2xl bg-[var(--surface-subtle)] px-4 py-3 text-[12px] leading-relaxed text-[var(--ink-muted)]">
+              ผู้ใช้ใหม่จะได้สิทธิ์หน้าตามค่าเริ่มต้นของระบบ —
+              การเปิด/ปิดหน้าทั้ง workspace ตั้งค่าได้ที่การ์ด “เปิด/ปิดหน้าใช้งาน”
+            </p>
           </div>
 
           <div className="border-t border-[var(--hairline-soft)] bg-[var(--surface-subtle)] px-6 py-4 flex flex-col-reverse sm:flex-row justify-end gap-3">
@@ -1277,7 +1211,13 @@ export default function UserManagement() {
             </div>
             <button
               type="button"
-              onClick={() => {
+              onClick={async () => {
+                const confirmed = await showConfirm(
+                  'ส่งออกรายชื่อผู้ใช้?',
+                  `จะส่งออก ${users.length} รายการตามตัวกรองที่เห็นอยู่เป็นไฟล์ CSV`,
+                );
+                if (!confirmed.isConfirmed) return;
+
                 const table = users as unknown as Array<Record<string, unknown>>;
                 const rows = table.map((entry) => [
                   String(entry.name ?? ''),

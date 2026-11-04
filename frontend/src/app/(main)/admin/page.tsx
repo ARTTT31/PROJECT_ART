@@ -15,6 +15,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
 import { RegistrationPolicyCard } from '@/components/Admin/RegistrationPolicyCard';
 import CompanyHolidayCard from '@/components/Admin/CompanyHolidayCard';
+import PageAccessCard from '@/components/Admin/PageAccessCard';
 import UserManagement from '@/components/Admin/UserManagement';
 
 interface Stat {
@@ -162,6 +163,9 @@ export default function AdminPage() {
           ข้อมูลอัปเดตเมื่อเปิดหน้านี้ — กดรีเฟรชเพื่อดูใหม่
         </div>
       </section>
+
+      {/* ── Pages open for the whole workspace ───────────────────── */}
+      <PageAccessCard />
 
       {/* ── Sign-up policy ───────────────────────────────────────── */}
       <RegistrationPolicyCard />

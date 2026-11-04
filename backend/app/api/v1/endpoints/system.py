@@ -30,6 +30,12 @@ from app.core.brand_logo import (
 )
 from app.core.config import settings
 from app.core.database import get_db
+from app.core.page_settings import (
+    PAGE_CATALOGUE,
+    get_enabled_pages,
+    normalise_enabled_pages,
+    serialize_enabled_pages,
+)
 from app.core.rate_limit import get_real_client_ip, limiter
 from app.core.utils import utcnow
 from app.models.system_setting import SystemSetting
@@ -62,6 +68,37 @@ async def _branding_response(db: AsyncSession) -> BrandingResponse:
         or "จัดการวันทำงานของคุณให้ง่ายขึ้น",
         brand_logo_url=settings_map.get("brand_logo_url") or "",
         registration_mode=await get_effective_registration_mode(db),
+    )
+
+
+class PageAccessItem(BaseModel):
+    id: str
+    label: str
+    required: bool
+    enabled: bool
+
+
+class PageAccessResponse(BaseModel):
+    pages: list[PageAccessItem]
+    updated_at: Optional[str] = None
+
+
+class PageAccessUpdate(BaseModel):
+    enabled: list[str] = []
+
+
+def _page_access_response(enabled: list[str], updated_at: Optional[str] = None) -> PageAccessResponse:
+    return PageAccessResponse(
+        pages=[
+            PageAccessItem(
+                id=page["id"],
+                label=page["label"],
+                required=page["required"],
+                enabled=page["id"] in enabled,
+            )
+            for page in PAGE_CATALOGUE
+        ],
+        updated_at=updated_at,
     )
 
 
@@ -111,6 +148,61 @@ async def get_system_health(
         memory_total_mb=round(mem.total / 1024 / 1024, 1),
         disk_percent=disk.percent,
     )
+
+
+@router.get("/pages", response_model=PageAccessResponse)
+async def get_page_access(db: AsyncSession = Depends(get_db)):
+    """Workspace page switches (public: the sidebar needs them before a fetch)."""
+    setting = await db.get(SystemSetting, "enabled_pages")
+    enabled = await get_enabled_pages(db)
+    return _page_access_response(
+        enabled,
+        setting.updated_at.isoformat() if setting and setting.updated_at else None,
+    )
+
+
+@router.put("/pages", response_model=PageAccessResponse)
+async def update_page_access(
+    payload: PageAccessUpdate,
+    request: Request,
+    current_admin=Depends(get_current_admin_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Admin-only: open or close a page for the whole workspace."""
+    if len(payload.enabled) > len(PAGE_CATALOGUE) + 5:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="รายการหน้าที่เปิดใช้งานไม่ถูกต้อง",
+        )
+
+    stored = serialize_enabled_pages(payload.enabled)
+    current_time = utcnow()
+    setting = await db.get(SystemSetting, "enabled_pages")
+    if setting:
+        setting.value = stored
+        setting.updated_at = current_time
+    else:
+        db.add(
+            SystemSetting(
+                key="enabled_pages",
+                value=stored,
+                description="หน้าที่เปิดใช้งานทั้ง workspace",
+                created_at=current_time,
+                updated_at=current_time,
+            )
+        )
+
+    enabled = normalise_enabled_pages(stored)
+    await AuditService(db).log_action(
+        action="UPDATE_PAGE_ACCESS",
+        user_id=current_admin.id,
+        details=f"ตั้งค่าหน้าที่เปิดใช้งาน: {', '.join(enabled)}",
+        ip_address=get_real_client_ip(request),
+        user_agent=request.headers.get("user-agent"),
+    )
+    await db.commit()
+
+    return _page_access_response(enabled, current_time.isoformat())
 
 
 @router.get("/branding", response_model=BrandingResponse)

@@ -71,6 +71,7 @@ const ACTION_LABELS: Record<string, string> = {
   AUTH_UPDATE_COMPANY_HOLIDAYS: 'บันทึกวันหยุดบริษัท',
   UPDATE_COMPANY_HOLIDAYS: 'บันทึกวันหยุดบริษัท',
   DELETE_COMPANY_HOLIDAYS: 'ลบปฏิทินวันหยุดบริษัท',
+  UPDATE_PAGE_ACCESS: 'ตั้งค่าหน้าที่เปิดใช้งาน',
 };
 
 const ACTION_OPTIONS = Object.keys(ACTION_LABELS);

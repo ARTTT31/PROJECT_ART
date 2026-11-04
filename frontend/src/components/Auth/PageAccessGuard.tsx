@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Lock } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { canAccessPage } from '@/utils/accessiblePages';
+import { isPageEnabled } from '@/hooks/useEnabledPages';
 
 /**
  * Client-side half of the page-access check.
@@ -34,7 +35,7 @@ export default function PageAccessGuard({
     );
   }
 
-  if (!canAccessPage(user, page)) {
+  if (!canAccessPage(user, page) || !isPageEnabled(page)) {
     return (
       <section
         role="status"

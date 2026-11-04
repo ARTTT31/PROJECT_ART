@@ -313,7 +313,7 @@ describe('UserManagement — create', () => {
     }
   };
 
-  it('creates the account with the role and pages that were chosen', async () => {
+  it('creates the account with the chosen role and the default page set', async () => {
     api = (method, path) => {
       if (method === 'POST' && path === '/api/v1/users/admin-create') {
         return json({ result: 'success', message: 'สร้างผู้ใช้สำเร็จ', data: { user_id: 9 } });
@@ -327,8 +327,8 @@ describe('UserManagement — create', () => {
     fireEvent.click(screen.getByRole('button', { name: /เพิ่มผู้ใช้/ }));
     fillForm();
     fireEvent.click(screen.getByRole('button', { name: /ผู้ดูแลระบบ \(Admin\)/ }));
-    // Drop one page from the default (all three) selection.
-    fireEvent.click(screen.getByRole('button', { name: /กล้อง \(Camera\)/ }));
+    // Page access is no longer chosen per new account: the workspace switches
+    // in the admin card decide what is open, so the form sends the default set.
     fireEvent.click(screen.getByRole('button', { name: 'สร้างผู้ใช้' }));
 
     await waitFor(() => expect(calls).toContain('POST /api/v1/users/admin-create'));
@@ -341,7 +341,7 @@ describe('UserManagement — create', () => {
       email: 'newbie@example.com',
       role: 'admin',
     });
-    expect(JSON.parse(body.accessible_pages)).toEqual(['dashboard', 'profile']);
+    expect(JSON.parse(body.accessible_pages)).toEqual(['dashboard', 'profile', 'camera']);
     expect(screen.getByText('สร้างผู้ใช้สำเร็จ')).toBeTruthy();
   });
 
