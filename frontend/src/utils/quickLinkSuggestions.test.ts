@@ -91,16 +91,18 @@ describe('findQuickLinkSuggestion', () => {
     expect(findQuickLinkSuggestion({ ...base, visits, store: makeStore() })).toBeNull();
   });
 
-  it('does suggest a page the user hid from their menu', () => {
+  it('never suggests a page that is in the menu, whatever the saved flag says', () => {
+    // The menu is ordering-only now: the admin page switches decide visibility,
+    // so a stale enabled flag must not turn a menu page into a suggestion.
     const visits = { '/camera': { count: 4, lastAt: 1 } };
-    const suggestion = findQuickLinkSuggestion({
-      links: [],
-      mainMenu: [menuItem({ enabled: false })],
-      visits,
-      store: makeStore(),
-    });
-    expect(suggestion?.path).toBe('/camera');
-    expect(suggestion?.label).toBe('กล้องวงจรปิด');
+    expect(
+      findQuickLinkSuggestion({
+        links: [],
+        mainMenu: [menuItem({ enabled: false })],
+        visits,
+        store: makeStore(),
+      }),
+    ).toBeNull();
   });
 
   it('skips a page that is already a quick link', () => {

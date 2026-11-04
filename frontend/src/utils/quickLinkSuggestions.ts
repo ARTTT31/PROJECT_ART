@@ -160,14 +160,11 @@ export function findQuickLinkSuggestion(options: {
     ...(options.dismissed ?? []),
   ]);
 
-  // A page that is already a shortcut, or already in the visible menu, needs no
-  // suggestion. A *hidden* menu item does not count: offering it back as a
-  // shortcut is exactly the useful case.
+  // A page that is already a shortcut, or already in the main menu, needs no
+  // suggestion. The menu is ordering-only now — visibility comes from the admin
+  // page switches — so every menu entry counts as claimed.
   const claimed = new Set(
-    [
-      ...links.map((link) => link.url),
-      ...mainMenu.filter((item) => item.enabled).map((item) => item.href),
-    ]
+    [...links.map((link) => link.url), ...mainMenu.map((item) => item.href)]
       .map((url) => normalizePath(url))
       .filter((path): path is string => Boolean(path)),
   );

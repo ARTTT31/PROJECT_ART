@@ -18,6 +18,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
 import { readCached } from '@/lib/offline/localStore';
 import { DEFAULT_MAIN_MENU_ITEMS, MAIN_MENU_ICON_MAP } from '@/utils/mainMenu';
+import { isPageEnabled } from '@/hooks/useEnabledPages';
 
 /** Open the palette from anywhere (the header button dispatches this). */
 export const COMMAND_PALETTE_EVENT = 'art:command-palette';
@@ -237,8 +238,10 @@ export default function CommandPalette() {
   }, [open, isAdmin]);
 
   const pageResults = useMemo<CommandResult[]>(() => {
+    // A page the admin switched off must not turn up in search either, otherwise
+    // the palette offers a result that can only end on the "no access" screen.
     const menu = DEFAULT_MAIN_MENU_ITEMS.filter(
-      (item) => item.enabled && (!item.adminOnly || isAdmin),
+      (item) => (!item.adminOnly || isAdmin) && isPageEnabled(item.id),
     ).map((item) => {
       const Icon = MAIN_MENU_ICON_MAP[item.icon] ?? FileText;
       return {
@@ -254,7 +257,7 @@ export default function CommandPalette() {
 
     const extra: CommandResult[] = [
       ...PROFILE_ACTIONS,
-      ...(isAdmin
+      ...(isAdmin && isPageEnabled('audit')
         ? [
             {
               id: 'page-audit',

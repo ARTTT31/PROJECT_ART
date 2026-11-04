@@ -186,13 +186,6 @@ export default function ProfilePage() {
     });
   };
 
-  const toggleMainMenuItem = (id: string) => {
-    const updated = mainMenuConfig.map((item) =>
-      item.id === id && !item.required ? { ...item, enabled: !item.enabled } : item,
-    );
-    saveMainMenu(updated);
-  };
-
   const moveMainMenuItem = (id: string, dir: 'up' | 'down') => {
     const idx = mainMenuConfig.findIndex((item) => item.id === id);
     if (idx === -1) return;
@@ -857,7 +850,6 @@ export default function ProfilePage() {
             {isAdmin && (
               <MainMenuCard
                 items={filteredMenuItems}
-                onToggle={toggleMainMenuItem}
                 onMove={moveMainMenuItem}
               />
             )}

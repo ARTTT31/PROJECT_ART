@@ -184,8 +184,10 @@ export default function Sidebar({
 
   // Active Main Menu Items based on user configuration. The same rule (and the
   // same parser) as the server-side gate in app/api/dependencies.py.
+  // The saved config only orders the menu now; whether an item shows at all is
+  // decided by the account's grant and the workspace page switches in /admin,
+  // so a stale `enabled: false` from the old per-user toggle cannot hide a page.
   const enabledMainItems = mainMenuConfig.filter((item) => {
-    if (!item.enabled) return false;
     // Admin-only pages (e.g. the activity log) never appear for regular accounts.
     if (item.adminOnly && user?.role !== 'admin') return false;
     // Two gates: the account's own grant, and whether the workspace has the
