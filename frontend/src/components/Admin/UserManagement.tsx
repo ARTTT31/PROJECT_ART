@@ -124,28 +124,14 @@ const ROLE_OPTIONS: FilterOption[] = [
   { value: 'user', label: 'User', icon: <User size={13} className="text-slate-600" /> },
 ];
 
+// Status filter is text-only on purpose: the coloured dots and icons added
+// noise to a short list the admin reads at a glance.
 const STATUS_OPTIONS: FilterOption[] = [
-  { value: '', label: 'ทุกสถานะ', icon: <Circle size={13} className="text-[var(--ink-tertiary)]" /> },
-  {
-    value: 'active',
-    label: 'ใช้งานปกติ',
-    icon: <span className="h-2 w-2 rounded-full bg-emerald-500 shrink-0" />,
-  },
-  {
-    value: 'suspended',
-    label: 'ระงับบัญชี',
-    icon: <span className="h-2 w-2 rounded-full bg-rose-500 shrink-0" />,
-  },
-  {
-    value: 'pending',
-    label: 'รออนุมัติ',
-    icon: <Clock size={13} className="text-amber-600 shrink-0" />,
-  },
-  {
-    value: 'trash',
-    label: 'ถังขยะ (ลบแล้ว)',
-    icon: <Trash2 size={13} className="text-amber-600 shrink-0" />,
-  },
+  { value: '', label: 'ทุกสถานะ' },
+  { value: 'active', label: 'ใช้งานปกติ' },
+  { value: 'suspended', label: 'ระงับบัญชี' },
+  { value: 'pending', label: 'รออนุมัติ' },
+  { value: 'trash', label: 'ถังขยะ (ลบแล้ว)' },
 ];
 
 function FilterDropdown({
@@ -154,12 +140,15 @@ function FilterDropdown({
   onChange,
   options,
   align = 'left',
+  textOnly = false,
 }: {
   ariaLabel: string;
   value: string;
   onChange: (val: string) => void;
   options: FilterOption[];
   align?: 'left' | 'right';
+  /** Render labels without option icons or a selection tick. */
+  textOnly?: boolean;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -206,7 +195,7 @@ function FilterDropdown({
         }`}
       >
         <span className="inline-flex items-center gap-2 truncate">
-          {selectedOption.icon}
+          {!textOnly && selectedOption.icon}
           <span>{selectedOption.label}</span>
         </span>
         <ChevronDown
@@ -247,10 +236,12 @@ function FilterDropdown({
                   }`}
                 >
                   <span className="inline-flex items-center gap-2.5 truncate">
-                    {opt.icon}
+                    {!textOnly && opt.icon}
                     <span>{opt.label}</span>
                   </span>
-                  {isSelected && <Check size={14} className="shrink-0 text-[var(--accent-text)]" />}
+                  {!textOnly && isSelected && (
+                    <Check size={14} className="shrink-0 text-[var(--accent-text)]" />
+                  )}
                 </button>
               );
             })}
@@ -1238,6 +1229,7 @@ export default function UserManagement() {
                   onChange={setStatusFilter}
                   options={STATUS_OPTIONS}
                   align="right"
+                  textOnly
                 />
               </div>
               {isFiltered && (
