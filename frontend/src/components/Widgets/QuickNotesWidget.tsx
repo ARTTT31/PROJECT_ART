@@ -4,6 +4,15 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { AlertCircle, ListTodo, Loader2, Plus, RotateCw, Trash2 } from 'lucide-react';
 import WidgetSizeToggle from './WidgetSizeToggle';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
+import {
+  clearPending,
+  isOffline,
+  readCached,
+  readPending,
+  writeCached,
+  writePending,
+} from '@/lib/offline/localStore';
+import { useOnlineStatus } from '@/lib/offline/useOnlineStatus';
 import { readUserCookie } from '@/lib/api/userCookie';
 
 // Mirrors the backend caps (app/schemas/user.py) so a hopeless save is refused
@@ -20,6 +29,8 @@ interface QuickNote {
 interface NotesResponse {
   notes?: QuickNote[];
 }
+
+const NOTES_OFFLINE_KEY = 'profile/quick-notes';
 
 // Module-level cache. Opening the dashboard remounts this widget, and refetching
 // on every mount made the card flash its spinner each time. Keeping the last
@@ -42,11 +53,16 @@ function currentUserId(): string {
 }
 
 function readNotesCache(): QuickNote[] | null {
-  return notesCache && notesCache.userId === currentUserId() ? notesCache.notes : null;
+  if (notesCache && notesCache.userId === currentUserId()) return notesCache.notes;
+  // The module cache is empty on a fresh page load; localStorage is what keeps
+  // the list readable when the page is opened without a connection.
+  const cached = readCached<NotesResponse>(NOTES_OFFLINE_KEY);
+  return cached && Array.isArray(cached.data.notes) ? cached.data.notes : null;
 }
 
 function writeNotesCache(notes: QuickNote[]) {
   notesCache = { userId: currentUserId(), notes };
+  writeCached<NotesResponse>(NOTES_OFFLINE_KEY, { notes });
 }
 
 /** Test helper: clear the cache so each case starts from a clean slate. */
@@ -102,6 +118,8 @@ export default function QuickNotesWidget({
   // With a cached list there is nothing to wait for: render it right away.
   const [loading, setLoading] = useState(() => readNotesCache() === null);
   const [saving, setSaving] = useState(false);
+  const [pendingSync, setPendingSync] = useState(() => readPending(NOTES_OFFLINE_KEY) !== null);
+  const online = useOnlineStatus();
   const [error, setError] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [justSaved, setJustSaved] = useState(false);
@@ -127,6 +145,10 @@ export default function QuickNotesWidget({
     // the previous list on screen and refresh it silently.
     if (readNotesCache() === null) setLoading(true);
     setLoadError(null);
+    if (isOffline()) {
+      setLoading(false);
+      return;
+    }
     try {
       const res = await fetchWithAuth('/api/v1/profile/quick-notes');
       if (!res.ok) {
@@ -137,12 +159,23 @@ export default function QuickNotesWidget({
       // The user edited (or another save completed) while this request was in
       // flight; its response is already stale.
       if (revisionRef.current !== startedAtRevision) return;
+      // An offline edit may still be waiting to be saved; the older server copy
+      // must not replace it before the flush.
+      if (readPending(NOTES_OFFLINE_KEY)) {
+        setPendingSync(true);
+        return;
+      }
       const loaded = Array.isArray(data.notes) ? data.notes : [];
       writeNotesCache(loaded);
       latestRef.current = loaded;
       setNotes(loaded);
+      setPendingSync(false);
     } catch (err) {
-      setLoadError(`โหลดรายการไม่สำเร็จ: ${requestErrorMessage(err)}`);
+      // With a cached list the widget stays usable offline; only a first load
+      // with nothing stored shows the full error card.
+      if (readNotesCache() === null) {
+        setLoadError(`โหลดรายการไม่สำเร็จ: ${requestErrorMessage(err)}`);
+      }
     } finally {
       setLoading(false);
     }
@@ -150,12 +183,19 @@ export default function QuickNotesWidget({
 
   const persist = useCallback((next: QuickNote[]) => {
     const sequence = ++saveSequenceRef.current;
+    // Save locally first: an offline edit must survive a reload, and this
+    // snapshot is replayed once the connection is back.
+    writeNotesCache(next);
+    writePending(NOTES_OFFLINE_KEY, { notes: next });
     setSaving(true);
+    setPendingSync(true);
 
     // Do not abort a write that may already have reached the database. Queue
     // snapshots in order so a slower earlier request cannot overwrite newer edits.
     const save = async () => {
       try {
+        // No request while offline: the snapshot waits for the `online` event.
+        if (isOffline()) return;
         const res = await fetchWithAuth('/api/v1/profile/quick-notes', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
@@ -167,7 +207,9 @@ export default function QuickNotesWidget({
         }
         if (sequence === saveSequenceRef.current) {
           revisionRef.current += 1;
+          clearPending(NOTES_OFFLINE_KEY);
           writeNotesCache(next);
+          setPendingSync(false);
           setError(null);
           setJustSaved(true);
           if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
@@ -201,6 +243,18 @@ export default function QuickNotesWidget({
       if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
     };
   }, [load, persist]);
+
+  // Replay an edit queued while offline (here or in a previous session) as soon
+  // as the connection is back.
+  useEffect(() => {
+    const flush = () => {
+      if (!readPending(NOTES_OFFLINE_KEY)) return;
+      void persist(latestRef.current);
+    };
+    if (!isOffline()) flush();
+    window.addEventListener('online', flush);
+    return () => window.removeEventListener('online', flush);
+  }, [persist]);
 
   /** Apply a change locally, then save it after the user stops typing. */
   const update = useCallback(
@@ -349,6 +403,11 @@ export default function QuickNotesWidget({
               </span>
               {saving && (
                 <Loader2 size={10} className="shrink-0 animate-spin text-[var(--accent)]" aria-hidden="true" />
+              )}
+              {!saving && !justSaved && pendingSync && (
+                <span className="shrink-0 font-medium text-[var(--ink-secondary)]">
+                  {online ? 'รอซิงก์' : 'บันทึกในเครื่องแล้ว'}
+                </span>
               )}
               {!saving && justSaved && (
                 <span className="shrink-0 font-medium text-[var(--success)]">บันทึกแล้ว</span>

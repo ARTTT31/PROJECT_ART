@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { fetchWithAuth, fetchWithAuthJson, forgetCsrfToken, refreshSessionToken } from '@/lib/api/fetchWithAuth';
 import { AuthUserSchema } from '@/lib/api/schemas';
 import { readUserCookie } from '@/lib/api/userCookie';
+import { clearOfflineData } from '@/lib/offline/localStore';
 import type { AuthUser, AuthRole } from '@/types';
 import { ZodError } from 'zod';
 
@@ -86,6 +87,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setStatus('anonymous');
       localStorage.removeItem('user');
       localStorage.removeItem('session_id');
+      // Offline mirrors hold this session's data; the next account on this
+      // browser must not inherit them.
+      clearOfflineData();
       // Use router.replace for smooth navigation
       router.replace('/login');
     };
@@ -281,6 +285,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       localStorage.removeItem('session_id');
       localStorage.removeItem('user');
+      clearOfflineData();
       // The CSRF token belongs to the session being ended; the next account in
       // this tab must not send it (see `forgetCsrfToken`).
       forgetCsrfToken();

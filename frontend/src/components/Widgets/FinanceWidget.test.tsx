@@ -35,6 +35,8 @@ const entries = [
 describe('FinanceWidget', () => {
   beforeEach(() => {
     api.fetchWithAuth.mockReset();
+    // The widget now mirrors data offline; each case starts without a mirror.
+    localStorage.clear();
   });
 
   it('loads entries and shows today’s totals', async () => {
@@ -98,6 +100,8 @@ describe('FinanceWidget', () => {
 describe('FinanceWidget safety nets', () => {
   beforeEach(() => {
     api.fetchWithAuth.mockReset();
+    // The widget now mirrors data offline; each case starts without a mirror.
+    localStorage.clear();
   });
 
   const later = new Date();

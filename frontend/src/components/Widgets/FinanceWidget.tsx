@@ -16,6 +16,15 @@ import FinanceSummaryDialog from './FinanceSummaryDialog';
 import FinanceEntryDialog, { type FinanceEntryValues } from './FinanceEntryDialog';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
 import {
+  clearPending,
+  isOffline,
+  readCached,
+  readPending,
+  writeCached,
+  writePending,
+} from '@/lib/offline/localStore';
+import { useOnlineStatus } from '@/lib/offline/useOnlineStatus';
+import {
   FINANCE_CATEGORIES,
   MAX_FINANCE_ENTRIES,
   MAX_FINANCE_LABEL,
@@ -28,6 +37,18 @@ import {
 } from '@/lib/finance/summary';
 
 const money = new Intl.NumberFormat('th-TH', { maximumFractionDigits: 2 });
+
+const FINANCE_OFFLINE_KEY = 'profile/finance';
+
+interface FinanceSnapshot {
+  entries: FinanceEntry[];
+  budget: number | null;
+}
+
+interface FinancePendingWrite extends FinanceSnapshot {
+  /** Deletions made offline, so the reconnect merge does not resurrect them. */
+  deletedIds: string[];
+}
 
 function newId(): string {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) return crypto.randomUUID();
@@ -49,11 +70,19 @@ export default function FinanceWidget({
   width?: number;
   onResize?: (size: number) => void;
 }) {
-  const [entries, setEntries] = useState<FinanceEntry[]>([]);
-  const [budget, setBudget] = useState<number | null>(null);
-  const [loading, setLoading] = useState(true);
+  // Paint the last known list before the network answers — and when it cannot:
+  // the server copy is one source, the offline mirror in localStorage the other.
+  const [initial] = useState(() => ({
+    cached: readCached<FinanceSnapshot>(FINANCE_OFFLINE_KEY),
+    pending: readPending<FinancePendingWrite>(FINANCE_OFFLINE_KEY),
+  }));
+  const [entries, setEntries] = useState<FinanceEntry[]>(initial.cached?.data.entries ?? []);
+  const [budget, setBudget] = useState<number | null>(initial.cached?.data.budget ?? null);
+  const [loading, setLoading] = useState(initial.cached === null);
   const [saving, setSaving] = useState(false);
+  const [pendingSync, setPendingSync] = useState(initial.pending !== null);
   const [error, setError] = useState<string | null>(null);
+  const online = useOnlineStatus();
   const [type, setType] = useState<EntryType>('expense');
   const [label, setLabel] = useState('');
   const [amount, setAmount] = useState('');
@@ -66,29 +95,45 @@ export default function FinanceWidget({
 
   const pendingRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const latestRef = useRef<FinanceEntry[]>([]);
-  const latestBudgetRef = useRef<number | null>(null);
+  const latestRef = useRef<FinanceEntry[]>(initial.cached?.data.entries ?? []);
+  const latestBudgetRef = useRef<number | null>(initial.cached?.data.budget ?? null);
   const saveQueueRef = useRef<Promise<void>>(Promise.resolve());
   const saveSequenceRef = useRef(0);
   const mountedRef = useRef(true);
-  const deletedRef = useRef<Set<string>>(new Set());
+  const deletedRef = useRef<Set<string>>(new Set(initial.pending?.data.deletedIds ?? []));
   const retryPendingRef = useRef(false);
 
   const load = useCallback(async () => {
-    setLoading(true);
     setError(null);
+    // Offline: the cached list already painted, and fetching would only add
+    // failed requests to the console.
+    if (isOffline()) {
+      setLoading(false);
+      return;
+    }
     try {
       const res = await fetchWithAuth('/api/v1/profile/finance');
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = (await res.json()) as { entries?: FinanceEntry[]; budget?: number | null };
       const loaded = Array.isArray(data.entries) ? data.entries : [];
       const loadedBudget = typeof data.budget === 'number' ? data.budget : null;
+      // An edit made offline has not reached the server yet. Replacing the list
+      // with the older server copy would silently drop it before the flush.
+      if (readPending(FINANCE_OFFLINE_KEY)) {
+        setPendingSync(true);
+        return;
+      }
       latestRef.current = loaded;
       latestBudgetRef.current = loadedBudget;
       setEntries(loaded);
       setBudget(loadedBudget);
+      writeCached(FINANCE_OFFLINE_KEY, { entries: loaded, budget: loadedBudget });
     } catch {
-      setError('โหลดรายการไม่สำเร็จ');
+      // A cached list stays on screen; only a first load with nothing stored is
+      // worth the error banner.
+      if (!readCached<FinanceSnapshot>(FINANCE_OFFLINE_KEY)) {
+        setError('โหลดรายการไม่สำเร็จ');
+      }
     } finally {
       setLoading(false);
     }
@@ -124,12 +169,30 @@ export default function FinanceWidget({
   const persist = useCallback(
     (next: FinanceEntry[], nextBudget: number | null) => {
       const sequence = ++saveSequenceRef.current;
-      if (mountedRef.current) setSaving(true);
+      // Mirror the edit before touching the network: if the request cannot go
+      // out, this snapshot is what the next connection replays.
+      writeCached(FINANCE_OFFLINE_KEY, { entries: next, budget: nextBudget });
+      writePending(FINANCE_OFFLINE_KEY, {
+        entries: next,
+        budget: nextBudget,
+        deletedIds: Array.from(deletedRef.current),
+      } satisfies FinancePendingWrite);
+      if (mountedRef.current) {
+        setSaving(true);
+        setPendingSync(true);
+      }
 
       // Queue writes so a slower earlier request cannot overwrite a newer list,
       // and so the payload order matches the order the user made the edits.
       const save = async () => {
         try {
+          if (isOffline()) {
+            // Keep the snapshot pending; the `online` event or the retry timer
+            // below flushes it once the connection is back.
+            retryPendingRef.current = true;
+            if (sequence === saveSequenceRef.current && mountedRef.current) setSaving(false);
+            return;
+          }
           const merged = await mergeWithServer(next);
           const res = await fetchWithAuth('/api/v1/profile/finance', {
             method: 'PUT',
@@ -138,17 +201,24 @@ export default function FinanceWidget({
           });
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           retryPendingRef.current = false;
-          // Everything local (including this session's deletions) is now the
-          // server copy, so tombstones are no longer needed.
-          deletedRef.current.clear();
-          if (sequence === saveSequenceRef.current && mountedRef.current) {
-            setError(null);
-            setSaving(false);
+          // A newer edit may already be queued; it owns the pending snapshot, so
+          // only the last save reconciles the mirror and tombstones.
+          if (sequence === saveSequenceRef.current) {
+            // Everything local (including this session's deletions) is now the
+            // server copy, so tombstones are no longer needed.
+            deletedRef.current.clear();
+            clearPending(FINANCE_OFFLINE_KEY);
+            writeCached(FINANCE_OFFLINE_KEY, { entries: merged, budget: nextBudget });
+            if (mountedRef.current) {
+              setError(null);
+              setPendingSync(false);
+              setSaving(false);
+            }
           }
         } catch {
           retryPendingRef.current = true;
           if (sequence === saveSequenceRef.current && mountedRef.current) {
-            setError('บันทึกไม่สำเร็จ ระบบจะลองใหม่ให้อัตโนมัติ');
+            setError('บันทึกในเครื่องแล้ว ระบบจะซิงก์ให้เมื่อกลับมาออนไลน์');
             setSaving(false);
           }
         }
@@ -180,6 +250,14 @@ export default function FinanceWidget({
       if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
     };
   }, [load, persist]);
+
+  // An edit queued in an earlier session (tab closed while offline) is replayed
+  // as soon as this widget is back on screen with a connection.
+  useEffect(() => {
+    if (!readPending(FINANCE_OFFLINE_KEY)) return;
+    retryPendingRef.current = true;
+    if (!isOffline()) void persist(latestRef.current, latestBudgetRef.current);
+  }, [persist]);
 
   // A failed save keeps a retry pending instead of losing the edit: retry when
   // the connection comes back, and on a slow interval as a fallback.
@@ -597,9 +675,13 @@ export default function FinanceWidget({
         <span>บันทึกอัตโนมัติ</span>
         <span className="inline-flex items-center gap-1">
           {saving && <Loader2 size={10} className="animate-spin" aria-hidden="true" />}
-          {saving
-            ? 'กำลังบันทึก...'
-            : `${money.format(entries.length)}/${money.format(MAX_FINANCE_ENTRIES)}`}
+          {!online
+            ? 'ออฟไลน์ · บันทึกในเครื่องแล้ว'
+            : saving
+              ? 'กำลังบันทึก...'
+              : pendingSync
+                ? 'รอเชื่อมต่อเพื่อซิงก์'
+                : `${money.format(entries.length)}/${money.format(MAX_FINANCE_ENTRIES)}`}
         </span>
       </div>
 

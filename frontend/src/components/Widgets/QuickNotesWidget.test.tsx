@@ -30,6 +30,8 @@ describe('QuickNotesWidget', () => {
   beforeEach(() => {
     api.fetchWithAuth.mockReset();
     resetQuickNotesCache();
+    // The widget now mirrors notes offline; each case starts without a mirror.
+    localStorage.clear();
   });
 
   it('does not show one account\'s cached notes to another account', async () => {

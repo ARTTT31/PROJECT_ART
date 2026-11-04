@@ -4,6 +4,15 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Loader2, Plus, RefreshCw, Trash2, TrendingUp } from 'lucide-react';
 import WidgetSizeToggle from './WidgetSizeToggle';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
+import {
+  clearPending,
+  isOffline,
+  readCached,
+  readPending,
+  writeCached,
+  writePending,
+} from '@/lib/offline/localStore';
+import { useOnlineStatus } from '@/lib/offline/useOnlineStatus';
 
 interface WatchlistSymbol {
   symbol: string;
@@ -21,6 +30,12 @@ interface Quote {
 
 const MAX_SYMBOLS = 12;
 const SYMBOL_PATTERN = /^[A-Z0-9.^=-]{1,24}$/;
+const WATCHLIST_OFFLINE_KEY = 'profile/watchlist';
+
+interface WatchlistSnapshot {
+  symbols: WatchlistSymbol[];
+  quotes: Record<string, Quote>;
+}
 const priceFormat = new Intl.NumberFormat('th-TH', { maximumFractionDigits: 4 });
 
 /**
@@ -36,20 +51,33 @@ export default function WatchlistWidget({
   width?: number;
   onResize?: (size: number) => void;
 }) {
-  const [symbols, setSymbols] = useState<WatchlistSymbol[]>([]);
-  const [quotes, setQuotes] = useState<Record<string, Quote>>({});
-  const [loading, setLoading] = useState(true);
+  // The mirror keeps the list (and its last quotes) readable without a network.
+  const [initial] = useState(() => readCached<WatchlistSnapshot>(WATCHLIST_OFFLINE_KEY));
+  const [symbols, setSymbols] = useState<WatchlistSymbol[]>(initial?.data.symbols ?? []);
+  const [quotes, setQuotes] = useState<Record<string, Quote>>(initial?.data.quotes ?? {});
+  const [loading, setLoading] = useState(initial === null);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pendingSync, setPendingSync] = useState(
+    () => readPending(WATCHLIST_OFFLINE_KEY) !== null,
+  );
   const [draft, setDraft] = useState('');
+  const online = useOnlineStatus();
   // A slow PUT must not land after a newer one and resurrect a removed symbol.
   const saveQueueRef = useRef<Promise<void>>(Promise.resolve());
+  const saveSequenceRef = useRef(0);
+  const symbolsRef = useRef<WatchlistSymbol[]>(initial?.data.symbols ?? []);
+  const quotesRef = useRef<Record<string, Quote>>(initial?.data.quotes ?? {});
 
   const loadQuotes = useCallback(async (list: WatchlistSymbol[]) => {
     if (list.length === 0) {
       setQuotes({});
+      quotesRef.current = {};
+      writeCached(WATCHLIST_OFFLINE_KEY, { symbols: list, quotes: {} });
       return;
     }
+    // Cached prices stay on screen offline; there is nothing to fetch.
+    if (isOffline()) return;
     setRefreshing(true);
     try {
       const codes = list.map((item) => item.symbol).join(',');
@@ -61,25 +89,40 @@ export default function WatchlistWidget({
         map[quote.symbol] = quote;
       });
       setQuotes(map);
+      quotesRef.current = map;
+      writeCached(WATCHLIST_OFFLINE_KEY, { symbols: list, quotes: map });
       setError(null);
     } catch {
-      setError('ดึงราคาล่าสุดไม่สำเร็จ');
+      // Stale prices are better than an empty card; only a missing mirror is
+      // worth an alert.
+      if (!readCached(WATCHLIST_OFFLINE_KEY)) setError('ดึงราคาล่าสุดไม่สำเร็จ');
     } finally {
       setRefreshing(false);
     }
   }, []);
 
   const load = useCallback(async () => {
-    setLoading(true);
+    if (isOffline()) {
+      setLoading(false);
+      return;
+    }
     try {
       const res = await fetchWithAuth('/api/v1/profile/watchlist');
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = (await res.json()) as { symbols?: WatchlistSymbol[] };
       const list = Array.isArray(data.symbols) ? data.symbols : [];
+      // An offline edit has not reached the server yet; replacing the list with
+      // the older server copy would drop it before the flush.
+      if (readPending(WATCHLIST_OFFLINE_KEY)) {
+        setPendingSync(true);
+        return;
+      }
       setSymbols(list);
+      symbolsRef.current = list;
+      writeCached(WATCHLIST_OFFLINE_KEY, { symbols: list, quotes: quotesRef.current });
       await loadQuotes(list);
     } catch {
-      setError('โหลดรายการติดตามไม่สำเร็จ');
+      if (!readCached(WATCHLIST_OFFLINE_KEY)) setError('โหลดรายการติดตามไม่สำเร็จ');
     } finally {
       setLoading(false);
     }
@@ -90,17 +133,30 @@ export default function WatchlistWidget({
   }, [load]);
 
   const persist = useCallback((next: WatchlistSymbol[]) => {
+    const sequence = ++saveSequenceRef.current;
+    // Keep the list locally first; offline it is the only copy until reconnect.
+    writeCached(WATCHLIST_OFFLINE_KEY, { symbols: next, quotes: quotesRef.current });
+    writePending(WATCHLIST_OFFLINE_KEY, { symbols: next });
+    setPendingSync(true);
+
     const save = async () => {
       try {
+        if (isOffline()) return;
         const res = await fetchWithAuth('/api/v1/profile/watchlist', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ symbols: next }),
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        setError(null);
+        if (sequence === saveSequenceRef.current) {
+          clearPending(WATCHLIST_OFFLINE_KEY);
+          setPendingSync(false);
+          setError(null);
+        }
       } catch {
-        setError('บันทึกรายการติดตามไม่สำเร็จ');
+        if (sequence === saveSequenceRef.current) {
+          setError('บันทึกในเครื่องแล้ว ระบบจะซิงก์ให้เมื่อกลับมาออนไลน์');
+        }
       }
     };
 
@@ -111,6 +167,19 @@ export default function WatchlistWidget({
     );
     return queued;
   }, []);
+
+  // Replay a list change queued while offline (here or in a previous session)
+  // once the connection is back, then refresh the prices it needs.
+  useEffect(() => {
+    const flush = () => {
+      if (!readPending(WATCHLIST_OFFLINE_KEY)) return;
+      void persist(symbolsRef.current);
+      void loadQuotes(symbolsRef.current);
+    };
+    if (!isOffline()) flush();
+    window.addEventListener('online', flush);
+    return () => window.removeEventListener('online', flush);
+  }, [persist, loadQuotes]);
 
   const addSymbol = () => {
     const symbol = draft.trim().toUpperCase();
@@ -130,6 +199,7 @@ export default function WatchlistWidget({
     setDraft('');
     setError(null);
     setSymbols(next);
+    symbolsRef.current = next;
     void persist(next);
     void loadQuotes(next);
   };
@@ -137,6 +207,7 @@ export default function WatchlistWidget({
   const removeSymbol = (symbol: string) => {
     const next = symbols.filter((item) => item.symbol !== symbol);
     setSymbols(next);
+    symbolsRef.current = next;
     void persist(next);
   };
 
@@ -286,7 +357,11 @@ export default function WatchlistWidget({
         <span>ราคาจาก Yahoo Finance · อาจล่าช้า</span>
         <span className="inline-flex items-center gap-1">
           {refreshing && <Loader2 size={10} className="animate-spin" aria-hidden="true" />}
-          {symbols.length}/{MAX_SYMBOLS}
+          {pendingSync
+            ? online
+              ? 'รอซิงก์'
+              : 'บันทึกในเครื่องแล้ว'
+            : `${symbols.length}/${MAX_SYMBOLS}`}
         </span>
       </div>
     </section>
