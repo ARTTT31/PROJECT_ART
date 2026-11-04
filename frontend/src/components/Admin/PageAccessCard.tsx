@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Check, Eye, EyeOff, Loader2, Lock, PanelsTopLeft, ShieldCheck } from 'lucide-react';
+import { Check, Eye, EyeOff, Loader2, Lock, PanelsTopLeft } from 'lucide-react';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
+import { showConfirm, showError, showSuccess } from '@/utils/sweetalert';
 import {
   DEFAULT_PAGE_SWITCHES,
   refreshPageSwitches,
@@ -12,15 +13,14 @@ import {
 /**
  * Workspace-wide page switches.
  *
- * This is the single place an admin opens or closes a page for everybody. The
- * admin console and the activity log are admin-only, so they appear here as a
- * fixed badge rather than a switch — closing them would not change anything for
- * a member, and hiding the console from the admin would strand the console.
+ * This is the single place an admin opens or closes a page for everybody. Only
+ * pages that can actually be closed are listed: the index and profile are
+ * required, and the admin console / activity log are admin-only, so a switch
+ * for them would never change what a member sees.
  */
 export default function PageAccessCard() {
   const [pages, setPages] = useState<PageSwitch[]>(DEFAULT_PAGE_SWITCHES);
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState<{ tone: 'ok' | 'error'; text: string } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -42,16 +42,26 @@ export default function PageAccessCard() {
   const toggle = (id: string) => {
     setPages((current) =>
       current.map((page) =>
-        page.id === id && !page.required && !page.adminOnly
-          ? { ...page, enabled: !page.enabled }
-          : page,
+        page.id === id && !page.required ? { ...page, enabled: !page.enabled } : page,
       ),
     );
   };
 
   const save = async () => {
+    const closing = pages.filter((page) => !page.enabled && !page.required && !page.adminOnly);
+    const kept = pages.filter((page) => page.enabled && !page.adminOnly);
+
+    const confirmed = await showConfirm(
+      'บันทึกการเปิด/ปิดหน้า?',
+      closing.length > 0
+        ? `หน้าต่อไปนี้จะถูกซ่อนจากทุกคนใน workspace: ${closing
+            .map((page) => page.label)
+            .join(', ')}`
+        : `ทุกหน้าจะเปิดใช้งาน: ${kept.map((page) => page.label).join(', ')}`,
+    );
+    if (!confirmed.isConfirmed) return;
+
     setSaving(true);
-    setMessage(null);
     try {
       const enabled = pages.filter((page) => page.enabled).map((page) => page.id);
       const res = await fetchWithAuth('/api/v1/system/pages', {
@@ -66,25 +76,26 @@ export default function PageAccessCard() {
       const body = (await res.json()) as { pages?: PageSwitch[] };
       if (Array.isArray(body.pages)) setPages(body.pages);
       await refreshPageSwitches();
-      const closed = pages.filter(
-        (page) => !page.enabled && !page.required && !page.adminOnly,
-      ).length;
-      setMessage({
-        tone: 'ok',
-        text:
-          closed > 0
-            ? `บันทึกแล้ว · ปิด ${closed} หน้า — ผู้ใช้จะเห็นผลเมื่อโหลดหน้าใหม่`
-            : 'บันทึกแล้ว · ทุกหน้าเปิดใช้งาน',
-      });
+
+      showSuccess(
+        'บันทึกแล้ว',
+        closing.length > 0
+          ? `ปิด ${closing.length} หน้า — ผู้ใช้จะเห็นผลเมื่อโหลดหน้าใหม่`
+          : 'ทุกหน้าเปิดใช้งานสำหรับทุกคนใน workspace',
+      );
     } catch (error) {
-      setMessage({
-        tone: 'error',
-        text: error instanceof Error ? error.message : 'บันทึกไม่สำเร็จ',
-      });
+      showError(
+        'บันทึกไม่สำเร็จ',
+        error instanceof Error ? error.message : 'กรุณาลองอีกครั้งภายหลัง',
+      );
     } finally {
       setSaving(false);
     }
   };
+
+  // Admin-only pages are always open and invisible to members, so they are not
+  // part of this list at all.
+  const visiblePages = pages.filter((page) => !page.adminOnly);
 
   return (
     <section className="overflow-hidden rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
@@ -119,7 +130,7 @@ export default function PageAccessCard() {
       </div>
 
       <div className="divide-y divide-[var(--hairline-soft)]">
-        {pages.map((page) => {
+        {visiblePages.map((page) => {
           const locked = page.required;
           return (
             <div key={page.id} className="flex items-center gap-3 px-5 py-3 sm:px-6">
@@ -140,21 +151,15 @@ export default function PageAccessCard() {
               <div className="min-w-0 flex-1">
                 <p className="text-[13px] font-semibold text-[var(--ink)]">{page.label}</p>
                 <p className="text-[11.5px] text-[var(--ink-tertiary)]">
-                  {page.adminOnly
-                    ? 'เห็นเฉพาะบัญชีแอดมิน — ปิดไม่ได้'
-                    : locked
-                      ? 'เปิดถาวร — ปิดไม่ได้เพื่อไม่ให้ผู้ใช้ติดค้าง'
-                      : page.enabled
-                        ? 'ทุกคนที่ได้รับสิทธิ์เห็นหน้านี้'
-                        : 'ซ่อนจากทุกคนใน workspace'}
+                  {locked
+                    ? 'เปิดถาวร — ปิดไม่ได้เพื่อไม่ให้ผู้ใช้ติดค้าง'
+                    : page.enabled
+                      ? 'ทุกคนที่ได้รับสิทธิ์เห็นหน้านี้'
+                      : 'ซ่อนจากทุกคนใน workspace'}
                 </p>
               </div>
 
-              {page.adminOnly ? (
-                <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[var(--accent-soft)] px-2.5 py-1 text-[10.5px] font-bold text-[var(--accent-text)]">
-                  <ShieldCheck size={11} aria-hidden="true" /> เฉพาะแอดมิน
-                </span>
-              ) : locked ? (
+              {locked ? (
                 <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[var(--surface-grouped-2)] px-2.5 py-1 text-[10.5px] font-bold text-[var(--ink-tertiary)]">
                   <Lock size={11} aria-hidden="true" /> จำเป็น
                 </span>
@@ -182,19 +187,6 @@ export default function PageAccessCard() {
           );
         })}
       </div>
-
-      {message && (
-        <div
-          role="status"
-          className={`border-t px-5 py-2.5 text-[12px] sm:px-6 ${
-            message.tone === 'ok'
-              ? 'border-[var(--success-soft)] bg-[var(--success-soft)] text-[var(--success-ink)]'
-              : 'border-[var(--danger-soft)] bg-[var(--danger-soft)] text-[var(--danger-ink)]'
-          }`}
-        >
-          {message.text}
-        </div>
-      )}
     </section>
   );
 }

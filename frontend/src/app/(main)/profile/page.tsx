@@ -16,6 +16,9 @@ import {
   AtSign,
   ShieldAlert,
   Sliders,
+  LayoutGrid,
+  Palette,
+  Building2,
   Camera,
   Loader2,
 } from 'lucide-react';
@@ -43,6 +46,22 @@ import type { AuthUser } from '@/types';
 // ─────────────────────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────────────────────
+
+/** Group label inside the preferences tab, so every card has a home. */
+function PreferenceHeading({
+  icon,
+  children,
+}: {
+  icon: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <h3 className="lg:col-span-2 mt-1 flex items-center gap-1.5 border-b border-[var(--hairline-soft)] pb-1.5 text-[11px] font-bold uppercase tracking-wider text-[var(--ink-muted)]">
+      {icon}
+      {children}
+    </h3>
+  );
+}
 
 /** Extract readable error message from API response body, handling Pydantic arrays */
 function apiMessage(data: unknown, fallback: string): string {
@@ -845,6 +864,10 @@ export default function ProfilePage() {
             transition={{ duration: 0.16, ease: 'easeOut' }}
             className="grid grid-cols-1 gap-5 lg:grid-cols-2 items-start min-h-[480px]"
           >
+            <PreferenceHeading icon={<LayoutGrid size={13} aria-hidden="true" />}>
+              เมนูและทางลัด
+            </PreferenceHeading>
+
             {/* Which pages exist in the sidebar is an admin decision: hiding
                 this card keeps ordinary users from rearranging (or hiding)
                 pages while the workspace is still being built. */}
@@ -865,6 +888,18 @@ export default function ProfilePage() {
               />
             </div>
 
+            <PreferenceHeading icon={<Palette size={13} aria-hidden="true" />}>
+              รูปลักษณ์
+            </PreferenceHeading>
+
+            <div className="lg:col-span-2">
+              <ThemeCard />
+            </div>
+
+            <PreferenceHeading icon={<Building2 size={13} aria-hidden="true" />}>
+              ข้อมูล workspace
+            </PreferenceHeading>
+
             <div className="lg:col-span-2">
               <BrandingCard isAdmin={isAdmin} />
             </div>
@@ -873,10 +908,6 @@ export default function ProfilePage() {
                 every member can read the calendar, only an admin can change it. */}
             <div className="lg:col-span-2">
               <CompanyHolidayCard canEdit={isAdmin} />
-            </div>
-
-            <div className="lg:col-span-2">
-              <ThemeCard />
             </div>
           </motion.div>
         )}
