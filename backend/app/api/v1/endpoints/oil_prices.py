@@ -30,8 +30,8 @@ from app.services import weather_cache
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
-# Unauthenticated by design so the widget renders on the login screen, but that
-# makes it an open relay to Bangchak. Rate limiting bounds the abuse.
+# Authenticated proxy to the Bangchak retail fuel API. Rate limiting and
+# session gating prevent open-relay abuse of upstream services.
 _GENERAL_LIMIT = f"{settings.RATE_LIMIT_GENERAL_PER_MINUTE}/minute"
 
 BANGCHAK_OIL_URL = "https://oil-price.bangchak.co.th/ApiOilPrice2/en"

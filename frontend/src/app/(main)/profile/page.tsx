@@ -122,7 +122,8 @@ export default function ProfilePage() {
   const router = useRouter();
   const { user: authUser, updateUser, logout } = useAuth();
   const { t } = useI18n();
-  const [user, setUser] = useState<AuthUser | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(authUser);
+  const currentUser = user || authUser;
   const [activeTab, setActiveTab] = useState<TabKey>('profile');
   const [accountSection, setAccountSection] = useState<AccountSection>('account');
   const [preferenceSection, setPreferenceSection] = useState<PreferenceSection>('menu');
@@ -132,8 +133,8 @@ export default function ProfilePage() {
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
   // Personal Info Form
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
+  const [name, setName] = useState(authUser?.name || '');
+  const [email, setEmail] = useState(authUser?.email || '');
   const [isSavingProfile, setIsSavingProfile] = useState(false);
 
   // Password & Security Form
@@ -147,7 +148,9 @@ export default function ProfilePage() {
   const [isChangingPassword, setIsChangingPassword] = useState(false);
 
   // Quick Links
-  const [quickLinks, setQuickLinks] = useState<QuickLink[]>([]);
+  const [quickLinks, setQuickLinks] = useState<QuickLink[]>(() =>
+    parseQuickLinks(authUser?.quick_links)
+  );
   const [quickLinkDialogOpen, setQuickLinkDialogOpen] = useState(false);
   const [editingQuickLink, setEditingQuickLink] = useState<QuickLink | null>(null);
 
@@ -158,7 +161,10 @@ export default function ProfilePage() {
     return parseMainMenuConfig(saved);
   });
 
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = currentUser?.role === 'admin';
+  const filteredMenuItems = mainMenuConfig.filter((item) =>
+    canAccessPage(currentUser, item.id)
+  );
 
   // Sync the tab with the URL so a shared `?tab=preferences` link opens the
   // right section. Older `?tab=admin` links simply fall back to the profile tab.
@@ -245,11 +251,16 @@ export default function ProfilePage() {
   };
 
   const moveMainMenuItem = (id: string, dir: 'up' | 'down') => {
+    const visibleIdx = filteredMenuItems.findIndex((item) => item.id === id);
+    if (visibleIdx === -1) return;
+    const targetVisibleIdx = dir === 'up' ? visibleIdx - 1 : visibleIdx + 1;
+    if (targetVisibleIdx < 0 || targetVisibleIdx >= filteredMenuItems.length) return;
+    const targetId = filteredMenuItems[targetVisibleIdx].id;
+
     const idx = mainMenuConfig.findIndex((item) => item.id === id);
-    if (idx === -1) return;
+    const target = mainMenuConfig.findIndex((item) => item.id === targetId);
+    if (idx === -1 || target === -1) return;
     const newList = [...mainMenuConfig];
-    const target = dir === 'up' ? idx - 1 : idx + 1;
-    if (target < 0 || target >= newList.length) return;
     [newList[idx], newList[target]] = [newList[target], newList[idx]];
     saveMainMenu(newList);
   };
@@ -328,10 +339,8 @@ export default function ProfilePage() {
         const profRes = await fetchWithAuth('/api/v1/profile/me');
         if (profRes.ok) {
           const fresh = await profRes.json();
-          const updatedUser: AuthUser = { ...user, avatar: fresh.avatar };
-          localStorage.setItem('user', JSON.stringify(updatedUser));
-          setUser(updatedUser);
           updateUser({ avatar: fresh.avatar });
+          setUser((prev) => (prev ? { ...prev, avatar: fresh.avatar } : null));
           window.dispatchEvent(new Event('user-profile-updated'));
         }
         showSuccess('สำเร็จ', data.message || 'อัปเดตรูปโปรไฟล์เรียบร้อยแล้ว!');
@@ -360,10 +369,8 @@ export default function ProfilePage() {
       });
       const data = await response.json();
       if (response.ok) {
-        const updatedUser: AuthUser = { ...user, name, email };
-        localStorage.setItem('user', JSON.stringify(updatedUser));
-        setUser(updatedUser);
         updateUser({ name, email });
+        setUser((prev) => (prev ? { ...prev, name, email } : null));
         window.dispatchEvent(new Event('user-profile-updated'));
         showSuccess('สำเร็จ', data.message || 'อัปเดตข้อมูลโปรไฟล์เรียบร้อยแล้ว!');
       } else {
@@ -513,7 +520,7 @@ export default function ProfilePage() {
 
   // ── Loading State ─────────────────────────────────────────────
 
-  if (!user) {
+  if (!currentUser) {
     return (
       <div className="flex min-h-[70vh] items-center justify-center">
         <div className="flex flex-col items-center gap-3">
@@ -525,10 +532,6 @@ export default function ProfilePage() {
   }
 
   const strengthMeta = getStrengthLabel();
-
-  // One shared rule for the whole app — see utils/accessiblePages.ts and the
-  // server-side twin in backend/app/api/dependencies.py.
-  const filteredMenuItems = mainMenuConfig.filter((item) => canAccessPage(user, item.id));
 
   // ── Render ────────────────────────────────────────────────────
 
@@ -551,12 +554,12 @@ export default function ProfilePage() {
                 aria-label="อัปโหลดรูปโปรไฟล์"
               />
 
-              {user.avatar ? (
+              {currentUser.avatar ? (
                 <div className="relative h-16 w-16 sm:h-20 sm:w-20 overflow-hidden rounded-[22px] shadow-md ring-4 ring-black/[0.03]">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={user.avatar}
-                    alt={user.name || 'โปรไฟล์'}
+                    src={currentUser.avatar}
+                    alt={currentUser.name || 'โปรไฟล์'}
                     className="h-full w-full object-cover"
                   />
                   {isUploadingAvatar && (
@@ -570,7 +573,7 @@ export default function ProfilePage() {
                   {isUploadingAvatar ? (
                     <Loader2 size={24} className="animate-spin text-white" />
                   ) : (
-                    user.name?.charAt(0).toUpperCase() || 'U'
+                    currentUser.name?.charAt(0).toUpperCase() || 'U'
                   )}
                 </div>
               )}
@@ -591,7 +594,7 @@ export default function ProfilePage() {
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 <h1 className="text-xl sm:text-2xl font-black tracking-tight text-[var(--ink)] truncate">
-                  {user.name || 'ผู้ใช้งาน'}
+                  {currentUser.name || 'ผู้ใช้งาน'}
                 </h1>
                 {isAdmin ? (
                   <span className="inline-flex items-center gap-1 rounded-full bg-purple-50 px-2.5 py-0.5 text-[11px] font-bold text-purple-700 ring-1 ring-purple-600/20">
@@ -607,12 +610,12 @@ export default function ProfilePage() {
               <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12.5px] text-[var(--ink-muted)]">
                 <span className="inline-flex items-center gap-1">
                   <Mail size={12} className="text-[var(--ink-tertiary)]" />
-                  {user.email || 'ไม่ได้ระบุอีเมล'}
+                  {currentUser.email || 'ไม่ได้ระบุอีเมล'}
                 </span>
-                {user.username && (
+                {currentUser.username && (
                   <span className="inline-flex items-center gap-1">
                     <AtSign size={12} className="text-[var(--ink-tertiary)]" />
-                    {user.username}
+                    {currentUser.username}
                   </span>
                 )}
               </div>

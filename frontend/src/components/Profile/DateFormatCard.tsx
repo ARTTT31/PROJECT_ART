@@ -85,13 +85,13 @@ export function DateFormatCard() {
     >
       <div className="space-y-3">
         <Segmented
-          label="ปีที่แสดง"
+          label={t('card.dateTime.era')}
           value={preferences.era}
           options={ERA_OPTIONS}
           onChange={(next) => savePreferences({ era: next })}
         />
         <Segmented
-          label="ภาษา"
+          label={t('card.dateTime.lang')}
           value={preferences.locale}
           options={LOCALE_OPTIONS}
           onChange={(next) => savePreferences({ locale: next })}
@@ -99,7 +99,7 @@ export function DateFormatCard() {
 
         <div className="rounded-[14px] bg-[var(--surface-subtle)] px-3 py-2.5 ring-1 ring-[var(--hairline)]">
           <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--ink-tertiary)]">
-            ตัวอย่าง
+            {t('card.dateTime.preview')}
           </p>
           <p className="mt-0.5 text-[13px] font-semibold text-[var(--ink)]">
             {preview || '—'}
@@ -107,7 +107,7 @@ export function DateFormatCard() {
         </div>
 
         <p className="px-1 text-[10.5px] text-[var(--ink-tertiary)]">
-          ใช้กับวิตเจ็ตวันหยุดและวันที่ในระบบ — บันทึกทันทีที่เลือก
+          {t('card.dateTime.hint')}
         </p>
       </div>
     </SectionCard>

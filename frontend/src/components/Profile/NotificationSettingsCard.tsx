@@ -56,9 +56,9 @@ export function NotificationSettingsCard() {
             <Volume2 size={18} aria-hidden="true" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-[13.5px] font-bold tracking-tight text-[var(--ink)]">เสียงกระดิ่ง</p>
+            <p className="text-[13.5px] font-bold tracking-tight text-[var(--ink)]">{t('card.notifications.bell.title')}</p>
             <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">
-              เล่นเสียงสั้น ๆ เมื่อมีการแจ้งเตือนใหม่
+              {t('card.notifications.bell.desc')}
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-2">
@@ -68,12 +68,12 @@ export function NotificationSettingsCard() {
                 onClick={() => playBellSound()}
                 className="rounded-full bg-[var(--surface-grouped)] px-2.5 py-1 text-[10.5px] font-semibold text-[var(--ink-muted)] transition-colors hover:bg-[var(--surface-chip)] hover:text-[var(--ink)]"
               >
-                ทดลองเสียง
+                {t('card.notifications.bell.test')}
               </button>
             )}
             <PreferenceSwitch
               checked={preferences.bellSound}
-              label="เสียงกระดิ่ง"
+              label={t('card.notifications.bell.title')}
               onChange={(next) => savePreferences({ bellSound: next })}
             />
           </div>
@@ -85,15 +85,15 @@ export function NotificationSettingsCard() {
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-[13.5px] font-bold tracking-tight text-[var(--ink)]">
-              วันหยุดและวันสำคัญ
+              {t('card.notifications.holidays.title')}
             </p>
             <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">
-              เตือนล่วงหน้า 7 วันเมื่อใกล้วันหยุด
+              {t('card.notifications.holidays.desc')}
             </p>
           </div>
           <PreferenceSwitch
             checked={preferences.holidayAlerts}
-            label="แจ้งเตือนวันหยุด"
+            label={t('card.notifications.holidays.title')}
             onChange={(next) => savePreferences({ holidayAlerts: next })}
           />
         </div>
@@ -104,21 +104,21 @@ export function NotificationSettingsCard() {
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-[13.5px] font-bold tracking-tight text-[var(--ink)]">
-              เตือนธุระและวันลาส่วนตัว
+              {t('card.notifications.reminders.title')}
             </p>
             <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">
-              แสดงรายการ “เตือนของฉัน” ในวิตเจ็ตวันหยุด
+              {t('card.notifications.reminders.desc')}
             </p>
           </div>
           <PreferenceSwitch
             checked={preferences.personalReminderAlerts}
-            label="เตือนธุระและวันลาส่วนตัว"
+            label={t('card.notifications.reminders.title')}
             onChange={(next) => savePreferences({ personalReminderAlerts: next })}
           />
         </div>
 
         <p className="px-1 pt-1 text-[10.5px] text-[var(--ink-tertiary)]">
-          บันทึกทันทีที่สลับ — มีผลกับเบราว์เซอร์นี้
+          {t('card.notifications.hint')}
         </p>
       </div>
     </SectionCard>

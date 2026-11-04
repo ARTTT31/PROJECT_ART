@@ -30,6 +30,7 @@ import {
   Download,
 } from 'lucide-react';
 import { datedFilename, downloadCsv, toCsv } from '@/lib/csv';
+import { parseAccessiblePages } from '@/utils/accessiblePages';
 
 // Define a simplified User type for admin management
 interface AdminUser {
@@ -437,15 +438,7 @@ export default function UserManagement() {
     setEditingUser(user);
     setEditRole(user.role);
     setEditIsActive(user.is_active);
-    try {
-      setEditPages(
-        user.accessible_pages
-          ? JSON.parse(user.accessible_pages)
-          : AVAILABLE_PAGES.map((p) => p.id),
-      );
-    } catch {
-      setEditPages(AVAILABLE_PAGES.map((p) => p.id));
-    }
+    setEditPages(parseAccessiblePages(user.accessible_pages));
   };
 
   const closeEdit = () => {
