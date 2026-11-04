@@ -19,14 +19,28 @@ interface HolidayRow {
 
 const CURRENT_YEAR = new Date().getFullYear();
 
+function formatThaiDate(value: string): string {
+  const [year, month, day] = value.split('-').map(Number);
+  if (!year || !month || !day) return value;
+  return new Intl.DateTimeFormat('th-TH', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  }).format(new Date(year, month - 1, day));
+}
+
 /**
  * Company holiday calendar, imported from the PDF HR publishes.
+ *
+ * It lives in general settings rather than the admin console: every member can
+ * read the calendar, and only an admin gets the import and edit controls
+ * (`canEdit`), matching the admin-only write endpoints.
  *
  * Nothing is saved until the admin confirms the preview: PDF extraction is
  * best-effort, so the draft is editable and a bad parse cannot silently replace
  * a calendar that is already in use.
  */
-export default function CompanyHolidayCard() {
+export default function CompanyHolidayCard({ canEdit = true }: { canEdit?: boolean }) {
   const [year, setYear] = useState(CURRENT_YEAR);
   const [rows, setRows] = useState<HolidayRow[]>([]);
   const [savedYears, setSavedYears] = useState<Record<number, number>>({});
@@ -163,7 +177,9 @@ export default function CompanyHolidayCard() {
               วันหยุดบริษัท
             </h2>
             <p className="mt-0.5 text-[12px] leading-snug text-[var(--ink-muted)]">
-              อัปโหลด PDF ประกาศวันหยุดของบริษัท ระบบจะอ่านวันที่ให้ตรวจสอบก่อนบันทึก
+              {canEdit
+                ? 'อัปโหลด PDF ประกาศวันหยุดของบริษัท ระบบจะอ่านวันที่ให้ตรวจสอบก่อนบันทึก'
+                : 'ปฏิทินวันหยุดที่บริษัทประกาศ — ดูได้ทุกคน แก้ไขได้เฉพาะแอดมิน'}
             </p>
           </div>
         </div>
@@ -177,74 +193,77 @@ export default function CompanyHolidayCard() {
             value={year}
             min={2000}
             max={2200}
+            disabled={!canEdit}
             onChange={(event) => setYear(Number(event.target.value) || CURRENT_YEAR)}
-            className="w-24 rounded-full border border-[var(--hairline)] bg-[var(--surface)] px-3 py-1.5 text-[12.5px] font-semibold text-[var(--ink)] outline-hidden focus:border-[var(--accent)]"
+            className="w-24 rounded-full border border-[var(--hairline)] bg-[var(--surface)] px-3 py-1.5 text-[12.5px] font-semibold text-[var(--ink)] outline-hidden focus:border-[var(--accent)] disabled:opacity-60"
           />
         </div>
       </div>
 
       <div className="space-y-3 p-5 sm:p-6">
-        <div className="flex flex-wrap items-center gap-2">
-          <input
-            ref={fileRef}
-            type="file"
-            accept="application/pdf,.pdf"
-            className="sr-only"
-            id="holiday-pdf"
-            onChange={(event) => {
-              const file = event.target.files?.[0];
-              if (file) void importPdf(file);
-            }}
-          />
-          <label
-            htmlFor="holiday-pdf"
-            className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-[var(--accent)] px-4 py-2 text-[12.5px] font-bold text-white shadow-xs transition-all hover:bg-[var(--accent-hover)] ${
-              importing ? 'pointer-events-none opacity-60' : ''
-            }`}
-          >
-            {importing ? (
-              <Loader2 size={14} className="animate-spin" aria-hidden="true" />
-            ) : (
-              <Upload size={14} aria-hidden="true" />
-            )}
-            {importing ? 'กำลังอ่าน PDF…' : 'อัปโหลด PDF วันหยุด'}
-          </label>
+        {canEdit && (
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              ref={fileRef}
+              type="file"
+              accept="application/pdf,.pdf"
+              className="sr-only"
+              id="holiday-pdf"
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                if (file) void importPdf(file);
+              }}
+            />
+            <label
+              htmlFor="holiday-pdf"
+              className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-[var(--accent)] px-4 py-2 text-[12.5px] font-bold text-white shadow-xs transition-all hover:bg-[var(--accent-hover)] ${
+                importing ? 'pointer-events-none opacity-60' : ''
+              }`}
+            >
+              {importing ? (
+                <Loader2 size={14} className="animate-spin" aria-hidden="true" />
+              ) : (
+                <Upload size={14} aria-hidden="true" />
+              )}
+              {importing ? 'กำลังอ่าน PDF…' : 'อัปโหลด PDF วันหยุด'}
+            </label>
 
-          <button
-            type="button"
-            onClick={() =>
-              setRows((current) => [...current, { date: `${year}-01-01`, title: '' }])
-            }
-            className="inline-flex items-center gap-1.5 rounded-full bg-[var(--surface-grouped)] px-4 py-2 text-[12.5px] font-semibold text-[var(--ink)] transition-colors hover:bg-[var(--surface-chip)]"
-          >
-            <CalendarPlus size={14} aria-hidden="true" /> เพิ่มวันเอง
-          </button>
-
-          {savedYears[year] ? (
             <button
               type="button"
-              onClick={() => void removeYear()}
-              disabled={saving}
-              className="inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-[12.5px] font-semibold text-[var(--danger)] transition-colors hover:bg-[var(--danger-soft)] disabled:opacity-50"
+              onClick={() =>
+                setRows((current) => [...current, { date: `${year}-01-01`, title: '' }])
+              }
+              className="inline-flex items-center gap-1.5 rounded-full bg-[var(--surface-grouped)] px-4 py-2 text-[12.5px] font-semibold text-[var(--ink)] transition-colors hover:bg-[var(--surface-chip)]"
             >
-              <Trash2 size={14} aria-hidden="true" /> ลบปฏิทินปีนี้
+              <CalendarPlus size={14} aria-hidden="true" /> เพิ่มวันเอง
             </button>
-          ) : null}
 
-          <button
-            type="button"
-            onClick={() => void save()}
-            disabled={saving || rows.length === 0}
-            className="ml-auto inline-flex items-center gap-1.5 rounded-full bg-[var(--success)] px-4 py-2 text-[12.5px] font-bold text-white shadow-xs transition-all hover:opacity-90 disabled:opacity-40"
-          >
-            {saving ? (
-              <Loader2 size={14} className="animate-spin" aria-hidden="true" />
-            ) : (
-              <Check size={14} aria-hidden="true" />
-            )}
-            บันทึกปฏิทิน
-          </button>
-        </div>
+            {savedYears[year] ? (
+              <button
+                type="button"
+                onClick={() => void removeYear()}
+                disabled={saving}
+                className="inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-[12.5px] font-semibold text-[var(--danger)] transition-colors hover:bg-[var(--danger-soft)] disabled:opacity-50"
+              >
+                <Trash2 size={14} aria-hidden="true" /> ลบปฏิทินปีนี้
+              </button>
+            ) : null}
+
+            <button
+              type="button"
+              onClick={() => void save()}
+              disabled={saving || rows.length === 0}
+              className="ml-auto inline-flex items-center gap-1.5 rounded-full bg-[var(--success)] px-4 py-2 text-[12.5px] font-bold text-white shadow-xs transition-all hover:opacity-90 disabled:opacity-40"
+            >
+              {saving ? (
+                <Loader2 size={14} className="animate-spin" aria-hidden="true" />
+              ) : (
+                <Check size={14} aria-hidden="true" />
+              )}
+              บันทึกปฏิทิน
+            </button>
+          </div>
+        )}
 
         {message && (
           <div
@@ -269,10 +288,12 @@ export default function CompanyHolidayCard() {
         )}
 
         {rows.length === 0 ? (
-          <p className="rounded-[12px] border border-dashed border-[var(--hairline)] bg-[var(--surface-subtle)] px-4 py-8 text-center text-[12.5px] text-[var(--ink-tertiary)]">
-            ยังไม่มีปฏิทินปี {year} — อัปโหลด PDF หรือเพิ่มวันเอง แล้วกดบันทึก
+          <p className="rounded-[12px] border border-dashed border-[var(--hairline)] bg-[var(--surface-subtle)] px-4 py-6 text-center text-[12.5px] text-[var(--ink-tertiary)]">
+            {canEdit
+              ? `ยังไม่มีปฏิทินปี ${year} — อัปโหลด PDF หรือเพิ่มวันเอง แล้วกดบันทึก`
+              : `ยังไม่มีปฏิทินวันหยุดปี ${year}`}
           </p>
-        ) : (
+        ) : canEdit ? (
           <div className="overflow-hidden rounded-[12px] border border-[var(--hairline)]">
             <table className="w-full text-left text-[12.5px]">
               <thead className="bg-[var(--surface-subtle)] text-[11px] font-bold uppercase tracking-wider text-[var(--ink-muted)]">
@@ -330,6 +351,22 @@ export default function CompanyHolidayCard() {
                 ))}
               </tbody>
             </table>
+          </div>
+        ) : (
+          <div className="max-h-72 divide-y divide-[var(--hairline-soft)] overflow-y-auto rounded-[12px] border border-[var(--hairline)]">
+            {rows.map((row, index) => (
+              <div
+                key={`${row.date}-${index}`}
+                className="flex items-center justify-between gap-3 px-3 py-2"
+              >
+                <span className="min-w-0 truncate text-[12.5px] font-semibold text-[var(--ink)]">
+                  {row.title}
+                </span>
+                <span className="shrink-0 text-[11.5px] text-[var(--ink-muted)]">
+                  {formatThaiDate(row.date)}
+                </span>
+              </div>
+            ))}
           </div>
         )}
       </div>

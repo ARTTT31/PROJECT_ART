@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Check, Eye, EyeOff, Loader2, Lock, PanelsTopLeft } from 'lucide-react';
+import { Check, Eye, EyeOff, Loader2, Lock, PanelsTopLeft, ShieldCheck } from 'lucide-react';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
 import {
   DEFAULT_PAGE_SWITCHES,
@@ -12,10 +12,10 @@ import {
 /**
  * Workspace-wide page switches.
  *
- * This is the single place an admin opens or closes a page for everybody. It
- * replaces the per-account page checklist that used to live inside the create
- * and edit dialogs; per-account permissions still exist in the database and are
- * still enforced, but they are no longer edited from this screen.
+ * This is the single place an admin opens or closes a page for everybody. The
+ * admin console and the activity log are admin-only, so they appear here as a
+ * fixed badge rather than a switch — closing them would not change anything for
+ * a member, and hiding the console from the admin would strand the console.
  */
 export default function PageAccessCard() {
   const [pages, setPages] = useState<PageSwitch[]>(DEFAULT_PAGE_SWITCHES);
@@ -42,7 +42,9 @@ export default function PageAccessCard() {
   const toggle = (id: string) => {
     setPages((current) =>
       current.map((page) =>
-        page.id === id && !page.required ? { ...page, enabled: !page.enabled } : page,
+        page.id === id && !page.required && !page.adminOnly
+          ? { ...page, enabled: !page.enabled }
+          : page,
       ),
     );
   };
@@ -64,7 +66,9 @@ export default function PageAccessCard() {
       const body = (await res.json()) as { pages?: PageSwitch[] };
       if (Array.isArray(body.pages)) setPages(body.pages);
       await refreshPageSwitches();
-      const closed = pages.filter((page) => !page.enabled && !page.required).length;
+      const closed = pages.filter(
+        (page) => !page.enabled && !page.required && !page.adminOnly,
+      ).length;
       setMessage({
         tone: 'ok',
         text:
@@ -136,32 +140,41 @@ export default function PageAccessCard() {
               <div className="min-w-0 flex-1">
                 <p className="text-[13px] font-semibold text-[var(--ink)]">{page.label}</p>
                 <p className="text-[11.5px] text-[var(--ink-tertiary)]">
-                  {locked
-                    ? 'เปิดถาวร — ปิดไม่ได้เพื่อไม่ให้ผู้ใช้ติดค้าง'
-                    : page.enabled
-                      ? 'ทุกคนที่ได้รับสิทธิ์เห็นหน้านี้'
-                      : 'ซ่อนจากทุกคนใน workspace'}
+                  {page.adminOnly
+                    ? 'เห็นเฉพาะบัญชีแอดมิน — ปิดไม่ได้'
+                    : locked
+                      ? 'เปิดถาวร — ปิดไม่ได้เพื่อไม่ให้ผู้ใช้ติดค้าง'
+                      : page.enabled
+                        ? 'ทุกคนที่ได้รับสิทธิ์เห็นหน้านี้'
+                        : 'ซ่อนจากทุกคนใน workspace'}
                 </p>
               </div>
 
-              {locked ? (
-                <span className="inline-flex items-center gap-1 rounded-full bg-[var(--surface-grouped-2)] px-2.5 py-1 text-[10.5px] font-bold text-[var(--ink-tertiary)]">
+              {page.adminOnly ? (
+                <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[var(--accent-soft)] px-2.5 py-1 text-[10.5px] font-bold text-[var(--accent-text)]">
+                  <ShieldCheck size={11} aria-hidden="true" /> เฉพาะแอดมิน
+                </span>
+              ) : locked ? (
+                <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[var(--surface-grouped-2)] px-2.5 py-1 text-[10.5px] font-bold text-[var(--ink-tertiary)]">
                   <Lock size={11} aria-hidden="true" /> จำเป็น
                 </span>
               ) : (
+                // `small-control` opts out of the global button min-height rule in
+                // globals.css, which would otherwise stretch the track into a circle.
                 <button
                   type="button"
+                  role="switch"
+                  aria-checked={page.enabled}
                   onClick={() => toggle(page.id)}
-                  aria-pressed={page.enabled}
                   aria-label={`${page.enabled ? 'ปิด' : 'เปิด'}หน้า ${page.label}`}
-                  className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
+                  className={`small-control relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition-colors duration-200 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 ${
                     page.enabled ? 'bg-[var(--success)]' : 'bg-[var(--surface-chip-2)]'
                   }`}
                 >
                   <span
-                    className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-xs transition-all ${
-                      page.enabled ? 'left-[22px]' : 'left-0.5'
-                    }`}
+                    aria-hidden="true"
+                    className="pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,0.25)] transition-transform duration-200 ease-in-out"
+                    style={{ transform: page.enabled ? 'translateX(22px)' : 'translateX(2px)' }}
                   />
                 </button>
               )}

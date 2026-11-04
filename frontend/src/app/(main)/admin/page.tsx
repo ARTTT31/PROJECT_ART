@@ -14,7 +14,6 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
 import { RegistrationPolicyCard } from '@/components/Admin/RegistrationPolicyCard';
-import CompanyHolidayCard from '@/components/Admin/CompanyHolidayCard';
 import PageAccessCard from '@/components/Admin/PageAccessCard';
 import UserManagement from '@/components/Admin/UserManagement';
 
@@ -169,9 +168,6 @@ export default function AdminPage() {
 
       {/* ── Sign-up policy ───────────────────────────────────────── */}
       <RegistrationPolicyCard />
-
-      {/* ── Company holiday calendar ─────────────────────────────── */}
-      <CompanyHolidayCard />
 
       {/* ── People ───────────────────────────────────────────────── */}
       <div id="approval-queue" className="scroll-mt-4">

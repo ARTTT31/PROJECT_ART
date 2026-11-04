@@ -29,6 +29,7 @@ import { MainMenuCard } from '@/components/Profile/MainMenuCard';
 import { QuickLinksCard } from '@/components/Profile/QuickLinksCard';
 import { QuickLinkDialog, type QuickLinkFormValues } from '@/components/Profile/QuickLinkDialog';
 import { BrandingCard } from '@/components/Profile/BrandingCard';
+import CompanyHolidayCard from '@/components/Profile/CompanyHolidayCard';
 import { ThemeCard } from '@/components/Profile/ThemeCard';
 import { type QuickLink, parseQuickLinks, serializeQuickLinks } from '@/utils/quickLinks';
 import {
@@ -866,6 +867,12 @@ export default function ProfilePage() {
 
             <div className="lg:col-span-2">
               <BrandingCard isAdmin={isAdmin} />
+            </div>
+
+            {/* Company holidays live in general settings, not the admin console:
+                every member can read the calendar, only an admin can change it. */}
+            <div className="lg:col-span-2">
+              <CompanyHolidayCard canEdit={isAdmin} />
             </div>
 
             <div className="lg:col-span-2">

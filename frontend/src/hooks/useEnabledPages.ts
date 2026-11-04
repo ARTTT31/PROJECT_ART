@@ -16,16 +16,37 @@ export interface PageSwitch {
   id: string;
   label: string;
   required: boolean;
+  /** Admin console / activity log: only an admin can open them. */
+  adminOnly?: boolean;
   enabled: boolean;
 }
 
 export const DEFAULT_PAGE_SWITCHES: PageSwitch[] = [
   { id: 'dashboard', label: 'หน้าหลัก', required: true, enabled: true },
   { id: 'camera', label: 'กล้องวงจรปิด', required: false, enabled: true },
-  { id: 'admin', label: 'จัดการระบบ', required: false, enabled: true },
-  { id: 'audit', label: 'บันทึกกิจกรรม', required: false, enabled: true },
+  { id: 'admin', label: 'จัดการระบบ', required: false, adminOnly: true, enabled: true },
+  { id: 'audit', label: 'บันทึกกิจกรรม', required: false, adminOnly: true, enabled: true },
   { id: 'profile', label: 'โปรไฟล์', required: true, enabled: true },
 ];
+
+/**
+ * Fill in flags a cached copy may predate (the admin-only marker is new) and
+ * force required/admin-only pages open: they can never be switched off.
+ */
+function normaliseSwitches(pages: PageSwitch[]): PageSwitch[] {
+  return pages.map((page) => {
+    const fallback = DEFAULT_PAGE_SWITCHES.find((item) => item.id === page.id);
+    const required = Boolean(page.required ?? fallback?.required);
+    const adminOnly = Boolean(page.adminOnly ?? fallback?.adminOnly);
+    return {
+      id: page.id,
+      label: page.label || fallback?.label || page.id,
+      required,
+      adminOnly,
+      enabled: required || adminOnly ? true : page.enabled,
+    };
+  });
+}
 
 const STORAGE_KEY = 'artEnabledPagesV1';
 const CHANGE_EVENT = 'art:pages-changed';
@@ -39,9 +60,11 @@ function readStored(): PageSwitch[] | null {
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return null;
-    return parsed.filter(
-      (page): page is PageSwitch =>
-        page && typeof page.id === 'string' && typeof page.enabled === 'boolean',
+    return normaliseSwitches(
+      parsed.filter(
+        (page): page is PageSwitch =>
+          page && typeof page.id === 'string' && typeof page.enabled === 'boolean',
+      ),
     );
   } catch {
     return null;
@@ -79,10 +102,11 @@ export async function refreshPageSwitches(): Promise<PageSwitch[]> {
     if (!res.ok) return getCachedPageSwitches();
     const body = (await res.json()) as { pages?: PageSwitch[] };
     if (!Array.isArray(body.pages)) return getCachedPageSwitches();
-    cache = body.pages;
-    writeStored(body.pages);
+    const pages = normaliseSwitches(body.pages);
+    cache = pages;
+    writeStored(pages);
     if (typeof window !== 'undefined') window.dispatchEvent(new Event(CHANGE_EVENT));
-    return body.pages;
+    return pages;
   } catch {
     return getCachedPageSwitches();
   }
