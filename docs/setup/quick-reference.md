@@ -124,3 +124,4 @@ never collects them.
 - **Alembic is the only owner of the schema.** Run `alembic upgrade head` on every release; the legacy startup `ALTER TABLE` repair has been removed. `AUTO_CREATE_TABLES=True` is a throwaway-local-database convenience and must stay `False` in production.
 - Current app routes in this repo are `/dashboard`, `/camera`, `/profile`, `/admin`, `/audit`, plus the auth pages (`/login`, `/register`, `/forgot-password`, `/reset-password`, `/verify-email`).
 - Live notifications (`/api/v1/ws/notifications`) require a signed-in session — the handshake authenticates with the `access_token` cookie and is rejected with close code `1008` otherwise. See the README's Security section.
+- **AI Agent Skills (Superpowers):** The workspace includes software engineering methodology skills under `.agent/skills/` bootstrapped via `GEMINI.md` (TDD, brainstorming, plan execution, and code review).

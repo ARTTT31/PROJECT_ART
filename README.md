@@ -8,8 +8,8 @@ Production URL: configure this in your deployment environment; do not commit a p
 
 The GitHub Actions pipeline (`ci.yml`) runs on every push and pull request to `main`:
 
-- **Backend:** Python 3.11 — flake8 7.4 lint (`--max-line-length=120`) + mypy 2.4 type check + `alembic upgrade head` and `alembic check` against a throwaway SQLite database + pytest (**470 passed**, coverage **75.8%** on 3.11)
-- **Frontend:** Node 26 — ESLint + TypeScript type-check + **208** Vitest unit tests + Next.js production build + Playwright smoke tests (3)
+- **Backend:** Python 3.11 — flake8 7.4 lint (`--max-line-length=120`) + mypy 2.4 type check + `alembic upgrade head` and `alembic check` against a throwaway SQLite database + pytest (**490 passed**)
+- **Frontend:** Node 26 — ESLint + TypeScript type-check + **275** Vitest unit tests + Next.js production build + Playwright smoke tests (3)
 - **Dependency audit (blocking):** `pip-audit` gates every push and pull request and re-runs weekly (`cron: 0 2 * * 1`, Mondays 02:00 UTC). The pinned backend set currently reports no known advisories; Dependabot opens the upgrade pull requests (see `.github/dependabot.yml`).
 
 > The coverage gate in `backend/pytest.ini` is `--cov-fail-under=75`: Python 3.11 measures ~75.8% on this suite while 3.14 measures ~86.7%, so the old 80 gate failed on the interpreter difference rather than on untested code. The number is a ratchet — raise it as 3.11 coverage climbs back toward 80 (see [Project Analysis](docs/internal/project-analysis.md)).
@@ -196,6 +196,8 @@ py -m pytest -q --tb=short
 
 ```
 PROJECT_ART/
+├── .agent/skills/               # Superpowers agent skills (TDD, debugging, planning, reviews)
+├── GEMINI.md                    # Agent bootstrap rules (using-superpowers)
 ├── frontend/                    # Next.js 16 App Router
 │   └── src/
 │       ├── app/                 # Pages (dashboard, admin, audit, profile, camera, auth)
@@ -217,6 +219,18 @@ PROJECT_ART/
 ├── design-system/art-workspace/ # MASTER.md + page overrides
 └── .github/workflows/ci.yml     # CI: flake8 + pytest + ESLint + build
 ```
+
+## Agentic Engineering & Skills (Superpowers)
+
+This repository includes the [Superpowers](https://github.com/obra/superpowers) agentic skills suite in `.agent/skills/` with bootstrap instructions in `GEMINI.md`.
+
+When developing with AI assistants (Antigravity, Gemini CLI, Claude Code), the assistant follows structured software engineering workflows:
+- **Brainstorming & Design:** Explores requirements and architectural decisions before writing code (`brainstorming`).
+- **Test-Driven Development (TDD):** Red-Green-Refactor testing discipline for new features and bug fixes (`test-driven-development`).
+- **Systematic Debugging:** Root cause analysis and hypothesis testing before proposing patches (`systematic-debugging`).
+- **Task Planning & Execution:** Decomposes complex tasks into reviewed milestone steps (`writing-plans`, `executing-plans`).
+- **Code Review & Verification:** Verification with evidence before declaring completion (`verification-before-completion`, `requesting-code-review`, `receiving-code-review`).
+- **Subagent Delegation:** Parallelizes independent tasks across helper agents (`dispatching-parallel-agents`, `subagent-driven-development`).
 
 ## Production Deployment Notes
 
