@@ -67,24 +67,31 @@ function SubNav<T extends string>({
   onChange: (next: T) => void;
 }) {
   return (
-    <div className="flex gap-1.5 overflow-x-auto no-scrollbar" role="tablist" aria-label={label}>
-      {options.map((option) => (
-        <button
-          key={option.value}
-          type="button"
-          role="tab"
-          aria-selected={value === option.value}
-          onClick={() => onChange(option.value)}
-          className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-2 text-[12.5px] font-bold transition-all duration-150 active:scale-[0.98] ${
-            value === option.value
-              ? 'bg-[var(--surface)] text-[var(--accent-text)] shadow-xs ring-1 ring-[var(--hairline)]'
-              : 'bg-[var(--surface-grouped)] text-[var(--ink-muted)] hover:text-[var(--ink)]'
-          }`}
-        >
-          {option.icon}
-          {option.label}
-        </button>
-      ))}
+    <div
+      className="flex items-center gap-1 overflow-x-auto no-scrollbar rounded-[16px] border border-[var(--hairline-soft)] bg-[var(--surface)] p-1.5 shadow-2xs"
+      role="tablist"
+      aria-label={label}
+    >
+      {options.map((option) => {
+        const selected = value === option.value;
+        return (
+          <button
+            key={option.value}
+            type="button"
+            role="tab"
+            aria-selected={selected}
+            onClick={() => onChange(option.value)}
+            className={`inline-flex shrink-0 items-center gap-1.5 rounded-[11px] px-3 py-2 text-[12px] font-bold whitespace-nowrap transition-all duration-150 active:scale-[0.98] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)] ${
+              selected
+                ? 'bg-[var(--accent)] text-white shadow-[0_4px_10px_-4px_var(--accent)]'
+                : 'text-[var(--ink-muted)] hover:bg-[var(--surface-grouped)] hover:text-[var(--ink)]'
+            }`}
+          >
+            {option.icon}
+            {option.label}
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -619,12 +626,12 @@ export default function ProfilePage() {
           ══════════════════════════════════════════════════ */}
       <nav
         aria-label="แท็บตั้งค่าโปรไฟล์"
-        className="flex items-center gap-1.5 p-1.5 bg-[var(--surface-chip)] backdrop-blur-md rounded-[18px] overflow-x-auto no-scrollbar border border-[var(--hairline-soft)]"
+        className="inline-flex max-w-full items-center gap-1 overflow-x-auto no-scrollbar rounded-[16px] border border-[var(--hairline-soft)] bg-[var(--surface-chip)] p-1 backdrop-blur-md"
       >
         <button
           type="button"
           onClick={() => handleTabChange('profile')}
-          className={`flex flex-1 sm:flex-initial items-center justify-center gap-2 px-4 py-2.5 rounded-[13px] text-[13px] font-bold whitespace-nowrap transition-all duration-200 active:scale-[0.98] ${
+          className={`inline-flex shrink-0 items-center justify-center gap-2 px-4 py-2 rounded-[12px] text-[13px] font-bold whitespace-nowrap transition-all duration-200 active:scale-[0.98] ${
             activeTab === 'profile'
               ? 'bg-[var(--surface)] text-[var(--accent-text)] shadow-[0_2px_8px_rgba(0,0,0,0.06)]'
               : 'text-[var(--ink-muted)] hover:text-[var(--ink)] hover:bg-[var(--glass-60)]'
@@ -637,7 +644,7 @@ export default function ProfilePage() {
         <button
           type="button"
           onClick={() => handleTabChange('preferences')}
-          className={`flex flex-1 sm:flex-initial items-center justify-center gap-2 px-4 py-2.5 rounded-[13px] text-[13px] font-bold whitespace-nowrap transition-all duration-200 active:scale-[0.98] ${
+          className={`inline-flex shrink-0 items-center justify-center gap-2 px-4 py-2 rounded-[12px] text-[13px] font-bold whitespace-nowrap transition-all duration-200 active:scale-[0.98] ${
             activeTab === 'preferences'
               ? 'bg-[var(--surface)] text-[var(--accent-text)] shadow-[0_2px_8px_rgba(0,0,0,0.06)]'
               : 'text-[var(--ink-muted)] hover:text-[var(--ink)] hover:bg-[var(--glass-60)]'
