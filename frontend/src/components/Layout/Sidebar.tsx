@@ -214,7 +214,7 @@ export default function Sidebar({
 
   return (
     <aside
-      className={`fixed left-0 top-0 z-40 h-screen w-[80vw] max-w-64 border-r border-[var(--hairline)] bg-[rgba(255,255,255,0.82)] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.04)] text-[var(--ink)] transition-transform duration-300 ease-out ${
+      className={`fixed left-0 top-0 z-40 h-screen w-[80vw] max-w-64 border-r border-[var(--hairline)] bg-[var(--apple-nav-bg)] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.04)] text-[var(--ink)] transition-transform duration-300 ease-out ${
         isOpen ? 'translate-x-0' : '-translate-x-full'
       } ${isCollapsed ? 'lg:-translate-x-full' : 'lg:translate-x-0'}`}
     >

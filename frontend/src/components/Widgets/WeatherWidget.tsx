@@ -642,7 +642,7 @@ export default function WeatherWidget({
 
                 {/* Dropdown Menu */}
                 {isCityDropdownOpen && (
-                  <div className="absolute left-0 top-full z-30 mt-1.5 w-60 rounded-[18px] border border-[var(--hairline)] bg-[rgba(255,255,255,0.95)] backdrop-blur-2xl p-1.5 shadow-[0_16px_36px_rgba(0,0,0,0.12)] animate-in fade-in zoom-in-95 duration-150">
+                  <div className="absolute left-0 top-full z-30 mt-1.5 w-60 rounded-[18px] border border-[var(--hairline)] bg-[var(--glass-95)] backdrop-blur-2xl p-1.5 shadow-[0_16px_36px_rgba(0,0,0,0.12)] animate-in fade-in zoom-in-95 duration-150">
                     <div className="border-b border-[var(--hairline)] pb-1 mb-1">
                       <button
                         type="button"

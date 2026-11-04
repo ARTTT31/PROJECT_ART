@@ -543,7 +543,7 @@ export default function NotificationBell() {
       </button>
 
       {open && (
-        <div className="absolute right-0 z-50 mt-2.5 w-[min(calc(100vw-2rem),26rem)] overflow-hidden rounded-[22px] border border-[var(--hairline)] bg-[rgba(255,255,255,0.92)] backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.14)] animate-in fade-in zoom-in-95 duration-150">
+        <div className="absolute right-0 z-50 mt-2.5 w-[min(calc(100vw-2rem),26rem)] overflow-hidden rounded-[22px] border border-[var(--hairline)] bg-[var(--glass-95)] backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.14)] animate-in fade-in zoom-in-95 duration-150">
           {/* Panel Header */}
           <div className="flex items-start justify-between gap-4 border-b border-[var(--hairline)] px-5 py-4 bg-[var(--glass-40)]">
             <div>

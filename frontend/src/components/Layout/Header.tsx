@@ -54,7 +54,7 @@ export default function Header({ user, onMenuClick, sidebarCollapsed = false }: 
   })();
 
   return (
-    <header className="sticky top-0 z-20 border-b border-[var(--hairline)] bg-[rgba(255,255,255,0.82)] backdrop-blur-2xl transition-all">
+    <header className="sticky top-0 z-20 border-b border-[var(--hairline)] bg-[var(--apple-nav-bg)] backdrop-blur-2xl transition-all">
       <div className="flex items-center justify-between px-4 py-2.5 lg:px-6">
         {/* Left Side: Sidebar Toggle & Page Title/Breadcrumb */}
         <div className="flex items-center gap-3 sm:gap-4">
