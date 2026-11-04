@@ -118,3 +118,8 @@ uploads/
 # Archives
 *.zip
 *.tar.gz
+
+# Python virtualenvs (local only, never committed)
+backend/venv*/
+venv*/
+.venv/
