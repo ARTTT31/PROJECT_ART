@@ -33,3 +33,19 @@ export function formatMonthShort(date: Date, preferences: AppPreferences): strin
 export function formatWeekday(date: Date, preferences: AppPreferences): string {
   return new Intl.DateTimeFormat(LOCALE_TAG[preferences.locale], { weekday: 'long' }).format(date);
 }
+
+/** Header clock: short weekday and month, the chosen era, then the time. */
+export function formatClock(date: Date, preferences: AppPreferences): string {
+  const tag = LOCALE_TAG[preferences.locale];
+  const datePart = new Intl.DateTimeFormat(tag, {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+  }).format(date);
+  const timePart = new Intl.DateTimeFormat(tag, {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  }).format(date);
+  return `${datePart} ${formatYear(date.getFullYear(), preferences)} ${timePart}`;
+}

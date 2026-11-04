@@ -7,6 +7,9 @@ import { Clock, Menu, Search } from 'lucide-react';
 import { AuthUser } from '@/types';
 import NotificationBell from './NotificationBell';
 import { openCommandPalette } from './CommandPalette';
+import { useI18n } from '@/lib/i18n/I18nProvider';
+import { usePreferences } from '@/hooks/usePreferences';
+import { formatClock } from '@/utils/dateFormat';
 
 interface HeaderProps {
   user?: AuthUser | null;
@@ -16,40 +19,31 @@ interface HeaderProps {
 
 export default function Header({ user, onMenuClick, sidebarCollapsed = false }: HeaderProps) {
   const pathname = usePathname();
+  const { t } = useI18n();
 
-  const headerMeta = (() => {
+  const headerMeta: { title: string; crumbs: Array<{ label: string; href?: string }> } = (() => {
+    const home = { label: t('breadcrumb.home'), href: '/dashboard' };
+
     if (pathname.startsWith('/camera')) {
-      return {
-        title: 'กล้องวงจรปิด',
-        crumbs: [{ label: 'หน้าหลัก', href: '/dashboard' }, { label: 'กล้องวงจรปิด' }],
-      };
+      return { title: t('page.camera'), crumbs: [home, { label: t('page.camera') }] };
     }
 
     if (pathname.startsWith('/admin')) {
-      return {
-        title: 'จัดการระบบ',
-        crumbs: [{ label: 'หน้าหลัก', href: '/dashboard' }, { label: 'จัดการระบบ' }],
-      };
+      return { title: t('page.admin'), crumbs: [home, { label: t('page.admin') }] };
     }
 
     if (pathname.startsWith('/audit')) {
-      return {
-        title: 'บันทึกกิจกรรม',
-        crumbs: [{ label: 'หน้าหลัก', href: '/dashboard' }, { label: 'บันทึกกิจกรรม' }],
-      };
+      return { title: t('page.audit'), crumbs: [home, { label: t('page.audit') }] };
     }
 
     if (pathname.startsWith('/profile')) {
-      return {
-        title: 'โปรไฟล์',
-        crumbs: [{ label: 'หน้าหลัก', href: '/dashboard' }, { label: 'โปรไฟล์' }],
-      };
+      return { title: t('page.profile'), crumbs: [home, { label: t('page.profile') }] };
     }
 
     // default: dashboard
     return {
-      title: 'แดชบอร์ด',
-      crumbs: [{ label: 'หน้าหลัก' }, { label: 'แดชบอร์ด' }],
+      title: t('page.dashboard.title'),
+      crumbs: [{ label: t('breadcrumb.home') }, { label: t('page.dashboard.title') }],
     };
   })();
 
@@ -61,7 +55,7 @@ export default function Header({ user, onMenuClick, sidebarCollapsed = false }: 
           <button
             onClick={onMenuClick}
             className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--ink)] transition-all duration-150 hover:bg-black/[0.05] active:scale-[0.95] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
-            aria-label={sidebarCollapsed ? 'เปิดแถบเมนูด้านข้าง' : 'พับแถบเมนูด้านข้าง'}
+            aria-label={t(sidebarCollapsed ? 'nav.menuToggle.open' : 'nav.menuToggle.close')}
             aria-pressed={!sidebarCollapsed}
           >
             <Menu size={20} aria-hidden="true" />
@@ -109,12 +103,12 @@ export default function Header({ user, onMenuClick, sidebarCollapsed = false }: 
           <button
             type="button"
             onClick={openCommandPalette}
-            aria-label="ค้นหาทั่วทั้งระบบ (Ctrl+K)"
-            title="ค้นหา (Ctrl+K)"
+            aria-label={t('nav.search.aria')}
+            title={t('nav.search.title')}
             className="hidden h-9 shrink-0 items-center gap-2 rounded-full border border-[var(--hairline)] bg-[var(--glass-80)] px-3 text-[12px] font-medium text-[var(--ink-tertiary)] transition-colors hover:bg-[var(--surface-grouped)] hover:text-[var(--ink)] sm:inline-flex"
           >
             <Search size={14} aria-hidden="true" />
-            <span>ค้นหา</span>
+            <span>{t('nav.search.label')}</span>
             <kbd className="rounded-md border border-[var(--hairline)] bg-[var(--surface)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--ink-muted)]">
               Ctrl K
             </kbd>
@@ -129,20 +123,13 @@ export default function Header({ user, onMenuClick, sidebarCollapsed = false }: 
 
 /** Isolated clock component – only this subtree re-renders every second */
 const ClockTime = memo(function ClockTime() {
+  const preferences = usePreferences();
   const [time, setTime] = useState(new Date());
   useEffect(() => {
     const id = setInterval(() => setTime(new Date()), 1_000);
     return () => clearInterval(id);
   }, []);
-  const formatted = time.toLocaleString('th-TH', {
-    weekday: 'short',
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  });
+  const formatted = formatClock(time, preferences);
   return (
     <>
       <Clock size={14} className="text-[var(--accent-text)]" aria-hidden="true" />

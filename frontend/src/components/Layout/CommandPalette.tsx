@@ -19,6 +19,8 @@ import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
 import { readCached } from '@/lib/offline/localStore';
 import { DEFAULT_MAIN_MENU_ITEMS, MAIN_MENU_ICON_MAP } from '@/utils/mainMenu';
 import { isPageEnabled } from '@/hooks/useEnabledPages';
+import { MENU_LABEL_KEYS, type MessageKey } from '@/lib/i18n/messages';
+import { useI18n, type Translate } from '@/lib/i18n/I18nProvider';
 
 /** Open the palette from anywhere (the header button dispatches this). */
 export const COMMAND_PALETTE_EVENT = 'art:command-palette';
@@ -41,26 +43,13 @@ interface CommandResult {
   keywords?: string;
 }
 
-const KIND_LABEL: Record<ResultKind, string> = {
-  page: 'หน้า',
-  note: 'โน้ต',
-  watchlist: 'ติดตาม',
-  reminder: 'เตือน',
-  user: 'ผู้ใช้',
+const KIND_KEYS: Record<ResultKind, MessageKey> = {
+  page: 'palette.kind.page',
+  note: 'palette.kind.note',
+  watchlist: 'palette.kind.watchlist',
+  reminder: 'palette.kind.reminder',
+  user: 'palette.kind.user',
 };
-
-/** Profile sections that exist today; the settings tab is the deep link. */
-const PROFILE_ACTIONS: CommandResult[] = [
-  {
-    id: 'profile-settings',
-    kind: 'page',
-    title: 'ตั้งค่าโปรไฟล์',
-    subtitle: 'ธีม สี ลิงก์ด่วน และเมนูหลัก',
-    href: '/profile?tab=preferences',
-    icon: <Shield size={15} aria-hidden="true" />,
-    keywords: 'profile settings theme preferences ธีม ตั้งค่า',
-  },
-];
 
 function asArray(value: unknown): unknown[] {
   return Array.isArray(value) ? value : [];
@@ -73,7 +62,7 @@ function asArray(value: unknown): unknown[] {
  * (`{notes}`, `{items}`, a bare array), so each reader tolerates all of them
  * rather than throwing away a payload it did not expect.
  */
-function collectLocalResults(): CommandResult[] {
+function collectLocalResults(t: Translate): CommandResult[] {
   const results: CommandResult[] = [];
 
   const notesCache = readCached<unknown>('profile/quick-notes');
@@ -86,7 +75,7 @@ function collectLocalResults(): CommandResult[] {
       id: `note-${typeof note.id === 'string' ? note.id : index}`,
       kind: 'note',
       title: note.text.trim(),
-      subtitle: 'โน้ตด่วนในแดชบอร์ด',
+      subtitle: t('palette.note.subtitle'),
       href: '/dashboard',
       icon: <StickyNote size={15} aria-hidden="true" />,
       keywords: 'note notes โน้ต',
@@ -112,7 +101,7 @@ function collectLocalResults(): CommandResult[] {
       id: `watch-${symbol}-${index}`,
       kind: 'watchlist',
       title: symbol,
-      subtitle: 'รายการติดตาม',
+      subtitle: t('palette.watch.subtitle'),
       href: '/dashboard',
       icon: <TrendingUp size={15} aria-hidden="true" />,
       keywords: 'watchlist หุ้น ติดตาม',
@@ -135,7 +124,9 @@ function collectLocalResults(): CommandResult[] {
       kind: 'reminder',
       title: reminder.title.trim(),
       subtitle:
-        typeof reminder.date === 'string' ? `เตือนของฉัน · ${reminder.date}` : 'เตือนของฉัน',
+        typeof reminder.date === 'string'
+          ? t('palette.reminder.subtitle.dated', { date: reminder.date })
+          : t('palette.reminder.subtitle'),
       href: '/dashboard',
       icon: <CalendarClock size={15} aria-hidden="true" />,
       keywords: 'reminder เตือน ธุระ ลา',
@@ -148,6 +139,7 @@ function collectLocalResults(): CommandResult[] {
 export default function CommandPalette() {
   const router = useRouter();
   const { user } = useAuth();
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [active, setActive] = useState(0);
@@ -188,7 +180,7 @@ export default function CommandPalette() {
   // palette opens: a stale list would send the search to the wrong page.
   useEffect(() => {
     if (!open) return;
-    setLocalResults(collectLocalResults());
+    setLocalResults(collectLocalResults(t));
     inputRef.current?.focus();
 
     if (!isAdmin) {
@@ -218,7 +210,8 @@ export default function CommandPalette() {
             id: `user-${typeof record.id === 'number' ? record.id : index}`,
             kind: 'user',
             title,
-            subtitle: typeof record.email === 'string' ? record.email : 'ผู้ใช้ในระบบ',
+            subtitle:
+              typeof record.email === 'string' ? record.email : t('palette.user.subtitle'),
             href: '/admin',
             icon: <Shield size={15} aria-hidden="true" />,
             keywords: `user ผู้ใช้ admin ${record.email ?? ''}`,
@@ -235,7 +228,23 @@ export default function CommandPalette() {
     return () => {
       cancelled = true;
     };
-  }, [open, isAdmin]);
+  }, [open, isAdmin, t]);
+
+  // Profile sections that exist today; the settings tab is the deep link.
+  const profileActions = useMemo<CommandResult[]>(
+    () => [
+      {
+        id: 'profile-settings',
+        kind: 'page',
+        title: t('palette.action.profileSettings'),
+        subtitle: t('palette.action.profileSettings.sub'),
+        href: '/profile?tab=preferences',
+        icon: <Shield size={15} aria-hidden="true" />,
+        keywords: 'profile settings theme preferences ธีม ตั้งค่า',
+      },
+    ],
+    [t],
+  );
 
   const pageResults = useMemo<CommandResult[]>(() => {
     // A page the admin switched off must not turn up in search either, otherwise
@@ -244,36 +253,43 @@ export default function CommandPalette() {
       (item) => (!item.adminOnly || isAdmin) && isPageEnabled(item.id),
     ).map((item) => {
       const Icon = MAIN_MENU_ICON_MAP[item.icon] ?? FileText;
+      const labelKey = MENU_LABEL_KEYS[item.id];
+      const title = labelKey ? t(labelKey) : item.name;
+      const description = labelKey
+        ? t(`${labelKey}.desc` as MessageKey)
+        : item.description;
       return {
         id: `page-${item.id}`,
         kind: 'page' as const,
-        title: item.name,
-        subtitle: item.description,
+        title,
+        subtitle: description,
         href: item.href,
         icon: <Icon size={15} aria-hidden="true" />,
-        keywords: `${item.id} ${item.name} ${item.description ?? ''}`,
+        // The Thai name and description stay in the haystack so a search in
+        // either language finds the same page.
+        keywords: `${item.id} ${item.name} ${item.description ?? ''} ${title}`,
       };
     });
 
     const extra: CommandResult[] = [
-      ...PROFILE_ACTIONS,
+      ...profileActions,
       ...(isAdmin && isPageEnabled('audit')
         ? [
             {
               id: 'page-audit',
               kind: 'page' as const,
-              title: 'บันทึกกิจกรรม',
-              subtitle: 'ประวัติการใช้งานทั้ง workspace',
+              title: t('palette.result.audit'),
+              subtitle: t('palette.result.audit.sub'),
               href: '/audit',
               icon: <FileText size={15} aria-hidden="true" />,
-              keywords: 'audit log บันทึก ประวัติ',
+              keywords: 'audit log บันทึก ประวัติ activity',
             },
           ]
         : []),
     ];
 
     return [...menu, ...extra];
-  }, [isAdmin]);
+  }, [isAdmin, profileActions, t]);
 
   const results = useMemo(() => {
     const term = query.trim().toLowerCase();
@@ -313,7 +329,7 @@ export default function CommandPalette() {
       <div
         role="dialog"
         aria-modal="true"
-        aria-label="ค้นหาทั่วทั้งระบบ"
+        aria-label={t('palette.title')}
         className="w-full max-w-xl overflow-hidden rounded-[20px] border border-[var(--hairline)] bg-[var(--surface)] shadow-[0_24px_60px_rgba(0,0,0,0.28)]"
       >
         <div className="flex items-center gap-2.5 border-b border-[var(--hairline)] px-4 py-3">
@@ -336,8 +352,8 @@ export default function CommandPalette() {
                 run(results[active]);
               }
             }}
-            placeholder="ค้นหาหน้า โน้ต รายการติดตาม เตือนของฉัน หรือผู้ใช้…"
-            aria-label="ค้นหา"
+            placeholder={t('palette.placeholder')}
+            aria-label={t('nav.search.label')}
             className="w-full bg-transparent text-[14px] font-medium text-[var(--ink)] outline-hidden placeholder:text-[var(--ink-tertiary)]"
           />
           {loadingUsers && (
@@ -346,7 +362,7 @@ export default function CommandPalette() {
           <button
             type="button"
             onClick={close}
-            aria-label="ปิดการค้นหา"
+            aria-label={t('palette.close')}
             className="rounded-full p-1 text-[var(--ink-tertiary)] transition-colors hover:bg-[var(--surface-grouped)] hover:text-[var(--ink)]"
           >
             <X size={15} aria-hidden="true" />
@@ -356,7 +372,7 @@ export default function CommandPalette() {
         <div className="max-h-[54vh] overflow-y-auto p-2">
           {results.length === 0 ? (
             <div className="px-4 py-8 text-center text-[12.5px] text-[var(--ink-tertiary)]">
-              ไม่พบผลลัพธ์สำหรับ “{query}”
+              {t('palette.empty', { query })}
             </div>
           ) : (
             results.map((result, index) => (
@@ -383,7 +399,7 @@ export default function CommandPalette() {
                   )}
                 </span>
                 <span className="shrink-0 rounded-full bg-[var(--surface-grouped-2)] px-2 py-0.5 text-[10px] font-bold text-[var(--ink-muted)]">
-                  {KIND_LABEL[result.kind]}
+                  {t(KIND_KEYS[result.kind])}
                 </span>
                 {index === active && (
                   <CornerDownLeft size={13} className="shrink-0 text-[var(--accent-text)]" aria-hidden="true" />
@@ -395,7 +411,7 @@ export default function CommandPalette() {
 
         <div className="flex items-center justify-between gap-3 border-t border-[var(--hairline)] bg-[var(--surface-subtle)] px-4 py-2 text-[11px] text-[var(--ink-tertiary)]">
           <span className="inline-flex items-center gap-1.5">
-            <ArrowRight size={11} aria-hidden="true" /> ↑↓ เลือก · Enter เปิด
+            <ArrowRight size={11} aria-hidden="true" /> {t('palette.hint')}
           </span>
           <kbd className="rounded-md border border-[var(--hairline)] bg-[var(--surface)] px-1.5 py-0.5 font-mono text-[10px]">
             Esc

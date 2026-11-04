@@ -35,6 +35,8 @@ import { canAccessPage } from '@/utils/accessiblePages';
 import { isPageEnabled } from '@/hooks/useEnabledPages';
 import { AuthUser } from '@/types';
 import { useBranding } from '@/context/BrandingContext';
+import { useI18n } from '@/lib/i18n/I18nProvider';
+import { MENU_LABEL_KEYS } from '@/lib/i18n/messages';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -70,6 +72,7 @@ export default function Sidebar({
   const pathname = usePathname();
   const { companyName, companyTagline, brandLogoUrl } = useBranding();
   const { updateUser } = useAuth();
+  const { t } = useI18n();
 
   // The account's config wins: it is the value that travels between devices.
   // localStorage is only a fast first paint / offline fallback.
@@ -124,7 +127,7 @@ export default function Sidebar({
   const quickLinkSection: MenuSection | null =
     visibleQuickLinks.length > 0
       ? {
-          title: 'ควิกลิ้งค์',
+          title: t('nav.section.quickLinks'),
           items: visibleQuickLinks.map((ql) => {
             const Icon = QUICK_LINK_ICON_MAP[ql.icon];
             const options = quickLinkEnvironmentOptions(ql);
@@ -196,11 +199,12 @@ export default function Sidebar({
   });
 
   const mainMenuItemsSection: MenuSection = {
-    title: 'เมนูหลัก',
+    title: t('nav.section.main'),
     items: enabledMainItems.map((item) => {
       const Icon = MAIN_MENU_ICON_MAP[item.icon] || Sparkles;
+      const labelKey = MENU_LABEL_KEYS[item.id];
       return {
-        name: item.name,
+        name: labelKey ? t(labelKey) : item.name,
         href: item.href,
         icon: <Icon size={20} aria-hidden="true" />,
         isWip: item.isWip,
@@ -303,8 +307,11 @@ export default function Sidebar({
                           <button
                             type="button"
                             onClick={item.environments.onCycle}
-                            aria-label={`สลับสภาพแวดล้อม of ${item.name} (ตอนนี้ ${item.environments.label})`}
-                            title="สลับสภาพแวดล้อม"
+                            aria-label={t('nav.environment.aria', {
+                              name: item.name,
+                              label: item.environments.label,
+                            })}
+                            title={t('nav.environment.title')}
                             className="shrink-0 rounded-full bg-[var(--surface-grouped-2)] px-1.5 py-1 text-[9.5px] font-bold text-[var(--ink-muted)] ring-1 ring-black/[0.04] transition-colors hover:text-[var(--ink)]"
                           >
                             {item.environments.label}
@@ -321,8 +328,7 @@ export default function Sidebar({
           {suggestion && (
             <div className="mt-4 rounded-[11px] border border-dashed border-[var(--hairline-strong)] bg-[var(--surface-subtle)] p-3">
               <p className="text-[11px] leading-relaxed text-[var(--ink-muted)]">
-                คุณเปิด <span className="font-bold text-[var(--ink)]">{suggestion.path}</span>{' '}
-                {suggestion.count} ครั้งแล้ว — เก็บเป็นควิกลิ้งค์?
+                {t('nav.suggestion', { path: suggestion.path, count: suggestion.count })}
               </p>
               <div className="mt-2 flex items-center gap-1.5">
                 <button
@@ -330,14 +336,14 @@ export default function Sidebar({
                   onClick={handleAcceptSuggestion}
                   className="rounded-full bg-[var(--accent)] px-2.5 py-1 text-[10.5px] font-bold text-white transition-all hover:bg-[var(--accent-hover)] active:scale-95"
                 >
-                  เก็บไว้
+                  {t('nav.keep')}
                 </button>
                 <button
                   type="button"
                   onClick={handleDismissSuggestion}
                   className="rounded-full bg-[var(--surface-grouped-2)] px-2.5 py-1 text-[10.5px] font-bold text-[var(--ink-muted)] transition-all hover:bg-[var(--surface-chip)]"
                 >
-                  ไม่ต้อง
+                  {t('nav.dismiss')}
                 </button>
               </div>
             </div>
@@ -353,12 +359,12 @@ export default function Sidebar({
               onLogout();
             }}
             className="flex min-h-[48px] w-full items-center gap-2.5 rounded-[11px] px-3 py-2 text-[14px] font-semibold text-[var(--danger)] transition-all duration-150 hover:bg-[var(--danger-soft)] active:scale-[0.95] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--danger)]"
-            aria-label="ออกจากระบบ"
+            aria-label={t('nav.logout')}
           >
             <span className="flex h-7 w-7 items-center justify-center rounded-[8px] bg-[var(--danger-soft)] text-[var(--danger)]">
               <LogOut size={16} aria-hidden="true" />
             </span>
-            <span>ออกจากระบบ</span>
+            <span>{t('nav.logout')}</span>
           </button>
         </div>
       </div>
