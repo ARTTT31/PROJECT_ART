@@ -26,6 +26,7 @@ import {
 import { showDeleteConfirm, showToast, showSuccess, showError } from '@/utils/sweetalert';
 import { canAccessPage } from '@/utils/accessiblePages';
 import { useAuth } from '@/hooks/useAuth';
+import { useI18n } from '@/lib/i18n/I18nProvider';
 
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
 import { InsetField, SectionCard } from '@/components/Profile/SectionCard';
@@ -89,6 +90,7 @@ type TabKey = 'profile' | 'preferences';
 export default function ProfilePage() {
   const router = useRouter();
   const { user: authUser, updateUser, logout } = useAuth();
+  const { t } = useI18n();
   const [user, setUser] = useState<AuthUser | null>(null);
   const [activeTab, setActiveTab] = useState<TabKey>('profile');
 
@@ -603,7 +605,7 @@ export default function ProfilePage() {
           }`}
         >
           <User size={15} />
-          <span>ข้อมูลส่วนตัว &amp; ความปลอดภัย</span>
+          <span>{t('profile.tab.profile')}</span>
         </button>
 
         <button
@@ -616,7 +618,7 @@ export default function ProfilePage() {
           }`}
         >
           <Sliders size={15} />
-          <span>ทางลัด &amp; ปรับแต่งเมนู</span>
+          <span>{t('profile.tab.preferences')}</span>
         </button>
       </nav>
 
@@ -868,7 +870,7 @@ export default function ProfilePage() {
             className="grid grid-cols-1 gap-5 lg:grid-cols-2 items-start min-h-[480px]"
           >
             <PreferenceHeading icon={<LayoutGrid size={13} aria-hidden="true" />}>
-              เมนูและทางลัด
+              {t('profile.group.menu')}
             </PreferenceHeading>
 
             {/* Which pages exist in the sidebar is an admin decision: hiding
@@ -892,7 +894,7 @@ export default function ProfilePage() {
             </div>
 
             <PreferenceHeading icon={<Palette size={13} aria-hidden="true" />}>
-              รูปลักษณ์
+              {t('profile.group.appearance')}
             </PreferenceHeading>
 
             <div className="lg:col-span-2">
@@ -900,7 +902,7 @@ export default function ProfilePage() {
             </div>
 
             <PreferenceHeading icon={<BellRing size={13} aria-hidden="true" />}>
-              การแจ้งเตือนและรูปแบบ
+              {t('profile.group.alerts')}
             </PreferenceHeading>
 
             <div className="lg:col-span-2">
@@ -912,7 +914,7 @@ export default function ProfilePage() {
             </div>
 
             <PreferenceHeading icon={<Building2 size={13} aria-hidden="true" />}>
-              ข้อมูล workspace
+              {t('profile.group.workspace')}
             </PreferenceHeading>
 
             <div className="lg:col-span-2">

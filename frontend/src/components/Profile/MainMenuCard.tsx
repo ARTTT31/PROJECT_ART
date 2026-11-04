@@ -3,6 +3,7 @@
 import { ChevronDown, ChevronUp, LayoutGrid, Sparkles } from 'lucide-react';
 import { SectionCard } from './SectionCard';
 import { MAIN_MENU_ICON_MAP, type MainMenuItemConfig } from '@/utils/mainMenu';
+import { useI18n } from '@/lib/i18n/I18nProvider';
 
 interface MainMenuCardProps {
   items: MainMenuItemConfig[];
@@ -15,14 +16,16 @@ interface MainMenuCardProps {
  * /admin (the page-switch card), so there is no per-user toggle here.
  */
 export function MainMenuCard({ items, onMove }: MainMenuCardProps) {
+  const { t } = useI18n();
+
   return (
     <SectionCard
       icon={<LayoutGrid size={19} aria-hidden="true" />}
       iconBg="bg-violet-50"
       iconColor="text-violet-600"
       iconRing="ring-violet-200/60"
-      title="เมนูหลักของระบบ"
-      subtitle="จัดลำดับรายการในแถบเมนูด้านข้าง"
+      title={t('card.mainMenu.title')}
+      subtitle={t('card.mainMenu.subtitle')}
     >
       <div className="space-y-2">
         {items.map((item, idx, arr) => {

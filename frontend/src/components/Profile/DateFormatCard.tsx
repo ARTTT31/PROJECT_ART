@@ -5,6 +5,7 @@ import { CalendarRange } from 'lucide-react';
 import { SectionCard } from './SectionCard';
 import { savePreferences, usePreferences, type DateEra, type UiLocale } from '@/hooks/usePreferences';
 import { formatLongDate } from '@/utils/dateFormat';
+import { useI18n } from '@/lib/i18n/I18nProvider';
 
 const ERA_OPTIONS: Array<{ value: DateEra; label: string; hint: string }> = [
   { value: 'th', label: 'พ.ศ.', hint: 'เช่น 2569' },
@@ -64,6 +65,7 @@ function Segmented<T extends string>({
 
 /** Year era and language used for dates across the workspace. */
 export function DateFormatCard() {
+  const { t } = useI18n();
   const preferences = usePreferences();
   // Formatted after mount: the server render has no reliable "today".
   const [preview, setPreview] = useState('');
@@ -78,8 +80,8 @@ export function DateFormatCard() {
       iconBg="bg-sky-50"
       iconColor="text-sky-600"
       iconRing="ring-sky-200/60"
-      title="รูปแบบวันที่และภาษา"
-      subtitle="เลือกปี พ.ศ./ค.ศ. และภาษาที่ใช้แสดงวัน เดือน"
+      title={t('card.dateTime.title')}
+      subtitle={t('card.dateTime.subtitle')}
     >
       <div className="space-y-3">
         <Segmented

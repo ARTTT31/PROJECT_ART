@@ -4,6 +4,7 @@ import { BellRing, CalendarDays, ListChecks, Volume2 } from 'lucide-react';
 import { SectionCard } from './SectionCard';
 import { savePreferences, usePreferences } from '@/hooks/usePreferences';
 import { playBellSound } from '@/utils/sound';
+import { useI18n } from '@/lib/i18n/I18nProvider';
 
 function PreferenceSwitch({
   checked,
@@ -37,6 +38,7 @@ function PreferenceSwitch({
 
 /** Which alerts this browser shows, and whether the bell plays a sound. */
 export function NotificationSettingsCard() {
+  const { t } = useI18n();
   const preferences = usePreferences();
 
   return (
@@ -45,8 +47,8 @@ export function NotificationSettingsCard() {
       iconBg="bg-amber-50"
       iconColor="text-amber-600"
       iconRing="ring-amber-200/60"
-      title="การแจ้งเตือน"
-      subtitle="เลือกว่าจะให้กระดิ่งเตือนอะไร และเล่นเสียงหรือไม่"
+      title={t('card.notifications.title')}
+      subtitle={t('card.notifications.subtitle')}
     >
       <div className="space-y-2">
         <div className="flex items-center gap-3 rounded-2xl bg-[var(--surface)] p-3 ring-1 ring-[var(--hairline)] shadow-2xs">

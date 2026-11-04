@@ -56,6 +56,57 @@ const th = {
   'palette.reminder.subtitle': 'เตือนของฉัน',
   'palette.reminder.subtitle.dated': 'เตือนของฉัน · {date}',
   'palette.user.subtitle': 'ผู้ใช้ในระบบ',
+
+  'profile.tab.profile': 'ข้อมูลส่วนตัว & ความปลอดภัย',
+  'profile.tab.preferences': 'ทางลัด & ปรับแต่งเมนู',
+  'profile.group.menu': 'เมนูและทางลัด',
+  'profile.group.appearance': 'รูปลักษณ์',
+  'profile.group.alerts': 'การแจ้งเตือนและรูปแบบ',
+  'profile.group.workspace': 'ข้อมูล workspace',
+
+  'card.mainMenu.title': 'เมนูหลักของระบบ',
+  'card.mainMenu.subtitle': 'จัดลำดับรายการในแถบเมนูด้านข้าง',
+  'card.quickLinks.title': 'ควิกลิ้งค์ (Quick Links)',
+  'card.quickLinks.subtitle': 'ทางลัดเข้าสู่ระบบงานหรือเว็บไซต์ แสดงในแถบเมนูข้าง',
+  'card.quickLinks.add': 'เพิ่มลิงก์',
+  'card.quickLinks.empty.title': 'ยังไม่มีควิกลิ้งค์',
+  'card.quickLinks.empty.body': 'เพิ่มทางลัดสำหรับเปิดเว็บไซต์ที่ใช้บ่อย เพื่อความสะดวกรวดเร็ว',
+  'card.quickLinks.empty.cta': 'สร้างควิกลิ้งค์แรก',
+  'card.theme.title': 'ธีมและการแสดงผล',
+  'card.theme.subtitle': 'เลือกโหมดสว่าง/มืด และสีหลักของทั้งระบบ',
+  'card.notifications.title': 'การแจ้งเตือน',
+  'card.notifications.subtitle': 'เลือกว่าจะให้กระดิ่งเตือนอะไร และเล่นเสียงหรือไม่',
+  'card.dateTime.title': 'รูปแบบวันที่และภาษา',
+  'card.dateTime.subtitle': 'เลือกปี พ.ศ./ค.ศ. และภาษาที่ใช้แสดงวัน เดือน',
+  'card.companyHolidays.title': 'วันหยุดบริษัท',
+  'card.companyHolidays.subtitle.edit':
+    'อัปโหลด PDF ประกาศวันหยุดของบริษัท ระบบจะอ่านวันที่ให้ตรวจสอบก่อนบันทึก',
+  'card.companyHolidays.subtitle.read':
+    'ปฏิทินวันหยุดที่บริษัทประกาศ — ดูได้ทุกคน แก้ไขได้เฉพาะแอดมิน',
+
+  'dashboard.moveWidget': 'ย้ายวิดเจ็ต {name}',
+  'dashboard.toggleWidget': 'สลับวิดเจ็ต {name}',
+
+  'widget.notes.name': 'โน้ตด่วน / To-do วันนี้',
+  'widget.notes.desc': 'จดรายการที่ต้องทำวันนี้ ติ๊กเสร็จแล้วบันทึกอัตโนมัติ',
+  'widget.calc.name': 'คิดราคา / กำไร',
+  'widget.calc.desc': 'คิดราคาขายหลังหักส่วนลด พร้อมกำไรต่อชิ้นและเปอร์เซ็นต์',
+  'widget.market.name': 'ค่าเงิน · ทอง · SET',
+  'widget.market.desc': 'อัตราแลกเปลี่ยน ราคาทองคำแท่ง และดัชนี SET',
+  'widget.holidays.name': 'วันหยุดนักขัตฤกษ์',
+  'widget.holidays.desc': 'ปฏิทินวันหยุดนักขัตฤกษ์ พร้อมระบบนับถอยหลัง',
+  'widget.weather.name': 'สภาพอากาศ & PM 2.5',
+  'widget.weather.desc': 'ตรวจสอบสภาพอากาศ อุณหภูมิ และดัชนีฝุ่น PM 2.5 รายวัน',
+  'widget.oilprice.name': 'ราคาน้ำมัน',
+  'widget.oilprice.desc': 'ติดตามราคาน้ำมันล่าสุดในหน้าแดชบอร์ด',
+  'widget.qrcode.name': 'สร้าง QR Code',
+  'widget.qrcode.desc': 'เปิดเครื่องมือสร้าง QR Code อย่างรวดเร็ว',
+  'widget.finance.name': 'รายรับ – รายจ่ายวันนี้',
+  'widget.finance.desc': 'บันทึกรายรับรายจ่ายของวันนี้ พร้อมยอดคงเหลือ',
+  'widget.watchlist.name': 'รายการติดตาม',
+  'widget.watchlist.desc': 'ติดตามหุ้น คริปโต หรือค่าเงินที่สนใจ พร้อมราคาล่าสุด',
+  'widget.converter.name': 'แปลงสกุลเงิน',
+  'widget.converter.desc': 'แปลงเงินบาทเป็นสกุลอื่นด้วยอัตราอ้างอิงรายวัน',
 } as const;
 
 const en: Record<keyof typeof th, string> = {
@@ -105,6 +156,57 @@ const en: Record<keyof typeof th, string> = {
   'palette.reminder.subtitle': 'My reminders',
   'palette.reminder.subtitle.dated': 'My reminders · {date}',
   'palette.user.subtitle': 'Workspace member',
+
+  'profile.tab.profile': 'Personal & security',
+  'profile.tab.preferences': 'Shortcuts & menu',
+  'profile.group.menu': 'Menu & shortcuts',
+  'profile.group.appearance': 'Appearance',
+  'profile.group.alerts': 'Alerts & formats',
+  'profile.group.workspace': 'Workspace data',
+
+  'card.mainMenu.title': 'Main menu',
+  'card.mainMenu.subtitle': 'Reorder the items in the sidebar',
+  'card.quickLinks.title': 'Quick links',
+  'card.quickLinks.subtitle': 'Shortcuts to other systems or sites, shown in the sidebar',
+  'card.quickLinks.add': 'Add link',
+  'card.quickLinks.empty.title': 'No quick links yet',
+  'card.quickLinks.empty.body': 'Add shortcuts to the sites you open most, so they are one click away.',
+  'card.quickLinks.empty.cta': 'Create the first quick link',
+  'card.theme.title': 'Theme & appearance',
+  'card.theme.subtitle': 'Choose light or dark mode and the accent colour for the whole app',
+  'card.notifications.title': 'Notifications',
+  'card.notifications.subtitle': 'Choose what the bell alerts you about and whether it chimes',
+  'card.dateTime.title': 'Date format & language',
+  'card.dateTime.subtitle': 'Pick the year era and the language used for dates',
+  'card.companyHolidays.title': 'Company holidays',
+  'card.companyHolidays.subtitle.edit':
+    'Upload the company holiday PDF; the dates are read for you to review before saving',
+  'card.companyHolidays.subtitle.read':
+    'The company holiday calendar — everyone can read it, only an admin can change it',
+
+  'dashboard.moveWidget': 'Move widget {name}',
+  'dashboard.toggleWidget': 'Toggle widget {name}',
+
+  'widget.notes.name': 'Quick notes / today’s to-dos',
+  'widget.notes.desc': 'Jot down today’s tasks; ticking one saves automatically',
+  'widget.calc.name': 'Price & profit',
+  'widget.calc.desc': 'Sale price after discount, profit per unit and margin',
+  'widget.market.name': 'Rates · gold · SET',
+  'widget.market.desc': 'Exchange rates, gold bar prices and the SET index',
+  'widget.holidays.name': 'Public holidays',
+  'widget.holidays.desc': 'Thai holiday calendar with a countdown',
+  'widget.weather.name': 'Weather & PM 2.5',
+  'widget.weather.desc': 'Daily weather, temperature and PM 2.5 readings',
+  'widget.oilprice.name': 'Fuel prices',
+  'widget.oilprice.desc': 'Latest fuel prices on your dashboard',
+  'widget.qrcode.name': 'QR code generator',
+  'widget.qrcode.desc': 'Open the QR code tool in one click',
+  'widget.finance.name': 'Today’s income – expense',
+  'widget.finance.desc': 'Record today’s income and expenses with a running balance',
+  'widget.watchlist.name': 'Watchlist',
+  'widget.watchlist.desc': 'Track stocks, crypto or currencies with the latest prices',
+  'widget.converter.name': 'Currency converter',
+  'widget.converter.desc': 'Convert baht to other currencies with the daily reference rate',
 };
 
 export const messages = { th, en };
@@ -112,6 +214,32 @@ export const messages = { th, en };
 export type MessageKey = keyof typeof th;
 
 /** Sidebar/palette label for each menu page. */
+export const WIDGET_NAME_KEYS: Record<string, MessageKey> = {
+  notes: 'widget.notes.name',
+  calc: 'widget.calc.name',
+  market: 'widget.market.name',
+  holidays: 'widget.holidays.name',
+  weather: 'widget.weather.name',
+  oilprice: 'widget.oilprice.name',
+  qrcode: 'widget.qrcode.name',
+  finance: 'widget.finance.name',
+  watchlist: 'widget.watchlist.name',
+  converter: 'widget.converter.name',
+};
+
+export const WIDGET_DESCRIPTION_KEYS: Record<string, MessageKey> = {
+  notes: 'widget.notes.desc',
+  calc: 'widget.calc.desc',
+  market: 'widget.market.desc',
+  holidays: 'widget.holidays.desc',
+  weather: 'widget.weather.desc',
+  oilprice: 'widget.oilprice.desc',
+  qrcode: 'widget.qrcode.desc',
+  finance: 'widget.finance.desc',
+  watchlist: 'widget.watchlist.desc',
+  converter: 'widget.converter.desc',
+};
+
 export const MENU_LABEL_KEYS: Record<string, MessageKey> = {
   dashboard: 'page.dashboard',
   camera: 'page.camera',

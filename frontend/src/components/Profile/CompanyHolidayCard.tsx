@@ -11,6 +11,7 @@ import {
   Upload,
 } from 'lucide-react';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
+import { useI18n } from '@/lib/i18n/I18nProvider';
 
 interface HolidayRow {
   date: string;
@@ -41,6 +42,7 @@ function formatThaiDate(value: string): string {
  * a calendar that is already in use.
  */
 export default function CompanyHolidayCard({ canEdit = true }: { canEdit?: boolean }) {
+  const { t } = useI18n();
   const [year, setYear] = useState(CURRENT_YEAR);
   const [rows, setRows] = useState<HolidayRow[]>([]);
   const [savedYears, setSavedYears] = useState<Record<number, number>>({});
@@ -174,12 +176,14 @@ export default function CompanyHolidayCard({ canEdit = true }: { canEdit?: boole
           </div>
           <div className="min-w-0">
             <h2 className="text-[15px] font-bold tracking-tight text-[var(--ink)]">
-              วันหยุดบริษัท
+              {t('card.companyHolidays.title')}
             </h2>
             <p className="mt-0.5 text-[12px] leading-snug text-[var(--ink-muted)]">
-              {canEdit
-                ? 'อัปโหลด PDF ประกาศวันหยุดของบริษัท ระบบจะอ่านวันที่ให้ตรวจสอบก่อนบันทึก'
-                : 'ปฏิทินวันหยุดที่บริษัทประกาศ — ดูได้ทุกคน แก้ไขได้เฉพาะแอดมิน'}
+              {t(
+                canEdit
+                  ? 'card.companyHolidays.subtitle.edit'
+                  : 'card.companyHolidays.subtitle.read',
+              )}
             </p>
           </div>
         </div>

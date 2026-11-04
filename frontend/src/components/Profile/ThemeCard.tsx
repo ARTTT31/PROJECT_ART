@@ -9,6 +9,7 @@ import {
   type ThemeMode,
 } from '@/context/ThemeContext';
 import { showToast } from '@/utils/sweetalert';
+import { useI18n } from '@/lib/i18n/I18nProvider';
 
 const MODE_ICON: Record<ThemeMode, React.ReactNode> = {
   system: <Monitor size={16} aria-hidden="true" />,
@@ -24,6 +25,7 @@ const MODE_ICON: Record<ThemeMode, React.ReactNode> = {
  * a shared account on a second device should not inherit this screen's dark mode.
  */
 export function ThemeCard() {
+  const { t } = useI18n();
   const { mode, accent, resolvedMode, setMode, setAccent, resetTheme } = useTheme();
 
   const handleReset = () => {
@@ -37,8 +39,8 @@ export function ThemeCard() {
       iconBg="bg-[var(--accent-soft)]"
       iconColor="text-[var(--accent-text)]"
       iconRing="ring-[var(--accent-ring)]"
-      title="ธีมและการแสดงผล"
-      subtitle="เลือกโหมดสว่าง/มืด และสีหลักของทั้งระบบ"
+      title={t('card.theme.title')}
+      subtitle={t('card.theme.subtitle')}
       action={
         <button
           type="button"

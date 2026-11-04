@@ -88,6 +88,8 @@ const CurrencyConverterWidget = dynamic(() => import('@/components/Widgets/Curre
 });
 
 import { useDashboardLayout, widgetNames, widgetDescriptions } from '@/hooks/useDashboardLayout';
+import { useI18n } from '@/lib/i18n/I18nProvider';
+import { WIDGET_DESCRIPTION_KEYS, WIDGET_NAME_KEYS } from '@/lib/i18n/messages';
 
 // ── Col-span helper ──────────────────────────────────────────────────────────
 
@@ -166,6 +168,9 @@ function SortableWidget({
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: widget.id,
   });
+  const { t } = useI18n();
+  const widgetLabel = (id: string) =>
+    WIDGET_NAME_KEYS[id] ? t(WIDGET_NAME_KEYS[id]) : (widgetNames[id] ?? id);
 
   const style = {
     transform: CSS.Translate.toString(transform),
@@ -193,7 +198,7 @@ function SortableWidget({
             {...attributes}
             {...listeners}
             type="button"
-            aria-label={`ย้ายวิดเจ็ต ${widgetNames[widget.id]}`}
+            aria-label={t('dashboard.moveWidget', { name: widgetLabel(widget.id) })}
             title="ลากเพื่อจัดลำดับ"
             className="pointer-events-auto flex cursor-grab touch-none items-center justify-center rounded-full p-1.5 text-[var(--ink-tertiary)] opacity-0 transition-opacity duration-150 hover:opacity-100 active:cursor-grabbing group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent-border)] [@media(hover:none)]:opacity-60"
           >
@@ -323,6 +328,14 @@ export default function DashboardPage() {
     handleResize,
     toggleWidgetVisibility,
   } = useDashboardLayout();
+  const { t } = useI18n();
+
+  // Widget titles and descriptions are translated here so the saved layout keeps
+  // its stable ids; the Thai maps stay as the fallback for unknown widgets.
+  const widgetLabel = (id: string) =>
+    WIDGET_NAME_KEYS[id] ? t(WIDGET_NAME_KEYS[id]) : (widgetNames[id] ?? id);
+  const widgetDescription = (id: string) =>
+    WIDGET_DESCRIPTION_KEYS[id] ? t(WIDGET_DESCRIPTION_KEYS[id]) : (widgetDescriptions[id] ?? '');
 
   const [showConfigModal, setShowConfigModal] = useState(false);
   const [greeting, setGreeting] = useState<string>(getGreeting);
@@ -444,10 +457,10 @@ export default function DashboardPage() {
                     >
                       <div className="min-w-0 flex-1">
                         <span className="block truncate text-[14px] font-semibold text-[var(--ink)]">
-                          {widgetNames[widget.id]}
+                          {widgetLabel(widget.id)}
                         </span>
                         <span className="mt-0.5 block text-[12px] leading-[1.4] text-[var(--ink-muted)]">
-                          {widgetDescriptions[widget.id]}
+                          {widgetDescription(widget.id)}
                         </span>
                       </div>
 
@@ -472,7 +485,9 @@ export default function DashboardPage() {
                           isLocked ? 'opacity-50' : ''
                         } ${isVisible ? 'bg-[var(--accent)]' : 'bg-[var(--surface-chip)]'}`}
                       >
-                        <span className="sr-only">สลับวิดเจ็ต {widgetNames[widget.id]}</span>
+                        <span className="sr-only">
+                          {t('dashboard.toggleWidget', { name: widgetLabel(widget.id) })}
+                        </span>
                         <span
                           aria-hidden="true"
                           style={{

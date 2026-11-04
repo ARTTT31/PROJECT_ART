@@ -16,6 +16,7 @@ import {
   isExternalUrl,
   type QuickLink,
 } from '@/utils/quickLinks';
+import { useI18n } from '@/lib/i18n/I18nProvider';
 
 interface QuickLinksCardProps {
   links: QuickLink[];
@@ -27,14 +28,16 @@ interface QuickLinksCardProps {
 
 /** "ควิกลิ้งค์ (Quick Links)" card: the sidebar shortcuts this user configured. */
 export function QuickLinksCard({ links, onAdd, onEdit, onDelete, onMove }: QuickLinksCardProps) {
+  const { t } = useI18n();
+
   return (
     <SectionCard
       icon={<Link2 size={19} aria-hidden="true" />}
       iconBg="bg-sky-50"
       iconColor="text-sky-600"
       iconRing="ring-sky-200/60"
-      title="ควิกลิ้งค์ (Quick Links)"
-      subtitle="ทางลัดเข้าสู่ระบบงานหรือเว็บไซต์ แสดงในแถบเมนูข้าง"
+      title={t('card.quickLinks.title')}
+      subtitle={t('card.quickLinks.subtitle')}
       action={
         <button
           type="button"
@@ -42,7 +45,7 @@ export function QuickLinksCard({ links, onAdd, onEdit, onDelete, onMove }: Quick
           className="inline-flex items-center gap-1.5 rounded-full bg-[var(--accent)] px-3.5 py-1.5 text-[11.5px] font-bold text-white shadow-xs transition-all hover:bg-[var(--accent-hover)] active:scale-95"
         >
           <Plus size={13} aria-hidden="true" />
-          เพิ่มลิงก์
+          {t('card.quickLinks.add')}
         </button>
       }
     >
@@ -51,9 +54,11 @@ export function QuickLinksCard({ links, onAdd, onEdit, onDelete, onMove }: Quick
           <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--surface)] text-sky-600 shadow-xs ring-1 ring-[var(--hairline)]">
             <Link2 size={20} aria-hidden="true" />
           </div>
-          <h3 className="text-[14px] font-bold text-[var(--ink)]">ยังไม่มีควิกลิ้งค์</h3>
+          <h3 className="text-[14px] font-bold text-[var(--ink)]">
+            {t('card.quickLinks.empty.title')}
+          </h3>
           <p className="mx-auto mt-1 max-w-xs text-[12px] text-[var(--ink-muted)] leading-relaxed">
-            เพิ่มทางลัดสำหรับเปิดเว็บไซต์ที่ใช้บ่อย เพื่อความสะดวกรวดเร็ว
+            {t('card.quickLinks.empty.body')}
           </p>
           <button
             type="button"
@@ -61,7 +66,7 @@ export function QuickLinksCard({ links, onAdd, onEdit, onDelete, onMove }: Quick
             className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-[var(--accent)] px-4 py-2 text-[12px] font-bold text-white shadow-xs transition-all hover:bg-[var(--accent-hover)]"
           >
             <Plus size={13} aria-hidden="true" />
-            สร้างควิกลิ้งค์แรก
+            {t('card.quickLinks.empty.cta')}
           </button>
         </div>
       ) : (
