@@ -9,7 +9,6 @@ import {
   FileText,
   Loader2,
   ShieldCheck,
-  SlidersHorizontal,
   UserPlus,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
@@ -111,13 +110,6 @@ export default function AdminPage() {
               </p>
             </div>
           </div>
-          <Link
-            href="/profile?tab=preferences"
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[var(--surface)] px-3.5 py-2 text-[12.5px] font-semibold text-[var(--ink)] shadow-xs ring-1 ring-[var(--hairline)] transition-all duration-150 hover:bg-[var(--surface-grouped)] active:scale-95"
-          >
-            <SlidersHorizontal size={14} aria-hidden="true" />
-            จัดการเมนูหลัก
-          </Link>
         </div>
 
         <div className="grid grid-cols-1 gap-3 p-5 sm:grid-cols-2 sm:p-6">
