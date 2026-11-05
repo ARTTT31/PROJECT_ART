@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
+import AuthTransitionOverlay from '@/components/Auth/AuthTransitionOverlay';
 import { AuthUserSchema } from '@/lib/api/schemas';
 import { getApiBaseUrl } from '@/lib/api/apiBase';
 import { readUserCookie } from '@/lib/api/userCookie';
@@ -77,12 +78,10 @@ export default function LoginSuccessPage() {
   }, [login, router]);
 
   return (
-    <div className="min-h-[100dvh] flex items-center justify-center bg-[var(--surface-grouped)] p-4">
-      <div className="text-center">
-        <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-[3px] border-[var(--surface-grouped)] border-t-[#0066cc]" />
-        <h2 className="text-[17px] font-bold text-[var(--ink)]">เข้าสู่ระบบสำเร็จ</h2>
-        <p className="mt-1 text-sm text-[var(--ink-secondary)]">กำลังพาคุณเข้าสู่ Dashboard...</p>
-      </div>
-    </div>
+    <AuthTransitionOverlay
+      tone="success"
+      title="เข้าสู่ระบบสำเร็จ"
+      subtitle="กำลังพาคุณเข้าสู่แดชบอร์ด…"
+    />
   );
 }

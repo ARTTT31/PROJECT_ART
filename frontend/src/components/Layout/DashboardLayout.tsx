@@ -8,6 +8,7 @@ import OfflineBanner from './OfflineBanner';
 import CommandPalette from './CommandPalette';
 import { showConfirm } from '@/utils/sweetalert';
 import AuthGuard from '@/components/Auth/AuthGuard';
+import AuthTransitionOverlay from '@/components/Auth/AuthTransitionOverlay';
 import { useAuth } from '@/hooks/useAuth';
 
 interface DashboardLayoutProps {
@@ -19,6 +20,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const { user, logout } = useAuth();
 
   useEffect(() => {
@@ -28,65 +30,77 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   const handleLogout = async () => {
     const result = await showConfirm('ต้องการออกจากระบบหรือไม่?', 'กดยืนยันเพื่อออกจากระบบ');
-    if (result.isConfirmed) {
-      await logout();
-      router.replace('/login');
-    }
+    if (!result.isConfirmed) return;
+
+    // Hold the overlay on screen for a beat before the session is cleared, so
+    // signing out reads as a deliberate transition rather than a jump cut.
+    setIsLoggingOut(true);
+    await new Promise((resolve) => window.setTimeout(resolve, 420));
+    await logout();
+    router.replace('/login');
   };
 
   return (
-    <AuthGuard>
-      <div className="art-app-shell relative overflow-x-hidden bg-[var(--surface-grouped)] min-h-[100dvh] text-[var(--ink)]">
-        <OfflineBanner />
-        {/* Sidebar wrapper */}
-        <div className="relative z-20">
-          <Sidebar
-            isOpen={sidebarOpen}
-            isCollapsed={sidebarCollapsed}
-            onClose={() => setSidebarOpen(false)}
-            user={user}
-            onLogout={handleLogout}
-          />
-        </div>
+    <>
+      <AuthGuard>
+        <div className="art-app-shell relative overflow-x-hidden bg-[var(--surface-grouped)] min-h-[100dvh] text-[var(--ink)]">
+          <OfflineBanner />
+          {/* Sidebar wrapper */}
+          <div className="relative z-20">
+            <Sidebar
+              isOpen={sidebarOpen}
+              isCollapsed={sidebarCollapsed}
+              onClose={() => setSidebarOpen(false)}
+              user={user}
+              onLogout={handleLogout}
+            />
+          </div>
 
-        {/* Main Content wrapper */}
-        <div
-          className={`relative z-10 min-h-[100dvh] flex flex-col transition-[padding] duration-300 ease-out ${
-            sidebarCollapsed ? 'lg:pl-0' : 'lg:pl-64'
-          }`}
-        >
-          {/* Header */}
-          <Header
-            user={user}
-            onMenuClick={() => {
-              if (window.matchMedia('(min-width: 1024px)').matches) {
-                setSidebarCollapsed((value) => !value);
-                return;
-              }
-              setSidebarOpen(true);
-            }}
-            sidebarCollapsed={sidebarCollapsed}
-          />
-
-          {/* Page Content */}
-          <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-[1600px] w-full mx-auto min-h-[calc(100dvh-52px)]">
-            <div key={pathname} className="page-enter h-full">
-              {children}
-            </div>
-          </main>
-        </div>
-
-        <CommandPalette />
-
-        {/* Mobile Sidebar Overlay */}
-        {sidebarOpen && (
+          {/* Main Content wrapper */}
           <div
-            className="fixed inset-0 z-30 bg-black/25 backdrop-blur-xs transition-all duration-300 lg:hidden"
-            onClick={() => setSidebarOpen(false)}
-            aria-hidden="true"
-          />
-        )}
-      </div>
-    </AuthGuard>
+            className={`relative z-10 min-h-[100dvh] flex flex-col transition-[padding] duration-300 ease-out ${
+              sidebarCollapsed ? 'lg:pl-0' : 'lg:pl-64'
+            }`}
+          >
+            {/* Header */}
+            <Header
+              user={user}
+              onMenuClick={() => {
+                if (window.matchMedia('(min-width: 1024px)').matches) {
+                  setSidebarCollapsed((value) => !value);
+                  return;
+                }
+                setSidebarOpen(true);
+              }}
+              sidebarCollapsed={sidebarCollapsed}
+            />
+
+            {/* Page Content */}
+            <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-[1600px] w-full mx-auto min-h-[calc(100dvh-52px)]">
+              <div key={pathname} className="page-enter h-full">
+                {children}
+              </div>
+            </main>
+          </div>
+
+          <CommandPalette />
+
+          {/* Mobile Sidebar Overlay */}
+          {sidebarOpen && (
+            <div
+              className="fixed inset-0 z-30 bg-black/25 backdrop-blur-xs transition-all duration-300 lg:hidden"
+              onClick={() => setSidebarOpen(false)}
+              aria-hidden="true"
+            />
+          )}
+        </div>
+      </AuthGuard>
+
+      {/* Kept outside AuthGuard so it stays visible while the session clear
+          unmounts the dashboard. */}
+      {isLoggingOut && (
+        <AuthTransitionOverlay title="กำลังออกจากระบบ…" subtitle="แล้วพบกันใหม่เร็ว ๆ นี้" />
+      )}
+    </>
   );
 }

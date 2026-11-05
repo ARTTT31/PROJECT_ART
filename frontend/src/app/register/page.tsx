@@ -5,14 +5,12 @@ import { FormEvent, KeyboardEvent, useCallback, useEffect, useRef, useState } fr
 import {
   ArrowRight,
   AlertCircle,
-  CheckCircle2,
   Clock,
   Eye,
   EyeOff,
   Loader2,
   Lock,
   Mail,
-  Shield,
   User,
 } from 'lucide-react';
 import Link from 'next/link';
@@ -21,6 +19,8 @@ import Image from 'next/image';
 import { useAuth } from '@/hooks/useAuth';
 import { useBranding } from '@/context/BrandingContext';
 import TurnstileWidget from '@/components/Auth/TurnstileWidget';
+import ApprovalPending from '@/components/Auth/ApprovalPending';
+import AuthTransitionOverlay from '@/components/Auth/AuthTransitionOverlay';
 import { useToast } from '@/components/Toast/ToastProvider';
 import { getApiBaseUrl } from '@/lib/api/apiBase';
 
@@ -71,6 +71,7 @@ export default function RegisterPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isPendingSuccess, setIsPendingSuccess] = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState('');
+  const [signUpDone, setSignUpDone] = useState(false);
   const [now, setNow] = useState(() => new Date());
 
   const nameRef = useRef<HTMLInputElement>(null);
@@ -92,6 +93,14 @@ export default function RegisterPage() {
     }, 1000);
     return () => window.clearInterval(timer);
   }, []);
+
+  // Open-mode sign-ups hand off to the sign-in form with a short success beat
+  // instead of an instant cut to another page.
+  useEffect(() => {
+    if (!signUpDone) return;
+    const timer = window.setTimeout(() => router.push('/login'), 850);
+    return () => window.clearTimeout(timer);
+  }, [signUpDone, router]);
 
   // Fetch registration mode from server
   useEffect(() => {
@@ -189,7 +198,7 @@ export default function RegisterPage() {
 
       // Open mode: account works immediately
       toast.success('สมัครสมาชิกสำเร็จ', 'กรุณาเข้าสู่ระบบด้วยบัญชีที่สร้างใหม่');
-      router.push('/login');
+      setSignUpDone(true);
     } catch (err) {
       console.error('Registration submit error:', err);
       setError('เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง');
@@ -243,55 +252,32 @@ export default function RegisterPage() {
             </div>
           ) : isPendingSuccess ? (
             /* Success awaiting approval state */
-            <div className="space-y-4">
-              <div className="login-notice flex flex-col items-center text-center p-6 rounded-2xl bg-amber-50/70 border border-amber-200/80">
-                <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center text-amber-600 mb-3">
-                  <Clock size={24} aria-hidden="true" />
-                </div>
-                <span className="text-[16px] font-bold text-amber-900 mb-1">
-                  ส่งคำขอสมัครสมาชิกสำเร็จแล้ว
-                </span>
-                <p className="text-[13.5px] text-amber-800/90 leading-relaxed max-w-sm">
-                  เราได้รับคำขอสมัครของ <strong>{registeredEmail}</strong> เรียบร้อยแล้ว
-                </p>
-                <div className="mt-3 p-3 rounded-xl bg-[var(--glass-80)] border border-amber-200/60 text-[12.5px] text-slate-700 leading-relaxed text-left w-full">
-                  <div className="font-semibold text-slate-900 mb-1 flex items-center gap-1.5">
-                    <Shield size={14} className="text-amber-600" />
-                    ระบบนี้กำหนดให้แอดมินอนุมัติก่อนเข้าใช้งาน
-                  </div>
-                  เมื่อผู้ดูแลระบบกดรับคำขอของคุณแล้ว บัญชีจะสามารถเข้าสู่ระบบได้ทันที
-                </div>
-              </div>
-
-              <Link href="/login" className="login-submit inline-flex items-center justify-center">
-                <span>กลับไปหน้าเข้าสู่ระบบ</span>
-                <ArrowRight size={18} aria-hidden="true" />
-              </Link>
-            </div>
+            <ApprovalPending email={registeredEmail} onBack={() => router.push('/login')} />
           ) : registrationMode === 'closed' ? (
             /* Registration closed state */
-            <div className="space-y-4 text-center py-6">
-              <div className="p-6 rounded-2xl bg-slate-50 border border-slate-200 text-slate-700">
-                <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-500 mx-auto flex items-center justify-center mb-3">
-                  <Lock size={22} />
-                </div>
-                <h2 className="text-[15px] font-bold text-slate-900 mb-1">
-                  ปิดรับสมัครสมาชิกชั่วคราว
-                </h2>
-                <p className="text-[13px] text-slate-600 leading-relaxed">
-                  ระบบนี้กำหนดให้เฉพาะผู้ดูแลระบบสร้างบัญชีให้เท่านั้น
-                  หากต้องการใช้งานกรุณาติดต่อผู้ดูแลระบบของคุณ
-                </p>
+            <div className="auth-state" role="status">
+              <span className="auth-state-icon auth-state-icon--neutral" aria-hidden="true">
+                <Lock size={28} strokeWidth={2.1} />
+              </span>
+              <h2 className="auth-state-title">ปิดรับสมัครสมาชิกชั่วคราว</h2>
+              <p className="auth-state-text">
+                ระบบนี้กำหนดให้เฉพาะผู้ดูแลระบบสร้างบัญชีให้เท่านั้น
+                หากต้องการใช้งานกรุณาติดต่อผู้ดูแลระบบของคุณ
+              </p>
+              <div className="auth-actions">
+                <Link href="/login" className="login-submit">
+                  <span>เข้าสู่ระบบด้วยบัญชีที่มีอยู่</span>
+                  <ArrowRight size={18} aria-hidden="true" />
+                </Link>
               </div>
-
-              <Link href="/login" className="login-submit inline-flex items-center justify-center">
-                <span>เข้าสู่ระบบด้วยบัญชีที่มีอยู่</span>
-                <ArrowRight size={18} aria-hidden="true" />
-              </Link>
             </div>
           ) : (
             /* Registration Form */
-            <form onSubmit={handleSubmit} className="login-form" aria-busy={isSubmitting}>
+            <form
+              onSubmit={handleSubmit}
+              className="login-form login-view-enter"
+              aria-busy={isSubmitting}
+            >
               <label htmlFor="reg-name" className="login-field">
                 <span>ชื่อที่แสดง</span>
                 <div className="login-input-wrap">
@@ -418,6 +404,14 @@ export default function RegisterPage() {
           )}
         </div>
       </section>
+
+      {signUpDone && (
+        <AuthTransitionOverlay
+          tone="success"
+          title="สมัครสมาชิกสำเร็จ"
+          subtitle="กำลังพาคุณไปหน้าเข้าสู่ระบบ…"
+        />
+      )}
     </main>
   );
 }

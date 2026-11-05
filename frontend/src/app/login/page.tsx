@@ -20,6 +20,8 @@ import Image from 'next/image';
 import { useAuth } from '@/hooks/useAuth';
 import { useBranding } from '@/context/BrandingContext';
 import TurnstileWidget from '@/components/Auth/TurnstileWidget';
+import ApprovalPending from '@/components/Auth/ApprovalPending';
+import AuthTransitionOverlay from '@/components/Auth/AuthTransitionOverlay';
 import { useToast } from '@/components/Toast/ToastProvider';
 
 /** Thai date, short month (e.g. "วันพฤหัสบดีที่ 9 ต.ค. 2569") — fits one line. */
@@ -161,6 +163,7 @@ function LoginContent() {
   const [signupError, setSignupError] = useState('');
   const [isSigningUp, setIsSigningUp] = useState(false);
   const [pendingEmail, setPendingEmail] = useState('');
+  const [signInDone, setSignInDone] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState('');
   const signupNameRef = useRef<HTMLInputElement>(null);
 
@@ -168,10 +171,17 @@ function LoginContent() {
   // requested page, or the dashboard. (Logout clears auth state before
   // replacing to /login, so this never loops.)
   useEffect(() => {
-    if (status === 'authenticated') {
+    if (status !== 'authenticated') return;
+    // A fresh sign-in keeps a short success beat on screen before the
+    // dashboard loads; a restored session (already authenticated on mount)
+    // must redirect straight away.
+    if (!signInDone) {
       router.replace(nextPath || '/dashboard');
+      return;
     }
-  }, [status, router, nextPath]);
+    const timer = window.setTimeout(() => router.replace(nextPath || '/dashboard'), 750);
+    return () => window.clearTimeout(timer);
+  }, [status, router, nextPath, signInDone]);
 
   useEffect(() => {
     setIsClient(true);
@@ -377,6 +387,7 @@ function LoginContent() {
       if (response.ok && result.result === 'success') {
         // login() persists the user + session_id and flips status to
         // 'authenticated', which triggers the redirect effect above.
+        setSignInDone(true);
         login(result.data.user, result.data.session_id);
 
         if (rememberMe) {
@@ -412,18 +423,17 @@ function LoginContent() {
   if (view === 'pending') {
     return (
       <LoginFrame now={now} tagline="สถานะการสมัครสมาชิก">
-        <div className="login-form">
-          <div className="login-notice" role="status" aria-live="polite">
-            <span className="login-notice-title">รอผู้ดูแลระบบอนุมัติ</span>
-            เราได้รับคำขอสมัครของ <strong>{pendingEmail}</strong> แล้ว
-            บัญชีจะใช้งานได้ทันทีที่ผู้ดูแลระบบอนุมัติ และเราจะแจ้งผลให้ทราบทางอีเมล
-            เมื่อได้รับอนุมัติแล้วกรุณากลับมาเข้าสู่ระบบ
-          </div>
-          <button type="button" className="login-submit" onClick={() => setView('signin')}>
-            <span>กลับไปหน้าเข้าสู่ระบบ</span>
-            <ArrowRight size={18} aria-hidden="true" />
-          </button>
-        </div>
+        <ApprovalPending
+          email={pendingEmail}
+          title="ได้รับคำขอสมัครสมาชิกแล้ว"
+          lead={
+            <>
+              เราได้รับคำขอของ <strong>{pendingEmail}</strong> แล้ว
+            </>
+          }
+          note="บัญชีจะใช้งานได้ทันทีที่ผู้ดูแลระบบอนุมัติ และเราจะแจ้งผลให้ทราบทางอีเมล"
+          onBack={() => setView('signin')}
+        />
       </LoginFrame>
     );
   }
@@ -432,7 +442,11 @@ function LoginContent() {
   if (view === 'signup') {
     return (
       <LoginFrame now={now} tagline="สมัครสมาชิกเพื่อใช้งานแดชบอร์ด">
-        <form onSubmit={handleSignup} className="login-form" aria-busy={isSigningUp}>
+        <form
+          onSubmit={handleSignup}
+          className="login-form login-view-enter"
+          aria-busy={isSigningUp}
+        >
           <label htmlFor="signup-name" className="login-field">
             <span>ชื่อที่แสดง</span>
             <div className="login-input-wrap">
@@ -535,7 +549,11 @@ function LoginContent() {
         <div className="login-panel">
           <LoginHeader now={now} tagline="เข้าสู่ระบบเพื่อใช้งานแดชบอร์ดของคุณ" />
 
-          <form onSubmit={handleSubmit} className="login-form" aria-busy={isSubmitting}>
+          <form
+            onSubmit={handleSubmit}
+            className="login-form login-view-enter"
+            aria-busy={isSubmitting}
+          >
             <label htmlFor="login-email" className="login-field">
               <span>อีเมล หรือ ชื่อผู้ใช้</span>
               <div className="login-input-wrap">
@@ -668,6 +686,14 @@ function LoginContent() {
           </form>
         </div>
       </section>
+
+      {signInDone && (
+        <AuthTransitionOverlay
+          tone="success"
+          title="เข้าสู่ระบบสำเร็จ"
+          subtitle="กำลังพาคุณเข้าสู่แดชบอร์ด…"
+        />
+      )}
     </main>
   );
 }

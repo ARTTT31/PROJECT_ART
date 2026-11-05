@@ -1380,3 +1380,36 @@ input[type='radio'],
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite linear;
 }
+
+/* ═══════════════════════════════════════════════════════
+   AUTH TRANSITION OVERLAY (sign-in / sign-out feedback)
+   ═══════════════════════════════════════════════════════ */
+.auth-transition-card {
+  animation: auth-card-in 320ms cubic-bezier(0.2, 0.75, 0.25, 1) both;
+}
+
+@keyframes auth-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Indeterminate progress rail shown while a session transition completes. */
+.auth-progress-bar {
+  width: 38%;
+  animation: auth-progress 1.15s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@keyframes auth-progress {
+  0% {
+    transform: translateX(-110%);
+  }
+  100% {
+    transform: translateX(300%);
+  }
+}
