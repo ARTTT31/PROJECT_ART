@@ -22,6 +22,7 @@ import {
   BellRing,
   Camera,
   Loader2,
+  Download,
 } from 'lucide-react';
 import { showDeleteConfirm, showToast, showSuccess, showError } from '@/utils/sweetalert';
 import { canAccessPage } from '@/utils/accessiblePages';
@@ -136,6 +137,30 @@ export default function ProfilePage() {
   const [name, setName] = useState(authUser?.name || '');
   const [email, setEmail] = useState(authUser?.email || '');
   const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExportData = async () => {
+    setIsExporting(true);
+    try {
+      const res = await fetchWithAuth('/api/v1/profile/export');
+      if (!res.ok) throw new Error('ไม่สามารถดาวน์โหลดข้อมูลได้');
+      const data = await res.json();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `art-workspace-export-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('ดาวน์โหลดสำเนาข้อมูลเรียบร้อย', 'success');
+    } catch {
+      showToast('เกิดข้อผิดพลาดในการดาวน์โหลดข้อมูล', 'error');
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   // Password & Security Form
   const [oldPassword, setOldPassword] = useState('');
@@ -768,6 +793,36 @@ export default function ProfilePage() {
               </form>
             </SectionCard>
 
+              {/* Card: ดาวน์โหลดข้อมูลบัญชี (Data Export) */}
+              <div className="mt-4">
+                <SectionCard
+                  icon={<Download size={19} aria-hidden="true" />}
+                  iconBg="bg-blue-50"
+                  iconColor="text-[var(--accent)]"
+                  iconRing="ring-blue-200/60"
+                  title="สำเนาข้อมูลบัญชี (Data Export)"
+                  subtitle="ดาวน์โหลดข้อมูลทั้งหมดของคุณในรูปแบบ JSON เพื่อเก็บสำรอง"
+                >
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 py-1">
+                    <div className="text-[12.5px] text-[var(--ink-muted)] leading-relaxed">
+                      ดาวน์โหลดข้อมูลส่วนตัว ข้อมูลโปรไฟล์ การตั้งค่า และประวัติที่เกี่ยวข้องในรูปแบบไฟล์ JSON
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleExportData}
+                      disabled={isExporting}
+                      className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full border border-[var(--hairline-strong)] bg-[var(--surface)] px-5 py-2.5 text-[13px] font-bold text-[var(--ink)] shadow-xs transition-all duration-150 hover:bg-[var(--surface-subtle)] hover:text-[var(--accent)] disabled:opacity-50 active:scale-[0.96] shrink-0"
+                    >
+                      {isExporting ? (
+                        <Loader2 size={15} className="animate-spin text-[var(--accent)]" />
+                      ) : (
+                        <Download size={15} aria-hidden="true" />
+                      )}
+                      {isExporting ? 'กำลังสร้างไฟล์…' : 'ส่งออกข้อมูล (JSON)'}
+                    </button>
+                  </div>
+                </SectionCard>
+              </div>
             </div>
 
             <div hidden={accountSection !== 'security'}>

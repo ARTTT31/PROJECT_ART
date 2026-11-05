@@ -1089,7 +1089,7 @@ input[type='radio'],
 
 .art-swal-popup {
   width: min(28rem, calc(100vw - 2rem)) !important;
-  border-radius: 28px !important;
+  border-radius: 18px !important;
   border: 1px solid var(--hairline) !important;
   background:
     radial-gradient(120% 70% at 50% -12%, var(--accent-soft-weak), rgba(255, 255, 255, 0) 62%),
@@ -1232,7 +1232,7 @@ input[type='radio'],
 .art-swal-confirm {
   min-width: 9.5rem !important;
   border: 1px solid transparent !important;
-  background: linear-gradient(180deg, var(--accent-hover) 0%, var(--accent) 100%) !important;
+  background: var(--accent) !important;
   color: white !important;
   box-shadow:
     0 10px 22px -10px rgba(0, 102, 204, 0.75),
@@ -1240,7 +1240,7 @@ input[type='radio'],
 }
 
 .art-swal-confirm:hover {
-  background: linear-gradient(180deg, var(--accent-hover) 0%, var(--accent-hover) 100%) !important;
+  background: var(--accent-hover) !important;
   transform: translateY(-1px) !important;
   box-shadow:
     0 14px 26px -10px rgba(0, 102, 204, 0.8),
@@ -1248,7 +1248,7 @@ input[type='radio'],
 }
 
 .art-swal-confirm:active {
-  transform: translateY(0) scale(0.985) !important;
+  transform: scale(0.95) !important;
 }
 
 .art-swal-confirm.art-swal-danger {
