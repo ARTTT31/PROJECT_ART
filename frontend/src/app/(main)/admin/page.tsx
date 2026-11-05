@@ -126,7 +126,7 @@ export default function AdminPage() {
               <p className="mt-1 text-[22px] font-extrabold leading-none tabular-nums text-[var(--ink)]">
                 {events.loading ? '—' : (events.value ?? '—')}
               </p>
-              <p className="mt-1 text-[11px] text-[var(--ink-faint)]">รายการที่บันทึกไว้ทั้งหมด</p>
+              <p className="mt-1 text-[11px] text-[var(--ink-tertiary)]">รายการที่บันทึกไว้ทั้งหมด</p>
             </div>
             <ArrowRight
               size={16}
@@ -147,7 +147,7 @@ export default function AdminPage() {
               <p className="mt-1 text-[22px] font-extrabold leading-none tabular-nums text-[var(--ink)]">
                 {pending.loading ? '—' : (pending.value ?? '—')}
               </p>
-              <p className="mt-1 text-[11px] text-[var(--ink-faint)]">คำขอสมัครสมาชิกที่รอการตัดสินใจ</p>
+              <p className="mt-1 text-[11px] text-[var(--ink-tertiary)]">คำขอสมัครสมาชิกที่รอการตัดสินใจ</p>
             </div>
             <ArrowRight
               size={16}
@@ -157,7 +157,7 @@ export default function AdminPage() {
           </Link>
         </div>
 
-        <div className="flex items-center gap-1.5 border-t border-[var(--hairline-soft)] px-5 py-2.5 text-[10.5px] text-[var(--ink-faint)] sm:px-6">
+        <div className="flex items-center gap-1.5 border-t border-[var(--hairline-soft)] px-5 py-2.5 text-[10.5px] text-[var(--ink-tertiary)] sm:px-6">
           <Clock3 size={11} aria-hidden="true" />
           ข้อมูลอัปเดตเมื่อเปิดหน้านี้ — กดรีเฟรชเพื่อดูใหม่
         </div>

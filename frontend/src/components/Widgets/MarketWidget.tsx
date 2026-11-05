@@ -447,7 +447,7 @@ export default function MarketWidget({
           )}
           <label
             htmlFor="market-currency-source"
-            className="mt-auto pt-3 text-[9.5px] font-medium uppercase tracking-[0.08em] text-[var(--ink-faint)]"
+            className="mt-auto pt-3 text-[9.5px] font-medium uppercase tracking-[0.08em] text-[var(--ink-tertiary)]"
           >
             แหล่งข้อมูล
           </label>

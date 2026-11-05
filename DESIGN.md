@@ -9,7 +9,7 @@ ART Workspace uses a refined Web/Desktop UI based on Apple Human Interface Guide
 Colours are declared once as CSS custom properties in `frontend/src/app/globals.css` and consumed through arbitrary Tailwind values (`bg-[var(--surface)]`, `text-[var(--ink-muted)]`, `bg-[var(--accent)]`). Do not hard-code a light-mode hex in a component: it would stay light in dark mode and ignore the accent the user picked.
 
 - Accent: `--accent` (`#0066cc`, Apple Action Blue by default) — primary actions, active states, focus rings. `--accent-hover` is the hover tone, `--accent-text` is the accent used as text (brightened automatically in dark mode).
-- Ink: `--ink` `#1d1d1f` — body text and headings; `--ink-secondary`, `--ink-muted` `#6e6e73`, `--ink-tertiary`, `--ink-faint` for lower emphasis.
+- Ink: `--ink` `#1d1d1f` — body text and headings. The lower-emphasis steps are contrast-tested, not decorative: `--ink-secondary` `#475569` (7.5:1), `--ink-muted` `#5f5f64` (6.3:1) and `--ink-tertiary` `#6e6e73` (5.0:1 on white, 4.7:1 on `--surface-grouped`) all clear WCAG AA at any text size. `--ink-faint` `#86868b` (3.6:1) is for icons and dividers only — never for copy.
 - Surfaces: `--surface` `#ffffff` for cards and widgets, `--surface-grouped` `#f5f5f7` for the page background, plus `--surface-subtle`, `--surface-chip` and the `--glass-*` translucent fills.
 - Hairlines: `--hairline`, `--hairline-soft`, `--hairline-strong` (they flip from black-alpha to white-alpha in dark mode).
 - State colors: `--success` `#34c759`, `--danger` `#ff3b30`, `--warning` `#ff9500`, each with a `*-ink` text tone and a `*-soft` fill.
@@ -47,6 +47,7 @@ All product buttons follow the HIG specifications:
 - Active: `active:scale-[0.95]` for a springy native feel.
 - Primary buttons use solid `#0066cc`.
 - Icon-only controls must include an `aria-label` and a visible focus ring.
+- Touch targets: 24×24 px is the floor for every control (WCAG 2.5.8, AA). The 44×44 Apple HIG size is applied only on coarse pointers (touch) through the `@media (pointer: coarse)` rule in `globals.css`; forcing it on desktop turned compact widget chips into 44px blocks.
 
 ## Dialogs (Radix UI)
 

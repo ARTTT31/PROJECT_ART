@@ -320,7 +320,7 @@ export default function FinanceSummaryDialog({
                       <span className="min-w-0 truncate text-[var(--ink)]">{row.category}</span>
                       <span className="shrink-0 tabular-nums font-semibold text-[var(--ink-muted)]">
                         {money.format(row.total)}
-                        <span className="ml-1 text-[10px] text-[var(--ink-faint)]">({row.count})</span>
+                        <span className="ml-1 text-[10px] text-[var(--ink-tertiary)]">({row.count})</span>
                       </span>
                     </div>
                     <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-[var(--surface-chip)]">

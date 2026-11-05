@@ -249,7 +249,7 @@ export default function Select({
             {groups.map(([group, groupOptions]) => (
               <div key={group || 'default'} role="group" aria-label={group || undefined}>
                 {group && (
-                  <div className="px-2.5 pb-1 pt-2 text-[10px] font-bold uppercase tracking-[0.08em] text-[var(--ink-faint)]">
+                  <div className="px-2.5 pb-1 pt-2 text-[10px] font-bold uppercase tracking-[0.08em] text-[var(--ink-tertiary)]">
                     {group}
                   </div>
                 )}
