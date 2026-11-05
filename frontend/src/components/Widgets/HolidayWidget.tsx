@@ -199,7 +199,7 @@ export default function HolidayWidget({
             type="button"
             onClick={() => setFilterMode(mode)}
             aria-pressed={filterMode === mode}
-            className={`rounded-full px-2.5 py-1 text-[10.5px] font-bold transition-all duration-150 ${
+            className={`small-control rounded-full px-2.5 py-0.5 text-[10.5px] font-bold transition-all duration-150 ${
               filterMode === mode
                 ? 'bg-[var(--accent-soft)] text-[var(--accent-text)]'
                 : 'text-[var(--ink-tertiary)] hover:bg-[var(--surface-grouped)] hover:text-[var(--ink)]'

@@ -187,7 +187,7 @@ export default function PersonalReminders() {
         <button
           type="button"
           onClick={() => setOpen((value) => !value)}
-          className="inline-flex items-center gap-1 rounded-full bg-[var(--surface)] px-2.5 py-1 text-[11px] font-semibold text-[var(--accent-text)] ring-1 ring-[var(--hairline)] transition-colors hover:bg-[var(--accent-soft)]"
+          className="small-control inline-flex items-center gap-1 rounded-full bg-[var(--surface)] px-2.5 py-1 text-[11px] font-semibold text-[var(--accent-text)] ring-1 ring-[var(--hairline)] transition-colors hover:bg-[var(--accent-soft)]"
           aria-expanded={open}
         >
           <Plus size={12} aria-hidden="true" />
@@ -222,7 +222,7 @@ export default function PersonalReminders() {
                   type="button"
                   onClick={() => setKind(value)}
                   aria-pressed={kind === value}
-                  className={`rounded-full px-2.5 py-1 text-[11px] font-semibold transition-colors ${
+                  className={`small-control rounded-full px-2.5 py-1 text-[11px] font-semibold transition-colors ${
                     kind === value
                       ? 'bg-[var(--surface)] text-[var(--ink)] shadow-xs'
                       : 'text-[var(--ink-muted)] hover:text-[var(--ink)]'
@@ -269,7 +269,7 @@ export default function PersonalReminders() {
                   type="button"
                   onClick={() => void toggle(item.id)}
                   aria-label={`ทำเครื่องหมาย ${item.title} ว่าเสร็จแล้ว`}
-                  className="shrink-0 rounded-full p-1 text-[var(--ink-tertiary)] hover:text-[var(--success)]"
+                  className="small-control shrink-0 rounded-full p-1 text-[var(--ink-tertiary)] hover:text-[var(--success)]"
                 >
                   <Check size={12} aria-hidden="true" />
                 </button>
@@ -277,7 +277,7 @@ export default function PersonalReminders() {
                   type="button"
                   onClick={() => void remove(item.id)}
                   aria-label={`ลบ ${item.title}`}
-                  className="shrink-0 rounded-full p-1 text-[var(--ink-tertiary)] hover:text-[var(--danger)]"
+                  className="small-control shrink-0 rounded-full p-1 text-[var(--ink-tertiary)] hover:text-[var(--danger)]"
                 >
                   <Trash2 size={12} aria-hidden="true" />
                 </button>

@@ -49,7 +49,10 @@ export default function WidgetSizeToggle({
             aria-label={`ปรับเป็น${description}`}
             title={description}
             className={clsx(
-              'h-6 min-w-[26px] rounded-full px-2 text-[11px] font-bold transition-all duration-150 active:scale-[0.95]',
+              // `small-control` opts out of the 44px touch-target rule in globals.css:
+              // that rule is right for page actions, but inside a widget tile it turned
+              // this 24px pill into a 44px block that pushed the content out of view.
+              'small-control h-6 min-w-[26px] rounded-full px-2 text-[11px] font-bold transition-all duration-150 active:scale-[0.95]',
               'focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)]',
               isActive
                 ? 'bg-[var(--surface)] text-[var(--ink)] shadow-[0_1px_3px_rgba(0,0,0,0.12)]'

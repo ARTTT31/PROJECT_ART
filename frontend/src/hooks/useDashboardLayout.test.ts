@@ -11,7 +11,7 @@ vi.mock('@/lib/api/fetchWithAuth', () => ({
   fetchWithAuth: vi.fn().mockResolvedValue({ ok: true }),
 }));
 
-import { useDashboardLayout } from '@/hooks/useDashboardLayout';
+import { useDashboardLayout, dashboardLayoutCacheKeys } from '@/hooks/useDashboardLayout';
 import type { WidgetConfig } from '@/types';
 
 let mockUser: { dashboard_layout?: string | null } | null = null;
@@ -57,7 +57,7 @@ describe('useDashboardLayout — initialization', () => {
       { id: 'weather', w: 2 },
       { id: 'qrcode', w: 1 },
     ];
-    localStorage.setItem('artWorkspaceLayoutV3', JSON.stringify(saved));
+    localStorage.setItem(dashboardLayoutCacheKeys().layout, JSON.stringify(saved));
 
     const { result } = await renderLayout();
 
@@ -75,7 +75,10 @@ describe('useDashboardLayout — initialization', () => {
   });
 
   it('prefers the cloud profile layout over localStorage', async () => {
-    localStorage.setItem('artWorkspaceLayoutV3', JSON.stringify([{ id: 'qrcode', w: 1 }]));
+    localStorage.setItem(
+      dashboardLayoutCacheKeys().layout,
+      JSON.stringify([{ id: 'qrcode', w: 1 }]),
+    );
     mockUser = { dashboard_layout: JSON.stringify([{ id: 'weather', w: 3 }]) };
 
     const { result } = await renderLayout();
@@ -106,11 +109,27 @@ describe('useDashboardLayout — initialization', () => {
   });
 
   it('survives malformed JSON in localStorage without throwing', async () => {
-    localStorage.setItem('artWorkspaceLayoutV3', '<<<broken');
+    localStorage.setItem(dashboardLayoutCacheKeys().layout, '<<<broken');
 
     const { result } = await renderLayout();
 
     expect(result.current.widgets.map((w) => w.id)).toEqual(DEFAULT_IDS);
+  });
+
+  it('ignores the pre-scoping cache so a new account starts from the default order', async () => {
+    // Older builds stored one device-wide key. A second account signing in on
+    // the same browser used to inherit that arrangement.
+    localStorage.setItem(
+      'artWorkspaceLayoutV3',
+      JSON.stringify([{ id: 'qrcode', w: 3 }]),
+    );
+    localStorage.setItem('artWorkspaceVisibleWidgets', JSON.stringify(['qrcode']));
+
+    const { result } = await renderLayout();
+
+    expect(result.current.widgets.map((w) => w.id)).toEqual(DEFAULT_IDS);
+    expect(result.current.visibleWidgetIds).toEqual(DEFAULT_IDS);
+    expect(localStorage.getItem('artWorkspaceLayoutV3')).toBeNull();
   });
 });
 
@@ -202,7 +221,9 @@ describe('useDashboardLayout — persistence', () => {
 
     act(() => result.current.handleResize('weather', 2));
 
-    const cached = JSON.parse(localStorage.getItem('artWorkspaceLayoutV3') || '[]');
+    const cached = JSON.parse(
+      localStorage.getItem(dashboardLayoutCacheKeys().layout) || '[]',
+    );
     expect(cached.find((w: WidgetConfig) => w.id === 'weather')?.w).toBe(2);
   });
 

@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { WidgetConfig } from '@/types';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
 import { useAuth } from '@/hooks/useAuth';
+import { offlineScope } from '@/lib/offline/localStore';
 
 const defaultWidgets: WidgetConfig[] = [
   { id: 'notes', w: 1 },
@@ -42,6 +43,33 @@ export const widgetDescriptions: Record<string, string> = {
   converter: 'แปลงเงินบาทเป็นสกุลอื่นด้วยอัตราอ้างอิงรายวัน',
 };
 
+/**
+ * Cache keys for the dashboard arrangement, scoped to the signed-in account.
+ *
+ * The arrangement belongs to an account, not to the browser. Storing it under
+ * one device-wide key made every new account inherit the previous one's widget
+ * order, hidden widgets and sizes — it looked as if the account had arrived
+ * with a dashboard it had never seen. The backend profile stays authoritative;
+ * this cache only makes the first paint correct on a slow connection.
+ */
+export function dashboardLayoutCacheKeys(): { layout: string; visible: string } {
+  const scope = offlineScope();
+  return {
+    layout: `artWorkspaceLayoutV3:${scope}`,
+    visible: `artWorkspaceVisibleWidgets:${scope}`,
+  };
+}
+
+/** Drop the pre-scoping keys so they can never reach another account. */
+function dropLegacyLayoutCache(): void {
+  try {
+    localStorage.removeItem('artWorkspaceLayoutV3');
+    localStorage.removeItem('artWorkspaceVisibleWidgets');
+  } catch {
+    // Private mode: nothing was persisted to begin with.
+  }
+}
+
 export function useDashboardLayout() {
   const { user, updateUser } = useAuth();
   const [widgets, setWidgets] = useState<WidgetConfig[]>([]);
@@ -79,10 +107,11 @@ export function useDashboardLayout() {
         visibleWidgetIds: newVisibleIds,
       });
 
-      // 1. Fast local cache
+      // 1. Fast local cache, keyed by account (see dashboardLayoutCacheKeys)
+      const cacheKeys = dashboardLayoutCacheKeys();
       try {
-        localStorage.setItem('artWorkspaceLayoutV3', JSON.stringify(newLayout));
-        localStorage.setItem('artWorkspaceVisibleWidgets', JSON.stringify(newVisibleIds));
+        localStorage.setItem(cacheKeys.layout, JSON.stringify(newLayout));
+        localStorage.setItem(cacheKeys.visible, JSON.stringify(newVisibleIds));
       } catch {}
 
       // 2. Debounced backend sync
@@ -141,14 +170,16 @@ export function useDashboardLayout() {
     }
 
     if (!foundCloud) {
-      const savedVisible = localStorage.getItem('artWorkspaceVisibleWidgets');
+      dropLegacyLayoutCache();
+      const cacheKeys = dashboardLayoutCacheKeys();
+      const savedVisible = localStorage.getItem(cacheKeys.visible);
       if (savedVisible) {
         try {
           loadedVisible = JSON.parse(savedVisible);
         } catch {}
       }
 
-      const savedLayout = localStorage.getItem('artWorkspaceLayoutV3');
+      const savedLayout = localStorage.getItem(cacheKeys.layout);
       if (savedLayout) {
         try {
           const parsed = JSON.parse(savedLayout);
