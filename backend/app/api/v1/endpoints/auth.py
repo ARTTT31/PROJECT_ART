@@ -409,12 +409,6 @@ async def register(
             detail=_CAPTCHA_REQUIRED_MESSAGE,
         )
 
-    if not user_register.accepted_terms:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="กรุณายอมรับข้อตกลงการใช้งานและนโยบายความเป็นส่วนตัวก่อนสมัครสมาชิก",
-        )
-
     try:
         if mode == "approval":
             # The answer is IDENTICAL whether the address is unknown, already
@@ -432,9 +426,6 @@ async def register(
                     ip_address=client_ip,
                     user_agent=user_agent,
                 )
-                # Consent is recorded with the request: provable from here on.
-                user.terms_accepted_at = utils_utcnow()
-                user.terms_version = settings.TERMS_VERSION
                 # Tell the admins something is waiting; best-effort by design.
                 await _notify_admins_of_request(db, user)
             elif existing.deleted_at is None and existing.status == "rejected":
@@ -447,9 +438,6 @@ async def register(
                     ip_address=client_ip,
                     user_agent=user_agent,
                 )
-                # Re-submission re-accepts the current terms and re-notifies admins.
-                existing.terms_accepted_at = utils_utcnow()
-                existing.terms_version = settings.TERMS_VERSION
             else:
                 await audit_service.log_action(
                     action="USER_REGISTER_DUPLICATE",
@@ -470,10 +458,6 @@ async def register(
 
         # ── open: self-registration creates a working account immediately ──
         user = await auth_service.register(user_register, role="user")
-
-        # Consent is recorded with the request: provable from here on.
-        user.terms_accepted_at = utils_utcnow()
-        user.terms_version = settings.TERMS_VERSION
 
         # Verification link for every self-registered password account. Whether
         # an unverified account may SIGN IN is decided at login

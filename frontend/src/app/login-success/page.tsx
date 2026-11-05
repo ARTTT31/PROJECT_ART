@@ -49,7 +49,7 @@ export default function LoginSuccessPage() {
         });
 
         if (!res.ok) {
-          console.log('No valid session found, redirecting to login');
+          console.warn('No valid session found, redirecting to login');
           hasRedirected.current = true;
           router.replace('/login');
           return;

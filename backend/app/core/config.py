@@ -263,7 +263,6 @@ class Settings(BaseSettings):
     # ── Terms / PDPA consent ────────────────────────────────────────────────
     # Version string recorded on an account when it accepts the terms. Bump it
     # when the terms change so a re-consent can be required later.
-    TERMS_VERSION: str = "2026-10"
 
     # ── Transactional email ─────────────────────────────────────────────────
     # console (default): messages are logged + kept in an in-memory outbox — the

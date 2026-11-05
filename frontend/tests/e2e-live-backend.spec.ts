@@ -53,6 +53,33 @@ test.describe('Live Backend E2E Tests', () => {
     await expect(page.locator('text=ชื่อผู้ใช้งานหรือรหัสผ่านไม่ถูกต้อง')).toBeVisible({ timeout: 10000 })
   })
 
+  test('a freshly registered account can sign in and reach the dashboard', async ({
+    page,
+    request,
+  }) => {
+    test.skip(!isBackendLive, `Live backend is not running at ${BACKEND_URL}. Skipping live test.`)
+
+    // The email is unique per run so a repeated local/CI run never collides.
+    const email = `e2e.login.${Date.now()}@artworkspace.dev`
+    const password = 'E2ePassword123!'
+
+    const register = await request.post(`${BACKEND_URL}/api/v1/auth/register`, {
+      data: { name: 'E2E Login', email, password },
+    })
+    // 201 in `open` mode; in `approval` mode the account is not sign-in-ready yet
+    // and this test is not the place to prove the admin queue.
+    expect(register.status(), await register.text()).toBe(201)
+
+    await page.goto('/login')
+    await page.locator('#login-email').fill(email)
+    await page.locator('#login-password').fill(password)
+    await page.getByRole('button', { name: 'เข้าสู่ระบบ', exact: true }).click()
+
+    // The success overlay holds for a beat before the dashboard route loads.
+    await expect(page).toHaveURL(/\/dashboard/, { timeout: 20_000 })
+    await expect(page.getByTestId('manage-widgets-button')).toBeVisible({ timeout: 20_000 })
+  })
+
   test('API rate limiting header presence from live backend', async ({ request }) => {
     test.skip(!isBackendLive, `Live backend is not running at ${BACKEND_URL}. Skipping live test.`)
 

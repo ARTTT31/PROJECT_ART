@@ -88,7 +88,7 @@
 | Single instance by default | The WebSocket registry can fan out through Redis (`WS_BROADCAST_REDIS_URL`) and the rate limiter can use Redis (`SLOWAPI_STORAGE_URI`), but both default to process-local and startup logs a `[SCALING]` notice. See README -> *Horizontal scaling*. |
 | Third-party market data | Yahoo Finance / Frankfurter / Thai Gold API have no SLA; the widget shows the last known value (or an empty block) rather than failing the whole page. |
 | Thai-only UI | All copy is hardcoded Thai; there is no i18n layer. |
-| Partial frontend coverage | 208 Vitest tests cover logic and most widgets, but several pages/components remain untested, and the 3 Playwright smoke tests run without a live backend. |
+| Partial frontend coverage | 275 Vitest tests cover logic and most widgets, but 58 of 87 components/pages still have no test file; `npm run test:coverage` reports the real number. Playwright now also runs axe checks on the auth pages and a live register → login E2E against the backend in CI. |
 
 ---
 
@@ -99,9 +99,9 @@ Ordered by evidence, not by preference:
 1. **Redis for the rate limiter before scaling out** — the WebSocket fan-out already has a
    supported path (`WS_BROADCAST_REDIS_URL`); the limiter still needs
    `SLOWAPI_STORAGE_URI=redis://…` for a second instance to be safe.
-2. **Frontend coverage and one live-backend E2E** — 208 unit tests cover pure logic and most
-   widgets; several pages/components are still untested, and nothing currently catches a
-   broken login against the real API.
+2. **Frontend page/component coverage** — 275 unit tests cover pure logic and most widgets and
+   the live auth E2E now proves register → login against the real API, so what remains is
+   coverage for the pages (profile, admin, camera) and splitting the largest components.
 3. **Signed/opaque `user` cookie** — the readable cookie is only a display fast-path and is
    re-verified against `/auth/session`, but it is not signed; removing editable fields or
    binding it to the server would be the defence-in-depth next step.

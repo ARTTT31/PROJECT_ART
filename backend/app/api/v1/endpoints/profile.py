@@ -695,8 +695,6 @@ async def export_my_data(
             "created_at": _stamp(current_user.created_at),
             "last_login": _stamp(current_user.last_login),
             "email_verified_at": _stamp(current_user.email_verified_at),
-            "terms_accepted_at": _stamp(current_user.terms_accepted_at),
-            "terms_version": current_user.terms_version,
         },
         "profile": {
             "avatar": getattr(current_user, "avatar", None),

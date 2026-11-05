@@ -278,9 +278,8 @@ function LoginContent() {
           name,
           email,
           password: signupPassword,
-          // Consent (PDPA) and the optional CAPTCHA token travel with the
-          // request; the backend records both.
-          accepted_terms: true,
+          // The optional CAPTCHA token travels with the request; the backend
+          // verifies it when the deployment has Turnstile configured.
           ...(turnstileToken ? { turnstile_token: turnstileToken } : {}),
         }),
       });

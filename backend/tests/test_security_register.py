@@ -34,7 +34,6 @@ async def _register(client, email=NEW_EMAIL, **extra):
             "email": email,
             "password": PASSWORD,
             "name": "Newcomer",
-            "accepted_terms": True,
             **extra,
         },
     )
@@ -187,7 +186,7 @@ async def test_register_cannot_choose_role(client, monkeypatch):
 
     r = await client.post("/api/v1/auth/register", json={
         "email": "evil@example.com", "password": PASSWORD,
-        "name": "Evil", "role": "admin", "accepted_terms": True})
+        "name": "Evil", "role": "admin"})
     assert r.status_code in (201, 422)
     if r.status_code == 201:
         r = await _login(client, email="evil@example.com")
@@ -203,7 +202,7 @@ async def test_register_ignores_whitehouse_role(client, monkeypatch):
 
     r = await client.post("/api/v1/auth/register", json={
         "email": "whitehouse@example.com", "password": PASSWORD,
-        "name": "Wh", "role": "admin", "accepted_terms": True})
+        "name": "Wh", "role": "admin"})
     assert r.status_code == 201
     r = await _login(client, email="whitehouse@example.com")
     tok = r.cookies.get("access_token")
@@ -218,7 +217,7 @@ async def test_approval_mode_ignores_a_role_in_the_body(client, db_session, monk
 
     r = await client.post("/api/v1/auth/register", json={
         "email": "sneaky@example.com", "password": PASSWORD,
-        "name": "Sneaky", "role": "admin", "accepted_terms": True})
+        "name": "Sneaky", "role": "admin"})
     assert r.status_code == 201
 
     user = (

@@ -142,7 +142,6 @@ async def test_admin_can_switch_registration_mode_and_signups_follow(
             "email": "from-branding@example.com",
             "password": "Passw0rd123",
             "name": "From Branding",
-            "accepted_terms": True,
         },
     )
     assert signup.status_code == 201, signup.text

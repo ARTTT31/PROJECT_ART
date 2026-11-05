@@ -176,8 +176,6 @@ export default function RegisterPage() {
           name: trimmedName,
           email: trimmedEmail,
           password,
-
-          accepted_terms: true,
           ...(turnstileToken ? { turnstile_token: turnstileToken } : {}),
         }),
       });

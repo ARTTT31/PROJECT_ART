@@ -19,7 +19,7 @@
 | ลายเซ็นอีเมล | `EMAIL_BACKEND`, `EMAIL_FROM`, provider key/SMTP | ดูข้อ 2 |
 | ยืนยันอีเมล | `REQUIRE_EMAIL_VERIFICATION=false` ก่อน → `true` เมื่ออีเมลใช้งานได้จริง | false = สมัครแล้วเข้าได้เลย; true = ต้องกดลิงก์ในอีเมลก่อน |
 | CAPTCHA | `TURNSTILE_SECRET_KEY` + `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | Cloudflare Turnstile ฟรี; ว่าง = ปิดการตรวจ (ระบบยังทำงานปกติ) |
-| ข้อตกลง/PDPA | ยังไม่มีหน้า `/terms` หรือ `/privacy` ในโค้ด (ถอดออก 27 ต.ค. 2026) | ฟอร์มสมัครยังส่ง `accepted_terms=true` และ backend ยังบันทึก `terms_version`; ก่อนเปิดสาธารณะต้องเพิ่มหน้านโยบายจริงหรือเอา consent ออกให้ตรงกัน |
+| ข้อตกลง/PDPA | ยังไม่มีหน้า `/terms` หรือ `/privacy` | consent ปลอมถูกถอดออกทั้งระบบแล้ว (5 พ.ย. 2026): ไม่มีฟิลด์ `accepted_terms`, ไม่บันทึก `terms_version` และลบคอลัมน์ออกจาก DB — ถ้าจะเปิดสาธารณะต้องสร้างหน้าโยบายจริงแล้วเพิ่ม consent กลับมาทั้งชุด |
 | Redis (ถ้ามีหลาย instance) | `SLOWAPI_STORAGE_URI`, `WS_BROADCAST_REDIS_URL` | ดูข้อ 4 |
 | Secret | `SECRET_KEY` (≥32 ตัวอักษร) | ระบบจะปฏิเสธการ start ถ้าใช้ค่า placeholder ตอน `DEBUG=False` |
 | Database (Aiven) | `DATABASE_URL`, `SSL_CA_CERT_PATH` | Aiven บังคับ TLS และ CA ของ Aiven ไม่อยู่ใน certifi — ดาวน์โหลด CA จาก Console (Service → Overview → CA certificate) วางบน host แล้วชี้ path ไปที่ไฟล์นั้น |
@@ -130,10 +130,10 @@ Production ใช้ **Aiven for PostgreSQL** (project `thanyapong-8a15`, servic
 ## 7. PDPA / เอกสารนโยบาย (สถานะปัจจุบัน)
 
 - หน้า `/terms` และ `/privacy` ถูกถอดออกจากโค้ดเมื่อ 27 ต.ค. 2026 พร้อมส่วน PDPA ในหน้าโปรไฟล์
-- ฟอร์มสมัครยังส่ง `accepted_terms=true` และ backend ยังบันทึก `terms_version` — ถ้าไม่มีหน้านโยบายจริง ต้องตัดสินใจว่าจะคืนหน้าเหล่านั้นหรือเอา consent ออก
+- consent ปลอมถูกถอดออกแล้วเมื่อ 5 พ.ย. 2026: ฟอร์มไม่ส่ง `accepted_terms`, schema ไม่รับฟิลด์นี้, endpoint ไม่ปฏิเสธผู้สมัครเพราะ consent และคอลัมน์ `users.terms_accepted_at` / `terms_version` ถูกลบด้วย migration `20261105_drop_terms_consent` (ข้อมูล consent เดิมหายถาวร)
+- ถ้าจะเปิดสาธารณะ ต้องสร้างหน้าโยบายจริง + ลิงก์จากฟอร์ม แล้วเพิ่ม consent กลับมาใหม่ทั้ง client, schema, endpoint และคอลัมน์ (พร้อม migration)
 - ถ้าจะเปิดสาธารณะ ควรมี: หน้านโยบาย + ลิงก์จากฟอร์มสมัคร, เจ้าของข้อมูล/ช่องทางติดต่อ, นโยบาย retention ของ audit log, และขั้นตอนแจ้งเหตุละเมิดภายใน 72 ชม.
 - API ยังมี `GET /api/v1/profile/export` และ `DELETE /api/v1/profile/me` แต่ยังไม่มีปุ่มใน UI หลังการถอดส่วนนั้น; ถ้าจะให้ผู้ใช้ใช้เองต้องเพิ่มปุ่มกลับเข้าไป
-- ก่อนแก้ข้อตกลง ให้ bump `TERMS_VERSION` เพื่อให้บันทึก consent แยกเวอร์ชันได้
 
 ---
 

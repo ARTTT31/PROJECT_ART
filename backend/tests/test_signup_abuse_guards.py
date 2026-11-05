@@ -1,8 +1,9 @@
-"""Sign-up hygiene: PDPA consent, disposable domains, Turnstile.
+"""Sign-up hygiene: disposable domains and Turnstile.
 
-All three apply to the public password sign-up; none of them may fire when the
-deployment has not configured the feature (Turnstile unset) or when the claim
-is genuinely fine.
+Both apply to the public password sign-up; neither may fire when the deployment
+has not configured the feature (Turnstile unset) or when the claim is genuinely
+fine. There is no consent test because there is no consent field: the deployment
+has no policy page to agree to.
 """
 
 import pytest
@@ -28,42 +29,6 @@ async def _register(client, email="new@example.com", **extra):
     return await client.post("/api/v1/auth/register", json=body)
 
 
-# ── consent (PDPA) ─────────────────────────────────────────────────────────
-
-
-async def test_signup_without_consent_is_refused(client, monkeypatch):
-    monkeypatch.setattr(settings, "REGISTRATION_MODE", "open")
-
-    r = await _register(client, accepted_terms=False)
-
-    assert r.status_code == 400
-    assert "ข้อตกลง" in r.json()["detail"]
-
-
-async def test_consent_is_recorded_on_the_account(client, db_session, monkeypatch):
-    from sqlalchemy import select
-
-    from app.models.user import User
-
-    monkeypatch.setattr(settings, "REGISTRATION_MODE", "open")
-
-    assert (await _register(client, accepted_terms=True)).status_code == 201
-
-    user = (
-        await db_session.execute(select(User).where(User.email == "new@example.com"))
-    ).scalars().one()
-    assert user.terms_accepted_at is not None
-    assert user.terms_version == settings.TERMS_VERSION
-
-
-async def test_consent_is_required_in_approval_mode_too(client, monkeypatch):
-    monkeypatch.setattr(settings, "REGISTRATION_MODE", "approval")
-
-    r = await _register(client, accepted_terms=False)
-
-    assert r.status_code == 400
-
-
 # ── disposable domains ─────────────────────────────────────────────────────
 
 
@@ -74,7 +39,7 @@ async def test_disposable_email_is_refused(client, db_session, monkeypatch):
 
     monkeypatch.setattr(settings, "REGISTRATION_MODE", "open")
 
-    r = await _register(client, email="throwaway@mailinator.com", accepted_terms=True)
+    r = await _register(client, email="throwaway@mailinator.com")
 
     assert r.status_code == 400
     assert "อีเมลชั่วคราว" in r.json()["detail"]
@@ -86,7 +51,7 @@ async def test_extra_domains_from_settings_are_honoured(client, monkeypatch):
     monkeypatch.setattr(settings, "REGISTRATION_MODE", "open")
     monkeypatch.setattr(settings, "DISPOSABLE_EMAIL_DOMAINS", "burner.example")
 
-    r = await _register(client, email="x@burner.example", accepted_terms=True)
+    r = await _register(client, email="x@burner.example")
 
     assert r.status_code == 400
 
@@ -125,14 +90,14 @@ def turnstile_factory(monkeypatch):
 async def test_turnstile_not_required_when_unconfigured(client, monkeypatch):
     monkeypatch.setattr(settings, "REGISTRATION_MODE", "open")
 
-    assert (await _register(client, accepted_terms=True)).status_code == 201
+    assert (await _register(client)).status_code == 201
 
 
 async def test_turnstile_blocks_signup_without_a_token(client, monkeypatch):
     monkeypatch.setattr(settings, "REGISTRATION_MODE", "open")
     monkeypatch.setattr(settings, "TURNSTILE_SECRET_KEY", "test-secret")
 
-    r = await _register(client, accepted_terms=True)
+    r = await _register(client)
 
     assert r.status_code == 400
     assert "CAPTCHA" in r.json()["detail"]
@@ -143,7 +108,7 @@ async def test_turnstile_accepts_a_verified_token(client, monkeypatch, turnstile
     monkeypatch.setattr(settings, "TURNSTILE_SECRET_KEY", "test-secret")
     turnstile_factory(success=True)
 
-    r = await _register(client, accepted_terms=True, turnstile_token="tok")
+    r = await _register(client, turnstile_token="tok")
 
     assert r.status_code == 201, r.text
 
@@ -153,7 +118,7 @@ async def test_turnstile_rejects_a_failed_verification(client, monkeypatch, turn
     monkeypatch.setattr(settings, "TURNSTILE_SECRET_KEY", "test-secret")
     turnstile_factory(success=False)
 
-    r = await _register(client, accepted_terms=True, turnstile_token="tok")
+    r = await _register(client, turnstile_token="tok")
 
     assert r.status_code == 400
 

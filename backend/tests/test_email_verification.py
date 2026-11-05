@@ -32,7 +32,6 @@ async def _register(client):
             "email": NEW_EMAIL,
             "password": PASSWORD,
             "name": "Fresh",
-            "accepted_terms": True,
         },
     )
 

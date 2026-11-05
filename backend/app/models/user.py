@@ -78,8 +78,6 @@ class User(Base, TimestampMixin):
     # PDPA consent record: when the account accepted the terms, and which
     # revision of them. Kept even if the account is later deactivated, because
     # consent must remain provable.
-    terms_accepted_at: Mapped[datetime | None] = mapped_column(DateTime)
-    terms_version: Mapped[str | None] = mapped_column(String(20))
     # Account status
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     is_locked: Mapped[bool] = mapped_column(Boolean, default=False)

@@ -476,3 +476,32 @@ features that were missing around them.
 - No browser pass on the widget: the summary/edit dialogs, CSV download and
   budget bar were verified by unit/integration tests and a production build only,
   since reaching them requires a running backend and a signed-in account.
+
+## Consent Removal, CI Repair and Verification Gate (November 5, 2026)
+
+Scope: remove the fake PDPA consent end to end, restore the backend test job, and add the
+verification the previous review kept listing as missing.
+
+1. **The consent was theatre.** `/register` and `/login` both sent `accepted_terms: true`
+   without any checkbox, `/terms` and `/privacy` do not exist, yet `POST /auth/register`
+   answered `400` unless `accepted_terms` was truthy and stamped `terms_accepted_at` /
+   `terms_version`. Removed the field from `UserRegister`, the endpoint check and both stamps,
+   the `TERMS_VERSION` setting and its `.env.example` line, and the two columns via
+   `20261105_drop_terms_consent` (downgrade recreates empty columns; the values are gone).
+   The tests that asserted the old behaviour were deleted with it.
+2. **The backend CI job had been failing on every push.** `backend/pytest.ini` filtered
+   `...:starlette.types.StarletteDeprecationWarning`, a class the installed Starlette 1.10 does
+   not define, so pytest aborted while parsing the configuration (exit 4) and collected zero
+   tests — 494 tests and the 75% coverage gate were not running at all. The filter is now
+   message-only. Verified: **494 passed, 84.71% coverage**; flake8 and mypy clean; the Alembic
+   chain applies and `alembic check` reports no drift.
+3. **New frontend verification.** `npm run test:coverage` (v8, visibility only, no gate yet);
+   `tests/a11y.spec.ts` runs axe on `/login`, `/register` and `/forgot-password` and fails on
+   critical/serious findings; CI starts the backend on SQLite and runs a live
+   register → login E2E, which is the gap every earlier pass deferred.
+4. **Hygiene.** Dropped the removed `@tanstack/react-query` from `optimizePackageImports`,
+   moved `@types/jsbarcode` to devDependencies, turned the last `console.log` into
+   `console.warn`, and stopped ignoring `package-lock.json` (it is tracked and `npm ci` needs it).
+5. **Still open, deliberately:** splitting `UserManagement.tsx` (80 KB) and the profile page,
+   list virtualization, the unsigned `user` cookie, Redis-backed rate limiting, finishing (or
+   removing) the i18n layer, and confirming `EMAIL_BACKEND` on Render.

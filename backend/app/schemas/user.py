@@ -24,11 +24,10 @@ class UserRegister(UserBase):
     """
 
     password: str = Field(..., min_length=8, max_length=100)
-    # Consent and CAPTCHA travel with the sign-up payload. ``accepted_terms`` is
-    # enforced by the endpoint (not the schema) so the refusal can say exactly
-    # what is missing; ``turnstile_token`` is only required when Turnstile is
-    # configured for the deployment.
-    accepted_terms: Optional[bool] = None
+    # ``turnstile_token`` is only required when Turnstile is configured for the
+    # deployment. There is deliberately no terms/consent field: the deployment
+    # has no /terms or /privacy page, so a checkbox would record an agreement
+    # the user was never able to read.
     turnstile_token: Optional[str] = Field(None, max_length=4096)
 
     @field_validator("password")

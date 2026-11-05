@@ -46,7 +46,6 @@ async def test_a_new_request_emails_every_active_admin(client, make_user, monkey
             "email": HOPEFUL_EMAIL,
             "password": PASSWORD,
             "name": "Hopeful",
-            "accepted_terms": True,
         },
     )
 

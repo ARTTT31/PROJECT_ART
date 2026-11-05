@@ -35,7 +35,6 @@ async def _submit_request(client, email=HOPEFUL_EMAIL):
             "email": email,
             "password": PASSWORD,
             "name": "Hopeful",
-            "accepted_terms": True,
         },
     )
 

@@ -147,3 +147,53 @@ jobs:
 
       - name: Run smoke tests
         run: npm run test:smoke
+
+      # The signed-out pages are the first thing a visitor sees, so an axe scan
+      # gates them: colour contrast on /login regressed once already.
+      - name: Run accessibility audit
+        run: npx playwright test tests/a11y.spec.ts
+
+      # ── Live auth E2E ─────────────────────────────────────────────────
+      # The smoke and auth-flow suites mock the API, so nothing proved a real
+      # account can sign in against the Python service. These steps start the
+      # backend on SQLite and drive the browser through register → login.
+      - name: Set up Python for the live backend
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install backend dependencies for the live E2E
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Start the backend for the live E2E
+        working-directory: backend
+        env:
+          SECRET_KEY: ci-test-secret-key-for-testing-only
+          DATABASE_URL: "sqlite+aiosqlite:///./e2e-live.db"
+          AUTO_CREATE_TABLES: "true"
+          DEBUG: "true"
+          REGISTRATION_MODE: "open"
+          REQUIRE_EMAIL_VERIFICATION: "false"
+          EMAIL_BACKEND: "console"
+          COOKIE_SECURE: "false"
+          COOKIE_SAMESITE: "lax"
+        run: |
+          nohup uvicorn app.main:app --host 127.0.0.1 --port 8080 > e2e-backend.log 2>&1 &
+          for _ in $(seq 1 45); do
+            if curl -fsS http://127.0.0.1:8080/health/ready > /dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat e2e-backend.log
+          exit 1
+
+      - name: Run live auth E2E
+        env:
+          LIVE_BACKEND_URL: "http://127.0.0.1:8080"
+          API_INTERNAL_URL: "http://127.0.0.1:8080"
+          NEXT_PUBLIC_USE_SAME_ORIGIN_API: "true"
+        run: npx playwright test tests/e2e-live-backend.spec.ts
