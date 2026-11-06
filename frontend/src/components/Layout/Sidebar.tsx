@@ -32,7 +32,7 @@ import {
   MainMenuItemConfig,
 } from '@/utils/mainMenu';
 import { canAccessPage } from '@/utils/accessiblePages';
-import { isPageEnabled } from '@/hooks/useEnabledPages';
+import { useEnabledPages, isPageEnabled, type PageSwitch } from '@/hooks/useEnabledPages';
 import { AuthUser } from '@/types';
 import { useBranding } from '@/context/BrandingContext';
 import { useI18n } from '@/lib/i18n/I18nProvider';
@@ -73,6 +73,7 @@ export default function Sidebar({
   const { companyName, companyTagline, brandLogoUrl } = useBranding();
   const { updateUser } = useAuth();
   const { t } = useI18n();
+  const enabledPages = useEnabledPages();
 
   // The account's config wins: it is the value that travels between devices.
   // localStorage is only a fast first paint / offline fallback.
@@ -195,7 +196,9 @@ export default function Sidebar({
     if (item.adminOnly && user?.role !== 'admin') return false;
     // Two gates: the account's own grant, and whether the workspace has the
     // page open at all (the admin page-switch card).
-    return canAccessPage(user, item.id) && isPageEnabled(item.id);
+    const pageSwitch = enabledPages.find((p: PageSwitch) => p.id === item.id);
+    const enabled = pageSwitch ? pageSwitch.enabled : isPageEnabled(item.id);
+    return canAccessPage(user, item.id) && enabled;
   });
 
   const mainMenuItemsSection: MenuSection = {

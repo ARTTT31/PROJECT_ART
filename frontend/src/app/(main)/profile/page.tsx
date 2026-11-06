@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { showDeleteConfirm, showToast, showSuccess, showError } from '@/utils/sweetalert';
 import { canAccessPage } from '@/utils/accessiblePages';
+import { useEnabledPages, isPageEnabled } from '@/hooks/useEnabledPages';
 import { useAuth } from '@/hooks/useAuth';
 import { useI18n } from '@/lib/i18n/I18nProvider';
 
@@ -186,10 +187,14 @@ export default function ProfilePage() {
     return parseMainMenuConfig(saved);
   });
 
+  const enabledPages = useEnabledPages();
   const isAdmin = currentUser?.role === 'admin';
-  const filteredMenuItems = mainMenuConfig.filter((item) =>
-    canAccessPage(currentUser, item.id)
-  );
+  const filteredMenuItems = mainMenuConfig.filter((item) => {
+    if (item.adminOnly && currentUser?.role !== 'admin') return false;
+    const pageSwitch = enabledPages.find((p) => p.id === item.id);
+    const enabled = pageSwitch ? pageSwitch.enabled : isPageEnabled(item.id);
+    return canAccessPage(currentUser, item.id) && enabled;
+  });
 
   // Sync the tab with the URL so a shared `?tab=preferences` link opens the
   // right section. Older `?tab=admin` links simply fall back to the profile tab.
