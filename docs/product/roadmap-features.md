@@ -1,6 +1,6 @@
 # Roadmap & Feature Inventory
 
-**Last updated:** October 30, 2026
+**Last updated:** November 6, 2026
 
 > **Sources of truth.** This file inventories what exists and what is planned. It must not
 > restate or contradict the documents that own those decisions:
@@ -92,18 +92,30 @@
 
 ---
 
-## Next (candidates, not committed)
+## Next Roadmap (Active & Planned)
 
-Ordered by evidence, not by preference:
+### Phase 1: Productivity, Usability & Maintenance (In Progress)
 
-1. **Redis for the rate limiter before scaling out** — the WebSocket fan-out already has a
-   supported path (`WS_BROADCAST_REDIS_URL`); the limiter still needs
-   `SLOWAPI_STORAGE_URI=redis://…` for a second instance to be safe.
-2. **Frontend page/component coverage** — 275 unit tests cover pure logic and most widgets and
-   the live auth E2E now proves register → login against the real API, so what remains is
-   coverage for the pages (profile, admin, camera) and splitting the largest components.
-3. **Signed/opaque `user` cookie** — the readable cookie is only a display fast-path and is
-   re-verified against `/auth/session`, but it is not signed; removing editable fields or
-   binding it to the server would be the defence-in-depth next step.
-4. **i18n** — the UI is Thai-only by design today; a second language needs a real message
-   layer, not string replacement.
+1. **Dependabot Optimization (Maintenance)**
+   - Group updates and switch schedule to monthly with lower open PR limit to prevent remote branch clutter while keeping dependencies updated.
+2. **Focus Timer / Pomodoro Widget (Dashboard)**
+   - Apple HIG styled circular progress timer (25m Focus / 5m Short Break / 15m Long Break).
+   - Springy controls (`active:scale-[0.95]`), session counters, gentle audio notification chime, full S/M/L responsive sizing.
+3. **Workspace Data Backup & Restore (Profile / Data Portability)**
+   - One-click full workspace JSON export & import in Profile (Quick Notes, Finance entries, Watchlist symbols, Quick links, Dashboard layout).
+   - JSON validation and preview before applying.
+4. **Mini Calendar & Planner Widget (Dashboard)**
+   - Interactive monthly grid view combining Thai official holidays with personal errands and reminders.
+5. **Command Palette Quick Actions (`Ctrl+K` / `⌘K`)**
+   - Quick jump to Quick Links, page navigation, and quick entry actions directly from keyboard search.
+
+### Phase 2: Security & Platform Hardening (Planned)
+
+1. **Two-Factor Authentication (2FA / TOTP)**
+   - Authenticator app support (QR code setup + TOTP code validation) for admin and high-security accounts.
+2. **Redis for Rate Limiting & Multi-Instance Scaling**
+   - Integrate `SLOWAPI_STORAGE_URI` with Redis to mirror `WS_BROADCAST_REDIS_URL`.
+3. **Signed / Opaque User Cookie**
+   - Cryptographically sign the client-side user cookie to enforce defense-in-depth before server re-verification.
+4. **Offline-first PWA Enhancements**
+   - Background sync for notes and finance transactions when network drops.

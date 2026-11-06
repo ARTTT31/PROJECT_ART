@@ -20,6 +20,7 @@ const mockUpdateUser = vi.fn();
 const DEFAULT_IDS = [
   'notes',
   'calc',
+  'focustimer',
   'market',
   'finance',
   'watchlist',

@@ -112,6 +112,8 @@ const th = {
   'widget.notes.desc': 'จดรายการที่ต้องทำวันนี้ ติ๊กเสร็จแล้วบันทึกอัตโนมัติ',
   'widget.calc.name': 'คิดราคา / กำไร',
   'widget.calc.desc': 'คิดราคาขายหลังหักส่วนลด พร้อมกำไรต่อชิ้นและเปอร์เซ็นต์',
+  'widget.focustimer.name': 'โฟกัส & จับเวลา',
+  'widget.focustimer.desc': 'จับเวลาทำงานสไตล์ Pomodoro พร้อมรอบโฟกัสและช่วงพัก',
   'widget.market.name': 'ค่าเงิน · ทอง · SET',
   'widget.market.desc': 'อัตราแลกเปลี่ยน ราคาทองคำแท่ง และดัชนี SET',
   'widget.holidays.name': 'วันหยุดนักขัตฤกษ์',
@@ -233,6 +235,8 @@ const en: Record<keyof typeof th, string> = {
   'widget.notes.desc': 'Jot down today’s tasks; ticking one saves automatically',
   'widget.calc.name': 'Price & profit',
   'widget.calc.desc': 'Sale price after discount, profit per unit and margin',
+  'widget.focustimer.name': 'Focus Timer',
+  'widget.focustimer.desc': 'Pomodoro-style work timer with focus sessions and breaks',
   'widget.market.name': 'Rates · gold · SET',
   'widget.market.desc': 'Exchange rates, gold bar prices and the SET index',
   'widget.holidays.name': 'Public holidays',
@@ -259,6 +263,7 @@ export type MessageKey = keyof typeof th;
 export const WIDGET_NAME_KEYS: Record<string, MessageKey> = {
   notes: 'widget.notes.name',
   calc: 'widget.calc.name',
+  focustimer: 'widget.focustimer.name',
   market: 'widget.market.name',
   holidays: 'widget.holidays.name',
   weather: 'widget.weather.name',
@@ -272,6 +277,7 @@ export const WIDGET_NAME_KEYS: Record<string, MessageKey> = {
 export const WIDGET_DESCRIPTION_KEYS: Record<string, MessageKey> = {
   notes: 'widget.notes.desc',
   calc: 'widget.calc.desc',
+  focustimer: 'widget.focustimer.desc',
   market: 'widget.market.desc',
   holidays: 'widget.holidays.desc',
   weather: 'widget.weather.desc',

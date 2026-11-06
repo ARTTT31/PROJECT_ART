@@ -86,6 +86,10 @@ const CurrencyConverterWidget = dynamic(() => import('@/components/Widgets/Curre
   ssr: false,
   loading: () => <ListWidgetSkeleton />,
 });
+const FocusTimerWidget = dynamic(() => import('@/components/Widgets/FocusTimerWidget'), {
+  ssr: false,
+  loading: () => <PriceCalcSkeleton />,
+});
 
 import { useDashboardLayout, widgetNames, widgetDescriptions } from '@/hooks/useDashboardLayout';
 import { useI18n } from '@/lib/i18n/I18nProvider';
@@ -230,6 +234,18 @@ function SortableWidget({
             )}
           >
             <PriceCalcWidget
+              width={widget.w}
+              onResize={(newSize) => onResize(widget.id, newSize)}
+            />
+          </ErrorBoundary>
+        )}
+        {widget.id === 'focustimer' && (
+          <ErrorBoundary
+            fallback={(err, reset) => (
+              <WidgetErrorFallback name="โฟกัส & จับเวลา" error={err} reset={reset} />
+            )}
+          >
+            <FocusTimerWidget
               width={widget.w}
               onResize={(newSize) => onResize(widget.id, newSize)}
             />

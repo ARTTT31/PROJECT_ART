@@ -7,6 +7,7 @@ import { offlineScope } from '@/lib/offline/localStore';
 const defaultWidgets: WidgetConfig[] = [
   { id: 'notes', w: 1 },
   { id: 'calc', w: 1 },
+  { id: 'focustimer', w: 1 },
   { id: 'market', w: 2 },
   { id: 'finance', w: 1 },
   { id: 'watchlist', w: 1 },
@@ -20,6 +21,7 @@ const defaultWidgets: WidgetConfig[] = [
 export const widgetNames: Record<string, string> = {
   notes: 'โน้ตด่วน / To-do วันนี้',
   calc: 'คิดราคา / กำไร',
+  focustimer: 'โฟกัส & จับเวลา',
   market: 'ค่าเงิน · ทอง · SET',
   holidays: 'วันหยุดนักขัตฤกษ์',
   weather: 'สภาพอากาศ & PM 2.5',
@@ -33,6 +35,7 @@ export const widgetNames: Record<string, string> = {
 export const widgetDescriptions: Record<string, string> = {
   notes: 'จดรายการที่ต้องทำวันนี้ ติ๊กเสร็จแล้วบันทึกอัตโนมัติ',
   calc: 'คิดราคาขายหลังหักส่วนลด พร้อมกำไรต่อชิ้นและเปอร์เซ็นต์',
+  focustimer: 'จับเวลาทำงานสไตล์ Pomodoro พร้อมรอบโฟกัสและช่วงพัก',
   market: 'อัตราแลกเปลี่ยน ราคาทองคำแท่ง และดัชนี SET',
   holidays: 'ปฏิทินวันหยุดนักขัตฤกษ์ พร้อมระบบนับถอยหลัง',
   weather: 'ตรวจสอบสภาพอากาศ อุณหภูมิ และดัชนีฝุ่น PM 2.5 รายวัน',
