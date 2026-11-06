@@ -37,7 +37,7 @@ function normaliseSwitches(pages: PageSwitch[]): PageSwitch[] {
   return pages.map((page) => {
     const fallback = DEFAULT_PAGE_SWITCHES.find((item) => item.id === page.id);
     const required = Boolean(page.required ?? fallback?.required);
-    const adminOnly = Boolean(page.adminOnly ?? fallback?.adminOnly);
+    const adminOnly = Boolean(page.adminOnly ?? (page as any).admin_only ?? fallback?.adminOnly ?? (page.id === "admin" || page.id === "audit"));
     return {
       id: page.id,
       label: page.label || fallback?.label || page.id,

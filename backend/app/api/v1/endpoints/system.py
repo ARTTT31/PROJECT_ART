@@ -79,6 +79,7 @@ class PageAccessItem(BaseModel):
     # Admin console / activity log: only an admin sees them, so the card shows a
     # badge instead of a switch that could never apply to anyone else.
     admin_only: bool = False
+    adminOnly: bool = False
 
 
 class PageAccessResponse(BaseModel):
@@ -99,6 +100,7 @@ def _page_access_response(enabled: list[str], updated_at: Optional[str] = None) 
                 required=page["required"],
                 enabled=page["id"] in enabled,
                 admin_only=bool(page.get("admin_only")),
+                adminOnly=bool(page.get("admin_only")),
             )
             for page in PAGE_CATALOGUE
         ],

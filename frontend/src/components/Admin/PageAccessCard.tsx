@@ -18,6 +18,9 @@ import {
  * required, and the admin console / activity log are admin-only, so a switch
  * for them would never change what a member sees.
  */
+const isPageAdminOnly = (page: { id: string; adminOnly?: boolean }) =>
+  Boolean(page.adminOnly || (page as any).admin_only || page.id === 'admin' || page.id === 'audit');
+
 export default function PageAccessCard() {
   const [pages, setPages] = useState<PageSwitch[]>(DEFAULT_PAGE_SWITCHES);
   const [saving, setSaving] = useState(false);
@@ -29,7 +32,16 @@ export default function PageAccessCard() {
         const res = await fetchWithAuth('/api/v1/system/pages');
         if (!res.ok) return;
         const body = (await res.json()) as { pages?: PageSwitch[] };
-        if (!cancelled && Array.isArray(body.pages)) setPages(body.pages);
+        if (!cancelled && Array.isArray(body.pages)) {
+          const mapped: PageSwitch[] = body.pages.map((p: any) => ({
+            id: p.id,
+            label: p.label,
+            required: Boolean(p.required),
+            adminOnly: isPageAdminOnly(p),
+            enabled: Boolean(p.enabled),
+          }));
+          setPages(mapped);
+        }
       } catch {
         // The defaults above keep the card usable.
       }
@@ -48,8 +60,8 @@ export default function PageAccessCard() {
   };
 
   const save = async () => {
-    const closing = pages.filter((page) => !page.enabled && !page.required && !page.adminOnly);
-    const kept = pages.filter((page) => page.enabled && !page.adminOnly);
+    const closing = pages.filter((page) => !page.enabled && !page.required && !isPageAdminOnly(page));
+    const kept = pages.filter((page) => page.enabled && !isPageAdminOnly(page));
 
     const confirmed = await showConfirm(
       'บันทึกการเปิด/ปิดหน้า?',
@@ -95,7 +107,7 @@ export default function PageAccessCard() {
 
   // Admin-only pages are always open and invisible to members, so they are not
   // part of this list at all.
-  const visiblePages = pages.filter((page) => !page.adminOnly);
+  const visiblePages = pages.filter((page) => !isPageAdminOnly(page));
 
   return (
     <section className="overflow-hidden rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)]">

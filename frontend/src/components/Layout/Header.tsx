@@ -103,16 +103,6 @@ export default function Header({ user, onMenuClick, sidebarCollapsed = false }: 
 
         {/* Right Side: Clock, Notification Bell & User Profile Pill */}
         <div className="flex items-center gap-2 sm:gap-3">
-          {/* Mobile search button */}
-          <button
-            type="button"
-            onClick={openCommandPalette}
-            aria-label={t('nav.search.aria')}
-            title={t('nav.search.title')}
-            className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--ink)] transition-all hover:bg-black/[0.05] dark:hover:bg-white/[0.08] active:scale-[0.95] sm:hidden"
-          >
-            <Search size={18} aria-hidden="true" />
-          </button>
           <div className="hidden min-h-[36px] items-center gap-2 rounded-full border border-[var(--hairline)] bg-[var(--glass-80)] px-3.5 py-1.5 text-[12px] font-semibold text-[var(--ink)] shadow-[0_1px_2px_rgba(0,0,0,0.04)] md:flex">
             <ClockTime />
           </div>
