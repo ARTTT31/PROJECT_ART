@@ -40,6 +40,7 @@ import { BrandingCard } from '@/components/Profile/BrandingCard';
 import CompanyHolidayCard from '@/components/Profile/CompanyHolidayCard';
 import WorkspaceBackupCard from '@/components/Profile/WorkspaceBackupCard';
 import NotificationSettingsCard from '@/components/Profile/NotificationSettingsCard';
+import SecurityCard from '@/components/Profile/SecurityCard';
 import DateFormatCard from '@/components/Profile/DateFormatCard';
 import { ThemeCard } from '@/components/Profile/ThemeCard';
 import { type QuickLink, parseQuickLinks, serializeQuickLinks } from '@/utils/quickLinks';
@@ -1010,6 +1011,11 @@ export default function ProfilePage() {
                 </div>
               </form>
             </SectionCard>
+
+              {/* Card 1.3: การยืนยันสองขั้นตอน */}
+              <div className="mt-4">
+                <SecurityCard />
+              </div>
             </div>
           </motion.div>
         )}

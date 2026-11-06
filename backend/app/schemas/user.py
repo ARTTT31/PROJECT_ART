@@ -64,6 +64,23 @@ class UserLogin(BaseModel):
     session_id: Optional[str] = Field(None, max_length=64)
     user_agent: Optional[str] = Field(None, max_length=500)  # matches DB column
     device_label: Optional[str] = Field(None, max_length=255)  # matches DB column
+    # Second factor. Absent on the first attempt for a 2FA account (the API
+    # answers ``totp_required``), then sent together with the same credentials.
+    totp_code: Optional[str] = Field(None, max_length=10)
+    recovery_code: Optional[str] = Field(None, max_length=32)
+
+
+class TwoFactorCodeRequest(BaseModel):
+    """A 6-digit code from the authenticator app."""
+
+    code: str = Field(..., min_length=6, max_length=10)
+
+
+class TwoFactorDisableRequest(BaseModel):
+    """Turning 2FA off re-proves password ownership."""
+
+    password: str = Field(..., min_length=1, max_length=100)
+    code: Optional[str] = Field(None, max_length=10)
 
 
 class ForgotPasswordRequest(BaseModel):

@@ -1975,7 +1975,13 @@ class TestUserCookieFormat:
         assert "\\" not in value, "cookie value must not contain backslash escapes"
         assert " " not in value, "cookie value must not contain raw spaces"
 
-        decoded = json.loads(unquote(value))
+        # The payload is followed by `.<hmac-sha256 hex>` (see
+        # test_user_cookie_signature.py): only the part before it is JSON.
+        body, separator, signature = value.rpartition(".")
+        assert separator == ".", f"cookie value is unsigned: {value[:60]}"
+        assert len(signature) == 64
+
+        decoded = json.loads(unquote(body))
         assert decoded["email"] == "test@example.com"
         assert decoded["role"] == "user"
 

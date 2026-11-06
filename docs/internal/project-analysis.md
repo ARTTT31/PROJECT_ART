@@ -505,3 +505,44 @@ verification the previous review kept listing as missing.
 5. **Still open, deliberately:** splitting `UserManagement.tsx` (80 KB) and the profile page,
    list virtualization, the unsigned `user` cookie, Redis-backed rate limiting, finishing (or
    removing) the i18n layer, and confirming `EMAIL_BACKEND` on Render.
+
+## Two-Factor Authentication, Signed Cookie and Roadmap Truth-Up (November 6, 2026)
+
+Started from "what is left on the roadmap?" — Phase 1 was recorded as in progress although all
+five items had shipped, and two Phase 2 items had drifted out of date in the opposite direction.
+
+1. **TOTP two-factor authentication shipped.** `app/core/totp.py` implements RFC 6238 on the
+   standard library (HMAC-SHA1 over a counter) instead of adding `pyotp`; the core is tested
+   against the RFC's published vectors, so breaking authenticator-app compatibility fails the
+   suite. Storage is three nullable columns (`totp_secret`, `totp_enabled`,
+   `totp_recovery_codes`) added by `20261106_user_totp`. Flow: `POST /auth/2fa/setup` issues a
+   secret that is NOT active, `/auth/2fa/enable` activates it only after a code verifies and
+   returns ten single-use recovery codes (stored as SHA-256 hashes), `/auth/2fa/disable` requires
+   the password and a live code. Login answers `result: "totp_required"` (HTTP 200, no cookies)
+   when the password is right and the second factor is missing, and a wrong code counts against
+   the existing brute-force backoff.
+2. **The readable `user` cookie is now signed.** `encode_user_cookie` appends `.` + HMAC-SHA256 of
+   the percent-encoded payload, and `decode_user_cookie` refuses anything it did not write —
+   including unsigned legacy values, since accepting those would let anyone strip the signature.
+   The frontend strips a trailing 64-hex signature before parsing and never verifies it (it has no
+   key); the guarantee is server-side. `core/utils.py` keeps its "leaf module" contract by
+   importing settings lazily inside the signing call.
+3. **The switch was geometrically wrong, and the cause was global CSS.** `Switch` rendered its
+   knob with flexbox, but an unlayered rule in `globals.css` gives every `<button>` a 24/44px
+   target *and* `justify-content: center`, which centred the knob in the track and then pushed it
+   past the right edge when checked. The knob is now absolutely positioned (2px inset, 22px
+   travel) and the button carries `small-control`, the project's existing opt-out from that rule.
+4. **The TypeScript/radius/motion pass landed** (commit `5598307`): one type ramp with an 11px
+   floor, three radii plus `rounded-full`, three durations with two curves, one global 1.75 icon
+   stroke, a shared `PageHeader` whose title fades into the app bar, and real `Switch` /
+   `SegmentedControl` widgets replacing clickable divs and radio cards.
+5. **Roadmap corrections.** Phase 1 is marked shipped. The constraints table no longer claims
+   "Thai-only, no i18n layer" (a `th`/`en` catalogue exists and drives 12 of 97 components) or
+   "275 tests". Redis-backed rate limiting was listed as open on November 5 but had been wired in
+   `61f0857`; it is now documented as shipped with the deployment step that remains.
+6. **Verified:** backend 519 passed at 85.14% (75% gate), flake8 and mypy clean, `alembic check`
+   reports no drift after applying the new revision; frontend `tsc --noEmit`, ESLint, 293 Vitest
+   tests and `next build` all clean, axe green on the three auth pages.
+7. **Still open, deliberately:** background sync in the service worker (the only remaining
+   Phase 2 item), the deployed-only checks (production WebSocket origin, Render CSP/CORS boot log,
+   `EMAIL_BACKEND`), finishing the i18n migration screen by screen, and raising frontend coverage.

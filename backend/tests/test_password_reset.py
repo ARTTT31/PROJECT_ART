@@ -15,7 +15,7 @@ from sqlalchemy import select
 from app.core.config import settings
 from app.core.utils import utcnow
 from app.models.email_token import EmailToken
-from app.services import account_emails, email_service
+from app.services import account_emails
 from app.services.email_service import outbox_clear, outbox_messages
 
 

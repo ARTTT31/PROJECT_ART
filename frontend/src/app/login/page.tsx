@@ -11,6 +11,7 @@ import {
   Loader2,
   Lock,
   Mail,
+  ShieldCheck,
   User,
 } from 'lucide-react';
 import Link from 'next/link';
@@ -133,6 +134,11 @@ function LoginContent() {
   const [showPassword, setShowPassword] = useState(false);
   const [capsLock, setCapsLock] = useState(false);
   const [error, setError] = useState('');
+  // Second factor: the API answers `totp_required` once the password checks
+  // out, and the same credentials are resent with the code alongside them.
+  const [totpRequired, setTotpRequired] = useState(false);
+  const [totpCode, setTotpCode] = useState('');
+  const totpRef = useRef<HTMLInputElement>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const [now, setNow] = useState(() => new Date());
@@ -355,12 +361,20 @@ function LoginContent() {
 
       const userAgent = navigator.userAgent;
       const deviceLabel = /Mobile|Android|iPhone|iPad/.test(userAgent) ? 'Mobile' : 'Desktop';
+      const secondFactor = totpCode.trim();
       const payload = {
         email,
         password,
         session_id: sessionId,
         user_agent: userAgent,
         device_label: deviceLabel,
+        // A 6-digit value is an authenticator code; anything else is treated
+        // as a recovery code, so a lost phone is not a dead end.
+        ...(secondFactor
+          ? /^\d{6}$/.test(secondFactor)
+            ? { totp_code: secondFactor }
+            : { recovery_code: secondFactor }
+          : {}),
       };
 
       const response = await fetch(LOGIN_ENDPOINT, {
@@ -382,6 +396,16 @@ function LoginContent() {
       }
 
       const result = await response.json().catch(() => ({}));
+
+      if (result.result === 'totp_required') {
+        setTotpRequired(true);
+        setError('');
+        setIsSubmitting(false);
+        setTotpCode('');
+        // The code field only exists after this render.
+        setTimeout(() => totpRef.current?.focus(), 0);
+        return;
+      }
 
       if (response.ok && result.result === 'success') {
         // login() persists the user + session_id and flips status to
@@ -628,6 +652,34 @@ function LoginContent() {
                 <span className="login-remember-text">จดจำฉันไว้</span>
               </label>
             </div>
+
+            {totpRequired && (
+              <label htmlFor="login-totp" className="login-field">
+                <span>รหัสยืนยัน 6 หลัก</span>
+                <div className="login-input-wrap">
+                  <ShieldCheck size={18} aria-hidden="true" />
+                  <input
+                    id="login-totp"
+                    ref={totpRef}
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    maxLength={11}
+                    value={totpCode}
+                    onChange={(event) => setTotpCode(event.target.value)}
+                    placeholder="123456"
+                    aria-describedby="login-totp-hint"
+                    disabled={isSubmitting}
+                  />
+                </div>
+              </label>
+            )}
+
+            {totpRequired && (
+              <p id="login-totp-hint" className="login-hint">
+                เปิดรหัสจากแอป Authenticator หรือกรอกรหัสสำรอง (แบบ xxxxx-xxxxx) ในช่องนี้
+              </p>
+            )}
 
             {error && (
               <div

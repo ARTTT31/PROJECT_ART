@@ -24,6 +24,14 @@ describe('readUserCookie', () => {
     expect(readUserCookie()).toEqual(payload);
   });
 
+  it('strips the trailing HMAC signature the backend appends', () => {
+    const payload = { id: 3, email: 'first.last@example.com', role: 'user' };
+    setUserCookie(
+      `${encodeURIComponent(JSON.stringify(payload))}.${'a'.repeat(64)}`,
+    );
+    expect(readUserCookie()).toEqual(payload);
+  });
+
   it('returns null when the cookie is missing', () => {
     expect(readUserCookie()).toBeNull();
   });

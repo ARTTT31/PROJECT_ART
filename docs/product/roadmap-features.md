@@ -46,11 +46,16 @@
 | สภาพอากาศ & PM 2.5 (weather) | S/M/L | Open-Meteo + MET Norway (weather), Open-Meteo (AQI), BigDataCloud + OSM Nominatim (geocode), via backend proxy |
 | ราคาน้ำมัน (oil price) | S/M/L | Bangchak Open Web API, via the backend proxy |
 | QR Code | S/M/L | Client-side |
+| โฟกัส / Pomodoro (focus) | S/M/L | Client-side; 25/5/15-minute sessions, counters and a closing chime |
+| ปฏิทิน & แพลนเนอร์ (calendar) | S/M/L | Thai holidays bundled in the repo + per-account `/planner` reminders |
 
 ### Platform
 
 - **Auth:** PyJWT access/refresh in HTTP-only cookies, CSRF double-submit token, account lockout
-  (5 attempts -> 30 min), session tracking (IP / user agent / device).
+  (5 attempts -> 30 min), session tracking (IP / user agent / device), and optional TOTP
+  two-factor authentication (authenticator app, 10 single-use recovery codes, password + code to
+  disable). The readable `user` cookie is HMAC-signed with `SECRET_KEY`; a value the server did not
+  write is rejected instead of being trusted as display data.
 - **Authorisation:** `role` plus per-user `accessible_pages`; the sidebar and profile page hide
   what a user cannot reach, and the backend enforces page access for page-scoped APIs.
 - **Admin:** a dedicated `/admin` console for user management, page-permission editing,
@@ -87,14 +92,17 @@
 |---|---|
 | Single instance by default | The WebSocket registry can fan out through Redis (`WS_BROADCAST_REDIS_URL`) and the rate limiter can use Redis (`SLOWAPI_STORAGE_URI`), but both default to process-local and startup logs a `[SCALING]` notice. See README -> *Horizontal scaling*. |
 | Third-party market data | Yahoo Finance / Frankfurter / Thai Gold API have no SLA; the widget shows the last known value (or an empty block) rather than failing the whole page. |
-| Thai-only UI | All copy is hardcoded Thai; there is no i18n layer. |
-| Partial frontend coverage | 275 Vitest tests cover logic and most widgets, but 58 of 87 components/pages still have no test file; `npm run test:coverage` reports the real number. Playwright now also runs axe checks on the auth pages and a live register → login E2E against the backend in CI. |
+| Partial i18n | A `th`/`en` message catalogue (`lib/i18n`) exists and drives 12 of the 97 components; the rest still hardcode Thai copy. Adding a language means migrating a screen at a time, not flipping a switch. |
+| Partial frontend coverage | 293 Vitest tests across 37 files; 519 backend tests at 85.1% coverage. Many components still have no test file, so `npm run test:coverage` remains the honest number. Playwright runs axe checks on the auth pages and a live register → login E2E against the backend in CI. |
 
 ---
 
 ## Next Roadmap (Active & Planned)
 
-### Phase 1: Productivity, Usability & Maintenance (In Progress)
+### Phase 1: Productivity, Usability & Maintenance (Shipped)
+
+All five items below shipped in `d58ae9f`, `2d9aabf` and `73a9571`; they stay listed so the
+scope is not re-litigated as "still planned".
 
 1. **Dependabot Optimization (Maintenance)**
    - Group updates and switch schedule to monthly with lower open PR limit to prevent remote branch clutter while keeping dependencies updated.
@@ -109,13 +117,19 @@
 5. **Command Palette Quick Actions (`Ctrl+K` / `⌘K`)**
    - Quick jump to Quick Links, page navigation, and quick entry actions directly from keyboard search.
 
-### Phase 2: Security & Platform Hardening (Planned)
+### Phase 2: Security & Platform Hardening
 
-1. **Two-Factor Authentication (2FA / TOTP)**
-   - Authenticator app support (QR code setup + TOTP code validation) for admin and high-security accounts.
-2. **Redis for Rate Limiting & Multi-Instance Scaling**
-   - Integrate `SLOWAPI_STORAGE_URI` with Redis to mirror `WS_BROADCAST_REDIS_URL`.
-3. **Signed / Opaque User Cookie**
-   - Cryptographically sign the client-side user cookie to enforce defense-in-depth before server re-verification.
-4. **Offline-first PWA Enhancements**
-   - Background sync for notes and finance transactions when network drops.
+1. **Two-Factor Authentication (2FA / TOTP) — Shipped (2026-11-06)**
+   - `pyotp`-free RFC 6238 implementation in `app/core/totp.py`, verified against the RFC vectors.
+   - `/auth/2fa/setup|enable|disable|status`, QR + manual secret, 10 single-use recovery codes,
+     and a `totp_required` login step that never mints a session before the code checks out.
+2. **Redis for Rate Limiting & Multi-Instance Scaling — Shipped**
+   - `SLOWAPI_STORAGE_URI` is read by `app/core/rate_limit.py` with an in-memory fallback;
+     login backoff shares the same backend. Remaining work is operational: point the env var at
+     Redis on the deployment and confirm the buckets are shared across instances.
+3. **Signed / Opaque User Cookie — Shipped (2026-11-06)**
+   - HMAC-SHA256 over the percent-encoded payload, appended after the last dot. Unsigned legacy
+     values are rejected rather than accepted without a signature.
+4. **Offline-first PWA Enhancements — Planned**
+   - Background sync for notes and finance transactions when network drops. `public/sw.js` still
+     has no `BackgroundSync` registration; this is the only open item in Phase 2.

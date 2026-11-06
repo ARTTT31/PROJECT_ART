@@ -3,6 +3,7 @@ Authentication Service - Business logic for authentication
 """
 
 import hashlib
+import json
 import logging
 import time
 from typing import Any, Dict, Optional, Tuple, Union
@@ -25,6 +26,11 @@ from app.core.security import (
     new_refresh_jti,
 )
 from app.core.config import settings
+from app.core.totp import (
+    load_recovery_hashes,
+    match_recovery_code,
+    verify as verify_totp,
+)
 from app.core.utils import utcnow
 from app.services.user_service import UserService
 
@@ -213,6 +219,8 @@ class AuthService:
         user_agent: Optional[str] = None,
         device_label: Optional[str] = None,
         ip_address: Optional[str] = None,
+        totp_code: Optional[str] = None,
+        recovery_code: Optional[str] = None,
     ) -> Dict:
         """
         Authenticate user and create session
@@ -311,6 +319,21 @@ class AuthService:
                     "ขออีเมลยืนยันใหม่ได้ที่หน้าล็อกอิน"
                 ),
             )
+
+        # ── Second factor ─────────────────────────────────────────────────
+        # Checked after every account-state gate and before any token exists, so
+        # a password-only attempt on a 2FA account never mints a session.
+        if user.totp_enabled:
+            if not totp_code and not recovery_code:
+                # Password proven: this is a prompt, not a failure, so it must
+                # not be counted against the brute-force backoff.
+                return {"totp_required": True}
+            if not await self._verify_second_factor(user, totp_code, recovery_code):
+                await _backoff_record_failure(backoff_key)
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="รหัสยืนยันสองขั้นตอนไม่ถูกต้อง",
+                )
 
         # Reset failure bookkeeping on a successful verification
         await _backoff_clear(backoff_key)
@@ -413,6 +436,36 @@ class AuthService:
                 "quick_links": user.quick_links,
             },
         }
+
+    async def _verify_second_factor(
+        self,
+        user: User,
+        totp_code: Optional[str],
+        recovery_code: Optional[str],
+    ) -> bool:
+        """Accept an authenticator code or burn a one-time recovery code.
+
+        A recovery code is removed from the stored list as soon as it matches:
+        the caller's later commit persists that, so the same code cannot be
+        replayed even if this login fails afterwards.
+        """
+        if totp_code and user.totp_secret and verify_totp(user.totp_secret, totp_code):
+            return True
+
+        if not recovery_code:
+            return False
+
+        stored = load_recovery_hashes(user.totp_recovery_codes)
+        index = match_recovery_code(recovery_code, stored)
+        if index is None:
+            return False
+
+        stored.pop(index)
+        user.totp_recovery_codes = json.dumps(stored)
+        logger.warning(
+            "Recovery code used for account %s (%d left)", user.id, len(stored)
+        )
+        return True
 
     async def register(
         self,

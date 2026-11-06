@@ -2,6 +2,7 @@
 Authentication Endpoints
 """
 
+import json
 import logging
 import os
 import secrets
@@ -38,14 +39,29 @@ from app.core.security import (
     decode_token,
     get_password_hash,
     new_refresh_jti,
+    verify_password,
 )
-from app.api.dependencies import load_profile_columns, resolve_user_from_token
+from app.api.dependencies import (
+    get_current_user,
+    load_profile_columns,
+    resolve_user_from_token,
+)
+from app.core.totp import (
+    generate_recovery_codes,
+    generate_secret,
+    load_recovery_hashes,
+    provisioning_uri,
+    verify as verify_totp,
+)
 from app.models.session import UserSession
+from app.models.user import User
 from app.schemas.response import ResponseModel
 from app.schemas.user import (
     ForgotPasswordRequest,
     ResendVerificationRequest,
     ResetPasswordRequest,
+    TwoFactorCodeRequest,
+    TwoFactorDisableRequest,
     UserCreate,
     UserLogin,
     UserRegister,
@@ -247,7 +263,19 @@ async def login(
             user_agent=user_login.user_agent,
             device_label=user_login.device_label,
             ip_address=client_ip,
+            totp_code=user_login.totp_code,
+            recovery_code=user_login.recovery_code,
         )
+
+        # Password proven, second factor missing: ask for the code. Deliberately
+        # a 200 with its own result, so the client does not treat it as an error
+        # and the attempt is not counted as a failure.
+        if result.get("totp_required"):
+            return ResponseModel(
+                result="totp_required",
+                message="กรอกรหัส 6 หลักจากแอป Authenticator เพื่อเข้าสู่ระบบ",
+                data={"totp_required": True},
+            )
 
         # Log success (committed by auth_service.login)
         await audit_service.log_action(
@@ -1504,3 +1532,157 @@ async def logout(
     except Exception as e:
         logger.info(f"[LOGOUT] Error: {str(e)}")
         return response
+
+
+# ══════════════════════════════════════════════════════════════════════════
+# Two-factor authentication (TOTP)
+# ══════════════════════════════════════════════════════════════════════════
+# Deliberately three small endpoints rather than one "toggle": starting a
+# setup must never enable 2FA, and turning it off must re-prove the password.
+# A half-finished setup therefore cannot lock the account out.
+
+
+@router.get("/2fa/status", response_model=ResponseModel)
+async def two_factor_status(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Whether this account needs a second factor, and codes left."""
+    return ResponseModel(
+        result="success",
+        message="สถานะการยืนยันสองขั้นตอน",
+        data={
+            "enabled": bool(current_user.totp_enabled),
+            "recovery_codes_remaining": len(
+                load_recovery_hashes(current_user.totp_recovery_codes)
+            ),
+        },
+    )
+
+
+@router.post("/2fa/setup", response_model=ResponseModel)
+@limiter.limit(_AUTH_LIMIT)
+async def two_factor_setup(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Issue a new secret (not yet active) and the otpauth URI to scan."""
+    if current_user.totp_enabled:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="เปิดใช้งานการยืนยันสองขั้นตอนอยู่แล้ว",
+        )
+
+    secret = generate_secret()
+    current_user.totp_secret = secret
+    # Any previously issued codes belong to the old secret.
+    current_user.totp_recovery_codes = None
+    await db.commit()
+
+    account = current_user.email or current_user.username or f"user-{current_user.id}"
+    return ResponseModel(
+        result="success",
+        message="สแกน QR Code ด้วยแอป Authenticator แล้วกรอกรหัสเพื่อยืนยัน",
+        data={
+            "secret": secret,
+            "otpauth_uri": provisioning_uri(secret, account),
+            "issuer": "ART Workspace",
+        },
+    )
+
+
+@router.post("/2fa/enable", response_model=ResponseModel)
+@limiter.limit(_AUTH_LIMIT)
+async def two_factor_enable(
+    payload: TwoFactorCodeRequest,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Activate a pending secret once the user proves they scanned it."""
+    if current_user.totp_enabled:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="เปิดใช้งานการยืนยันสองขั้นตอนอยู่แล้ว",
+        )
+    if not current_user.totp_secret:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="ยังไม่ได้เริ่มตั้งค่า กรุณาขอ QR Code ใหม่",
+        )
+    if not verify_totp(current_user.totp_secret, payload.code):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="รหัสไม่ถูกต้อง หรือหมดอายุแล้ว กรุณาลองใหม่",
+        )
+
+    codes, hashes = generate_recovery_codes()
+    current_user.totp_enabled = True
+    current_user.totp_recovery_codes = json.dumps(hashes)
+
+    client_ip = request.client.host if request.client else None
+    await AuditService(db).log_action(
+        action="2FA_ENABLED",
+        user_id=current_user.id,
+        details=f"Recovery codes issued: {len(codes)}",
+        ip_address=client_ip,
+        user_agent=request.headers.get("user-agent"),
+    )
+    await db.commit()
+
+    return ResponseModel(
+        result="success",
+        message="เปิดใช้งานการยืนยันสองขั้นตอนแล้ว",
+        data={"enabled": True, "recovery_codes": codes},
+    )
+
+
+@router.post("/2fa/disable", response_model=ResponseModel)
+@limiter.limit(_AUTH_LIMIT)
+async def two_factor_disable(
+    payload: TwoFactorDisableRequest,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Turn 2FA off. Requires the password AND a current code.
+
+    A stolen session cookie is not enough: disabling 2FA needs the password and
+    something only the second factor can produce.
+    """
+    if not verify_password(payload.password, current_user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="รหัสผ่านไม่ถูกต้อง",
+        )
+    if not current_user.totp_enabled:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="การยืนยันสองขั้นตอนไม่ได้เปิดใช้งาน",
+        )
+    if not payload.code or not verify_totp(current_user.totp_secret or "", payload.code):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="รหัสยืนยันไม่ถูกต้อง",
+        )
+
+    current_user.totp_enabled = False
+    current_user.totp_secret = None
+    current_user.totp_recovery_codes = None
+
+    client_ip = request.client.host if request.client else None
+    await AuditService(db).log_action(
+        action="2FA_DISABLED",
+        user_id=current_user.id,
+        details="Two-factor authentication turned off",
+        ip_address=client_ip,
+        user_agent=request.headers.get("user-agent"),
+    )
+    await db.commit()
+
+    return ResponseModel(
+        result="success",
+        message="ปิดการยืนยันสองขั้นตอนแล้ว",
+        data={"enabled": False},
+    )

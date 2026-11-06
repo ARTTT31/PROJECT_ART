@@ -98,6 +98,16 @@ class User(Base, TimestampMixin):
     failed_login_attempts: Mapped[int] = mapped_column(Integer, default=0)
     locked_until: Mapped[datetime | None] = mapped_column(DateTime)
 
+    # ── Two-factor authentication (TOTP) ─────────────────────────────────
+    # Base32 shared secret. Written on ``/auth/2fa/setup`` and only trusted
+    # once ``totp_enabled`` is set, so an abandoned setup can never lock the
+    # account out: a disabled account ignores the column entirely.
+    totp_secret: Mapped[str | None] = mapped_column(Text)
+    totp_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    # SHA-256 hashes of the one-time recovery codes, as a JSON array of text.
+    # NULL means "none issued" (2FA off, or enabled before this column existed).
+    totp_recovery_codes: Mapped[str | None] = mapped_column(Text)
+
     # Relationships
     sessions = relationship(
         "UserSession", back_populates="user", cascade="all, delete-orphan"
