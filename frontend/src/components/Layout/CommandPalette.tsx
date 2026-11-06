@@ -12,8 +12,8 @@ import {
   Shield,
   StickyNote,
   TrendingUp,
-  X,
 } from 'lucide-react';
+import { Dialog, DialogContent, DialogTitleSR } from '@/components/ui/Dialog';
 import { useAuth } from '@/hooks/useAuth';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
 import { readCached } from '@/lib/offline/localStore';
@@ -149,11 +149,15 @@ export default function CommandPalette() {
   const inputRef = useRef<HTMLInputElement>(null);
   const isAdmin = user?.role === 'admin';
 
-  const close = useCallback(() => {
-    setOpen(false);
+  const close = useCallback(() => setOpen(false), []);
+
+  // Every close path (Escape, overlay click, built-in X, ⌘K) clears the query,
+  // so reopening never shows the previous search.
+  useEffect(() => {
+    if (open) return;
     setQuery('');
     setActive(0);
-  }, []);
+  }, [open]);
 
   // ⌘K / Ctrl+K opens, Escape closes. Captured on the window so the shortcut
   // works on every page without each one registering a handler.
@@ -162,9 +166,7 @@ export default function CommandPalette() {
       if (event.key.toLowerCase() === 'k' && (event.metaKey || event.ctrlKey)) {
         event.preventDefault();
         setOpen((value) => !value);
-        return;
       }
-      if (event.key === 'Escape') setOpen(false);
     };
     const onOpen = () => setOpen(true);
 
@@ -181,7 +183,6 @@ export default function CommandPalette() {
   useEffect(() => {
     if (!open) return;
     setLocalResults(collectLocalResults(t));
-    inputRef.current?.focus();
 
     if (!isAdmin) {
       setUsers([]);
@@ -317,22 +318,22 @@ export default function CommandPalette() {
     [close, router],
   );
 
-  if (!open) return null;
-
   return (
-    <div
-      className="fixed inset-0 z-[80] flex items-start justify-center bg-black/30 px-4 pt-[12vh] backdrop-blur-sm"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) close();
-      }}
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
+    <Dialog open={open} onOpenChange={(next) => (next ? setOpen(true) : close())}>
+      {/* The project Dialog supplies the focus trap, Escape handling, overlay
+          dismissal, scroll lock and focus restore that this palette used to
+          reimplement by hand. */}
+      <DialogContent
         aria-label={t('palette.title')}
-        className="w-full max-w-xl overflow-hidden rounded-[20px] border border-[var(--hairline)] bg-[var(--surface)] shadow-[0_24px_60px_rgba(0,0,0,0.28)]"
+        aria-describedby={undefined}
+        onOpenAutoFocus={(event) => {
+          event.preventDefault();
+          inputRef.current?.focus();
+        }}
+        className="top-[12vh] max-w-xl translate-y-0 rounded-[20px]"
       >
-        <div className="flex items-center gap-2.5 border-b border-[var(--hairline)] px-4 py-3">
+        <DialogTitleSR>{t('palette.title')}</DialogTitleSR>
+        <div className="flex min-h-12 items-center gap-2.5 border-b border-[var(--hairline)] py-3 pl-4 pr-14">
           <Search size={16} className="shrink-0 text-[var(--ink-tertiary)]" aria-hidden="true" />
           <input
             ref={inputRef}
@@ -359,14 +360,6 @@ export default function CommandPalette() {
           {loadingUsers && (
             <Loader2 size={14} className="animate-spin text-[var(--ink-tertiary)]" aria-hidden="true" />
           )}
-          <button
-            type="button"
-            onClick={close}
-            aria-label={t('palette.close')}
-            className="rounded-full p-1 text-[var(--ink-tertiary)] transition-colors hover:bg-[var(--surface-grouped)] hover:text-[var(--ink)]"
-          >
-            <X size={15} aria-hidden="true" />
-          </button>
         </div>
 
         <div className="max-h-[54vh] overflow-y-auto p-2">
@@ -417,7 +410,7 @@ export default function CommandPalette() {
             Esc
           </kbd>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

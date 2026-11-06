@@ -297,7 +297,7 @@ export default function MarketWidget({
 
       <div className="mt-4 grid grid-cols-1 gap-2.5 sm:grid-cols-3">
         {/* ── Gold ─────────────────────────────────────────────────────── */}
-        <div className="flex flex-col justify-between rounded-[16px] border border-[var(--hairline-soft)] bg-gradient-to-b from-[var(--surface-subtle)] to-[var(--surface-grouped-2)] p-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]">
+        <div className="flex flex-col justify-between rounded-[16px] border border-[var(--hairline-soft)] bg-[var(--surface-subtle)] p-3.5">
           <div className="flex items-center gap-2">
             <span className="flex h-6 w-6 items-center justify-center rounded-[8px] bg-[var(--warning-soft)] text-[var(--warning-ink)]">
               <Coins size={12} aria-hidden="true" />
@@ -369,7 +369,7 @@ export default function MarketWidget({
         </div>
 
         {/* ── SET index ────────────────────────────────────────────────── */}
-        <div className="flex flex-col justify-between rounded-[16px] border border-[var(--hairline-soft)] bg-gradient-to-b from-[var(--surface-subtle)] to-[var(--surface-grouped-2)] p-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]">
+        <div className="flex flex-col justify-between rounded-[16px] border border-[var(--hairline-soft)] bg-[var(--surface-subtle)] p-3.5">
           <div className="flex items-center gap-2">
             <span className="flex h-6 w-6 items-center justify-center rounded-[8px] bg-[var(--accent-soft)] text-[var(--accent-text)]">
               <TrendingUp size={12} aria-hidden="true" />
@@ -407,7 +407,7 @@ export default function MarketWidget({
         </div>
 
         {/* ── Currency ─────────────────────────────────────────────────── */}
-        <div className="flex flex-col rounded-[16px] border border-[var(--hairline-soft)] bg-gradient-to-b from-[var(--surface-subtle)] to-[var(--surface-grouped-2)] p-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]">
+        <div className="flex flex-col rounded-[16px] border border-[var(--hairline-soft)] bg-[var(--surface-subtle)] p-3.5">
           <div className="flex items-center gap-2">
             <span className="flex h-6 w-6 items-center justify-center rounded-[8px] bg-[var(--success-soft)] text-[var(--success-ink)]">
               <Banknote size={12} aria-hidden="true" />

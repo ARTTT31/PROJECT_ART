@@ -30,7 +30,7 @@ export function SectionCard({
   children,
 }: SectionCardProps) {
   return (
-    <section className="overflow-hidden rounded-[18px] bg-[var(--surface)] border border-[var(--hairline)] shadow-xs transition-all duration-200">
+    <section className="overflow-hidden rounded-[18px] bg-[var(--surface)] border border-[var(--hairline)] transition-all duration-200">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--hairline-soft)] bg-[var(--surface-subtle)] px-5 sm:px-6 py-4">
         <div className="flex items-center gap-3 min-w-0">
           <div

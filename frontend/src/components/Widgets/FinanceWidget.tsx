@@ -414,7 +414,7 @@ export default function FinanceWidget({
 
   return (
     <section
-      className="flex h-full flex-col rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)]"
+      className="flex h-full flex-col rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] p-5"
       aria-labelledby="finance-title"
     >
       <div className="flex items-start justify-between gap-3">

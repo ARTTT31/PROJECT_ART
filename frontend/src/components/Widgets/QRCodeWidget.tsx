@@ -415,7 +415,7 @@ export default function QRCodeWidget({
                 {format === 'qrcode' ? (
                   <div
                     ref={qrWrapRef}
-                    className="rounded-[14px] bg-[var(--surface)] p-3 shadow-xs ring-1 ring-black/[0.05]"
+                    className="rounded-[14px] bg-[var(--surface)] p-3 ring-1 ring-black/[0.05]"
                   >
                     <QRCodeCanvas
                       value={generatedText}
@@ -427,7 +427,7 @@ export default function QRCodeWidget({
                     />
                   </div>
                 ) : (
-                  <div className="flex w-full items-center justify-center overflow-x-auto rounded-[14px] bg-[var(--surface)] p-3 shadow-xs ring-1 ring-black/[0.05]">
+                  <div className="flex w-full items-center justify-center overflow-x-auto rounded-[14px] bg-[var(--surface)] p-3 ring-1 ring-black/[0.05]">
                     <canvas ref={barcodeCanvasRef} className="max-w-full" />
                   </div>
                 )}

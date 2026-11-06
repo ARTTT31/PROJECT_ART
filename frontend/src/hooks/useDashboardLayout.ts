@@ -238,6 +238,12 @@ export function useDashboardLayout() {
     persistLayout(newWidgets, newVisible);
   };
 
+  const resetToDefaultLayout = useCallback(() => {
+    const resetLayout = [...defaultWidgets];
+    const resetVisible = defaultWidgets.map((w) => w.id);
+    persistLayout(resetLayout, resetVisible);
+  }, [persistLayout]);
+
   return {
     widgets,
     visibleWidgetIds,
@@ -247,5 +253,6 @@ export function useDashboardLayout() {
     persistLayout,
     handleResize,
     toggleWidgetVisibility,
+    resetToDefaultLayout,
   };
 }

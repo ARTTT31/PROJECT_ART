@@ -350,7 +350,7 @@ export default function QuickNotesWidget({
 
   if (loadError) {
     return (
-      <section className="flex h-full flex-col rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+      <section className="flex h-full flex-col rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] p-5">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[var(--success-soft)] text-[var(--success-ink)]">
             <ListTodo size={20} aria-hidden="true" />
@@ -375,7 +375,7 @@ export default function QuickNotesWidget({
 
   return (
     <section
-      className="flex h-full flex-col justify-start rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)]"
+      className="flex h-full flex-col justify-start rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] p-5"
       aria-labelledby="quick-notes-title"
     >
       <div className="flex items-start justify-between gap-3">
@@ -508,8 +508,8 @@ export default function QuickNotesWidget({
                 <span
                   className={`flex h-[20px] w-[20px] items-center justify-center rounded-[7px] border-[1.5px] transition-all duration-200 ${
                     note.done
-                      ? 'border-[var(--success)] bg-gradient-to-b from-[var(--success)] to-[#22a447] shadow-[0_1px_3px_rgba(34,164,71,0.45)]'
-                      : 'border-[var(--ink-divider)] bg-[var(--surface)] shadow-[inset_0_1px_1px_rgba(255,255,255,0.9)] group-hover:border-[var(--accent)] group-hover:bg-[var(--accent)]/5'
+                      ? 'border-[var(--success)] bg-[var(--success)]'
+                      : 'border-[var(--ink-divider)] bg-[var(--surface)] group-hover:border-[var(--accent)] group-hover:bg-[var(--accent)]/5'
                   }`}
                 >
                   <svg

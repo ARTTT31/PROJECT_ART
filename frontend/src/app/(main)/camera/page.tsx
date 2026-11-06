@@ -347,7 +347,7 @@ export default function CameraPage() {
     return (
       <>
         <div className="flex min-h-[400px] items-center justify-center">
-          <div className="h-10 w-10 animate-spin rounded-full border-[3px] border-[var(--surface-grouped)] border-t-[#0066cc]" />
+          <div className="h-10 w-10 animate-spin rounded-full border-[3px] border-[var(--surface-grouped)] border-t-[var(--accent)]" />
         </div>
       </>
     );
@@ -383,7 +383,7 @@ export default function CameraPage() {
             <button
               onClick={handleRefresh}
               disabled={refreshing}
-              className="inline-flex items-center gap-2 rounded-full bg-[var(--surface)] px-4 py-2 text-[13px] font-semibold text-[var(--ink)] ring-1 ring-[var(--hairline)] transition-all duration-150 hover:bg-[var(--surface-grouped)] hover:shadow-xs disabled:opacity-50 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 active:scale-[0.95]"
+              className="inline-flex items-center gap-2 rounded-full bg-[var(--surface)] px-4 py-2 text-[13px] font-semibold text-[var(--ink)] ring-1 ring-[var(--hairline)] transition-colors duration-150 hover:bg-[var(--surface-grouped)] disabled:opacity-50 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 active:scale-[0.95]"
               aria-label="รีเฟรชสถานะกล้อง"
             >
               <RefreshCw
@@ -550,7 +550,7 @@ export default function CameraPage() {
 
           {/* Camera List Sidebar */}
           <div className="flex flex-col gap-3">
-            <div className="rounded-2xl bg-[var(--surface)] p-5 ring-1 ring-[var(--hairline)] shadow-[0_8px_32px_rgba(15,23,42,0.06)]">
+            <div className="rounded-2xl bg-[var(--surface)] p-5 ring-1 ring-[var(--hairline)]">
               <div className="mb-4 flex items-center justify-between">
                 <h2 className="flex items-center gap-2.5 text-[15px] font-bold text-[var(--ink)]">
                   <div className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-[var(--surface-grouped)]">
@@ -569,8 +569,8 @@ export default function CameraPage() {
                         className={[
                           'flex w-full items-center justify-between rounded-xl p-3 text-left transition-all duration-150',
                           isSelected
-                            ? 'bg-[var(--accent-soft)] ring-1 ring-[var(--accent-ring)] shadow-[0_2px_8px_rgba(0,102,204,0.08)]'
-                            : 'bg-[var(--surface-grouped)] hover:bg-[var(--surface)] hover:ring-1 hover:ring-[var(--hairline)] hover:shadow-[0_2px_8px_rgba(15,23,42,0.05)]',
+                            ? 'bg-[var(--accent-soft)] ring-1 ring-[var(--accent-ring)]'
+                            : 'bg-[var(--surface-grouped)] hover:bg-[var(--surface)] hover:ring-1 hover:ring-[var(--hairline)]',
                         ].join(' ')}
                       >
                         <button

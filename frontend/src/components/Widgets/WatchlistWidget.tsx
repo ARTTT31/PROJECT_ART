@@ -181,8 +181,8 @@ export default function WatchlistWidget({
     return () => window.removeEventListener('online', flush);
   }, [persist, loadQuotes]);
 
-  const addSymbol = () => {
-    const symbol = draft.trim().toUpperCase();
+  const addSymbol = (customSymbol?: string) => {
+    const symbol = (customSymbol ?? draft).trim().toUpperCase();
     if (!SYMBOL_PATTERN.test(symbol)) {
       setError('ชื่อย่อต้องเป็นตัวอักษรหรือตัวเลข เช่น PTT.BK หรือ BTC-USD');
       return;
@@ -231,7 +231,7 @@ export default function WatchlistWidget({
 
   return (
     <section
-      className="flex h-full flex-col rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)]"
+      className="flex h-full flex-col rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] p-5"
       aria-labelledby="watchlist-title"
     >
       <div className="flex items-start justify-between gap-3">
@@ -303,6 +303,18 @@ export default function WatchlistWidget({
             <TrendingUp size={20} className="mb-2 text-[var(--ink-faint)]" aria-hidden="true" />
             <span>ยังไม่มีรายการติดตาม</span>
             <span className="mt-0.5 text-[11px]">ลองพิมพ์ PTT.BK, AAPL หรือ BTC-USD</span>
+            <div className="mt-2.5 flex flex-wrap items-center justify-center gap-1.5">
+              {['SET50', 'PTT.BK', 'BTC-USD', 'AAPL'].map((quick) => (
+                <button
+                  key={quick}
+                  type="button"
+                  onClick={() => addSymbol(quick)}
+                  className="inline-flex items-center gap-0.5 rounded-full bg-[var(--surface)] px-2.5 py-1 text-[11px] font-semibold text-[var(--accent-text)] ring-1 ring-[var(--hairline)] hover:bg-[var(--accent)]/10 transition-colors active:scale-[0.95]"
+                >
+                  +{quick}
+                </button>
+              ))}
+            </div>
           </li>
         ) : (
           symbols.map((item) => {

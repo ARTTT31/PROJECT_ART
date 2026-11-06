@@ -212,7 +212,7 @@ export default function Select({
             }
           }
         }}
-        className={`inline-flex min-w-0 items-center justify-between gap-1.5 border border-[var(--hairline)] bg-[var(--surface)] text-left font-medium text-[var(--ink)] shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all duration-150 hover:border-[var(--hairline-strong)] hover:shadow-[0_2px_6px_rgba(0,0,0,0.06)] focus-visible:border-[var(--accent-border)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent-ring)] disabled:cursor-not-allowed disabled:opacity-50 ${triggerSize} ${className}`}
+        className={`inline-flex min-w-0 items-center justify-between gap-1.5 border border-[var(--hairline)] bg-[var(--surface)] text-left font-medium text-[var(--ink)] transition-colors duration-150 hover:border-[var(--hairline-strong)] focus-visible:border-[var(--accent-border)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent-ring)] disabled:cursor-not-allowed disabled:opacity-50 ${triggerSize} ${className}`}
       >
         <span className={`truncate ${selected ? '' : 'text-[var(--ink-tertiary)]'}`}>
           {selected?.label ?? placeholder}

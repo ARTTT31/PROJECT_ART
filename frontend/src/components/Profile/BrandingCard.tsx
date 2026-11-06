@@ -329,7 +329,7 @@ export function BrandingCard({ isAdmin = false }: { isAdmin?: boolean }) {
             ตัวอย่างในเมนูด้านข้าง
           </span>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="inline-flex items-center gap-3 rounded-2xl bg-[var(--glass-95)] p-3 shadow-xs border border-[var(--hairline)] max-w-sm">
+            <div className="inline-flex items-center gap-3 rounded-2xl bg-[var(--glass-95)] p-3 border border-[var(--hairline)] max-w-sm">
               <div className="relative shrink-0">
                 <Image
                   src={brandLogoUrl || '/art-workspace-mark.svg'}

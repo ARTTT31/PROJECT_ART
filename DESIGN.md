@@ -33,7 +33,8 @@ Rules: sentence case only; `text-wrap: balance` for headings; max 75ch line leng
 ## Surfaces, Depth & Shape
 
 - No decorative gradients. Atmosphere comes from content, never CSS gradients.
-- Elevation comes from surface color and hairline borders — not from shadows on cards, buttons, or text.
+- Elevation comes from surface color and hairline borders — not from shadows on cards, buttons, or text. Cards, widgets and settings panels carry no shadow at all, and nothing lifts or gains a shadow on hover.
+- Shadows are allowed only where a surface floats above the page and needs to be separated from it: the Dialog, dropdown menus, popovers and toasts. Chips, tabs and switches use a 1px shadow at most, as their own control affordance.
 - Exactly one drop-shadow exists for product imagery: `3px 5px 30px 0 rgba(0, 0, 0, 0.22)` (`shadow-apple-product`).
 - Radius scale: `none` 0 / `apple-xs` 5px / `apple-sm` 8px / `apple-md` 11px / `apple-lg` 18px / `rounded-full` pill.
 - Active/press state is `scale(0.95)` on buttons — no hover lift.

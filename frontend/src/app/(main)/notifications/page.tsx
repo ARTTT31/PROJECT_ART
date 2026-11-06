@@ -130,7 +130,7 @@ export default function NotificationsPage() {
 
   return (
     <div className="space-y-5">
-      <section className="rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+      <section className="rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex items-start gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[var(--accent-soft)] text-[var(--accent-text)]">
@@ -204,7 +204,7 @@ export default function NotificationsPage() {
         </div>
       </section>
 
-      <section className="rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] p-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)] sm:p-5">
+      <section className="rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] p-4 sm:p-5">
         {visible.length === 0 ? (
           <div className="flex min-h-[200px] flex-col items-center justify-center rounded-[14px] border border-dashed border-[var(--hairline)] bg-[var(--surface-subtle)] px-4 text-center text-[13px] text-[var(--ink-tertiary)]">
             <Bell size={22} className="mb-2 text-[var(--ink-faint)]" aria-hidden="true" />

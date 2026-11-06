@@ -389,7 +389,7 @@ export default function OilPriceWidget({
               return (
                 <div
                   key={item.key || idx}
-                  className="flex cursor-default flex-col items-center justify-center gap-1.5 rounded-[18px] bg-[var(--surface-grouped)] px-3 py-3.5 transition-all duration-150 hover:bg-[var(--surface)] hover:shadow-md hover:ring-1 hover:ring-[var(--hairline)]"
+                  className="flex cursor-default flex-col items-center justify-center gap-1.5 rounded-[18px] bg-[var(--surface-grouped)] px-3 py-3.5 transition-colors duration-150 hover:bg-[var(--surface)] hover:ring-1 hover:ring-[var(--hairline)]"
                 >
                   {/* Dot + name */}
                   <div className="flex items-center gap-1.5">

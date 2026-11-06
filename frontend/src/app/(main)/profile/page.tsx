@@ -549,7 +549,7 @@ export default function ProfilePage() {
     return (
       <div className="flex min-h-[70vh] items-center justify-center">
         <div className="flex flex-col items-center gap-3">
-          <div className="h-10 w-10 animate-spin rounded-full border-[3px] border-[var(--surface-grouped)] border-t-[#0066cc]" />
+          <div className="h-10 w-10 animate-spin rounded-full border-[3px] border-[var(--surface-grouped)] border-t-[var(--accent)]" />
           <span className="text-[13px] font-medium text-[var(--ink-muted)]">กำลังโหลดข้อมูลโปรไฟล์…</span>
         </div>
       </div>
@@ -565,7 +565,7 @@ export default function ProfilePage() {
       {/* ══════════════════════════════════════════════════
           HERO IDENTITY CARD (Apple-style Header Banner)
           ══════════════════════════════════════════════════ */}
-      <section className="overflow-hidden rounded-[18px] bg-[var(--surface)] border border-[var(--hairline)] p-5 sm:p-7 shadow-xs transition-all">
+      <section className="overflow-hidden rounded-[18px] bg-[var(--surface)] border border-[var(--hairline)] p-5 sm:p-7 transition-colors">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5">
           {/* Left: Avatar + Identity */}
           <div className="flex items-center gap-4 sm:gap-5">
@@ -580,7 +580,7 @@ export default function ProfilePage() {
               />
 
               {currentUser.avatar ? (
-                <div className="relative h-16 w-16 sm:h-20 sm:w-20 overflow-hidden rounded-[22px] shadow-md ring-4 ring-black/[0.03]">
+                <div className="relative h-16 w-16 sm:h-20 sm:w-20 overflow-hidden rounded-[22px] ring-4 ring-black/[0.03]">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={currentUser.avatar}
@@ -594,7 +594,7 @@ export default function ProfilePage() {
                   )}
                 </div>
               ) : (
-                <div className="relative flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-[22px] bg-gradient-to-tr from-[var(--accent)] via-[var(--accent-hover)] to-[#38bdf8] text-2xl sm:text-3xl font-extrabold text-white shadow-md ring-4 ring-black/[0.03]">
+                <div className="relative flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-[22px] bg-[var(--accent)] text-2xl sm:text-3xl font-extrabold text-white ring-4 ring-black/[0.03]">
                   {isUploadingAvatar ? (
                     <Loader2 size={24} className="animate-spin text-white" />
                   ) : (
@@ -610,7 +610,7 @@ export default function ProfilePage() {
                 disabled={isUploadingAvatar}
                 title="เปลี่ยนรูปโปรไฟล์ (ไม่เกิน 1MB)"
                 aria-label="เปลี่ยนรูปโปรไฟล์"
-                className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full bg-[var(--surface)] text-[var(--ink)] shadow-md ring-1 ring-[var(--hairline)] transition-transform hover:scale-110 active:scale-95 disabled:opacity-50"
+                className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full bg-[var(--surface)] text-[var(--ink)] ring-1 ring-[var(--hairline)] transition-transform hover:scale-110 active:scale-95 disabled:opacity-50"
               >
                 <Camera size={13} className="text-[var(--accent-text)]" />
               </button>

@@ -561,7 +561,7 @@ export default function WeatherWidget({
   if (error && !weather && !loading) {
     return (
       <section
-        className="flex h-full flex-col justify-center rounded-[18px] bg-[var(--surface)] p-5 border border-[var(--hairline)] shadow-[0_1px_3px_rgba(0,0,0,0.05)]"
+        className="flex h-full flex-col justify-center rounded-[18px] bg-[var(--surface)] p-5 border border-[var(--hairline)]"
         aria-labelledby="weather-title"
       >
         <div className="flex items-start gap-3">
@@ -587,7 +587,7 @@ export default function WeatherWidget({
 
   return (
     <section
-      className="flex h-full flex-col justify-between rounded-[18px] bg-[var(--surface)] p-5 border border-[var(--hairline)] shadow-[0_1px_3px_rgba(0,0,0,0.05)] transition-all duration-200"
+      className="flex h-full flex-col justify-between rounded-[18px] bg-[var(--surface)] p-5 border border-[var(--hairline)] transition-all duration-200"
       aria-labelledby="weather-title"
     >
       <div>

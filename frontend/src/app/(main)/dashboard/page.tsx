@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { SlidersHorizontal } from 'lucide-react';
+import { SlidersHorizontal, RotateCcw } from 'lucide-react';
 import { WidgetConfig } from '@/types';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { getGreeting } from '@/utils/greeting';
@@ -327,6 +327,7 @@ export default function DashboardPage() {
     persistLayout,
     handleResize,
     toggleWidgetVisibility,
+    resetToDefaultLayout,
   } = useDashboardLayout();
   const { t } = useI18n();
 
@@ -378,7 +379,7 @@ export default function DashboardPage() {
       {/* ── Apple HIG Hero Welcome Banner ───────────────────────────────── */}
       <section
         aria-label="การทักทายและสถานะประจำวัน"
-        className="relative mb-6 overflow-hidden rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04)] sm:p-7"
+        className="relative mb-6 overflow-hidden rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] p-6 sm:p-7"
       >
         <div className="relative z-10 flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
           <div className="space-y-1.5">
@@ -396,7 +397,7 @@ export default function DashboardPage() {
               type="button"
               onClick={() => setShowConfigModal(true)}
               data-testid="manage-widgets-button"
-              className="inline-flex items-center gap-2 rounded-full bg-[var(--surface)] px-4 py-2 text-[13px] font-semibold text-[var(--ink)] shadow-xs ring-1 ring-[var(--hairline)] transition-all duration-150 hover:bg-[var(--surface-grouped)] hover:shadow-md focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 active:scale-[0.95]"
+              className="inline-flex items-center gap-2 rounded-full bg-[var(--surface)] px-4 py-2 text-[13px] font-semibold text-[var(--ink)] ring-1 ring-[var(--hairline)] transition-colors duration-150 hover:bg-[var(--surface-grouped)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 active:scale-[0.95]"
               aria-label="จัดการวิดเจ็ต"
             >
               <SlidersHorizontal className="h-3.5 w-3.5 text-[var(--ink-secondary)]" aria-hidden="true" />
@@ -504,7 +505,15 @@ export default function DashboardPage() {
             </div>
           </DialogBody>
 
-          <DialogFooter>
+          <DialogFooter className="flex flex-row items-center justify-between">
+            <button
+              type="button"
+              onClick={resetToDefaultLayout}
+              className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-[13px] font-semibold text-[var(--ink-secondary)] transition-all hover:bg-black/[0.05] dark:hover:bg-white/[0.08] active:scale-[0.95]"
+            >
+              <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
+              รีเซ็ตค่าเริ่มต้น
+            </button>
             <button
               onClick={() => setShowConfigModal(false)}
               className="inline-flex items-center justify-center rounded-full bg-[var(--accent)] px-6 py-2.5 text-[15px] font-semibold text-white transition-all duration-150 hover:bg-[var(--accent-hover)]  focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 active:scale-[0.95]"

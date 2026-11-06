@@ -181,7 +181,7 @@ export default function AuditPage() {
 
   return (
     <div className="space-y-5">
-      <section className="rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+      <section className="rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-start gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[var(--accent-soft)] text-[var(--accent-text)]">
@@ -287,14 +287,30 @@ export default function AuditPage() {
         </div>
       </section>
 
-      <section className="rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] p-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)] sm:p-5">
+      <section className="rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] p-4 sm:p-5">
         {loading ? (
           <div
             role="status"
             aria-live="polite"
             className="flex min-h-[240px] items-center justify-center"
           >
-            <Loader2 className="h-5 w-5 animate-spin text-[var(--accent-text)]" aria-hidden="true" />
+            <div className="w-full space-y-2.5 animate-pulse py-2">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div
+                  key={i}
+                  className="flex flex-col gap-2 rounded-[14px] bg-[var(--surface-subtle)] p-3.5 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <div className="h-5 w-20 rounded-full bg-[var(--surface-chip)]" />
+                      <div className="h-4 w-28 rounded-md bg-[var(--surface-chip)]" />
+                    </div>
+                    <div className="h-3.5 w-56 rounded-md bg-[var(--surface-chip)]" />
+                  </div>
+                  <div className="h-4 w-24 rounded-md bg-[var(--surface-chip)]" />
+                </div>
+              ))}
+            </div>
           </div>
         ) : error ? (
           <div
@@ -308,6 +324,20 @@ export default function AuditPage() {
           <div className="flex min-h-[200px] flex-col items-center justify-center rounded-[14px] border border-dashed border-[var(--hairline)] bg-[var(--surface-subtle)] px-4 text-center text-[13px] text-[var(--ink-tertiary)]">
             <FileText size={22} className="mb-2 text-[var(--ink-faint)]" aria-hidden="true" />
             <span>ไม่พบบันทึกกิจกรรมที่ตรงกับเงื่อนไข</span>
+            {(search || action || dateFrom || dateTo) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearch('');
+                  setAction('');
+                  setDateFrom('');
+                  setDateTo('');
+                }}
+                className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-[var(--surface)] px-3.5 py-1.5 text-[12px] font-semibold text-[var(--accent-text)] ring-1 ring-[var(--hairline)] hover:bg-[var(--accent)]/10 transition-colors active:scale-[0.95]"
+              >
+                ล้างตัวกรองทั้งหมด
+              </button>
+            )}
           </div>
         ) : (
           <ul className="space-y-2">

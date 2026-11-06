@@ -20,6 +20,13 @@ interface HeaderProps {
 export default function Header({ user, onMenuClick, sidebarCollapsed = false }: HeaderProps) {
   const pathname = usePathname();
   const { t } = useI18n();
+  const [shortcutKey, setShortcutKey] = useState('Ctrl K');
+
+  useEffect(() => {
+    if (typeof navigator !== 'undefined' && /mac|iphone|ipad|ipod/i.test(navigator.userAgent)) {
+      setShortcutKey('⌘K');
+    }
+  }, []);
 
   const headerMeta: { title: string; crumbs: Array<{ label: string; href?: string }> } = (() => {
     const home = { label: t('breadcrumb.home'), href: '/dashboard' };
@@ -96,6 +103,16 @@ export default function Header({ user, onMenuClick, sidebarCollapsed = false }: 
 
         {/* Right Side: Clock, Notification Bell & User Profile Pill */}
         <div className="flex items-center gap-2 sm:gap-3">
+          {/* Mobile search button */}
+          <button
+            type="button"
+            onClick={openCommandPalette}
+            aria-label={t('nav.search.aria')}
+            title={t('nav.search.title')}
+            className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--ink)] transition-all hover:bg-black/[0.05] dark:hover:bg-white/[0.08] active:scale-[0.95] sm:hidden"
+          >
+            <Search size={18} aria-hidden="true" />
+          </button>
           <div className="hidden min-h-[36px] items-center gap-2 rounded-full border border-[var(--hairline)] bg-[var(--glass-80)] px-3.5 py-1.5 text-[12px] font-semibold text-[var(--ink)] shadow-[0_1px_2px_rgba(0,0,0,0.04)] md:flex">
             <ClockTime />
           </div>
@@ -110,7 +127,7 @@ export default function Header({ user, onMenuClick, sidebarCollapsed = false }: 
             <Search size={14} aria-hidden="true" />
             <span>{t('nav.search.label')}</span>
             <kbd className="rounded-md border border-[var(--hairline)] bg-[var(--surface)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--ink-muted)]">
-              Ctrl K
+              {shortcutKey}
             </kbd>
           </button>
 

@@ -166,7 +166,7 @@ export default function ResetPasswordPage() {
         </label>
 
         {confirmPassword && password === confirmPassword && (
-          <p className="login-hint" style={{ color: '#1a7f37' }}>
+          <p className="login-hint text-[var(--success-ink)]">
             <CheckCircle2 size={14} aria-hidden="true" style={{ verticalAlign: '-2px' }} />{' '}
             รหัสผ่านยืนยันตรงกัน
           </p>

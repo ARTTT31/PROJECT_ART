@@ -256,4 +256,24 @@ describe('useDashboardLayout — persistence', () => {
       vi.useRealTimers();
     }
   });
+
+  it('resets layout and visibility to defaults when resetToDefaultLayout is called', async () => {
+    const { result } = await renderLayout();
+
+    // Change layout and visibility
+    act(() => {
+      result.current.handleResize('notes', 3);
+      result.current.toggleWidgetVisibility('notes');
+    });
+
+    expect(result.current.visibleWidgetIds).not.toContain('notes');
+
+    // Reset to defaults
+    act(() => {
+      result.current.resetToDefaultLayout();
+    });
+
+    expect(result.current.widgets.map((w) => w.id)).toEqual(DEFAULT_IDS);
+    expect(result.current.visibleWidgetIds).toEqual(DEFAULT_IDS);
+  });
 });

@@ -148,7 +148,7 @@ export function QuickLinkDialog({ open, onOpenChange, link, onSubmit }: QuickLin
               <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--ink-tertiary)] mb-2">
                 ตัวอย่างการแสดงผล
               </div>
-              <div className="flex items-center gap-3 rounded-2xl bg-[var(--surface)] p-3 ring-1 ring-[var(--hairline)] shadow-xs">
+              <div className="flex items-center gap-3 rounded-2xl bg-[var(--surface)] p-3 ring-1 ring-[var(--hairline)]">
                 <div
                   className="flex h-10 w-10 items-center justify-center rounded-[14px]"
                   style={{ backgroundColor: `${color}15` }}

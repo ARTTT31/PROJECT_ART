@@ -742,8 +742,35 @@ export default function UserManagement() {
 
   if (initialLoading) {
     return (
-      <div className="flex h-32 items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-[3px] border-[var(--surface-grouped)] border-t-[#0066cc]" />
+      <div className="w-full">
+        <div className="w-full space-y-4 animate-pulse py-2">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex flex-1 items-center gap-2">
+              <div className="h-10 w-64 rounded-full bg-[var(--surface-subtle)] ring-1 ring-[var(--hairline)]" />
+              <div className="h-10 w-28 rounded-full bg-[var(--surface-subtle)] ring-1 ring-[var(--hairline)]" />
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="h-10 w-28 rounded-full bg-[var(--surface-subtle)] ring-1 ring-[var(--hairline)]" />
+              <div className="h-10 w-28 rounded-full bg-[var(--accent-soft)]" />
+            </div>
+          </div>
+          <div className="overflow-hidden rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)]">
+            <div className="h-12 border-b border-[var(--hairline-soft)] bg-[var(--surface-subtle)]" />
+            <div className="divide-y divide-[var(--hairline-soft)] p-4 space-y-4">
+              {[1, 2, 3, 4, 5].map((idx) => (
+                <div key={idx} className="flex items-center justify-between pt-2">
+                  <div className="space-y-1.5">
+                    <div className="h-4 w-36 rounded-md bg-[var(--surface-chip)]" />
+                    <div className="h-3 w-48 rounded-md bg-[var(--surface-subtle)]" />
+                  </div>
+                  <div className="h-6 w-16 rounded-full bg-[var(--surface-chip)]" />
+                  <div className="h-6 w-14 rounded-full bg-[var(--surface-chip)]" />
+                  <div className="h-8 w-20 rounded-full bg-[var(--surface-subtle)]" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -782,7 +809,7 @@ export default function UserManagement() {
               </label>
               <div
                 onClick={() => setEditIsActive(!editIsActive)}
-                className="group flex cursor-pointer items-center gap-3 rounded-2xl bg-[var(--surface-subtle)] p-4 ring-1 ring-black/[0.04] transition-all hover:bg-[var(--surface)] hover:shadow-xs"
+                className="group flex cursor-pointer items-center gap-3 rounded-2xl bg-[var(--surface-subtle)] p-4 ring-1 ring-black/[0.04] transition-colors hover:bg-[var(--surface)]"
               >
                 {editIsActive ? (
                   <CheckCircle2 size={22} className="text-[var(--accent-text)]" />
@@ -811,8 +838,8 @@ export default function UserManagement() {
                   onClick={() => setEditRole('user')}
                   className={`group relative flex cursor-pointer items-start gap-3 rounded-2xl p-4 transition-all duration-200 ${
                     editRole === 'user'
-                      ? 'bg-[var(--surface)] ring-2 ring-[var(--accent)] shadow-[0_4px_12px_rgba(0,102,204,0.12)]'
-                      : 'bg-[var(--surface-subtle)] ring-1 ring-black/[0.04] hover:bg-[var(--surface)] hover:shadow-xs'
+                      ? 'bg-[var(--surface)] ring-2 ring-[var(--accent)]'
+                      : 'bg-[var(--surface-subtle)] ring-1 ring-black/[0.04] hover:bg-[var(--surface)]'
                   }`}
                 >
                   <div
@@ -848,8 +875,8 @@ export default function UserManagement() {
                   onClick={() => setEditRole('admin')}
                   className={`group relative flex cursor-pointer items-start gap-3 rounded-2xl p-4 transition-all duration-200 ${
                     editRole === 'admin'
-                      ? 'bg-[var(--surface)] ring-2 ring-purple-600 shadow-[0_4px_12px_rgba(147,51,234,0.12)]'
-                      : 'bg-[var(--surface-subtle)] ring-1 ring-black/[0.04] hover:bg-[var(--surface)] hover:shadow-xs'
+                      ? 'bg-[var(--surface)] ring-2 ring-purple-600'
+                      : 'bg-[var(--surface-subtle)] ring-1 ring-black/[0.04] hover:bg-[var(--surface)]'
                   }`}
                 >
                   <div
@@ -1019,8 +1046,8 @@ export default function UserManagement() {
                     aria-pressed={createForm.role === role}
                     className={`group relative flex items-center gap-3 rounded-2xl p-4 text-left transition-all duration-200 ${
                       createForm.role === role
-                        ? 'bg-[var(--surface)] ring-2 ring-[var(--accent)] shadow-[0_4px_12px_rgba(0,102,204,0.12)]'
-                        : 'bg-[var(--surface-subtle)] ring-1 ring-black/[0.04] hover:bg-[var(--surface)] hover:shadow-xs'
+                        ? 'bg-[var(--surface)] ring-2 ring-[var(--accent)]'
+                        : 'bg-[var(--surface-subtle)] ring-1 ring-black/[0.04] hover:bg-[var(--surface)]'
                     }`}
                   >
                     <div

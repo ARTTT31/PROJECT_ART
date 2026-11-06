@@ -150,7 +150,7 @@ const DialogTitle = React.forwardRef<
       // Typography (from design system: Title scale)
       'text-xl font-semibold leading-tight tracking-tight',
       // Color (Ink from design system)
-      'text-slate-900',
+      'text-[var(--ink)]',
       className,
     )}
     {...props}
@@ -168,7 +168,7 @@ const DialogDescription = React.forwardRef<
       // Typography (from design system: Body scale)
       'text-sm leading-relaxed',
       // Color (Muted from design system)
-      'text-slate-600',
+      'text-[var(--ink-secondary)]',
       className,
     )}
     {...props}
