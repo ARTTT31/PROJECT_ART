@@ -12,6 +12,8 @@ import {
   Shield,
   StickyNote,
   TrendingUp,
+  ExternalLink,
+  Timer,
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitleSR } from '@/components/ui/Dialog';
 import { useAuth } from '@/hooks/useAuth';
@@ -30,7 +32,7 @@ export function openCommandPalette() {
   window.dispatchEvent(new Event(COMMAND_PALETTE_EVENT));
 }
 
-type ResultKind = 'page' | 'note' | 'watchlist' | 'reminder' | 'user';
+type ResultKind = 'page' | 'note' | 'watchlist' | 'reminder' | 'user' | 'quicklink' | 'action';
 
 interface CommandResult {
   id: string;
@@ -41,6 +43,7 @@ interface CommandResult {
   icon: React.ReactNode;
   /** Extra words that should match but are not shown. */
   keywords?: string;
+  isExternal?: boolean;
 }
 
 const KIND_KEYS: Record<ResultKind, MessageKey> = {
@@ -49,6 +52,8 @@ const KIND_KEYS: Record<ResultKind, MessageKey> = {
   watchlist: 'palette.kind.watchlist',
   reminder: 'palette.kind.reminder',
   user: 'palette.kind.user',
+  quicklink: 'palette.kind.quicklink',
+  action: 'palette.kind.action',
 };
 
 function asArray(value: unknown): unknown[] {
@@ -130,6 +135,25 @@ function collectLocalResults(t: Translate): CommandResult[] {
       href: '/dashboard',
       icon: <CalendarClock size={15} aria-hidden="true" />,
       keywords: 'reminder เตือน ธุระ ลา',
+    });
+  });
+
+  const linksCache = readCached<unknown>('profile/quick-links');
+  const linksPayload = linksCache?.data as unknown[] | undefined;
+  const links = Array.isArray(linksPayload) ? linksPayload : [];
+  links.slice(0, 20).forEach((entry, index) => {
+    const link = entry as { id?: unknown; title?: unknown; name?: unknown; url?: unknown };
+    const title = typeof link?.title === 'string' ? link.title : typeof link?.name === 'string' ? link.name : '';
+    if (!title.trim()) return;
+    results.push({
+      id: `link-${typeof link.id === 'string' ? link.id : index}`,
+      kind: 'quicklink',
+      title: title.trim(),
+      subtitle: typeof link.url === 'string' ? link.url : 'ควิกลิ้งค์',
+      href: typeof link.url === 'string' ? link.url : undefined,
+      isExternal: true,
+      icon: <ExternalLink size={15} aria-hidden="true" />,
+      keywords: `link quicklink ควิกลิ้งค์ ${title} ${link.url ?? ''}`,
     });
   });
 
@@ -289,7 +313,37 @@ export default function CommandPalette() {
         : []),
     ];
 
-    return [...menu, ...extra];
+    const quickActions: CommandResult[] = [
+      {
+        id: 'action-focustimer',
+        kind: 'action' as const,
+        title: 'เริ่มโฟกัส & จับเวลา (Focus Timer)',
+        subtitle: 'ไปที่หน้าแดชบอร์ดเพื่อเริ่มจับเวลา Pomodoro',
+        href: '/dashboard',
+        icon: <Timer size={15} aria-hidden="true" />,
+        keywords: 'pomodoro timer focus โฟกัส จับเวลา นาฬิกา',
+      },
+      {
+        id: 'action-calendar',
+        kind: 'action' as const,
+        title: 'เปิดปฏิทิน & ตารางนัดหมาย (Calendar)',
+        subtitle: 'ดูวันหยุดและนัดหมายในแดชบอร์ด',
+        href: '/dashboard',
+        icon: <CalendarClock size={15} aria-hidden="true" />,
+        keywords: 'calendar ปฏิทิน นัดหมาย วันหยุด เตือน',
+      },
+      {
+        id: 'action-backup',
+        kind: 'action' as const,
+        title: 'สำรองและกู้คืนข้อมูล (Backup & Restore)',
+        subtitle: 'ดาวน์โหลดหรือนำเข้าข้อมูล Workspace',
+        href: '/profile?tab=preferences',
+        icon: <Shield size={15} aria-hidden="true" />,
+        keywords: 'backup restore สำรอง กู้คืน json',
+      },
+    ];
+
+    return [...menu, ...extra, ...quickActions];
   }, [isAdmin, profileActions, t]);
 
   const results = useMemo(() => {
@@ -313,6 +367,10 @@ export default function CommandPalette() {
     (result: CommandResult | undefined) => {
       if (!result) return;
       close();
+      if (result.isExternal && result.href) {
+        window.open(result.href, '_blank', 'noopener,noreferrer');
+        return;
+      }
       router.push(result.href ?? '/dashboard');
     },
     [close, router],

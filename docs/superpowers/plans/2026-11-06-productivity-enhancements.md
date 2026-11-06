@@ -49,3 +49,12 @@
 - [x] **Step 4.2**: Register `calendar` widget in `useDashboardLayout.ts` and dashboard page.
 - [x] **Step 4.3**: Unit test and verify.
 - [x] **Step 4.4**: Commit Task 4 changes.
+
+---
+
+### Task 5: Command Palette Quick Actions (`Ctrl+K` / `⌘K`)
+
+- [x] **Step 5.1**: Connect Quick Links search and direct opening in `CommandPalette.tsx`.
+- [x] **Step 5.2**: Add quick action triggers for Focus Timer, Calendar, and Workspace Backup.
+- [x] **Step 5.3**: Add unit test `CommandPalette.test.tsx` and i18n translation keys.
+- [x] **Step 5.4**: Run tests, type-check, lint, and build.
