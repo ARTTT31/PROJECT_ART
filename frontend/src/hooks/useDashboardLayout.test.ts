@@ -21,6 +21,7 @@ const DEFAULT_IDS = [
   'notes',
   'calc',
   'focustimer',
+  'calendar',
   'market',
   'finance',
   'watchlist',

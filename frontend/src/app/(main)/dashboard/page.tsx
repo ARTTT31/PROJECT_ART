@@ -90,6 +90,10 @@ const FocusTimerWidget = dynamic(() => import('@/components/Widgets/FocusTimerWi
   ssr: false,
   loading: () => <PriceCalcSkeleton />,
 });
+const CalendarWidget = dynamic(() => import('@/components/Widgets/CalendarWidget'), {
+  ssr: false,
+  loading: () => <HolidaySkeleton />,
+});
 
 import { useDashboardLayout, widgetNames, widgetDescriptions } from '@/hooks/useDashboardLayout';
 import { useI18n } from '@/lib/i18n/I18nProvider';
@@ -246,6 +250,18 @@ function SortableWidget({
             )}
           >
             <FocusTimerWidget
+              width={widget.w}
+              onResize={(newSize) => onResize(widget.id, newSize)}
+            />
+          </ErrorBoundary>
+        )}
+        {widget.id === 'calendar' && (
+          <ErrorBoundary
+            fallback={(err, reset) => (
+              <WidgetErrorFallback name="ปฏิทิน & ตารางนัดหมาย" error={err} reset={reset} />
+            )}
+          >
+            <CalendarWidget
               width={widget.w}
               onResize={(newSize) => onResize(widget.id, newSize)}
             />
