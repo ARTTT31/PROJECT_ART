@@ -3,10 +3,9 @@
 import { memo, useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { Clock, Menu, Search } from 'lucide-react';
+import { Clock, Menu } from 'lucide-react';
 import { AuthUser } from '@/types';
 import NotificationBell from './NotificationBell';
-import { openCommandPalette } from './CommandPalette';
 import { useI18n } from '@/lib/i18n/I18nProvider';
 import { usePreferences } from '@/hooks/usePreferences';
 import { formatClock } from '@/utils/dateFormat';
@@ -20,13 +19,6 @@ interface HeaderProps {
 export default function Header({ user, onMenuClick, sidebarCollapsed = false }: HeaderProps) {
   const pathname = usePathname();
   const { t } = useI18n();
-  const [shortcutKey, setShortcutKey] = useState('Ctrl K');
-
-  useEffect(() => {
-    if (typeof navigator !== 'undefined' && /mac|iphone|ipad|ipod/i.test(navigator.userAgent)) {
-      setShortcutKey('⌘K');
-    }
-  }, []);
 
   const headerMeta: { title: string; crumbs: Array<{ label: string; href?: string }> } = (() => {
     const home = { label: t('breadcrumb.home'), href: '/dashboard' };
@@ -107,19 +99,6 @@ export default function Header({ user, onMenuClick, sidebarCollapsed = false }: 
             <ClockTime />
           </div>
 
-          <button
-            type="button"
-            onClick={openCommandPalette}
-            aria-label={t('nav.search.aria')}
-            title={t('nav.search.title')}
-            className="hidden h-9 shrink-0 items-center gap-2 rounded-full border border-[var(--hairline)] bg-[var(--glass-80)] px-3 text-[12px] font-medium text-[var(--ink-tertiary)] transition-colors hover:bg-[var(--surface-grouped)] hover:text-[var(--ink)] sm:inline-flex"
-          >
-            <Search size={14} aria-hidden="true" />
-            <span>{t('nav.search.label')}</span>
-            <kbd className="rounded-md border border-[var(--hairline)] bg-[var(--surface)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--ink-muted)]">
-              {shortcutKey}
-            </kbd>
-          </button>
 
           <NotificationBell />
         </div>
