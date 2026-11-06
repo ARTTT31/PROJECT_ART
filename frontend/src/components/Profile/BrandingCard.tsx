@@ -228,10 +228,14 @@ export function BrandingCard({ isAdmin = false }: { isAdmin?: boolean }) {
       <form onSubmit={handleSaveBranding} className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-[13px] font-semibold text-[var(--ink)] mb-1.5">
+            <label
+              htmlFor="branding-company-name"
+              className="block text-[13px] font-semibold text-[var(--ink)] mb-1.5"
+            >
               {copy.nameLabel} <span className="text-rose-500">*</span>
             </label>
             <input
+              id="branding-company-name"
               type="text"
               value={formCompanyName}
               onChange={(e) => setFormCompanyName(e.target.value)}
@@ -243,10 +247,14 @@ export function BrandingCard({ isAdmin = false }: { isAdmin?: boolean }) {
           </div>
 
           <div>
-            <label className="block text-[13px] font-semibold text-[var(--ink)] mb-1.5">
+            <label
+              htmlFor="branding-company-tagline"
+              className="block text-[13px] font-semibold text-[var(--ink)] mb-1.5"
+            >
               คำโปรย (ไม่บังคับ)
             </label>
             <input
+              id="branding-company-tagline"
               type="text"
               value={formCompanyTagline}
               onChange={(e) => setFormCompanyTagline(e.target.value)}

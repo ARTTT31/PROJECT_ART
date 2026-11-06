@@ -5,6 +5,7 @@ import { SlidersHorizontal, RotateCcw } from 'lucide-react';
 import { WidgetConfig } from '@/types';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { getGreeting } from '@/utils/greeting';
+import { showConfirm } from '@/utils/sweetalert';
 
 import {
   Dialog,
@@ -540,8 +541,15 @@ export default function DashboardPage() {
           <DialogFooter className="flex flex-row items-center justify-between">
             <button
               type="button"
-              onClick={resetToDefaultLayout}
-              className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-[13px] font-semibold text-[var(--ink-secondary)] transition-all hover:bg-black/[0.05] dark:hover:bg-white/[0.08] active:scale-[0.95]"
+              onClick={async () => {
+                // Throws away the arrangement the account saved on every device.
+                const result = await showConfirm(
+                  'รีเซ็ตการจัดเรียงวิดเจ็ต?',
+                  'ลำดับ ขนาด และการเปิด/ปิดวิดเจ็ตจะกลับไปเป็นค่าเริ่มต้น',
+                );
+                if (result.isConfirmed) resetToDefaultLayout();
+              }}
+              className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-[13px] font-semibold text-[var(--ink-secondary)] transition-all hover:bg-[var(--surface-chip)] active:scale-[0.95]"
             >
               <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
               รีเซ็ตค่าเริ่มต้น

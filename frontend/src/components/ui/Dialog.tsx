@@ -33,7 +33,7 @@ const DialogOverlay = React.forwardRef<
     className={cn(
       // Liquid Glass UI: Semi-transparent overlay with backdrop blur
       'fixed inset-0 z-[1000]',
-      'bg-slate-900/10 backdrop-blur-md',
+      'bg-[var(--scrim)] backdrop-blur-md',
       // Smooth fade-in animation
       'data-[state=open]:animate-in data-[state=closed]:animate-out',
       'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
@@ -91,7 +91,7 @@ const DialogContent = React.forwardRef<
           'inline-flex items-center justify-center',
           // Colors
           'text-[var(--ink-tertiary)] hover:text-[var(--ink)]',
-          'hover:bg-black/[0.05]',
+          'hover:bg-[var(--surface-chip)]',
           // Transitions
           'transition-all duration-150 active:scale-[0.95]',
           // Focus ring

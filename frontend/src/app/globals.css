@@ -158,6 +158,11 @@
   --hairline: rgba(0, 0, 0, 0.06);
   --hairline-strong: rgba(0, 0, 0, 0.1);
 
+  /* Scrim behind dialogs and the mobile drawer. A literal black, not a
+     Tailwind palette step: the palette ramps flip in dark mode, so
+     `bg-slate-900/10` turned into a white wash there. */
+  --scrim: rgba(0, 0, 0, 0.28);
+
   --glass-95: rgba(255, 255, 255, 0.95);
   --glass-80: rgba(255, 255, 255, 0.8);
   --glass-60: rgba(255, 255, 255, 0.6);
@@ -244,6 +249,9 @@
   --hairline-soft: rgba(255, 255, 255, 0.07);
   --hairline: rgba(255, 255, 255, 0.1);
   --hairline-strong: rgba(255, 255, 255, 0.16);
+
+  /* Dark pages need a stronger scrim to separate a dialog from the wall. */
+  --scrim: rgba(0, 0, 0, 0.6);
 
   --glass-95: rgba(28, 28, 30, 0.95);
   --glass-80: rgba(28, 28, 30, 0.8);

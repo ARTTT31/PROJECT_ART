@@ -795,7 +795,7 @@ export default function UserManagement() {
             </div>
             <button
               onClick={closeEdit}
-              className="flex h-8 w-8 items-center justify-center rounded-full bg-black/5 text-[var(--ink-muted)] transition-colors hover:bg-black/10 self-end sm:self-auto"
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--surface-chip)] text-[var(--ink-muted)] transition-colors hover:bg-[var(--surface-chip-2)] self-end sm:self-auto"
             >
               <X size={16} />
             </button>
@@ -804,12 +804,10 @@ export default function UserManagement() {
           <div className="p-6 space-y-6">
             {/* Status */}
             <div>
-              <label className="mb-2 block text-[12px] font-bold tracking-wide uppercase text-[var(--ink-muted)]">
-                สถานะการใช้งาน
-              </label>
+              <span className="mb-2 block text-[12px] font-bold tracking-wide uppercase text-[var(--ink-muted)]">สถานะการใช้งาน</span>
               <div
                 onClick={() => setEditIsActive(!editIsActive)}
-                className="group flex cursor-pointer items-center gap-3 rounded-2xl bg-[var(--surface-subtle)] p-4 ring-1 ring-black/[0.04] transition-colors hover:bg-[var(--surface)]"
+                className="group flex cursor-pointer items-center gap-3 rounded-2xl bg-[var(--surface-subtle)] p-4 ring-1 ring-[var(--hairline)] transition-colors hover:bg-[var(--surface)]"
               >
                 {editIsActive ? (
                   <CheckCircle2 size={22} className="text-[var(--accent-text)]" />
@@ -829,9 +827,7 @@ export default function UserManagement() {
 
             {/* Role */}
             <div>
-              <label className="mb-2 block text-[12px] font-bold tracking-wide uppercase text-[var(--ink-muted)]">
-                สิทธิ์การใช้งาน (Role)
-              </label>
+              <span className="mb-2 block text-[12px] font-bold tracking-wide uppercase text-[var(--ink-muted)]">สิทธิ์การใช้งาน (Role)</span>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {/* User Role Card */}
                 <div
@@ -839,7 +835,7 @@ export default function UserManagement() {
                   className={`group relative flex cursor-pointer items-start gap-3 rounded-2xl p-4 transition-all duration-200 ${
                     editRole === 'user'
                       ? 'bg-[var(--surface)] ring-2 ring-[var(--accent)]'
-                      : 'bg-[var(--surface-subtle)] ring-1 ring-black/[0.04] hover:bg-[var(--surface)]'
+                      : 'bg-[var(--surface-subtle)] ring-1 ring-[var(--hairline)] hover:bg-[var(--surface)]'
                   }`}
                 >
                   <div
@@ -876,7 +872,7 @@ export default function UserManagement() {
                   className={`group relative flex cursor-pointer items-start gap-3 rounded-2xl p-4 transition-all duration-200 ${
                     editRole === 'admin'
                       ? 'bg-[var(--surface)] ring-2 ring-purple-600'
-                      : 'bg-[var(--surface-subtle)] ring-1 ring-black/[0.04] hover:bg-[var(--surface)]'
+                      : 'bg-[var(--surface-subtle)] ring-1 ring-[var(--hairline)] hover:bg-[var(--surface)]'
                   }`}
                 >
                   <div
@@ -956,7 +952,7 @@ export default function UserManagement() {
             <button
               onClick={() => setIsCreating(false)}
               aria-label="ปิดฟอร์มสร้างผู้ใช้"
-              className="flex h-8 w-8 items-center justify-center rounded-full bg-black/5 text-[var(--ink-muted)] transition-colors hover:bg-black/10"
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--surface-chip)] text-[var(--ink-muted)] transition-colors hover:bg-[var(--surface-chip-2)]"
             >
               <X size={16} />
             </button>
@@ -977,7 +973,7 @@ export default function UserManagement() {
                   onChange={(e) => setCreateForm((prev) => ({ ...prev, username: e.target.value }))}
                   placeholder="อย่างน้อย 3 ตัวอักษร"
                   autoComplete="off"
-                  className="w-full rounded-2xl border-0 bg-[var(--surface-subtle)] px-4 py-3 text-[14px] font-medium text-[var(--ink)] outline-hidden ring-1 ring-black/[0.04] transition-all placeholder:text-[var(--ink-tertiary)] focus:bg-[var(--surface)] focus:ring-2 focus:ring-[var(--accent)]"
+                  className="w-full rounded-2xl border-0 bg-[var(--surface-subtle)] px-4 py-3 text-[14px] font-medium text-[var(--ink)] outline-hidden ring-1 ring-[var(--hairline)] transition-all placeholder:text-[var(--ink-tertiary)] focus:bg-[var(--surface)] focus:ring-2 focus:ring-[var(--accent)]"
                 />
               </div>
               <div>
@@ -994,7 +990,7 @@ export default function UserManagement() {
                     setCreateForm((prev) => ({ ...prev, display_name: e.target.value }))
                   }
                   placeholder="ชื่อ-นามสกุล"
-                  className="w-full rounded-2xl border-0 bg-[var(--surface-subtle)] px-4 py-3 text-[14px] font-medium text-[var(--ink)] outline-hidden ring-1 ring-black/[0.04] transition-all placeholder:text-[var(--ink-tertiary)] focus:bg-[var(--surface)] focus:ring-2 focus:ring-[var(--accent)]"
+                  className="w-full rounded-2xl border-0 bg-[var(--surface-subtle)] px-4 py-3 text-[14px] font-medium text-[var(--ink)] outline-hidden ring-1 ring-[var(--hairline)] transition-all placeholder:text-[var(--ink-tertiary)] focus:bg-[var(--surface)] focus:ring-2 focus:ring-[var(--accent)]"
                 />
               </div>
               <div>
@@ -1011,7 +1007,7 @@ export default function UserManagement() {
                   onChange={(e) => setCreateForm((prev) => ({ ...prev, email: e.target.value }))}
                   placeholder="name@example.com"
                   autoComplete="off"
-                  className="w-full rounded-2xl border-0 bg-[var(--surface-subtle)] px-4 py-3 text-[14px] font-medium text-[var(--ink)] outline-hidden ring-1 ring-black/[0.04] transition-all placeholder:text-[var(--ink-tertiary)] focus:bg-[var(--surface)] focus:ring-2 focus:ring-[var(--accent)]"
+                  className="w-full rounded-2xl border-0 bg-[var(--surface-subtle)] px-4 py-3 text-[14px] font-medium text-[var(--ink)] outline-hidden ring-1 ring-[var(--hairline)] transition-all placeholder:text-[var(--ink-tertiary)] focus:bg-[var(--surface)] focus:ring-2 focus:ring-[var(--accent)]"
                 />
               </div>
               <div>
@@ -1028,15 +1024,13 @@ export default function UserManagement() {
                   onChange={(e) => setCreateForm((prev) => ({ ...prev, password: e.target.value }))}
                   placeholder="อย่างน้อย 8 ตัวอักษร"
                   autoComplete="new-password"
-                  className="w-full rounded-2xl border-0 bg-[var(--surface-subtle)] px-4 py-3 text-[14px] font-medium text-[var(--ink)] outline-hidden ring-1 ring-black/[0.04] transition-all placeholder:text-[var(--ink-tertiary)] focus:bg-[var(--surface)] focus:ring-2 focus:ring-[var(--accent)]"
+                  className="w-full rounded-2xl border-0 bg-[var(--surface-subtle)] px-4 py-3 text-[14px] font-medium text-[var(--ink)] outline-hidden ring-1 ring-[var(--hairline)] transition-all placeholder:text-[var(--ink-tertiary)] focus:bg-[var(--surface)] focus:ring-2 focus:ring-[var(--accent)]"
                 />
               </div>
             </div>
 
             <div>
-              <label className="mb-2 block text-[12px] font-bold tracking-wide uppercase text-[var(--ink-muted)]">
-                สิทธิ์การใช้งาน (Role)
-              </label>
+              <span className="mb-2 block text-[12px] font-bold tracking-wide uppercase text-[var(--ink-muted)]">สิทธิ์การใช้งาน (Role)</span>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {(['user', 'admin'] as const).map((role) => (
                   <button
@@ -1047,7 +1041,7 @@ export default function UserManagement() {
                     className={`group relative flex items-center gap-3 rounded-2xl p-4 text-left transition-all duration-200 ${
                       createForm.role === role
                         ? 'bg-[var(--surface)] ring-2 ring-[var(--accent)]'
-                        : 'bg-[var(--surface-subtle)] ring-1 ring-black/[0.04] hover:bg-[var(--surface)]'
+                        : 'bg-[var(--surface-subtle)] ring-1 ring-[var(--hairline)] hover:bg-[var(--surface)]'
                     }`}
                   >
                     <div
@@ -1290,7 +1284,7 @@ export default function UserManagement() {
                   </tr>
                 </thead>
                 <tbody
-                  className={`divide-y divide-black/[0.04] transition-opacity duration-200 ${isFetching ? 'opacity-50' : 'opacity-100'}`}
+                  className={`divide-y divide-[var(--hairline)] transition-opacity duration-200 ${isFetching ? 'opacity-50' : 'opacity-100'}`}
                 >
                   {statusFilter === 'trash'
                     ? filteredTrash.map((t) => (

@@ -144,7 +144,7 @@ export function QuickLinkDialog({ open, onOpenChange, link, onSubmit }: QuickLin
         <form onSubmit={handleSubmit}>
           <DialogBody className="space-y-4">
             {/* Preview card */}
-            <div className="rounded-[18px] bg-[var(--surface-grouped)] p-3.5 ring-1 ring-black/[0.04]">
+            <div className="rounded-[18px] bg-[var(--surface-grouped)] p-3.5 ring-1 ring-[var(--hairline)]">
               <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--ink-tertiary)] mb-2">
                 ตัวอย่างการแสดงผล
               </div>
@@ -217,13 +217,13 @@ export function QuickLinkDialog({ open, onOpenChange, link, onSubmit }: QuickLin
 
             {/* Icon Picker (with scroll container to avoid huge modal on laptops/phones) */}
             <div>
-              <label className="mb-1.5 ml-1 block text-[11px] font-bold tracking-wide uppercase text-[var(--ink-muted)]">
+              <span className="mb-1.5 ml-1 block text-[11px] font-bold tracking-wide uppercase text-[var(--ink-muted)]">
                 ไอคอน ·{' '}
                 <span className="text-[var(--accent-text)] font-normal normal-case tracking-normal">
                   {previewIconLabel}
                 </span>
-              </label>
-              <div className="rounded-2xl bg-[var(--surface-subtle)] p-2 ring-1 ring-black/[0.04] max-h-44 overflow-y-auto">
+              </span>
+              <div className="rounded-2xl bg-[var(--surface-subtle)] p-2 ring-1 ring-[var(--hairline)] max-h-44 overflow-y-auto">
                 <div className="grid grid-cols-6 sm:grid-cols-8 gap-1.5">
                   {QUICK_LINK_ICON_OPTIONS.map((option) => {
                     const OptionIcon = QUICK_LINK_ICON_MAP[option.key];
@@ -239,7 +239,7 @@ export function QuickLinkDialog({ open, onOpenChange, link, onSubmit }: QuickLin
                           'relative flex h-9 w-9 items-center justify-center rounded-xl transition-all duration-150',
                           active
                             ? 'bg-[var(--surface)] shadow-xs ring-2 ring-[var(--accent)]'
-                            : 'bg-[var(--glass-60)] hover:bg-[var(--surface)] ring-1 ring-black/[0.04] hover:ring-[var(--hairline)]',
+                            : 'bg-[var(--glass-60)] hover:bg-[var(--surface)] ring-1 ring-[var(--hairline)] hover:ring-[var(--hairline)]',
                         ].join(' ')}
                       >
                         <OptionIcon
@@ -257,9 +257,7 @@ export function QuickLinkDialog({ open, onOpenChange, link, onSubmit }: QuickLin
             {/* Color Picker */}
             <div>
               <div className="mb-1.5 ml-1 flex items-center justify-between">
-                <label className="text-[11px] font-bold tracking-wide uppercase text-[var(--ink-muted)]">
-                  สีของไอคอน
-                </label>
+                <span className="text-[11px] font-bold tracking-wide uppercase text-[var(--ink-muted)]">สีของไอคอน</span>
                 <div className="flex items-center gap-1.5">
                   <div
                     className="h-4 w-4 rounded-md ring-1 ring-[var(--hairline-strong)]"
@@ -269,7 +267,7 @@ export function QuickLinkDialog({ open, onOpenChange, link, onSubmit }: QuickLin
                   <span className="text-[10px] font-mono text-[var(--ink-muted)] uppercase">{color}</span>
                 </div>
               </div>
-              <div className="rounded-2xl bg-[var(--surface-subtle)] p-2.5 ring-1 ring-black/[0.04]">
+              <div className="rounded-2xl bg-[var(--surface-subtle)] p-2.5 ring-1 ring-[var(--hairline)]">
                 <div className="flex flex-wrap items-center gap-1.5">
                   {QUICK_LINK_COLOR_PRESETS.map((preset) => {
                     const active = color === preset;

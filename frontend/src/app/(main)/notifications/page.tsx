@@ -15,6 +15,7 @@ import {
   Sparkles,
   Trash2,
 } from 'lucide-react';
+import { showDeleteConfirm } from '@/utils/sweetalert';
 import {
   clearHistory,
   clearHistoryOnServer,
@@ -168,10 +169,18 @@ export default function NotificationsPage() {
             </button>
             <button
               type="button"
-              onClick={() => {
+              onClick={async () => {
+                // Clearing also deletes the server-side archive, so there is
+                // nothing left to undo: ask first.
+                const result = await showDeleteConfirm(
+                  'ล้างประวัติการแจ้งเตือนทั้งหมด?',
+                  'ประวัติจะถูกลบทั้งในเครื่องนี้และบนบัญชีของคุณ และกู้คืนไม่ได้',
+                );
+                if (!result.isConfirmed) return;
                 clearHistory();
                 void clearHistoryOnServer();
                 setEntries([]);
+                setReadIds(new Set());
               }}
               disabled={entries.length === 0}
               className="inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-[13px] font-semibold text-[var(--danger)] transition-colors hover:bg-[var(--danger-soft)] disabled:opacity-40"
@@ -234,7 +243,7 @@ export default function NotificationsPage() {
                     }}
                     className={`flex w-full items-start gap-3 rounded-[14px] p-3.5 text-left transition-colors ${
                       isUnread
-                        ? 'bg-[var(--surface-subtle)] ring-1 ring-black/[0.04]'
+                        ? 'bg-[var(--surface-subtle)] ring-1 ring-[var(--hairline)]'
                         : 'bg-[var(--surface-subtle)] opacity-70'
                     }`}
                   >
@@ -245,7 +254,7 @@ export default function NotificationsPage() {
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="flex flex-wrap items-center gap-1.5">
-                        <span className="inline-flex items-center gap-1 rounded-full bg-[var(--surface)] px-2 py-0.5 text-[10px] font-bold text-[var(--ink)] ring-1 ring-black/[0.04]">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-[var(--surface)] px-2 py-0.5 text-[10px] font-bold text-[var(--ink)] ring-1 ring-[var(--hairline)]">
                           <TypeIcon size={11} aria-hidden="true" />
                           {type.label}
                         </span>

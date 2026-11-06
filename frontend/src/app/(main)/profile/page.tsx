@@ -586,7 +586,7 @@ export default function ProfilePage() {
               />
 
               {currentUser.avatar ? (
-                <div className="relative h-16 w-16 sm:h-20 sm:w-20 overflow-hidden rounded-[22px] ring-4 ring-black/[0.03]">
+                <div className="relative h-16 w-16 sm:h-20 sm:w-20 overflow-hidden rounded-[22px] ring-4 ring-[var(--hairline-soft)]">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={currentUser.avatar}
@@ -600,7 +600,7 @@ export default function ProfilePage() {
                   )}
                 </div>
               ) : (
-                <div className="relative flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-[22px] bg-[var(--accent)] text-2xl sm:text-3xl font-extrabold text-white ring-4 ring-black/[0.03]">
+                <div className="relative flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-[22px] bg-[var(--accent)] text-2xl sm:text-3xl font-extrabold text-white ring-4 ring-[var(--hairline-soft)]">
                   {isUploadingAvatar ? (
                     <Loader2 size={24} className="animate-spin text-white" />
                   ) : (
@@ -893,7 +893,7 @@ export default function ProfilePage() {
 
                 {/* Strength Meter */}
                 {newPassword && (
-                  <div className="-mt-1 rounded-2xl bg-[var(--surface-subtle)] p-3.5 ring-1 ring-black/[0.04]">
+                  <div className="-mt-1 rounded-2xl bg-[var(--surface-subtle)] p-3.5 ring-1 ring-[var(--hairline)]">
                     <div className="flex items-center justify-between text-[11.5px] mb-1.5">
                       <span className="text-[var(--ink-muted)]">ระดับความปลอดภัย</span>
                       <span className={`font-bold ${strengthMeta.text}`}>{strengthMeta.label}</span>

@@ -670,7 +670,7 @@ export default function WeatherWidget({
                           className={`flex w-full items-center justify-between rounded-[10px] px-2.5 py-1.5 text-left text-xs font-semibold transition-colors ${
                             selectedCity.id === c.id
                               ? 'bg-[var(--accent-soft)] text-[var(--accent-text)]'
-                              : 'text-[var(--ink)] hover:bg-black/[0.05]'
+                              : 'text-[var(--ink)] hover:bg-[var(--surface-chip)]'
                           }`}
                         >
                           <span>{c.name}</span>
@@ -695,7 +695,7 @@ export default function WeatherWidget({
                 setUnit(next);
                 localStorage.setItem('artWeatherUnit', next);
               }}
-              className="flex h-8 w-8 items-center justify-center rounded-full text-[12px] font-bold text-[var(--ink-muted)] hover:bg-black/[0.05] hover:text-[var(--ink)] active:scale-[0.95] transition-all"
+              className="flex h-8 w-8 items-center justify-center rounded-full text-[12px] font-bold text-[var(--ink-muted)] hover:bg-[var(--surface-chip)] hover:text-[var(--ink)] active:scale-[0.95] transition-all"
               aria-label="สลับหน่วยอุณหภูมิ"
               title="สลับ °C / °F"
             >
@@ -705,7 +705,7 @@ export default function WeatherWidget({
               type="button"
               onClick={() => fetchWeatherData(selectedCity, true)}
               disabled={refreshing}
-              className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--ink-muted)] hover:bg-black/[0.05] hover:text-[var(--ink)] active:scale-[0.95] transition-all"
+              className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--ink-muted)] hover:bg-[var(--surface-chip)] hover:text-[var(--ink)] active:scale-[0.95] transition-all"
               aria-label="รีเฟรชข้อมูลสภาพอากาศ"
               title="รีเฟรชข้อมูล"
             >
@@ -758,7 +758,7 @@ export default function WeatherWidget({
         {weather && airQuality && (
           <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
             {/* Card 1: Weather Info */}
-            <div className="flex flex-col justify-between rounded-[18px] bg-[var(--surface-grouped)] p-4 ring-1 ring-black/[0.04]">
+            <div className="flex flex-col justify-between rounded-[18px] bg-[var(--surface-grouped)] p-4 ring-1 ring-[var(--hairline)]">
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <div className="flex items-baseline gap-1">
@@ -773,7 +773,7 @@ export default function WeatherWidget({
                 </div>
 
                 <div className="text-right">
-                  <span className="inline-block rounded-full bg-[var(--surface)] px-2.5 py-0.5 text-[11px] font-semibold text-[var(--ink)] shadow-2xs ring-1 ring-black/[0.04]">
+                  <span className="inline-block rounded-full bg-[var(--surface)] px-2.5 py-0.5 text-[11px] font-semibold text-[var(--ink)] shadow-2xs ring-1 ring-[var(--hairline)]">
                     {displayTemp(weather.tempMax)}° / {displayTemp(weather.tempMin)}°
                   </span>
                   <div className="mt-1 text-[11px] font-medium text-[var(--ink-tertiary)]">
@@ -800,7 +800,7 @@ export default function WeatherWidget({
             </div>
 
             {/* Card 2: PM 2.5 & Air Quality */}
-            <div className="flex flex-col justify-between rounded-[18px] bg-[var(--surface-grouped)] p-4 ring-1 ring-black/[0.04]">
+            <div className="flex flex-col justify-between rounded-[18px] bg-[var(--surface-grouped)] p-4 ring-1 ring-[var(--hairline)]">
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div className="min-w-0">
                   <div className="flex items-baseline gap-1.5 flex-wrap">
@@ -836,7 +836,7 @@ export default function WeatherWidget({
 
         {/* ── Hourly Forecast Strip (เวลาล่วงหน้า) ──────────────────────────── */}
         {weather && weather.hourlyForecast && (
-          <div className="mt-3.5 rounded-[18px] bg-[var(--surface-grouped)] p-3.5 ring-1 ring-black/[0.04]">
+          <div className="mt-3.5 rounded-[18px] bg-[var(--surface-grouped)] p-3.5 ring-1 ring-[var(--hairline)]">
             <div className="mb-2.5 flex items-center justify-between">
               <span className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-[var(--ink-tertiary)]">
                 <Clock size={12} />
@@ -857,7 +857,7 @@ export default function WeatherWidget({
                     className={`flex flex-col items-center justify-center rounded-[14px] p-2 text-center transition-all duration-150 ${
                       item.isCurrent
                         ? 'bg-[var(--accent-soft)] ring-1 ring-[var(--accent-ring)] shadow-2xs'
-                        : 'bg-[var(--surface)] shadow-2xs ring-1 ring-black/[0.04] hover:-translate-y-0.5'
+                        : 'bg-[var(--surface)] shadow-2xs ring-1 ring-[var(--hairline)] hover:-translate-y-0.5'
                     } ${width < 2 && index === 4 ? 'hidden sm:flex' : ''}`}
                   >
                     <span

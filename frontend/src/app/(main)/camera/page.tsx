@@ -575,7 +575,7 @@ export default function CameraPage() {
                       >
                         <button
                           onClick={() => setActiveCameraId(cam.id)}
-                          className="flex min-w-0 flex-1 items-center gap-3 text-left focus-visible:outline-hidden"
+                          className="flex min-w-0 flex-1 items-center gap-3 rounded-xl text-left focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
                           aria-label={`${cam.name} — ${cam.status === 'online' ? 'ออนไลน์' : 'ออฟไลน์'}`}
                         >
                           {/* Icon badge */}
@@ -611,7 +611,7 @@ export default function CameraPage() {
                               e.stopPropagation();
                               openEditDialog(cam);
                             }}
-                            className="rounded-lg p-1.5 text-slate-400 opacity-0 transition-opacity hover:bg-black/[0.05] hover:text-slate-700 group-hover:opacity-100 focus-visible:opacity-100"
+                            className="rounded-lg p-2 text-slate-400 opacity-0 transition-opacity hover:bg-[var(--surface-chip)] hover:text-slate-700 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-[var(--accent)] [@media(hover:none)]:opacity-100"
                             aria-label={`แก้ไข ${cam.name}`}
                           >
                             <Pencil size={13} />
@@ -622,7 +622,7 @@ export default function CameraPage() {
                               e.stopPropagation();
                               handleDeleteCamera(cam.id, cam.name);
                             }}
-                            className="rounded-lg p-1.5 text-slate-400 opacity-0 transition-opacity hover:bg-rose-50 hover:text-rose-600 group-hover:opacity-100 focus-visible:opacity-100"
+                            className="rounded-lg p-2 text-slate-400 opacity-0 transition-opacity hover:bg-rose-50 hover:text-rose-600 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-[var(--danger)] [@media(hover:none)]:opacity-100"
                             aria-label={`ลบ ${cam.name}`}
                           >
                             <Trash2 size={13} />
@@ -663,10 +663,14 @@ export default function CameraPage() {
             <form onSubmit={handleSaveCamera}>
               <DialogBody className="space-y-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700">
+                  <label
+                    htmlFor="camera-name"
+                    className="block text-xs font-semibold text-slate-700"
+                  >
                     ชื่อกล้อง <span className="text-red-500">*</span>
                   </label>
                   <input
+                    id="camera-name"
                     type="text"
                     required
                     value={formName}
@@ -677,10 +681,14 @@ export default function CameraPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700">
+                  <label
+                    htmlFor="camera-location"
+                    className="block text-xs font-semibold text-slate-700"
+                  >
                     ตำแหน่งที่ตั้ง
                   </label>
                   <input
+                    id="camera-location"
                     type="text"
                     value={formLocation}
                     onChange={(e) => setFormLocation(e.target.value)}
@@ -689,8 +697,11 @@ export default function CameraPage() {
                   />
                 </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700">
+                <div role="group" aria-labelledby="camera-stream-type-label">
+                  <label
+                    id="camera-stream-type-label"
+                    className="block text-xs font-semibold text-slate-700"
+                  >
                     ประเภทการเชื่อมต่อ (Stream Type)
                   </label>
                   <div className="mt-1.5 grid grid-cols-2 gap-2">
@@ -726,10 +737,14 @@ export default function CameraPage() {
 
                 {formStreamType !== 'simulated' && (
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700">
+                    <label
+                      htmlFor="camera-url"
+                      className="block text-xs font-semibold text-slate-700"
+                    >
                       URL สตรีม / Snapshot URL <span className="text-red-500">*</span>
                     </label>
                     <input
+                      id="camera-url"
                       type="url"
                       required
                       value={formUrl}
@@ -770,10 +785,14 @@ export default function CameraPage() {
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700">
+                    <label
+                      htmlFor="camera-resolution"
+                      className="block text-xs font-semibold text-slate-700"
+                    >
                       ความละเอียด
                     </label>
                     <input
+                      id="camera-resolution"
                       type="text"
                       value={formResolution}
                       onChange={(e) => setFormResolution(e.target.value)}
@@ -782,10 +801,14 @@ export default function CameraPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700">
+                    <label
+                      htmlFor="camera-fps"
+                      className="block text-xs font-semibold text-slate-700"
+                    >
                       อัตราเฟรมเรต (FPS)
                     </label>
                     <input
+                      id="camera-fps"
                       type="number"
                       min={1}
                       max={60}

@@ -15,6 +15,9 @@ interface DashboardLayoutProps {
   children: React.ReactNode;
 }
 
+/** Display preference, not workspace data — same idea as the theme card. */
+const SIDEBAR_COLLAPSED_KEY = 'art_sidebar_collapsed';
+
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -27,6 +30,45 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     router.prefetch('/dashboard');
     router.prefetch('/profile');
   }, [router]);
+
+  // The collapsed rail is a display preference like the theme, so it survives
+  // a reload. Read after mount to keep the server and client markup identical.
+  useEffect(() => {
+    if (window.localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === '1') setSidebarCollapsed(true);
+  }, []);
+
+  const toggleSidebarCollapsed = () => {
+    setSidebarCollapsed((value) => {
+      const next = !value;
+      try {
+        window.localStorage.setItem(SIDEBAR_COLLAPSED_KEY, next ? '1' : '0');
+      } catch {
+        // Private mode: the choice just does not persist.
+      }
+      return next;
+    });
+  };
+
+  // The mobile drawer is a modal surface: Escape must close it and focus has to
+  // start inside it, otherwise a keyboard user stays behind the panel.
+  useEffect(() => {
+    if (!sidebarOpen) return;
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    const focusTimer = window.setTimeout(() => {
+      document
+        .querySelector<HTMLElement>('#app-sidebar nav a, #app-sidebar nav button')
+        ?.focus();
+    }, 60);
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setSidebarOpen(false);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      window.clearTimeout(focusTimer);
+      window.removeEventListener('keydown', onKeyDown);
+      previouslyFocused?.focus?.();
+    };
+  }, [sidebarOpen]);
 
   const handleLogout = async () => {
     const result = await showConfirm('ต้องการออกจากระบบหรือไม่?', 'กดยืนยันเพื่อออกจากระบบ');
@@ -67,7 +109,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               user={user}
               onMenuClick={() => {
                 if (window.matchMedia('(min-width: 1024px)').matches) {
-                  setSidebarCollapsed((value) => !value);
+                  toggleSidebarCollapsed();
                   return;
                 }
                 setSidebarOpen(true);
@@ -85,12 +127,15 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
           <CommandPalette />
 
-          {/* Mobile Sidebar Overlay */}
+          {/* Mobile Sidebar Overlay — a real button so it can also be dismissed
+              with Enter/Space, not only a pointer. */}
           {sidebarOpen && (
-            <div
-              className="fixed inset-0 z-30 bg-black/25 backdrop-blur-xs transition-all duration-300 lg:hidden"
+            <button
+              type="button"
+              tabIndex={-1}
+              aria-label="ปิดเมนู"
+              className="fixed inset-0 z-30 bg-[var(--scrim)] backdrop-blur-xs transition-all duration-300 lg:hidden"
               onClick={() => setSidebarOpen(false)}
-              aria-hidden="true"
             />
           )}
         </div>

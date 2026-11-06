@@ -416,7 +416,7 @@ export default function FinanceSummaryDialog({
                         <span className="min-w-0 flex-1 truncate text-[12.5px] text-[var(--ink)]">
                           {entry.label || (entry.type === 'income' ? 'รายรับ' : 'รายจ่าย')}
                           {entry.category && (
-                            <span className="ml-1.5 rounded-full bg-[var(--surface)] px-1.5 py-0.5 text-[10px] text-[var(--ink-muted)] ring-1 ring-black/[0.05]">
+                            <span className="ml-1.5 rounded-full bg-[var(--surface)] px-1.5 py-0.5 text-[10px] text-[var(--ink-muted)] ring-1 ring-[var(--hairline)]">
                               {entry.category}
                             </span>
                           )}

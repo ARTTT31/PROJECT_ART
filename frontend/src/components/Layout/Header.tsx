@@ -53,7 +53,7 @@ export default function Header({ user, onMenuClick, sidebarCollapsed = false }: 
         <div className="flex items-center gap-3 sm:gap-4">
           <button
             onClick={onMenuClick}
-            className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--ink)] transition-all duration-150 hover:bg-black/[0.05] active:scale-[0.95] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+            className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--ink)] transition-all duration-150 hover:bg-[var(--surface-chip)] active:scale-[0.95] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
             aria-label={t(sidebarCollapsed ? 'nav.menuToggle.open' : 'nav.menuToggle.close')}
             aria-pressed={!sidebarCollapsed}
           >
@@ -81,7 +81,7 @@ export default function Header({ user, onMenuClick, sidebarCollapsed = false }: 
                         <span className={isLast ? 'text-[var(--ink)]' : ''}>{c.label}</span>
                       )}
                       {!isLast && (
-                        <span aria-hidden="true" className="text-black/20">
+                        <span aria-hidden="true" className="text-[var(--ink-faint)]">
                           /
                         </span>
                       )}

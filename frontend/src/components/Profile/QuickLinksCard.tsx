@@ -78,7 +78,7 @@ export function QuickLinksCard({ links, onAdd, onEdit, onDelete, onMove }: Quick
             return (
               <div
                 key={link.id}
-                className="group flex items-center gap-3 rounded-2xl bg-[var(--surface)] p-2.5 sm:p-3 ring-1 ring-black/[0.05] transition-all hover:bg-[var(--surface-subtle)] shadow-2xs"
+                className="group flex items-center gap-3 rounded-2xl bg-[var(--surface)] p-2.5 sm:p-3 ring-1 ring-[var(--hairline)] transition-all hover:bg-[var(--surface-subtle)] shadow-2xs"
               >
                 <div className="shrink-0">
                   <div
@@ -104,7 +104,7 @@ export function QuickLinksCard({ links, onAdd, onEdit, onDelete, onMove }: Quick
                       {linkMeta.tone}
                     </span>
                     {link.envs && Object.keys(link.envs).length > 0 && (
-                      <span className="rounded-full bg-[var(--surface-grouped-2)] px-1.5 py-[1px] text-[9.5px] font-bold text-[var(--ink-muted)] ring-1 ring-black/[0.04]">
+                      <span className="rounded-full bg-[var(--surface-grouped-2)] px-1.5 py-[1px] text-[9.5px] font-bold text-[var(--ink-muted)] ring-1 ring-[var(--hairline)]">
                         +{Object.keys(link.envs).length} env
                       </span>
                     )}

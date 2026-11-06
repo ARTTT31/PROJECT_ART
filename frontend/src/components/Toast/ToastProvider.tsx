@@ -148,8 +148,8 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: string) =
   return (
     <div
       className="flex w-[min(90vw,400px)] items-center gap-3 rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] p-3.5 shadow-[0_8px_30px_rgba(0,0,0,0.10)] animate-slide-in-top"
-      role="alert"
-      aria-live="polite"
+      role={toast.type === 'error' ? 'alert' : 'status'}
+      aria-live={toast.type === 'error' ? 'assertive' : 'polite'}
     >
       <div
         className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[11px] ${config.iconBg} ${config.iconColor}`}
@@ -166,7 +166,7 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: string) =
       </div>
       <button
         onClick={() => onRemove(toast.id)}
-        className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--ink-tertiary)] transition-colors hover:bg-black/5 hover:text-[var(--ink)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+        className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--ink-tertiary)] transition-colors hover:bg-[var(--surface-chip)] hover:text-[var(--ink)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
         aria-label="ปิดการแจ้งเตือน"
       >
         <X size={16} aria-hidden="true" />

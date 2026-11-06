@@ -223,6 +223,10 @@ export default function Sidebar({
 
   return (
     <aside
+      id="app-sidebar"
+      role={isOpen ? 'dialog' : undefined}
+      aria-modal={isOpen ? true : undefined}
+      aria-label={t('nav.section.main')}
       className={`fixed left-0 top-0 z-40 h-screen w-[80vw] max-w-64 border-r border-[var(--hairline)] bg-[var(--apple-nav-bg)] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.04)] text-[var(--ink)] transition-transform duration-300 ease-out ${
         isOpen ? 'translate-x-0' : '-translate-x-full'
       } ${isCollapsed ? 'lg:-translate-x-full' : 'lg:translate-x-0'}`}
@@ -268,7 +272,7 @@ export default function Sidebar({
                           className={`group flex min-h-[48px] min-w-0 flex-1 items-center gap-2.5 rounded-[11px] px-3 py-2 text-[14px] font-semibold transition-all duration-150 active:scale-[0.95] ${
                             isActive
                               ? 'bg-[var(--accent)] text-white'
-                              : 'text-[var(--ink)] hover:bg-black/[0.05] hover:text-[var(--ink)]'
+                              : 'text-[var(--ink)] hover:bg-[var(--surface-chip)] hover:text-[var(--ink)]'
                           }`}
                           onClick={() => !item.external && onClose()}
                         >
@@ -315,7 +319,7 @@ export default function Sidebar({
                               label: item.environments.label,
                             })}
                             title={t('nav.environment.title')}
-                            className="shrink-0 rounded-full bg-[var(--surface-grouped-2)] px-1.5 py-1 text-[9.5px] font-bold text-[var(--ink-muted)] ring-1 ring-black/[0.04] transition-colors hover:text-[var(--ink)]"
+                            className="shrink-0 rounded-full bg-[var(--surface-grouped-2)] px-1.5 py-1 text-[9.5px] font-bold text-[var(--ink-muted)] ring-1 ring-[var(--hairline)] transition-colors hover:text-[var(--ink)]"
                           >
                             {item.environments.label}
                           </button>
