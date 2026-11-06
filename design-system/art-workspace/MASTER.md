@@ -44,15 +44,26 @@ This document defines the strict rules for **ART Workspace**. All components, pa
   - Translucent Panels: `rgba(255, 255, 255, 0.82)` with `backdrop-blur-2xl`
 
 ### 3. Continuous Squircle Corner Radii
-- **Cards / Widgets:** `18px` (`rounded-[18px]`, `apple-lg`)
-- **Dialogs & Modals:** `18px` (`rounded-[18px]`)
-- **Inputs & Small Controls:** `11px` (`apple-md`)
-- **Pills, Badges & Segmented Controls:** `9999px` (`rounded-full`)
+The scale is **four values, nothing else**. Tailwind's named radii (`rounded-xl`, `rounded-2xl`, `rounded-lg`) are retired: they resolve to 12/16/8px and quietly reintroduced a fifth scale.
+
+- **Cards / Widgets / Dialogs / Sheets:** `18px` (`rounded-[18px]`)
+- **Medium surfaces** (grouped rows, popovers, hero strips): `14px` (`rounded-[14px]`)
+- **Controls** (buttons, inputs, chips, icon tiles): `11px` (`rounded-[11px]`)
+- **Pills, badges, segmented controls, switches:** `rounded-full`
 
 ### 4. Iconography Style
-- Consistent line weight (`strokeWidth={1.75}`)
+- Consistent line weight: one global rule sets `svg.lucide { stroke-width: 1.75 }`. Do **not** pass `strokeWidth` per icon; use `stroke-[2]` only when an icon must read heavier at 11–13px.
 - Tinted squircle icon badge containers (`bg-[#0066cc]/10 text-[#0066cc]`, etc.)
 - Enclosed icon buttons with springy click feedback (`active:scale-[0.95]`)
+
+### 5. Motion
+- Durations: `150ms` interactions (`duration-apple-1`), `200ms` state/panel changes (`duration-apple-2`), `300ms` layout moves (`duration-apple-3`). No other values.
+- Curves: `ease-apple` (`cubic-bezier(0.25, 0.1, 0.25, 1)`) for fades and colours, `ease-apple-spring` for the switch knob and press feedback.
+- Every animation must survive `prefers-reduced-motion` (already handled globally in `globals.css`).
+
+### 6. Layout & Rhythm
+- Page content is capped at `max-w-[1280px]`; Apple keeps reading width near 1200px instead of filling the monitor.
+- 8pt spacing rhythm; page bottom padding is deliberate (`pb-16 lg:pb-20`) so the last widget is not glued to the viewport edge.
 
 ---
 
@@ -63,13 +74,19 @@ This document defines the strict rules for **ART Workspace**. All components, pa
 
 ### Scale
 
+The ramp is closed: **11 / 12 / 13 / 14 / 15 / 16 / 17 / 20 / 22 / 28**. `text-[9px]`, `text-[10.5px]`, `text-[11.5px]`, `text-[12.5px]` and friends are gone — sub-11px text fails the HIG caption floor and made the UI read cramped.
+
 | Role | Size | Weight | Line Height | Context |
 |---|---|---|---|---|
-| **Page Heading** | 20px (`text-xl`) | 600 (semibold) | 1.4 | Page title / Page header |
-| **Section Title** | 16px (`text-base`) | 600 | 1.5 | Widget headers, card titles |
-| **UI Label** | 14px (`text-sm`) | 500/600 | 1.4 | Form labels, navigation items |
-| **Body Text** | 14px (`text-sm`) | 400 | 1.5 | Paragraphs, metadata |
-| **Data / Code** | 13px | 400 | 1.4 | Tables, lists, compact widgets |
+| **Large Title** | 28px (`text-apple-title1`) | 600 (semibold) | 1.21 | `<PageHeader>` — exactly one `<h1>` per page |
+| **Title 2** | 22px (`text-apple-title2`) | 600 | 1.27 | Hero card headings, mobile large title |
+| **Headline** | 17px (`text-apple-headline`) | 600 | 1.41 | Compact title in the app header, dialog titles |
+| **Body** | 15px (`text-apple-subheadline`) | 400 | 1.33 | Paragraphs, dialog copy |
+| **Footnote** | 13px (`text-apple-footnote`) | 400/600 | 1.38 | Metadata, helper text, controls |
+| **Caption 1** | 12px (`text-apple-caption1`) | 500/600 | 1.33 | Labels, badges, table cells |
+| **Caption 2** | 11px (`text-apple-caption2`) | 600 | 1.27 | Smallest allowed text: chips, footnotes, timestamps |
+
+**Heading ownership:** a page's only `<h1>` lives in the page's large title (`<PageHeader>`, or a hero card wired through `usePageHeading`). The app header shows a compact copy of that title, marked `aria-hidden`, which fades in once the large title scrolls under the bar.
 
 ---
 

@@ -187,7 +187,7 @@ export default function WorkspaceBackupCard() {
     >
       {/* Header */}
       <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[var(--surface-chip)] text-[var(--accent)]">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] bg-[var(--surface-chip)] text-[var(--accent)]">
           <Database className="h-5 w-5" />
         </div>
         <div>

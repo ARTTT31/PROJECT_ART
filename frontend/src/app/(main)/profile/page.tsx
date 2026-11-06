@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { showDeleteConfirm, showToast, showSuccess, showError } from '@/utils/sweetalert';
 import { canAccessPage } from '@/utils/accessiblePages';
+import { usePageHeading } from '@/components/ui/PageHeader';
 import { useEnabledPages, isPageEnabled } from '@/hooks/useEnabledPages';
 import { useAuth } from '@/hooks/useAuth';
 import { useI18n } from '@/lib/i18n/I18nProvider';
@@ -71,7 +72,7 @@ function SubNav<T extends string>({
 }) {
   return (
     <div
-      className="flex items-center gap-1 overflow-x-auto no-scrollbar rounded-[16px] border border-[var(--hairline-soft)] bg-[var(--surface)] p-1.5 shadow-2xs"
+      className="flex items-center gap-1 overflow-x-auto no-scrollbar rounded-[18px] border border-[var(--hairline-soft)] bg-[var(--surface)] p-1.5 shadow-2xs"
       role="tablist"
       aria-label={label}
     >
@@ -190,6 +191,8 @@ export default function ProfilePage() {
 
   const enabledPages = useEnabledPages();
   const isAdmin = currentUser?.role === 'admin';
+  // The profile card's name is this page's large title (see the h1 below).
+  const headingRef = usePageHeading(currentUser?.name || 'โปรไฟล์');
   const filteredMenuItems = mainMenuConfig.filter((item) => {
     if (item.adminOnly && currentUser?.role !== 'admin') return false;
     const pageSwitch = enabledPages.find((p) => p.id === item.id);
@@ -586,7 +589,7 @@ export default function ProfilePage() {
               />
 
               {currentUser.avatar ? (
-                <div className="relative h-16 w-16 sm:h-20 sm:w-20 overflow-hidden rounded-[22px] ring-4 ring-[var(--hairline-soft)]">
+                <div className="relative h-16 w-16 sm:h-20 sm:w-20 overflow-hidden rounded-[18px] ring-4 ring-[var(--hairline-soft)]">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={currentUser.avatar}
@@ -600,7 +603,7 @@ export default function ProfilePage() {
                   )}
                 </div>
               ) : (
-                <div className="relative flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-[22px] bg-[var(--accent)] text-2xl sm:text-3xl font-extrabold text-white ring-4 ring-[var(--hairline-soft)]">
+                <div className="relative flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-[18px] bg-[var(--accent)] text-2xl sm:text-3xl font-extrabold text-white ring-4 ring-[var(--hairline-soft)]">
                   {isUploadingAvatar ? (
                     <Loader2 size={24} className="animate-spin text-white" />
                   ) : (
@@ -624,7 +627,10 @@ export default function ProfilePage() {
 
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-xl sm:text-2xl font-black tracking-tight text-[var(--ink)] truncate">
+                <h1
+                  ref={headingRef}
+                  className="truncate text-apple-title2 font-semibold text-[var(--ink)]"
+                >
                   {currentUser.name || 'ผู้ใช้งาน'}
                 </h1>
                 {isAdmin ? (
@@ -638,7 +644,7 @@ export default function ProfilePage() {
                 )}
               </div>
 
-              <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12.5px] text-[var(--ink-muted)]">
+              <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-[var(--ink-muted)]">
                 <span className="inline-flex items-center gap-1">
                   <Mail size={12} className="text-[var(--ink-tertiary)]" />
                   {currentUser.email || 'ไม่ได้ระบุอีเมล'}
@@ -660,12 +666,12 @@ export default function ProfilePage() {
           ══════════════════════════════════════════════════ */}
       <nav
         aria-label="แท็บตั้งค่าโปรไฟล์"
-        className="inline-flex max-w-full items-center gap-1 overflow-x-auto no-scrollbar rounded-[16px] border border-[var(--hairline-soft)] bg-[var(--surface-chip)] p-1 backdrop-blur-md"
+        className="inline-flex max-w-full items-center gap-1 overflow-x-auto no-scrollbar rounded-[18px] border border-[var(--hairline-soft)] bg-[var(--surface-chip)] p-1 backdrop-blur-md"
       >
         <button
           type="button"
           onClick={() => handleTabChange('profile')}
-          className={`inline-flex shrink-0 items-center justify-center gap-2 px-4 py-2 rounded-[12px] text-[13px] font-bold whitespace-nowrap transition-all duration-200 active:scale-[0.98] ${
+          className={`inline-flex shrink-0 items-center justify-center gap-2 px-4 py-2 rounded-[14px] text-[13px] font-bold whitespace-nowrap transition-all duration-200 active:scale-[0.98] ${
             activeTab === 'profile'
               ? 'bg-[var(--surface)] text-[var(--accent-text)] shadow-[0_2px_8px_rgba(0,0,0,0.06)]'
               : 'text-[var(--ink-muted)] hover:text-[var(--ink)] hover:bg-[var(--glass-60)]'
@@ -678,7 +684,7 @@ export default function ProfilePage() {
         <button
           type="button"
           onClick={() => handleTabChange('preferences')}
-          className={`inline-flex shrink-0 items-center justify-center gap-2 px-4 py-2 rounded-[12px] text-[13px] font-bold whitespace-nowrap transition-all duration-200 active:scale-[0.98] ${
+          className={`inline-flex shrink-0 items-center justify-center gap-2 px-4 py-2 rounded-[14px] text-[13px] font-bold whitespace-nowrap transition-all duration-200 active:scale-[0.98] ${
             activeTab === 'preferences'
               ? 'bg-[var(--surface)] text-[var(--accent-text)] shadow-[0_2px_8px_rgba(0,0,0,0.06)]'
               : 'text-[var(--ink-muted)] hover:text-[var(--ink)] hover:bg-[var(--glass-60)]'
@@ -810,7 +816,7 @@ export default function ProfilePage() {
                   subtitle="ดาวน์โหลดข้อมูลทั้งหมดของคุณในรูปแบบ JSON เพื่อเก็บสำรอง"
                 >
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 py-1">
-                    <div className="text-[12.5px] text-[var(--ink-muted)] leading-relaxed">
+                    <div className="text-[13px] text-[var(--ink-muted)] leading-relaxed">
                       ดาวน์โหลดข้อมูลส่วนตัว ข้อมูลโปรไฟล์ การตั้งค่า และประวัติที่เกี่ยวข้องในรูปแบบไฟล์ JSON
                     </div>
                     <button
@@ -893,8 +899,8 @@ export default function ProfilePage() {
 
                 {/* Strength Meter */}
                 {newPassword && (
-                  <div className="-mt-1 rounded-2xl bg-[var(--surface-subtle)] p-3.5 ring-1 ring-[var(--hairline)]">
-                    <div className="flex items-center justify-between text-[11.5px] mb-1.5">
+                  <div className="-mt-1 rounded-[18px] bg-[var(--surface-subtle)] p-3.5 ring-1 ring-[var(--hairline)]">
+                    <div className="flex items-center justify-between text-[12px] mb-1.5">
                       <span className="text-[var(--ink-muted)]">ระดับความปลอดภัย</span>
                       <span className={`font-bold ${strengthMeta.text}`}>{strengthMeta.label}</span>
                     </div>
@@ -970,7 +976,7 @@ export default function ProfilePage() {
 
                 {confirmPassword && (
                   <div
-                    className={`-mt-1 flex items-center gap-1.5 rounded-2xl px-3 py-2 text-[11.5px] font-semibold ring-1 ${
+                    className={`-mt-1 flex items-center gap-1.5 rounded-[18px] px-3 py-2 text-[12px] font-semibold ring-1 ${
                       newPassword === confirmPassword
                         ? 'bg-emerald-50 text-emerald-700 ring-emerald-200'
                         : 'bg-rose-50 text-rose-700 ring-rose-200'

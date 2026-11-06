@@ -9,13 +9,13 @@ export default function CameraLoading() {
         </div>
       </div>
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-        <div className="aspect-video animate-pulse rounded-2xl bg-slate-800 lg:col-span-2" />
-        <div className="animate-pulse rounded-2xl border border-[var(--hairline)] bg-[var(--surface)] p-5">
+        <div className="aspect-video animate-pulse rounded-[18px] bg-slate-800 lg:col-span-2" />
+        <div className="animate-pulse rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] p-5">
           <div className="mb-5 h-5 w-40 rounded-full bg-[var(--surface-chip)]" />
           <div className="space-y-3">
             {[0, 1, 2, 3].map((item) => (
-              <div key={item} className="flex items-center gap-3 rounded-xl bg-[var(--surface-grouped)] p-3">
-                <div className="h-9 w-9 rounded-[10px] bg-[var(--surface-chip)]" />
+              <div key={item} className="flex items-center gap-3 rounded-[14px] bg-[var(--surface-grouped)] p-3">
+                <div className="h-9 w-9 rounded-[11px] bg-[var(--surface-chip)]" />
                 <div className="flex-1 space-y-2">
                   <div className="h-3 w-28 rounded-full bg-[var(--surface-chip)]" />
                   <div className="h-3 w-20 rounded-full bg-[var(--surface-chip-2)]" />

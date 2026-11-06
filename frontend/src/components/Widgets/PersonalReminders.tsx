@@ -205,7 +205,7 @@ export default function PersonalReminders() {
             }}
             placeholder="เช่น ไปธนาคาร, ลาพักร้อน"
             aria-label="ชื่อรายการที่ต้องเตือน"
-            className="w-full rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] px-2.5 py-1.5 text-[12px] text-[var(--ink)] outline-hidden focus:border-[var(--accent)]"
+            className="w-full rounded-[11px] border border-[var(--hairline)] bg-[var(--surface)] px-2.5 py-1.5 text-[12px] text-[var(--ink)] outline-hidden focus:border-[var(--accent)]"
           />
           <div className="flex flex-wrap items-center gap-2">
             <input
@@ -213,7 +213,7 @@ export default function PersonalReminders() {
               value={date}
               onChange={(event) => setDate(event.target.value)}
               aria-label="วันที่"
-              className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] px-2 py-1 text-[11.5px] text-[var(--ink)] outline-hidden focus:border-[var(--accent)]"
+              className="rounded-[11px] border border-[var(--hairline)] bg-[var(--surface)] px-2 py-1 text-[12px] text-[var(--ink)] outline-hidden focus:border-[var(--accent)]"
             />
             <div className="inline-flex rounded-full bg-[var(--surface-chip)] p-0.5" role="group" aria-label="ประเภท">
               {(Object.keys(KIND_META) as ReminderKind[]).map((value) => (
@@ -245,7 +245,7 @@ export default function PersonalReminders() {
       )}
 
       {upcoming.length === 0 ? (
-        <p className="mt-2 text-[11.5px] text-[var(--ink-tertiary)]">
+        <p className="mt-2 text-[12px] text-[var(--ink-tertiary)]">
           ยังไม่มีรายการที่ต้องเตือน — เพิ่มธุระหรือวันลาของคุณเองได้
         </p>
       ) : (
@@ -254,15 +254,15 @@ export default function PersonalReminders() {
             const Icon = KIND_META[item.kind].icon;
             const left = daysUntil(item.date);
             return (
-              <li key={item.id} className="flex items-center gap-2 rounded-[10px] px-1.5 py-1">
+              <li key={item.id} className="flex items-center gap-2 rounded-[11px] px-1.5 py-1">
                 <Icon size={12} className="shrink-0 text-[var(--accent-text)]" aria-hidden="true" />
                 <span className="min-w-0 flex-1 truncate text-[12px] text-[var(--ink)]">
                   {item.title}
-                  <span className="ml-1.5 text-[10.5px] text-[var(--ink-tertiary)]">
+                  <span className="ml-1.5 text-[11px] text-[var(--ink-tertiary)]">
                     {KIND_META[item.kind].label}
                   </span>
                 </span>
-                <span className="shrink-0 text-[10.5px] font-semibold text-[var(--ink-muted)]">
+                <span className="shrink-0 text-[11px] font-semibold text-[var(--ink-muted)]">
                   {left === 0 ? 'วันนี้' : left === 1 ? 'พรุ่งนี้' : `อีก ${left} วัน`}
                 </span>
                 <button
@@ -288,7 +288,7 @@ export default function PersonalReminders() {
       )}
 
       {status && (
-        <p role="status" className="mt-1.5 text-[10.5px] text-[var(--ink-tertiary)]">
+        <p role="status" className="mt-1.5 text-[11px] text-[var(--ink-tertiary)]">
           {status}
         </p>
       )}

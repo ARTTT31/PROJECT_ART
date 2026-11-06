@@ -30,7 +30,7 @@ function Segmented<T extends string>({
 }) {
   return (
     <div>
-      <p className="mb-1.5 text-[11.5px] font-bold text-[var(--ink-muted)]">{label}</p>
+      <p className="mb-1.5 text-[12px] font-bold text-[var(--ink-muted)]">{label}</p>
       <div
         className="inline-flex w-full rounded-full bg-[var(--surface-chip)] p-0.5"
         role="group"
@@ -55,7 +55,7 @@ function Segmented<T extends string>({
             >
               {option.label}
             </span>
-            <span className="block text-[9.5px] text-[var(--ink-tertiary)]">{option.hint}</span>
+            <span className="block text-[11px] text-[var(--ink-tertiary)]">{option.hint}</span>
           </button>
         ))}
       </div>
@@ -98,7 +98,7 @@ export function DateFormatCard() {
         />
 
         <div className="rounded-[14px] bg-[var(--surface-subtle)] px-3 py-2.5 ring-1 ring-[var(--hairline)]">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--ink-tertiary)]">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--ink-tertiary)]">
             {t('card.dateTime.preview')}
           </p>
           <p className="mt-0.5 text-[13px] font-semibold text-[var(--ink)]">
@@ -106,7 +106,7 @@ export function DateFormatCard() {
           </p>
         </div>
 
-        <p className="px-1 text-[10.5px] text-[var(--ink-tertiary)]">
+        <p className="px-1 text-[11px] text-[var(--ink-tertiary)]">
           {t('card.dateTime.hint')}
         </p>
       </div>

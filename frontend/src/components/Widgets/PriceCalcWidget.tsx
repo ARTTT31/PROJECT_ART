@@ -52,7 +52,7 @@ export default function PriceCalcWidget({
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[var(--info-soft)] text-[var(--info-ink)]">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] bg-[var(--info-soft)] text-[var(--info-ink)]">
             <Calculator size={20} aria-hidden="true" />
           </div>
           <div className="min-w-0">
@@ -80,7 +80,7 @@ export default function PriceCalcWidget({
             value={cost}
             onChange={(event) => setCost(event.target.value)}
             placeholder="0.00"
-            className="w-full rounded-xl border border-[var(--hairline-strong)] bg-[var(--surface)] px-3 py-2 text-[14px] tabular-nums text-[var(--ink)] placeholder:text-[var(--ink-divider)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
+            className="w-full rounded-[14px] border border-[var(--hairline-strong)] bg-[var(--surface)] px-3 py-2 text-[14px] tabular-nums text-[var(--ink)] placeholder:text-[var(--ink-divider)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
           />
         </label>
 
@@ -92,7 +92,7 @@ export default function PriceCalcWidget({
             value={price}
             onChange={(event) => setPrice(event.target.value)}
             placeholder="0.00"
-            className="w-full rounded-xl border border-[var(--hairline-strong)] bg-[var(--surface)] px-3 py-2 text-[14px] tabular-nums text-[var(--ink)] placeholder:text-[var(--ink-divider)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
+            className="w-full rounded-[14px] border border-[var(--hairline-strong)] bg-[var(--surface)] px-3 py-2 text-[14px] tabular-nums text-[var(--ink)] placeholder:text-[var(--ink-divider)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
           />
         </label>
 
@@ -104,7 +104,7 @@ export default function PriceCalcWidget({
             value={discount}
             onChange={(event) => setDiscount(event.target.value)}
             placeholder="0"
-            className="w-full rounded-xl border border-[var(--hairline-strong)] bg-[var(--surface)] px-3 py-2 text-[14px] tabular-nums text-[var(--ink)] placeholder:text-[var(--ink-divider)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
+            className="w-full rounded-[14px] border border-[var(--hairline-strong)] bg-[var(--surface)] px-3 py-2 text-[14px] tabular-nums text-[var(--ink)] placeholder:text-[var(--ink-divider)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
           />
         </label>
       </div>
@@ -112,16 +112,16 @@ export default function PriceCalcWidget({
       <div className="mt-4 grid flex-1 grid-cols-3 gap-2.5">
         <div className="flex flex-col items-center justify-center rounded-[18px] bg-[var(--surface-grouped)] px-2 py-3 text-center">
           <span className="text-[11px] font-medium text-[var(--ink-muted)]">ราคาหลังหักส่วนลด</span>
-          <span className="mt-1 tabular-nums text-[18px] font-extrabold leading-none text-[var(--ink)]">
+          <span className="mt-1 tabular-nums text-[17px] font-extrabold leading-none text-[var(--ink)]">
             {money.format(result.net)}
           </span>
-          <span className="mt-1 text-[10px] text-[var(--ink-tertiary)]">บาท</span>
+          <span className="mt-1 text-[11px] text-[var(--ink-tertiary)]">บาท</span>
         </div>
 
         <div className="flex flex-col items-center justify-center rounded-[18px] bg-[var(--surface-grouped)] px-2 py-3 text-center">
           <span className="text-[11px] font-medium text-[var(--ink-muted)]">กำไรต่อชิ้น</span>
           <span
-            className={`mt-1 tabular-nums text-[18px] font-extrabold leading-none ${
+            className={`mt-1 tabular-nums text-[17px] font-extrabold leading-none ${
               result.hasInput
                 ? profitPositive
                   ? 'text-[var(--success-ink)]'
@@ -131,13 +131,13 @@ export default function PriceCalcWidget({
           >
             {money.format(result.profit)}
           </span>
-          <span className="mt-1 text-[10px] text-[var(--ink-tertiary)]">บาท</span>
+          <span className="mt-1 text-[11px] text-[var(--ink-tertiary)]">บาท</span>
         </div>
 
         <div className="flex flex-col items-center justify-center rounded-[18px] bg-[var(--surface-grouped)] px-2 py-3 text-center">
           <span className="text-[11px] font-medium text-[var(--ink-muted)]">กำไร (%)</span>
           <span
-            className={`mt-1 tabular-nums text-[18px] font-extrabold leading-none ${
+            className={`mt-1 tabular-nums text-[17px] font-extrabold leading-none ${
               result.hasInput
                 ? profitPositive
                   ? 'text-[var(--success-ink)]'
@@ -147,11 +147,11 @@ export default function PriceCalcWidget({
           >
             {result.hasInput ? `${result.margin.toFixed(1)}%` : '—'}
           </span>
-          <span className="mt-1 text-[10px] text-[var(--ink-tertiary)]">คิดจากราคาขาย</span>
+          <span className="mt-1 text-[11px] text-[var(--ink-tertiary)]">คิดจากราคาขาย</span>
         </div>
       </div>
 
-      <div className="mt-3 border-t border-[var(--hairline-soft)] pt-2 text-[10px] text-[var(--ink-secondary)]">
+      <div className="mt-3 border-t border-[var(--hairline-soft)] pt-2 text-[11px] text-[var(--ink-secondary)]">
         {result.hasInput
           ? `ต้นทุน ${money.format(result.costValue)} · ราคาตั้ง ${money.format(result.priceValue)} บาท`
           : 'กรอกตัวเลขเพื่อเริ่มคำนวณ'}

@@ -5,36 +5,7 @@ import { SectionCard } from './SectionCard';
 import { savePreferences, usePreferences } from '@/hooks/usePreferences';
 import { playBellSound } from '@/utils/sound';
 import { useI18n } from '@/lib/i18n/I18nProvider';
-
-function PreferenceSwitch({
-  checked,
-  label,
-  onChange,
-}: {
-  checked: boolean;
-  label: string;
-  onChange: (next: boolean) => void;
-}) {
-  return (
-    // `small-control` opts out of the global button min-height rule in globals.css.
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      aria-label={label}
-      onClick={() => onChange(!checked)}
-      className={`small-control relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition-colors duration-200 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 ${
-        checked ? 'bg-[var(--success)]' : 'bg-[var(--surface-chip-2)]'
-      }`}
-    >
-      <span
-        aria-hidden="true"
-        className="pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,0.25)] transition-transform duration-200 ease-in-out"
-        style={{ transform: checked ? 'translateX(22px)' : 'translateX(2px)' }}
-      />
-    </button>
-  );
-}
+import Switch from '@/components/ui/Switch';
 
 /** Which alerts this browser shows, and whether the bell plays a sound. */
 export function NotificationSettingsCard() {
@@ -51,12 +22,12 @@ export function NotificationSettingsCard() {
       subtitle={t('card.notifications.subtitle')}
     >
       <div className="space-y-2">
-        <div className="flex items-center gap-3 rounded-2xl bg-[var(--surface)] p-3 ring-1 ring-[var(--hairline)] shadow-2xs">
+        <div className="flex items-center gap-3 rounded-[18px] bg-[var(--surface)] p-3 ring-1 ring-[var(--hairline)] shadow-2xs">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] bg-[var(--accent-soft)] text-[var(--accent-text)]">
             <Volume2 size={18} aria-hidden="true" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-[13.5px] font-bold tracking-tight text-[var(--ink)]">{t('card.notifications.bell.title')}</p>
+            <p className="text-[13px] font-bold tracking-tight text-[var(--ink)]">{t('card.notifications.bell.title')}</p>
             <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">
               {t('card.notifications.bell.desc')}
             </p>
@@ -66,12 +37,12 @@ export function NotificationSettingsCard() {
               <button
                 type="button"
                 onClick={() => playBellSound()}
-                className="rounded-full bg-[var(--surface-grouped)] px-2.5 py-1 text-[10.5px] font-semibold text-[var(--ink-muted)] transition-colors hover:bg-[var(--surface-chip)] hover:text-[var(--ink)]"
+                className="rounded-full bg-[var(--surface-grouped)] px-2.5 py-1 text-[11px] font-semibold text-[var(--ink-muted)] transition-colors hover:bg-[var(--surface-chip)] hover:text-[var(--ink)]"
               >
                 {t('card.notifications.bell.test')}
               </button>
             )}
-            <PreferenceSwitch
+            <Switch
               checked={preferences.bellSound}
               label={t('card.notifications.bell.title')}
               onChange={(next) => savePreferences({ bellSound: next })}
@@ -79,45 +50,45 @@ export function NotificationSettingsCard() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3 rounded-2xl bg-[var(--surface)] p-3 ring-1 ring-[var(--hairline)] shadow-2xs">
+        <div className="flex items-center gap-3 rounded-[18px] bg-[var(--surface)] p-3 ring-1 ring-[var(--hairline)] shadow-2xs">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] bg-[var(--accent-soft)] text-[var(--accent-text)]">
             <CalendarDays size={18} aria-hidden="true" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-[13.5px] font-bold tracking-tight text-[var(--ink)]">
+            <p className="text-[13px] font-bold tracking-tight text-[var(--ink)]">
               {t('card.notifications.holidays.title')}
             </p>
             <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">
               {t('card.notifications.holidays.desc')}
             </p>
           </div>
-          <PreferenceSwitch
+          <Switch
             checked={preferences.holidayAlerts}
             label={t('card.notifications.holidays.title')}
             onChange={(next) => savePreferences({ holidayAlerts: next })}
           />
         </div>
 
-        <div className="flex items-center gap-3 rounded-2xl bg-[var(--surface)] p-3 ring-1 ring-[var(--hairline)] shadow-2xs">
+        <div className="flex items-center gap-3 rounded-[18px] bg-[var(--surface)] p-3 ring-1 ring-[var(--hairline)] shadow-2xs">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] bg-[var(--accent-soft)] text-[var(--accent-text)]">
             <ListChecks size={18} aria-hidden="true" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-[13.5px] font-bold tracking-tight text-[var(--ink)]">
+            <p className="text-[13px] font-bold tracking-tight text-[var(--ink)]">
               {t('card.notifications.reminders.title')}
             </p>
             <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">
               {t('card.notifications.reminders.desc')}
             </p>
           </div>
-          <PreferenceSwitch
+          <Switch
             checked={preferences.personalReminderAlerts}
             label={t('card.notifications.reminders.title')}
             onChange={(next) => savePreferences({ personalReminderAlerts: next })}
           />
         </div>
 
-        <p className="px-1 pt-1 text-[10.5px] text-[var(--ink-tertiary)]">
+        <p className="px-1 pt-1 text-[11px] text-[var(--ink-tertiary)]">
           {t('card.notifications.hint')}
         </p>
       </div>

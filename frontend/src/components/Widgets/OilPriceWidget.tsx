@@ -292,19 +292,19 @@ export default function OilPriceWidget({
   if (loading && !data) {
     return (
       <div
-        className="flex h-full min-h-[300px] items-center justify-center rounded-2xl bg-[var(--surface)] p-5 ring-1 ring-[var(--hairline)]"
+        className="flex h-full min-h-[300px] items-center justify-center rounded-[18px] bg-[var(--surface)] p-5 ring-1 ring-[var(--hairline)]"
         role="status"
         aria-live="polite"
         aria-label="กำลังโหลดราคาน้ำมัน"
       >
         <div className="grid w-full animate-pulse grid-cols-2 gap-3 sm:grid-cols-3">
           {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div key={i} className="flex flex-col items-center gap-2 rounded-2xl bg-[var(--surface-grouped)] p-4">
+            <div key={i} className="flex flex-col items-center gap-2 rounded-[18px] bg-[var(--surface-grouped)] p-4">
               <div className="flex items-center gap-2">
                 <div className="h-2.5 w-2.5 rounded-full bg-slate-200" />
                 <div className="h-3.5 w-14 rounded-full bg-slate-200" />
               </div>
-              <div className="h-7 w-16 rounded-lg bg-slate-200" />
+              <div className="h-7 w-16 rounded-[11px] bg-slate-200" />
               <div className="h-2.5 w-12 rounded-full bg-slate-100" />
             </div>
           ))}
@@ -328,7 +328,7 @@ export default function OilPriceWidget({
         {/* ── Header ────────────────────────────────────────────────────── */}
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-start gap-3 min-w-0">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[var(--warning-soft)] text-[var(--warning)]">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] bg-[var(--warning-soft)] text-[var(--warning)]">
               <Fuel size={20} aria-hidden="true" />
             </div>
 
@@ -410,7 +410,7 @@ export default function OilPriceWidget({
                   {/* Trend indicator */}
                   {change ? (
                     <span
-                      className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
+                      className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[11px] font-bold ${
                         change.direction === 'up'
                           ? 'bg-red-100 text-red-600'
                           : 'bg-emerald-100 text-emerald-600'
@@ -443,7 +443,7 @@ export default function OilPriceWidget({
 
         {/* ── Footer ────────────────────────────────────────────────────── */}
         <div className="border-t border-[var(--hairline-soft)] pt-2">
-          <span className="text-[10px] text-[var(--ink-secondary)]">แหล่งข้อมูล: Bangchak</span>
+          <span className="text-[11px] text-[var(--ink-secondary)]">แหล่งข้อมูล: Bangchak</span>
         </div>
       </div>
     </section>

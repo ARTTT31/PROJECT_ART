@@ -184,12 +184,12 @@ export default function AuditPage() {
       <section className="rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-start gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[var(--accent-soft)] text-[var(--accent-text)]">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] bg-[var(--accent-soft)] text-[var(--accent-text)]">
               <FileText size={20} aria-hidden="true" />
             </div>
             <div>
               <h2 className="text-[17px] font-bold tracking-tight text-[var(--ink)]">บันทึกกิจกรรม</h2>
-              <p className="mt-0.5 text-[12.5px] text-[var(--ink-muted)]">
+              <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">
                 ประวัติการเข้าสู่ระบบ การแก้ไขข้อมูล และการจัดการบัญชี — เห็นเฉพาะผู้ดูแลระบบ
               </p>
             </div>
@@ -240,7 +240,7 @@ export default function AuditPage() {
               onChange={(event) => setSearch(event.target.value)}
               placeholder="ค้นหารายละเอียด ชื่อ หรืออีเมล"
               aria-label="ค้นหาบันทึกกิจกรรม"
-              className="w-full rounded-xl border border-[var(--hairline-strong)] bg-[var(--surface)] py-2 pl-9 pr-3 text-[13px] text-[var(--ink)] placeholder:text-[var(--ink-tertiary)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
+              className="w-full rounded-[14px] border border-[var(--hairline-strong)] bg-[var(--surface)] py-2 pl-9 pr-3 text-[13px] text-[var(--ink)] placeholder:text-[var(--ink-tertiary)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
             />
           </div>
           <Select
@@ -261,7 +261,7 @@ export default function AuditPage() {
               value={dateFrom}
               onChange={(event) => setDateFrom(event.target.value)}
               aria-label="ตั้งแต่วันที่"
-              className="w-full rounded-xl border border-[var(--hairline-strong)] bg-[var(--surface)] px-3 py-2 text-[13px] text-[var(--ink)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)] sm:w-40"
+              className="w-full rounded-[14px] border border-[var(--hairline-strong)] bg-[var(--surface)] px-3 py-2 text-[13px] text-[var(--ink)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)] sm:w-40"
             />
             <span className="text-[12px] text-[var(--ink-tertiary)]">ถึง</span>
             <input
@@ -269,7 +269,7 @@ export default function AuditPage() {
               value={dateTo}
               onChange={(event) => setDateTo(event.target.value)}
               aria-label="ถึงวันที่"
-              className="w-full rounded-xl border border-[var(--hairline-strong)] bg-[var(--surface)] px-3 py-2 text-[13px] text-[var(--ink)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)] sm:w-40"
+              className="w-full rounded-[14px] border border-[var(--hairline-strong)] bg-[var(--surface)] px-3 py-2 text-[13px] text-[var(--ink)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)] sm:w-40"
             />
             {(dateFrom || dateTo) && (
               <button
@@ -278,7 +278,7 @@ export default function AuditPage() {
                   setDateFrom('');
                   setDateTo('');
                 }}
-                className="shrink-0 rounded-full px-3 py-2 text-[12.5px] font-semibold text-[var(--ink-muted)] transition-colors hover:bg-[var(--surface-grouped)] hover:text-[var(--ink)]"
+                className="shrink-0 rounded-full px-3 py-2 text-[13px] font-semibold text-[var(--ink-muted)] transition-colors hover:bg-[var(--surface-grouped)] hover:text-[var(--ink)]"
               >
                 ล้างวันที่
               </button>
@@ -303,11 +303,11 @@ export default function AuditPage() {
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
                       <div className="h-5 w-20 rounded-full bg-[var(--surface-chip)]" />
-                      <div className="h-4 w-28 rounded-md bg-[var(--surface-chip)]" />
+                      <div className="h-4 w-28 rounded-[11px] bg-[var(--surface-chip)]" />
                     </div>
-                    <div className="h-3.5 w-56 rounded-md bg-[var(--surface-chip)]" />
+                    <div className="h-3.5 w-56 rounded-[11px] bg-[var(--surface-chip)]" />
                   </div>
-                  <div className="h-4 w-24 rounded-md bg-[var(--surface-chip)]" />
+                  <div className="h-4 w-24 rounded-[11px] bg-[var(--surface-chip)]" />
                 </div>
               ))}
             </div>
@@ -358,13 +358,13 @@ export default function AuditPage() {
                     </span>
                   </div>
                   {entry.details && (
-                    <p className="mt-1 break-words text-[12.5px] leading-relaxed text-[var(--ink-muted)]">
+                    <p className="mt-1 break-words text-[13px] leading-relaxed text-[var(--ink-muted)]">
                       {entry.details}
                     </p>
                   )}
                 </div>
 
-                <div className="shrink-0 text-left text-[11.5px] text-[var(--ink-tertiary)] sm:text-right">
+                <div className="shrink-0 text-left text-[12px] text-[var(--ink-tertiary)] sm:text-right">
                   <div className="tabular-nums">{formatDate(entry.created_at)}</div>
                   {entry.ip_address && <div className="tabular-nums">{entry.ip_address}</div>}
                 </div>

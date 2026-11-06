@@ -1,6 +1,6 @@
 'use client';
 
-import { memo, useEffect, useState } from 'react';
+import { memo, useEffect, useState, useSyncExternalStore } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { Clock, Menu } from 'lucide-react';
@@ -9,6 +9,11 @@ import NotificationBell from './NotificationBell';
 import { useI18n } from '@/lib/i18n/I18nProvider';
 import { usePreferences } from '@/hooks/usePreferences';
 import { formatClock } from '@/utils/dateFormat';
+import {
+  getPageTitleServerSnapshot,
+  getPageTitleSnapshot,
+  subscribePageTitle,
+} from '@/lib/pageTitleStore';
 
 interface HeaderProps {
   user?: AuthUser | null;
@@ -19,6 +24,11 @@ interface HeaderProps {
 export default function Header({ user, onMenuClick, sidebarCollapsed = false }: HeaderProps) {
   const pathname = usePathname();
   const { t } = useI18n();
+  const pageTitle = useSyncExternalStore(
+    subscribePageTitle,
+    getPageTitleSnapshot,
+    getPageTitleServerSnapshot,
+  );
 
   const headerMeta: { title: string; crumbs: Array<{ label: string; href?: string }> } = (() => {
     const home = { label: t('breadcrumb.home'), href: '/dashboard' };
@@ -60,10 +70,25 @@ export default function Header({ user, onMenuClick, sidebarCollapsed = false }: 
             <Menu size={20} aria-hidden="true" />
           </button>
 
-          <div>
-            <h1 className="text-[17px] font-bold tracking-tight text-[var(--ink)]">
-              {headerMeta.title}
-            </h1>
+          <div className="min-w-0">
+            {/* Compact title: the page's own <h1> is the real heading, this is
+                chrome that fades in once that heading scrolls under the bar —
+                the iOS navigation-title behaviour. Kept out of the heading
+                outline so every page has exactly one h1. */}
+            <div className="flex h-6 items-center">
+              <span
+                aria-hidden="true"
+                className={[
+                  'truncate text-apple-headline text-[var(--ink)]',
+                  'transition-[opacity,transform] duration-apple-2 ease-apple',
+                  pageTitle.collapsed
+                    ? 'translate-y-0 opacity-100'
+                    : 'pointer-events-none -translate-y-1 opacity-0',
+                ].join(' ')}
+              >
+                {pageTitle.title ?? headerMeta.title}
+              </span>
+            </div>
             <div className="flex flex-wrap items-center gap-1.5">
               <nav
                 aria-label="breadcrumb"

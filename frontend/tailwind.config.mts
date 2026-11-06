@@ -131,6 +131,17 @@ const config: Config = {
         'apple-title1': ['1.75rem', { lineHeight: '2.125rem', letterSpacing: '-0.025em' }],   // 28px
         'apple-large-title': ['2.125rem', { lineHeight: '2.5rem', letterSpacing: '-0.03em' }], // 34px
       },
+      // Motion scale: three durations and two curves cover every transition in
+      // the app, so a hover and a panel slide feel like one system.
+      transitionDuration: {
+        'apple-1': '150ms',
+        'apple-2': '200ms',
+        'apple-3': '300ms',
+      },
+      transitionTimingFunction: {
+        apple: 'cubic-bezier(0.25, 0.1, 0.25, 1)',
+        'apple-spring': 'cubic-bezier(0.34, 1.4, 0.64, 1)',
+      },
       animation: {
         shimmer: 'shimmer 1.5s infinite linear',
         'slide-in-top': 'slideInTop 0.4s cubic-bezier(0.16, 1, 0.3, 1)',

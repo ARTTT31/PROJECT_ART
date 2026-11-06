@@ -352,7 +352,7 @@ export default function QuickNotesWidget({
     return (
       <section className="flex h-full flex-col rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] p-5">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[var(--success-soft)] text-[var(--success-ink)]">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] bg-[var(--success-soft)] text-[var(--success-ink)]">
             <ListTodo size={20} aria-hidden="true" />
           </div>
           <div>
@@ -380,7 +380,7 @@ export default function QuickNotesWidget({
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[var(--success-soft)] text-[var(--success-ink)]">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] bg-[var(--success-soft)] text-[var(--success-ink)]">
             <ListTodo size={20} aria-hidden="true" />
           </div>
           <div className="min-w-0">
@@ -450,7 +450,7 @@ export default function QuickNotesWidget({
           maxLength={MAX_NOTE_LENGTH}
           placeholder="พิมพ์รายการที่ต้องทำ..."
           aria-label="รายการที่ต้องทำใหม่"
-          className="min-w-0 flex-1 rounded-xl border border-[var(--hairline-strong)] bg-[var(--surface)] px-3 py-2 text-[13px] text-[var(--ink)] placeholder:text-[var(--ink-tertiary)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
+          className="min-w-0 flex-1 rounded-[14px] border border-[var(--hairline-strong)] bg-[var(--surface)] px-3 py-2 text-[13px] text-[var(--ink)] placeholder:text-[var(--ink-tertiary)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
         />
         <button
           type="submit"
@@ -467,7 +467,7 @@ export default function QuickNotesWidget({
           <button
             type="button"
             onClick={clearCompleted}
-            className="rounded-full px-2 py-[3px] text-[10px] font-semibold text-[var(--accent-text)] transition-colors hover:bg-[var(--accent)]/10"
+            className="rounded-full px-2 py-[3px] text-[11px] font-semibold text-[var(--accent-text)] transition-colors hover:bg-[var(--accent)]/10"
           >
             ล้างที่เสร็จแล้ว ({completed})
           </button>
@@ -479,7 +479,7 @@ export default function QuickNotesWidget({
         aria-label="รายการที่ต้องทำ"
       >
         {notes.length === 0 && (
-          <li className="flex min-h-[104px] flex-col items-center justify-center rounded-[14px] border border-dashed border-[var(--hairline)] bg-[var(--surface-subtle)] px-3.5 py-5 text-center text-[12.5px] text-[var(--ink-tertiary)]">
+          <li className="flex min-h-[104px] flex-col items-center justify-center rounded-[14px] border border-dashed border-[var(--hairline)] bg-[var(--surface-subtle)] px-3.5 py-5 text-center text-[13px] text-[var(--ink-tertiary)]">
             <ListTodo size={20} className="mb-2 text-[var(--ink-faint)]" aria-hidden="true" />
             <span>ยังไม่มีรายการ</span>
             <span className="mt-0.5 text-[11px]">พิมพ์รายการด้านบนเพื่อเริ่มต้น</span>
@@ -491,7 +491,7 @@ export default function QuickNotesWidget({
           return (
             <li
               key={note.id}
-              className={`group flex items-center gap-2 rounded-[12px] px-2 py-1.5 transition-colors ${
+              className={`group flex items-center gap-2 rounded-[14px] px-2 py-1.5 transition-colors ${
                 note.done ? 'bg-[var(--surface-subtle)]' : 'bg-[var(--surface-grouped)] hover:bg-[var(--surface-chip)]'
               }`}
             >
@@ -506,7 +506,7 @@ export default function QuickNotesWidget({
                 className="-m-1 flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-ring)]"
               >
                 <span
-                  className={`flex h-[20px] w-[20px] items-center justify-center rounded-[7px] border-[1.5px] transition-all duration-200 ${
+                  className={`flex h-[20px] w-[20px] items-center justify-center rounded-[11px] border-[1.5px] transition-all duration-200 ${
                     note.done
                       ? 'border-[var(--success)] bg-[var(--success)]'
                       : 'border-[var(--ink-divider)] bg-[var(--surface)] group-hover:border-[var(--accent)] group-hover:bg-[var(--accent)]/5'
@@ -553,7 +553,7 @@ export default function QuickNotesWidget({
                   }}
                   maxLength={MAX_NOTE_LENGTH}
                   aria-label={`แก้ไข ${note.text}`}
-                  className="min-w-0 flex-1 rounded-lg border border-[var(--accent)]/40 bg-[var(--surface)] px-2 py-[3px] text-[13px] text-[var(--ink)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
+                  className="min-w-0 flex-1 rounded-[11px] border border-[var(--accent)]/40 bg-[var(--surface)] px-2 py-[3px] text-[13px] text-[var(--ink)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
                 />
               ) : (
                 <button
@@ -561,7 +561,7 @@ export default function QuickNotesWidget({
                   onClick={() => startEdit(note)}
                   aria-label={`แก้ไข ${note.text}`}
                   title="คลิกเพื่อแก้ไข"
-                  className="min-w-0 flex-1 rounded-md px-0.5 py-[3px] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-ring)]"
+                  className="min-w-0 flex-1 rounded-[11px] px-0.5 py-[3px] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-ring)]"
                 >
                   <span
                     className={`block break-words text-[13px] leading-snug ${

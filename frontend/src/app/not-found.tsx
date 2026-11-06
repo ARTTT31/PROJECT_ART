@@ -19,7 +19,7 @@ export default function NotFound() {
 
       <div id="main-content" className="flex min-h-[100dvh] items-center justify-center px-4 py-10">
         <section
-          className={`w-full max-w-5xl overflow-hidden rounded-[var(--art-radius-xl)] border border-[var(--hairline)] bg-[var(--surface)] shadow-glass transition-all duration-700 ease-out lg:grid lg:grid-cols-[0.92fr_1.08fr] ${
+          className={`w-full max-w-5xl overflow-hidden rounded-[var(--art-radius-xl)] border border-[var(--hairline)] bg-[var(--surface)] shadow-glass transition-all duration-300 ease-out lg:grid lg:grid-cols-[0.92fr_1.08fr] ${
             mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
           }`}
           role="alert"
@@ -58,14 +58,14 @@ export default function NotFound() {
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Link
                 href="/dashboard"
-                className="art-primary-button inline-flex items-center justify-center gap-2 !rounded-2xl"
+                className="art-primary-button inline-flex items-center justify-center gap-2 !rounded-[18px]"
               >
                 <Home size={18} aria-hidden="true" />
                 กลับหน้า Dashboard
               </Link>
               <Link
                 href="/login"
-                className="art-soft-button inline-flex items-center justify-center gap-2 !rounded-2xl"
+                className="art-soft-button inline-flex items-center justify-center gap-2 !rounded-[18px]"
               >
                 <LogIn size={18} aria-hidden="true" />
                 ไปหน้า Login

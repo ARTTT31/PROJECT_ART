@@ -388,7 +388,7 @@ export default function CommandPalette() {
           event.preventDefault();
           inputRef.current?.focus();
         }}
-        className="top-[12vh] max-w-xl translate-y-0 rounded-[20px]"
+        className="top-[12vh] max-w-xl translate-y-0 rounded-[18px]"
       >
         <DialogTitleSR>{t('palette.title')}</DialogTitleSR>
         <div className="flex min-h-12 items-center gap-2.5 border-b border-[var(--hairline)] py-3 pl-4 pr-14">
@@ -422,7 +422,7 @@ export default function CommandPalette() {
 
         <div className="max-h-[54vh] overflow-y-auto p-2">
           {results.length === 0 ? (
-            <div className="px-4 py-8 text-center text-[12.5px] text-[var(--ink-tertiary)]">
+            <div className="px-4 py-8 text-center text-[13px] text-[var(--ink-tertiary)]">
               {t('palette.empty', { query })}
             </div>
           ) : (
@@ -432,24 +432,24 @@ export default function CommandPalette() {
                 type="button"
                 onMouseEnter={() => setActive(index)}
                 onClick={() => run(result)}
-                className={`flex w-full items-center gap-3 rounded-[12px] px-3 py-2.5 text-left transition-colors ${
+                className={`flex w-full items-center gap-3 rounded-[14px] px-3 py-2.5 text-left transition-colors ${
                   index === active
                     ? 'bg-[var(--accent-soft)] text-[var(--accent-text)]'
                     : 'text-[var(--ink)] hover:bg-[var(--surface-grouped)]'
                 }`}
               >
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-[var(--surface-grouped-2)] text-[var(--ink-muted)]">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[11px] bg-[var(--surface-grouped-2)] text-[var(--ink-muted)]">
                   {result.icon}
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-[13px] font-semibold">{result.title}</span>
                   {result.subtitle && (
-                    <span className="block truncate text-[11.5px] text-[var(--ink-tertiary)]">
+                    <span className="block truncate text-[12px] text-[var(--ink-tertiary)]">
                       {result.subtitle}
                     </span>
                   )}
                 </span>
-                <span className="shrink-0 rounded-full bg-[var(--surface-grouped-2)] px-2 py-0.5 text-[10px] font-bold text-[var(--ink-muted)]">
+                <span className="shrink-0 rounded-full bg-[var(--surface-grouped-2)] px-2 py-0.5 text-[11px] font-bold text-[var(--ink-muted)]">
                   {t(KIND_KEYS[result.kind])}
                 </span>
                 {index === active && (
@@ -464,7 +464,7 @@ export default function CommandPalette() {
           <span className="inline-flex items-center gap-1.5">
             <ArrowRight size={11} aria-hidden="true" /> {t('palette.hint')}
           </span>
-          <kbd className="rounded-md border border-[var(--hairline)] bg-[var(--surface)] px-1.5 py-0.5 font-mono text-[10px]">
+          <kbd className="rounded-[11px] border border-[var(--hairline)] bg-[var(--surface)] px-1.5 py-0.5 font-mono text-[11px]">
             Esc
           </kbd>
         </div>

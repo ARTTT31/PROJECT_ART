@@ -419,7 +419,7 @@ export default function FinanceWidget({
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[var(--success-soft)] text-[var(--success-ink)]">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] bg-[var(--success-soft)] text-[var(--success-ink)]">
             <Wallet size={20} aria-hidden="true" />
           </div>
           <div className="min-w-0">
@@ -478,7 +478,7 @@ export default function FinanceWidget({
       </div>
 
       {budget !== null && (
-        <div className="mt-2.5 rounded-[12px] bg-[var(--surface-subtle)] px-3 py-2">
+        <div className="mt-2.5 rounded-[14px] bg-[var(--surface-subtle)] px-3 py-2">
           <div className="flex items-baseline justify-between gap-2 text-[11px]">
             <span className="font-semibold text-[var(--ink-muted)]">งบเดือนนี้</span>
             <span
@@ -496,7 +496,7 @@ export default function FinanceWidget({
             />
           </div>
           {overBudget && (
-            <p className="mt-1 text-[10.5px] font-semibold text-[var(--danger-ink)]">
+            <p className="mt-1 text-[11px] font-semibold text-[var(--danger-ink)]">
               เกินงบไป {money.format(monthExpense - budget)} แล้ว
             </p>
           )}
@@ -506,7 +506,7 @@ export default function FinanceWidget({
       {error && (
         <p
           role="alert"
-          className="mt-2.5 rounded-[10px] bg-[var(--danger-soft)] px-3 py-1.5 text-[12px] text-[var(--danger-ink)]"
+          className="mt-2.5 rounded-[11px] bg-[var(--danger-soft)] px-3 py-1.5 text-[12px] text-[var(--danger-ink)]"
         >
           {error}
         </p>
@@ -515,7 +515,7 @@ export default function FinanceWidget({
       {undo && (
         <div
           role="status"
-          className="mt-2.5 flex items-center justify-between gap-2 rounded-[10px] bg-[var(--surface-inverse)] px-3 py-1.5 text-[11.5px] text-[var(--ink-inverse)]"
+          className="mt-2.5 flex items-center justify-between gap-2 rounded-[11px] bg-[var(--surface-inverse)] px-3 py-1.5 text-[12px] text-[var(--ink-inverse)]"
         >
           <span className="min-w-0 truncate">
             ลบ “{undo.label || (undo.type === 'income' ? 'รายรับ' : 'รายจ่าย')}” แล้ว
@@ -549,7 +549,7 @@ export default function FinanceWidget({
                 type="button"
                 onClick={() => setType(option)}
                 aria-pressed={type === option}
-                className={`rounded-full px-3 py-1 text-[11.5px] font-bold transition-colors ${
+                className={`rounded-full px-3 py-1 text-[12px] font-bold transition-colors ${
                   type === option ? 'bg-[var(--surface)] text-[var(--ink)] shadow-xs' : 'text-[var(--ink-muted)]'
                 }`}
               >
@@ -564,7 +564,7 @@ export default function FinanceWidget({
             placeholder="รายการ เช่น ค่ากาแฟ"
             aria-label="ชื่อรายการ"
             maxLength={MAX_FINANCE_LABEL}
-            className="min-w-0 flex-1 rounded-xl border border-[var(--hairline-strong)] bg-[var(--surface)] px-3 py-1.5 text-[12.5px] text-[var(--ink)] placeholder:text-[var(--ink-tertiary)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
+            className="min-w-0 flex-1 rounded-[14px] border border-[var(--hairline-strong)] bg-[var(--surface)] px-3 py-1.5 text-[13px] text-[var(--ink)] placeholder:text-[var(--ink-tertiary)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
           />
         </div>
 
@@ -576,14 +576,14 @@ export default function FinanceWidget({
             onChange={(event) => setAmount(event.target.value)}
             placeholder="จำนวนเงิน"
             aria-label="จำนวนเงิน"
-            className="min-w-0 flex-1 rounded-xl border border-[var(--hairline-strong)] bg-[var(--surface)] px-3 py-2 text-[13px] tabular-nums text-[var(--ink)] placeholder:text-[var(--ink-tertiary)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
+            className="min-w-0 flex-1 rounded-[14px] border border-[var(--hairline-strong)] bg-[var(--surface)] px-3 py-2 text-[13px] tabular-nums text-[var(--ink)] placeholder:text-[var(--ink-tertiary)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
           />
           <input
             type="date"
             value={date}
             onChange={(event) => setDate(event.target.value)}
             aria-label="วันที่"
-            className="w-[136px] shrink-0 rounded-xl border border-[var(--hairline-strong)] bg-[var(--surface)] px-2 py-2 text-[12px] text-[var(--ink)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
+            className="w-[136px] shrink-0 rounded-[14px] border border-[var(--hairline-strong)] bg-[var(--surface)] px-2 py-2 text-[12px] text-[var(--ink)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
           />
           <button
             type="submit"
@@ -603,7 +603,7 @@ export default function FinanceWidget({
           placeholder="หมวดหมู่ (ไม่บังคับ)"
           aria-label="หมวดหมู่"
           maxLength={40}
-          className="w-full rounded-xl border border-[var(--hairline-strong)] bg-[var(--surface)] px-3 py-1.5 text-[12px] text-[var(--ink)] placeholder:text-[var(--ink-tertiary)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
+          className="w-full rounded-[14px] border border-[var(--hairline-strong)] bg-[var(--surface)] px-3 py-1.5 text-[12px] text-[var(--ink)] placeholder:text-[var(--ink-tertiary)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
         />
         <datalist id="finance-categories">
           {FINANCE_CATEGORIES.map((option) => (
@@ -617,7 +617,7 @@ export default function FinanceWidget({
         aria-label="รายการวันนี้"
       >
         {todayEntries.length === 0 ? (
-          <li className="flex min-h-[92px] flex-col items-center justify-center rounded-[14px] border border-dashed border-[var(--hairline)] bg-[var(--surface-subtle)] px-3 py-4 text-center text-[12.5px] text-[var(--ink-tertiary)]">
+          <li className="flex min-h-[92px] flex-col items-center justify-center rounded-[14px] border border-dashed border-[var(--hairline)] bg-[var(--surface-subtle)] px-3 py-4 text-center text-[13px] text-[var(--ink-tertiary)]">
             <Wallet size={18} className="mb-1.5 text-[var(--ink-faint)]" aria-hidden="true" />
             ยังไม่มีรายการวันนี้
           </li>
@@ -625,7 +625,7 @@ export default function FinanceWidget({
           todayEntries.map((entry) => (
             <li
               key={entry.id}
-              className="group flex items-center gap-2.5 rounded-[12px] bg-[var(--surface-grouped)] px-3 py-2"
+              className="group flex items-center gap-2.5 rounded-[14px] bg-[var(--surface-grouped)] px-3 py-2"
             >
               {entry.type === 'income' ? (
                 <ArrowUpCircle size={16} className="shrink-0 text-[var(--success-ink)]" aria-hidden="true" />
@@ -633,17 +633,17 @@ export default function FinanceWidget({
                 <ArrowDownCircle size={16} className="shrink-0 text-[var(--danger-ink)]" aria-hidden="true" />
               )}
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-[12.5px] text-[var(--ink)]">
+                <span className="block truncate text-[13px] text-[var(--ink)]">
                   {entry.label || (entry.type === 'income' ? 'รายรับ' : 'รายจ่าย')}
                 </span>
                 {entry.category && (
-                  <span className="block truncate text-[10.5px] text-[var(--ink-tertiary)]">
+                  <span className="block truncate text-[11px] text-[var(--ink-tertiary)]">
                     {entry.category}
                   </span>
                 )}
               </span>
               <span
-                className={`shrink-0 tabular-nums text-[12.5px] font-bold ${
+                className={`shrink-0 tabular-nums text-[13px] font-bold ${
                   entry.type === 'income' ? 'text-[var(--success-ink)]' : 'text-[var(--ink)]'
                 }`}
               >
@@ -671,7 +671,7 @@ export default function FinanceWidget({
         )}
       </ul>
 
-      <div className="mt-3 flex items-center justify-between border-t border-[var(--hairline-soft)] pt-2 text-[10px] text-[var(--ink-secondary)]">
+      <div className="mt-3 flex items-center justify-between border-t border-[var(--hairline-soft)] pt-2 text-[11px] text-[var(--ink-secondary)]">
         <span>บันทึกอัตโนมัติ</span>
         <span className="inline-flex items-center gap-1">
           {saving && <Loader2 size={10} className="animate-spin" aria-hidden="true" />}

@@ -11,9 +11,9 @@ export default function ProfileLoading() {
           >
             <div className="mb-6 h-5 w-40 rounded-full bg-[var(--surface-chip)]" />
             <div className="space-y-4">
-              <div className="h-11 rounded-xl bg-[var(--surface-grouped-2)]" />
-              <div className="h-11 rounded-xl bg-[var(--surface-grouped-2)]" />
-              <div className="h-11 rounded-xl bg-[var(--surface-grouped-2)]" />
+              <div className="h-11 rounded-[14px] bg-[var(--surface-grouped-2)]" />
+              <div className="h-11 rounded-[14px] bg-[var(--surface-grouped-2)]" />
+              <div className="h-11 rounded-[14px] bg-[var(--surface-grouped-2)]" />
             </div>
           </div>
         ))}

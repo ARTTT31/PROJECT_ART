@@ -5,6 +5,7 @@ import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
 import { useToast } from '@/components/Toast/ToastProvider';
 import { useAuth } from '@/components/Auth/AuthProvider';
 import { showConfirm, showDeleteConfirm } from '@/utils/sweetalert';
+import Switch from '@/components/ui/Switch';
 import {
   Settings,
   Edit,
@@ -232,7 +233,7 @@ function FilterDropdown({
                     onChange(opt.value);
                     setIsOpen(false);
                   }}
-                  className={`flex w-full items-center justify-between gap-3 rounded-[12px] px-3.5 py-2.5 text-[13px] font-semibold transition-all duration-150 ${
+                  className={`flex w-full items-center justify-between gap-3 rounded-[14px] px-3.5 py-2.5 text-[13px] font-semibold transition-all duration-150 ${
                     isSelected
                       ? 'bg-[var(--accent-soft)] text-[var(--accent-text)]'
                       : 'text-[var(--ink)] hover:bg-[var(--surface-grouped)]'
@@ -760,8 +761,8 @@ export default function UserManagement() {
               {[1, 2, 3, 4, 5].map((idx) => (
                 <div key={idx} className="flex items-center justify-between pt-2">
                   <div className="space-y-1.5">
-                    <div className="h-4 w-36 rounded-md bg-[var(--surface-chip)]" />
-                    <div className="h-3 w-48 rounded-md bg-[var(--surface-subtle)]" />
+                    <div className="h-4 w-36 rounded-[11px] bg-[var(--surface-chip)]" />
+                    <div className="h-3 w-48 rounded-[11px] bg-[var(--surface-subtle)]" />
                   </div>
                   <div className="h-6 w-16 rounded-full bg-[var(--surface-chip)]" />
                   <div className="h-6 w-14 rounded-full bg-[var(--surface-chip)]" />
@@ -805,16 +806,8 @@ export default function UserManagement() {
             {/* Status */}
             <div>
               <span className="mb-2 block text-[12px] font-bold tracking-wide uppercase text-[var(--ink-muted)]">สถานะการใช้งาน</span>
-              <div
-                onClick={() => setEditIsActive(!editIsActive)}
-                className="group flex cursor-pointer items-center gap-3 rounded-2xl bg-[var(--surface-subtle)] p-4 ring-1 ring-[var(--hairline)] transition-colors hover:bg-[var(--surface)]"
-              >
-                {editIsActive ? (
-                  <CheckCircle2 size={22} className="text-[var(--accent-text)]" />
-                ) : (
-                  <Circle size={22} className="text-slate-300 group-hover:text-slate-400" />
-                )}
-                <div>
+              <div className="flex items-center justify-between gap-4 rounded-[18px] bg-[var(--surface-subtle)] p-4 ring-1 ring-[var(--hairline)]">
+                <div className="min-w-0">
                   <span className="block text-[14px] font-semibold text-[var(--ink)]">
                     เปิดใช้งานบัญชี (Active)
                   </span>
@@ -822,6 +815,11 @@ export default function UserManagement() {
                     ผู้ใช้สามารถเข้าสู่ระบบและใช้งานได้ตามปกติ
                   </span>
                 </div>
+                <Switch
+                  checked={editIsActive}
+                  onChange={setEditIsActive}
+                  label="เปิดใช้งานบัญชีนี้"
+                />
               </div>
             </div>
 
@@ -832,7 +830,7 @@ export default function UserManagement() {
                 {/* User Role Card */}
                 <div
                   onClick={() => setEditRole('user')}
-                  className={`group relative flex cursor-pointer items-start gap-3 rounded-2xl p-4 transition-all duration-200 ${
+                  className={`group relative flex cursor-pointer items-start gap-3 rounded-[18px] p-4 transition-all duration-200 ${
                     editRole === 'user'
                       ? 'bg-[var(--surface)] ring-2 ring-[var(--accent)]'
                       : 'bg-[var(--surface-subtle)] ring-1 ring-[var(--hairline)] hover:bg-[var(--surface)]'
@@ -869,7 +867,7 @@ export default function UserManagement() {
                 {/* Admin Role Card */}
                 <div
                   onClick={() => setEditRole('admin')}
-                  className={`group relative flex cursor-pointer items-start gap-3 rounded-2xl p-4 transition-all duration-200 ${
+                  className={`group relative flex cursor-pointer items-start gap-3 rounded-[18px] p-4 transition-all duration-200 ${
                     editRole === 'admin'
                       ? 'bg-[var(--surface)] ring-2 ring-purple-600'
                       : 'bg-[var(--surface-subtle)] ring-1 ring-[var(--hairline)] hover:bg-[var(--surface)]'
@@ -905,7 +903,7 @@ export default function UserManagement() {
               </div>
             </div>
 
-            <p className="rounded-2xl bg-[var(--surface-subtle)] px-4 py-3 text-[12px] leading-relaxed text-[var(--ink-muted)]">
+            <p className="rounded-[18px] bg-[var(--surface-subtle)] px-4 py-3 text-[12px] leading-relaxed text-[var(--ink-muted)]">
               การเปิด/ปิดหน้าของทั้ง workspace ตั้งค่าได้ที่การ์ด “เปิด/ปิดหน้าใช้งาน”
               ด้านบนของหน้าจัดการระบบ
             </p>
@@ -973,7 +971,7 @@ export default function UserManagement() {
                   onChange={(e) => setCreateForm((prev) => ({ ...prev, username: e.target.value }))}
                   placeholder="อย่างน้อย 3 ตัวอักษร"
                   autoComplete="off"
-                  className="w-full rounded-2xl border-0 bg-[var(--surface-subtle)] px-4 py-3 text-[14px] font-medium text-[var(--ink)] outline-hidden ring-1 ring-[var(--hairline)] transition-all placeholder:text-[var(--ink-tertiary)] focus:bg-[var(--surface)] focus:ring-2 focus:ring-[var(--accent)]"
+                  className="w-full rounded-[18px] border-0 bg-[var(--surface-subtle)] px-4 py-3 text-[14px] font-medium text-[var(--ink)] outline-hidden ring-1 ring-[var(--hairline)] transition-all placeholder:text-[var(--ink-tertiary)] focus:bg-[var(--surface)] focus:ring-2 focus:ring-[var(--accent)]"
                 />
               </div>
               <div>
@@ -990,7 +988,7 @@ export default function UserManagement() {
                     setCreateForm((prev) => ({ ...prev, display_name: e.target.value }))
                   }
                   placeholder="ชื่อ-นามสกุล"
-                  className="w-full rounded-2xl border-0 bg-[var(--surface-subtle)] px-4 py-3 text-[14px] font-medium text-[var(--ink)] outline-hidden ring-1 ring-[var(--hairline)] transition-all placeholder:text-[var(--ink-tertiary)] focus:bg-[var(--surface)] focus:ring-2 focus:ring-[var(--accent)]"
+                  className="w-full rounded-[18px] border-0 bg-[var(--surface-subtle)] px-4 py-3 text-[14px] font-medium text-[var(--ink)] outline-hidden ring-1 ring-[var(--hairline)] transition-all placeholder:text-[var(--ink-tertiary)] focus:bg-[var(--surface)] focus:ring-2 focus:ring-[var(--accent)]"
                 />
               </div>
               <div>
@@ -1007,7 +1005,7 @@ export default function UserManagement() {
                   onChange={(e) => setCreateForm((prev) => ({ ...prev, email: e.target.value }))}
                   placeholder="name@example.com"
                   autoComplete="off"
-                  className="w-full rounded-2xl border-0 bg-[var(--surface-subtle)] px-4 py-3 text-[14px] font-medium text-[var(--ink)] outline-hidden ring-1 ring-[var(--hairline)] transition-all placeholder:text-[var(--ink-tertiary)] focus:bg-[var(--surface)] focus:ring-2 focus:ring-[var(--accent)]"
+                  className="w-full rounded-[18px] border-0 bg-[var(--surface-subtle)] px-4 py-3 text-[14px] font-medium text-[var(--ink)] outline-hidden ring-1 ring-[var(--hairline)] transition-all placeholder:text-[var(--ink-tertiary)] focus:bg-[var(--surface)] focus:ring-2 focus:ring-[var(--accent)]"
                 />
               </div>
               <div>
@@ -1024,7 +1022,7 @@ export default function UserManagement() {
                   onChange={(e) => setCreateForm((prev) => ({ ...prev, password: e.target.value }))}
                   placeholder="อย่างน้อย 8 ตัวอักษร"
                   autoComplete="new-password"
-                  className="w-full rounded-2xl border-0 bg-[var(--surface-subtle)] px-4 py-3 text-[14px] font-medium text-[var(--ink)] outline-hidden ring-1 ring-[var(--hairline)] transition-all placeholder:text-[var(--ink-tertiary)] focus:bg-[var(--surface)] focus:ring-2 focus:ring-[var(--accent)]"
+                  className="w-full rounded-[18px] border-0 bg-[var(--surface-subtle)] px-4 py-3 text-[14px] font-medium text-[var(--ink)] outline-hidden ring-1 ring-[var(--hairline)] transition-all placeholder:text-[var(--ink-tertiary)] focus:bg-[var(--surface)] focus:ring-2 focus:ring-[var(--accent)]"
                 />
               </div>
             </div>
@@ -1038,7 +1036,7 @@ export default function UserManagement() {
                     type="button"
                     onClick={() => setCreateForm((prev) => ({ ...prev, role }))}
                     aria-pressed={createForm.role === role}
-                    className={`group relative flex items-center gap-3 rounded-2xl p-4 text-left transition-all duration-200 ${
+                    className={`group relative flex items-center gap-3 rounded-[18px] p-4 text-left transition-all duration-200 ${
                       createForm.role === role
                         ? 'bg-[var(--surface)] ring-2 ring-[var(--accent)]'
                         : 'bg-[var(--surface-subtle)] ring-1 ring-[var(--hairline)] hover:bg-[var(--surface)]'
@@ -1077,7 +1075,7 @@ export default function UserManagement() {
               </div>
             </div>
 
-            <p className="rounded-2xl bg-[var(--surface-subtle)] px-4 py-3 text-[12px] leading-relaxed text-[var(--ink-muted)]">
+            <p className="rounded-[18px] bg-[var(--surface-subtle)] px-4 py-3 text-[12px] leading-relaxed text-[var(--ink-muted)]">
               ผู้ใช้ใหม่จะได้สิทธิ์หน้าตามค่าเริ่มต้นของระบบ —
               การเปิด/ปิดหน้าทั้ง workspace ตั้งค่าได้ที่การ์ด “เปิด/ปิดหน้าใช้งาน”
             </p>
@@ -1108,9 +1106,9 @@ export default function UserManagement() {
       ) : (
         <>
           {statusFilter !== 'pending' && pendingInView.length > 0 && (
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 rounded-2xl bg-amber-500/[0.08] border border-amber-500/25 text-[var(--ink)]">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 rounded-[18px] bg-amber-500/[0.08] border border-amber-500/25 text-[var(--ink)]">
               <div className="flex items-start gap-3">
-                <span className="p-2 rounded-xl bg-amber-500/15 text-amber-700 shrink-0 mt-0.5 sm:mt-0">
+                <span className="p-2 rounded-[14px] bg-amber-500/15 text-amber-700 shrink-0 mt-0.5 sm:mt-0">
                   <Clock size={18} />
                 </span>
                 <div>
@@ -1118,11 +1116,11 @@ export default function UserManagement() {
                     <span>
                       มีคำขอสมัครสมาชิกใหม่ {pendingInView.length} รายการในหน้านี้ รอการอนุมัติ
                     </span>
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10.5px] font-bold bg-amber-500 text-white">
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-500 text-white">
                       รออนุมัติ
                     </span>
                   </div>
-                  <p className="text-[12.5px] text-amber-800/90 mt-0.5">
+                  <p className="text-[13px] text-amber-800/90 mt-0.5">
                     คุณสามารถกดอนุมัติได้ทันทีที่ตารางด้านล่าง หรือคลิกเพื่อกรองดูเฉพาะคำขอทั้งหมด
                   </p>
                 </div>
@@ -1146,7 +1144,7 @@ export default function UserManagement() {
                       setStatusFilter('pending');
                     }
                   }}
-                  className="inline-flex items-center justify-center gap-1.5 rounded-full bg-emerald-600 px-4 py-2 text-[12.5px] font-bold text-white shadow-xs transition-all hover:bg-emerald-700 active:scale-[0.98] disabled:opacity-50"
+                  className="inline-flex items-center justify-center gap-1.5 rounded-full bg-emerald-600 px-4 py-2 text-[13px] font-bold text-white shadow-xs transition-all hover:bg-emerald-700 active:scale-[0.98] disabled:opacity-50"
                 >
                   {bulkApproving ? (
                     <Loader2 size={14} className="animate-spin" aria-hidden="true" />
@@ -1158,7 +1156,7 @@ export default function UserManagement() {
                 <button
                   type="button"
                   onClick={() => setStatusFilter('pending')}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-amber-600 hover:bg-amber-700 active:scale-[0.98] text-white text-[12.5px] font-bold shadow-xs transition-all shrink-0 self-stretch sm:self-auto justify-center"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-amber-600 hover:bg-amber-700 active:scale-[0.98] text-white text-[13px] font-bold shadow-xs transition-all shrink-0 self-stretch sm:self-auto justify-center"
                 >
                   <span>กรองดูเฉพาะคำขอรออนุมัติ</span>
                   <ArrowRight size={14} />
@@ -1193,7 +1191,7 @@ export default function UserManagement() {
                     minHeight: '42px',
                     height: '42px',
                   }}
-                  className="w-full rounded-full border border-[var(--hairline)] bg-[var(--surface-grouped)] pr-4 text-[13.5px] font-medium text-[var(--ink)] outline-hidden transition-all placeholder:text-[var(--ink-tertiary)] focus:bg-[var(--surface)] focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-ring)]"
+                  className="w-full rounded-full border border-[var(--hairline)] bg-[var(--surface-grouped)] pr-4 text-[13px] font-medium text-[var(--ink)] outline-hidden transition-all placeholder:text-[var(--ink-tertiary)] focus:bg-[var(--surface)] focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-ring)]"
                 />
               </label>
               <div className="grid grid-cols-2 gap-2 w-full sm:w-auto sm:flex sm:items-center">
@@ -1291,7 +1289,7 @@ export default function UserManagement() {
                         <tr key={t.id} className="hover:bg-slate-50/50 transition-colors">
                           <td className="px-5 py-4">
                             <div className="font-semibold text-[var(--ink)] text-[14px]">{t.name}</div>
-                            <div className="text-[12.5px] text-[var(--ink-muted)] mt-0.5">
+                            <div className="text-[13px] text-[var(--ink-muted)] mt-0.5">
                               {t.email || t.username}
                             </div>
                           </td>
@@ -1306,7 +1304,7 @@ export default function UserManagement() {
                               </span>
                             )}
                           </td>
-                          <td className="px-5 py-4 text-[12.5px] font-medium text-[var(--ink-muted)]">
+                          <td className="px-5 py-4 text-[13px] font-medium text-[var(--ink-muted)]">
                             {formatDateTime(t.deleted_at)}
                           </td>
                           <td className="px-5 py-4">
@@ -1354,7 +1352,7 @@ export default function UserManagement() {
                               <div className="font-semibold text-[var(--ink)] text-[14px]">
                                 {p.name}
                               </div>
-                              <div className="text-[12.5px] text-[var(--ink-muted)] mt-0.5">
+                              <div className="text-[13px] text-[var(--ink-muted)] mt-0.5">
                                 {p.email || p.username}
                               </div>
                             </td>
@@ -1409,7 +1407,7 @@ export default function UserManagement() {
                                 <div className="font-semibold text-[var(--ink)] text-[14px]">
                                   {u.name}
                                 </div>
-                                <div className="text-[12.5px] text-[var(--ink-muted)] mt-0.5">
+                                <div className="text-[13px] text-[var(--ink-muted)] mt-0.5">
                                   {u.email || u.username}
                                 </div>
                               </td>
@@ -1568,7 +1566,7 @@ export default function UserManagement() {
 
           {showPagination && (
             <div className="flex flex-col gap-3 rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-              <span className="text-[12.5px] font-medium text-[var(--ink-muted)]">
+              <span className="text-[13px] font-medium text-[var(--ink-muted)]">
                 {statusFilter === 'trash'
                   ? debouncedQuery.trim()
                     ? `พบ ${filteredTrash.length} บัญชีในถังขยะ`

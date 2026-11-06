@@ -94,7 +94,7 @@ export default function CurrencyConverterWidget({
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[var(--info-soft)] text-[var(--info-ink)]">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] bg-[var(--info-soft)] text-[var(--info-ink)]">
             <Wallet size={20} aria-hidden="true" />
           </div>
           <div className="min-w-0">
@@ -122,7 +122,7 @@ export default function CurrencyConverterWidget({
             value={amount}
             onChange={(event) => setAmount(event.target.value)}
             aria-label="จำนวนเงินที่ต้องการแปลง"
-            className="w-full rounded-xl border border-[var(--hairline-strong)] bg-[var(--surface)] px-3 py-2 text-[14px] tabular-nums text-[var(--ink)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
+            className="w-full rounded-[14px] border border-[var(--hairline-strong)] bg-[var(--surface)] px-3 py-2 text-[14px] tabular-nums text-[var(--ink)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
           />
         </label>
 
@@ -162,7 +162,7 @@ export default function CurrencyConverterWidget({
         </div>
       </div>
 
-      <div className="mt-4 flex flex-1 flex-col justify-center rounded-[16px] bg-[var(--surface-grouped)] px-4 py-3.5">
+      <div className="mt-4 flex flex-1 flex-col justify-center rounded-[18px] bg-[var(--surface-grouped)] px-4 py-3.5">
         {loading ? (
           <div role="status" className="flex items-center justify-center py-2">
             <Loader2 size={16} className="animate-spin text-[var(--accent-text)]" aria-hidden="true" />
@@ -171,16 +171,16 @@ export default function CurrencyConverterWidget({
           <button
             type="button"
             onClick={() => void load()}
-            className="inline-flex items-center justify-center gap-1.5 text-[12.5px] font-semibold text-[var(--danger-ink)]"
+            className="inline-flex items-center justify-center gap-1.5 text-[13px] font-semibold text-[var(--danger-ink)]"
           >
             <RefreshCw size={13} aria-hidden="true" /> {error} — ลองใหม่
           </button>
         ) : (
           <>
-            <span className="text-[11.5px] font-medium text-[var(--ink-muted)]">
+            <span className="text-[12px] font-medium text-[var(--ink-muted)]">
               {numberFormat.format(numericAmount)} {from} =
             </span>
-            <span className="mt-0.5 tabular-nums text-[24px] font-extrabold leading-tight text-[var(--ink)]">
+            <span className="mt-0.5 tabular-nums text-[22px] font-extrabold leading-tight text-[var(--ink)]">
               {numberFormat.format(converted)}{' '}
               <span className="text-[13px] font-semibold text-[var(--ink-muted)]">{to}</span>
             </span>
@@ -191,7 +191,7 @@ export default function CurrencyConverterWidget({
         )}
       </div>
 
-      <p className="mt-3 border-t border-[var(--hairline-soft)] pt-2 text-[10px] text-[var(--ink-secondary)]">
+      <p className="mt-3 border-t border-[var(--hairline-soft)] pt-2 text-[11px] text-[var(--ink-secondary)]">
         อัตราอ้างอิงจาก Frankfurter · ข้อมูลรายวัน ไม่ใช่ราคาซื้อขายจริงของธนาคาร
       </p>
     </section>

@@ -345,7 +345,7 @@ export default function CalendarWidget({
       {/* Top Header: Title, Month Selector & Size Toggle */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-[9px] bg-[var(--surface-chip)] text-[var(--accent)]">
+          <div className="flex h-7 w-7 items-center justify-center rounded-[11px] bg-[var(--surface-chip)] text-[var(--accent)]">
             <CalendarIcon className="h-4 w-4" />
           </div>
           <div>
@@ -360,7 +360,7 @@ export default function CalendarWidget({
           <button
             type="button"
             onClick={goToToday}
-            className="rounded-full bg-[var(--surface-chip)] px-2 py-0.5 text-[10px] font-semibold text-[var(--ink)] hover:bg-[var(--surface-grouped)] transition-colors active:scale-[0.95]"
+            className="rounded-full bg-[var(--surface-chip)] px-2 py-0.5 text-[11px] font-semibold text-[var(--ink)] hover:bg-[var(--surface-grouped)] transition-colors active:scale-[0.95]"
           >
             วันนี้
           </button>
@@ -392,7 +392,7 @@ export default function CalendarWidget({
           /* Size S: Compact Calendar + Selected Date Preview */
           <div className="flex flex-col gap-2">
             {/* Weekdays */}
-            <div className="grid grid-cols-7 text-center text-[10px] font-semibold text-[var(--ink-muted)]">
+            <div className="grid grid-cols-7 text-center text-[11px] font-semibold text-[var(--ink-muted)]">
               {WEEKDAY_NAMES.map((w, idx) => (
                 <div key={w} className={idx === 0 || idx === 6 ? 'text-red-500' : ''}>
                   {w}
@@ -436,7 +436,7 @@ export default function CalendarWidget({
             </div>
 
             {/* Selected Day Preview */}
-            <div className="mt-1 rounded-[10px] border border-[var(--hairline)] bg-[var(--surface-grouped)] px-2.5 py-1.5 text-xs">
+            <div className="mt-1 rounded-[11px] border border-[var(--hairline)] bg-[var(--surface-grouped)] px-2.5 py-1.5 text-xs">
               {selectedEvents.length > 0 ? (
                 <div className="space-y-0.5">
                   {selectedEvents.slice(0, 2).map((ev) => (
@@ -450,7 +450,7 @@ export default function CalendarWidget({
                     </div>
                   ))}
                   {selectedEvents.length > 2 && (
-                    <p className="text-[10px] text-[var(--ink-muted)]">
+                    <p className="text-[11px] text-[var(--ink-muted)]">
                       +{selectedEvents.length - 2} รายการเพิ่มเติม
                     </p>
                   )}
@@ -527,13 +527,13 @@ export default function CalendarWidget({
 
               {/* Add Reminder Inline Form */}
               {isAddingReminder && (
-                <form onSubmit={handleAddReminder} className="flex flex-col gap-2 rounded-[10px] bg-[var(--surface)] p-2.5 border border-[var(--hairline)]">
+                <form onSubmit={handleAddReminder} className="flex flex-col gap-2 rounded-[11px] bg-[var(--surface)] p-2.5 border border-[var(--hairline)]">
                   <input
                     type="text"
                     value={newReminderTitle}
                     onChange={(e) => setNewReminderTitle(e.target.value)}
                     placeholder="พิมพ์ชื่อธุระหรือนัดหมาย..."
-                    className="w-full rounded-[8px] border border-[var(--hairline)] bg-[var(--surface-grouped)] px-2.5 py-1 text-xs text-[var(--ink)] focus:outline-hidden focus:ring-1 focus:ring-[var(--accent)]"
+                    className="w-full rounded-[11px] border border-[var(--hairline)] bg-[var(--surface-grouped)] px-2.5 py-1 text-xs text-[var(--ink)] focus:outline-hidden focus:ring-1 focus:ring-[var(--accent)]"
                     autoFocus
                   />
                   <div className="flex items-center justify-between gap-1">
@@ -543,7 +543,7 @@ export default function CalendarWidget({
                           key={k}
                           type="button"
                           onClick={() => setNewReminderKind(k)}
-                          className={`rounded-full px-2 py-0.5 text-[10px] font-medium transition-all ${
+                          className={`rounded-full px-2 py-0.5 text-[11px] font-medium transition-all ${
                             newReminderKind === k
                               ? 'bg-[var(--accent)] text-white'
                               : 'bg-[var(--surface-chip)] text-[var(--ink-secondary)]'
@@ -557,13 +557,13 @@ export default function CalendarWidget({
                       <button
                         type="button"
                         onClick={() => setIsAddingReminder(false)}
-                        className="rounded-full px-2 py-0.5 text-[10px] text-[var(--ink-muted)] hover:text-[var(--ink)]"
+                        className="rounded-full px-2 py-0.5 text-[11px] text-[var(--ink-muted)] hover:text-[var(--ink)]"
                       >
                         ยกเลิก
                       </button>
                       <button
                         type="submit"
-                        className="rounded-full bg-[var(--accent)] px-2.5 py-0.5 text-[10px] font-semibold text-white shadow-xs"
+                        className="rounded-full bg-[var(--accent)] px-2.5 py-0.5 text-[11px] font-semibold text-white shadow-xs"
                       >
                         บันทึก
                       </button>
@@ -578,7 +578,7 @@ export default function CalendarWidget({
                   selectedEvents.map((ev) => (
                     <div
                       key={ev.id}
-                      className="flex items-center justify-between rounded-[9px] border border-[var(--hairline)] bg-[var(--surface)] p-2 text-xs"
+                      className="flex items-center justify-between rounded-[11px] border border-[var(--hairline)] bg-[var(--surface)] p-2 text-xs"
                     >
                       <div className="flex items-center gap-2 truncate">
                         {ev.type === 'holiday' ? (
@@ -634,7 +634,7 @@ export default function CalendarWidget({
                   สรุปวันสำคัญเดือน{THAI_MONTH_NAMES[currentMonth]}
                 </span>
                 <div className="space-y-2 text-xs">
-                  <div className="flex items-center justify-between rounded-[9px] bg-[var(--surface)] p-2.5">
+                  <div className="flex items-center justify-between rounded-[11px] bg-[var(--surface)] p-2.5">
                     <div className="flex items-center gap-2">
                       <Star className="h-4 w-4 text-red-500" />
                       <span className="text-[var(--ink-secondary)]">วันหยุดในเดือนนี้</span>
@@ -647,7 +647,7 @@ export default function CalendarWidget({
                       วัน
                     </span>
                   </div>
-                  <div className="flex items-center justify-between rounded-[9px] bg-[var(--surface)] p-2.5">
+                  <div className="flex items-center justify-between rounded-[11px] bg-[var(--surface)] p-2.5">
                     <div className="flex items-center gap-2">
                       <Briefcase className="h-4 w-4 text-[var(--accent)]" />
                       <span className="text-[var(--ink-secondary)]">นัดหมาย / ธุระ</span>
@@ -656,7 +656,7 @@ export default function CalendarWidget({
                       {reminders.filter((r) => r.kind === 'errand' && !r.done).length} รายการ
                     </span>
                   </div>
-                  <div className="flex items-center justify-between rounded-[9px] bg-[var(--surface)] p-2.5">
+                  <div className="flex items-center justify-between rounded-[11px] bg-[var(--surface)] p-2.5">
                     <div className="flex items-center gap-2">
                       <Palmtree className="h-4 w-4 text-emerald-500" />
                       <span className="text-[var(--ink-secondary)]">วันลาพักผ่อน</span>

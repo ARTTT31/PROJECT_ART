@@ -113,7 +113,7 @@ export default function PageAccessCard() {
     <section className="overflow-hidden rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)]">
       <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[var(--hairline-soft)] bg-[var(--surface-subtle)] px-5 py-4 sm:px-6">
         <div className="flex min-w-0 items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[var(--accent-soft)] text-[var(--accent-text)]">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] bg-[var(--accent-soft)] text-[var(--accent-text)]">
             <PanelsTopLeft size={19} aria-hidden="true" />
           </div>
           <div className="min-w-0">
@@ -130,7 +130,7 @@ export default function PageAccessCard() {
           type="button"
           onClick={() => void save()}
           disabled={saving}
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[var(--accent)] px-4 py-2 text-[12.5px] font-bold text-white shadow-xs transition-all hover:bg-[var(--accent-hover)] active:scale-95 disabled:opacity-50"
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[var(--accent)] px-4 py-2 text-[13px] font-bold text-white shadow-xs transition-all hover:bg-[var(--accent-hover)] active:scale-95 disabled:opacity-50"
         >
           {saving ? (
             <Loader2 size={14} className="animate-spin" aria-hidden="true" />
@@ -147,7 +147,7 @@ export default function PageAccessCard() {
           return (
             <div key={page.id} className="flex items-center gap-3 px-5 py-3 sm:px-6">
               <span
-                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] ${
+                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-[11px] ${
                   page.enabled
                     ? 'bg-[var(--success-soft)] text-[var(--success-ink)]'
                     : 'bg-[var(--surface-grouped-2)] text-[var(--ink-tertiary)]'
@@ -162,7 +162,7 @@ export default function PageAccessCard() {
 
               <div className="min-w-0 flex-1">
                 <p className="text-[13px] font-semibold text-[var(--ink)]">{page.label}</p>
-                <p className="text-[11.5px] text-[var(--ink-tertiary)]">
+                <p className="text-[12px] text-[var(--ink-tertiary)]">
                   {locked
                     ? 'เปิดถาวร — ปิดไม่ได้เพื่อไม่ให้ผู้ใช้ติดค้าง'
                     : page.enabled
@@ -172,7 +172,7 @@ export default function PageAccessCard() {
               </div>
 
               {locked ? (
-                <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[var(--surface-grouped-2)] px-2.5 py-1 text-[10.5px] font-bold text-[var(--ink-tertiary)]">
+                <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[var(--surface-grouped-2)] px-2.5 py-1 text-[11px] font-bold text-[var(--ink-tertiary)]">
                   <Lock size={11} aria-hidden="true" /> จำเป็น
                 </span>
               ) : (

@@ -16,6 +16,7 @@ import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
 import { RegistrationPolicyCard } from '@/components/Admin/RegistrationPolicyCard';
 import PageAccessCard from '@/components/Admin/PageAccessCard';
 import UserManagement from '@/components/Admin/UserManagement';
+import { usePageHeading } from '@/components/ui/PageHeader';
 
 interface Stat {
   value: number | null;
@@ -35,6 +36,7 @@ const EMPTY_STAT: Stat = { value: null, loading: true };
  */
 export default function AdminPage() {
   const { user, status } = useAuth();
+  const headingRef = usePageHeading('จัดการระบบ');
   const router = useRouter();
   const isClient = status !== 'loading';
   const isAdmin = user?.role === 'admin';
@@ -99,11 +101,14 @@ export default function AdminPage() {
       <section className="overflow-hidden rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)]">
         <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[var(--hairline-soft)] bg-[var(--surface-subtle)] px-5 py-4 sm:px-6">
           <div className="flex min-w-0 items-start gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[var(--info-soft)] text-[var(--info-ink)] ring-1 ring-[var(--info-soft)]">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] bg-[var(--info-soft)] text-[var(--info-ink)] ring-1 ring-[var(--info-soft)]">
               <ShieldCheck size={20} aria-hidden="true" />
             </div>
             <div className="min-w-0">
-              <h1 className="text-[16px] font-bold tracking-tight text-[var(--ink)]">
+              <h1
+                ref={headingRef}
+                className="text-apple-title3 font-semibold text-[var(--ink)]"
+              >
                 จัดการระบบ
               </h1>
               <p className="mt-0.5 text-[12px] leading-snug text-[var(--ink-muted)]">
@@ -157,7 +162,7 @@ export default function AdminPage() {
           </Link>
         </div>
 
-        <div className="flex items-center gap-1.5 border-t border-[var(--hairline-soft)] px-5 py-2.5 text-[10.5px] text-[var(--ink-tertiary)] sm:px-6">
+        <div className="flex items-center gap-1.5 border-t border-[var(--hairline-soft)] px-5 py-2.5 text-[11px] text-[var(--ink-tertiary)] sm:px-6">
           <Clock3 size={11} aria-hidden="true" />
           ข้อมูลอัปเดตเมื่อเปิดหน้านี้ — กดรีเฟรชเพื่อดูใหม่
         </div>

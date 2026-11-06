@@ -227,7 +227,7 @@ export default function Sidebar({
       role={isOpen ? 'dialog' : undefined}
       aria-modal={isOpen ? true : undefined}
       aria-label={t('nav.section.main')}
-      className={`fixed left-0 top-0 z-40 h-screen w-[80vw] max-w-64 border-r border-[var(--hairline)] bg-[var(--apple-nav-bg)] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.04)] text-[var(--ink)] transition-transform duration-300 ease-out ${
+      className={`fixed left-0 top-0 z-40 h-screen w-[80vw] max-w-64 border-r border-[var(--hairline)] bg-[var(--apple-nav-bg)] backdrop-blur-2xl text-[var(--ink)] transition-transform duration-300 ease-out ${
         isOpen ? 'translate-x-0' : '-translate-x-full'
       } ${isCollapsed ? 'lg:-translate-x-full' : 'lg:translate-x-0'}`}
     >
@@ -239,11 +239,11 @@ export default function Sidebar({
             alt={companyName}
             width={34}
             height={34}
-            className="rounded-[10px] shrink-0 object-contain shadow-2xs"
+            className="rounded-[11px] shrink-0 object-contain shadow-2xs"
             priority
           />
           <div className="min-w-0 flex-1">
-            <h2 className="truncate text-[13.5px] font-bold text-[var(--ink)] tracking-tight">
+            <h2 className="truncate text-[13px] font-bold text-[var(--ink)] tracking-tight">
               {companyName}
             </h2>
             <p className="truncate text-[11px] text-[var(--ink-tertiary)]">{companyTagline || 'Workspace'}</p>
@@ -277,7 +277,7 @@ export default function Sidebar({
                           onClick={() => !item.external && onClose()}
                         >
                           <span
-                            className={`flex h-7 w-7 items-center justify-center rounded-[8px] transition-colors ${
+                            className={`flex h-7 w-7 items-center justify-center rounded-[11px] transition-colors ${
                               isActive
                                 ? 'bg-[var(--glass-20)] text-white'
                                 : 'text-[var(--ink-muted)] group-hover:text-[var(--ink)]'
@@ -290,7 +290,7 @@ export default function Sidebar({
                           {/* WIP Indicator Badge */}
                           {item.isWip && (
                             <span
-                              className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                              className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${
                                 isActive
                                   ? 'bg-[var(--glass-20)] text-white'
                                   : 'bg-[var(--warning-soft)] text-[var(--warning)]'
@@ -319,7 +319,7 @@ export default function Sidebar({
                               label: item.environments.label,
                             })}
                             title={t('nav.environment.title')}
-                            className="shrink-0 rounded-full bg-[var(--surface-grouped-2)] px-1.5 py-1 text-[9.5px] font-bold text-[var(--ink-muted)] ring-1 ring-[var(--hairline)] transition-colors hover:text-[var(--ink)]"
+                            className="shrink-0 rounded-full bg-[var(--surface-grouped-2)] px-1.5 py-1 text-[11px] font-bold text-[var(--ink-muted)] ring-1 ring-[var(--hairline)] transition-colors hover:text-[var(--ink)]"
                           >
                             {item.environments.label}
                           </button>
@@ -341,14 +341,14 @@ export default function Sidebar({
                 <button
                   type="button"
                   onClick={handleAcceptSuggestion}
-                  className="rounded-full bg-[var(--accent)] px-2.5 py-1 text-[10.5px] font-bold text-white transition-all hover:bg-[var(--accent-hover)] active:scale-95"
+                  className="rounded-full bg-[var(--accent)] px-2.5 py-1 text-[11px] font-bold text-white transition-all hover:bg-[var(--accent-hover)] active:scale-95"
                 >
                   {t('nav.keep')}
                 </button>
                 <button
                   type="button"
                   onClick={handleDismissSuggestion}
-                  className="rounded-full bg-[var(--surface-grouped-2)] px-2.5 py-1 text-[10.5px] font-bold text-[var(--ink-muted)] transition-all hover:bg-[var(--surface-chip)]"
+                  className="rounded-full bg-[var(--surface-grouped-2)] px-2.5 py-1 text-[11px] font-bold text-[var(--ink-muted)] transition-all hover:bg-[var(--surface-chip)]"
                 >
                   {t('nav.dismiss')}
                 </button>
@@ -368,7 +368,7 @@ export default function Sidebar({
             className="flex min-h-[48px] w-full items-center gap-2.5 rounded-[11px] px-3 py-2 text-[14px] font-semibold text-[var(--danger)] transition-all duration-150 hover:bg-[var(--danger-soft)] active:scale-[0.95] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--danger)]"
             aria-label={t('nav.logout')}
           >
-            <span className="flex h-7 w-7 items-center justify-center rounded-[8px] bg-[var(--danger-soft)] text-[var(--danger)]">
+            <span className="flex h-7 w-7 items-center justify-center rounded-[11px] bg-[var(--danger-soft)] text-[var(--danger)]">
               <LogOut size={16} aria-hidden="true" />
             </span>
             <span>{t('nav.logout')}</span>

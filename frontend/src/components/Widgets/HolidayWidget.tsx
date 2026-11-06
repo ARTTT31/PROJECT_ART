@@ -118,7 +118,7 @@ export default function HolidayWidget({
               >
                 วันหยุดนักขัตฤกษ์
               </h2>
-              <span className="shrink-0 rounded-full bg-[var(--surface-grouped-2)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--ink-muted)]">
+              <span className="shrink-0 rounded-full bg-[var(--surface-grouped-2)] px-1.5 py-0.5 text-[11px] font-bold text-[var(--ink-muted)]">
                 {hasCalendar ? formatYear(calendarYear, preferences) : 'ยังไม่พร้อม'}
               </span>
             </div>
@@ -138,9 +138,9 @@ export default function HolidayWidget({
       </div>
 
       {!hasCalendar && (
-        <div className="mt-3 rounded-[12px] border border-dashed border-[var(--accent-border)] bg-[var(--accent-soft-weak)] p-3 text-center">
+        <div className="mt-3 rounded-[14px] border border-dashed border-[var(--accent-border)] bg-[var(--accent-soft-weak)] p-3 text-center">
           <CalendarHeart className="mx-auto text-[var(--accent-text)]" size={20} aria-hidden="true" />
-          <p className="mt-1.5 text-[12.5px] font-bold text-[var(--ink)]">
+          <p className="mt-1.5 text-[13px] font-bold text-[var(--ink)]">
             ยังไม่มีปฏิทินวันหยุดปี {formatYear(calendarYear, preferences)}
           </p>
           <p className="mt-0.5 text-[11px] text-[var(--ink-tertiary)]">
@@ -151,17 +151,17 @@ export default function HolidayWidget({
 
       {/* ── Next holiday (one compact row) ──────────────────────────── */}
       {nextHoliday && (
-        <div className="mt-3 flex items-center gap-3 rounded-[12px] border border-[var(--accent-border)] bg-[var(--accent-soft)] px-3 py-2.5">
+        <div className="mt-3 flex items-center gap-3 rounded-[14px] border border-[var(--accent-border)] bg-[var(--accent-soft)] px-3 py-2.5">
           <CalendarDays
             size={16}
             className="shrink-0 text-[var(--accent-text)]"
             aria-hidden="true"
           />
           <div className="min-w-0 flex-1">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--accent-text)]">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--accent-text)]">
               วันหยุดถัดไป
             </p>
-            <p className="truncate text-[13.5px] font-extrabold text-[var(--ink)]">
+            <p className="truncate text-[13px] font-extrabold text-[var(--ink)]">
               {nextHoliday.title}
             </p>
             <p className="truncate text-[11px] text-[var(--ink-muted)]">
@@ -199,7 +199,7 @@ export default function HolidayWidget({
             type="button"
             onClick={() => setFilterMode(mode)}
             aria-pressed={filterMode === mode}
-            className={`small-control rounded-full px-2.5 py-0.5 text-[10.5px] font-bold transition-all duration-150 ${
+            className={`small-control rounded-full px-2.5 py-0.5 text-[11px] font-bold transition-all duration-150 ${
               filterMode === mode
                 ? 'bg-[var(--accent-soft)] text-[var(--accent-text)]'
                 : 'text-[var(--ink-tertiary)] hover:bg-[var(--surface-grouped)] hover:text-[var(--ink)]'
@@ -225,7 +225,7 @@ export default function HolidayWidget({
           return (
             <div
               key={item.id}
-              className={`flex items-center justify-between gap-2 rounded-[10px] px-2 py-1.5 transition-colors ${
+              className={`flex items-center justify-between gap-2 rounded-[11px] px-2 py-1.5 transition-colors ${
                 isNext
                   ? 'bg-[var(--accent-soft-weak)]'
                   : item.isPast
@@ -235,26 +235,26 @@ export default function HolidayWidget({
             >
               <div className="flex min-w-0 items-center gap-2.5">
                 <div
-                  className={`flex h-8 w-8 shrink-0 flex-col items-center justify-center rounded-[9px] leading-none ${
+                  className={`flex h-8 w-8 shrink-0 flex-col items-center justify-center rounded-[11px] leading-none ${
                     isNext
                       ? 'bg-[var(--accent)] text-white'
                       : 'bg-[var(--surface-grouped-2)] text-[var(--ink)]'
                   }`}
                 >
-                  <span className="text-[9px] font-semibold uppercase tracking-wide opacity-80">
+                  <span className="text-[11px] font-semibold uppercase tracking-wide opacity-80">
                     {formatMonthShort(item.dateObj, preferences)}
                   </span>
-                  <span className="mt-0.5 text-[12.5px] font-bold">{item.day}</span>
+                  <span className="mt-0.5 text-[13px] font-bold">{item.day}</span>
                 </div>
                 <div className="min-w-0">
                   <p
-                    className={`truncate text-[12.5px] font-semibold ${
+                    className={`truncate text-[13px] font-semibold ${
                       isNext ? 'text-[var(--accent-text)]' : 'text-[var(--ink)]'
                     }`}
                   >
                     {item.title}
                   </p>
-                  <p className="truncate text-[10.5px] text-[var(--ink-tertiary)]">
+                  <p className="truncate text-[11px] text-[var(--ink-tertiary)]">
                     {formatWeekday(item.dateObj, preferences)}
                   </p>
                 </div>
@@ -268,11 +268,11 @@ export default function HolidayWidget({
                     aria-label="ผ่านแล้ว"
                   />
                 ) : item.isToday ? (
-                  <span className="rounded-full bg-[var(--success-soft)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--success)]">
+                  <span className="rounded-full bg-[var(--success-soft)] px-1.5 py-0.5 text-[11px] font-bold text-[var(--success)]">
                     วันนี้
                   </span>
                 ) : (
-                  <span className="text-[10.5px] font-semibold text-[var(--ink-muted)]">
+                  <span className="text-[11px] font-semibold text-[var(--ink-muted)]">
                     อีก {item.daysLeft} วัน
                   </span>
                 )}

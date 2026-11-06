@@ -33,14 +33,14 @@ export function MainMenuCard({ items, onMove }: MainMenuCardProps) {
           return (
             <div
               key={item.id}
-              className="flex items-center gap-3 rounded-2xl bg-[var(--surface)] p-3 ring-1 ring-[var(--hairline)] shadow-2xs transition-all duration-150"
+              className="flex items-center gap-3 rounded-[18px] bg-[var(--surface)] p-3 ring-1 ring-[var(--hairline)] shadow-2xs transition-all duration-150"
             >
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] bg-[var(--accent-soft)] text-[var(--accent-text)]">
                 <Icon size={18} aria-hidden="true" />
               </div>
 
               <div className="min-w-0 flex-1">
-                <span className="text-[13.5px] font-bold tracking-tight text-[var(--ink)]">
+                <span className="text-[13px] font-bold tracking-tight text-[var(--ink)]">
                   {item.name}
                 </span>
                 {item.description && (
@@ -54,7 +54,7 @@ export function MainMenuCard({ items, onMove }: MainMenuCardProps) {
                   onClick={() => onMove(item.id, 'up')}
                   disabled={idx === 0}
                   aria-label="ย้ายขึ้น"
-                  className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-all hover:bg-slate-100 hover:text-slate-700 disabled:opacity-30 disabled:hover:bg-transparent"
+                  className="flex h-8 w-8 items-center justify-center rounded-[11px] text-slate-400 transition-all hover:bg-slate-100 hover:text-slate-700 disabled:opacity-30 disabled:hover:bg-transparent"
                 >
                   <ChevronUp size={14} aria-hidden="true" />
                 </button>
@@ -63,7 +63,7 @@ export function MainMenuCard({ items, onMove }: MainMenuCardProps) {
                   onClick={() => onMove(item.id, 'down')}
                   disabled={idx === arr.length - 1}
                   aria-label="ย้ายลง"
-                  className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-all hover:bg-slate-100 hover:text-slate-700 disabled:opacity-30 disabled:hover:bg-transparent"
+                  className="flex h-8 w-8 items-center justify-center rounded-[11px] text-slate-400 transition-all hover:bg-slate-100 hover:text-slate-700 disabled:opacity-30 disabled:hover:bg-transparent"
                 >
                   <ChevronDown size={14} aria-hidden="true" />
                 </button>

@@ -6,6 +6,7 @@ import { WidgetConfig } from '@/types';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { getGreeting } from '@/utils/greeting';
 import { showConfirm } from '@/utils/sweetalert';
+import { usePageHeading } from '@/components/ui/PageHeader';
 
 import {
   Dialog,
@@ -364,6 +365,10 @@ export default function DashboardPage() {
   } = useDashboardLayout();
   const { t } = useI18n();
 
+  // The greeting is this page's large title; the app header shows the compact
+  // "แดชบอร์ด" once it scrolls away.
+  const headingRef = usePageHeading(t('page.dashboard.title'));
+
   // Widget titles and descriptions are translated here so the saved layout keeps
   // its stable ids; the Thai maps stay as the fallback for unknown widgets.
   const widgetLabel = (id: string) =>
@@ -416,7 +421,10 @@ export default function DashboardPage() {
       >
         <div className="relative z-10 flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
           <div className="space-y-1.5">
-            <h1 className="text-2xl font-semibold tracking-tight text-[var(--ink)] sm:text-3xl">
+            <h1
+              ref={headingRef}
+              className="text-apple-title2 font-semibold text-[var(--ink)] sm:text-apple-title1"
+            >
               {greeting},{' '}
               <span className="text-[var(--accent-text)]">{user.display_name || user.username}</span> 👋
             </h1>
@@ -474,7 +482,7 @@ export default function DashboardPage() {
           </DialogHeader>
 
           <DialogBody>
-            <div className="rounded-2xl bg-[var(--surface-grouped)] p-2 space-y-1.5">
+            <div className="rounded-[18px] bg-[var(--surface-grouped)] p-2 space-y-1.5">
               {defaultWidgets
                 .filter((widget) => widget.id !== 'syshealth' || user?.role === 'admin')
                 .map((widget) => {
@@ -483,7 +491,7 @@ export default function DashboardPage() {
                   return (
                     <div
                       key={widget.id}
-                      className={`flex items-center gap-3 rounded-xl p-3.5 transition-all duration-150 ${
+                      className={`flex items-center gap-3 rounded-[14px] p-3.5 transition-all duration-150 ${
                         isVisible
                           ? 'bg-[var(--surface)] shadow-xs ring-1 ring-[var(--hairline)]'
                           : 'hover:bg-[var(--glass-80)]'

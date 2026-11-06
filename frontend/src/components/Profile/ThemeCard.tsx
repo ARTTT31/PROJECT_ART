@@ -2,6 +2,7 @@
 
 import { Check, Monitor, Moon, Palette, RotateCcw, Sun } from 'lucide-react';
 import { SectionCard } from './SectionCard';
+import SegmentedControl from '@/components/ui/SegmentedControl';
 import {
   THEME_ACCENTS,
   THEME_MODES,
@@ -45,7 +46,7 @@ export function ThemeCard() {
         <button
           type="button"
           onClick={handleReset}
-          className="inline-flex items-center gap-1.5 rounded-full bg-[var(--surface)] px-3 py-1.5 text-[11.5px] font-bold text-[var(--ink-muted)] ring-1 ring-[var(--hairline)] transition-all hover:bg-[var(--surface-grouped)] active:scale-95"
+          className="inline-flex items-center gap-1.5 rounded-full bg-[var(--surface)] px-3 py-1.5 text-[12px] font-bold text-[var(--ink-muted)] ring-1 ring-[var(--hairline)] transition-all hover:bg-[var(--surface-grouped)] active:scale-95"
         >
           <RotateCcw size={12} aria-hidden="true" />
           ค่าเริ่มต้น
@@ -54,36 +55,21 @@ export function ThemeCard() {
     >
       <div className="space-y-5">
         <div>
-          <span className="mb-2 block text-[11.5px] font-bold uppercase tracking-wider text-[var(--ink-tertiary)]">
+          <span className="mb-2 block text-[12px] font-bold uppercase tracking-wider text-[var(--ink-tertiary)]">
             โหมดการแสดงผล
           </span>
-          <div
-            role="radiogroup"
-            aria-label="โหมดการแสดงผล"
-            className="grid grid-cols-3 gap-1 rounded-[14px] bg-[var(--surface-grouped)] p-1"
-          >
-            {THEME_MODES.map((option) => {
-              const selected = mode === option.id;
-              return (
-                <button
-                  key={option.id}
-                  type="button"
-                  role="radio"
-                  aria-checked={selected}
-                  onClick={() => setMode(option.id)}
-                  className={`inline-flex items-center justify-center gap-1.5 rounded-[11px] px-3 py-2 text-[12.5px] font-bold transition-all active:scale-[0.97] ${
-                    selected
-                      ? 'bg-[var(--surface)] text-[var(--ink)] ring-1 ring-[var(--hairline)] shadow-2xs'
-                      : 'text-[var(--ink-muted)] hover:text-[var(--ink)]'
-                  }`}
-                >
-                  {MODE_ICON[option.id]}
-                  {option.label}
-                </button>
-              );
-            })}
-          </div>
-          <p className="mt-2 text-[11.5px] text-[var(--ink-tertiary)]">
+          <SegmentedControl
+            label="โหมดการแสดงผล"
+            fullWidth
+            value={mode}
+            onChange={setMode}
+            options={THEME_MODES.map((option) => ({
+              value: option.id,
+              label: option.label,
+              icon: MODE_ICON[option.id],
+            }))}
+          />
+          <p className="mt-2 text-[12px] text-[var(--ink-tertiary)]">
             {mode === 'system'
               ? `ตอนนี้ระบบของคุณใช้โหมด${resolvedMode === 'dark' ? 'มืด' : 'สว่าง'}`
               : `กำลังใช้โหมด${mode === 'dark' ? 'มืด' : 'สว่าง'}อยู่`}
@@ -91,7 +77,7 @@ export function ThemeCard() {
         </div>
 
         <div>
-          <span className="mb-2 block text-[11.5px] font-bold uppercase tracking-wider text-[var(--ink-tertiary)]">
+          <span className="mb-2 block text-[12px] font-bold uppercase tracking-wider text-[var(--ink-tertiary)]">
             สีหลัก (Accent)
           </span>
           <div className="flex flex-wrap gap-2.5">
@@ -121,7 +107,7 @@ export function ThemeCard() {
           </div>
         </div>
 
-        <p className="rounded-[14px] bg-[var(--surface-grouped)] px-3.5 py-2.5 text-[11.5px] leading-relaxed text-[var(--ink-muted)]">
+        <p className="rounded-[14px] bg-[var(--surface-grouped)] px-3.5 py-2.5 text-[12px] leading-relaxed text-[var(--ink-muted)]">
           การตั้งค่านี้ถูกจำไว้ในเบราว์เซอร์เครื่องนี้เท่านั้น ไม่กระทบผู้ใช้คนอื่นใน workspace
         </p>
       </div>

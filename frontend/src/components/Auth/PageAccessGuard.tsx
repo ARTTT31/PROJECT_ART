@@ -49,12 +49,12 @@ export default function PageAccessGuard({
           <Lock size={22} />
         </span>
         <h2 className="text-[17px] font-bold text-[var(--ink)]">คุณไม่มีสิทธิ์เข้าถึงหน้านี้</h2>
-        <p className="text-[13.5px] leading-relaxed text-[var(--ink-muted)]">
+        <p className="text-[13px] leading-relaxed text-[var(--ink-muted)]">
           บัญชีของคุณไม่ได้รับสิทธิ์ในหน้านี้ กรุณาติดต่อผู้ดูแลระบบหากต้องการเข้าใช้งาน
         </p>
         <Link
           href="/dashboard"
-          className="mt-1 inline-flex min-h-[44px] items-center rounded-full bg-[var(--accent)] px-6 text-[13.5px] font-semibold text-white transition-colors hover:bg-[var(--accent-hover)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 active:scale-[0.95]"
+          className="mt-1 inline-flex min-h-[44px] items-center rounded-full bg-[var(--accent)] px-6 text-[13px] font-semibold text-white transition-colors hover:bg-[var(--accent-hover)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 active:scale-[0.95]"
         >
           กลับหน้าหลัก
         </Link>

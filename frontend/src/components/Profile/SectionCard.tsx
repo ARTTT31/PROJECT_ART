@@ -34,7 +34,7 @@ export function SectionCard({
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--hairline-soft)] bg-[var(--surface-subtle)] px-5 sm:px-6 py-4">
         <div className="flex items-center gap-3 min-w-0">
           <div
-            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] ${iconBg} ${iconColor} ring-1 ${iconRing}`}
+            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] ${iconBg} ${iconColor} ring-1 ${iconRing}`}
           >
             {icon}
           </div>

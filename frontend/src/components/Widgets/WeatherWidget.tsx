@@ -570,7 +570,7 @@ export default function WeatherWidget({
             <h2 id="weather-title" className="text-[15px] font-bold text-[var(--ink)]">
               สภาพอากาศ &amp; PM 2.5
             </h2>
-            <p className="mt-1 text-[12.5px] leading-relaxed text-[var(--ink-muted)]">{error}</p>
+            <p className="mt-1 text-[13px] leading-relaxed text-[var(--ink-muted)]">{error}</p>
           </div>
         </div>
         <button
@@ -596,7 +596,7 @@ export default function WeatherWidget({
           <div className="flex items-start gap-3 min-w-0">
             {/* Icon badge */}
             <div
-              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] ${weatherMeta.bgClass} ${weatherMeta.colorClass}`}
+              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] ${weatherMeta.bgClass} ${weatherMeta.colorClass}`}
             >
               <WeatherIcon size={20} aria-hidden="true" />
             </div>
@@ -648,7 +648,7 @@ export default function WeatherWidget({
                         type="button"
                         onClick={handleDetectLocation}
                         disabled={isLocating}
-                        className="flex w-full items-center gap-2 rounded-[10px] px-2.5 py-1.5 text-left text-xs font-semibold text-[var(--accent-text)] hover:bg-[var(--accent-soft)] transition-colors disabled:opacity-50"
+                        className="flex w-full items-center gap-2 rounded-[11px] px-2.5 py-1.5 text-left text-xs font-semibold text-[var(--accent-text)] hover:bg-[var(--accent-soft)] transition-colors disabled:opacity-50"
                       >
                         <LocateFixed size={13} className={isLocating ? 'animate-spin' : ''} />
                         <span>
@@ -657,7 +657,7 @@ export default function WeatherWidget({
                       </button>
                     </div>
 
-                    <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-[var(--ink-tertiary)]">
+                    <div className="px-2 py-1 text-[11px] font-bold uppercase tracking-wider text-[var(--ink-tertiary)]">
                       จังหวัดยอดนิยม
                     </div>
 
@@ -667,7 +667,7 @@ export default function WeatherWidget({
                           key={c.id}
                           type="button"
                           onClick={() => handleSelectCity(c)}
-                          className={`flex w-full items-center justify-between rounded-[10px] px-2.5 py-1.5 text-left text-xs font-semibold transition-colors ${
+                          className={`flex w-full items-center justify-between rounded-[11px] px-2.5 py-1.5 text-left text-xs font-semibold transition-colors ${
                             selectedCity.id === c.id
                               ? 'bg-[var(--accent-soft)] text-[var(--accent-text)]'
                               : 'text-[var(--ink)] hover:bg-[var(--surface-chip)]'
@@ -711,7 +711,7 @@ export default function WeatherWidget({
             >
               <RefreshCw
                 size={15}
-                className={`transition-transform duration-500 ${refreshing ? 'animate-spin text-[var(--accent-text)]' : ''}`}
+                className={`transition-transform duration-300 ${refreshing ? 'animate-spin text-[var(--accent-text)]' : ''}`}
                 aria-hidden="true"
               />
             </button>
@@ -842,7 +842,7 @@ export default function WeatherWidget({
                 <Clock size={12} />
                 <span>พยากรณ์รายชั่วโมง (เวลาล่วงหน้า)</span>
               </span>
-              <span className="text-[10px] font-medium text-[var(--ink-tertiary)]">อุณหภูมิ / สภาพอากาศ</span>
+              <span className="text-[11px] font-medium text-[var(--ink-tertiary)]">อุณหภูมิ / สภาพอากาศ</span>
             </div>
 
             <div
@@ -872,11 +872,11 @@ export default function WeatherWidget({
                       {displayTemp(item.temp)}°
                     </span>
                     {item.rainProb > 0 ? (
-                      <span className="mt-0.5 text-[9px] font-semibold text-[var(--accent-text)]">
+                      <span className="mt-0.5 text-[11px] font-semibold text-[var(--accent-text)]">
                         💧{item.rainProb}%
                       </span>
                     ) : (
-                      <span className="mt-0.5 text-[9px] font-medium text-[var(--ink-tertiary)]">-</span>
+                      <span className="mt-0.5 text-[11px] font-medium text-[var(--ink-tertiary)]">-</span>
                     )}
                   </div>
                 );

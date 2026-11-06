@@ -320,7 +320,7 @@ export default function QRCodeWidget({
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-start gap-3 min-w-0">
             {/* Icon badge */}
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[var(--accent-soft)] text-[var(--accent-text)]">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] bg-[var(--accent-soft)] text-[var(--accent-text)]">
               {format === 'qrcode' ? (
                 <QrCode size={20} aria-hidden="true" />
               ) : (
@@ -389,7 +389,7 @@ export default function QRCodeWidget({
                 ? 'พิมพ์ข้อความ, URL, เบอร์โทร หรือ PromptPay...'
                 : 'พิมพ์รหัส เช่น ART-10023, 12345678 (ภาษาอังกฤษ/ตัวเลข)...'
             }
-            className="w-full rounded-[12px] bg-[var(--surface-grouped-2)] px-3.5 py-2.5 text-[14px] text-[var(--ink)] placeholder:text-[var(--ink-tertiary)] transition-all duration-150 focus:bg-[var(--surface)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent)]"
+            className="w-full rounded-[14px] bg-[var(--surface-grouped-2)] px-3.5 py-2.5 text-[14px] text-[var(--ink)] placeholder:text-[var(--ink-tertiary)] transition-all duration-150 focus:bg-[var(--surface)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent)]"
             aria-label="ข้อความสำหรับสร้างโค้ด"
           />
         </div>
@@ -484,7 +484,7 @@ export default function QRCodeWidget({
                 width >= 3 ? 'min-h-[310px]' : width >= 2 ? 'min-h-[280px]' : 'min-h-[250px]'
               }`}
             >
-              <div className="flex h-14 w-14 items-center justify-center rounded-[16px] bg-[var(--surface-grouped)] text-[var(--ink-tertiary)]">
+              <div className="flex h-14 w-14 items-center justify-center rounded-[18px] bg-[var(--surface-grouped)] text-[var(--ink-tertiary)]">
                 {format === 'qrcode' ? <QrCode size={28} /> : <Barcode size={28} />}
               </div>
               <p className="text-[14px] font-semibold text-[var(--ink)]">

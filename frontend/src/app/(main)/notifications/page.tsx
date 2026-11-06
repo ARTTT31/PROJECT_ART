@@ -16,6 +16,8 @@ import {
   Trash2,
 } from 'lucide-react';
 import { showDeleteConfirm } from '@/utils/sweetalert';
+import { PageHeader } from '@/components/ui/PageHeader';
+import SegmentedControl from '@/components/ui/SegmentedControl';
 import {
   clearHistory,
   clearHistoryOnServer,
@@ -131,27 +133,20 @@ export default function NotificationsPage() {
 
   return (
     <div className="space-y-5">
-      <section className="rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] p-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div className="flex items-start gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[var(--accent-soft)] text-[var(--accent-text)]">
-              <Bell size={20} aria-hidden="true" />
-            </div>
-            <div>
-              <h1 className="text-[17px] font-bold tracking-tight text-[var(--ink)]">
-                ประวัติการแจ้งเตือน
-              </h1>
-              <p className="mt-0.5 text-[12.5px] text-[var(--ink-muted)]">
-                {entries.length} รายการ · ยังไม่ได้อ่าน {unread} รายการ ·{' '}
-                {source === 'server' ? 'ซิงก์กับบัญชีแล้ว' : 'เก็บไว้ในเครื่องนี้'}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
+      <PageHeader
+        icon={<Bell size={20} aria-hidden="true" />}
+        title="ประวัติการแจ้งเตือน"
+        subtitle={
+          <>
+            {entries.length} รายการ · ยังไม่ได้อ่าน {unread} รายการ ·{' '}
+            {source === 'server' ? 'ซิงก์กับบัญชีแล้ว' : 'เก็บไว้ในเครื่องนี้'}
+          </>
+        }
+        actions={
+          <>
             <Link
               href="/dashboard"
-              className="inline-flex items-center gap-1.5 rounded-full bg-[var(--surface-grouped)] px-4 py-2 text-[13px] font-semibold text-[var(--ink)] transition-colors hover:bg-[var(--surface-chip)]"
+              className="inline-flex items-center gap-1.5 rounded-full bg-[var(--surface-grouped)] px-4 py-2 text-[13px] font-semibold text-[var(--ink)] transition-colors duration-150 hover:bg-[var(--surface-chip)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 active:scale-[0.97]"
             >
               <ArrowLeft size={14} aria-hidden="true" /> กลับแดชบอร์ด
             </Link>
@@ -163,7 +158,7 @@ export default function NotificationsPage() {
                 void markAllReadOnServer();
               }}
               disabled={unread === 0}
-              className="inline-flex items-center gap-1.5 rounded-full bg-[var(--accent-soft)] px-4 py-2 text-[13px] font-semibold text-[var(--accent-text)] transition-colors hover:bg-[var(--accent)] hover:text-white disabled:opacity-40"
+              className="inline-flex items-center gap-1.5 rounded-full bg-[var(--accent-soft)] px-4 py-2 text-[13px] font-semibold text-[var(--accent-text)] transition-colors duration-150 hover:bg-[var(--accent)] hover:text-white disabled:opacity-40 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 active:scale-[0.97]"
             >
               <CheckCheck size={14} aria-hidden="true" /> อ่านทั้งหมด
             </button>
@@ -183,39 +178,29 @@ export default function NotificationsPage() {
                 setReadIds(new Set());
               }}
               disabled={entries.length === 0}
-              className="inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-[13px] font-semibold text-[var(--danger)] transition-colors hover:bg-[var(--danger-soft)] disabled:opacity-40"
+              className="inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-[13px] font-semibold text-[var(--danger)] transition-colors duration-150 hover:bg-[var(--danger-soft)] disabled:opacity-40 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--danger)] focus-visible:ring-offset-2 active:scale-[0.97]"
             >
               <Trash2 size={14} aria-hidden="true" /> ล้างประวัติ
             </button>
-          </div>
-        </div>
+          </>
+        }
+      >
+        <SegmentedControl
+          label="ตัวกรองประวัติ"
+          value={filter}
+          onChange={setFilter}
+          options={[
+            { value: 'all', label: `ทั้งหมด (${entries.length})` },
+            { value: 'unread', label: `ยังไม่อ่าน (${unread})` },
+          ]}
+        />
+      </PageHeader>
 
-        <div
-          className="mt-5 inline-flex rounded-full bg-[var(--surface-chip)] p-0.5"
-          role="group"
-          aria-label="ตัวกรองประวัติ"
-        >
-          {(['all', 'unread'] as const).map((value) => (
-            <button
-              key={value}
-              type="button"
-              onClick={() => setFilter(value)}
-              aria-pressed={filter === value}
-              className={`rounded-full px-3.5 py-1.5 text-[12px] font-bold transition-all ${
-                filter === value
-                  ? 'bg-[var(--surface)] text-[var(--ink)] shadow-xs'
-                  : 'text-[var(--ink-muted)] hover:text-[var(--ink)]'
-              }`}
-            >
-              {value === 'all' ? `ทั้งหมด (${entries.length})` : `ยังไม่อ่าน (${unread})`}
-            </button>
-          ))}
-        </div>
-      </section>
-
-      <section className="rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] p-4 sm:p-5">
+      {/* Inset grouped list: rows share one surface and one hairline divider,
+          the way iOS Settings lists are built. */}
+      <section className="overflow-hidden rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)]">
         {visible.length === 0 ? (
-          <div className="flex min-h-[200px] flex-col items-center justify-center rounded-[14px] border border-dashed border-[var(--hairline)] bg-[var(--surface-subtle)] px-4 text-center text-[13px] text-[var(--ink-tertiary)]">
+          <div className="m-4 flex min-h-[200px] flex-col items-center justify-center rounded-[14px] border border-dashed border-[var(--hairline)] bg-[var(--surface-subtle)] px-4 text-center text-[13px] text-[var(--ink-tertiary)] sm:m-5">
             <Bell size={22} className="mb-2 text-[var(--ink-faint)]" aria-hidden="true" />
             <span>
               {entries.length === 0
@@ -224,7 +209,7 @@ export default function NotificationsPage() {
             </span>
           </div>
         ) : (
-          <ul className="space-y-2">
+          <ul className="divide-y divide-[var(--hairline)]">
             {visible.map((entry) => {
               const level = LEVEL_META[entry.level];
               const type = TYPE_META[entry.type];
@@ -241,25 +226,23 @@ export default function NotificationsPage() {
                       next.add(entry.id);
                       persistRead(next);
                     }}
-                    className={`flex w-full items-start gap-3 rounded-[14px] p-3.5 text-left transition-colors ${
-                      isUnread
-                        ? 'bg-[var(--surface-subtle)] ring-1 ring-[var(--hairline)]'
-                        : 'bg-[var(--surface-subtle)] opacity-70'
+                    className={`flex w-full items-start gap-3 px-4 py-3.5 text-left transition-colors duration-150 hover:bg-[var(--surface-subtle)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--accent)] ${
+                      isUnread ? '' : 'opacity-70'
                     }`}
                   >
                     <span
-                      className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] ${level.className}`}
+                      className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-[11px] ${level.className}`}
                     >
                       <LevelIcon size={15} aria-hidden="true" />
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="flex flex-wrap items-center gap-1.5">
-                        <span className="inline-flex items-center gap-1 rounded-full bg-[var(--surface)] px-2 py-0.5 text-[10px] font-bold text-[var(--ink)] ring-1 ring-[var(--hairline)]">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-[var(--surface)] px-2 py-0.5 text-[11px] font-bold text-[var(--ink)] ring-1 ring-[var(--hairline)]">
                           <TypeIcon size={11} aria-hidden="true" />
                           {type.label}
                         </span>
                         {isUnread && (
-                          <span className="rounded-full bg-[var(--accent-soft)] px-2 py-0.5 text-[10px] font-bold text-[var(--accent-text)]">
+                          <span className="rounded-full bg-[var(--accent-soft)] px-2 py-0.5 text-[11px] font-bold text-[var(--accent-text)]">
                             ใหม่
                           </span>
                         )}

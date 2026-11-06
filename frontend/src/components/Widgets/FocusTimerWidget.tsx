@@ -156,7 +156,7 @@ export default function FocusTimerWidget({
       {/* Top Bar: Title & Resize / Sound */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-[9px] bg-[var(--surface-chip)] text-[var(--accent)]">
+          <div className="flex h-7 w-7 items-center justify-center rounded-[11px] bg-[var(--surface-chip)] text-[var(--accent)]">
             <TimerIcon className="h-4 w-4" />
           </div>
           <div>
@@ -223,7 +223,7 @@ export default function FocusTimerWidget({
                   cx="50"
                   cy="50"
                   r={circleRadius}
-                  className="stroke-[var(--accent)] transition-all duration-500 ease-linear"
+                  className="stroke-[var(--accent)] transition-all duration-300 ease-linear"
                   strokeWidth="6"
                   strokeDasharray={circumference}
                   strokeDashoffset={strokeOffset}
@@ -235,7 +235,7 @@ export default function FocusTimerWidget({
                 <span className="font-mono text-2xl font-bold tracking-tight text-[var(--ink)]">
                   {formattedTime}
                 </span>
-                <span className="text-[10px] text-[var(--ink-muted)]">
+                <span className="text-[11px] text-[var(--ink-muted)]">
                   {isRunning ? 'กำลังทำงาน' : timeLeft === 0 ? 'เสร็จสิ้น' : 'หยุดชั่วคราว'}
                 </span>
               </div>
@@ -313,7 +313,7 @@ export default function FocusTimerWidget({
                     />
                   ))}
                 </div>
-                <p className="mt-2 text-[10px] text-[var(--ink-muted)]">
+                <p className="mt-2 text-[11px] text-[var(--ink-muted)]">
                   ครบ 4 รอบโฟกัส แนะนำให้พักยาว 15 นาที
                 </p>
               </div>
@@ -365,7 +365,7 @@ export default function FocusTimerWidget({
                     cx="50"
                     cy="50"
                     r={circleRadius}
-                    className="stroke-[var(--accent)] transition-all duration-500 ease-linear"
+                    className="stroke-[var(--accent)] transition-all duration-300 ease-linear"
                     strokeWidth="6"
                     strokeDasharray={circumference}
                     strokeDashoffset={strokeOffset}
@@ -403,7 +403,7 @@ export default function FocusTimerWidget({
                     cx="50"
                     cy="50"
                     r={circleRadius}
-                    className="stroke-[var(--accent)] transition-all duration-500 ease-linear"
+                    className="stroke-[var(--accent)] transition-all duration-300 ease-linear"
                     strokeWidth="6"
                     strokeDasharray={circumference}
                     strokeDashoffset={strokeOffset}
@@ -474,7 +474,7 @@ export default function FocusTimerWidget({
                 <span className="text-[var(--ink-secondary)]">เวลาโฟกัสสะสม</span>
                 <span className="font-semibold text-[var(--ink)]">{completedSessions * 25} นาที</span>
               </div>
-              <div className="mt-1 flex items-start gap-1.5 rounded-[9px] bg-[var(--surface)] p-2 text-[11px] text-[var(--ink-muted)]">
+              <div className="mt-1 flex items-start gap-1.5 rounded-[11px] bg-[var(--surface)] p-2 text-[11px] text-[var(--ink-muted)]">
                 <CheckCircle2 className="h-3.5 w-3.5 text-[var(--accent)] shrink-0 mt-0.5" />
                 <span>เทคนิค Pomodoro ช่วยลดความล้าของสมองและเพิ่มความต่อเนื่องในการทำงาน</span>
               </div>

@@ -176,8 +176,8 @@ export default function Select({
 
   const triggerSize =
     size === 'sm'
-      ? 'rounded-[10px] px-2.5 py-[7px] text-[12px]'
-      : 'rounded-[12px] px-3 py-2 text-[13px]';
+      ? 'rounded-[11px] px-2.5 py-[7px] text-[12px]'
+      : 'rounded-[14px] px-3 py-2 text-[13px]';
 
   // Grouping is derived from the option order, so a caller only sets `group`.
   const groups = useMemo(() => {
@@ -244,12 +244,12 @@ export default function Select({
               bottom: placement.bottom,
               maxHeight: MENU_MAX_HEIGHT,
             }}
-            className="z-[70] overflow-y-auto overscroll-contain rounded-[12px] border border-[var(--hairline)] bg-[var(--glass-95)] p-1 shadow-[0_16px_40px_-12px_rgba(0,0,0,0.28)] outline-hidden backdrop-blur-xl"
+            className="z-[70] overflow-y-auto overscroll-contain rounded-[14px] border border-[var(--hairline)] bg-[var(--glass-95)] p-1 shadow-[0_16px_40px_-12px_rgba(0,0,0,0.28)] outline-hidden backdrop-blur-xl"
           >
             {groups.map(([group, groupOptions]) => (
               <div key={group || 'default'} role="group" aria-label={group || undefined}>
                 {group && (
-                  <div className="px-2.5 pb-1 pt-2 text-[10px] font-bold uppercase tracking-[0.08em] text-[var(--ink-tertiary)]">
+                  <div className="px-2.5 pb-1 pt-2 text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--ink-tertiary)]">
                     {group}
                   </div>
                 )}
@@ -268,7 +268,7 @@ export default function Select({
                         if (index >= 0) setActive(index);
                       }}
                       onClick={() => commit(option)}
-                      className={`flex w-full items-center justify-between gap-2 rounded-[8px] px-2.5 py-[7px] text-left text-[12.5px] transition-colors duration-100 disabled:cursor-not-allowed disabled:opacity-40 ${
+                      className={`flex w-full items-center justify-between gap-2 rounded-[11px] px-2.5 py-[7px] text-left text-[13px] transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-40 ${
                         isActive && !option.disabled ? 'bg-[var(--accent-soft)]' : ''
                       } ${isSelected ? 'font-semibold text-[var(--accent-text)]' : 'text-[var(--ink)]'}`}
                     >

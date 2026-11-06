@@ -37,7 +37,7 @@ export default function AuthTransitionOverlay({
             height={56}
             priority
             draggable={false}
-            className="h-14 w-14 rounded-[16px] object-contain"
+            className="h-14 w-14 rounded-[18px] object-contain"
           />
           <span
             aria-hidden="true"

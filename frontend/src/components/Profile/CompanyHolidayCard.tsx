@@ -171,7 +171,7 @@ export default function CompanyHolidayCard({ canEdit = true }: { canEdit?: boole
     <section className="overflow-hidden rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)]">
       <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[var(--hairline-soft)] bg-[var(--surface-subtle)] px-5 py-4 sm:px-6">
         <div className="flex min-w-0 items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[var(--accent-soft)] text-[var(--accent-text)]">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] bg-[var(--accent-soft)] text-[var(--accent-text)]">
             <Building2 size={19} aria-hidden="true" />
           </div>
           <div className="min-w-0">
@@ -199,7 +199,7 @@ export default function CompanyHolidayCard({ canEdit = true }: { canEdit?: boole
             max={2200}
             disabled={!canEdit}
             onChange={(event) => setYear(Number(event.target.value) || CURRENT_YEAR)}
-            className="w-24 rounded-full border border-[var(--hairline)] bg-[var(--surface)] px-3 py-1.5 text-[12.5px] font-semibold text-[var(--ink)] outline-hidden focus:border-[var(--accent)] disabled:opacity-60"
+            className="w-24 rounded-full border border-[var(--hairline)] bg-[var(--surface)] px-3 py-1.5 text-[13px] font-semibold text-[var(--ink)] outline-hidden focus:border-[var(--accent)] disabled:opacity-60"
           />
         </div>
       </div>
@@ -220,7 +220,7 @@ export default function CompanyHolidayCard({ canEdit = true }: { canEdit?: boole
             />
             <label
               htmlFor="holiday-pdf"
-              className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-[var(--accent)] px-4 py-2 text-[12.5px] font-bold text-white shadow-xs transition-all hover:bg-[var(--accent-hover)] ${
+              className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-[var(--accent)] px-4 py-2 text-[13px] font-bold text-white shadow-xs transition-all hover:bg-[var(--accent-hover)] ${
                 importing ? 'pointer-events-none opacity-60' : ''
               }`}
             >
@@ -237,7 +237,7 @@ export default function CompanyHolidayCard({ canEdit = true }: { canEdit?: boole
               onClick={() =>
                 setRows((current) => [...current, { date: `${year}-01-01`, title: '' }])
               }
-              className="inline-flex items-center gap-1.5 rounded-full bg-[var(--surface-grouped)] px-4 py-2 text-[12.5px] font-semibold text-[var(--ink)] transition-colors hover:bg-[var(--surface-chip)]"
+              className="inline-flex items-center gap-1.5 rounded-full bg-[var(--surface-grouped)] px-4 py-2 text-[13px] font-semibold text-[var(--ink)] transition-colors hover:bg-[var(--surface-chip)]"
             >
               <CalendarPlus size={14} aria-hidden="true" /> เพิ่มวันเอง
             </button>
@@ -247,7 +247,7 @@ export default function CompanyHolidayCard({ canEdit = true }: { canEdit?: boole
                 type="button"
                 onClick={() => void removeYear()}
                 disabled={saving}
-                className="inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-[12.5px] font-semibold text-[var(--danger)] transition-colors hover:bg-[var(--danger-soft)] disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-[13px] font-semibold text-[var(--danger)] transition-colors hover:bg-[var(--danger-soft)] disabled:opacity-50"
               >
                 <Trash2 size={14} aria-hidden="true" /> ลบปฏิทินปีนี้
               </button>
@@ -257,7 +257,7 @@ export default function CompanyHolidayCard({ canEdit = true }: { canEdit?: boole
               type="button"
               onClick={() => void save()}
               disabled={saving || rows.length === 0}
-              className="ml-auto inline-flex items-center gap-1.5 rounded-full bg-[var(--success)] px-4 py-2 text-[12.5px] font-bold text-white shadow-xs transition-all hover:opacity-90 disabled:opacity-40"
+              className="ml-auto inline-flex items-center gap-1.5 rounded-full bg-[var(--success)] px-4 py-2 text-[13px] font-bold text-white shadow-xs transition-all hover:opacity-90 disabled:opacity-40"
             >
               {saving ? (
                 <Loader2 size={14} className="animate-spin" aria-hidden="true" />
@@ -272,7 +272,7 @@ export default function CompanyHolidayCard({ canEdit = true }: { canEdit?: boole
         {message && (
           <div
             role="status"
-            className={`flex items-start gap-2 rounded-[12px] border p-3 text-[12.5px] ${
+            className={`flex items-start gap-2 rounded-[14px] border p-3 text-[13px] ${
               message.tone === 'ok'
                 ? 'border-[var(--success-soft)] bg-[var(--success-soft)] text-[var(--success-ink)]'
                 : 'border-[var(--danger-soft)] bg-[var(--danger-soft)] text-[var(--danger-ink)]'
@@ -284,7 +284,7 @@ export default function CompanyHolidayCard({ canEdit = true }: { canEdit?: boole
         )}
 
         {warnings.length > 0 && (
-          <ul className="space-y-1 rounded-[12px] bg-[var(--surface-subtle)] p-3 text-[11.5px] text-[var(--ink-muted)]">
+          <ul className="space-y-1 rounded-[14px] bg-[var(--surface-subtle)] p-3 text-[12px] text-[var(--ink-muted)]">
             {warnings.map((warning, index) => (
               <li key={`${warning}-${index}`}>• {warning}</li>
             ))}
@@ -292,14 +292,14 @@ export default function CompanyHolidayCard({ canEdit = true }: { canEdit?: boole
         )}
 
         {rows.length === 0 ? (
-          <p className="rounded-[12px] border border-dashed border-[var(--hairline)] bg-[var(--surface-subtle)] px-4 py-6 text-center text-[12.5px] text-[var(--ink-tertiary)]">
+          <p className="rounded-[14px] border border-dashed border-[var(--hairline)] bg-[var(--surface-subtle)] px-4 py-6 text-center text-[13px] text-[var(--ink-tertiary)]">
             {canEdit
               ? `ยังไม่มีปฏิทินปี ${year} — อัปโหลด PDF หรือเพิ่มวันเอง แล้วกดบันทึก`
               : `ยังไม่มีปฏิทินวันหยุดปี ${year}`}
           </p>
         ) : canEdit ? (
-          <div className="overflow-hidden rounded-[12px] border border-[var(--hairline)]">
-            <table className="w-full text-left text-[12.5px]">
+          <div className="overflow-hidden rounded-[14px] border border-[var(--hairline)]">
+            <table className="w-full text-left text-[13px]">
               <thead className="bg-[var(--surface-subtle)] text-[11px] font-bold uppercase tracking-wider text-[var(--ink-muted)]">
                 <tr>
                   <th className="px-3 py-2">วันที่</th>
@@ -322,7 +322,7 @@ export default function CompanyHolidayCard({ canEdit = true }: { canEdit?: boole
                           )
                         }
                         aria-label={`วันที่รายการที่ ${index + 1}`}
-                        className="rounded-md border border-[var(--hairline)] bg-[var(--surface)] px-2 py-1 text-[12px] outline-hidden focus:border-[var(--accent)]"
+                        className="rounded-[11px] border border-[var(--hairline)] bg-[var(--surface)] px-2 py-1 text-[12px] outline-hidden focus:border-[var(--accent)]"
                       />
                     </td>
                     <td className="px-3 py-1.5">
@@ -336,7 +336,7 @@ export default function CompanyHolidayCard({ canEdit = true }: { canEdit?: boole
                           )
                         }
                         aria-label={`ชื่อวันหยุดรายการที่ ${index + 1}`}
-                        className="w-full rounded-md border border-[var(--hairline)] bg-[var(--surface)] px-2 py-1 text-[12px] outline-hidden focus:border-[var(--accent)]"
+                        className="w-full rounded-[11px] border border-[var(--hairline)] bg-[var(--surface)] px-2 py-1 text-[12px] outline-hidden focus:border-[var(--accent)]"
                       />
                     </td>
                     <td className="px-3 py-1.5 text-right">
@@ -357,16 +357,16 @@ export default function CompanyHolidayCard({ canEdit = true }: { canEdit?: boole
             </table>
           </div>
         ) : (
-          <div className="max-h-72 divide-y divide-[var(--hairline-soft)] overflow-y-auto rounded-[12px] border border-[var(--hairline)]">
+          <div className="max-h-72 divide-y divide-[var(--hairline-soft)] overflow-y-auto rounded-[14px] border border-[var(--hairline)]">
             {rows.map((row, index) => (
               <div
                 key={`${row.date}-${index}`}
                 className="flex items-center justify-between gap-3 px-3 py-2"
               >
-                <span className="min-w-0 truncate text-[12.5px] font-semibold text-[var(--ink)]">
+                <span className="min-w-0 truncate text-[13px] font-semibold text-[var(--ink)]">
                   {row.title}
                 </span>
-                <span className="shrink-0 text-[11.5px] text-[var(--ink-muted)]">
+                <span className="shrink-0 text-[12px] text-[var(--ink-muted)]">
                   {formatThaiDate(row.date)}
                 </span>
               </div>

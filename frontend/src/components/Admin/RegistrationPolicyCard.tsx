@@ -67,7 +67,7 @@ export function RegistrationPolicyCard() {
               type="button"
               disabled={isSaving}
               onClick={() => setMode(opt.value)}
-              className={`flex flex-col rounded-xl border p-3.5 text-left transition-all ${
+              className={`flex flex-col rounded-[14px] border p-3.5 text-left transition-all ${
                 mode === opt.value
                   ? 'border-[var(--accent)] bg-[var(--accent-soft-weak)] ring-2 ring-[var(--accent-ring)]'
                   : 'border-[var(--hairline-strong)] bg-[var(--surface)] hover:bg-slate-50'
@@ -76,18 +76,18 @@ export function RegistrationPolicyCard() {
               <div className="mb-1 flex w-full items-center justify-between gap-2">
                 <span className="text-[13px] font-bold text-[var(--ink)]">{opt.label}</span>
                 {opt.badge && (
-                  <span className="shrink-0 rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-bold text-[var(--accent-text)]">
+                  <span className="shrink-0 rounded-full bg-blue-100 px-2 py-0.5 text-[11px] font-bold text-[var(--accent-text)]">
                     {opt.badge}
                   </span>
                 )}
               </div>
-              <span className="text-[11.5px] leading-relaxed text-[var(--ink-muted)]">{opt.desc}</span>
+              <span className="text-[12px] leading-relaxed text-[var(--ink-muted)]">{opt.desc}</span>
             </button>
           ))}
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-          <p className="flex items-center gap-1.5 text-[11.5px] text-[var(--ink-tertiary)]">
+          <p className="flex items-center gap-1.5 text-[12px] text-[var(--ink-tertiary)]">
             <Info size={13} className="shrink-0" aria-hidden="true" />
             มีผลกับหน้าเข้าสู่ระบบของทุกคนทันทีหลังบันทึก
           </p>
