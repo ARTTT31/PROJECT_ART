@@ -179,7 +179,7 @@ narrowed to something that genuinely needs a deployment or a product decision.
 
 7. **WebSocket broadcasts can now fan out across instances.** New `app/services/ws_bus.py` publishes through Redis pub/sub when `WS_BROADCAST_REDIS_URL` is set, and every instance delivers to its own clients; with the variable unset behaviour is unchanged (process-local, logged at startup). Redis is imported lazily and every failure — missing package, unreachable broker, publish error — degrades to local delivery instead of dropping the notification. `redis` was added to `requirements.txt`.
 
-8. **CI now checks what production checks.** The backend job applies the Alembic chain to a throwaway SQLite file and runs `alembic check`, so a broken revision or model drift fails the build instead of production; that gap was explicitly listed before. Added a `pip-audit` job (advisory, `continue-on-error`) and `.github/dependabot.yml` for weekly pip / npm / GitHub Actions updates. The audit is advisory because the pinned set currently reports advisories (starlette via fastapi 0.111, python-jose) and a permanently red required check gets ignored — and because `pip-audit -r requirements.txt` could not be verified on Windows (no `psycopg2-binary` wheel for the local interpreter).
+8. **CI now checks what production checks.** The backend job applies the Alembic chain to a throwaway SQLite file and runs `alembic check`, so a broken revision or model drift fails the build instead of production; that gap was explicitly listed before. Added a `pip-audit` job and `.github/dependabot.yml` for weekly pip / npm / GitHub Actions updates. The job shipped advisory because the pinned set still reported advisories at the time (starlette via fastapi 0.111, python-jose) and a permanently red required check gets ignored; it became a blocking gate on 2026-11-06 once the pins were clean and `pip-audit -r requirements.txt` could be reproduced locally.
 
 9. **The frontend socket origin is configurable, and the bell is tested.** `resolveNotificationsWsUrl()` resolves `NEXT_PUBLIC_WS_URL` → `NEXT_PUBLIC_API_URL` → this origin, which turns the "Vercel rewrites may not forward the upgrade" caveat into an environment variable instead of a code change. Nine Vitest tests cover the resolution rules, broadcast handling, malformed frames, the `1008` stop, backoff reconnection and unmount cleanup (frontend suite: 70 → 79).
 
@@ -361,7 +361,7 @@ build` succeeds. All changes pushed to `origin/main`.
 
 - **The production WebSocket origin still needs one deployed check.** The client prefers `NEXT_PUBLIC_WS_URL`, then `NEXT_PUBLIC_API_URL`, then its own origin. If the Vercel rewrite forwards plain requests but drops the upgrade, the socket never connects — set `NEXT_PUBLIC_WS_URL` to the backend origin. This cannot be verified from a local checkout.
 - **A deployed check of the October 12 CSP/CORS changes is pending.** If Render's `CORS_ORIGINS` env value is not a strict origin list, the new validator will refuse to boot (intended); verify the Render startup log after the next deploy. The camera page should be re-checked on the HTTPS deployment now that `http:` images are allowed.
-- **The backend audit job is still `continue-on-error`.** The advisories themselves are fixed (see the pass above) and the CI job is now expected to pass, but `pip-audit -r requirements.txt` could not be reproduced from the local checkout, so the flag was left advisory rather than flipped blind. Flip it to a required check once one CI run comes back clean.
+- **Dependency audit is now a blocking check.** Flipped to `continue-on-error: false` on 2026-11-06 after `venv/Scripts/pip-audit.exe -r requirements.txt` ran to completion on Windows (the earlier failure was a missing wheel for the bare interpreter, not for the venv) and reported "No known vulnerabilities found", and after CI run `42246039586` came back green on the same pinned set. A new advisory now fails the build; the weekly schedule catches advisories published between pushes.
 - **Rate limiting is still process-local by default.** The WebSocket fan-out now has a supported path (`WS_BROADCAST_REDIS_URL`), but a horizontally scaled deployment also needs `SLOWAPI_STORAGE_URI` pointed at Redis.
 - **Frontend coverage is still partial.** 92 unit tests cover pure logic plus the notification bell; most components and widgets remain untested, and the 3 Playwright smoke tests still run without a live backend, so they would not catch a broken login against the real API.
 - **Thai-only UI.** All copy is hardcoded Thai; there is no i18n layer.
@@ -543,6 +543,45 @@ five items had shipped, and two Phase 2 items had drifted out of date in the opp
 6. **Verified:** backend 519 passed at 85.14% (75% gate), flake8 and mypy clean, `alembic check`
    reports no drift after applying the new revision; frontend `tsc --noEmit`, ESLint, 293 Vitest
    tests and `next build` all clean, axe green on the three auth pages.
-7. **Still open, deliberately:** background sync in the service worker (the only remaining
-   Phase 2 item), the deployed-only checks (production WebSocket origin, Render CSP/CORS boot log,
-   `EMAIL_BACKEND`), finishing the i18n migration screen by screen, and raising frontend coverage.
+7. **Corrected, not newly built:** the offline queue was already shipped as a client outbox
+   (`lib/offline/localStore.ts` + `OfflineBanner`, replayed on `online` and on mount) for quick
+   notes, finance, watchlist and reminders, so the "background sync" item was documentation debt,
+   not missing code. Service-worker `BackgroundSync` stays rejected on purpose: the double-submit
+   CSRF token and the rotating auth cookie cannot be replayed by a worker.
+8. **Still open, deliberately:** the deployed-only checks (production WebSocket origin, Render
+   CSP/CORS boot log, `EMAIL_BACKEND`), finishing the i18n migration screen by screen, and
+   raising frontend coverage.
+
+## Two-Factor Escape Hatch and Documentation Correction (November 6, 2026, later pass)
+
+1. **Admin reset for 2FA.** The feature shipped with no way out for a user who loses both the
+   authenticator and the recovery codes; the only fix was a manual database edit. Added
+   `POST /api/v1/users/{user_id}/reset-2fa` (admin only) which clears `totp_secret`,
+   `totp_enabled` and `totp_recovery_codes`, writes an `ADMIN_RESET_2FA` audit entry, and refuses
+   404 / 400 (already off) cases. Self-targeting is refused on purpose: allowing it would let a
+   stolen admin session remove its own second factor, which is exactly what the self-service
+   disable spends a password and a live code to prevent.
+2. **`UserResponse.two_factor_enabled`.** A read-only model property (aliasing the `totp_enabled`
+   column) so the admin console can show the state and only offer a reset when it applies.
+3. **Admin UI.** The edit panel in `components/Admin/UserManagement.tsx` gained a "ความปลอดภัย
+   (2FA)" row with a confirm-gated reset button; the row is disabled for the signed-in admin and
+   the list is patched locally after a successful reset, so no refetch is needed.
+4. **Four new tests** in `tests/test_totp.py`: the happy path (including that password-only login
+   works afterwards), self-target refusal, an account without 2FA, and a non-admin caller.
+5. **Documentation corrected rather than duplicated.** Two roadmap items were stale:
+   - "Background sync for notes and finance" was already implemented as a client-side outbox
+     (`lib/offline/localStore.ts`, replayed on `online` and on mount, surfaced by `OfflineBanner`)
+     for quick notes, finance, watchlist and reminders. Service-worker `BackgroundSync` stays
+     rejected: the double-submit CSRF token and the rotating auth cookie cannot be replayed from a
+     worker. The item is now marked shipped with that reasoning.
+   - The `pip-audit` job had already been flipped to `continue-on-error: false`; this pass verified
+     it locally on Windows (`venv/Scripts/pip-audit.exe -r requirements.txt` → "No known
+     vulnerabilities found") and updated the notes that still described it as advisory.
+6. **Verified:** backend 523 passed at 85.18% (75% gate), flake8 clean, mypy clean (60 source
+   files), `alembic check` no drift; frontend `tsc --noEmit`, ESLint, 293 Vitest tests (37 files)
+   and `next build` all clean.
+7. **Not done in this pass:** the i18n migration across 97 components, splitting the ~1.6k-line
+   `UserManagement.tsx`, list virtualization, and the deployed-only checks (production WebSocket
+   origin, Render CSP/CORS boot log, `EMAIL_BACKEND`). The 2FA flow itself still cannot be walked
+   end to end against production because registration mode is `approval` and no test account
+   exists.

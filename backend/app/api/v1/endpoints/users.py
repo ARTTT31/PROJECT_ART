@@ -573,3 +573,65 @@ async def restore_user(
         message="กู้คืนผู้ใช้สำเร็จ",
         data={"user_id": restored.id, "is_active": restored.is_active},
     )
+
+
+@router.post("/{user_id}/reset-2fa", response_model=ResponseModel)
+@limiter.limit(_GENERAL_LIMIT)
+async def admin_reset_two_factor(
+    user_id: int,
+    request: Request,
+    current_user: User = Depends(get_current_admin_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Clear an account's TOTP secret and recovery codes (Admin only).
+
+    The escape hatch for someone who lost both their authenticator and their
+    recovery codes: without it the only fix is editing the database by hand.
+
+    Deliberately refused for the caller's own account. Otherwise a stolen admin
+    session could strip its own second factor with one request, which is exactly
+    the guarantee ``/auth/2fa/disable`` spends a password *and* a live code on.
+    """
+    if current_user.id == user_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=(
+                "ไม่สามารถรีเซ็ต 2FA ของบัญชีตัวเองได้ "
+                "ให้ปิดที่หน้าตั้งค่าความปลอดภัยซึ่งต้องใช้รหัสผ่านและรหัสยืนยัน"
+            ),
+        )
+
+    user_service = UserService(db)
+    target = await user_service.get_user_by_id(user_id)
+    if target is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="ไม่พบผู้ใช้ที่ระบุ",
+        )
+    if not target.totp_enabled and not target.totp_secret:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="บัญชีนี้ยังไม่ได้เปิดใช้งานการยืนยันสองขั้นตอน",
+        )
+
+    target.totp_enabled = False
+    target.totp_secret = None
+    target.totp_recovery_codes = None
+
+    await AuditService(db).log_action(
+        action="ADMIN_RESET_2FA",
+        user_id=current_user.id,
+        details=(
+            "Admin cleared two-factor authentication for "
+            f"{target.email or target.username or target.name} (ID: {user_id})"
+        ),
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent"),
+    )
+    await db.commit()
+
+    return ResponseModel(
+        result="success",
+        message="รีเซ็ตการยืนยันสองขั้นตอนแล้ว ผู้ใช้จะเข้าสู่ระบบด้วยรหัสผ่านเท่านั้น",
+        data={"user_id": user_id, "two_factor_enabled": False},
+    )

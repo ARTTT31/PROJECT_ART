@@ -108,6 +108,11 @@ class User(Base, TimestampMixin):
     # NULL means "none issued" (2FA off, or enabled before this column existed).
     totp_recovery_codes: Mapped[str | None] = mapped_column(Text)
 
+    @property
+    def two_factor_enabled(self) -> bool:
+        """Read-only alias for API responses (the column is ``totp_enabled``)."""
+        return bool(self.totp_enabled)
+
     # Relationships
     sessions = relationship(
         "UserSession", back_populates="user", cascade="all, delete-orphan"

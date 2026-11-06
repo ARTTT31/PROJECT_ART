@@ -8,7 +8,7 @@ Production URL: configure this in your deployment environment; do not commit a p
 
 The GitHub Actions pipeline (`ci.yml`) runs on every push and pull request to `main`:
 
-- **Backend:** Python 3.11 — flake8 7.4 lint (`--max-line-length=120`) + mypy 2.4 type check + `alembic upgrade head` and `alembic check` against a throwaway SQLite database + pytest (**519 passed**, coverage 85.1% against a 75% gate)
+- **Backend:** Python 3.11 — flake8 7.4 lint (`--max-line-length=120`) + mypy 2.4 type check + `alembic upgrade head` and `alembic check` against a throwaway SQLite database + pytest (**523 passed**, coverage 85.2% against a 75% gate)
 - **Frontend:** Node 26 — ESLint + TypeScript type-check + **293** Vitest unit tests + Next.js production build + Playwright smoke tests (3) + axe accessibility checks on the auth pages + a live auth E2E (register → login) that starts the backend on SQLite
 - **Dependency audit (blocking):** `pip-audit` gates every push and pull request and re-runs weekly (`cron: 0 2 * * 1`, Mondays 02:00 UTC). The pinned backend set currently reports no known advisories; Dependabot opens the upgrade pull requests (see `.github/dependabot.yml`).
 

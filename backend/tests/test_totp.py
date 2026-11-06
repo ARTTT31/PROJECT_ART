@@ -260,3 +260,73 @@ class TestTwoFactorLogin:
         )
         assert response.status_code == 200
         assert response.json()["result"] == "success"
+
+
+class TestAdminResetTwoFactor:
+    async def test_admin_clears_the_second_factor(
+        self, client, db_session, logged_in_admin_user
+    ):
+        from conftest import seed_account
+
+        target = await seed_account(db_session, "reset-target@example.com", "Passw0rd123")
+        target.totp_secret = generate_secret()
+        target.totp_enabled = True
+        target.totp_recovery_codes = json.dumps(["a" * 64])
+        await db_session.commit()
+
+        # The admin list has to expose the state, otherwise the console cannot
+        # decide whether a reset button applies.
+        listing = await client.get("/api/v1/users")
+        payload = listing.json()
+        rows = payload["data"] if isinstance(payload, dict) else payload
+        listed = next(r for r in rows if r["id"] == target.id)
+        assert listed["two_factor_enabled"] is True
+
+        response = await client.post(f"/api/v1/users/{target.id}/reset-2fa")
+
+        assert response.status_code == 200
+        assert response.json()["data"]["two_factor_enabled"] is False
+
+        await db_session.refresh(target)
+        assert target.totp_enabled is False
+        assert target.totp_secret is None
+        assert target.totp_recovery_codes is None
+
+        # The escape hatch must actually restore password-only sign-in.
+        client.cookies.clear()
+        login = await client.post(
+            "/api/v1/auth/login",
+            json={"email": "reset-target@example.com", "password": "Passw0rd123"},
+        )
+        assert login.json()["result"] == "success"
+
+    async def test_admin_cannot_reset_their_own_second_factor(
+        self, client, logged_in_admin_user
+    ):
+        session = await client.get("/api/v1/auth/session")
+        admin_id = session.json()["data"]["user"]["id"]
+
+        response = await client.post(f"/api/v1/users/{admin_id}/reset-2fa")
+
+        assert response.status_code == 400
+        assert "หน้าตั้งค่าความปลอดภัย" in response.json()["detail"]
+
+    async def test_reset_is_refused_when_2fa_is_not_enabled(
+        self, client, db_session, logged_in_admin_user
+    ):
+        from conftest import seed_account
+
+        target = await seed_account(db_session, "no-2fa@example.com", "Passw0rd123")
+
+        response = await client.post(f"/api/v1/users/{target.id}/reset-2fa")
+
+        assert response.status_code == 400
+
+    async def test_reset_requires_an_admin(self, client, db_session, logged_in_user):
+        from conftest import seed_account
+
+        target = await seed_account(db_session, "not-admin@example.com", "Passw0rd123")
+
+        response = await client.post(f"/api/v1/users/{target.id}/reset-2fa")
+
+        assert response.status_code == 403

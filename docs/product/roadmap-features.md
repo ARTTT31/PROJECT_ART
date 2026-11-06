@@ -123,6 +123,10 @@ scope is not re-litigated as "still planned".
    - `pyotp`-free RFC 6238 implementation in `app/core/totp.py`, verified against the RFC vectors.
    - `/auth/2fa/setup|enable|disable|status`, QR + manual secret, 10 single-use recovery codes,
      and a `totp_required` login step that never mints a session before the code checks out.
+   - Admin escape hatch: `POST /users/{id}/reset-2fa` (admin only, audit `ADMIN_RESET_2FA`) clears
+     the secret and recovery codes for someone who lost both the device and the codes. It refuses
+     the caller's own account — a stolen admin session must not be able to strip its own second
+     factor, which is why the self-service path still demands password + live code.
 2. **Redis for Rate Limiting & Multi-Instance Scaling — Shipped**
    - `SLOWAPI_STORAGE_URI` is read by `app/core/rate_limit.py` with an in-memory fallback;
      login backoff shares the same backend. Remaining work is operational: point the env var at
@@ -130,6 +134,13 @@ scope is not re-litigated as "still planned".
 3. **Signed / Opaque User Cookie — Shipped (2026-11-06)**
    - HMAC-SHA256 over the percent-encoded payload, appended after the last dot. Unsigned legacy
      values are rejected rather than accepted without a signature.
-4. **Offline-first PWA Enhancements — Planned**
-   - Background sync for notes and finance transactions when network drops. `public/sw.js` still
-     has no `BackgroundSync` registration; this is the only open item in Phase 2.
+4. **Offline-first PWA Enhancements — Shipped (2026-11-06, client outbox)**
+   - Quick notes, finance entries, watchlist symbols and personal reminders write to localStorage
+     first and keep a per-resource pending snapshot (`lib/offline/localStore.ts`). The widget
+     replays it on the `online` event and again on mount, so an edit made offline survives a
+     reload and lands as soon as the app can talk to the API. `OfflineBanner` shows the queued
+     count and confirms the flush.
+   - `BackgroundSync` in the service worker is deliberately **not** used: the API needs the
+     double-submit CSRF token plus a rotated auth cookie, and a replay from a background worker
+     would carry neither, so the request would be rejected after the fact. The only thing SW-level
+     sync would add is flushing while the tab is closed; today that waits for the next visit.

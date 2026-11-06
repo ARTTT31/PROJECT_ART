@@ -41,6 +41,8 @@ interface AdminUser {
   name: string;
   role: string;
   is_active: boolean;
+  /** Whether this account signs in with a TOTP second factor. */
+  two_factor_enabled?: boolean;
   accessible_pages: string | null;
   deleted_at?: string | null;
   /** Sign-up lifecycle: null (normal), 'pending', 'rejected'. */
@@ -302,6 +304,7 @@ export default function UserManagement() {
   const [bulkApproving, setBulkApproving] = useState(false);
 
   const [editingUser, setEditingUser] = useState<AdminUser | null>(null);
+  const [resettingTwoFactorId, setResettingTwoFactorId] = useState<number | null>(null);
 
   const [editRole, setEditRole] = useState('');
   const [editIsActive, setEditIsActive] = useState(true);
@@ -471,6 +474,47 @@ export default function UserManagement() {
       showError('ไม่สามารถเชื่อมต่อได้', 'เกิดข้อผิดพลาดในการเชื่อมต่อ');
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  /**
+   * Clear an account's TOTP secret and recovery codes.
+   *
+   * The escape hatch for a user who lost the authenticator AND the recovery
+   * codes; without it the only fix is editing the database. The API refuses it
+   * for the caller's own account, so an admin cannot strip their own second
+   * factor from a stolen session.
+   */
+  const handleResetTwoFactor = async (user: AdminUser) => {
+    const confirmed = await showConfirm(
+      'รีเซ็ตการยืนยันสองขั้นตอน?',
+      `${displayLabel(user)} จะเข้าสู่ระบบด้วยรหัสผ่านเท่านั้น ` +
+        'และรหัสสำรองเดิมทั้งหมดจะใช้ไม่ได้ — ให้ผู้ใช้ตั้งค่า 2FA ใหม่หลังเข้าสู่ระบบ',
+    );
+    if (!confirmed.isConfirmed) return;
+
+    setResettingTwoFactorId(user.id);
+    try {
+      const res = await fetchWithAuth(`/api/v1/users/${user.id}/reset-2fa`, {
+        method: 'POST',
+      });
+      const data = await res.json().catch(() => ({}));
+
+      if (res.ok) {
+        showSuccess('รีเซ็ต 2FA แล้ว', `${displayLabel(user)} เข้าใช้รหัสผ่านอย่างเดียวได้แล้ว`);
+        setUsers((prev) =>
+          prev.map((u) => (u.id === user.id ? { ...u, two_factor_enabled: false } : u)),
+        );
+        setEditingUser((prev) =>
+          prev && prev.id === user.id ? { ...prev, two_factor_enabled: false } : prev,
+        );
+      } else {
+        showError('รีเซ็ตไม่สำเร็จ', data.detail || 'ไม่สามารถรีเซ็ต 2FA ได้');
+      }
+    } catch {
+      showError('ไม่สามารถเชื่อมต่อได้', 'เกิดข้อผิดพลาดในการเชื่อมต่อ');
+    } finally {
+      setResettingTwoFactorId(null);
     }
   };
 
@@ -820,6 +864,48 @@ export default function UserManagement() {
                   onChange={setEditIsActive}
                   label="เปิดใช้งานบัญชีนี้"
                 />
+              </div>
+            </div>
+
+            {/* Two-factor authentication */}
+            <div>
+              <span className="mb-2 block text-[12px] font-bold tracking-wide uppercase text-[var(--ink-muted)]">ความปลอดภัย (2FA)</span>
+              <div className="flex flex-col gap-3 rounded-[18px] bg-[var(--surface-subtle)] p-4 ring-1 ring-[var(--hairline)] sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
+                  <span className="block text-[14px] font-semibold text-[var(--ink)]">
+                    {editingUser.two_factor_enabled
+                      ? 'เปิดใช้งานการยืนยันสองขั้นตอน'
+                      : 'ยังไม่ได้เปิดใช้งาน 2FA'}
+                  </span>
+                  <span className="block text-[12px] text-[var(--ink-muted)]">
+                    {editingUser.two_factor_enabled
+                      ? 'ใช้เมื่อผู้ใช้ทำเครื่องและรหัสสำรองหาย — การรีเซ็ตจะล้างรหัสทั้งหมด'
+                      : 'บัญชีนี้เข้าสู่ระบบด้วยรหัสผ่านเพียงอย่างเดียว'}
+                  </span>
+                </div>
+                {editingUser.two_factor_enabled && (
+                  <button
+                    type="button"
+                    onClick={() => handleResetTwoFactor(editingUser)}
+                    disabled={
+                      currentUser?.id === editingUser.id ||
+                      resettingTwoFactorId === editingUser.id
+                    }
+                    title={
+                      currentUser?.id === editingUser.id
+                        ? 'ปิด 2FA ของตัวเองได้ที่หน้าตั้งค่าความปลอดภัย'
+                        : 'ล้างรหัส 2FA ของบัญชีนี้'
+                    }
+                    className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-full bg-rose-50 px-3.5 py-1.5 text-[12px] font-bold text-rose-700 ring-1 ring-inset ring-rose-600/20 transition-all duration-150 hover:bg-rose-100 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    {resettingTwoFactorId === editingUser.id ? (
+                      <Loader2 size={12} className="animate-spin" aria-hidden="true" />
+                    ) : (
+                      <ShieldAlert size={12} aria-hidden="true" />
+                    )}
+                    รีเซ็ต 2FA
+                  </button>
+                )}
               </div>
             </div>
 

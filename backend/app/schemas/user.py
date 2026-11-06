@@ -353,6 +353,9 @@ class UserResponse(BaseModel):
     # Address confirmation; None only for accounts that never confirmed.
     email_verified_at: Optional[datetime] = None
     is_active: bool
+    # Read from the model's `two_factor_enabled` property, so the admin console
+    # can offer a reset only for accounts that actually use a second factor.
+    two_factor_enabled: bool = False
     last_login: Optional[datetime] = None
     created_at: datetime
     updated_at: datetime
