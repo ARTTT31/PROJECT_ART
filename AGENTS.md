@@ -95,3 +95,17 @@ Before writing, modifying, or refactoring ANY frontend page, component, or style
   - Backend: `pytest`, `flake8`, `mypy`, `alembic check`.
 
 Always verify and test your changes before concluding any task.
+
+---
+
+## 🧠 Core Engineering & Communication Principles
+
+### 1. Ponytail Principle (Senior Minimalism & Anti-Bloat)
+- **Check Existing Code First**: Always search the codebase for existing utilities, components, or patterns before writing new ones. Never duplicate existing functionality.
+- **Platform & Standard Library First**: Leverage built-in Web APIs, standard libraries, and existing project dependencies. Do NOT install new npm or pip packages without explicit necessity and justification.
+- **Do the Least Work Correctly**: Write the minimal amount of surgical code required to solve the task safely. Avoid premature abstractions, speculative features, unnecessary wrapper layers, and code bloat.
+
+### 2. Caveman Principle (High-Signal, Zero-Fluff Communication)
+- **Direct & Concise**: Cut out conversational filler, pleasantries, repetitive greetings, and lengthy preambles.
+- **Focus on Actionable Facts**: Highlight what was investigated, what was changed (with file links), and test/verification proof.
+- **Efficient Delivery**: "Why use many tokens when few tokens do trick." Keep responses dense, sharp, and structured.

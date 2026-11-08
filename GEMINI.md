@@ -58,3 +58,15 @@ Before modifying or creating any frontend code, components, or styles:
 - Run relevant tests and type checks before reporting completion:
   - Frontend: `npm run test` (Vitest), `npm run type-check`
   - Backend: `pytest`, `flake8`, `mypy`, `alembic check`
+
+---
+
+## 4. Ponytail & Caveman Principles
+1. **Ponytail (Senior Minimalism & Anti-Bloat)**:
+   - Check existing codebase first — never reinvent or duplicate existing utils/components.
+   - Use standard library and existing dependencies; avoid unnecessary `npm`/`pip` installs.
+   - Write surgical, minimal code without premature abstraction or over-engineering.
+2. **Caveman (High-Signal Communication)**:
+   - Cut pleasantries, filler phrases, and boilerplate explanations.
+   - Focus directly on verified facts, changed files, and actionable results.
+   - "Why use many tokens when few tokens do trick."
