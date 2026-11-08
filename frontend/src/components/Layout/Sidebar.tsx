@@ -4,7 +4,7 @@ import { useState, useEffect, type ReactElement } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { LogOut, ExternalLink, Sparkles } from 'lucide-react';
+import { LogOut, ExternalLink, Sparkles, X } from 'lucide-react';
 import {
   QUICK_LINK_ENVIRONMENT_LABELS,
   QUICK_LINK_ICON_MAP,
@@ -227,7 +227,7 @@ export default function Sidebar({
       role={isOpen ? 'dialog' : undefined}
       aria-modal={isOpen ? true : undefined}
       aria-label={t('nav.section.main')}
-      className={`fixed left-0 top-0 z-40 h-screen w-[80vw] max-w-64 border-r border-[var(--hairline)] bg-[var(--apple-nav-bg)] backdrop-blur-2xl text-[var(--ink)] transition-transform duration-300 ease-out ${
+      className={`fixed left-0 top-0 z-40 h-screen w-[80vw] max-w-64 border-r border-[var(--hairline)] bg-[var(--apple-nav-bg)] backdrop-blur-2xl text-[var(--ink)] shadow-[4px_0_24px_rgba(0,0,0,0.12)] lg:shadow-none transition-transform duration-300 ease-out ${
         isOpen ? 'translate-x-0' : '-translate-x-full'
       } ${isCollapsed ? 'lg:-translate-x-full' : 'lg:translate-x-0'}`}
     >
@@ -248,6 +248,14 @@ export default function Sidebar({
             </h2>
             <p className="truncate text-[11px] text-[var(--ink-tertiary)]">{companyTagline || 'Workspace'}</p>
           </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[var(--ink-muted)] hover:bg-[var(--surface-chip)] hover:text-[var(--ink)] active:scale-[0.95] lg:hidden transition-colors"
+            aria-label="ปิดเมนู"
+          >
+            <X size={18} aria-hidden="true" />
+          </button>
         </div>
 
         {/* Navigation Menu */}

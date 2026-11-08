@@ -49,10 +49,14 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     });
   };
 
-  // The mobile drawer is a modal surface: Escape must close it and focus has to
-  // start inside it, otherwise a keyboard user stays behind the panel.
+  // The mobile drawer is a modal surface: Escape must close it, background
+  // scrolling is locked on mobile, and focus starts inside the drawer.
   useEffect(() => {
     if (!sidebarOpen) return;
+    const originalOverflow = document.body.style.overflow;
+    if (window.innerWidth < 1024) {
+      document.body.style.overflow = 'hidden';
+    }
     const previouslyFocused = document.activeElement as HTMLElement | null;
     const focusTimer = window.setTimeout(() => {
       document
@@ -64,11 +68,27 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     };
     window.addEventListener('keydown', onKeyDown);
     return () => {
+      document.body.style.overflow = originalOverflow;
       window.clearTimeout(focusTimer);
       window.removeEventListener('keydown', onKeyDown);
       previouslyFocused?.focus?.();
     };
   }, [sidebarOpen]);
+
+  // Close mobile drawer when navigating or when resized to desktop
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 1024) {
+        setSidebarOpen(false);
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const handleLogout = async () => {
     const result = await showConfirm('ต้องการออกจากระบบหรือไม่?', 'กดยืนยันเพื่อออกจากระบบ');
@@ -86,16 +106,25 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     <>
       <AuthGuard>
         <div className="art-app-shell relative overflow-x-hidden bg-[var(--surface-grouped)] min-h-[100dvh] text-[var(--ink)]">
-          {/* Sidebar wrapper */}
-          <div className="relative z-20">
-            <Sidebar
-              isOpen={sidebarOpen}
-              isCollapsed={sidebarCollapsed}
-              onClose={() => setSidebarOpen(false)}
-              user={user}
-              onLogout={handleLogout}
+          {/* Mobile Sidebar Backdrop Overlay — sits at z-30 to blur background behind the z-40 drawer */}
+          {sidebarOpen && (
+            <button
+              type="button"
+              tabIndex={-1}
+              aria-label="ปิดเมนู"
+              className="fixed inset-0 z-30 bg-[var(--scrim)] backdrop-blur-xs transition-opacity duration-300 lg:hidden"
+              onClick={() => setSidebarOpen(false)}
             />
-          </div>
+          )}
+
+          {/* Sidebar Drawer — sits at fixed z-40 so it stays above the z-30 backdrop */}
+          <Sidebar
+            isOpen={sidebarOpen}
+            isCollapsed={sidebarCollapsed}
+            onClose={() => setSidebarOpen(false)}
+            user={user}
+            onLogout={handleLogout}
+          />
 
           {/* Main Content wrapper */}
           <div
@@ -111,7 +140,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   toggleSidebarCollapsed();
                   return;
                 }
-                setSidebarOpen(true);
+                setSidebarOpen((open) => !open);
               }}
               sidebarCollapsed={sidebarCollapsed}
             />
@@ -128,18 +157,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
           <CommandPalette />
           <PwaInstallPrompt />
-
-          {/* Mobile Sidebar Overlay — a real button so it can also be dismissed
-              with Enter/Space, not only a pointer. */}
-          {sidebarOpen && (
-            <button
-              type="button"
-              tabIndex={-1}
-              aria-label="ปิดเมนู"
-              className="fixed inset-0 z-30 bg-[var(--scrim)] backdrop-blur-xs transition-all duration-300 lg:hidden"
-              onClick={() => setSidebarOpen(false)}
-            />
-          )}
         </div>
       </AuthGuard>
 
