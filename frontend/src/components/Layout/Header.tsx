@@ -50,12 +50,18 @@ export default function Header({ user, onMenuClick, sidebarCollapsed = false }: 
       return { title: t('page.profile'), crumbs: [home, { label: t('page.profile') }] };
     }
 
+    if (pathname.startsWith('/notifications')) {
+      return { title: 'การแจ้งเตือน', crumbs: [home, { label: 'การแจ้งเตือน' }] };
+    }
+
     // default: dashboard
     return {
       title: t('page.dashboard.title'),
       crumbs: [{ label: t('breadcrumb.home') }, { label: t('page.dashboard.title') }],
     };
   })();
+
+  const currentTitle = headerMeta.title || pageTitle.title || 'ART Workspace';
 
   return (
     <header className="sticky top-0 z-20 border-b border-[var(--hairline)] bg-[var(--apple-nav-bg)] backdrop-blur-2xl transition-all">
@@ -64,7 +70,7 @@ export default function Header({ user, onMenuClick, sidebarCollapsed = false }: 
         <div className="flex items-center gap-3 sm:gap-4">
           <button
             onClick={onMenuClick}
-            className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--ink)] transition-all duration-150 hover:bg-[var(--surface-chip)] active:scale-[0.95] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[var(--ink)] transition-all duration-150 hover:bg-[var(--surface-chip)] active:scale-[0.95] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
             aria-label={t(sidebarCollapsed ? 'nav.menuToggle.open' : 'nav.menuToggle.close')}
             aria-pressed={!sidebarCollapsed}
           >
@@ -72,28 +78,13 @@ export default function Header({ user, onMenuClick, sidebarCollapsed = false }: 
           </button>
 
           <div className="min-w-0">
-            {/* Compact title: the page's own <h1> is the real heading, this is
-                chrome that fades in once that heading scrolls under the bar —
-                the iOS navigation-title behaviour. Kept out of the heading
-                outline so every page has exactly one h1. */}
-            <div className="flex h-6 items-center">
-              <span
-                aria-hidden="true"
-                className={[
-                  'truncate text-apple-headline text-[var(--ink)]',
-                  'transition-[opacity,transform] duration-apple-2 ease-apple',
-                  pageTitle.collapsed
-                    ? 'translate-y-0 opacity-100'
-                    : 'pointer-events-none -translate-y-1 opacity-0',
-                ].join(' ')}
-              >
-                {pageTitle.title ?? headerMeta.title}
-              </span>
-            </div>
-            <div className="flex flex-wrap items-center gap-1.5">
+            <h1 className="truncate text-[15px] sm:text-[16px] font-bold tracking-tight text-[var(--ink)] leading-tight">
+              {currentTitle}
+            </h1>
+            <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
               <nav
                 aria-label="breadcrumb"
-                className="flex items-center gap-1.5 text-[12px] font-medium text-[var(--ink-tertiary)]"
+                className="flex items-center gap-1.5 text-[11px] sm:text-[12px] font-medium text-[var(--ink-tertiary)]"
               >
                 {headerMeta.crumbs.map((c, idx) => {
                   const isLast = idx === headerMeta.crumbs.length - 1;
@@ -104,7 +95,7 @@ export default function Header({ user, onMenuClick, sidebarCollapsed = false }: 
                           {c.label}
                         </Link>
                       ) : (
-                        <span className={isLast ? 'text-[var(--ink)]' : ''}>{c.label}</span>
+                        <span className={isLast ? 'text-[var(--ink-secondary)]' : ''}>{c.label}</span>
                       )}
                       {!isLast && (
                         <span aria-hidden="true" className="text-[var(--ink-faint)]">
@@ -125,7 +116,6 @@ export default function Header({ user, onMenuClick, sidebarCollapsed = false }: 
           <div className="hidden min-h-[36px] items-center gap-2 rounded-full border border-[var(--hairline)] bg-[var(--glass-80)] px-3.5 py-1.5 text-[12px] font-semibold text-[var(--ink)] shadow-[0_1px_2px_rgba(0,0,0,0.04)] md:flex">
             <ClockTime />
           </div>
-
 
           <NotificationBell />
         </div>

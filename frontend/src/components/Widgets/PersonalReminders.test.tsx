@@ -11,7 +11,12 @@ import PersonalReminders from './PersonalReminders';
 const DAY = 24 * 60 * 60 * 1000;
 
 function isoOffset(days: number): string {
-  return new Date(Date.now() + days * DAY).toISOString().slice(0, 10);
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 const SERVER_ITEMS = [
