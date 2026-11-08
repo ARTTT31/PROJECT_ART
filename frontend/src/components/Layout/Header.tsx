@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Clock, Menu } from 'lucide-react';
 import { AuthUser } from '@/types';
 import NotificationBell from './NotificationBell';
+import { PwaHeaderButton } from '@/components/PWA/PwaInstallPrompt';
 import { useI18n } from '@/lib/i18n/I18nProvider';
 import { usePreferences } from '@/hooks/usePreferences';
 import { formatClock } from '@/utils/dateFormat';
@@ -120,6 +121,7 @@ export default function Header({ user, onMenuClick, sidebarCollapsed = false }: 
 
         {/* Right Side: Clock, Notification Bell & User Profile Pill */}
         <div className="flex items-center gap-2 sm:gap-3">
+          <PwaHeaderButton />
           <div className="hidden min-h-[36px] items-center gap-2 rounded-full border border-[var(--hairline)] bg-[var(--glass-80)] px-3.5 py-1.5 text-[12px] font-semibold text-[var(--ink)] shadow-[0_1px_2px_rgba(0,0,0,0.04)] md:flex">
             <ClockTime />
           </div>

@@ -5,6 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import Header from './Header';
 import Sidebar from './Sidebar';
 import CommandPalette from './CommandPalette';
+import { PwaInstallPrompt } from '@/components/PWA/PwaInstallPrompt';
 import { showConfirm } from '@/utils/sweetalert';
 import AuthGuard from '@/components/Auth/AuthGuard';
 import AuthTransitionOverlay from '@/components/Auth/AuthTransitionOverlay';
@@ -126,6 +127,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           </div>
 
           <CommandPalette />
+          <PwaInstallPrompt />
 
           {/* Mobile Sidebar Overlay — a real button so it can also be dismissed
               with Enter/Space, not only a pointer. */}
