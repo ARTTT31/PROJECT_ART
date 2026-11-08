@@ -268,7 +268,7 @@ class Settings(BaseSettings):
     # console (default): messages are logged + kept in an in-memory outbox — the
     #   safe choice for local work and for deployments with no provider yet. A
     #   production deployment must set smtp/resend: console means no user ever
-    #   receives a reset/verification link (and the link is written to logs).
+    #   receives a verification link (and the link is written to logs).
     # smtp: any relay (Brevo, Gmail app password, SES, ...). resend: Resend API.
     EMAIL_BACKEND: Literal["console", "smtp", "resend"] = "console"
     # RFC 5322 From header, e.g. "ART Workspace <no-reply@example.com>".
@@ -282,8 +282,7 @@ class Settings(BaseSettings):
     SMTP_STARTTLS: bool = True
     # Resend backend
     RESEND_API_KEY: str = ""
-    # How long the links stay valid.
-    PASSWORD_RESET_TOKEN_MINUTES: int = 30
+    # How long the verification link stays valid.
     EMAIL_VERIFY_TOKEN_MINUTES: int = 1440
     # Require a verified email before a password login succeeds. Off by default
     # so a deployment whose email backend is not configured yet cannot lock
@@ -298,7 +297,7 @@ class Settings(BaseSettings):
 
     # ── Abuse protection ────────────────────────────────────────────────────
     # Cloudflare Turnstile (optional, free). When the secret is set,
-    # /auth/register and /auth/forgot-password require a valid turnstile_token.
+    # /auth/register requires a valid turnstile_token.
     TURNSTILE_SECRET_KEY: str = ""
     # Extra domains to refuse at signup, comma-separated. A small built-in list
     # of known disposable-email providers is always applied.

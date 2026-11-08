@@ -1,9 +1,9 @@
 """
 Email Token Model
 
-Single-use, expiring tokens for account emails: password reset and email
-verification. Only the SHA-256 hash of the token is stored — a database leak
-must not hand out working reset links (same reasoning as password hashing).
+Single-use, expiring tokens for account emails: email verification. Only the
+SHA-256 hash of the token is stored — a database leak must not hand out
+working links (same reasoning as password hashing).
 """
 
 from datetime import datetime
@@ -20,7 +20,7 @@ class EmailToken(Base, TimestampMixin):
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
-    # "password_reset" | "email_verify" — text for the same reason as
+    # "email_verify" — text for the same reason as
     # users.status: a new purpose is an application change, not a migration.
     purpose: Mapped[str] = mapped_column(String(20), index=True)
     token_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True)

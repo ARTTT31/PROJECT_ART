@@ -1,7 +1,7 @@
 """Cloudflare Turnstile verification (optional signup/abuse protection).
 
-When ``TURNSTILE_SECRET_KEY`` is set, the public write endpoints (register,
-forgot-password) require a valid ``turnstile_token``. When it is empty the
+When ``TURNSTILE_SECRET_KEY`` is set, account registration requires a valid
+``turnstile_token``. When it is empty the
 check is skipped entirely — a deployment that has not set up Turnstile must
 keep working.
 

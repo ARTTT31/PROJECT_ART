@@ -13,14 +13,11 @@ import {
   EyeOff,
   KeyRound,
   Mail,
-  AtSign,
-  ShieldAlert,
   Sliders,
   LayoutGrid,
   Palette,
   Building2,
   BellRing,
-  Camera,
   Loader2,
   Download,
 } from 'lucide-react';
@@ -33,16 +30,12 @@ import { useI18n } from '@/lib/i18n/I18nProvider';
 
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
 import { InsetField, SectionCard } from '@/components/Profile/SectionCard';
-import { MainMenuCard } from '@/components/Profile/MainMenuCard';
-import { QuickLinksCard } from '@/components/Profile/QuickLinksCard';
 import { QuickLinkDialog, type QuickLinkFormValues } from '@/components/Profile/QuickLinkDialog';
-import { BrandingCard } from '@/components/Profile/BrandingCard';
-import CompanyHolidayCard from '@/components/Profile/CompanyHolidayCard';
-import WorkspaceBackupCard from '@/components/Profile/WorkspaceBackupCard';
-import NotificationSettingsCard from '@/components/Profile/NotificationSettingsCard';
 import SecurityCard from '@/components/Profile/SecurityCard';
-import DateFormatCard from '@/components/Profile/DateFormatCard';
-import { ThemeCard } from '@/components/Profile/ThemeCard';
+import ProfileHero from '@/components/Profile/ProfileHero';
+import PreferencesPanels, {
+  type PreferenceSection,
+} from '@/components/Profile/PreferencesPanels';
 import { type QuickLink, parseQuickLinks, serializeQuickLinks } from '@/utils/quickLinks';
 import {
   parseMainMenuConfig,
@@ -121,7 +114,6 @@ function apiMessage(data: unknown, fallback: string): string {
 
 type TabKey = 'profile' | 'preferences';
 type AccountSection = 'account' | 'security';
-type PreferenceSection = 'menu' | 'appearance' | 'alerts' | 'workspace';
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -575,92 +567,18 @@ export default function ProfilePage() {
       {/* ══════════════════════════════════════════════════
           HERO IDENTITY CARD (Apple-style Header Banner)
           ══════════════════════════════════════════════════ */}
-      <section className="overflow-hidden rounded-[18px] bg-[var(--surface)] border border-[var(--hairline)] p-5 sm:p-7 transition-colors">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5">
-          {/* Left: Avatar + Identity */}
-          <div className="flex items-center gap-4 sm:gap-5">
-            <div className="relative shrink-0 group">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/jpeg,image/png,image/gif"
-                onChange={handleAvatarFileSelect}
-                className="hidden"
-                aria-label="อัปโหลดรูปโปรไฟล์"
-              />
-
-              {currentUser.avatar ? (
-                <div className="relative h-16 w-16 sm:h-20 sm:w-20 overflow-hidden rounded-[18px] ring-4 ring-[var(--hairline-soft)]">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={currentUser.avatar}
-                    alt={currentUser.name || 'โปรไฟล์'}
-                    className="h-full w-full object-cover"
-                  />
-                  {isUploadingAvatar && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-xs">
-                      <Loader2 size={20} className="animate-spin text-white" />
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="relative flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-[18px] bg-[var(--accent)] text-2xl sm:text-3xl font-extrabold text-white ring-4 ring-[var(--hairline-soft)]">
-                  {isUploadingAvatar ? (
-                    <Loader2 size={24} className="animate-spin text-white" />
-                  ) : (
-                    currentUser.name?.charAt(0).toUpperCase() || 'U'
-                  )}
-                </div>
-              )}
-
-              {/* Upload photo button badge */}
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isUploadingAvatar}
-                title="เปลี่ยนรูปโปรไฟล์ (ไม่เกิน 1MB)"
-                aria-label="เปลี่ยนรูปโปรไฟล์"
-                className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full bg-[var(--surface)] text-[var(--ink)] ring-1 ring-[var(--hairline)] transition-transform hover:scale-110 active:scale-95 disabled:opacity-50"
-              >
-                <Camera size={13} className="text-[var(--accent-text)]" />
-              </button>
-            </div>
-
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <h1
-                  ref={headingRef}
-                  className="truncate text-apple-title2 font-semibold text-[var(--ink)]"
-                >
-                  {currentUser.name || 'ผู้ใช้งาน'}
-                </h1>
-                {isAdmin ? (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-purple-50 px-2.5 py-0.5 text-[11px] font-bold text-purple-700 ring-1 ring-purple-600/20">
-                    <ShieldAlert size={11} /> จัดการระบบ (Admin)
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-bold text-slate-600 ring-1 ring-slate-500/20">
-                    <User size={11} /> ผู้ใช้ทั่วไป (User)
-                  </span>
-                )}
-              </div>
-
-              <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-[var(--ink-muted)]">
-                <span className="inline-flex items-center gap-1">
-                  <Mail size={12} className="text-[var(--ink-tertiary)]" />
-                  {currentUser.email || 'ไม่ได้ระบุอีเมล'}
-                </span>
-                {currentUser.username && (
-                  <span className="inline-flex items-center gap-1">
-                    <AtSign size={12} className="text-[var(--ink-tertiary)]" />
-                    {currentUser.username}
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      <ProfileHero
+        name={currentUser.name}
+        email={currentUser.email}
+        username={currentUser.username}
+        avatar={currentUser.avatar}
+        isAdmin={isAdmin}
+        avatarInputRef={fileInputRef}
+        isUploadingAvatar={isUploadingAvatar}
+        onAvatarFileSelect={handleAvatarFileSelect}
+        onPickAvatar={() => fileInputRef.current?.click()}
+        headingRef={headingRef}
+      />
 
       {/* ══════════════════════════════════════════════════
           RESPONSIVE NAVIGATION TABS (Segmented Control)
@@ -1032,40 +950,17 @@ export default function ProfilePage() {
             transition={{ duration: 0.16, ease: 'easeOut' }}
             className="grid min-h-[480px] grid-cols-1 gap-5 items-start"
           >
-            <div hidden={preferenceSection !== 'menu'} className="space-y-5">
-              {/* Which pages exist in the sidebar is an admin decision: hiding
-                  this card keeps ordinary users from rearranging (or hiding)
-                  pages while the workspace is still being built. */}
-              <div className={isAdmin ? 'grid gap-5 lg:grid-cols-2' : ''}>
-                {isAdmin && (
-                  <MainMenuCard items={filteredMenuItems} onMove={moveMainMenuItem} />
-                )}
-                <QuickLinksCard
-                  links={quickLinks}
-                  onAdd={openCreateQuickLink}
-                  onEdit={openEditQuickLink}
-                  onDelete={handleDeleteQuickLink}
-                  onMove={handleMoveQuickLink}
-                />
-              </div>
-            </div>
-
-            <div hidden={preferenceSection !== 'appearance'}>
-              <ThemeCard />
-            </div>
-
-            <div hidden={preferenceSection !== 'alerts'} className="space-y-5">
-              <NotificationSettingsCard />
-              <DateFormatCard />
-            </div>
-
-            <div hidden={preferenceSection !== 'workspace'} className="space-y-5">
-              <BrandingCard isAdmin={isAdmin} />
-              {/* Company holidays live in general settings, not the admin console:
-                  every member can read the calendar, only an admin can change it. */}
-              <CompanyHolidayCard canEdit={isAdmin} />
-              <WorkspaceBackupCard />
-            </div>
+            <PreferencesPanels
+              section={preferenceSection}
+              isAdmin={isAdmin}
+              menuItems={filteredMenuItems}
+              onMoveMenuItem={moveMainMenuItem}
+              quickLinks={quickLinks}
+              onAddQuickLink={openCreateQuickLink}
+              onEditQuickLink={openEditQuickLink}
+              onDeleteQuickLink={handleDeleteQuickLink}
+              onMoveQuickLink={handleMoveQuickLink}
+            />
           </motion.div>
         )}
 

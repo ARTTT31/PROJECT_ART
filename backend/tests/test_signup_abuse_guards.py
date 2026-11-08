@@ -121,15 +121,3 @@ async def test_turnstile_rejects_a_failed_verification(client, monkeypatch, turn
     r = await _register(client, turnstile_token="tok")
 
     assert r.status_code == 400
-
-
-async def test_forgot_password_also_checks_turnstile(client, make_user, monkeypatch):
-    await make_user(email="forgetful@example.com")
-    monkeypatch.setattr(settings, "TURNSTILE_SECRET_KEY", "test-secret")
-
-    r = await client.post(
-        "/api/v1/auth/forgot-password", json={"email": "forgetful@example.com"}
-    )
-
-    assert r.status_code == 400
-    assert "CAPTCHA" in r.json()["detail"]

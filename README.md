@@ -174,7 +174,7 @@ npm test
 npm run test:coverage          # unit coverage (visibility only, no gate yet)
 npm run build
 npm run test:smoke
-npx playwright test tests/a11y.spec.ts   # axe gate for /login, /register, /forgot-password
+npx playwright test tests/a11y.spec.ts   # axe gate for /login, /register, /verify-email
 ```
 
 Backend checks:

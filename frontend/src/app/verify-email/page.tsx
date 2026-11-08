@@ -24,7 +24,7 @@ export default function VerifyEmailPage() {
     const token = new URLSearchParams(window.location.search).get('token');
     if (!token) {
       setState('error');
-      setMessage('ลิงก์ยืนยันอีเมลไม่ถูกต้องหรือหมดอายุ กรุณาขออีเมลยืนยันฉบับใหม่');
+      setMessage('ลิงก์ยืนยันอีเมลไม่ถูกต้องหรือหมดอายุ กรุณาติดต่อผู้ดูแลระบบ');
       return;
     }
 
@@ -38,9 +38,7 @@ export default function VerifyEmailPage() {
       .then(async (response) => {
         const body = await response.json().catch(() => ({}));
         if (!response.ok) {
-          throw new Error(
-            body.detail || 'ลิงก์ยืนยันอีเมลไม่ถูกต้องหรือหมดอายุ กรุณาขออีเมลยืนยันฉบับใหม่',
-          );
+          throw new Error(body.detail || 'ลิงก์ยืนยันอีเมลไม่ถูกต้องหรือหมดอายุ กรุณาติดต่อผู้ดูแลระบบ');
         }
         setState('success');
       })
@@ -95,17 +93,13 @@ export default function VerifyEmailPage() {
         ) : (
           state === 'error' && (
             <>
-              <Link
-                href="/forgot-password"
-                className="login-submit"
-                style={{ textDecoration: 'none' }}
-              >
-                <span>ขอลิงก์ยืนยันใหม่</span>
+              <Link href="/login" className="login-submit" style={{ textDecoration: 'none' }}>
+                <span>กลับไปหน้าเข้าสู่ระบบ</span>
                 <ArrowRight size={18} aria-hidden="true" />
               </Link>
-              <Link href="/login" className="login-switch">
-                กลับไปหน้าเข้าสู่ระบบ
-              </Link>
+              <p className="login-switch" style={{ textAlign: 'center', margin: 0 }}>
+                หากลิงก์หมดอายุ กรุณาติดต่อผู้ดูแลระบบเพื่อขออีเมลยืนยันฉบับใหม่
+              </p>
             </>
           )
         )}

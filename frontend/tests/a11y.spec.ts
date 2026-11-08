@@ -9,13 +9,15 @@ import AxeBuilder from '@axe-core/playwright'
  * first-time visitor can land in. Only `critical` and `serious` findings fail
  * the build — `minor`/`moderate` notes still print for the next design pass.
  */
-const PAGES = ['/login', '/register', '/forgot-password']
+const PAGES = ['/login', '/register', '/verify-email']
 
 for (const path of PAGES) {
   test(`${path} has no critical accessibility violations`, async ({ page }) => {
     await page.goto(path)
-    // The auth shell animates in; wait for the primary form control.
-    await expect(page.locator('input').first()).toBeVisible({ timeout: 15_000 })
+    // The auth shell animates in; wait for it to mount. `/verify-email` shows a
+    // status card rather than a form, so the shell — not an input — is the
+    // common anchor.
+    await expect(page.locator('.login-shell').first()).toBeVisible({ timeout: 15_000 })
 
     // Let the entrance animation finish before sampling colours: axe reads the
     // composited result, and scanning mid-fade reported contrast failures that

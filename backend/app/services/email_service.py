@@ -204,29 +204,6 @@ def _wrap_html(title: str, body: str, link: str, label: str) -> str:
     )
 
 
-def password_reset_email(to: str, name: str, link: str) -> EmailMessage:
-    """Link that lets the owner of ``to`` choose a new password."""
-    greeting = f"สวัสดี {name}" if name else "สวัสดี"
-    text = (
-        f"{greeting}\n\n"
-        "เราได้รับคำขอตั้งรหัสผ่านใหม่สำหรับบัญชีนี้ "
-        "กดลิงก์ด้านล่างเพื่อตั้งรหัสผ่านใหม่:\n\n"
-        f"{link}\n\n"
-        f"ลิงก์นี้ใช้ได้ครั้งเดียวและจะหมดอายุใน "
-        f"{settings.PASSWORD_RESET_TOKEN_MINUTES} นาที\n"
-        "ถ้าคุณไม่ได้เป็นผู้ขอ ไม่ต้องทำอะไร รหัสผ่านเดิมยังใช้ได้ตามปกติ"
-    )
-    html = _wrap_html(
-        "ตั้งรหัสผ่านใหม่",
-        f"<p>{greeting}</p><p>เราได้รับคำขอตั้งรหัสผ่านใหม่สำหรับบัญชีนี้ "
-        f"ลิงก์นี้ใช้ได้ครั้งเดียวและจะหมดอายุใน "
-        f"{settings.PASSWORD_RESET_TOKEN_MINUTES} นาที</p>",
-        link,
-        "ตั้งรหัสผ่านใหม่",
-    )
-    return EmailMessage(to=to, subject="ตั้งรหัสผ่านใหม่ — ART Workspace", text=text, html=html)
-
-
 def verify_email_message(to: str, name: str, link: str) -> EmailMessage:
     """Link that proves the address belongs to the account."""
     greeting = f"สวัสดี {name}" if name else "สวัสดี"

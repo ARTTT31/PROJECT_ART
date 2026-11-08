@@ -37,7 +37,6 @@ from app.core.security import (
     create_access_token,
     create_refresh_token,
     decode_token,
-    get_password_hash,
     new_refresh_jti,
     verify_password,
 )
@@ -57,9 +56,7 @@ from app.models.session import UserSession
 from app.models.user import User
 from app.schemas.response import ResponseModel
 from app.schemas.user import (
-    ForgotPasswordRequest,
     ResendVerificationRequest,
-    ResetPasswordRequest,
     TwoFactorCodeRequest,
     TwoFactorDisableRequest,
     UserCreate,
@@ -120,11 +117,6 @@ async def _send_verification_email(db: AsyncSession, user: Any) -> None:
     await account_emails.send_verification_email(db, user)
 
 
-async def _send_password_reset_email(db: AsyncSession, user: Any) -> None:
-    """Issue a single-use reset token and mail the link."""
-    await account_emails.send_password_reset_email(db, user)
-
-
 async def _notify_admins_of_request(db: AsyncSession, applicant: Any) -> None:
     """Tell every admin who can still decide that a request is waiting."""
     review_url = f"{settings.FRONTEND_BASE_URL}/profile?tab=admin"
@@ -167,8 +159,7 @@ _SIGNIN_UNVERIFIED_MESSAGE = (
     "กรุณายืนยันอีเมลของคุณก่อนเข้าสู่ระบบ — ขออีเมลยืนยันใหม่ได้ที่หน้าล็อกอิน"
 )
 _GENERIC_EMAIL_SENT_MESSAGE = "ถ้าอีเมลนี้มีอยู่ในระบบ เราได้ส่งลิงก์ให้แล้ว กรุณาตรวจสอบกล่องจดหมาย"
-_VERIFY_EMAIL_INVALID_MESSAGE = "ลิงก์ยืนยันอีเมลไม่ถูกต้องหรือหมดอายุ กรุณาขออีเมลยืนยันฉบับใหม่"
-_RESET_TOKEN_INVALID_MESSAGE = "ลิงก์ตั้งรหัสผ่านใหม่ไม่ถูกต้องหรือหมดอายุ กรุณาขอลิงก์ใหม่"
+_VERIFY_EMAIL_INVALID_MESSAGE = "ลิงก์ยืนยันอีเมลไม่ถูกต้องหรือหมดอายุ กรุณาติดต่อผู้ดูแลระบบ"
 _CAPTCHA_REQUIRED_MESSAGE = "กรุณายืนยันว่าไม่ใช่โปรแกรมอัตโนมัติ (CAPTCHA) แล้วลองอีกครั้ง"
 
 
@@ -523,104 +514,6 @@ async def register(
         )
 
 
-@router.post("/forgot-password", response_model=ResponseModel)
-@limiter.limit(_AUTH_LIMIT)
-async def forgot_password(
-    payload: ForgotPasswordRequest,
-    request: Request,
-    db: AsyncSession = Depends(get_db),
-):
-    """
-    Email a password-reset link to an account that has one.
-
-    The answer is IDENTICAL whether or not the address exists — anything else
-    would turn this endpoint into an account-existence oracle. The audit log
-    keeps the real outcome for an admin to read.
-    """
-    audit_service = AuditService(db)
-    client_ip = request.client.host if request.client else None
-    user_agent = request.headers.get("user-agent")
-
-    if not await verify_turnstile(payload.turnstile_token, client_ip):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=_CAPTCHA_REQUIRED_MESSAGE,
-        )
-
-    user = await UserService(db).get_user_by_email(payload.email)
-    if user is not None and user.deleted_at is None:
-        await audit_service.log_action(
-            action="PASSWORD_RESET_REQUESTED",
-            user_id=user.id,
-            details=f"Password reset link emailed to {user.email}",
-            ip_address=client_ip,
-            user_agent=user_agent,
-        )
-        await _send_password_reset_email(db, user)
-    else:
-        await audit_service.log_action(
-            action="PASSWORD_RESET_REQUESTED",
-            details=(
-                "Password reset requested for an address that does not exist: "
-                f"{_mask_identifier(payload.email)}"
-            ),
-            ip_address=client_ip,
-            user_agent=user_agent,
-        )
-
-    await db.commit()
-    return ResponseModel(
-        result="success", message=_GENERIC_EMAIL_SENT_MESSAGE, data={"sent": True}
-    )
-
-
-@router.post("/reset-password", response_model=ResponseModel)
-@limiter.limit(_AUTH_LIMIT)
-async def reset_password(
-    payload: ResetPasswordRequest,
-    request: Request,
-    db: AsyncSession = Depends(get_db),
-):
-    """Set a new password from a valid, unused reset link."""
-    client_ip = request.client.host if request.client else None
-    user_agent = request.headers.get("user-agent")
-
-    user_service = UserService(db)
-    token = await account_emails.consume_token(
-        db, account_emails.PURPOSE_PASSWORD_RESET, payload.token
-    )
-    user = await user_service.get_user_by_id(token.user_id) if token else None
-    if token is None or user is None or user.deleted_at is not None:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail=_RESET_TOKEN_INVALID_MESSAGE
-        )
-
-    user.hashed_password = get_password_hash(payload.new_password)
-    user.updated_at = utils_utcnow()
-    # The mailbox was just proven. Clearing the lockout bookkeeping keeps a
-    # lock acquired by repeated forgotten-password attempts from outliving the
-    # reset the user finally managed to complete.
-    user.failed_login_attempts = 0
-    user.is_locked = False
-    user.locked_until = None
-
-    # Any session opened with the old password is now suspect: revoke them all.
-    revoked = await user_service.revoke_sessions(user.id)
-
-    await AuditService(db).log_action(
-        action="PASSWORD_RESET_COMPLETED",
-        user_id=user.id,
-        details=f"Password reset via email link; {revoked} session(s) revoked",
-        ip_address=client_ip,
-        user_agent=user_agent,
-    )
-    await db.commit()
-
-    return ResponseModel(
-        result="success", message="ตั้งรหัสผ่านใหม่สำเร็จ กรุณาเข้าสู่ระบบ"
-    )
-
-
 @router.post("/verify-email", response_model=ResponseModel)
 @limiter.limit(_AUTH_LIMIT)
 async def verify_email(
@@ -659,7 +552,7 @@ async def resend_verification(
     request: Request,
     db: AsyncSession = Depends(get_db),
 ):
-    """Send a fresh verification link. Same generic answer as forgot-password."""
+    """Send a fresh verification link, answering the same way for every address."""
     audit_service = AuditService(db)
     client_ip = request.client.host if request.client else None
     user_agent = request.headers.get("user-agent")

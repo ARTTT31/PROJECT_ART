@@ -496,7 +496,7 @@ verification the previous review kept listing as missing.
    message-only. Verified: **494 passed, 84.71% coverage**; flake8 and mypy clean; the Alembic
    chain applies and `alembic check` reports no drift.
 3. **New frontend verification.** `npm run test:coverage` (v8, visibility only, no gate yet);
-   `tests/a11y.spec.ts` runs axe on `/login`, `/register` and `/forgot-password` and fails on
+   `tests/a11y.spec.ts` runs axe on `/login`, `/register` and `/verify-email` and fails on
    critical/serious findings; CI starts the backend on SQLite and runs a live
    register → login E2E, which is the gap every earlier pass deferred.
 4. **Hygiene.** Dropped the removed `@tanstack/react-query` from `optimizePackageImports`,
@@ -585,3 +585,44 @@ five items had shipped, and two Phase 2 items had drifted out of date in the opp
    origin, Render CSP/CORS boot log, `EMAIL_BACKEND`). The 2FA flow itself still cannot be walked
    end to end against production because registration mode is `approval` and no test account
    exists.
+
+## Password Reset Removal, File Splits and Widget Test Coverage (November 8, 2026)
+
+The starting request was "what still needs fixing or adding?", followed by a decision: no
+password-reset email, remove it, and do the rest of the list.
+
+1. **Email password reset removed end to end.** Two endpoints (`POST /auth/forgot-password`,
+   `POST /auth/reset-password`), their request schemas, `send_password_reset_email` /
+   `password_reset_email`, `PASSWORD_RESET_TOKEN_MINUTES`, the two CSRF-exempt prefixes, the
+   `/forgot-password` and `/reset-password` pages, the login link and the quick-link suggestions
+   all went. `GET|POST /auth/verify-email` and `/auth/resend-verification` stay: verification still
+   needs the token table, so no migration was required and `email_tokens` is now used for
+   `email_verify` only. Because users can no longer reset a forgotten password themselves, the
+   supported path is an admin setting one — `PUT /api/v1/users/{id}` with `password`
+   (`scripts/admin/reset_user.py` remains the CLI route). The audit labels
+   `PASSWORD_RESET_REQUESTED` / `PASSWORD_RESET_COMPLETED` are intentionally kept so historical
+   rows still render. `tests/test_password_reset_removed.py` pins the removal (both routes 404 and
+   no reset template on the email service); the old forgot/reset tests were deleted with the code.
+2. **`UserManagement.tsx` split by responsibility.** 1,690 lines became a 661-line orchestrator
+   plus `userManagementModel.tsx` (types, constants, helpers, `CreateUserForm`), `FilterDropdown`,
+   `UserListToolbar`, `UserTable`, `PendingRequestsBanner`, `UserManagementSkeleton`,
+   `UserEditPanel` and `UserCreatePanel`. Markup and behaviour are byte-for-byte the previous
+   render; the 22 existing tests pass unmodified.
+3. **Profile and weather pages lost their oversized files too.** `profile/page.tsx` 1,082 → 977
+   with `ProfileHero` and `PreferencesPanels` extracted, and `WeatherWidget.tsx` 899 → 719 with
+   `weatherModel.ts` holding the types, city presets, cache keys and the AQI/PM2.5 rating tables.
+4. **Five untested widgets now have tests** (20 cases): `CurrencyConverterWidget` (conversion,
+   swap, live editing, failure + retry), `OilPriceWidget` (prices, retry, cache), `HolidayWidget`
+   (upcoming days, empty state), `QRCodeWidget` (format switch, Code 128 non-ASCII refusal,
+   persistence) with `qrcode.react` and `jsbarcode` mocked because jsdom has no canvas, and
+   `PersonalReminders` (load, add-and-save, complete, offline-keeps-the-edit).
+   Two traps worth remembering: `CurrencyConverterWidget` caches rates at module scope, and
+   `vi.resetModules()` re-evaluates React itself, which produces duplicate copies and act()
+   warnings — the tests use the cached module and run the failure case first instead.
+5. **Removed the stray `backend/uploads/` directory** (empty, never read by any code).
+6. **Verified:** backend 517 passed at 85.00% (75% gate) — the count dropped because the reset
+   suite was larger than its replacement; flake8 and mypy clean (60 files, `alembic check` no drift).
+   Frontend `tsc --noEmit`, ESLint, 313 Vitest tests across 42 files.
+7. **Not done in this pass:** the i18n migration across the remaining components, cross-device
+   versioning for finance deletions, and the deployed-only checks (production WebSocket origin,
+   Render CSP/CORS boot log, `EMAIL_BACKEND`).

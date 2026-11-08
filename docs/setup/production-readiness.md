@@ -1,12 +1,14 @@
 # 🚀 Production Readiness — เปิดใช้งานหลายคน / สาธารณะ
 
-**Last updated:** 30 October 2026
+**Last updated:** 8 November 2026
 
 เอกสารนี้คือ checklist สำหรับ deploy ระบบให้คนทั่วไปใช้งาน ครอบคลุมสิ่งที่ต้องตั้งค่า
 ขั้นตอนทดสอบ และสิ่งที่ยังต้องทำด้วยมือ (บัญชีผู้ให้บริการ, โดเมน, การแจ้งเตือน)
 
-> ส่วนที่ implement แล้วในโค้ด (อีเมล, ลืมรหัสผ่าน, ยืนยันอีเมล, Turnstile,
+> ส่วนที่ implement แล้วในโค้ด (อีเมล, ยืนยันอีเมล, Turnstile,
 > approval workflow) ทำงานได้ทันทีเมื่อตั้งค่า environment variable ด้านล่าง
+> ระบบ **ไม่มี** การรีเซ็ตรหัสผ่านทางอีเมลแล้ว — ผู้ใช้ที่ลืมรหัสต้องให้แอดมิน
+> ตั้งรหัสใหม่ให้ผ่าน `PUT /api/v1/users/{id}` (หรือ `py scripts/admin/reset_user.py`)
 > ส่วนหน้า `/terms` / `/privacy` ถูกถอดออกแล้ว — ดูสถานะล่าสุดในข้อ 7
 
 ---
@@ -48,7 +50,7 @@ cd backend && alembic upgrade head     # schema มาก่อนเสมอ (
 ระบบมี 3 backend เลือกผ่าน `EMAIL_BACKEND`:
 
 - **`console`** (ค่าเริ่มต้น) — ไม่ส่งจริง ข้อความถูก log + เก็บในหน่วยความจำ
-  ใช้ตอน dev/ทดสอบได้เลย **ลิงก์ลืมรหัสผ่านจะถูกพิมพ์ใน log ของเซิร์ฟเวอร์**
+  ใช้ตอน dev/ทดสอบได้เลย **ลิงก์ยืนยันอีเมลจะถูกพิมพ์ใน log ของเซิร์ฟเวอร์**
 - **`smtp`** — ใช้กับผู้ให้บริการรายใดก็ได้ที่ให้ SMTP (`SMTP_HOST/PORT/USERNAME/PASSWORD/STARTTLS`)
 - **`resend`** — ใช้ HTTP API ของ Resend (`RESEND_API_KEY`)
 
@@ -73,7 +75,7 @@ cd backend && alembic upgrade head     # schema มาก่อนเสมอ (
 ### ตรวจว่าอีเมลทำงาน
 
 1. ตั้ง env → restart backend
-2. ขอ "ลืมรหัสผ่าน" จากหน้า login → ต้องได้อีเมลภายใน 1 นาที
+2. สมัครด้วยอีเมลจริง → ต้องได้รับลิงก์ยืนยันอีเมลภายใน 1 นาที
 3. สมัครบัญชีใหม่ (โหมด approval) → แอดมินต้องได้อีเมลแจ้งคำขอ
 4. อนุมัติ → ผู้สมัครต้องได้อีเมลผลอนุมัติ
 
@@ -81,7 +83,7 @@ cd backend && alembic upgrade head     # schema มาก่อนเสมอ (
 
 ## 3. Local / ทดสอบโดยไม่ส่งอีเมลจริง
 
-- คง `EMAIL_BACKEND=console` — ลิงก์ตั้งรหัสผ่าน/ยืนยันอีเมลจะโผล่ใน log ของ uvicorn
+- คง `EMAIL_BACKEND=console` — ลิงก์ยืนยันอีเมลจะโผล่ใน log ของ uvicorn
 - เทสต์ทั้งชุดของ backend ใช้ console backend อยู่แล้ว (outbox ในหน่วยความจำ)
 - อย่าตั้ง `REQUIRE_EMAIL_VERIFICATION=true` ตอนที่ยังใช้ console backend ในเครื่องคนอื่น
 
@@ -144,7 +146,8 @@ Production ใช้ **Aiven for PostgreSQL** (project `thanyapong-8a15`, servic
 - [ ] `CORS_ORIGINS` = โดเมน frontend จริงเท่านั้น (ห้าม `*`)
 - [ ] `FRONTEND_URL` = โดเมน frontend จริง (ใช้สร้างลิงก์ในอีเมล)
 - [ ] `COOKIE_SECURE=true`, `DEBUG=false`, `ENABLE_API_DOCS=false`
-- [ ] ทดสอบ flow จริง: สมัคร → แอดมินเห็นคำขอใน `/admin` → อนุมัติ → ผู้สมัครได้อีเมล → เข้าสู่ระบบ → ลืมรหัสผ่าน → ตั้งรหัสใหม่
+- [ ] ทดสอบ flow จริง: สมัคร → แอดมินเห็นคำขอใน `/admin` → อนุมัติ → ผู้สมัครได้อีเมล → เข้าสู่ระบบ
+- [ ] ทดสอบเส้นทาง "ลืมรหัส": แจ้งแอดมิน → แอดมินตั้งรหัสใหม่ในหน้า `/admin` → ผู้ใช้เข้าได้ด้วยรหัสใหม่
 - [ ] Uptime monitor + Sentry alert ทำงาน
 - [ ] ซ้อม restore ฐานข้อมูล 1 ครั้ง
 - [ ] Load test บน staging เสร็จ รู้ว่า capacity เท่าไร

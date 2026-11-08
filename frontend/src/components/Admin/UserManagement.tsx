@@ -5,273 +5,33 @@ import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
 import { useToast } from '@/components/Toast/ToastProvider';
 import { useAuth } from '@/components/Auth/AuthProvider';
 import { showConfirm, showDeleteConfirm } from '@/utils/sweetalert';
-import Switch from '@/components/ui/Switch';
-import {
-  Settings,
-  Edit,
-  Check,
-  X,
-  ShieldAlert,
-  User,
-  CheckCircle2,
-  Circle,
-  Trash2,
-  Loader2,
-  Search,
-  UserPlus,
-  RotateCcw,
-  ChevronLeft,
-  ChevronRight,
-  Eraser,
-  ChevronDown,
-  Clock,
-  UserCheck,
-  UserX,
-  ArrowRight,
-  Download,
-} from 'lucide-react';
-import { datedFilename, downloadCsv, toCsv } from '@/lib/csv';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { parseAccessiblePages } from '@/utils/accessiblePages';
+import PendingRequestsBanner from './PendingRequestsBanner';
+import UserCreatePanel from './UserCreatePanel';
+import UserEditPanel from './UserEditPanel';
+import UserListToolbar from './UserListToolbar';
+import UserManagementSkeleton from './UserManagementSkeleton';
+import UserTable from './UserTable';
+import {
+  apiMessage,
+  AVAILABLE_PAGES,
+  displayLabel,
+  PAGE_SIZE,
+  statusTitle,
+  type AdminUser,
+  type CreateUserForm,
+  type TrashUser,
+} from './userManagementModel';
 
-// Define a simplified User type for admin management
-interface AdminUser {
-  id: number;
-  email: string | null;
-  username: string | null;
-  name: string;
-  role: string;
-  is_active: boolean;
-  /** Whether this account signs in with a TOTP second factor. */
-  two_factor_enabled?: boolean;
-  accessible_pages: string | null;
-  deleted_at?: string | null;
-  /** Sign-up lifecycle: null (normal), 'pending', 'rejected'. */
-  status?: string | null;
-}
-
-/** A soft-deleted account, as returned by `GET /api/v1/users/deleted`. */
-interface TrashUser extends AdminUser {
-  deleted_at: string;
-  days_remaining: number;
-  purge_at: string;
-}
-
-const AVAILABLE_PAGES = [
-  { id: 'dashboard', label: 'หน้าหลัก (Dashboard)' },
-  { id: 'profile', label: 'หน้าโปรไฟล์ (Profile)' },
-  { id: 'camera', label: 'กล้อง (Camera)' },
-];
-
-const PAGE_SIZE = 10;
-
-/** Thai label for a trash row's remaining restore window. */
-const remainingLabel = (days: number) => (days <= 0 ? 'หมดเวลาแล้ว' : `กู้คืนได้อีก ${days} วัน`);
-
-/**
- * Readable message out of an API error body. FastAPI answers validation
- * failures with `detail` as a list of field errors, while our own handlers send
- * a plain string — the create form surfaces both.
- */
-/**
- * Format an API timestamp for the trash table. The backend stores naive UTC, so
- * a value without a zone suffix is read as UTC — without that, a deletion made
- * this morning shows up as yesterday evening in a UTC+7 browser.
- */
-const formatDateTime = (value: string): string => {
-  const iso = /[zZ]|[+-]\d\d:\d\d$/.test(value) ? value : `${value}Z`;
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleString('th-TH', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  });
-};
-
-/** Short Thai title for an HTTP failure, shared by the action handlers. */
-const statusTitle = (status: number): string => {
-  if (status === 400) return 'ทำรายการไม่ได้';
-  if (status === 401 || status === 403) return 'ไม่ได้รับอนุญาต';
-  if (status === 404) return 'ไม่พบข้อมูล';
-  if (status === 409) return 'ข้อมูลซ้ำ';
-  if (status === 422) return 'ข้อมูลไม่ถูกต้อง';
-  if (status === 429) return 'ทำรายการบ่อยเกินไป';
-  return 'เกิดข้อผิดพลาด';
-};
-
-const apiMessage = (data: unknown, fallback: string): string => {
-  const detail = (data as { detail?: unknown } | null)?.detail;
-  if (typeof detail === 'string' && detail) return detail;
-  if (Array.isArray(detail) && detail.length > 0) {
-    const first = detail[0] as { msg?: string; loc?: unknown[] };
-    if (first?.msg) {
-      const field = Array.isArray(first.loc) ? first.loc[first.loc.length - 1] : undefined;
-      return field ? `${field}: ${first.msg}` : first.msg;
-    }
-  }
-  return fallback;
-};
-
-/** Human-readable identifier for confirm dialogs, toasts and aria-labels. */
-const displayLabel = (u: AdminUser) => u.email || u.username || u.name;
-
-interface FilterOption {
-  value: string;
-  label: string;
-  icon?: React.ReactNode;
-}
-
-const ROLE_OPTIONS: FilterOption[] = [
-  { value: '', label: 'ทุกสิทธิ์', icon: <User size={13} className="text-[var(--ink-tertiary)]" /> },
-  { value: 'admin', label: 'Admin', icon: <ShieldAlert size={13} className="text-purple-600" /> },
-  { value: 'user', label: 'User', icon: <User size={13} className="text-slate-600" /> },
-];
-
-// Status filter is text-only on purpose: the coloured dots and icons added
-// noise to a short list the admin reads at a glance.
-const STATUS_OPTIONS: FilterOption[] = [
-  { value: '', label: 'ทุกสถานะ' },
-  { value: 'active', label: 'ใช้งานปกติ' },
-  { value: 'suspended', label: 'ระงับบัญชี' },
-  { value: 'pending', label: 'รออนุมัติ' },
-  { value: 'trash', label: 'ถังขยะ (ลบแล้ว)' },
-];
-
-function FilterDropdown({
-  ariaLabel,
-  value,
-  onChange,
-  options,
-  align = 'left',
-  textOnly = false,
-}: {
-  ariaLabel: string;
-  value: string;
-  onChange: (val: string) => void;
-  options: FilterOption[];
-  align?: 'left' | 'right';
-  /** Render labels without option icons or a selection tick. */
-  textOnly?: boolean;
-}) {
-  const [isOpen, setIsOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  const selectedOption = options.find((opt) => opt.value === value) || options[0];
-
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setIsOpen(false);
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    document.addEventListener('touchstart', handleClickOutside);
-    document.addEventListener('keydown', handleKeyDown);
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('touchstart', handleClickOutside);
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [isOpen]);
-
-  return (
-    <div ref={dropdownRef} className="relative w-full sm:w-auto">
-      {/* Visual Custom Dropdown Button */}
-      <button
-        type="button"
-        onClick={() => setIsOpen((prev) => !prev)}
-        style={{ minHeight: '42px', height: '42px', borderRadius: '9999px' }}
-        className={`w-full sm:w-auto inline-flex items-center justify-between gap-2.5 rounded-full border px-4 text-[13px] font-bold transition-all active:scale-[0.98] ${
-          isOpen
-            ? 'border-[var(--accent)] bg-[var(--surface)] ring-2 ring-[var(--accent-ring)] text-[var(--ink)]'
-            : value
-              ? 'border-[var(--accent-border)] bg-[var(--accent-soft-weak)] text-[var(--accent-text)] hover:bg-[var(--accent-soft)]'
-              : 'border-[var(--hairline)] bg-[var(--surface-grouped)] text-[var(--ink)] hover:bg-[var(--surface-chip-2)]'
-        }`}
-      >
-        <span className="inline-flex items-center gap-2 truncate">
-          {!textOnly && selectedOption.icon}
-          <span>{selectedOption.label}</span>
-        </span>
-        <ChevronDown
-          size={14}
-          className={`shrink-0 transition-transform duration-200 ${
-            isOpen ? 'rotate-180 text-[var(--accent-text)]' : 'text-[var(--ink-tertiary)]'
-          }`}
-        />
-      </button>
-
-      {/* Floating Apple-Style Popover Menu */}
-      {isOpen && (
-        <div
-          role="listbox"
-          className={`absolute top-[calc(100%+6px)] z-50 min-w-[175px] max-w-[240px] overflow-hidden rounded-[18px] border border-[var(--hairline)] bg-[var(--glass-95)] p-1.5 shadow-[0_12px_32px_rgba(0,0,0,0.12),0_2px_6px_rgba(0,0,0,0.04)] backdrop-blur-xl animate-in fade-in zoom-in-95 duration-150 ${
-            align === 'right' ? 'right-0 sm:left-0' : 'left-0'
-          }`}
-        >
-          <div className="space-y-0.5">
-            {options.map((opt) => {
-              const isSelected = opt.value === value;
-              return (
-                <button
-                  key={opt.value}
-                  type="button"
-                  role="option"
-                  aria-selected={isSelected}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    onChange(opt.value);
-                    setIsOpen(false);
-                  }}
-                  className={`flex w-full items-center justify-between gap-3 rounded-[14px] px-3.5 py-2.5 text-[13px] font-semibold transition-all duration-150 ${
-                    isSelected
-                      ? 'bg-[var(--accent-soft)] text-[var(--accent-text)]'
-                      : 'text-[var(--ink)] hover:bg-[var(--surface-grouped)]'
-                  }`}
-                >
-                  <span className="inline-flex items-center gap-2.5 truncate">
-                    {!textOnly && opt.icon}
-                    <span>{opt.label}</span>
-                  </span>
-                  {!textOnly && isSelected && (
-                    <Check size={14} className="shrink-0 text-[var(--accent-text)]" />
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Accessible native select for test automation & screen readers */}
-      <select
-        aria-label={ariaLabel}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="sr-only"
-        tabIndex={-1}
-      >
-        {options.map((opt) => (
-          <option key={opt.value} value={opt.value}>
-            {opt.label}
-          </option>
-        ))}
-      </select>
-    </div>
-  );
-}
+const emptyCreateForm = (): CreateUserForm => ({
+  username: '',
+  display_name: '',
+  email: '',
+  password: '',
+  role: 'user',
+  pages: AVAILABLE_PAGES.map((p) => p.id),
+});
 
 export default function UserManagement() {
   const { success: showSuccess, error: showError } = useToast();
@@ -319,14 +79,7 @@ export default function UserManagement() {
 
   // ── Create user ─────────────────────────────────────────────────────
   const [isCreating, setIsCreating] = useState(false);
-  const [createForm, setCreateForm] = useState({
-    username: '',
-    display_name: '',
-    email: '',
-    password: '',
-    role: 'user',
-    pages: AVAILABLE_PAGES.map((p) => p.id),
-  });
+  const [createForm, setCreateForm] = useState<CreateUserForm>(emptyCreateForm);
   const [isCreatingSaving, setIsCreatingSaving] = useState(false);
 
   useEffect(() => {
@@ -578,14 +331,7 @@ export default function UserManagement() {
   };
 
   const openCreate = () => {
-    setCreateForm({
-      username: '',
-      display_name: '',
-      email: '',
-      password: '',
-      role: 'user',
-      pages: AVAILABLE_PAGES.map((p) => p.id),
-    });
+    setCreateForm(emptyCreateForm());
     setIsCreating(true);
   };
 
@@ -717,6 +463,23 @@ export default function UserManagement() {
     }
   };
 
+  /** Approve every request on the current page in one pass. */
+  const handleBulkApprove = async () => {
+    if (bulkApproving || pendingInView.length === 0) return;
+    setBulkApproving(true);
+    try {
+      for (const candidate of pendingInView) {
+        await fetchWithAuth(`/api/v1/users/${candidate.id}/approve`, {
+          method: 'POST',
+        });
+      }
+    } finally {
+      setBulkApproving(false);
+      // Re-filtering is what refetches the list for this view.
+      setStatusFilter('pending');
+    }
+  };
+
   const handleRestore = async (user: TrashUser) => {
     if (trashActionInFlight.current) return;
     trashActionInFlight.current = true;
@@ -786,869 +549,77 @@ export default function UserManagement() {
   };
 
   if (initialLoading) {
-    return (
-      <div className="w-full">
-        <div className="w-full space-y-4 animate-pulse py-2">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex flex-1 items-center gap-2">
-              <div className="h-10 w-64 rounded-full bg-[var(--surface-subtle)] ring-1 ring-[var(--hairline)]" />
-              <div className="h-10 w-28 rounded-full bg-[var(--surface-subtle)] ring-1 ring-[var(--hairline)]" />
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="h-10 w-28 rounded-full bg-[var(--surface-subtle)] ring-1 ring-[var(--hairline)]" />
-              <div className="h-10 w-28 rounded-full bg-[var(--accent-soft)]" />
-            </div>
-          </div>
-          <div className="overflow-hidden rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)]">
-            <div className="h-12 border-b border-[var(--hairline-soft)] bg-[var(--surface-subtle)]" />
-            <div className="divide-y divide-[var(--hairline-soft)] p-4 space-y-4">
-              {[1, 2, 3, 4, 5].map((idx) => (
-                <div key={idx} className="flex items-center justify-between pt-2">
-                  <div className="space-y-1.5">
-                    <div className="h-4 w-36 rounded-[11px] bg-[var(--surface-chip)]" />
-                    <div className="h-3 w-48 rounded-[11px] bg-[var(--surface-subtle)]" />
-                  </div>
-                  <div className="h-6 w-16 rounded-full bg-[var(--surface-chip)]" />
-                  <div className="h-6 w-14 rounded-full bg-[var(--surface-chip)]" />
-                  <div className="h-8 w-20 rounded-full bg-[var(--surface-subtle)]" />
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+    return <UserManagementSkeleton />;
   }
 
   return (
     <div className="space-y-4">
       {editingUser ? (
-        <div className="overflow-hidden rounded-[18px] bg-[var(--surface)] ring-1 ring-[var(--hairline)]">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[var(--hairline-soft)] bg-[var(--surface-subtle)] px-6 py-5">
-            <div className="flex items-center gap-3 mb-3 sm:mb-0">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--accent-soft)] text-[var(--accent-text)]">
-                <Edit size={18} />
-              </div>
-              <div>
-                <h3 className="text-[15px] font-bold tracking-tight text-[var(--ink)]">
-                  แก้ไขผู้ใช้งาน: {editingUser.name}
-                </h3>
-                <p className="text-[13px] text-[var(--ink-muted)]">
-                  {editingUser.email || editingUser.username}
-                </p>
-              </div>
-            </div>
-            <button
-              onClick={closeEdit}
-              className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--surface-chip)] text-[var(--ink-muted)] transition-colors hover:bg-[var(--surface-chip-2)] self-end sm:self-auto"
-            >
-              <X size={16} />
-            </button>
-          </div>
-
-          <div className="p-6 space-y-6">
-            {/* Status */}
-            <div>
-              <span className="mb-2 block text-[12px] font-bold tracking-wide uppercase text-[var(--ink-muted)]">สถานะการใช้งาน</span>
-              <div className="flex items-center justify-between gap-4 rounded-[18px] bg-[var(--surface-subtle)] p-4 ring-1 ring-[var(--hairline)]">
-                <div className="min-w-0">
-                  <span className="block text-[14px] font-semibold text-[var(--ink)]">
-                    เปิดใช้งานบัญชี (Active)
-                  </span>
-                  <span className="block text-[12px] text-[var(--ink-muted)]">
-                    ผู้ใช้สามารถเข้าสู่ระบบและใช้งานได้ตามปกติ
-                  </span>
-                </div>
-                <Switch
-                  checked={editIsActive}
-                  onChange={setEditIsActive}
-                  label="เปิดใช้งานบัญชีนี้"
-                />
-              </div>
-            </div>
-
-            {/* Two-factor authentication */}
-            <div>
-              <span className="mb-2 block text-[12px] font-bold tracking-wide uppercase text-[var(--ink-muted)]">ความปลอดภัย (2FA)</span>
-              <div className="flex flex-col gap-3 rounded-[18px] bg-[var(--surface-subtle)] p-4 ring-1 ring-[var(--hairline)] sm:flex-row sm:items-center sm:justify-between">
-                <div className="min-w-0">
-                  <span className="block text-[14px] font-semibold text-[var(--ink)]">
-                    {editingUser.two_factor_enabled
-                      ? 'เปิดใช้งานการยืนยันสองขั้นตอน'
-                      : 'ยังไม่ได้เปิดใช้งาน 2FA'}
-                  </span>
-                  <span className="block text-[12px] text-[var(--ink-muted)]">
-                    {editingUser.two_factor_enabled
-                      ? 'ใช้เมื่อผู้ใช้ทำเครื่องและรหัสสำรองหาย — การรีเซ็ตจะล้างรหัสทั้งหมด'
-                      : 'บัญชีนี้เข้าสู่ระบบด้วยรหัสผ่านเพียงอย่างเดียว'}
-                  </span>
-                </div>
-                {editingUser.two_factor_enabled && (
-                  <button
-                    type="button"
-                    onClick={() => handleResetTwoFactor(editingUser)}
-                    disabled={
-                      currentUser?.id === editingUser.id ||
-                      resettingTwoFactorId === editingUser.id
-                    }
-                    title={
-                      currentUser?.id === editingUser.id
-                        ? 'ปิด 2FA ของตัวเองได้ที่หน้าตั้งค่าความปลอดภัย'
-                        : 'ล้างรหัส 2FA ของบัญชีนี้'
-                    }
-                    className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-full bg-rose-50 px-3.5 py-1.5 text-[12px] font-bold text-rose-700 ring-1 ring-inset ring-rose-600/20 transition-all duration-150 hover:bg-rose-100 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    {resettingTwoFactorId === editingUser.id ? (
-                      <Loader2 size={12} className="animate-spin" aria-hidden="true" />
-                    ) : (
-                      <ShieldAlert size={12} aria-hidden="true" />
-                    )}
-                    รีเซ็ต 2FA
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Role */}
-            <div>
-              <span className="mb-2 block text-[12px] font-bold tracking-wide uppercase text-[var(--ink-muted)]">สิทธิ์การใช้งาน (Role)</span>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {/* User Role Card */}
-                <div
-                  onClick={() => setEditRole('user')}
-                  className={`group relative flex cursor-pointer items-start gap-3 rounded-[18px] p-4 transition-all duration-200 ${
-                    editRole === 'user'
-                      ? 'bg-[var(--surface)] ring-2 ring-[var(--accent)]'
-                      : 'bg-[var(--surface-subtle)] ring-1 ring-[var(--hairline)] hover:bg-[var(--surface)]'
-                  }`}
-                >
-                  <div
-                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-all duration-200 ${
-                      editRole === 'user'
-                        ? 'bg-[var(--accent)] text-white scale-110'
-                        : 'bg-slate-100 text-slate-400 group-hover:text-slate-500'
-                    }`}
-                  >
-                    <User size={18} strokeWidth={2.5} />
-                  </div>
-                  <div>
-                    <span
-                      className={`block text-[14px] font-semibold transition-colors ${
-                        editRole === 'user' ? 'text-[var(--accent-text)]' : 'text-[var(--ink)]'
-                      }`}
-                    >
-                      ผู้ใช้งานทั่วไป (User)
-                    </span>
-                    <span className="block mt-0.5 text-[12px] text-[var(--ink-muted)] leading-relaxed">
-                      เข้าถึงเฉพาะฟีเจอร์ที่ได้รับอนุญาต
-                    </span>
-                  </div>
-                  {editRole === 'user' && (
-                    <div className="absolute right-4 top-4 text-[var(--accent-text)] animate-in zoom-in duration-200">
-                      <CheckCircle2 size={20} />
-                    </div>
-                  )}
-                </div>
-
-                {/* Admin Role Card */}
-                <div
-                  onClick={() => setEditRole('admin')}
-                  className={`group relative flex cursor-pointer items-start gap-3 rounded-[18px] p-4 transition-all duration-200 ${
-                    editRole === 'admin'
-                      ? 'bg-[var(--surface)] ring-2 ring-purple-600'
-                      : 'bg-[var(--surface-subtle)] ring-1 ring-[var(--hairline)] hover:bg-[var(--surface)]'
-                  }`}
-                >
-                  <div
-                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-all duration-200 ${
-                      editRole === 'admin'
-                        ? 'bg-purple-600 text-white scale-110'
-                        : 'bg-slate-100 text-slate-400 group-hover:text-slate-500'
-                    }`}
-                  >
-                    <ShieldAlert size={18} strokeWidth={2.5} />
-                  </div>
-                  <div>
-                    <span
-                      className={`block text-[14px] font-semibold transition-colors ${
-                        editRole === 'admin' ? 'text-purple-700' : 'text-[var(--ink)]'
-                      }`}
-                    >
-                      ผู้ดูแลระบบ (Admin)
-                    </span>
-                    <span className="block mt-0.5 text-[12px] text-[var(--ink-muted)] leading-relaxed">
-                      มีสิทธิ์สูงสุดในการจัดการระบบทั้งหมด
-                    </span>
-                  </div>
-                  {editRole === 'admin' && (
-                    <div className="absolute right-4 top-4 text-purple-600 animate-in zoom-in duration-200">
-                      <CheckCircle2 size={20} />
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <p className="rounded-[18px] bg-[var(--surface-subtle)] px-4 py-3 text-[12px] leading-relaxed text-[var(--ink-muted)]">
-              การเปิด/ปิดหน้าของทั้ง workspace ตั้งค่าได้ที่การ์ด “เปิด/ปิดหน้าใช้งาน”
-              ด้านบนของหน้าจัดการระบบ
-            </p>
-          </div>
-
-          <div className="border-t border-[var(--hairline-soft)] bg-[var(--surface-subtle)] px-6 py-4 flex flex-col-reverse sm:flex-row justify-end gap-3">
-            <button
-              onClick={closeEdit}
-              className="w-full sm:w-auto rounded-full bg-[var(--surface-grouped)] px-5 py-2.5 text-[13px] font-bold text-[var(--ink)] transition-all hover:bg-[var(--surface-chip-2)] active:scale-[0.95]"
-            >
-              ยกเลิก
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={isSaving}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-[var(--accent)] px-6 py-2.5 text-[13px] font-bold text-white shadow-xs transition-all duration-150 hover:bg-[var(--accent-hover)]  active:scale-[0.95] disabled:opacity-50"
-            >
-              {isSaving ? (
-                'กำลังบันทึก...'
-              ) : (
-                <>
-                  <Check size={14} /> บันทึกการแก้ไข
-                </>
-              )}
-            </button>
-          </div>
-        </div>
+        <UserEditPanel
+          user={editingUser}
+          currentUserId={currentUser?.id}
+          role={editRole}
+          onRoleChange={setEditRole}
+          isActive={editIsActive}
+          onIsActiveChange={setEditIsActive}
+          isSaving={isSaving}
+          resettingTwoFactorId={resettingTwoFactorId}
+          onSave={handleSave}
+          onCancel={closeEdit}
+          onResetTwoFactor={handleResetTwoFactor}
+        />
       ) : isCreating ? (
-        <div className="overflow-hidden rounded-[18px] bg-[var(--surface)] ring-1 ring-[var(--hairline)]">
-          <div className="flex items-center justify-between border-b border-[var(--hairline-soft)] bg-[var(--surface-subtle)] px-6 py-5">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--accent-soft)] text-[var(--accent-text)]">
-                <UserPlus size={18} />
-              </div>
-              <div>
-                <h3 className="text-[15px] font-bold tracking-tight text-[var(--ink)]">
-                  สร้างผู้ใช้งานใหม่
-                </h3>
-                <p className="text-[13px] text-[var(--ink-muted)]">
-                  บัญชีใช้งานได้ทันทีหลังสร้าง — แจ้งรหัสผ่านให้ผู้ใช้อย่างปลอดภัย
-                </p>
-              </div>
-            </div>
-            <button
-              onClick={() => setIsCreating(false)}
-              aria-label="ปิดฟอร์มสร้างผู้ใช้"
-              className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--surface-chip)] text-[var(--ink-muted)] transition-colors hover:bg-[var(--surface-chip-2)]"
-            >
-              <X size={16} />
-            </button>
-          </div>
-
-          <div className="p-6 space-y-6">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div>
-                <label
-                  htmlFor="create-username"
-                  className="mb-2 block text-[12px] font-bold tracking-wide uppercase text-[var(--ink-muted)]"
-                >
-                  ชื่อผู้ใช้ (Username) *
-                </label>
-                <input
-                  id="create-username"
-                  value={createForm.username}
-                  onChange={(e) => setCreateForm((prev) => ({ ...prev, username: e.target.value }))}
-                  placeholder="อย่างน้อย 3 ตัวอักษร"
-                  autoComplete="off"
-                  className="w-full rounded-[18px] border-0 bg-[var(--surface-subtle)] px-4 py-3 text-[14px] font-medium text-[var(--ink)] outline-hidden ring-1 ring-[var(--hairline)] transition-all placeholder:text-[var(--ink-tertiary)] focus:bg-[var(--surface)] focus:ring-2 focus:ring-[var(--accent)]"
-                />
-              </div>
-              <div>
-                <label
-                  htmlFor="create-display-name"
-                  className="mb-2 block text-[12px] font-bold tracking-wide uppercase text-[var(--ink-muted)]"
-                >
-                  ชื่อที่แสดง (Display name) *
-                </label>
-                <input
-                  id="create-display-name"
-                  value={createForm.display_name}
-                  onChange={(e) =>
-                    setCreateForm((prev) => ({ ...prev, display_name: e.target.value }))
-                  }
-                  placeholder="ชื่อ-นามสกุล"
-                  className="w-full rounded-[18px] border-0 bg-[var(--surface-subtle)] px-4 py-3 text-[14px] font-medium text-[var(--ink)] outline-hidden ring-1 ring-[var(--hairline)] transition-all placeholder:text-[var(--ink-tertiary)] focus:bg-[var(--surface)] focus:ring-2 focus:ring-[var(--accent)]"
-                />
-              </div>
-              <div>
-                <label
-                  htmlFor="create-email"
-                  className="mb-2 block text-[12px] font-bold tracking-wide uppercase text-[var(--ink-muted)]"
-                >
-                  อีเมล (ไม่บังคับ)
-                </label>
-                <input
-                  id="create-email"
-                  type="email"
-                  value={createForm.email}
-                  onChange={(e) => setCreateForm((prev) => ({ ...prev, email: e.target.value }))}
-                  placeholder="name@example.com"
-                  autoComplete="off"
-                  className="w-full rounded-[18px] border-0 bg-[var(--surface-subtle)] px-4 py-3 text-[14px] font-medium text-[var(--ink)] outline-hidden ring-1 ring-[var(--hairline)] transition-all placeholder:text-[var(--ink-tertiary)] focus:bg-[var(--surface)] focus:ring-2 focus:ring-[var(--accent)]"
-                />
-              </div>
-              <div>
-                <label
-                  htmlFor="create-password"
-                  className="mb-2 block text-[12px] font-bold tracking-wide uppercase text-[var(--ink-muted)]"
-                >
-                  รหัสผ่าน *
-                </label>
-                <input
-                  id="create-password"
-                  type="password"
-                  value={createForm.password}
-                  onChange={(e) => setCreateForm((prev) => ({ ...prev, password: e.target.value }))}
-                  placeholder="อย่างน้อย 8 ตัวอักษร"
-                  autoComplete="new-password"
-                  className="w-full rounded-[18px] border-0 bg-[var(--surface-subtle)] px-4 py-3 text-[14px] font-medium text-[var(--ink)] outline-hidden ring-1 ring-[var(--hairline)] transition-all placeholder:text-[var(--ink-tertiary)] focus:bg-[var(--surface)] focus:ring-2 focus:ring-[var(--accent)]"
-                />
-              </div>
-            </div>
-
-            <div>
-              <span className="mb-2 block text-[12px] font-bold tracking-wide uppercase text-[var(--ink-muted)]">สิทธิ์การใช้งาน (Role)</span>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {(['user', 'admin'] as const).map((role) => (
-                  <button
-                    key={role}
-                    type="button"
-                    onClick={() => setCreateForm((prev) => ({ ...prev, role }))}
-                    aria-pressed={createForm.role === role}
-                    className={`group relative flex items-center gap-3 rounded-[18px] p-4 text-left transition-all duration-200 ${
-                      createForm.role === role
-                        ? 'bg-[var(--surface)] ring-2 ring-[var(--accent)]'
-                        : 'bg-[var(--surface-subtle)] ring-1 ring-[var(--hairline)] hover:bg-[var(--surface)]'
-                    }`}
-                  >
-                    <div
-                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-all duration-200 ${
-                        createForm.role === role
-                          ? 'bg-[var(--accent)] text-white'
-                          : 'bg-slate-100 text-slate-400'
-                      }`}
-                    >
-                      {role === 'admin' ? (
-                        <ShieldAlert size={18} strokeWidth={2.5} />
-                      ) : (
-                        <User size={18} strokeWidth={2.5} />
-                      )}
-                    </div>
-                    <div>
-                      <span className="block text-[14px] font-semibold text-[var(--ink)]">
-                        {role === 'admin' ? 'ผู้ดูแลระบบ (Admin)' : 'ผู้ใช้งานทั่วไป (User)'}
-                      </span>
-                      <span className="block mt-0.5 text-[12px] text-[var(--ink-muted)] leading-relaxed">
-                        {role === 'admin'
-                          ? 'มีสิทธิ์สูงสุดในการจัดการระบบทั้งหมด'
-                          : 'เข้าถึงเฉพาะฟีเจอร์ที่ได้รับอนุญาต'}
-                      </span>
-                    </div>
-                    {createForm.role === role && (
-                      <div className="absolute right-4 top-4 text-[var(--accent-text)]">
-                        <CheckCircle2 size={20} />
-                      </div>
-                    )}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <p className="rounded-[18px] bg-[var(--surface-subtle)] px-4 py-3 text-[12px] leading-relaxed text-[var(--ink-muted)]">
-              ผู้ใช้ใหม่จะได้สิทธิ์หน้าตามค่าเริ่มต้นของระบบ —
-              การเปิด/ปิดหน้าทั้ง workspace ตั้งค่าได้ที่การ์ด “เปิด/ปิดหน้าใช้งาน”
-            </p>
-          </div>
-
-          <div className="border-t border-[var(--hairline-soft)] bg-[var(--surface-subtle)] px-6 py-4 flex flex-col-reverse sm:flex-row justify-end gap-3">
-            <button
-              onClick={() => setIsCreating(false)}
-              className="w-full sm:w-auto rounded-full bg-[var(--surface-grouped)] px-5 py-2.5 text-[13px] font-bold text-[var(--ink)] transition-all hover:bg-[var(--surface-chip-2)] active:scale-[0.95]"
-            >
-              ยกเลิก
-            </button>
-            <button
-              onClick={handleCreate}
-              disabled={isCreatingSaving}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-[var(--accent)] px-6 py-2.5 text-[13px] font-bold text-white shadow-xs transition-all duration-150 hover:bg-[var(--accent-hover)] active:scale-[0.95] disabled:opacity-50"
-            >
-              {isCreatingSaving ? (
-                'กำลังสร้าง...'
-              ) : (
-                <>
-                  <UserPlus size={14} /> สร้างผู้ใช้
-                </>
-              )}
-            </button>
-          </div>
-        </div>
+        <UserCreatePanel
+          form={createForm}
+          onFormChange={(patch) => setCreateForm((prev) => ({ ...prev, ...patch }))}
+          isSaving={isCreatingSaving}
+          onSave={handleCreate}
+          onCancel={() => setIsCreating(false)}
+        />
       ) : (
         <>
           {statusFilter !== 'pending' && pendingInView.length > 0 && (
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 rounded-[18px] bg-amber-500/[0.08] border border-amber-500/25 text-[var(--ink)]">
-              <div className="flex items-start gap-3">
-                <span className="p-2 rounded-[14px] bg-amber-500/15 text-amber-700 shrink-0 mt-0.5 sm:mt-0">
-                  <Clock size={18} />
-                </span>
-                <div>
-                  <div className="font-bold text-[14px] text-amber-950 flex items-center gap-2">
-                    <span>
-                      มีคำขอสมัครสมาชิกใหม่ {pendingInView.length} รายการในหน้านี้ รอการอนุมัติ
-                    </span>
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-500 text-white">
-                      รออนุมัติ
-                    </span>
-                  </div>
-                  <p className="text-[13px] text-amber-800/90 mt-0.5">
-                    คุณสามารถกดอนุมัติได้ทันทีที่ตารางด้านล่าง หรือคลิกเพื่อกรองดูเฉพาะคำขอทั้งหมด
-                  </p>
-                </div>
-              </div>
-              <div className="flex shrink-0 flex-col items-stretch gap-2 sm:flex-row sm:items-center">
-                <button
-                  type="button"
-                  disabled={bulkApproving || pendingInView.length === 0}
-                  onClick={async () => {
-                    if (bulkApproving) return;
-                    setBulkApproving(true);
-                    try {
-                      for (const candidate of pendingInView) {
-                        await fetchWithAuth(`/api/v1/users/${candidate.id}/approve`, {
-                          method: 'POST',
-                        });
-                      }
-                    } finally {
-                      setBulkApproving(false);
-                      // Re-filtering is what refetches the list for this view.
-                      setStatusFilter('pending');
-                    }
-                  }}
-                  className="inline-flex items-center justify-center gap-1.5 rounded-full bg-emerald-600 px-4 py-2 text-[13px] font-bold text-white shadow-xs transition-all hover:bg-emerald-700 active:scale-[0.98] disabled:opacity-50"
-                >
-                  {bulkApproving ? (
-                    <Loader2 size={14} className="animate-spin" aria-hidden="true" />
-                  ) : (
-                    <Check size={14} aria-hidden="true" />
-                  )}
-                  อนุมัติทั้งหมด ({pendingInView.length})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setStatusFilter('pending')}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-amber-600 hover:bg-amber-700 active:scale-[0.98] text-white text-[13px] font-bold shadow-xs transition-all shrink-0 self-stretch sm:self-auto justify-center"
-                >
-                  <span>กรองดูเฉพาะคำขอรออนุมัติ</span>
-                  <ArrowRight size={14} />
-                </button>
-              </div>
-            </div>
+            <PendingRequestsBanner
+              count={pendingInView.length}
+              bulkApproving={bulkApproving}
+              onBulkApprove={handleBulkApprove}
+              onFilterPending={() => setStatusFilter('pending')}
+            />
           )}
 
-          <div className="relative z-20 flex flex-col gap-3 rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] p-4 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
-              <label className="relative flex-1">
-                {isFetching ? (
-                  <Loader2
-                    size={15}
-                    className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 animate-spin text-[var(--accent-text)]"
-                  />
-                ) : (
-                  <Search
-                    size={15}
-                    className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--ink-tertiary)]"
-                  />
-                )}
-                <input
-                  type="search"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="ค้นหาชื่อ อีเมล หรือชื่อผู้ใช้"
-                  aria-label="ค้นหาผู้ใช้"
-                  style={{
-                    paddingLeft: '2.75rem',
-                    borderRadius: '9999px',
-                    minHeight: '42px',
-                    height: '42px',
-                  }}
-                  className="w-full rounded-full border border-[var(--hairline)] bg-[var(--surface-grouped)] pr-4 text-[13px] font-medium text-[var(--ink)] outline-hidden transition-all placeholder:text-[var(--ink-tertiary)] focus:bg-[var(--surface)] focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-ring)]"
-                />
-              </label>
-              <div className="grid grid-cols-2 gap-2 w-full sm:w-auto sm:flex sm:items-center">
-                <FilterDropdown
-                  ariaLabel="กรองตามสิทธิ์"
-                  value={roleFilter}
-                  onChange={setRoleFilter}
-                  options={ROLE_OPTIONS}
-                />
-                <FilterDropdown
-                  ariaLabel="กรองตามสถานะ"
-                  value={statusFilter}
-                  onChange={setStatusFilter}
-                  options={STATUS_OPTIONS}
-                  align="right"
-                  textOnly
-                />
-              </div>
-              {isFiltered && (
-                <button
-                  type="button"
-                  onClick={clearFilters}
-                  className="sr-only"
-                  aria-label="ล้างตัวกรอง"
-                >
-                  ล้างตัวกรอง
-                </button>
-              )}
-            </div>
-            <button
-              type="button"
-              onClick={async () => {
-                const confirmed = await showConfirm(
-                  'ส่งออกรายชื่อผู้ใช้?',
-                  `จะส่งออก ${users.length} รายการตามตัวกรองที่เห็นอยู่เป็นไฟล์ CSV`,
-                );
-                if (!confirmed.isConfirmed) return;
+          <UserListToolbar
+            query={query}
+            onQueryChange={setQuery}
+            isFetching={isFetching}
+            roleFilter={roleFilter}
+            onRoleFilterChange={setRoleFilter}
+            statusFilter={statusFilter}
+            onStatusFilterChange={setStatusFilter}
+            isFiltered={isFiltered}
+            onClearFilters={clearFilters}
+            users={users}
+            onCreate={openCreate}
+          />
 
-                const table = users as unknown as Array<Record<string, unknown>>;
-                const rows = table.map((entry) => [
-                  String(entry.name ?? ''),
-                  String(entry.username ?? ''),
-                  String(entry.email ?? ''),
-                  String(entry.role ?? ''),
-                  String(entry.status ?? 'active'),
-                  String(entry.created_at ?? ''),
-                ]);
-                downloadCsv(
-                  datedFilename('users'),
-                  toCsv(['ชื่อ', 'ชื่อผู้ใช้', 'อีเมล', 'สิทธิ์', 'สถานะ', 'สร้างเมื่อ'], rows),
-                );
-              }}
-              disabled={users.length === 0}
-              style={{ minHeight: '42px', height: '42px' }}
-              className="w-full lg:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-[var(--surface-grouped)] px-5 text-[13px] font-bold text-[var(--ink)] transition-all hover:bg-[var(--surface-chip)] active:scale-95 disabled:opacity-40"
-              title="ส่งออกรายชื่อตามตัวกรองที่เห็นอยู่"
-            >
-              <Download size={14} aria-hidden="true" /> ส่งออก CSV
-            </button>
-            <button
-              onClick={openCreate}
-              style={{ minHeight: '42px', height: '42px' }}
-              className="w-full lg:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-[var(--accent)] px-5 text-[13px] font-bold text-white shadow-xs transition-all hover:bg-[var(--accent-hover)] active:scale-95"
-            >
-              <UserPlus size={14} /> เพิ่มผู้ใช้
-            </button>
-          </div>
-
-          <div className="overflow-hidden rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] min-h-[420px]">
-            <div
-              className={`h-0.5 w-full bg-[var(--accent)] transition-all duration-300 ${isFetching ? 'opacity-100 animate-pulse' : 'opacity-0'}`}
-            />
-            <div className="overflow-x-auto min-h-[340px]">
-              <table className="w-full text-left text-sm whitespace-nowrap">
-                <thead className="bg-[var(--surface-subtle)] text-[var(--ink-muted)] text-[12px] font-bold uppercase tracking-wider">
-                  <tr>
-                    <th className="px-5 py-4 border-b border-[var(--hairline-soft)]">ชื่อผู้ใช้</th>
-                    <th className="px-5 py-4 border-b border-[var(--hairline-soft)]">สิทธิ์</th>
-                    {statusFilter === 'trash' ? (
-                      <>
-                        <th className="px-5 py-4 border-b border-[var(--hairline-soft)]">ลบเมื่อ</th>
-                        <th className="px-5 py-4 border-b border-[var(--hairline-soft)]">เหลือเวลา</th>
-                      </>
-                    ) : (
-                      <th className="px-5 py-4 border-b border-[var(--hairline-soft)]">สถานะ</th>
-                    )}
-                    <th className="px-5 py-4 border-b border-[var(--hairline-soft)] text-right">จัดการ</th>
-                  </tr>
-                </thead>
-                <tbody
-                  className={`divide-y divide-[var(--hairline)] transition-opacity duration-200 ${isFetching ? 'opacity-50' : 'opacity-100'}`}
-                >
-                  {statusFilter === 'trash'
-                    ? filteredTrash.map((t) => (
-                        <tr key={t.id} className="hover:bg-slate-50/50 transition-colors">
-                          <td className="px-5 py-4">
-                            <div className="font-semibold text-[var(--ink)] text-[14px]">{t.name}</div>
-                            <div className="text-[13px] text-[var(--ink-muted)] mt-0.5">
-                              {t.email || t.username}
-                            </div>
-                          </td>
-                          <td className="px-5 py-4">
-                            {t.role === 'admin' ? (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-purple-50 px-2.5 py-1 text-[11px] font-bold text-purple-700 ring-1 ring-inset ring-purple-600/20">
-                                <ShieldAlert size={11} /> Admin
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-bold text-slate-600 ring-1 ring-inset ring-slate-500/20">
-                                <User size={11} /> User
-                              </span>
-                            )}
-                          </td>
-                          <td className="px-5 py-4 text-[13px] font-medium text-[var(--ink-muted)]">
-                            {formatDateTime(t.deleted_at)}
-                          </td>
-                          <td className="px-5 py-4">
-                            <span
-                              className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-bold ring-1 ring-inset ${
-                                t.days_remaining <= 3
-                                  ? 'bg-rose-50 text-rose-700 ring-rose-600/20'
-                                  : 'bg-amber-50 text-amber-700 ring-amber-600/20'
-                              }`}
-                            >
-                              {remainingLabel(t.days_remaining)}
-                            </span>
-                          </td>
-                          <td className="px-5 py-4 text-right">
-                            <div className="inline-flex items-center gap-2">
-                              <button
-                                onClick={() => handleRestore(t)}
-                                disabled={trashBusyId === t.id}
-                                aria-label={`กู้คืนผู้ใช้ ${displayLabel(t)}`}
-                                className="inline-flex items-center justify-center gap-1.5 rounded-full bg-[var(--accent-soft)] px-3.5 py-1.5 text-[12px] font-bold text-[var(--accent-text)] transition-all hover:bg-[var(--accent-soft)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
-                              >
-                                {trashBusyId === t.id ? (
-                                  <Loader2 size={12} className="animate-spin" />
-                                ) : (
-                                  <RotateCcw size={12} />
-                                )}
-                                กู้คืน
-                              </button>
-                              <button
-                                onClick={() => handlePurge(t)}
-                                disabled={trashBusyId === t.id}
-                                aria-label={`ลบถาวร ${displayLabel(t)}`}
-                                className="inline-flex items-center justify-center gap-1.5 rounded-full bg-rose-50 px-3.5 py-1.5 text-[12px] font-bold text-rose-700 ring-1 ring-inset ring-rose-600/20 transition-all hover:bg-rose-100 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
-                              >
-                                <Trash2 size={12} /> ลบถาวร
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))
-                    : statusFilter === 'pending'
-                      ? filteredPending.map((p) => (
-                          <tr key={p.id} className="hover:bg-slate-50/50 transition-colors">
-                            <td className="px-5 py-4">
-                              <div className="font-semibold text-[var(--ink)] text-[14px]">
-                                {p.name}
-                              </div>
-                              <div className="text-[13px] text-[var(--ink-muted)] mt-0.5">
-                                {p.email || p.username}
-                              </div>
-                            </td>
-                            <td className="px-5 py-4">
-                              {p.role === 'admin' ? (
-                                <span className="inline-flex items-center gap-1 rounded-full bg-purple-50 px-2.5 py-1 text-[11px] font-bold text-purple-700 ring-1 ring-inset ring-purple-600/20">
-                                  <ShieldAlert size={11} /> Admin
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-bold text-slate-600 ring-1 ring-inset ring-slate-500/20">
-                                  <User size={11} /> User
-                                </span>
-                              )}
-                            </td>
-                            <td className="px-5 py-4">
-                              <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-bold text-amber-700 ring-1 ring-inset ring-amber-600/20">
-                                <Clock size={11} /> รออนุมัติ
-                              </span>
-                            </td>
-                            <td className="px-5 py-4 text-right">
-                              <div className="inline-flex items-center gap-2">
-                                <button
-                                  onClick={() => handleApprove(p)}
-                                  disabled={pendingBusyId === p.id}
-                                  aria-label={`อนุมัติคำขอของ ${displayLabel(p)}`}
-                                  className="inline-flex items-center justify-center gap-1.5 rounded-full bg-[var(--accent)] px-3.5 py-1.5 text-[12px] font-bold text-white transition-all hover:bg-[var(--accent-hover)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
-                                >
-                                  {pendingBusyId === p.id ? (
-                                    <Loader2 size={12} className="animate-spin" />
-                                  ) : (
-                                    <UserCheck size={12} />
-                                  )}
-                                  อนุมัติ
-                                </button>
-                                <button
-                                  onClick={() => handleReject(p)}
-                                  disabled={pendingBusyId === p.id}
-                                  aria-label={`ปฏิเสธคำขอของ ${displayLabel(p)}`}
-                                  className="inline-flex items-center justify-center gap-1.5 rounded-full bg-rose-50 px-3.5 py-1.5 text-[12px] font-bold text-rose-700 ring-1 ring-inset ring-rose-600/20 transition-all hover:bg-rose-100 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
-                                >
-                                  <UserX size={12} /> ปฏิเสธ
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))
-                      : users.map((u) => {
-                          const isSelf = currentUser?.id === u.id;
-                          return (
-                            <tr key={u.id} className="hover:bg-slate-50/50 transition-colors">
-                              <td className="px-5 py-4">
-                                <div className="font-semibold text-[var(--ink)] text-[14px]">
-                                  {u.name}
-                                </div>
-                                <div className="text-[13px] text-[var(--ink-muted)] mt-0.5">
-                                  {u.email || u.username}
-                                </div>
-                              </td>
-                              <td className="px-5 py-4">
-                                {u.role === 'admin' ? (
-                                  <span className="inline-flex items-center gap-1 rounded-full bg-purple-50 px-2.5 py-1 text-[11px] font-bold text-purple-700 ring-1 ring-inset ring-purple-600/20">
-                                    <ShieldAlert size={11} /> Admin
-                                  </span>
-                                ) : (
-                                  <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-bold text-slate-600 ring-1 ring-inset ring-slate-500/20">
-                                    <User size={11} /> User
-                                  </span>
-                                )}
-                              </td>
-                              <td className="px-5 py-4">
-                                {u.status === 'pending' ? (
-                                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-bold text-amber-700 ring-1 ring-inset ring-amber-600/20">
-                                    <Clock size={11} /> รออนุมัติ
-                                  </span>
-                                ) : u.is_active ? (
-                                  <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-700 ring-1 ring-inset ring-emerald-600/20">
-                                    ปกติ
-                                  </span>
-                                ) : (
-                                  <span className="inline-flex items-center rounded-full bg-rose-50 px-2.5 py-1 text-[11px] font-bold text-rose-700 ring-1 ring-inset ring-rose-600/20">
-                                    ระงับบัญชี
-                                  </span>
-                                )}
-                              </td>
-                              <td className="px-5 py-4 text-right">
-                                <div className="inline-flex items-center gap-2">
-                                  {u.status === 'pending' ? (
-                                    <>
-                                      <button
-                                        onClick={() => handleApprove(u)}
-                                        disabled={pendingBusyId === u.id}
-                                        aria-label={`อนุมัติคำขอของ ${displayLabel(u)}`}
-                                        className="inline-flex items-center justify-center gap-1.5 rounded-full bg-[var(--accent)] px-3.5 py-1.5 text-[12px] font-bold text-white transition-all hover:bg-[var(--accent-hover)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 shadow-xs"
-                                      >
-                                        {pendingBusyId === u.id ? (
-                                          <Loader2 size={12} className="animate-spin" />
-                                        ) : (
-                                          <UserCheck size={12} />
-                                        )}
-                                        อนุมัติ
-                                      </button>
-                                      <button
-                                        onClick={() => handleReject(u)}
-                                        disabled={pendingBusyId === u.id}
-                                        aria-label={`ปฏิเสธคำขอของ ${displayLabel(u)}`}
-                                        className="inline-flex items-center justify-center gap-1.5 rounded-full bg-rose-50 px-3.5 py-1.5 text-[12px] font-bold text-rose-700 ring-1 ring-inset ring-rose-600/20 transition-all hover:bg-rose-100 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
-                                      >
-                                        <UserX size={12} /> ปฏิเสธ
-                                      </button>
-                                    </>
-                                  ) : (
-                                    <>
-                                      <button
-                                        onClick={() => openEdit(u)}
-                                        className="inline-flex items-center justify-center gap-1.5 rounded-full bg-[var(--surface-grouped)] px-3.5 py-1.5 text-[12px] font-bold text-[var(--ink)] transition-all hover:bg-[var(--surface-chip-2)] active:scale-95"
-                                      >
-                                        <Settings size={12} /> ตั้งค่า
-                                      </button>
-                                      <button
-                                        onClick={() => handleDelete(u)}
-                                        disabled={isSelf || deletingId === u.id}
-                                        title={
-                                          isSelf
-                                            ? 'ไม่สามารถลบบัญชีของตัวเองได้'
-                                            : `ลบผู้ใช้ ${displayLabel(u)}`
-                                        }
-                                        aria-label={`ลบผู้ใช้ ${displayLabel(u)}`}
-                                        className="inline-flex items-center justify-center gap-1.5 rounded-full bg-rose-50 px-3.5 py-1.5 text-[12px] font-bold text-rose-700 ring-1 ring-inset ring-rose-600/20 transition-all hover:bg-rose-100 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-rose-50"
-                                      >
-                                        {deletingId === u.id ? (
-                                          <>
-                                            <Loader2 size={12} className="animate-spin" />{' '}
-                                            กำลังลบ...
-                                          </>
-                                        ) : (
-                                          <>
-                                            <Trash2 size={12} /> ลบ
-                                          </>
-                                        )}
-                                      </button>
-                                    </>
-                                  )}
-                                </div>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                  {statusFilter === 'trash'
-                    ? filteredTrash.length === 0 && (
-                        <tr>
-                          <td
-                            colSpan={5}
-                            className="px-5 py-10 text-center text-[13px] font-medium text-[var(--ink-muted)]"
-                          >
-                            {isFetching ? (
-                              <span className="inline-flex items-center gap-2">
-                                <Loader2 size={15} className="animate-spin text-[var(--accent-text)]" />{' '}
-                                กำลังโหลดข้อมูล...
-                              </span>
-                            ) : debouncedQuery.trim() ? (
-                              'ไม่พบผู้ใช้ที่ตรงกับเงื่อนไข'
-                            ) : (
-                              'ยังไม่มีบัญชีในถังขยะ'
-                            )}
-                          </td>
-                        </tr>
-                      )
-                    : statusFilter === 'pending'
-                      ? filteredPending.length === 0 && (
-                          <tr>
-                            <td
-                              colSpan={4}
-                              className="px-5 py-10 text-center text-[13px] font-medium text-[var(--ink-muted)]"
-                            >
-                              {isFetching ? (
-                                <span className="inline-flex items-center gap-2">
-                                  <Loader2 size={15} className="animate-spin text-[var(--accent-text)]" />{' '}
-                                  กำลังโหลดข้อมูล...
-                                </span>
-                              ) : debouncedQuery.trim() ? (
-                                'ไม่พบคำขอที่ตรงกับเงื่อนไข'
-                              ) : (
-                                'ยังไม่มีคำขอสมัครที่รออนุมัติ'
-                              )}
-                            </td>
-                          </tr>
-                        )
-                      : users.length === 0 && (
-                          <tr>
-                            <td
-                              colSpan={4}
-                              className="px-5 py-10 text-center text-[13px] font-medium text-[var(--ink-muted)]"
-                            >
-                              {isFetching ? (
-                                <span className="inline-flex items-center gap-2">
-                                  <Loader2 size={15} className="animate-spin text-[var(--accent-text)]" />{' '}
-                                  กำลังโหลดข้อมูล...
-                                </span>
-                              ) : isFiltered ? (
-                                'ไม่พบผู้ใช้ที่ตรงกับเงื่อนไข'
-                              ) : (
-                                'ยังไม่มีผู้ใช้งานในระบบ'
-                              )}
-                            </td>
-                          </tr>
-                        )}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <UserTable
+            statusFilter={statusFilter}
+            isFetching={isFetching}
+            users={users}
+            filteredTrash={filteredTrash}
+            filteredPending={filteredPending}
+            currentUser={currentUser}
+            deletingId={deletingId}
+            pendingBusyId={pendingBusyId}
+            trashBusyId={trashBusyId}
+            isFiltered={isFiltered}
+            debouncedQuery={debouncedQuery}
+            onRestore={handleRestore}
+            onPurge={handlePurge}
+            onApprove={handleApprove}
+            onReject={handleReject}
+            onEdit={openEdit}
+            onDelete={handleDelete}
+          />
 
           {showPagination && (
             <div className="flex flex-col gap-3 rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">

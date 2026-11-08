@@ -83,27 +83,6 @@ class TwoFactorDisableRequest(BaseModel):
     code: Optional[str] = Field(None, max_length=10)
 
 
-class ForgotPasswordRequest(BaseModel):
-    """Ask for a password-reset link. Turnstile is checked when configured."""
-
-    email: EmailStr
-    turnstile_token: Optional[str] = Field(None, max_length=4096)
-
-
-class ResetPasswordRequest(BaseModel):
-    """Redeem a password-reset link."""
-
-    token: str = Field(..., min_length=16, max_length=128)
-    new_password: str = Field(..., min_length=8, max_length=100)
-
-    @field_validator("new_password")
-    @classmethod
-    def validate_new_password(cls, v):
-        if len(v) < 8:
-            raise ValueError("Password must be at least 8 characters")
-        return v
-
-
 class VerifyEmailRequest(BaseModel):
     """Redeem an email-verification link."""
 

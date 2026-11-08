@@ -93,8 +93,8 @@ def log_email_delivery_configuration() -> None:
     backend = (settings.EMAIL_BACKEND or "console").strip().lower()
     if backend == "console":
         logger.warning(
-            "EMAIL_BACKEND=console in production: password-reset and email-verification "
-            "links will NOT be delivered. Set EMAIL_BACKEND=resend or smtp."
+            "EMAIL_BACKEND=console in production: email-verification links will NOT "
+            "be delivered. Set EMAIL_BACKEND=resend or smtp."
         )
     elif backend == "resend" and not (settings.RESEND_API_KEY or "").strip():
         logger.warning("EMAIL_BACKEND=resend but RESEND_API_KEY is empty; email will not send.")
@@ -334,12 +334,10 @@ class CSRFMiddleware:
         "/api/v1/auth/google",
         "/api/v1/auth/csrf",
         # Account-email flows. Same reasoning as login/register: they are
-        # pre-authentication doors (a reset link arrives in an inbox, not a
-        # browser session), and each state change requires a secret carried in
-        # the body — a reset token is bound to its own account, so riding a
-        # victim's cookies cannot reset anyone but the token's owner.
-        "/api/v1/auth/forgot-password",
-        "/api/v1/auth/reset-password",
+        # pre-authentication doors (a verification link arrives in an inbox, not
+        # a browser session), and each state change requires a secret carried in
+        # the body — a verification token is bound to its own account, so riding
+        # a victim's cookies cannot verify anyone but the token's owner.
         "/api/v1/auth/verify-email",
         "/api/v1/auth/resend-verification",
     )

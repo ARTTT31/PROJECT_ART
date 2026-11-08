@@ -25,7 +25,7 @@
 | Route | Purpose |
 |---|---|
 | `/login` | Email/password sign-in |
-| `/register`, `/forgot-password`, `/reset-password`, `/verify-email` | Registration policy, password self-service, email verification |
+| `/register`, `/verify-email` | Registration policy and email verification (no self-service password reset — an admin re-issues the password from `/admin`) |
 | `/dashboard` | Widget grid — rearrange, resize (S/M/L), show/hide |
 | `/profile` | Name/email/password, Quick Links, main-menu config, camera config, per-account branding |
 | `/admin` | Admin console — registration policy, pending approvals, user management |

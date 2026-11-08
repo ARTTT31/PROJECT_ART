@@ -39,8 +39,6 @@ function storage(): StorageLike | null {
 const AUTH_PATHS = [
   '/login',
   '/register',
-  '/forgot-password',
-  '/reset-password',
   '/verify-email',
   '/login-success',
 ];

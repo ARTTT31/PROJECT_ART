@@ -1,7 +1,7 @@
-"""Single-use tokens that back the password-reset and email-verify links.
+"""Single-use tokens that back the email-verification link.
 
 The raw token is mailed to the user; only its SHA-256 hash is stored, so a
-leaked database cannot be turned into working reset links.
+leaked database cannot be turned into working links.
 """
 
 from __future__ import annotations
@@ -20,7 +20,6 @@ from app.models.email_token import EmailToken
 from app.services import email_service
 
 
-PURPOSE_PASSWORD_RESET = "password_reset"
 PURPOSE_EMAIL_VERIFY = "email_verify"
 
 
@@ -89,22 +88,6 @@ async def send_verification_email(db: AsyncSession, user: object) -> None:
     link = f"{settings.FRONTEND_BASE_URL}/verify-email?token={raw}"
     await email_service.get_email_service().send(
         email_service.verify_email_message(
-            getattr(user, "email", None) or "", getattr(user, "name", None) or "", link
-        )
-    )
-
-
-async def send_password_reset_email(db: AsyncSession, user: object) -> None:
-    """Issue a single-use reset token and mail the link."""
-    raw = await issue_token(
-        db,
-        int(getattr(user, "id")),
-        PURPOSE_PASSWORD_RESET,
-        settings.PASSWORD_RESET_TOKEN_MINUTES,
-    )
-    link = f"{settings.FRONTEND_BASE_URL}/reset-password?token={raw}"
-    await email_service.get_email_service().send(
-        email_service.password_reset_email(
             getattr(user, "email", None) or "", getattr(user, "name", None) or "", link
         )
     )

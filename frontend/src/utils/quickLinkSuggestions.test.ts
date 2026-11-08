@@ -43,7 +43,7 @@ describe('normalizePath', () => {
     expect(normalizePath('/')).toBeNull();
     expect(normalizePath('/login')).toBeNull();
     expect(normalizePath('/login-success')).toBeNull();
-    expect(normalizePath('/reset-password/abc')).toBeNull();
+    expect(normalizePath('/verify-email')).toBeNull();
   });
 });
 

@@ -1,7 +1,7 @@
 """Email transport: console outbox, SMTP integration, soft failures.
 
 The load-bearing property is that ``send()`` never raises: a broken provider
-must not turn a password-reset request into a 500. Everything else here pins
+must not turn a verification request into a 500. Everything else here pins
 the backend wiring and the Thai templates' links.
 """
 
@@ -19,7 +19,6 @@ from app.services.email_service import (
     admin_new_request_email,
     outbox_clear,
     outbox_messages,
-    password_reset_email,
     verify_email_message,
 )
 
@@ -110,14 +109,6 @@ async def test_resend_backend_without_api_key_fails_softly(monkeypatch):
     ok = await EmailService().send(EmailMessage(to="d@example.com", subject="S", text="T"))
 
     assert ok is False
-
-
-def test_password_reset_template_contains_the_link():
-    message = password_reset_email("u@example.com", "User", "https://app.example.com/reset-password?token=abc")
-
-    assert "reset-password?token=abc" in message.text
-    assert "reset-password?token=abc" in message.html
-    assert "รหัสผ่าน" in message.subject
 
 
 def test_verification_template_contains_the_link():
