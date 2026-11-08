@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AlertCircle, ListTodo, Loader2, Plus, RotateCw, Trash2 } from 'lucide-react';
+import { AlertCircle, CheckCheck, ListTodo, Loader2, Plus, RotateCw, Trash2 } from 'lucide-react';
 import WidgetSizeToggle from './WidgetSizeToggle';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
 import {
@@ -416,7 +416,24 @@ export default function QuickNotesWidget({
           </div>
         </div>
 
-        {onResize && <WidgetSizeToggle value={width} onChange={onResize} sizes={[1, 2, 3]} />}
+        <div className="flex shrink-0 items-center gap-1.5">
+          {/* Lives in the header, not above the list: it appears the moment the
+              first item is ticked, and a row of its own used to shove every
+              entry down as you worked down the list. */}
+          {completed > 0 && (
+            <button
+              type="button"
+              onClick={clearCompleted}
+              aria-label={`ล้างที่เสร็จแล้ว ${completed} รายการ`}
+              title={`ล้างที่เสร็จแล้ว (${completed})`}
+              className="inline-flex h-8 items-center gap-1 rounded-full px-2.5 text-[11px] font-bold tabular-nums text-[var(--accent-text)] transition-colors hover:bg-[var(--accent)]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-ring)]"
+            >
+              <CheckCheck size={14} aria-hidden="true" />
+              {completed}
+            </button>
+          )}
+          {onResize && <WidgetSizeToggle value={width} onChange={onResize} sizes={[1, 2, 3]} />}
+        </div>
       </div>
 
       {error && (
@@ -461,18 +478,6 @@ export default function QuickNotesWidget({
           <Plus size={16} aria-hidden="true" />
         </button>
       </form>
-
-      {completed > 0 && (
-        <div className="mt-1.5 flex justify-end">
-          <button
-            type="button"
-            onClick={clearCompleted}
-            className="rounded-full px-2 py-[3px] text-[11px] font-semibold text-[var(--accent-text)] transition-colors hover:bg-[var(--accent)]/10"
-          >
-            ล้างที่เสร็จแล้ว ({completed})
-          </button>
-        </div>
-      )}
 
       <ul
         className="mt-2 max-h-[268px] space-y-1.5 overflow-y-auto pr-0.5"

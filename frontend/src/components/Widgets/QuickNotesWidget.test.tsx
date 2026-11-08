@@ -141,13 +141,19 @@ describe('QuickNotesWidget', () => {
     );
   });
 
+  it('shows the clear control only once an item is ticked', async () => {
+    await renderWith([{ id: 'n1', text: 'งานที่ยังค้าง', done: false }]);
+
+    expect(screen.queryByRole('button', { name: /ล้างที่เสร็จแล้ว/ })).toBeNull();
+  });
+
   it('clears finished items in one click', async () => {
     await renderWith([
       { id: 'n1', text: 'งานที่เสร็จแล้ว', done: true },
       { id: 'n2', text: 'งานที่ยังค้าง', done: false },
     ]);
 
-    fireEvent.click(screen.getByText('ล้างที่เสร็จแล้ว (1)'));
+    fireEvent.click(screen.getByRole('button', { name: 'ล้างที่เสร็จแล้ว 1 รายการ' }));
 
     expect(screen.queryByText('งานที่เสร็จแล้ว')).toBeNull();
     expect(screen.getByText('งานที่ยังค้าง')).toBeTruthy();
