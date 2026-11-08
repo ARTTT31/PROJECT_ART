@@ -42,6 +42,11 @@ Before modifying or creating any frontend code, components, or styles:
    - **UI & System Icons**: MUST use `lucide-react` (e.g., `import { Search, ChevronDown, Check, Settings, Trash2 } from 'lucide-react'`). Never create inline or custom SVGs for general UI controls.
    - **Brand, Social & Tech Logos**: MUST use `@icons-pack/react-simple-icons` (e.g., `import { SiGoogle, SiGithub, SiFacebook, SiLine, SiApple } from '@icons-pack/react-simple-icons'`). Never guess or draw logos manually.
    - Sizing: `w-4 h-4` (16px), `w-5 h-5` (20px), `w-6 h-6` (24px). Purely decorative icons require `aria-hidden="true"`. Global line weight `1.75` from `globals.css` applies to Lucide.
+7. **Next.js 15, React 19 & Tailwind v4 Guardrails (Strict)**:
+   - In Next.js 15, page/layout `params` and `searchParams` are Promises (`const { slug } = await params`). Never read them synchronously.
+   - `cookies()` and `headers()` from `next/headers` are asynchronous (`await cookies()`).
+   - React 19: pass `ref` directly as a component prop (no `forwardRef`). Use `useActionState` instead of `useFormState`.
+   - Tailwind v4: uses `@import 'tailwindcss';` + `@config` in `globals.css`. Never create `tailwind.config.js` or use legacy `@tailwind` v3 directives.
 
 ---
 
