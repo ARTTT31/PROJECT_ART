@@ -49,7 +49,7 @@ export function SectionCard({
                 </span>
               )}
             </div>
-            <p className="text-[12px] leading-snug text-[var(--ink-muted)] truncate max-w-xs sm:max-w-md">
+            <p className="text-[12px] leading-snug text-[var(--ink-muted)]">
               {subtitle}
             </p>
           </div>

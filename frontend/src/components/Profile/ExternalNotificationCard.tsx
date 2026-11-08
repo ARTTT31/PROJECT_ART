@@ -178,12 +178,12 @@ export default function ExternalNotificationCard() {
       <form onSubmit={handleSave} className="space-y-6">
         {/* LINE Notification Section */}
         <div className="rounded-[18px] border border-[var(--hairline)] bg-[var(--surface-subtle)] p-4 sm:p-5 space-y-4">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2.5">
-              <div className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-[#06C755]/10 text-[#06C755]">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-[#06C755]/10 text-[#06C755]">
                 <SiLine className="h-5 w-5" aria-hidden="true" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <h3 className="text-[14px] font-bold text-[var(--ink)]">LINE Messaging / Webhook</h3>
                 <p className="text-[11px] text-[var(--ink-muted)]">รับแจ้งเตือนผ่าน LINE Channel Access Token หรือ Webhook</p>
               </div>
@@ -192,7 +192,7 @@ export default function ExternalNotificationCard() {
               type="button"
               disabled={testingChannel === 'line' || (!config.line_token && !config.line_webhook_url)}
               onClick={() => handleTestNotification('line')}
-              className="inline-flex items-center gap-1.5 rounded-[9px] border border-[var(--hairline)] bg-[var(--surface)] px-2.5 py-1 text-[11px] font-semibold text-[var(--ink-secondary)] transition-all hover:bg-[var(--surface-grouped)] active:scale-[0.95] disabled:opacity-40"
+              className="self-end sm:self-auto inline-flex items-center gap-1.5 rounded-[9px] border border-[var(--hairline)] bg-[var(--surface)] px-2.5 py-1 text-[11px] font-semibold text-[var(--ink-secondary)] transition-all hover:bg-[var(--surface-grouped)] active:scale-[0.95] disabled:opacity-40"
             >
               {testingChannel === 'line' ? (
                 <Loader2 size={12} className="animate-spin" />
@@ -227,12 +227,12 @@ export default function ExternalNotificationCard() {
 
         {/* Telegram Notification Section */}
         <div className="rounded-[18px] border border-[var(--hairline)] bg-[var(--surface-subtle)] p-4 sm:p-5 space-y-4">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2.5">
-              <div className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-[#24A1DE]/10 text-[#24A1DE]">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-[#24A1DE]/10 text-[#24A1DE]">
                 <SiTelegram className="h-5 w-5" aria-hidden="true" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <h3 className="text-[14px] font-bold text-[var(--ink)]">Telegram Bot</h3>
                 <p className="text-[11px] text-[var(--ink-muted)]">รับแจ้งเตือนผ่านบอท Telegram ของคุณเอง</p>
               </div>
@@ -241,7 +241,7 @@ export default function ExternalNotificationCard() {
               type="button"
               disabled={testingChannel === 'telegram' || !config.telegram_bot_token || !config.telegram_chat_id}
               onClick={() => handleTestNotification('telegram')}
-              className="inline-flex items-center gap-1.5 rounded-[9px] border border-[var(--hairline)] bg-[var(--surface)] px-2.5 py-1 text-[11px] font-semibold text-[var(--ink-secondary)] transition-all hover:bg-[var(--surface-grouped)] active:scale-[0.95] disabled:opacity-40"
+              className="self-end sm:self-auto inline-flex items-center gap-1.5 rounded-[9px] border border-[var(--hairline)] bg-[var(--surface)] px-2.5 py-1 text-[11px] font-semibold text-[var(--ink-secondary)] transition-all hover:bg-[var(--surface-grouped)] active:scale-[0.95] disabled:opacity-40"
             >
               {testingChannel === 'telegram' ? (
                 <Loader2 size={12} className="animate-spin" />
@@ -275,12 +275,12 @@ export default function ExternalNotificationCard() {
 
         {/* Custom Webhook Section */}
         <div className="rounded-[18px] border border-[var(--hairline)] bg-[var(--surface-subtle)] p-4 sm:p-5 space-y-4">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2.5">
-              <div className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-purple-500/10 text-purple-600 dark:text-purple-400">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-purple-500/10 text-purple-600 dark:text-purple-400">
                 <Globe className="h-5 w-5" aria-hidden="true" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <h3 className="text-[14px] font-bold text-[var(--ink)]">Custom Webhook (HTTP POST)</h3>
                 <p className="text-[11px] text-[var(--ink-muted)]">ส่ง Payload JSON ไปยัง Discord, Slack, n8n หรือ API ภายนอก</p>
               </div>
@@ -289,7 +289,7 @@ export default function ExternalNotificationCard() {
               type="button"
               disabled={testingChannel === 'webhook' || !config.webhook_url}
               onClick={() => handleTestNotification('webhook')}
-              className="inline-flex items-center gap-1.5 rounded-[9px] border border-[var(--hairline)] bg-[var(--surface)] px-2.5 py-1 text-[11px] font-semibold text-[var(--ink-secondary)] transition-all hover:bg-[var(--surface-grouped)] active:scale-[0.95] disabled:opacity-40"
+              className="self-end sm:self-auto inline-flex items-center gap-1.5 rounded-[9px] border border-[var(--hairline)] bg-[var(--surface)] px-2.5 py-1 text-[11px] font-semibold text-[var(--ink-secondary)] transition-all hover:bg-[var(--surface-grouped)] active:scale-[0.95] disabled:opacity-40"
             >
               {testingChannel === 'webhook' ? (
                 <Loader2 size={12} className="animate-spin" />
@@ -315,68 +315,74 @@ export default function ExternalNotificationCard() {
         <div className="rounded-[18px] border border-[var(--hairline)] bg-[var(--surface-subtle)] p-4 sm:p-5 space-y-3">
           <h3 className="text-[13px] font-bold text-[var(--ink)]">หัวข้อการแจ้งเตือนที่ต้องการรับ (Event Subscriptions)</h3>
           <div className="space-y-2">
-            <div className="flex items-center justify-between rounded-[14px] bg-[var(--surface)] p-3 ring-1 ring-[var(--hairline)]">
-              <div>
+            <div className="flex items-center justify-between gap-3 rounded-[14px] bg-[var(--surface)] p-3 ring-1 ring-[var(--hairline)]">
+              <div className="min-w-0 flex-1">
                 <p className="text-[13px] font-bold text-[var(--ink)]">แจ้งเตือนราคาน้ำมัน (Oil Price Alert)</p>
-                <p className="text-[11px] text-[var(--ink-muted)]">แจ้งเตือนเมื่อมีการประกาศปรับเปลี่ยนราคาน้ำมันขายปลีก</p>
+                <p className="mt-0.5 text-[11px] leading-relaxed text-[var(--ink-muted)]">แจ้งเตือนเมื่อมีการประกาศปรับเปลี่ยนราคาน้ำมันขายปลีก</p>
               </div>
-              <Switch
-                checked={config.events.oil_alert}
-                label="แจ้งเตือนราคาน้ำมัน"
-                onChange={(checked) =>
-                  setConfig((prev) => ({
-                    ...prev,
-                    events: { ...prev.events, oil_alert: checked },
-                  }))
-                }
-              />
+              <div className="shrink-0">
+                <Switch
+                  checked={config.events.oil_alert}
+                  label="แจ้งเตือนราคาน้ำมัน"
+                  onChange={(checked) =>
+                    setConfig((prev) => ({
+                      ...prev,
+                      events: { ...prev.events, oil_alert: checked },
+                    }))
+                  }
+                />
+              </div>
             </div>
 
-            <div className="flex items-center justify-between rounded-[14px] bg-[var(--surface)] p-3 ring-1 ring-[var(--hairline)]">
-              <div>
+            <div className="flex items-center justify-between gap-3 rounded-[14px] bg-[var(--surface)] p-3 ring-1 ring-[var(--hairline)]">
+              <div className="min-w-0 flex-1">
                 <p className="text-[13px] font-bold text-[var(--ink)]">สรุปภาพรวมตลาด (Market Summary Alert)</p>
-                <p className="text-[11px] text-[var(--ink-muted)]">แจ้งเตือนภาพรวมตลาดหุ้น, อัตราแลกเปลี่ยน และดัชนีสำคัญ</p>
+                <p className="mt-0.5 text-[11px] leading-relaxed text-[var(--ink-muted)]">แจ้งเตือนภาพรวมตลาดหุ้น, อัตราแลกเปลี่ยน และดัชนีสำคัญ</p>
               </div>
-              <Switch
-                checked={config.events.market_alert}
-                label="สรุปภาพรวมตลาด"
-                onChange={(checked) =>
-                  setConfig((prev) => ({
-                    ...prev,
-                    events: { ...prev.events, market_alert: checked },
-                  }))
-                }
-              />
+              <div className="shrink-0">
+                <Switch
+                  checked={config.events.market_alert}
+                  label="สรุปภาพรวมตลาด"
+                  onChange={(checked) =>
+                    setConfig((prev) => ({
+                      ...prev,
+                      events: { ...prev.events, market_alert: checked },
+                    }))
+                  }
+                />
+              </div>
             </div>
 
-            <div className="flex items-center justify-between rounded-[14px] bg-[var(--surface)] p-3 ring-1 ring-[var(--hairline)]">
-              <div>
+            <div className="flex items-center justify-between gap-3 rounded-[14px] bg-[var(--surface)] p-3 ring-1 ring-[var(--hairline)]">
+              <div className="min-w-0 flex-1">
                 <p className="text-[13px] font-bold text-[var(--ink)]">สรุปภาพรวมประจำวัน (Daily Digest)</p>
-                <p className="text-[11px] text-[var(--ink-muted)]">รับสรุปงาน พยากรณ์อากาศ และภารกิจสำคัญประจำวัน</p>
+                <p className="mt-0.5 text-[11px] leading-relaxed text-[var(--ink-muted)]">รับสรุปงาน พยากรณ์อากาศ และภารกิจสำคัญประจำวัน</p>
               </div>
-              <Switch
-                checked={config.events.daily_summary}
-                label="สรุปภาพรวมประจำวัน"
-                onChange={(checked) =>
-                  setConfig((prev) => ({
-                    ...prev,
-                    events: { ...prev.events, daily_summary: checked },
-                  }))
-                }
-              />
+              <div className="shrink-0">
+                <Switch
+                  checked={config.events.daily_summary}
+                  label="สรุปภาพรวมประจำวัน"
+                  onChange={(checked) =>
+                    setConfig((prev) => ({
+                      ...prev,
+                      events: { ...prev.events, daily_summary: checked },
+                    }))
+                  }
+                />
+              </div>
             </div>
           </div>
         </div>
 
         {/* Footer save reminder */}
-        <div className="flex items-center justify-between pt-2">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
           <p className="text-[11px] text-[var(--ink-tertiary)]">
             * ข้อมูลการเชื่อมต่อและการตั้งค่าจะถูกเก็บเป็นความลับเฉพาะบัญชีผู้ใช้ของคุณเท่านั้น
           </p>
           <button
             type="submit"
             disabled={isSaving}
-            className="inline-flex items-center gap-1.5 rounded-[11px] bg-[var(--accent)] px-4 py-2 text-[13px] font-bold text-white shadow-2xs transition-all duration-150 hover:bg-[var(--accent-hover)] active:scale-[0.95] disabled:opacity-50"
+            className="self-end sm:self-auto inline-flex items-center gap-1.5 rounded-[11px] bg-[var(--accent)] px-4 py-2 text-[13px] font-bold text-white shadow-2xs transition-all duration-150 hover:bg-[var(--accent-hover)] active:scale-[0.95] disabled:opacity-50"
           >
             {isSaving ? (
               <Loader2 size={14} className="animate-spin" />

@@ -46,7 +46,7 @@ export default function WidgetSizeToggle({
             type="button"
             onClick={() => onChange(size)}
             aria-pressed={isActive}
-            aria-label={`ปรับเป็น${description}`}
+            aria-label={`ปรับเป็น ${description}`}
             title={description}
             className={clsx(
               // `small-control` opts out of the 44px touch-target rule in globals.css:

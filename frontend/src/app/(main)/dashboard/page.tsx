@@ -132,7 +132,7 @@ function WidgetErrorFallback({
         <AlertTriangle className="h-6 w-6 text-red-500" aria-hidden="true" />
       </div>
       <div className="text-center">
-        <p className="text-[15px] font-semibold text-[var(--ink)]">วิดเจ็ต{name}ไม่พร้อมใช้งาน</p>
+        <p className="text-[15px] font-semibold text-[var(--ink)]">วิดเจ็ต {name} ไม่พร้อมใช้งาน</p>
         <p className="mt-1 text-[13px] text-[var(--ink-muted)]">
           {isChunkError
             ? 'มีการอัปเดตเวอร์ชันใหม่ กรุณารีเฟรชหน้าเว็บ'
@@ -367,6 +367,7 @@ export default function DashboardPage() {
     resetToDefaultLayout,
     currentView,
     setCurrentView,
+    applyRolePreset,
   } = useDashboardLayout();
   const { t } = useI18n();
 
@@ -515,8 +516,44 @@ export default function DashboardPage() {
             </DialogDescription>
           </DialogHeader>
 
-          <DialogBody>
-            <div className="rounded-[18px] bg-[var(--surface-grouped)] p-2 space-y-1.5">
+          <DialogBody className="space-y-4">
+            {/* 1-Click Role Presets */}
+            <div>
+              <div className="mb-2 px-1">
+                <span className="text-[12px] font-bold text-[var(--ink-secondary)]">
+                  แม่แบบจัดหน้าตามสายงาน (Role Presets)
+                </span>
+                <p className="text-[11px] text-[var(--ink-muted)]">
+                  เลือกแม่แบบเพื่อจัดเรียงและเปิดใช้วิดเจ็ตที่เกี่ยวข้องใน 1 คลิก
+                </p>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {ROLE_PRESETS.map((preset) => (
+                  <button
+                    key={preset.id}
+                    type="button"
+                    onClick={() => applyRolePreset(preset.id)}
+                    className="flex flex-col items-start gap-1 rounded-[14px] border border-[var(--hairline)] bg-[var(--surface)] p-2.5 text-left transition-all hover:bg-[var(--surface-grouped)] hover:border-[var(--accent)] active:scale-[0.97]"
+                  >
+                    <span className="text-[12px] font-bold text-[var(--ink)]">
+                      {preset.label}
+                    </span>
+                    <span className="line-clamp-1 text-[10px] text-[var(--ink-muted)]">
+                      {preset.description}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Individual Widget Switches */}
+            <div>
+              <div className="mb-2 px-1">
+                <span className="text-[12px] font-bold text-[var(--ink-secondary)]">
+                  เลือกเปิด-ปิดวิดเจ็ตรายตัว
+                </span>
+              </div>
+              <div className="rounded-[18px] bg-[var(--surface-grouped)] p-2 space-y-1.5">
               {defaultWidgets
                 .filter((widget) => widget.id !== 'syshealth' || user?.role === 'admin')
                 .map((widget) => {
@@ -577,6 +614,7 @@ export default function DashboardPage() {
                     </div>
                   );
                 })}
+              </div>
             </div>
           </DialogBody>
 

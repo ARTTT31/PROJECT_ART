@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { CheckCircle2, Loader2, Wifi, WifiOff } from 'lucide-react';
+import { CheckCircle2, Loader2, WifiOff } from 'lucide-react';
 import { OFFLINE_CHANGE_EVENT, pendingCount } from '@/lib/offline/localStore';
 
 /**
@@ -112,9 +112,21 @@ export default function OfflineBanner() {
         ) : queued > 0 ? (
           <>
             <Loader2 size={16} className="mt-0.5 shrink-0 animate-spin" aria-hidden="true" />
-            <span className="leading-relaxed">
-              กลับมาออนไลน์แล้ว · กำลังซิงก์ {queued} รายการที่ค้างไว้
-            </span>
+            <div className="flex flex-1 items-center justify-between gap-2.5">
+              <span className="leading-relaxed">
+                กลับมาออนไลน์แล้ว · กำลังซิงก์ {queued} รายการที่ค้างไว้
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  window.dispatchEvent(new Event('online'));
+                  refreshQueue();
+                }}
+                className="shrink-0 rounded-full bg-[var(--surface)] px-2.5 py-1 text-[11px] font-bold text-[var(--accent-text)] ring-1 ring-[var(--hairline)] transition-all hover:bg-[var(--surface-grouped)] active:scale-95"
+              >
+                ซิงก์ทันที
+              </button>
+            </div>
           </>
         ) : (
           <>

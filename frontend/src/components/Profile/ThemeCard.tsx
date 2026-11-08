@@ -89,7 +89,7 @@ export function ThemeCard() {
                   type="button"
                   onClick={() => setAccent(option.id)}
                   title={option.label}
-                  aria-label={`ใช้สี${option.label}`}
+                  aria-label={`ใช้สี ${option.label}`}
                   aria-pressed={selected}
                   className={`relative flex h-11 w-11 items-center justify-center rounded-full transition-all active:scale-95 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface)] ${
                     selected

@@ -245,7 +245,7 @@ export default function DailyDigestWidget({
             'กำลังประมวลผลข้อมูลสรุปประจำวัน…'
           ) : (
             <>
-              อุณหภูมิวันนี้ประมาณ <span className="font-semibold text-[var(--ink)]">{data.weather.temp ?? 31}°C</span> สภาพ{data.weather.condition} สถานการณ์ราคาน้ำมัน{data.oil.status} ดัชนี SET อยู่ที่ <span className="font-semibold text-[var(--ink)]">{data.market.setIndex ?? '-'}</span> และคุณมีงานที่ค้างอยู่ <span className="font-semibold text-[var(--ink)]">{data.pendingTasks} รายการ</span>
+              อุณหภูมิวันนี้ประมาณ <span className="font-semibold text-[var(--ink)]">{data.weather.temp ?? 31}°C</span> ({data.weather.condition}) · ราคาน้ำมัน: <span className="font-semibold text-[var(--ink)]">{data.oil.status}</span> · ดัชนี SET:  <span className="font-semibold text-[var(--ink)]">{data.market.setIndex ?? '-'}</span> · งานค้างในระบบ: <span className="font-semibold text-[var(--ink)]">{data.pendingTasks} รายการ</span>
             </>
           )}
         </p>
