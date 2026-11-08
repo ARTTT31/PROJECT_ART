@@ -13,8 +13,8 @@ const ERA_OPTIONS: Array<{ value: DateEra; label: string; hint: string }> = [
 ];
 
 const LOCALE_OPTIONS: Array<{ value: UiLocale; label: string; hint: string }> = [
-  { value: 'th', label: 'ไทย', hint: 'พฤหัสบดี 5 พฤศจิกายน' },
-  { value: 'en', label: 'อังกฤษ', hint: 'Thursday 5 November' },
+  { value: 'th', label: 'ภาษาไทย', hint: 'พฤหัสบดี 5 พฤศจิกายน' },
+  { value: 'en', label: 'English', hint: 'Thursday 5 November' },
 ];
 
 function Segmented<T extends string>({
@@ -30,34 +30,39 @@ function Segmented<T extends string>({
 }) {
   return (
     <div>
-      <p className="mb-1.5 text-[12px] font-bold text-[var(--ink-muted)]">{label}</p>
+      <p className="mb-2 text-[12px] font-bold text-[var(--ink-secondary)]">{label}</p>
       <div
-        className="inline-flex w-full rounded-full bg-[var(--surface-chip)] p-0.5"
+        className="grid grid-cols-2 gap-2 rounded-[16px] bg-[var(--surface-grouped)] p-1.5 ring-1 ring-[var(--hairline)]"
         role="group"
         aria-label={label}
       >
-        {options.map((option) => (
-          <button
-            key={option.value}
-            type="button"
-            onClick={() => onChange(option.value)}
-            aria-pressed={value === option.value}
-            className={`flex-1 rounded-full px-3 py-1.5 text-center transition-all duration-150 ${
-              value === option.value
-                ? 'bg-[var(--surface)] shadow-xs'
-                : 'hover:bg-[var(--glass-60)]'
-            }`}
-          >
-            <span
-              className={`block text-[12px] font-bold ${
-                value === option.value ? 'text-[var(--ink)]' : 'text-[var(--ink-muted)]'
+        {options.map((option) => {
+          const selected = value === option.value;
+          return (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => onChange(option.value)}
+              aria-pressed={selected}
+              className={`!flex !flex-col items-center justify-center gap-1 rounded-[12px] px-3 py-2.5 text-center transition-all duration-150 active:scale-[0.98] ${
+                selected
+                  ? 'bg-[var(--surface)] text-[var(--ink)] shadow-xs ring-1 ring-[var(--hairline)]'
+                  : 'text-[var(--ink-muted)] hover:bg-[var(--surface-chip)] hover:text-[var(--ink)]'
               }`}
             >
-              {option.label}
-            </span>
-            <span className="block text-[11px] text-[var(--ink-tertiary)]">{option.hint}</span>
-          </button>
-        ))}
+              <span
+                className={`text-[13px] font-bold ${
+                  selected ? 'text-[var(--ink)]' : 'text-[var(--ink-secondary)]'
+                }`}
+              >
+                {option.label}
+              </span>
+              <span className="text-[11px] font-normal text-[var(--ink-tertiary)]">
+                {option.hint}
+              </span>
+            </button>
+          );
+        })}
       </div>
     </div>
   );
@@ -83,7 +88,7 @@ export function DateFormatCard() {
       title={t('card.dateTime.title')}
       subtitle={t('card.dateTime.subtitle')}
     >
-      <div className="space-y-3">
+      <div className="space-y-4">
         <Segmented
           label={t('card.dateTime.era')}
           value={preferences.era}
@@ -97,11 +102,11 @@ export function DateFormatCard() {
           onChange={(next) => savePreferences({ locale: next })}
         />
 
-        <div className="rounded-[14px] bg-[var(--surface-subtle)] px-3 py-2.5 ring-1 ring-[var(--hairline)]">
+        <div className="rounded-[14px] bg-[var(--surface-subtle)] px-4 py-3 ring-1 ring-[var(--hairline)]">
           <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--ink-tertiary)]">
             {t('card.dateTime.preview')}
           </p>
-          <p className="mt-0.5 text-[13px] font-semibold text-[var(--ink)]">
+          <p className="mt-1 text-[14px] font-bold text-[var(--ink)]">
             {preview || '—'}
           </p>
         </div>

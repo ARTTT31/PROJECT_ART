@@ -966,36 +966,38 @@ textarea:focus-visible,
 }
 
 /* Ensure touch targets are at least 44x44px (WCAG AAA) */
-button:not(.inline-action):not(.small-control):not(.weather-refresh-btn):not(.min-h-9),
-a.btn,
-a.art-primary-button,
-a.art-soft-button,
-a[role='button'],
-input[type='checkbox'],
-input[type='radio'],
-[role='button']:not(.inline-action):not(.small-control),
-[role='checkbox'],
-[role='radio'] {
-  min-width: 24px;
-  min-height: 24px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* The 44×44 target is Apple HIG / WCAG 2.5.5 (AAA) — correct where a finger does
-   the pointing, but wrong as a floor for a desktop dashboard: it turned 22px
-   widget chips into 44px blocks and pushed the content out of the tile. WCAG
-   2.5.8 (AA) asks for 24×24, which every control keeps above. */
-@media (pointer: coarse) {
+@layer base {
   button:not(.inline-action):not(.small-control):not(.weather-refresh-btn):not(.min-h-9),
   a.btn,
   a.art-primary-button,
   a.art-soft-button,
   a[role='button'],
-  [role='button']:not(.inline-action):not(.small-control) {
-    min-width: 44px;
-    min-height: 44px;
+  input[type='checkbox'],
+  input[type='radio'],
+  [role='button']:not(.inline-action):not(.small-control),
+  [role='checkbox'],
+  [role='radio'] {
+    min-width: 24px;
+    min-height: 24px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* The 44×44 target is Apple HIG / WCAG 2.5.5 (AAA) — correct where a finger does
+     the pointing, but wrong as a floor for a desktop dashboard: it turned 22px
+     widget chips into 44px blocks and pushed the content out of the tile. WCAG
+     2.5.8 (AA) asks for 24×24, which every control keeps above. */
+  @media (pointer: coarse) {
+    button:not(.inline-action):not(.small-control):not(.weather-refresh-btn):not(.min-h-9),
+    a.btn,
+    a.art-primary-button,
+    a.art-soft-button,
+    a[role='button'],
+    [role='button']:not(.inline-action):not(.small-control) {
+      min-width: 44px;
+      min-height: 44px;
+    }
   }
 }
 
