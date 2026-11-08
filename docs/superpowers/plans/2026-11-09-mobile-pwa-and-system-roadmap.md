@@ -9,7 +9,7 @@
 
 ---
 
-## 📱 2. รายการฟีเจอร์ในแผนงาน (Detailed Feature Breakdown)
+## 📱 2. รายการฟีเจอร์ที่ได้รับอนุมัติเข้าแผนงาน (Approved Features in Roadmap)
 
 ### 2.1 PWA App Icon Badge (ตัวเลขแจ้งเตือนบนไอคอนแอป) 🔴
 - **วัตถุประสงค์**: แสดงตัวเลขเตือน (Badge Counter สีแดง) บนไอคอนแอปหน้าจอมือถือ/แท็บเล็ต/เดสก์ท็อป เมื่อมีงานค้างหรือการแจ้งเตือนใหม่
@@ -52,13 +52,13 @@
     - [x] วันหยุดราชการและรายการเตือนความจำส่วนตัว
   - **Backend Scheduler**: Background worker รันตรวจสอบเวลาของผู้ใช้แต่ละคนและส่งข้อความผ่าน `pywebpush`
 
-### 2.6 Fuel Price Change Early Warning (แจ้งเตือนน้ำมันจะปรับราคาล่วงหน้าตอนเย็น 17:00 น.) ⛽
+### 2.6 Fuel Price Change Early Warning (แจ้งเตือนน้ำมันจะปรับราคาล่วงหน้าตอนเย็น 17:00 น.) ⛽ [เพิ่มเข้าแผนแล้ว]
 - **วัตถุประสงค์**: แจ้งเตือนผู้ใช้ล่วงหน้าเมื่อน้ำมันจะปรับขึ้นราคาในวันถัดไป
 - **การทำงาน**:
   - ช่วงเวลา 17:00–18:00 น. ของทุกวัน ตรวจสอบฟิลด์ `has_change` จาก Bangchak API
   - หากตรวจพบว่าพรุ่งนี้ราคาน้ำมันจะปรับขึ้น ยิง Web Push แจ้งเตือนทันที: *"⚠️ พรุ่งนี้ราคาน้ำมันปรับขึ้น +0.50 บาท/ลิตร แนะนำแวะเติมน้ำมันก่อนกลับบ้านครับ"*
 
-### 2.7 PWA Home Screen Quick Shortcuts (กดค้างไอคอนแอปเพื่อสั่งงานด่วน) ⚡
+### 2.7 PWA Home Screen Quick Shortcuts (กดค้างไอคอนแอปเพื่อสั่งงานด่วน) ⚡ [เพิ่มเข้าแผนแล้ว]
 - **วัตถุประสงค์**: กดค้างไอคอนบนหน้าจอโฮมเพื่อเข้าถึงเมนูลัดทันที (PWA Shortcuts Metadata)
 - **เมนูลัด**:
   - 📝 "จดโน้ตด่วน" (เปิด Dashboard พร้อมโฟกัสที่ช่อง Quick Notes)
@@ -66,24 +66,40 @@
   - 🤖 "คุยกับ AI Copilot" (เปิดแอปพร้อมเด้งหน้าต่าง AI ผู้ช่วย)
   - 📹 "ดูกล้องวงจรปิด CCTV"
 
-### 2.8 Web Share Target (รับข้อมูลที่แชร์จากแอปอื่นเข้า Workspace) 📥
+### 2.8 Web Share Target (รับข้อมูลที่แชร์จากแอปอื่นเข้า Workspace) 📥 [เพิ่มเข้าแผนแล้ว]
 - **วัตถุประสงค์**: เมื่อกดปุ่ม "แชร์" จาก Safari, LINE, หรือ Facebook สามารถเลือกส่งข้อความ/ลิงก์เข้ามาบันทึกลงใน ART Workspace ได้ทันที
-
-### 2.9 Biometric Quick Unlock (ปลดล็อกแอปด้วย Face ID / Touch ID / Fingerprint) 🔒
-- **วัตถุประสงค์**: เข้าใช้งานแอปได้อย่างปลอดภัยและรวดเร็วผ่าน WebAuthn โดยไม่ต้องกรอกรหัสผ่านทุกครั้ง
 
 ---
 
-## 🛠️ 3. ตารางสรุปแผนงานและสถานะ (Roadmap Execution Matrix)
+## 💡 3. ฟีเจอร์เสนอแนะเพิ่มเติมเพื่อพิจารณา (New Proposed Features)
+
+### 3.1 AI Receipt & Slip OCR Scanner (ถ่ายรูปสลิป/ใบเสร็จ บันทึกลง Finance อัตโนมัติ) 🧾
+- **แนวคิด**: ถ่ายรูปใบเสร็จค่าใช้จ่ายหรือสลิปโอนเงินธนาคาร ให้ AI สแกนยอดเงิน ร้านค้า วันที่ และหมวดหมู่ แล้วกรอกลงใน Finance Widget อัตโนมัติใน 3 วินาที
+- **ประโยชน์**: ไม่ต้องเสียเวลานั่งพิมพ์บันทึกรายรับ-รายจ่ายเองทีละรายการ
+
+### 3.2 AI Audio Morning Briefing (ฟังเสียงสรุปประจำวัน 1 นาทีสไตล์ Podcast) 🎙️
+- **แนวคิด**: มีปุ่มกด "ฟังเสียงสรุปเช้า" ในหน้า Dashboard โดยใช้ Web Speech API อ่านสรุปสภาพอากาศ ราคาน้ำมัน และงานค้างให้ฟังตอนเตรียมตัวหรือขณะขับรถ
+
+### 3.3 LINE Auto-Push Daily Card (ส่งภาพสรุปการ์ดเข้ากลุ่ม LINE ทุกเช้าอัตโนมัติ) 💬
+- **แนวคิด**: ผูก LINE Notify / LINE Bot Webhook เพื่อให้ Server เรนเดอร์การ์ดสรุปประจำวัน (Daily Card Image) ส่งเข้ากลุ่ม LINE ครอบครัวหรือกลุ่มงานทุกเช้า 08:00 น. โดยไม่ต้องกดแชร์เอง
+
+### 3.4 Ambient Focus Sounds ใน Focus Timer (เสียงบรรยากาศช่วยสมาธิ) 🌧️
+- **แนวคิด**: เพิ่มเสียงฝนตกเบา ๆ, คลื่นทะเล, หรือ White Noise ในตัวจับเวลา Focus Timer โดยใช้ Pure Web Audio API (0 KB ไม่เปลืองเน็ต) ช่วยเพิ่มสมาธิทำงาน
+
+### 3.5 Trip Fuel Cost Calculator (เครื่องคำนวณค่าน้ำมันตามระยะทางจริง) 🚗
+- **แนวคิด**: เลือกประเภทรถ/น้ำมัน และพิมพ์ระยะทาง (เช่น กรุงเทพฯ - ชลบุรี 80 กม.) ระบบจะคำนวณค่าน้ำมันจริงตามราคาขายปลีกวันนี้ให้ทันที
+
+---
+
+## 🛠️ 4. ตารางสรุปแผนงานและสถานะ (Roadmap Execution Matrix)
 
 | ลำดับ | รายการฟีเจอร์ | สโคปงาน | สถานะ |
 | :--- | :--- | :--- | :--- |
-| **1** | **PWA App Icon Badge** | Frontend (`navigator.setAppBadge`) | วางแผนแล้ว (รอเริ่ม) |
-| **2** | **Retina & Adaptive Mobile Icons** | Frontend Branding & Favicon Canvas | วางแผนแล้ว (รอเริ่ม) |
-| **3** | **Apple-style Haptic Feedback** | Frontend Utility Hook (`navigator.vibrate`) | วางแผนแล้ว (รอเริ่ม) |
-| **4** | **Mobile Pull-to-Refresh** | Frontend Gestures & Layout | วางแผนแล้ว (รอเริ่ม) |
-| **5** | **Customizable Daily Push Scheduler** | Backend Cron + Profile Settings UI | วางแผนแล้ว (รอเริ่ม) |
-| **6** | **แจ้งเตือนน้ำมันปรับราคาล่วงหน้า (17:00 น.)** | Backend Scheduled Checker + Push Dispatcher | วางแผนแล้ว (รอเริ่ม) |
-| **7** | **PWA Home Screen Quick Shortcuts** | Manifest Shortcuts + Route Handlers | วางแผนแล้ว (รอเริ่ม) |
-| **8** | **Web Share Target API** | Manifest Share Target + Ingest Handler | วางแผนแล้ว (รอเริ่ม) |
-| **9** | **Biometric Unlock (Face ID / Touch ID)** | WebAuthn Credentials API | วางแผนแล้ว (รอเริ่ม) |
+| **1** | **PWA App Icon Badge** | Frontend (`navigator.setAppBadge`) | บันทึกในแผน (รอคำสั่ง) |
+| **2** | **Retina & Adaptive Mobile Icons** | Frontend Branding & Favicon Canvas | บันทึกในแผน (รอคำสั่ง) |
+| **3** | **Apple-style Haptic Feedback** | Frontend Utility Hook (`navigator.vibrate`) | บันทึกในแผน (รอคำสั่ง) |
+| **4** | **Mobile Pull-to-Refresh** | Frontend Gestures & Layout | บันทึกในแผน (รอคำสั่ง) |
+| **5** | **Customizable Daily Push Scheduler** | Backend Cron + Profile Settings UI | บันทึกในแผน (รอคำสั่ง) |
+| **6** | **แจ้งเตือนน้ำมันปรับราคาล่วงหน้า (17:00 น.)** | Backend Scheduled Checker + Push Dispatcher | บันทึกในแผน (รอคำสั่ง) |
+| **7** | **PWA Home Screen Quick Shortcuts** | Manifest Shortcuts + Route Handlers | บันทึกในแผน (รอคำสั่ง) |
+| **8** | **Web Share Target API** | Manifest Share Target + Ingest Handler | บันทึกในแผน (รอคำสั่ง) |
