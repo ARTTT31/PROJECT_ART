@@ -11,6 +11,7 @@ import {
   Copy,
   Check,
   Calendar,
+  Share2,
 } from 'lucide-react';
 import WidgetSizeToggle from './WidgetSizeToggle';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
@@ -18,6 +19,8 @@ import { showToast } from '@/utils/sweetalert';
 import { usePreferences } from '@/hooks/usePreferences';
 import { formatLongDate } from '@/utils/dateFormat';
 import { getGreeting } from '@/utils/greeting';
+import { shareOrDownloadDailyCard } from '@/utils/cardGenerator';
+import { useBranding } from '@/context/BrandingContext';
 
 interface DigestData {
   weather: {
@@ -53,9 +56,11 @@ export default function DailyDigestWidget({
   onResize?: (size: number) => void;
 }) {
   const preferences = usePreferences();
+  const { companyName } = useBranding();
   const [data, setData] = useState<DigestData>(INITIAL_DIGEST);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isGeneratingCard, setIsGeneratingCard] = useState(false);
   const [copied, setCopied] = useState(false);
   const [greeting, setGreeting] = useState<string>(getGreeting);
   const [, startTransition] = useTransition();
@@ -178,6 +183,38 @@ export default function DailyDigestWidget({
     }
   };
 
+  const handleShareCard = async () => {
+    try {
+      setIsGeneratingCard(true);
+      const dateStr = formatLongDate(new Date(), preferences);
+      await shareOrDownloadDailyCard({
+        companyName: companyName || 'ART WORKSPACE',
+        dateStr,
+        weather: {
+          temp: data.weather.temp,
+          condition: data.weather.condition,
+          pm25: data.weather.pm25,
+        },
+        oil: {
+          diesel: data.oil.diesel,
+          gasohol95: data.oil.gasohol95,
+          status: data.oil.status,
+        },
+        market: {
+          setIndex: data.market.setIndex,
+          setChange: data.market.setChange,
+          usdRate: data.market.usdRate,
+        },
+        pendingTasks: data.pendingTasks,
+      });
+      showToast('สร้างภาพการ์ดสรุปประจำวันสำเร็จ', 'success');
+    } catch {
+      showToast('ไม่สามารถสร้างภาพการ์ดได้', 'error');
+    } finally {
+      setIsGeneratingCard(false);
+    }
+  };
+
   return (
     <section
       className="flex h-full flex-col rounded-[18px] bg-[var(--surface)] p-4 border border-[var(--hairline)] transition-all duration-200"
@@ -209,6 +246,16 @@ export default function DailyDigestWidget({
         </div>
 
         <div className="flex items-center gap-1.5 shrink-0">
+          <button
+            type="button"
+            onClick={handleShareCard}
+            disabled={isGeneratingCard}
+            title="แชร์การ์ดสรุปประจำวัน (รูปภาพ)"
+            aria-label="แชร์การ์ดสรุปประจำวัน"
+            className="flex h-7 w-7 items-center justify-center rounded-full text-[var(--ink-tertiary)] transition-colors hover:bg-[var(--surface-grouped)] hover:text-[var(--accent)] active:scale-[0.95] disabled:opacity-50"
+          >
+            <Share2 size={14} className={isGeneratingCard ? 'animate-pulse text-[var(--accent)]' : ''} />
+          </button>
           <button
             type="button"
             onClick={handleCopy}

@@ -318,6 +318,9 @@ class Settings(BaseSettings):
     VAPID_PRIVATE_KEY: str = ""
     VAPID_SUBJECT: str = "mailto:admin@example.com"
 
+    # ── AI & Gemini API ─────────────────────────────────────────────────────
+    GEMINI_API_KEY: str = ""
+
     def require_google_client_id(self) -> str:
         """Return the configured Google client ID or raise a clear 500 error."""
         val = (self.GOOGLE_CLIENT_ID or os.getenv("BACKEND_GOOGLE_CLIENT_ID") or "").strip()

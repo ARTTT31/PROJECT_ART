@@ -5,6 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import Header from './Header';
 import Sidebar from './Sidebar';
 import CommandPalette from './CommandPalette';
+import AICopilotDrawer from '@/components/AICopilot/AICopilotDrawer';
 import { PwaInstallPrompt } from '@/components/PWA/PwaInstallPrompt';
 import { showConfirm } from '@/utils/sweetalert';
 import AuthGuard from '@/components/Auth/AuthGuard';
@@ -156,6 +157,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           </div>
 
           <CommandPalette />
+          <AICopilotDrawer />
           <PwaInstallPrompt />
         </div>
       </AuthGuard>

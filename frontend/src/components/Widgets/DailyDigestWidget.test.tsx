@@ -1,6 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import DailyDigestWidget from './DailyDigestWidget';
+import { shareOrDownloadDailyCard } from '@/utils/cardGenerator';
+
+vi.mock('@/utils/cardGenerator', () => ({
+  shareOrDownloadDailyCard: vi.fn().mockResolvedValue(undefined),
+}));
 
 // Mock fetchWithAuth
 vi.mock('@/lib/api/fetchWithAuth', () => ({
@@ -108,5 +113,16 @@ describe('DailyDigestWidget', () => {
     expect(screen.getByText(/ราตรีสวัสดิ์ — ภาพรวมพร้อมสำหรับคุณ/)).toBeDefined();
 
     vi.useRealTimers();
+  });
+
+  it('triggers shareOrDownloadDailyCard when share card button is clicked', async () => {
+    await act(async () => {
+      render(<DailyDigestWidget width={2} />);
+    });
+    const shareBtn = screen.getByLabelText('แชร์การ์ดสรุปประจำวัน');
+    await act(async () => {
+      fireEvent.click(shareBtn);
+    });
+    expect(shareOrDownloadDailyCard).toHaveBeenCalled();
   });
 });
