@@ -313,6 +313,11 @@ class Settings(BaseSettings):
     # above also honours the environment variable of the same name.
     FRONTEND_URL: str = "http://localhost:3000"
 
+    # ── Web Push (VAPID RFC 8292) ───────────────────────────────────────────
+    VAPID_PUBLIC_KEY: str = ""
+    VAPID_PRIVATE_KEY: str = ""
+    VAPID_SUBJECT: str = "mailto:admin@example.com"
+
     def require_google_client_id(self) -> str:
         """Return the configured Google client ID or raise a clear 500 error."""
         val = (self.GOOGLE_CLIENT_ID or os.getenv("BACKEND_GOOGLE_CLIENT_ID") or "").strip()

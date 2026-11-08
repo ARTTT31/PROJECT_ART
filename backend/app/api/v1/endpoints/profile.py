@@ -1193,6 +1193,16 @@ async def dispatch_external_notification(
     return {"result": "success", "sent_count": count}
 
 
+@router.get("/web-push/vapid-key")
+@limiter.limit(_GENERAL_LIMIT)
+async def get_web_push_vapid_key(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+):
+    from app.services.web_push_service import get_vapid_public_key
+    return {"result": "success", "public_key": get_vapid_public_key()}
+
+
 @router.get("/web-push")
 @limiter.limit(_GENERAL_LIMIT)
 async def get_web_push_subscription(
@@ -1238,14 +1248,30 @@ async def remove_web_push_subscription(
 async def test_web_push(
     request: Request,
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
+    from app.services.web_push_service import send_web_push_to_user
+
     user_name = current_user.display_name or current_user.username or "ผู้ใช้"
+    title = "ART Workspace"
+    body = f"ทดสอบการแจ้งเตือนสำหรับคุณ {user_name} สำเร็จ!"
+    url = "/dashboard"
+
+    sent = await send_web_push_to_user(
+        db=db,
+        user=current_user,
+        title=title,
+        body=body,
+        url=url,
+    )
+
     return {
         "result": "success",
         "message": "ส่งข้อความทดสอบแจ้งเตือนบนเบราว์เซอร์เรียบร้อยแล้ว",
+        "sent_via_push_service": sent,
         "notification": {
-            "title": "ART Workspace",
-            "body": f"ทดสอบการแจ้งเตือนสำหรับคุณ {user_name} สำเร็จ!",
-            "url": "/dashboard",
+            "title": title,
+            "body": body,
+            "url": url,
         },
     }

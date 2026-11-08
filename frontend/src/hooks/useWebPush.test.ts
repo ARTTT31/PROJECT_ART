@@ -128,4 +128,60 @@ describe('useWebPush', () => {
     expect(unsubSuccess).toBe(true);
     expect(result.current.isSubscribed).toBe(false);
   });
+
+  it('requests VAPID public key and subscribes via PushManager when no active subscription exists', async () => {
+    window.Notification = {
+      permission: 'default',
+      requestPermission: vi.fn().mockResolvedValue('granted'),
+    } as unknown as typeof Notification;
+    (window as unknown as { PushManager: unknown }).PushManager = {};
+
+    const mockCreatedSub = {
+      endpoint: 'https://fcm.googleapis.com/fcm/send/new-token',
+      getKey: vi.fn().mockReturnValue(new Uint8Array([4, 5, 6]).buffer),
+    };
+
+    const subscribeMock = vi.fn().mockResolvedValue(mockCreatedSub);
+    Object.defineProperty(navigator, 'serviceWorker', {
+      value: {
+        ready: Promise.resolve({
+          pushManager: {
+            getSubscription: vi.fn().mockResolvedValue(null),
+            subscribe: subscribeMock,
+          },
+        }),
+      },
+      configurable: true,
+    });
+
+    vi.spyOn(fetchWithAuthModule, 'fetchWithAuth').mockImplementation((url) => {
+      if (url.toString().includes('vapid-key')) {
+        return Promise.resolve({
+          ok: true,
+          json: vi.fn().mockResolvedValue({
+            result: 'success',
+            public_key: 'BFakeVapidPublicKeyForTest1234567890',
+          }),
+        } as unknown as Response);
+      }
+      return Promise.resolve({
+        ok: true,
+        json: vi.fn().mockResolvedValue({ result: 'success' }),
+      } as unknown as Response);
+    });
+
+    const { result } = renderHook(() => useWebPush());
+
+    let success = false;
+    await act(async () => {
+      success = await result.current.subscribe();
+    });
+
+    expect(success).toBe(true);
+    expect(subscribeMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userVisibleOnly: true,
+      })
+    );
+  });
 });

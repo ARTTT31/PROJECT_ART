@@ -79,6 +79,14 @@ async def test_dispatch_external_notification_endpoint(client: AsyncClient, logg
 
 
 async def test_web_push_subscription_flow(client: AsyncClient, logged_in_user):
+    # 0. Fetch VAPID public key
+    vapid_res = await client.get("/api/v1/profile/web-push/vapid-key")
+    assert vapid_res.status_code == 200
+    vapid_data = vapid_res.json()
+    assert vapid_data["result"] == "success"
+    assert len(vapid_data["public_key"]) == 87
+    assert vapid_data["public_key"].startswith("B")
+
     # 1. Initial check
     get_res = await client.get("/api/v1/profile/web-push")
     assert get_res.status_code == 200
@@ -102,6 +110,7 @@ async def test_web_push_subscription_flow(client: AsyncClient, logged_in_user):
     test_res = await client.post("/api/v1/profile/web-push/test")
     assert test_res.status_code == 200
     assert test_res.json()["result"] == "success"
+    assert "sent_via_push_service" in test_res.json()
     assert "notification" in test_res.json()
 
     # 5. Unsubscribe

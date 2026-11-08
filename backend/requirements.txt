@@ -39,6 +39,7 @@ pillow==13.0.0
 
 # PDF text extraction for the company holiday calendar import (pure Python).
 pypdf==6.21.4
+pywebpush==2.5.0
 
 # Utilities
 python-dotenv==1.2.4

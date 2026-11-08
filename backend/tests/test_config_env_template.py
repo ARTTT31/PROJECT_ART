@@ -34,9 +34,6 @@ NOT_A_SETTINGS_FIELD = {
     "SENTRY_AUTH_TOKEN",
     "SENTRY_ORG",
     "SENTRY_PROJECT",
-    # Web push: documented for the PWA tooling; no backend code reads them yet.
-    "VAPID_PRIVATE_KEY",
-    "VAPID_SUBJECT",
     # Read per call through os.getenv() rather than at import, so a change does
     # not need a redeploy (/auth responses and the cookie posture depend on them).
     "COOKIE_SAMESITE",

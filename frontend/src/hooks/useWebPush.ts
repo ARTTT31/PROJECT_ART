@@ -15,6 +15,18 @@ export interface UseWebPushReturn {
   sendTestNotification: () => Promise<boolean>;
 }
 
+function urlBase64ToUint8Array(base64String: string): BufferSource {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  const buffer = new ArrayBuffer(rawData.length);
+  const outputArray = new Uint8Array(buffer);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return buffer;
+}
+
 export function useWebPush(): UseWebPushReturn {
   const [isSupported, setIsSupported] = useState<boolean>(false);
   const [permission, setPermission] = useState<NotificationPermission | 'unsupported'>('default');
@@ -82,9 +94,24 @@ export function useWebPush(): UseWebPushReturn {
       let auth = '';
 
       try {
+        const vapidRes = await fetchWithAuth('/api/v1/profile/web-push/vapid-key');
+        let applicationServerKey: BufferSource | undefined;
+        if (vapidRes.ok) {
+          const vapidData = (await vapidRes.json()) as { public_key?: string };
+          if (vapidData.public_key) {
+            applicationServerKey = urlBase64ToUint8Array(vapidData.public_key);
+          }
+        }
+
         const reg = await navigator.serviceWorker.ready;
         if (reg.pushManager) {
-          const sub = await reg.pushManager.getSubscription();
+          let sub = await reg.pushManager.getSubscription();
+          if (!sub && applicationServerKey) {
+            sub = await reg.pushManager.subscribe({
+              userVisibleOnly: true,
+              applicationServerKey,
+            });
+          }
           if (sub) {
             endpoint = sub.endpoint;
             p256dh = sub.getKey('p256dh')
@@ -95,8 +122,8 @@ export function useWebPush(): UseWebPushReturn {
               : '';
           }
         }
-      } catch {
-        // Fallback for native notification without direct PushManager subscription
+      } catch (subErr) {
+        console.warn('Native PushManager subscription fallback:', subErr);
       }
 
       const res = await fetchWithAuth('/api/v1/profile/web-push', {
@@ -191,19 +218,23 @@ export function useWebPush(): UseWebPushReturn {
         url: '/dashboard',
       };
 
-      if ('serviceWorker' in navigator) {
-        const reg = await navigator.serviceWorker.ready;
-        await reg.showNotification(notif.title, {
-          body: notif.body,
-          icon: '/icons/icon-192x192.png',
-          badge: '/icons/icon-192x192.png',
-          data: { url: notif.url },
-        });
-      } else {
-        new Notification(notif.title, {
-          body: notif.body,
-          icon: '/icons/icon-192x192.png',
-        });
+      // If the backend sent real push via FCM/APNs, the SW will handle it.
+      // If not sent via push service (e.g. simulated or offline), trigger local fallback:
+      if (!resData.sent_via_push_service) {
+        if ('serviceWorker' in navigator) {
+          const reg = await navigator.serviceWorker.ready;
+          await reg.showNotification(notif.title, {
+            body: notif.body,
+            icon: '/icons/icon-192x192.png',
+            badge: '/icons/icon-192x192.png',
+            data: { url: notif.url },
+          });
+        } else {
+          new Notification(notif.title, {
+            body: notif.body,
+            icon: '/icons/icon-192x192.png',
+          });
+        }
       }
 
       showToast('ส่งการแจ้งเตือนทดสอบเรียบร้อยแล้ว', 'success');
