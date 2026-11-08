@@ -168,12 +168,15 @@ export default function AICopilotDrawer() {
     try {
       // Gather context
       let pendingTasks = 0;
+      let taskList: string[] = [];
       try {
         const raw = localStorage.getItem('quick_notes_tasks');
         if (raw) {
           const parsed = JSON.parse(raw);
           if (Array.isArray(parsed)) {
-            pendingTasks = parsed.filter((t: { done?: boolean }) => !t.done).length;
+            const pending = parsed.filter((t: { done?: boolean }) => !t.done);
+            pendingTasks = pending.length;
+            taskList = pending.map((t: { text?: string }) => t.text || '').filter(Boolean);
           }
         }
       } catch {
@@ -186,6 +189,7 @@ export default function AICopilotDrawer() {
           message: text,
           context: {
             pendingTasks,
+            tasks: taskList.slice(0, 5),
             page: window.location.pathname,
           },
         }),

@@ -21,6 +21,7 @@ import { formatLongDate } from '@/utils/dateFormat';
 import { getGreeting } from '@/utils/greeting';
 import { shareOrDownloadDailyCard } from '@/utils/cardGenerator';
 import { useBranding } from '@/context/BrandingContext';
+import { useTheme } from '@/context/ThemeContext';
 
 interface DigestData {
   weather: {
@@ -57,6 +58,7 @@ export default function DailyDigestWidget({
 }) {
   const preferences = usePreferences();
   const { companyName } = useBranding();
+  const { resolvedMode } = useTheme();
   const [data, setData] = useState<DigestData>(INITIAL_DIGEST);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -190,6 +192,8 @@ export default function DailyDigestWidget({
       await shareOrDownloadDailyCard({
         companyName: companyName || 'ART WORKSPACE',
         dateStr,
+        greeting: `${greeting} — ภาพรวมพร้อมสำหรับคุณ`,
+        theme: resolvedMode === 'dark' ? 'dark' : 'light',
         weather: {
           temp: data.weather.temp,
           condition: data.weather.condition,

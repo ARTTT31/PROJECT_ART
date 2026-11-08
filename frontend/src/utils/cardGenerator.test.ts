@@ -16,6 +16,8 @@ describe('cardGenerator', () => {
     const mockCtx = {
       createLinearGradient: vi.fn().mockReturnValue({ addColorStop: vi.fn() }),
       createRadialGradient: vi.fn().mockReturnValue({ addColorStop: vi.fn() }),
+      save: vi.fn(),
+      restore: vi.fn(),
       fillRect: vi.fn(),
       strokeRect: vi.fn(),
       beginPath: vi.fn(),

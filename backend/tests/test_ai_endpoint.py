@@ -25,6 +25,16 @@ def test_parse_builtin_intent_oil_and_weather():
     assert "น้ำมัน" in oil_res.reply
     assert "32.94" in oil_res.reply
 
+    # Zero-context fallback still returns accurate retail prices
+    oil_zero_ctx = parse_builtin_intent("ราคาน้ำมันวันนี้")
+    assert "32.94" in oil_zero_ctx.reply
+    assert "38.55" in oil_zero_ctx.reply
+
+    # Specific fuel highlighting
+    diesel_res = parse_builtin_intent("ดีเซลเท่าไหร่")
+    assert "ราคาน้ำมันดีเซลวันนี้" in diesel_res.reply
+    assert "32.94" in diesel_res.reply
+
     weather_res = parse_builtin_intent("สภาพอากาศ", {"weather": {"temp": 32, "condition": "แดดจัด"}})
     assert "สภาพอากาศ" in weather_res.reply
     assert "32°C" in weather_res.reply

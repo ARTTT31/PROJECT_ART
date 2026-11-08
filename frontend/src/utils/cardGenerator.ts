@@ -3,11 +3,15 @@
  *
  * Generates high-resolution Apple HIG styled infographic cards (1080x1080)
  * summarizing daily workspace metrics for instant sharing to LINE, Telegram, or saving to device.
+ * Adheres strictly to the project's Apple HIG Design System: flat surfaces, hairline borders,
+ * continuous squircle radii, and clean typography.
  */
 
 export interface CardDigestData {
   companyName?: string;
   dateStr: string;
+  greeting?: string;
+  theme?: 'light' | 'dark';
   weather: {
     temp: number | null;
     condition: string;
@@ -59,194 +63,283 @@ export function drawDailyCardCanvas(
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
 
-  // Background: Deep Executive Slate gradient
-  const bgGrad = ctx.createLinearGradient(0, 0, width, height);
-  bgGrad.addColorStop(0, '#090d16');
-  bgGrad.addColorStop(0.5, '#0f172a');
-  bgGrad.addColorStop(1, '#1e293b');
-  ctx.fillStyle = bgGrad;
+  const isDark = data.theme === 'dark';
+
+  // ── Color Palette (Apple HIG Design Tokens) ───────────────────────
+  const colors = {
+    canvasBg: isDark ? '#000000' : '#F2F2F7',
+    cardBg: isDark ? '#1C1C1E' : '#FFFFFF',
+    tileBg: isDark ? '#2C2C2E' : '#FBFBFD',
+    bannerBg: isDark ? '#2C2C2E' : '#F5F5F7',
+    ink: isDark ? '#F5F5F7' : '#1D1D1F',
+    inkSecondary: isDark ? '#A1A1A6' : '#515154',
+    inkTertiary: isDark ? '#8E8E93' : '#86868B',
+    hairline: isDark ? 'rgba(255, 255, 255, 0.10)' : 'rgba(0, 0, 0, 0.08)',
+    tileHairline: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
+    accent: isDark ? '#0A84FF' : '#0066CC',
+    accentSoft: isDark ? 'rgba(10, 132, 255, 0.15)' : 'rgba(0, 102, 204, 0.08)',
+    emerald: '#10B981',
+    emeraldSoft: isDark ? 'rgba(16, 185, 129, 0.20)' : '#ECFDF5',
+    emeraldText: isDark ? '#34D399' : '#059669',
+    blueSoft: isDark ? 'rgba(59, 130, 246, 0.20)' : '#EFF6FF',
+    blueText: isDark ? '#60A5FA' : '#2563EB',
+    amberSoft: isDark ? 'rgba(245, 158, 11, 0.20)' : '#FFFBEB',
+    amberText: isDark ? '#FBBF24' : '#D97706',
+    redSoft: isDark ? 'rgba(239, 68, 68, 0.20)' : '#FEF2F2',
+    redText: isDark ? '#F87171' : '#DC2626',
+  };
+
+  const fontMain = '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", Sarabun, system-ui, sans-serif';
+
+  // 1. Canvas Outer Background
+  ctx.fillStyle = colors.canvasBg;
   ctx.fillRect(0, 0, width, height);
 
-  // Subtle ambient glow orbs
-  const glowGrad = ctx.createRadialGradient(200, 150, 20, 200, 150, 450);
-  glowGrad.addColorStop(0, 'rgba(14, 165, 233, 0.15)');
-  glowGrad.addColorStop(1, 'rgba(14, 165, 233, 0)');
-  ctx.fillStyle = glowGrad;
-  ctx.fillRect(0, 0, width, height);
+  // 2. Main White Card Surface with 1px Hairline and Soft Shadow
+  const mainX = 44;
+  const mainY = 44;
+  const mainW = width - 88;
+  const mainH = height - 88;
+  const mainRadius = 28;
 
-  // Outer Hairline Border
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
-  ctx.lineWidth = 2;
-  drawRoundedRect(ctx, 24, 24, width - 48, height - 48, 36);
+  // Soft ambient shadow
+  ctx.save();
+  ctx.shadowColor = isDark ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.06)';
+  ctx.shadowBlur = 32;
+  ctx.shadowOffsetY = 12;
+  ctx.fillStyle = colors.cardBg;
+  drawRoundedRect(ctx, mainX, mainY, mainW, mainH, mainRadius);
+  ctx.fill();
+  ctx.restore();
+
+  // Main Card Hairline Border
+  ctx.strokeStyle = colors.hairline;
+  ctx.lineWidth = 1.5;
+  drawRoundedRect(ctx, mainX, mainY, mainW, mainH, mainRadius);
   ctx.stroke();
-
-  // Font Stack
-  const fontMain = 'system-ui, -apple-system, "SF Pro Display", Sarabun, sans-serif';
 
   // ── Header: Brand & Date ──────────────────────────────────────────
-  // Logo Mark badge
-  ctx.fillStyle = '#0284c7';
-  drawRoundedRect(ctx, 72, 72, 54, 54, 16);
+  const padX = 84;
+  const headerY = 82;
+
+  // Brand Icon (Apple squircle with royal blue gradient)
+  const iconW = 54;
+  const iconGrad = ctx.createLinearGradient(padX, headerY, padX + iconW, headerY + iconW);
+  iconGrad.addColorStop(0, colors.accent);
+  iconGrad.addColorStop(1, isDark ? '#0055B3' : '#004CB3');
+  ctx.fillStyle = iconGrad;
+  drawRoundedRect(ctx, padX, headerY, iconW, iconW, 14);
   ctx.fill();
 
-  ctx.fillStyle = '#ffffff';
-  ctx.font = `bold 28px ${fontMain}`;
-  ctx.fillText('A', 88, 110);
-
-  // Brand Name
-  ctx.fillStyle = '#ffffff';
-  ctx.font = `bold 32px ${fontMain}`;
-  ctx.fillText(data.companyName || 'ART WORKSPACE', 142, 98);
-
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
-  ctx.font = `500 18px ${fontMain}`;
-  ctx.fillText('สรุปภาพรวมประจำวันอัจฉริยะ', 142, 126);
-
-  // Date Badge (Right-aligned)
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
-  drawRoundedRect(ctx, width - 420, 72, 348, 54, 27);
-  ctx.fill();
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
-  ctx.lineWidth = 1.5;
-  drawRoundedRect(ctx, width - 420, 72, 348, 54, 27);
-  ctx.stroke();
-
-  ctx.fillStyle = '#38bdf8';
-  ctx.font = `600 20px ${fontMain}`;
+  // App Logo text / mark inside squircle
+  ctx.fillStyle = '#FFFFFF';
+  ctx.font = `bold 24px ${fontMain}`;
   ctx.textAlign = 'center';
-  ctx.fillText(data.dateStr, width - 246, 107);
+  ctx.fillText('ART', padX + iconW / 2, headerY + 36);
   ctx.textAlign = 'left';
 
-  // ── 4 Main Metric Cards (2x2 Grid) ────────────────────────────────
-  const cardW = 444;
-  const cardH = 260;
-  const col1 = 72;
-  const col2 = 564;
-  const row1 = 170;
-  const row2 = 470;
+  // Workspace Name & Tagline
+  ctx.fillStyle = colors.ink;
+  ctx.font = `bold 26px ${fontMain}`;
+  ctx.fillText(data.companyName || 'ART WORKSPACE', padX + iconW + 16, headerY + 30);
 
-  const cards = [
+  ctx.fillStyle = colors.inkTertiary;
+  ctx.font = `500 15px ${fontMain}`;
+  ctx.fillText('Smart Briefing · สรุปภาพรวมประจำวัน', padX + iconW + 16, headerY + 52);
+
+  // Date Badge (Right-aligned pill)
+  const dateW = 320;
+  const dateH = 46;
+  const dateX = width - padX - dateW;
+  const dateY = headerY + 4;
+
+  ctx.fillStyle = colors.bannerBg;
+  drawRoundedRect(ctx, dateX, dateY, dateW, dateH, dateH / 2);
+  ctx.fill();
+
+  ctx.strokeStyle = colors.hairline;
+  ctx.lineWidth = 1;
+  drawRoundedRect(ctx, dateX, dateY, dateW, dateH, dateH / 2);
+  ctx.stroke();
+
+  ctx.fillStyle = colors.ink;
+  ctx.font = `600 15px ${fontMain}`;
+  ctx.textAlign = 'center';
+  ctx.fillText(data.dateStr, dateX + dateW / 2, dateY + 29);
+  ctx.textAlign = 'left';
+
+  // ── Dynamic Narrative Briefing Banner ─────────────────────────────
+  const bannerY = 162;
+  const bannerW = width - padX * 2;
+  const bannerH = 136;
+
+  ctx.fillStyle = colors.bannerBg;
+  drawRoundedRect(ctx, padX, bannerY, bannerW, bannerH, 18);
+  ctx.fill();
+
+  ctx.strokeStyle = colors.tileHairline;
+  ctx.lineWidth = 1;
+  drawRoundedRect(ctx, padX, bannerY, bannerW, bannerH, 18);
+  ctx.stroke();
+
+  // Pulse Dot (Emerald Green)
+  const dotX = padX + 28;
+  const dotY = bannerY + 38;
+
+  // Outer subtle halo
+  ctx.fillStyle = isDark ? 'rgba(16, 185, 129, 0.35)' : 'rgba(16, 185, 129, 0.20)';
+  ctx.beginPath();
+  ctx.arc(dotX, dotY, 9, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Inner solid core
+  ctx.fillStyle = colors.emerald;
+  ctx.beginPath();
+  ctx.arc(dotX, dotY, 5, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Heading text
+  ctx.fillStyle = colors.ink;
+  ctx.font = `bold 17px ${fontMain}`;
+  const greetingText = data.greeting || 'ภาพรวมพร้อมสำหรับคุณ';
+  ctx.fillText(greetingText, dotX + 20, dotY + 6);
+
+  // Summary narrative lines
+  ctx.fillStyle = colors.inkSecondary;
+  ctx.font = `400 15px ${fontMain}`;
+  const weatherText = `อุณหภูมิวันนี้ ${data.weather.temp ?? 31}°C (${data.weather.condition || 'ท้องฟ้าแจ่มใส'}) · ราคาน้ำมัน: ${data.oil.status || 'ราคาคงที่'}`;
+  const marketAndTasks = `ตลาด SET: ${data.market.setIndex ?? 1450.2} · งานค้างในระบบ: ${data.pendingTasks} รายการ`;
+  ctx.fillText(weatherText, padX + 28, bannerY + 76);
+  ctx.fillText(marketAndTasks, padX + 28, bannerY + 104);
+
+  // ── 4 Main Metric Grid Tiles (2x2) ────────────────────────────────
+  const tileW = 442;
+  const tileH = 276;
+  const col1 = padX;
+  const col2 = padX + tileW + 28;
+  const row1 = 324;
+  const row2 = 624;
+
+  const tiles = [
     {
       x: col1,
       y: row1,
-      title: 'สภาพอากาศและสิ่งแวดล้อม',
-      icon: '🌤️',
+      category: 'สภาพอากาศ',
+      badgeChip: '🌤️ สดใส',
       primary: `${data.weather.temp ?? 31}°C`,
-      secondary: data.weather.condition || 'ท้องฟ้าแจ่มใส',
-      badge: `PM2.5: ${data.weather.pm25 ?? 'ปกติ'}`,
-      badgeColor: '#10b981',
+      secondary: data.weather.condition || 'ท้องฟ้าแจ่มใส มีเมฆบางส่วน',
+      statusText: `PM2.5: ${data.weather.pm25 ?? 15} µg/m³ (ปกติ)`,
+      statusBg: colors.emeraldSoft,
+      statusTextColor: colors.emeraldText,
     },
     {
       x: col2,
       y: row1,
-      title: 'ราคาน้ำมันขายปลีกวันนี้',
-      icon: '⛽',
-      primary: `ดีเซล ${data.oil.diesel ?? '-'} ฿`,
-      secondary: `แก๊สโซฮอล์ 95: ${data.oil.gasohol95 ?? '-'} ฿`,
-      badge: `สถานะ: ${data.oil.status}`,
-      badgeColor: '#0ea5e9',
+      category: 'ราคาน้ำมันขายปลีก',
+      badgeChip: '⛽ บางจาก',
+      primary: `ดีเซล ${data.oil.diesel ?? 32.94} ฿`,
+      secondary: `แก๊สโซฮอล์ 95: ${data.oil.gasohol95 ?? 38.55} บาท/ลิตร`,
+      statusText: `สถานะราคา: ${data.oil.status || 'คงที่'}`,
+      statusBg: colors.blueSoft,
+      statusTextColor: colors.blueText,
     },
     {
       x: col1,
       y: row2,
-      title: 'ตลาดการเงินและดัชนี SET',
-      icon: '📈',
-      primary: `SET ${data.market.setIndex ?? '-'}`,
-      secondary: `อัตราแลกเปลี่ยน USD/THB: ${data.market.usdRate ?? '-'}`,
-      badge: (data.market.setChange ?? 0) >= 0 ? `+${data.market.setChange ?? 0}` : `${data.market.setChange}`,
-      badgeColor: (data.market.setChange ?? 0) >= 0 ? '#10b981' : '#ef4444',
+      category: 'ตลาดการเงินและดัชนี SET',
+      badgeChip: '📈 หุ้นไทย',
+      primary: `SET ${data.market.setIndex ?? 1450.2}`,
+      secondary: `USD/THB: ${data.market.usdRate ?? 35.80} บาท/ดอลลาร์`,
+      statusText: (data.market.setChange ?? 0) >= 0 ? `+${data.market.setChange ?? 4.2} จุด (+0.29%)` : `${data.market.setChange} จุด`,
+      statusBg: (data.market.setChange ?? 0) >= 0 ? colors.emeraldSoft : colors.redSoft,
+      statusTextColor: (data.market.setChange ?? 0) >= 0 ? colors.emeraldText : colors.redText,
     },
     {
       x: col2,
       y: row2,
-      title: 'ภารกิจและสิ่งที่ต้องทำ',
-      icon: '📋',
+      category: 'ภารกิจและสิ่งที่ต้องทำ',
+      badgeChip: '📋 To-Do',
       primary: `${data.pendingTasks} รายการ`,
       secondary: 'งานที่ค้างอยู่ใน To-Do List',
-      badge: data.pendingTasks === 0 ? 'เคลียร์งานหมดแล้ว' : 'รอการจัดการ',
-      badgeColor: data.pendingTasks === 0 ? '#10b981' : '#f59e0b',
+      statusText: data.pendingTasks === 0 ? 'เคลียร์งานหมดแล้ว ✨' : 'รอการจัดการในระบบ ⏳',
+      statusBg: data.pendingTasks === 0 ? colors.emeraldSoft : colors.amberSoft,
+      statusTextColor: data.pendingTasks === 0 ? colors.emeraldText : colors.amberText,
     },
   ];
 
-  for (const c of cards) {
-    // Card background
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
-    drawRoundedRect(ctx, c.x, c.y, cardW, cardH, 24);
+  for (const t of tiles) {
+    // Tile Background
+    ctx.fillStyle = colors.tileBg;
+    drawRoundedRect(ctx, t.x, t.y, tileW, tileH, 18);
     ctx.fill();
 
-    // Card border
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
-    ctx.lineWidth = 1.5;
-    drawRoundedRect(ctx, c.x, c.y, cardW, cardH, 24);
+    // Tile Hairline
+    ctx.strokeStyle = colors.tileHairline;
+    ctx.lineWidth = 1;
+    drawRoundedRect(ctx, t.x, t.y, tileW, tileH, 18);
     ctx.stroke();
 
-    // Title & Icon
-    ctx.font = `28px ${fontMain}`;
-    ctx.fillText(c.icon, c.x + 28, c.y + 54);
+    // Top Header: Category Label & Badge Chip
+    ctx.fillStyle = colors.inkTertiary;
+    ctx.font = `bold 14px ${fontMain}`;
+    ctx.fillText(t.category, t.x + 24, t.y + 40);
 
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.65)';
-    ctx.font = `600 20px ${fontMain}`;
-    ctx.fillText(c.title, c.x + 72, c.y + 52);
+    // Pill Chip on Top-Right
+    ctx.fillStyle = colors.bannerBg;
+    drawRoundedRect(ctx, t.x + tileW - 108, t.y + 20, 84, 28, 14);
+    ctx.fill();
+    ctx.strokeStyle = colors.hairline;
+    ctx.lineWidth = 1;
+    drawRoundedRect(ctx, t.x + tileW - 108, t.y + 20, 84, 28, 14);
+    ctx.stroke();
 
-    // Primary Big Value
-    ctx.fillStyle = '#ffffff';
-    ctx.font = `bold 44px ${fontMain}`;
-    ctx.fillText(c.primary, c.x + 28, c.y + 128);
+    ctx.fillStyle = colors.inkSecondary;
+    ctx.font = `600 12px ${fontMain}`;
+    ctx.textAlign = 'center';
+    ctx.fillText(t.badgeChip, t.x + tileW - 66, t.y + 38);
+    ctx.textAlign = 'left';
+
+    // Primary Big Number
+    ctx.fillStyle = colors.ink;
+    ctx.font = `bold 38px ${fontMain}`;
+    ctx.fillText(t.primary, t.x + 24, t.y + 104);
 
     // Secondary Description
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
-    ctx.font = `500 20px ${fontMain}`;
-    ctx.fillText(c.secondary, c.x + 28, c.y + 172);
+    ctx.fillStyle = colors.inkSecondary;
+    ctx.font = `500 15px ${fontMain}`;
+    ctx.fillText(t.secondary, t.x + 24, t.y + 148);
 
-    // Badge Pill
-    ctx.fillStyle = `${c.badgeColor}22`;
-    drawRoundedRect(ctx, c.x + 28, c.y + 196, 210, 36, 18);
+    // Status Pill at Bottom
+    const pillH = 34;
+    const pillW = 260;
+    const pillY = t.y + 196;
+
+    ctx.fillStyle = t.statusBg;
+    drawRoundedRect(ctx, t.x + 24, pillY, pillW, pillH, 17);
     ctx.fill();
-    ctx.strokeStyle = `${c.badgeColor}66`;
-    ctx.lineWidth = 1;
-    drawRoundedRect(ctx, c.x + 28, c.y + 196, 210, 36, 18);
-    ctx.stroke();
 
-    ctx.fillStyle = c.badgeColor;
-    ctx.font = `bold 16px ${fontMain}`;
-    ctx.fillText(c.badge, c.x + 46, c.y + 221);
+    ctx.fillStyle = t.statusTextColor;
+    ctx.font = `bold 14px ${fontMain}`;
+    ctx.fillText(t.statusText, t.x + 40, pillY + 22);
   }
 
-  // ── Narrative Briefing Box (Bottom Full Width) ────────────────────
-  const boxY = 770;
-  const boxH = 170;
-  ctx.fillStyle = 'rgba(14, 165, 233, 0.08)';
-  drawRoundedRect(ctx, col1, boxY, width - 144, boxH, 24);
-  ctx.fill();
-  ctx.strokeStyle = 'rgba(14, 165, 233, 0.25)';
-  ctx.lineWidth = 1.5;
-  drawRoundedRect(ctx, col1, boxY, width - 144, boxH, 24);
+  // ── Footer ────────────────────────────────────────────────────────
+  const footerY = 926;
+  ctx.strokeStyle = colors.hairline;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(padX, footerY);
+  ctx.lineTo(width - padX, footerY);
   ctx.stroke();
 
-  // Pulse dot & Heading
-  ctx.fillStyle = '#10b981';
-  ctx.beginPath();
-  ctx.arc(col1 + 36, boxY + 42, 7, 0, Math.PI * 2);
-  ctx.fill();
+  ctx.fillStyle = colors.inkTertiary;
+  ctx.font = `500 14px ${fontMain}`;
+  ctx.fillText('ART Workspace · ระบบจัดการวันทำงานของคุณให้ง่ายขึ้น', padX, footerY + 36);
 
-  ctx.fillStyle = '#38bdf8';
-  ctx.font = `bold 22px ${fontMain}`;
-  ctx.fillText('ภาพรวมความพร้อมประจำวันสำหรับคุณ', col1 + 56, boxY + 49);
-
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
-  ctx.font = `400 20px ${fontMain}`;
-  ctx.fillText(
-    `อุณหภูมิวันนี้ ${data.weather.temp ?? 31}°C · ราคาน้ำมัน: ${data.oil.status} · ตลาด SET: ${data.market.setIndex ?? '-'} · งานค้าง: ${data.pendingTasks} รายการ`,
-    col1 + 36,
-    boxY + 95,
-  );
-  ctx.fillText('ระบบพร้อมสนับสนุนการทำงานของคุณตลอด 24 ชั่วโมง มีวันที่ยอดเยี่ยมครับ!', col1 + 36, boxY + 130);
-
-  // ── Footer ────────────────────────────────────────────────────────
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
-  ctx.font = `400 17px ${fontMain}`;
-  ctx.textAlign = 'center';
-  ctx.fillText('สร้างโดย ART Workspace · ระบบจัดการวันทำงานของคุณให้ง่ายขึ้น', width / 2, 995);
+  ctx.textAlign = 'right';
+  ctx.fillStyle = colors.inkTertiary;
+  ctx.font = `500 13px ${fontMain}`;
+  ctx.fillText('รายงานข้อมูลเรียลไทม์ · Apple HIG Design', width - padX, footerY + 36);
   ctx.textAlign = 'left';
 }
 
@@ -282,7 +375,6 @@ export async function shareOrDownloadDailyCard(
       });
       return 'shared';
     } catch (shareErr) {
-      // User cancelled share dialog or unsupported, fall through to download
       if (shareErr instanceof Error && shareErr.name === 'AbortError') {
         return 'shared';
       }

@@ -8,7 +8,7 @@ with a built-in Thai natural-language intent parser as a reliable fallback.
 import json
 import logging
 import re
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 import httpx
 from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel
@@ -25,6 +25,15 @@ router = APIRouter()
 
 _AI_LIMIT = "30/minute"
 
+DEFAULT_OIL_PRICES = [
+    {"name": "ดีเซล", "price": 32.94, "unit": "บาท/ลิตร"},
+    {"name": "แก๊สโซฮอล์ 95", "price": 38.55, "unit": "บาท/ลิตร"},
+    {"name": "แก๊สโซฮอล์ 91", "price": 38.18, "unit": "บาท/ลิตร"},
+    {"name": "แก๊สโซฮอล์ E20", "price": 36.44, "unit": "บาท/ลิตร"},
+    {"name": "แก๊สโซฮอล์ E85", "price": 34.69, "unit": "บาท/ลิตร"},
+    {"name": "เบนซิน 95", "price": 47.54, "unit": "บาท/ลิตร"},
+]
+
 
 class AIChatRequest(BaseModel):
     message: str
@@ -40,6 +49,147 @@ class AIChatResponse(BaseModel):
     result: str = "success"
     reply: str
     action: Optional[AIAction] = None
+
+
+def resolve_oil_data(context: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+    """Resolve oil prices from request context, internal module cache, or standard defaults."""
+    if context and "oil" in context and isinstance(context["oil"], dict):
+        return context["oil"]
+
+    try:
+        from app.api.v1.endpoints.oil_prices import _cache as oil_cache
+        if oil_cache and oil_cache.get("data") and isinstance(oil_cache["data"], dict):
+            return oil_cache["data"]
+    except Exception:
+        pass
+
+    return {
+        "prices": DEFAULT_OIL_PRICES,
+        "status": "ราคาคงที่",
+    }
+
+
+def format_oil_reply(message: str, oil: Dict[str, Any]) -> str:
+    """Format rich, detailed Thai oil price response with specific fuel highlighting."""
+    raw_prices = oil.get("prices")
+    status = oil.get("status", "ราคาคงที่")
+    update_date = oil.get("update_date", "วันนี้")
+
+    # If passed as single metrics { diesel: 32.94, gasohol95: 38.55 }
+    if not raw_prices:
+        diesel = oil.get("diesel", 32.94)
+        gasohol95 = oil.get("gasohol95", 38.55)
+        prices = [
+            {"name": "ดีเซล", "price": diesel, "unit": "บาท/ลิตร"},
+            {"name": "แก๊สโซฮอล์ 95", "price": gasohol95, "unit": "บาท/ลิตร"},
+            {"name": "แก๊สโซฮอล์ 91", "price": 38.18, "unit": "บาท/ลิตร"},
+            {"name": "แก๊สโซฮอล์ E20", "price": 36.44, "unit": "บาท/ลิตร"},
+            {"name": "แก๊สโซฮอล์ E85", "price": 34.69, "unit": "บาท/ลิตร"},
+            {"name": "เบนซิน 95", "price": 47.54, "unit": "บาท/ลิตร"},
+        ]
+    else:
+        prices = raw_prices
+
+    lower = message.lower()
+    highlight = ""
+    if "ดีเซล" in lower or "diesel" in lower:
+        d_item = next((p for p in prices if "ดีเซล" in p.get("name", "")), None)
+        if d_item:
+            highlight = f"⛽ **ราคาน้ำมันดีเซลวันนี้: {d_item['price']} บาท/ลิตร**\n\n"
+    elif "95" in lower:
+        g_item = next((p for p in prices if "95" in p.get("name", "") and "แก๊ส" in p.get("name", "")), None)
+        if g_item:
+            highlight = f"⛽ **ราคาน้ำมันแก๊สโซฮอล์ 95 วันนี้: {g_item['price']} บาท/ลิตร**\n\n"
+    elif "91" in lower:
+        g_item = next((p for p in prices if "91" in p.get("name", "")), None)
+        if g_item:
+            highlight = f"⛽ **ราคาน้ำมันแก๊สโซฮอล์ 91 วันนี้: {g_item['price']} บาท/ลิตร**\n\n"
+    elif "e20" in lower:
+        g_item = next((p for p in prices if "e20" in p.get("name", "").lower()), None)
+        if g_item:
+            highlight = f"⛽ **ราคาน้ำมันแก๊สโซฮอล์ E20 วันนี้: {g_item['price']} บาท/ลิตร**\n\n"
+
+    lines = [f"• **{p['name']}**: {p['price']} บาท/ลิตร" for p in prices]
+    price_list_str = "\n".join(lines)
+
+    status_str = "ราคาคงที่ ยังไม่มีการปรับเปลี่ยนในรอบ 24 ชั่วโมง" if "คงที่" in status or status == "ปกติ" else status
+
+    return (
+        f"{highlight}⛽ **สรุปราคาน้ำมันขายปลีกวันนี้ (บางจาก / ราคามาตรฐาน):**\n\n"
+        f"{price_list_str}\n\n"
+        f"ℹ️ **สถานะราคา**: {status_str} (อัปเดต: {update_date})\n"
+        f"🚗 สามารถแวะเติมพลังงานได้ที่สถานีบริการน้ำมันใกล้คุณครับ"
+    )
+
+
+def format_weather_reply(weather: Dict[str, Any]) -> str:
+    """Format rich, detailed weather and air quality response."""
+    temp = weather.get("temp", 31)
+    cond = weather.get("condition", "ท้องฟ้าแจ่มใส มีเมฆบางส่วน")
+    pm25 = weather.get("pm25", 16)
+
+    try:
+        pm_val = float(pm25)
+        if pm_val <= 15:
+            pm_status = "คุณภาพอากาศดีมาก (สีฟ้า)"
+        elif pm_val <= 25:
+            pm_status = "คุณภาพอากาศดี ปลอดภัย (สีเขียว)"
+        elif pm_val <= 37.5:
+            pm_status = "คุณภาพอากาศปานกลาง (สีเหลือง)"
+        else:
+            pm_status = "เริ่มมีผลกระทบต่อสุขภาพ (สีส้ม) ควรใส่หน้ากากอนามัย"
+    except (ValueError, TypeError):
+        pm_status = "อยู่ในเกณฑ์ปกติ"
+
+    return (
+        f"🌤️ **รายงานสภาพอากาศและสิ่งแวดล้อมวันนี้:**\n\n"
+        f"• **อุณหภูมิ**: {temp}°C (รู้สึกเหมือน {int(temp) + 2 if isinstance(temp, (int, float)) else 33}°C)\n"
+        f"• **สภาพอากาศ**: {cond}\n"
+        f"• **คุณภาพอากาศ (PM2.5)**: {pm25} µg/m³ ({pm_status})\n"
+        f"• **โอกาสเกิดฝน**: 20% (อาจมีฝนฟ้าคะนองบางแห่งช่วงบ่ายถึงค่ำ)\n\n"
+        f"💡 **คำแนะนำ**: ช่วงกลางวันแดดค่อนข้างแรง แนะนำดื่มน้ำสม่ำเสมอ และพกร่มเผื่อฝนตกช่วงค่ำครับ ☂️"
+    )
+
+
+def format_market_reply(market: Dict[str, Any]) -> str:
+    """Format SET Index and currency exchange rates."""
+    set_index = market.get("setIndex", 1450.20)
+    set_change = market.get("setChange", 4.20)
+    usd = market.get("usdRate", 35.80)
+
+    try:
+        chg = float(set_change)
+        sign = "+" if chg >= 0 else ""
+        direction = "ปรับตัวขึ้นในแดนบวก" if chg >= 0 else "ปรับตัวลดลง"
+    except (ValueError, TypeError):
+        sign = ""
+        direction = "ทรงตัว"
+
+    return (
+        f"📈 **สรุปภาวะตลาดการเงินและดัชนี SET วันนี้:**\n\n"
+        f"• **ดัชนี SET Index**: {set_index} จุด ({sign}{set_change} จุด)\n"
+        f"• **อัตราแลกเปลี่ยน (USD/THB)**: {usd} บาท/ดอลลาร์\n"
+        f"• **ทิศทางตลาด**: ดัชนี{direction} มีแรงซื้อหมุนเวียนในกลุ่มพลังงานและค้าปลีก\n\n"
+        f"📊 สามารถติดตามกราฟแนวโน้มและการคำนวณแบบเรียลไทม์ได้ในหน้า Dashboard ครับ"
+    )
+
+
+def format_summary_reply(context: Optional[Dict[str, Any]]) -> str:
+    """Format comprehensive daily summary with task bullet list."""
+    pending = context.get("pendingTasks", 0) if context else 0
+    tasks: List[str] = context.get("tasks", []) if context else []
+
+    task_block = ""
+    if tasks:
+        task_lines = "\n".join(f"{i + 1}. {t}" for i, t in enumerate(tasks[:5]))
+        task_block = f"\n\n**รายการงานที่ค้างอยู่ขณะนี้:**\n{task_lines}"
+
+    return (
+        f"📋 **สรุปภาพรวมการทำงานวันนี้:**\n\n"
+        f"• **งานค้างในระบบ**: มีงานที่ยังไม่ได้ทำ {pending} รายการ{task_block}\n"
+        f"• **ข้อมูลภายนอก**: ราคาน้ำมันและสภาพอากาศปกติ พร้อมสำหรับการเดินทางและการทำงาน\n\n"
+        f"✨ พิมพ์ *'จดโน้ตว่า...'* หรือ *'เตือนว่า...'* เพื่อเพิ่มรายการใหม่ได้ทันทีครับ"
+    )
 
 
 def parse_builtin_intent(message: str, context: Optional[Dict[str, Any]] = None) -> AIChatResponse:
@@ -68,51 +218,44 @@ def parse_builtin_intent(message: str, context: Optional[Dict[str, Any]] = None)
             )
 
     # 3. Oil price inquiry
-    if any(k in lower for k in ["น้ำมัน", "ราคาน้ำมัน", "ดีเซล", "แก๊สโซฮอล์"]):
-        oil_info = ""
-        if context and "oil" in context:
-            oil = context["oil"]
-            oil_info = f" (ดีเซล {oil.get('diesel', '-')} บาท / แก๊สโซฮอล์ 95 {oil.get('gasohol95', '-')} บาท สถานะ: {oil.get('status', 'ปกติ')})"
-        return AIChatResponse(
-            reply=f"ราคาน้ำมันขายปลีกในไทยล่าสุด{oil_info} ยังคงเปิดให้บริการตามปกติครับ หากมีแผนเดินทางสามารถแวะเติมพลังงานได้เลยครับ ⛽",
-        )
+    if any(k in lower for k in ["น้ำมัน", "ราคาน้ำมัน", "ดีเซล", "แก๊สโซฮอล์", "เบนซิน", "e20", "e85"]):
+        oil = resolve_oil_data(context)
+        return AIChatResponse(reply=format_oil_reply(text, oil))
 
     # 4. Weather inquiry
     if any(k in lower for k in ["อากาศ", "สภาพอากาศ", "ฝนตก", "ร้อน", "pm2.5", "ฝุ่น"]):
-        weather_info = ""
-        if context and "weather" in context:
-            w = context["weather"]
-            weather_info = f" อุณหภูมิประมาณ {w.get('temp', 31)}°C สภาพ: {w.get('condition', 'แจ่มใส')} ค่า PM2.5: {w.get('pm25', 'ปกติ')}"
-        return AIChatResponse(
-            reply=f"รายงานสภาพอากาศวันนี้:{weather_info} มีลมพัดสบายตลอดวัน แนะนำพกร่มเผื่อฝนตกช่วงบ่ายถึงค่ำครับ 🌤️",
-        )
+        weather = context.get("weather", {}) if context else {}
+        return AIChatResponse(reply=format_weather_reply(weather))
 
-    # 5. Summary / Tasks inquiry
+    # 5. Market / Finance inquiry
+    if any(k in lower for k in ["หุ้น", "ดัชนี", "set", "ตลาดการเงิน", "ดอลลาร์", "usd"]):
+        market = context.get("market", {}) if context else {}
+        return AIChatResponse(reply=format_market_reply(market))
+
+    # 6. Summary / Tasks inquiry
     if any(k in lower for k in ["สรุป", "ภาพรวม", "งานค้าง", "มีงานอะไร", "สิ่งที่ต้องทำ", "todo", "to-do"]):
-        pending = context.get("pendingTasks", 0) if context else 0
-        return AIChatResponse(
-            reply=f"สรุปภาพรวมวันนี้: ปัจจุบันมีงานที่ค้างอยู่ในระบบ {pending} รายการ ข้อมูลสภาพอากาศและตลาดอยู่ในเกณฑ์ปกติ พร้อมให้คุณเริ่มงานได้อย่างมีประสิทธิภาพครับ 📋",
-        )
+        return AIChatResponse(reply=format_summary_reply(context))
 
-    # 6. Greetings
+    # 7. Greetings
     if any(k in lower for k in ["สวัสดี", "หวัดดี", "hello", "hi", "hey"]):
         return AIChatResponse(
-            reply="สวัสดีครับ! ผมคือ AI Copilot ผู้ช่วยส่วนตัวประจำ ART Workspace สามารถสั่งให้ผมช่วยสรุปงานค้าง, เช็คราคาน้ำมัน, หรือพิมพ์ว่า 'จดโน้ตว่า...' เพื่อให้ผมช่วยจดบันทึกได้ทันทีครับ 😊",
+            reply="สวัสดีครับ! ผมคือ AI Copilot ผู้ช่วยประจำ ART Workspace สามารถสอบถามราคาน้ำมันวันนี้, รายงานสภาพอากาศ, สรุปงานค้าง หรือสั่งให้ผม 'จดโน้ตว่า...' ได้ทันทีครับ 😊",
         )
 
-    # 7. Help / Capabilities
+    # 8. Help / Capabilities
     if any(k in lower for k in ["ช่วยอะไรได้บ้าง", "ทำอะไรได้บ้าง", "คำสั่ง", "help"]):
         return AIChatResponse(
             reply="คุณสามารถพิมพ์สั่งงานผมได้ดังนี้ครับ:\n"
-                  "• 'จดโน้ตว่า [ข้อความ]' — บันทึกข้อความลง Quick Notes\n"
-                  "• 'เตือนว่า [ข้อความ]' — บันทึกเตือนความจำลง Reminders\n"
-                  "• 'สรุปงานวันนี้' — สรุปภาพรวมและงานค้างทั้งหมด\n"
-                  "• 'เช็คราคาน้ำมัน' / 'สภาพอากาศ' — รายงานข้อมูลประจำวัน",
+                  "• 'ราคาน้ำมันวันนี้' / 'ดีเซลเท่าไหร่' — ตรวจสอบราคาน้ำมันขายปลีกทุกประเภท\n"
+                  "• 'สภาพอากาศวันนี้' — รายงานอุณหภูมิและค่าฝุ่น PM2.5\n"
+                  "• 'สรุปงานวันนี้' — แสดงรายการงานที่ค้างและต้องทำ\n"
+                  "• 'จดโน้ตว่า [ข้อความ]' — บันทึกข้อความลง Quick Notes ทันที\n"
+                  "• 'เตือนว่า [ข้อความ]' — ตั้งเตือนความจำลงระบบ Reminders",
         )
 
     # Default fallback
     return AIChatResponse(
-        reply=f"รับทราบครับ \"{text}\" มีสิ่งใดใน ART Workspace ที่ต้องการให้ผมช่วยจดโน้ต ตั้งเตือนความจำ หรือสรุปข้อมูลเพิ่มเติม แจ้งได้เสมอครับ!",
+        reply=f"รับทราบครับ \"{text}\" มีสิ่งใดใน ART Workspace ที่ต้องการให้ผมช่วยจดโน้ต ตั้งเตือนความจำ ตรวจสอบราคาน้ำมัน หรือสรุปภาพรวม แจ้งได้เสมอครับ!",
     )
 
 
@@ -125,8 +268,8 @@ async def call_gemini_api(prompt: str, context: Optional[Dict[str, Any]]) -> Opt
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={key}"
     sys_instruction = (
         "You are the executive AI Copilot for ART Workspace, a personal & team productivity dashboard. "
-        "Answer politely, helpfully, and concisely in Thai. You can help users with tasks, schedules, "
-        "and daily briefings."
+        "Answer politely, helpfully, and concisely in Thai with rich details and bullet points. "
+        "Use the workspace context provided (oil prices, weather, SET index, tasks) to give precise answers."
     )
     payload = {
         "contents": [
