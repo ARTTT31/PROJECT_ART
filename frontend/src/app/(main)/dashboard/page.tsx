@@ -96,8 +96,12 @@ const CalendarWidget = dynamic(() => import('@/components/Widgets/CalendarWidget
   ssr: false,
   loading: () => <HolidaySkeleton />,
 });
+const DailyDigestWidget = dynamic(() => import('@/components/Widgets/DailyDigestWidget'), {
+  ssr: false,
+  loading: () => <WeatherSkeleton />,
+});
 
-import { useDashboardLayout, widgetNames, widgetDescriptions } from '@/hooks/useDashboardLayout';
+import { useDashboardLayout, widgetNames, widgetDescriptions, DASHBOARD_VIEWS, VIEW_WIDGET_PRESETS } from '@/hooks/useDashboardLayout';
 import { useI18n } from '@/lib/i18n/I18nProvider';
 import { WIDGET_DESCRIPTION_KEYS, WIDGET_NAME_KEYS } from '@/lib/i18n/messages';
 
@@ -208,6 +212,18 @@ function SortableWidget({
         </div>
 
         {/* Widget content */}
+        {widget.id === 'digest' && (
+          <ErrorBoundary
+            fallback={(err, reset) => (
+              <WidgetErrorFallback name="สรุปประจำวันอัจฉริยะ" error={err} reset={reset} />
+            )}
+          >
+            <DailyDigestWidget
+              width={widget.w}
+              onResize={(newSize) => onResize(widget.id, newSize)}
+            />
+          </ErrorBoundary>
+        )}
         {widget.id === 'notes' && (
           <ErrorBoundary
             fallback={(err, reset) => (
@@ -349,6 +365,8 @@ export default function DashboardPage() {
     handleResize,
     toggleWidgetVisibility,
     resetToDefaultLayout,
+    currentView,
+    setCurrentView,
   } = useDashboardLayout();
   const { t } = useI18n();
 
@@ -389,7 +407,10 @@ export default function DashboardPage() {
     persistLayout(newLayout, visibleWidgetIds);
   };
 
-  const visibleWidgets = widgets.filter((w) => visibleWidgetIds.includes(w.id));
+  const viewPreset = VIEW_WIDGET_PRESETS[currentView];
+  const visibleWidgets = widgets.filter(
+    (w) => visibleWidgetIds.includes(w.id) && (!viewPreset || viewPreset.includes(w.id)),
+  );
 
   // ── Loading state ────────────────────────────────────────────────────────
 
@@ -432,6 +453,32 @@ export default function DashboardPage() {
               จัดการวิดเจ็ต
             </button>
           </div>
+        </div>
+
+        {/* Dashboard View Segmented Pills */}
+        <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-[var(--hairline)] pt-4">
+          <div className="inline-flex items-center gap-1 rounded-full bg-[var(--surface-grouped)] p-1 ring-1 ring-[var(--hairline)]">
+            {DASHBOARD_VIEWS.map((v) => {
+              const active = currentView === v.id;
+              return (
+                <button
+                  key={v.id}
+                  type="button"
+                  onClick={() => setCurrentView(v.id)}
+                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[12px] font-semibold transition-all duration-150 active:scale-[0.95] ${
+                    active
+                      ? 'bg-[var(--surface)] text-[var(--accent-text)] shadow-xs ring-1 ring-[var(--hairline)]'
+                      : 'text-[var(--ink-muted)] hover:text-[var(--ink)]'
+                  }`}
+                >
+                  {v.label}
+                </button>
+              );
+            })}
+          </div>
+          <span className="text-[12px] font-medium text-[var(--ink-muted)]">
+            แสดง {visibleWidgets.length} วิดเจ็ต
+          </span>
         </div>
       </section>
 

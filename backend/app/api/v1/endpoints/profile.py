@@ -25,6 +25,8 @@ from app.schemas.user import (
     UserMainMenuUpdate,
     UserDashboardLayoutUpdate,
     UserCameraConfigUpdate,
+    ExternalNotificationsUpdate,
+    ExternalNotificationTestRequest,
     WorkspaceBrandingUpdate,
     WorkspaceBrandingResponse,
     QuickNotesUpdate,
@@ -1052,3 +1054,125 @@ async def update_watchlist(
     current_user.watchlist = saved
     await db.commit()
     return _watchlist_response(saved)
+
+
+@router.get("/external-notifications")
+@limiter.limit(_GENERAL_LIMIT)
+async def get_external_notifications(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+):
+    import json
+    raw = getattr(current_user, "external_notifications", None)
+    try:
+        data = json.loads(raw) if raw else {}
+    except Exception:
+        data = {}
+    events = data.get("events") or {}
+    return {
+        "result": "success",
+        "data": {
+            "line_token": data.get("line_token", ""),
+            "line_webhook_url": data.get("line_webhook_url", ""),
+            "telegram_bot_token": data.get("telegram_bot_token", ""),
+            "telegram_chat_id": data.get("telegram_chat_id", ""),
+            "webhook_url": data.get("webhook_url", ""),
+            "events": {
+                "oil_alert": bool(events.get("oil_alert", data.get("oil_alert", True))),
+                "market_alert": bool(events.get("market_alert", data.get("market_alert", True))),
+                "daily_summary": bool(events.get("daily_summary", data.get("daily_summary", True))),
+            },
+        },
+    }
+
+
+@router.patch("/external-notifications")
+@limiter.limit(_GENERAL_LIMIT)
+async def update_external_notifications(
+    request: Request,
+    payload: ExternalNotificationsUpdate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    import json
+    events = payload.events or {
+        "oil_alert": payload.oil_alert,
+        "market_alert": payload.market_alert,
+        "daily_summary": payload.daily_summary,
+    }
+    data = {
+        "line_token": payload.line_token,
+        "line_webhook_url": payload.line_webhook_url,
+        "telegram_bot_token": payload.telegram_bot_token,
+        "telegram_chat_id": payload.telegram_chat_id,
+        "webhook_url": payload.webhook_url,
+        "events": events,
+    }
+    current_user.external_notifications = json.dumps(data, ensure_ascii=False)
+    db.add(current_user)
+    await db.commit()
+    await db.refresh(current_user)
+    return {
+        "result": "success",
+        "message": "บันทึกการตั้งค่าการแจ้งเตือนภายนอกเรียบร้อยแล้ว",
+        "data": data,
+    }
+
+
+@router.post("/external-notifications/test")
+@limiter.limit(_GENERAL_LIMIT)
+async def test_external_notification(
+    request: Request,
+    payload: ExternalNotificationTestRequest,
+    current_user: User = Depends(get_current_user),
+):
+    import httpx
+    channel = payload.channel
+    user_name = current_user.display_name or current_user.username or "ผู้ใช้งาน"
+    test_msg = f"🔔 [ART Workspace] ทดสอบการแจ้งเตือนสำหรับคุณ {user_name} สำเร็จเรียบร้อยแล้ว!"
+
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            if channel == "line":
+                token = (payload.line_token or "").strip()
+                if not token:
+                    raise HTTPException(status_code=400, detail="กรุณาระบุ LINE Token")
+                if token.startswith("http://") or token.startswith("https://"):
+                    res = await client.post(token, json={"message": test_msg})
+                else:
+                    res = await client.post(
+                        "https://notify-api.line.me/api/notify",
+                        headers={"Authorization": f"Bearer {token}"},
+                        data={"message": test_msg},
+                    )
+                if res.status_code not in (200, 204):
+                    err = f"LINE API ตอบกลับสถานะ {res.status_code}"
+                    return JSONResponse(status_code=400, content={"result": "error", "message": err})
+
+            elif channel == "telegram":
+                bot_token = (payload.telegram_bot_token or "").strip()
+                chat_id = (payload.telegram_chat_id or "").strip()
+                if not bot_token or not chat_id:
+                    raise HTTPException(status_code=400, detail="กรุณาระบุ Telegram Bot Token และ Chat ID")
+                url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+                res = await client.post(url, json={"chat_id": chat_id, "text": test_msg})
+                if res.status_code not in (200, 204):
+                    err = f"Telegram API ตอบกลับสถานะ {res.status_code}"
+                    return JSONResponse(status_code=400, content={"result": "error", "message": err})
+
+            elif channel == "webhook":
+                webhook_url = (payload.webhook_url or "").strip()
+                if not webhook_url or not (webhook_url.startswith("http://") or webhook_url.startswith("https://")):
+                    raise HTTPException(status_code=400, detail="กรุณาระบุ Webhook URL ที่ถูกต้อง")
+                res = await client.post(webhook_url, json={"content": test_msg, "text": test_msg})
+                if res.status_code not in (200, 204):
+                    err = f"Webhook ตอบกลับสถานะ {res.status_code}"
+                    return JSONResponse(status_code=400, content={"result": "error", "message": err})
+
+        return {"result": "success", "message": f"ส่งข้อความทดสอบไปยัง {channel.upper()} สำเร็จแล้ว!"}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        err = f"ส่งข้อความทดสอบไม่สำเร็จ: {str(e)[:100]}"
+        return JSONResponse(status_code=400, content={"result": "error", "message": err})

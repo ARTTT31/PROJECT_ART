@@ -5,6 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { offlineScope } from '@/lib/offline/localStore';
 
 const defaultWidgets: WidgetConfig[] = [
+  { id: 'digest', w: 2 },
   { id: 'notes', w: 1 },
   { id: 'calc', w: 1 },
   { id: 'focustimer', w: 1 },
@@ -19,7 +20,24 @@ const defaultWidgets: WidgetConfig[] = [
   { id: 'qrcode', w: 1 },
 ];
 
+export type DashboardView = 'all' | 'daily' | 'work' | 'finance';
+
+export const DASHBOARD_VIEWS: Array<{ id: DashboardView; label: string }> = [
+  { id: 'all', label: 'ทั้งหมด' },
+  { id: 'daily', label: 'ประจำวัน' },
+  { id: 'work', label: 'การทำงาน' },
+  { id: 'finance', label: 'การเงิน & ตลาด' },
+];
+
+export const VIEW_WIDGET_PRESETS: Record<DashboardView, string[] | null> = {
+  all: null,
+  daily: ['digest', 'weather', 'holidays', 'oilprice', 'calendar', 'notes'],
+  work: ['notes', 'focustimer', 'calc', 'qrcode', 'calendar'],
+  finance: ['finance', 'market', 'watchlist', 'converter', 'oilprice', 'calc'],
+};
+
 export const widgetNames: Record<string, string> = {
+  digest: 'สรุปประจำวันอัจฉริยะ',
   notes: 'โน้ตด่วน / To-do วันนี้',
   calc: 'คิดราคา / กำไร',
   focustimer: 'โฟกัส & จับเวลา',
@@ -35,6 +53,7 @@ export const widgetNames: Record<string, string> = {
 };
 
 export const widgetDescriptions: Record<string, string> = {
+  digest: 'สรุปสภาพอากาศ ราคาน้ำมัน ตลาดหุ้น และภารกิจสำคัญประจำวัน',
   notes: 'จดรายการที่ต้องทำวันนี้ ติ๊กเสร็จแล้วบันทึกอัตโนมัติ',
   calc: 'คิดราคาขายหลังหักส่วนลด พร้อมกำไรต่อชิ้นและเปอร์เซ็นต์',
   focustimer: 'จับเวลาทำงานสไตล์ Pomodoro พร้อมรอบโฟกัสและช่วงพัก',
@@ -80,6 +99,7 @@ export function useDashboardLayout() {
   const { user, updateUser } = useAuth();
   const [widgets, setWidgets] = useState<WidgetConfig[]>([]);
   const [visibleWidgetIds, setVisibleWidgetIds] = useState<string[]>([]);
+  const [currentView, setCurrentView] = useState<DashboardView>('all');
   const [isClient, setIsClient] = useState(false);
   const hasInitializedRef = useRef(false);
   const saveLayoutDebouncedRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -260,5 +280,7 @@ export function useDashboardLayout() {
     handleResize,
     toggleWidgetVisibility,
     resetToDefaultLayout,
+    currentView,
+    setCurrentView,
   };
 }

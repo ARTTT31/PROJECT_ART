@@ -5,6 +5,7 @@ import {
   ArrowDownCircle,
   ArrowUpCircle,
   BarChart3,
+  Download,
   Loader2,
   Pencil,
   Plus,
@@ -34,6 +35,7 @@ import {
   parseAmountInput,
   summarize,
   todayKey,
+  toCsv,
 } from '@/lib/finance/summary';
 
 const money = new Intl.NumberFormat('th-TH', { maximumFractionDigits: 2 });
@@ -437,6 +439,22 @@ export default function FinanceWidget({
   const budgetUsed = budget && budget > 0 ? Math.min(100, (monthExpense / budget) * 100) : 0;
   const overBudget = budget !== null && monthExpense > budget;
 
+  const handleExportCsv = () => {
+    if (entries.length === 0) return;
+    const blob = new Blob([`\uFEFF${toCsv(entries)}`], {
+      type: 'text/csv;charset=utf-8',
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    const stamp = new Date().toISOString().slice(0, 10);
+    link.download = `finance-all-${stamp}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   if (loading) {
     return (
       <div
@@ -476,6 +494,17 @@ export default function FinanceWidget({
         </div>
 
         <div className="flex shrink-0 items-center gap-1">
+          <button
+            type="button"
+            onClick={handleExportCsv}
+            disabled={entries.length === 0}
+            aria-label="ส่งออกข้อมูล CSV"
+            title="ดาวน์โหลดไฟล์ CSV"
+            className="inline-flex items-center gap-1 rounded-full bg-[var(--surface-grouped)] px-2 py-1.5 text-[11px] font-semibold text-[var(--ink-muted)] transition-colors hover:bg-[var(--surface-chip)] hover:text-[var(--ink)] active:scale-[0.95] disabled:opacity-40 disabled:pointer-events-none focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+          >
+            <Download size={13} aria-hidden="true" />
+            <span className="hidden sm:inline">CSV</span>
+          </button>
           <button
             type="button"
             onClick={() => setSummaryOpen(true)}

@@ -158,6 +158,26 @@ class UserCameraConfigUpdate(BaseModel):
     camera_config: str = Field(..., min_length=0, max_length=100_000)
 
 
+class ExternalNotificationsUpdate(BaseModel):
+    line_token: Optional[str] = Field(None, max_length=200)
+    line_webhook_url: Optional[str] = Field(None, max_length=500)
+    telegram_bot_token: Optional[str] = Field(None, max_length=200)
+    telegram_chat_id: Optional[str] = Field(None, max_length=100)
+    webhook_url: Optional[str] = Field(None, max_length=500)
+    oil_alert: bool = True
+    market_alert: bool = True
+    daily_summary: bool = True
+    events: Optional[dict[str, bool]] = None
+
+
+class ExternalNotificationTestRequest(BaseModel):
+    channel: str = Field(..., pattern="^(line|telegram|webhook)$")
+    line_token: Optional[str] = None
+    telegram_bot_token: Optional[str] = None
+    telegram_chat_id: Optional[str] = None
+    webhook_url: Optional[str] = None
+
+
 class WorkspaceBrandingUpdate(BaseModel):
     """Per-user workspace branding (name / tagline / logo).
 
@@ -333,6 +353,7 @@ class UserResponse(BaseModel):
     dashboard_layout: Optional[str] = None
     camera_config: Optional[str] = None
     accessible_pages: Optional[str] = None
+    external_notifications: Optional[str] = None
     # Sign-up lifecycle: None (normal account), "pending", "rejected".
     status: Optional[str] = None
     # Address confirmation; None only for accounts that never confirmed.

@@ -68,6 +68,8 @@ class User(Base, TimestampMixin):
     # Camera streams configuration (JSON stored as text)
     camera_config: Mapped[str | None] = mapped_column(Text)
     accessible_pages: Mapped[str | None] = mapped_column(Text)
+    # External notifications configuration (JSON stored as text: line, telegram, webhook)
+    external_notifications: Mapped[str | None] = mapped_column(Text)
     # Registration lifecycle: NULL means a normal account (every row created
     # before this column existed), ``pending`` is someone waiting for an admin
     # to approve their sign-up request, and ``rejected`` is a refused request.

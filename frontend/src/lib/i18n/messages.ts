@@ -110,6 +110,8 @@ const th = {
   'dashboard.moveWidget': 'ย้ายวิดเจ็ต {name}',
   'dashboard.toggleWidget': 'สลับวิดเจ็ต {name}',
 
+  'widget.digest.name': 'สรุปประจำวันอัจฉริยะ',
+  'widget.digest.desc': 'สรุปภาพรวมสภาพอากาศ ราคาน้ำมัน ตลาดหุ้น และงานค้างประจำวัน',
   'widget.notes.name': 'โน้ตด่วน / To-do วันนี้',
   'widget.notes.desc': 'จดรายการที่ต้องทำวันนี้ ติ๊กเสร็จแล้วบันทึกอัตโนมัติ',
   'widget.calc.name': 'คิดราคา / กำไร',
@@ -237,6 +239,8 @@ const en: Record<keyof typeof th, string> = {
   'dashboard.moveWidget': 'Move widget {name}',
   'dashboard.toggleWidget': 'Toggle widget {name}',
 
+  'widget.digest.name': 'Smart Daily Digest',
+  'widget.digest.desc': 'Executive daily briefing for weather, oil prices, market trends, and tasks',
   'widget.notes.name': 'Quick notes / today’s to-dos',
   'widget.notes.desc': 'Jot down today’s tasks; ticking one saves automatically',
   'widget.calc.name': 'Price & profit',
@@ -269,6 +273,7 @@ export type MessageKey = keyof typeof th;
 
 /** Sidebar/palette label for each menu page. */
 export const WIDGET_NAME_KEYS: Record<string, MessageKey> = {
+  digest: 'widget.digest.name',
   notes: 'widget.notes.name',
   calc: 'widget.calc.name',
   focustimer: 'widget.focustimer.name',
@@ -284,6 +289,7 @@ export const WIDGET_NAME_KEYS: Record<string, MessageKey> = {
 };
 
 export const WIDGET_DESCRIPTION_KEYS: Record<string, MessageKey> = {
+  digest: 'widget.digest.desc',
   notes: 'widget.notes.desc',
   calc: 'widget.calc.desc',
   focustimer: 'widget.focustimer.desc',

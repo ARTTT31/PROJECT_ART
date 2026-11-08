@@ -18,6 +18,7 @@ let mockUser: { dashboard_layout?: string | null } | null = null;
 const mockUpdateUser = vi.fn();
 
 const DEFAULT_IDS = [
+  'digest',
   'notes',
   'calc',
   'focustimer',
@@ -277,5 +278,17 @@ describe('useDashboardLayout — persistence', () => {
 
     expect(result.current.widgets.map((w) => w.id)).toEqual(DEFAULT_IDS);
     expect(result.current.visibleWidgetIds).toEqual(DEFAULT_IDS);
+  });
+
+  it('supports dashboard views and switching views', async () => {
+    const { result } = await renderLayout();
+
+    expect(result.current.currentView).toBe('all');
+
+    act(() => {
+      result.current.setCurrentView('finance');
+    });
+
+    expect(result.current.currentView).toBe('finance');
   });
 });
