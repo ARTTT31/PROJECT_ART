@@ -92,4 +92,21 @@ describe('DailyDigestWidget', () => {
     fireEvent.click(resizeBtn);
     expect(onResize).toHaveBeenCalledWith(1);
   });
+
+  it('displays the appropriate time-of-day greeting in the narrative banner', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 10, 9, 8, 30));
+    await act(async () => {
+      render(<DailyDigestWidget width={2} />);
+    });
+    expect(screen.getByText(/สวัสดีตอนเช้า — ภาพรวมพร้อมสำหรับคุณ/)).toBeDefined();
+
+    vi.setSystemTime(new Date(2026, 10, 9, 23, 15));
+    act(() => {
+      vi.advanceTimersByTime(60000);
+    });
+    expect(screen.getByText(/ราตรีสวัสดิ์ — ภาพรวมพร้อมสำหรับคุณ/)).toBeDefined();
+
+    vi.useRealTimers();
+  });
 });

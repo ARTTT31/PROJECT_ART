@@ -17,6 +17,7 @@ import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
 import { showToast } from '@/utils/sweetalert';
 import { usePreferences } from '@/hooks/usePreferences';
 import { formatLongDate } from '@/utils/dateFormat';
+import { getGreeting } from '@/utils/greeting';
 
 interface DigestData {
   weather: {
@@ -56,6 +57,7 @@ export default function DailyDigestWidget({
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [greeting, setGreeting] = useState<string>(getGreeting);
   const [, startTransition] = useTransition();
 
   const fetchDigestData = async () => {
@@ -143,18 +145,16 @@ export default function DailyDigestWidget({
 
   useEffect(() => {
     fetchDigestData();
+    setGreeting(getGreeting());
+    const timer = setInterval(() => {
+      setGreeting(getGreeting());
+    }, 60000);
+    return () => clearInterval(timer);
   }, []);
 
   const handleRefresh = () => {
     setIsRefreshing(true);
     fetchDigestData();
-  };
-
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return 'สวัสดีตอนเช้า';
-    if (hour < 17) return 'สวัสดีตอนบ่าย';
-    return 'สรุปภาพรวมช่วงค่ำ';
   };
 
   const generateDigestText = () => {
@@ -237,7 +237,7 @@ export default function DailyDigestWidget({
         <div className="flex items-center gap-2">
           <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
           <p className="text-[12px] font-bold text-[var(--ink)]">
-            {getGreeting()} — ภาพรวมพร้อมสำหรับคุณ
+            {greeting} — ภาพรวมพร้อมสำหรับคุณ
           </p>
         </div>
         <p className="mt-1 text-[12px] leading-relaxed text-[var(--ink-muted)]">
