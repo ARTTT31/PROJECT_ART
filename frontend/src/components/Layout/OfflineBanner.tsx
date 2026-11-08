@@ -83,37 +83,46 @@ export default function OfflineBanner() {
 
   if (!isOffline && queued === 0 && !justSynced) return null;
 
+  // A tinted card rather than a full-width bar: the bar sat above the app shell
+  // and pushed the whole page down every time the connection flapped, and it was
+  // rendered twice (providers + dashboard layout) so it stacked.
   const tone = isOffline
-    ? 'bg-amber-500 text-white'
+    ? 'border-[var(--hairline)] bg-[var(--warning-soft)] text-[var(--warning)]'
     : queued > 0
-      ? 'bg-[var(--accent)] text-white'
-      : 'bg-emerald-600 text-white';
+      ? 'border-[var(--hairline)] bg-[var(--accent-soft)] text-[var(--accent-text)]'
+      : 'border-[var(--hairline)] bg-[var(--success-soft)] text-[var(--success-ink)]';
 
   return (
     <div
       role="status"
       aria-live="polite"
-      className={`z-50 flex w-full items-center justify-center gap-2 px-4 py-2 text-xs font-medium transition-all duration-300 md:text-sm ${tone}`}
+      className="pointer-events-none fixed inset-x-3 bottom-3 z-[70] flex justify-center sm:inset-x-auto sm:right-5 sm:bottom-5 sm:justify-end"
     >
-      {isOffline ? (
-        <>
-          <WifiOff size={15} className="shrink-0 animate-pulse" aria-hidden="true" />
-          <span>
-            ออฟไลน์ · ข้อมูลล่าสุดถูกเก็บไว้ในเครื่อง
-            {queued > 0 ? ` และมี ${queued} รายการรอซิงก์` : ' แก้ไขต่อได้เลย'}
-          </span>
-        </>
-      ) : queued > 0 ? (
-        <>
-          <Loader2 size={15} className="shrink-0 animate-spin" aria-hidden="true" />
-          <span>กลับมาออนไลน์แล้ว · กำลังซิงก์ {queued} รายการที่ค้างไว้</span>
-        </>
-      ) : (
-        <>
-          <CheckCircle2 size={15} className="shrink-0" aria-hidden="true" />
-          <span>ซิงก์ข้อมูลที่ค้างไว้ครบแล้ว</span>
-        </>
-      )}
+      <div
+        className={`pointer-events-auto flex max-w-md items-start gap-2.5 rounded-[18px] border px-4 py-3 text-[12px] font-semibold shadow-xs backdrop-blur-md transition-all duration-300 md:text-[13px] ${tone}`}
+      >
+        {isOffline ? (
+          <>
+            <WifiOff size={16} className="mt-0.5 shrink-0 animate-pulse" aria-hidden="true" />
+            <span className="leading-relaxed">
+              ออฟไลน์ · ข้อมูลล่าสุดถูกเก็บไว้ในเครื่อง
+              {queued > 0 ? ` และมี ${queued} รายการรอซิงก์` : ' แก้ไขต่อได้เลย'}
+            </span>
+          </>
+        ) : queued > 0 ? (
+          <>
+            <Loader2 size={16} className="mt-0.5 shrink-0 animate-spin" aria-hidden="true" />
+            <span className="leading-relaxed">
+              กลับมาออนไลน์แล้ว · กำลังซิงก์ {queued} รายการที่ค้างไว้
+            </span>
+          </>
+        ) : (
+          <>
+            <CheckCircle2 size={16} className="mt-0.5 shrink-0" aria-hidden="true" />
+            <span className="leading-relaxed">ซิงก์ข้อมูลที่ค้างไว้ครบแล้ว</span>
+          </>
+        )}
+      </div>
     </div>
   );
 }

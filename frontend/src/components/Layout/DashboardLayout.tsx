@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Header from './Header';
 import Sidebar from './Sidebar';
-import OfflineBanner from './OfflineBanner';
 import CommandPalette from './CommandPalette';
 import { showConfirm } from '@/utils/sweetalert';
 import AuthGuard from '@/components/Auth/AuthGuard';
@@ -86,7 +85,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     <>
       <AuthGuard>
         <div className="art-app-shell relative overflow-x-hidden bg-[var(--surface-grouped)] min-h-[100dvh] text-[var(--ink)]">
-          <OfflineBanner />
           {/* Sidebar wrapper */}
           <div className="relative z-20">
             <Sidebar
