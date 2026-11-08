@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AlertCircle, CheckCheck, ListTodo, Loader2, Plus, RotateCw, Trash2 } from 'lucide-react';
+import { AlertCircle, CheckCheck, ListTodo, Loader2, Plus, RotateCcw, RotateCw, Trash2 } from 'lucide-react';
 import WidgetSizeToggle from './WidgetSizeToggle';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
 import {
@@ -132,6 +132,12 @@ export default function QuickNotesWidget({
 
   const pendingRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // One-click clearing is still a delete, so it leaves a short window to take it
+  // back instead of asking for a confirmation every time.
+  const [clearedAt, setClearedAt] = useState<number | null>(null);
+  const undoClearRef = useRef<{ notes: QuickNote[]; timer: ReturnType<typeof setTimeout> } | null>(
+    null,
+  );
   const latestRef = useRef<QuickNote[]>(notes);
   const saveQueueRef = useRef<Promise<void>>(Promise.resolve());
   const saveSequenceRef = useRef(0);
@@ -241,6 +247,7 @@ export default function QuickNotesWidget({
         void persist(latestRef.current);
       }
       if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+      if (undoClearRef.current) clearTimeout(undoClearRef.current.timer);
     };
   }, [load, persist]);
 
@@ -320,8 +327,29 @@ export default function QuickNotesWidget({
   };
 
   const clearCompleted = () => {
-    const kept = latestRef.current.filter((note) => !note.done);
-    if (kept.length !== latestRef.current.length) update(kept);
+    const before = latestRef.current;
+    const kept = before.filter((note) => !note.done);
+    if (kept.length === before.length) return;
+
+    if (undoClearRef.current) clearTimeout(undoClearRef.current.timer);
+    undoClearRef.current = {
+      notes: before,
+      timer: setTimeout(() => {
+        undoClearRef.current = null;
+        setClearedAt(null);
+      }, 8000),
+    };
+    setClearedAt(Date.now());
+    update(kept);
+  };
+
+  const undoClear = () => {
+    const snapshot = undoClearRef.current;
+    if (!snapshot) return;
+    clearTimeout(snapshot.timer);
+    undoClearRef.current = null;
+    setClearedAt(null);
+    update(snapshot.notes);
   };
 
   /** Move the caret/cursor to the end of a note when its editor opens. */
@@ -420,17 +448,30 @@ export default function QuickNotesWidget({
           {/* Lives in the header, not above the list: it appears the moment the
               first item is ticked, and a row of its own used to shove every
               entry down as you worked down the list. */}
-          {completed > 0 && (
+          {clearedAt !== null ? (
             <button
               type="button"
-              onClick={clearCompleted}
-              aria-label={`ล้างที่เสร็จแล้ว ${completed} รายการ`}
-              title={`ล้างที่เสร็จแล้ว (${completed})`}
-              className="inline-flex h-8 items-center gap-1 rounded-full px-2.5 text-[11px] font-bold tabular-nums text-[var(--accent-text)] transition-colors hover:bg-[var(--accent)]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-ring)]"
+              onClick={undoClear}
+              aria-label="เลิกทำการล้างรายการ"
+              title="เลิกทำการล้างรายการ"
+              className="inline-flex h-8 items-center gap-1 rounded-full px-2.5 text-[11px] font-bold text-[var(--accent-text)] transition-colors hover:bg-[var(--accent)]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-ring)]"
             >
-              <CheckCheck size={14} aria-hidden="true" />
-              {completed}
+              <RotateCcw size={14} aria-hidden="true" />
+              เลิกทำ
             </button>
+          ) : (
+            completed > 0 && (
+              <button
+                type="button"
+                onClick={clearCompleted}
+                aria-label={`ล้างที่เสร็จแล้ว ${completed} รายการ`}
+                title={`ล้างที่เสร็จแล้ว (${completed})`}
+                className="inline-flex h-8 items-center gap-1 rounded-full px-2.5 text-[11px] font-bold tabular-nums text-[var(--accent-text)] transition-colors hover:bg-[var(--accent)]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-ring)]"
+              >
+                <CheckCheck size={14} aria-hidden="true" />
+                ล้าง {completed}
+              </button>
+            )
           )}
           {onResize && <WidgetSizeToggle value={width} onChange={onResize} sizes={[1, 2, 3]} />}
         </div>

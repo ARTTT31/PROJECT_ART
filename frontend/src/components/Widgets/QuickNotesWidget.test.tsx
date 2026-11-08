@@ -157,12 +157,28 @@ describe('QuickNotesWidget', () => {
 
     expect(screen.queryByText('งานที่เสร็จแล้ว')).toBeNull();
     expect(screen.getByText('งานที่ยังค้าง')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /ล้างที่เสร็จแล้ว/ })).toBeNull();
     await waitFor(
       () => {
         expect(lastPutBody().notes.map((note) => note.text)).toEqual(['งานที่ยังค้าง']);
       },
       { timeout: 3000 },
     );
+  });
+
+  it('takes a wholesale clear back within the undo window', async () => {
+    await renderWith([
+      { id: 'n1', text: 'งานที่เสร็จแล้ว', done: true },
+      { id: 'n2', text: 'งานที่ยังค้าง', done: false },
+    ]);
+
+    fireEvent.click(screen.getByRole('button', { name: 'ล้างที่เสร็จแล้ว 1 รายการ' }));
+    expect(screen.queryByText('งานที่เสร็จแล้ว')).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'เลิกทำการล้างรายการ' }));
+
+    expect(await screen.findByText('งานที่เสร็จแล้ว')).toBeTruthy();
+    expect(screen.getByText('งานที่ยังค้าง')).toBeTruthy();
   });
 
   it('queues saves so a later edit is written after an earlier request finishes', async () => {
