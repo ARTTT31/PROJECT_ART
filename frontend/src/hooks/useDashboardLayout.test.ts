@@ -291,4 +291,14 @@ describe('useDashboardLayout — persistence', () => {
 
     expect(result.current.currentView).toBe('finance');
   });
+  it('applies a role preset layout and filters widgets', async () => {
+    const { result } = await renderLayout();
+
+    act(() => {
+      result.current.applyRolePreset('minimal');
+    });
+
+    expect(result.current.visibleWidgetIds).toEqual(['digest', 'notes', 'weather', 'oilprice']);
+  });
+
 });

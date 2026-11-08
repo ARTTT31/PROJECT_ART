@@ -154,6 +154,37 @@ async def _session_cleanup_loop(interval_hours: int) -> None:
             logger.warning("Scheduled session cleanup failed: %s", exc)
 
 
+async def _notification_scheduler_loop(check_interval_seconds: int = 1800) -> None:
+    """Periodically check and dispatch scheduled external notifications (daily digest, market summary)."""
+    from app.services.notification_dispatcher import dispatch_event_notifications
+    last_dispatched_hour: dict[str, int] = {}
+
+    while True:
+        await asyncio.sleep(check_interval_seconds)
+        try:
+            now = time.localtime()
+            current_hour = now.tm_hour
+            # Morning daily digest at 08:00
+            if current_hour == 8 and last_dispatched_hour.get("daily_summary") != current_hour:
+                async with SessionLocal() as db:
+                    await dispatch_event_notifications(
+                        db, "daily_summary", "☀️ [ART Workspace] สรุปภารกิจและรายงานประจำวันพร้อมแล้ว"
+                    )
+                last_dispatched_hour["daily_summary"] = current_hour
+
+            # Evening market summary at 17:00
+            if current_hour == 17 and last_dispatched_hour.get("market_alert") != current_hour:
+                async with SessionLocal() as db:
+                    await dispatch_event_notifications(
+                        db, "market_alert", "📈 [ART Workspace] สรุปภาพรวมตลาด SET และค่าเงินหลังปิดตลาด"
+                    )
+                last_dispatched_hour["market_alert"] = current_hour
+        except asyncio.CancelledError:
+            raise
+        except Exception as exc:
+            logger.warning("Notification scheduler loop warning: %s", exc)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Schema is owned by Alembic (`alembic upgrade head`). AUTO_CREATE_TABLES is a
@@ -180,6 +211,9 @@ async def lifespan(app: FastAPI):
     log_email_delivery_configuration()
 
     cleanup_task: "asyncio.Task[None] | None" = None
+    notif_task: "asyncio.Task[None] | None" = None
+    if not settings.DEBUG:
+        notif_task = asyncio.create_task(_notification_scheduler_loop())
     if settings.SESSION_CLEANUP_INTERVAL_HOURS > 0:
         cleanup_task = asyncio.create_task(
             _session_cleanup_loop(settings.SESSION_CLEANUP_INTERVAL_HOURS)
@@ -198,6 +232,9 @@ async def lifespan(app: FastAPI):
         if cleanup_task is not None:
             cleanup_task.cancel()
             await asyncio.gather(cleanup_task, return_exceptions=True)
+        if notif_task is not None:
+            notif_task.cancel()
+            await asyncio.gather(notif_task, return_exceptions=True)
         await broadcast_bus.stop()
 # CORS is explicit because authenticated cookies must never be shared with
 # arbitrary preview deployments. Set CORS_ORIGINS in the production host.

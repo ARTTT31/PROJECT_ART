@@ -17,6 +17,8 @@ from app.core.rate_limit import get_real_client_ip, limiter
 from app.core.security import decode_token, verify_password
 from app.core.utils import utcnow
 from app.schemas.user import (
+    ExternalNotificationDispatchRequest,
+    WebPushSubscriptionRequest,
     SelfDeleteRequest,
     UserResponse,
     UserUpdate,
@@ -1176,3 +1178,74 @@ async def test_external_notification(
     except Exception as e:
         err = f"ส่งข้อความทดสอบไม่สำเร็จ: {str(e)[:100]}"
         return JSONResponse(status_code=400, content={"result": "error", "message": err})
+
+
+@router.post("/external-notifications/dispatch")
+@limiter.limit(_GENERAL_LIMIT)
+async def dispatch_external_notification(
+    request: Request,
+    payload: ExternalNotificationDispatchRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    from app.services.notification_dispatcher import dispatch_event_notifications
+    count = await dispatch_event_notifications(db, payload.event_type, payload.message)
+    return {"result": "success", "sent_count": count}
+
+
+@router.get("/web-push")
+@limiter.limit(_GENERAL_LIMIT)
+async def get_web_push_subscription(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+):
+    raw = getattr(current_user, "web_push_subscription", None)
+    has_sub = bool(raw and raw.strip())
+    return {"result": "success", "has_subscription": has_sub}
+
+
+@router.post("/web-push")
+@limiter.limit(_GENERAL_LIMIT)
+async def save_web_push_subscription(
+    request: Request,
+    payload: WebPushSubscriptionRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    import json
+    sub_data = {"endpoint": payload.endpoint, "keys": payload.keys}
+    current_user.web_push_subscription = json.dumps(sub_data)
+    db.add(current_user)
+    await db.commit()
+    return {"result": "success", "message": "บันทึกการสมัครรับแจ้งเตือนเบราว์เซอร์สำเร็จ"}
+
+
+@router.delete("/web-push")
+@limiter.limit(_GENERAL_LIMIT)
+async def remove_web_push_subscription(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    current_user.web_push_subscription = None
+    db.add(current_user)
+    await db.commit()
+    return {"result": "success", "message": "ยกเลิกการรับแจ้งเตือนเบราว์เซอร์สำเร็จ"}
+
+
+@router.post("/web-push/test")
+@limiter.limit(_GENERAL_LIMIT)
+async def test_web_push(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+):
+    user_name = current_user.display_name or current_user.username or "ผู้ใช้"
+    return {
+        "result": "success",
+        "message": "ส่งข้อความทดสอบแจ้งเตือนบนเบราว์เซอร์เรียบร้อยแล้ว",
+        "notification": {
+            "title": "ART Workspace",
+            "body": f"ทดสอบการแจ้งเตือนสำหรับคุณ {user_name} สำเร็จ!",
+            "url": "/dashboard",
+        },
+    }

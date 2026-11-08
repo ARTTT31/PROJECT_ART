@@ -354,6 +354,7 @@ class UserResponse(BaseModel):
     camera_config: Optional[str] = None
     accessible_pages: Optional[str] = None
     external_notifications: Optional[str] = None
+    web_push_subscription: Optional[str] = None
     # Sign-up lifecycle: None (normal account), "pending", "rejected".
     status: Optional[str] = None
     # Address confirmation; None only for accounts that never confirmed.
@@ -376,3 +377,13 @@ class UserTrashResponse(UserResponse):
 
     days_remaining: int
     purge_at: datetime
+
+
+class ExternalNotificationDispatchRequest(BaseModel):
+    event_type: str = Field(..., pattern="^(oil_alert|market_alert|daily_summary)$")
+    message: str = Field(..., min_length=1, max_length=2000)
+
+
+class WebPushSubscriptionRequest(BaseModel):
+    endpoint: str = Field(..., max_length=1500)
+    keys: dict[str, str] = Field(default_factory=dict)

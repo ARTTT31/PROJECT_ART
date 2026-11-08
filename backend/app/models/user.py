@@ -70,6 +70,8 @@ class User(Base, TimestampMixin):
     accessible_pages: Mapped[str | None] = mapped_column(Text)
     # External notifications configuration (JSON stored as text: line, telegram, webhook)
     external_notifications: Mapped[str | None] = mapped_column(Text)
+    # Web push subscription (JSON stored as text: endpoint, p256dh, auth keys)
+    web_push_subscription: Mapped[str | None] = mapped_column(Text)
     # Registration lifecycle: NULL means a normal account (every row created
     # before this column existed), ``pending`` is someone waiting for an admin
     # to approve their sign-up request, and ``rejected`` is a refused request.

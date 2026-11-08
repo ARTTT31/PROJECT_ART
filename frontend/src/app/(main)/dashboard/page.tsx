@@ -101,7 +101,7 @@ const DailyDigestWidget = dynamic(() => import('@/components/Widgets/DailyDigest
   loading: () => <WeatherSkeleton />,
 });
 
-import { useDashboardLayout, widgetNames, widgetDescriptions, DASHBOARD_VIEWS, VIEW_WIDGET_PRESETS } from '@/hooks/useDashboardLayout';
+import { useDashboardLayout, widgetNames, widgetDescriptions, DASHBOARD_VIEWS, VIEW_WIDGET_PRESETS, ROLE_PRESETS } from '@/hooks/useDashboardLayout';
 import { useI18n } from '@/lib/i18n/I18nProvider';
 import { WIDGET_DESCRIPTION_KEYS, WIDGET_NAME_KEYS } from '@/lib/i18n/messages';
 

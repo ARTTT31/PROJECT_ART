@@ -1,16 +1,18 @@
 'use client';
 
-import { BellRing, CalendarDays, ListChecks, Volume2 } from 'lucide-react';
+import { BellRing, CalendarDays, Globe, ListChecks, Loader2, Volume2 } from 'lucide-react';
 import { SectionCard } from './SectionCard';
 import { savePreferences, usePreferences } from '@/hooks/usePreferences';
+import { useWebPush } from '@/hooks/useWebPush';
 import { playBellSound } from '@/utils/sound';
 import { useI18n } from '@/lib/i18n/I18nProvider';
 import Switch from '@/components/ui/Switch';
 
-/** Which alerts this browser shows, and whether the bell plays a sound. */
+/** Which alerts this browser shows, bell sounds, and Web Push notifications. */
 export function NotificationSettingsCard() {
   const { t } = useI18n();
   const preferences = usePreferences();
+  const webPush = useWebPush();
 
   return (
     <SectionCard
@@ -22,6 +24,68 @@ export function NotificationSettingsCard() {
       subtitle={t('card.notifications.subtitle')}
     >
       <div className="space-y-2">
+        {/* Web Push Notification */}
+        <div className="flex items-center gap-3 rounded-[18px] bg-[var(--surface)] p-3 ring-1 ring-[var(--hairline)] shadow-2xs">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] bg-[var(--accent-soft)] text-[var(--accent-text)]">
+            <Globe size={18} aria-hidden="true" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-[13px] font-bold tracking-tight text-[var(--ink)]">
+                การแจ้งเตือนบนเบราว์เซอร์ (Web Push)
+              </p>
+              {!webPush.isSupported ? (
+                <span className="rounded-full bg-stone-100 px-2 py-0.5 text-[10px] font-semibold text-stone-500">
+                  ไม่รองรับ
+                </span>
+              ) : webPush.permission === 'denied' ? (
+                <span className="rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-semibold text-red-600">
+                  ถูกปิดกั้น
+                </span>
+              ) : webPush.isSubscribed ? (
+                <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-600">
+                  เปิดใช้งานแล้ว
+                </span>
+              ) : null}
+            </div>
+            <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">
+              รับการแจ้งเตือนราคาน้ำมัน สรุปข่าวสาร และการเตือนต่างๆ แม้ไม่ได้เปิดหน้าต่างเว็บค้างไว้
+            </p>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            {webPush.isSupported && (
+              <button
+                type="button"
+                onClick={() => webPush.sendTestNotification()}
+                disabled={webPush.isTesting || webPush.isLoading}
+                className="rounded-full bg-[var(--surface-grouped)] px-2.5 py-1 text-[11px] font-semibold text-[var(--ink-muted)] transition-colors hover:bg-[var(--surface-chip)] hover:text-[var(--ink)] disabled:opacity-50"
+              >
+                {webPush.isTesting ? (
+                  <span className="flex items-center gap-1">
+                    <Loader2 size={12} className="animate-spin" aria-hidden="true" />
+                    กำลังส่ง...
+                  </span>
+                ) : (
+                  'ทดสอบ'
+                )}
+              </button>
+            )}
+            <Switch
+              checked={webPush.isSubscribed}
+              disabled={!webPush.isSupported || webPush.isLoading}
+              label="การแจ้งเตือนบนเบราว์เซอร์"
+              onChange={(next) => {
+                if (next) {
+                  webPush.subscribe();
+                } else {
+                  webPush.unsubscribe();
+                }
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Bell Sound */}
         <div className="flex items-center gap-3 rounded-[18px] bg-[var(--surface)] p-3 ring-1 ring-[var(--hairline)] shadow-2xs">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] bg-[var(--accent-soft)] text-[var(--accent-text)]">
             <Volume2 size={18} aria-hidden="true" />
@@ -50,6 +114,7 @@ export function NotificationSettingsCard() {
           </div>
         </div>
 
+        {/* Holiday Alerts */}
         <div className="flex items-center gap-3 rounded-[18px] bg-[var(--surface)] p-3 ring-1 ring-[var(--hairline)] shadow-2xs">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] bg-[var(--accent-soft)] text-[var(--accent-text)]">
             <CalendarDays size={18} aria-hidden="true" />
@@ -69,6 +134,7 @@ export function NotificationSettingsCard() {
           />
         </div>
 
+        {/* Personal Reminder Alerts */}
         <div className="flex items-center gap-3 rounded-[18px] bg-[var(--surface)] p-3 ring-1 ring-[var(--hairline)] shadow-2xs">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] bg-[var(--accent-soft)] text-[var(--accent-text)]">
             <ListChecks size={18} aria-hidden="true" />

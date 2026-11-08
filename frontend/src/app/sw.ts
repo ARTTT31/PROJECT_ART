@@ -44,3 +44,51 @@ const serwist = new Serwist({
 });
 
 serwist.addEventListeners();
+
+// Push Notifications
+self.addEventListener('push', (event: PushEvent) => {
+  let title = 'ART Workspace';
+  let options: NotificationOptions = {
+    body: 'คุณมีการแจ้งเตือนใหม่',
+    icon: '/icons/icon-192x192.png',
+    badge: '/icons/icon-192x192.png',
+    data: { url: '/dashboard' },
+  };
+
+  if (event.data) {
+    try {
+      const data = event.data.json();
+      title = data.title || title;
+      options = {
+        ...options,
+        body: data.body || options.body,
+        icon: data.icon || options.icon,
+        data: {
+          url: data.url || '/dashboard',
+        },
+      };
+    } catch {
+      options.body = event.data.text() || options.body;
+    }
+  }
+
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener('notificationclick', (event: NotificationEvent) => {
+  event.notification.close();
+  const targetUrl = (event.notification.data as { url?: string } | undefined)?.url || '/dashboard';
+
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if (client.url.includes(targetUrl) && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      if (self.clients.openWindow) {
+        return self.clients.openWindow(targetUrl);
+      }
+    })
+  );
+});

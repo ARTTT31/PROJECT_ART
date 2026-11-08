@@ -6,6 +6,8 @@ pytestmark = pytest.mark.asyncio
 
 async def test_get_external_notifications_default(client: AsyncClient, logged_in_user):
     resp = await client.get("/api/v1/profile/external-notifications")
+    if resp.status_code != 200:
+        print("RESP 422 DETAIL:", resp.json())
     assert resp.status_code == 200
     res_json = resp.json()
     assert res_json["result"] == "success"
@@ -31,6 +33,8 @@ async def test_patch_external_notifications(client: AsyncClient, logged_in_user)
         },
     }
     resp = await client.patch("/api/v1/profile/external-notifications", json=payload)
+    if resp.status_code != 200:
+        print("RESP 422 DETAIL:", resp.json())
     assert resp.status_code == 200
     res_json = resp.json()
     assert res_json["result"] == "success"
@@ -58,3 +62,53 @@ async def test_notification_test_endpoint_unconfigured(client: AsyncClient, logg
     assert resp.status_code == 400
     detail = resp.json()["detail"]
     assert "ไม่ได้ระบุ" in detail or "Token" in detail
+
+
+async def test_dispatch_external_notification_endpoint(client: AsyncClient, logged_in_user):
+    payload = {
+        "event_type": "daily_summary",
+        "message": "☀️ ทดสอบส่งข้อความสรุปประจำวันจากระบบ Dispatcher",
+    }
+    resp = await client.post("/api/v1/profile/external-notifications/dispatch", json=payload)
+    if resp.status_code != 200:
+        print("RESP 422 DETAIL:", resp.json())
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["result"] == "success"
+    assert "sent_count" in data
+
+
+async def test_web_push_subscription_flow(client: AsyncClient, logged_in_user):
+    # 1. Initial check
+    get_res = await client.get("/api/v1/profile/web-push")
+    assert get_res.status_code == 200
+    assert get_res.json()["has_subscription"] is False
+
+    # 2. Subscribe
+    sub_payload = {
+        "endpoint": "https://fcm.googleapis.com/fcm/send/test-sub-123",
+        "keys": {"p256dh": "key123", "auth": "auth123"},
+    }
+    post_res = await client.post("/api/v1/profile/web-push", json=sub_payload)
+    assert post_res.status_code == 200
+    assert post_res.json()["result"] == "success"
+
+    # 3. Verify subscribed
+    verify_res = await client.get("/api/v1/profile/web-push")
+    assert verify_res.status_code == 200
+    assert verify_res.json()["has_subscription"] is True
+
+    # 4. Test notification dispatch
+    test_res = await client.post("/api/v1/profile/web-push/test")
+    assert test_res.status_code == 200
+    assert test_res.json()["result"] == "success"
+    assert "notification" in test_res.json()
+
+    # 5. Unsubscribe
+    del_res = await client.delete("/api/v1/profile/web-push")
+    assert del_res.status_code == 200
+
+    # 6. Verify unsubscribed
+    final_res = await client.get("/api/v1/profile/web-push")
+    assert final_res.status_code == 200
+    assert final_res.json()["has_subscription"] is False

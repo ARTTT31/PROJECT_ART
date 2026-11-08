@@ -36,6 +36,40 @@ export const VIEW_WIDGET_PRESETS: Record<DashboardView, string[] | null> = {
   finance: ['finance', 'market', 'watchlist', 'converter', 'oilprice', 'calc'],
 };
 
+export interface RolePreset {
+  id: string;
+  label: string;
+  description: string;
+  widgetIds: string[];
+}
+
+export const ROLE_PRESETS: RolePreset[] = [
+  {
+    id: 'executive',
+    label: 'ผู้บริหาร & การเงิน',
+    description: 'สรุปรายงานประจำวัน, รายรับรายจ่าย, ตลาดหุ้น SET, อัตราแลกเปลี่ยน และรายการติดตาม',
+    widgetIds: ['digest', 'finance', 'market', 'watchlist', 'converter', 'calc'],
+  },
+  {
+    id: 'productivity',
+    label: 'การทำงาน & โฟกัส',
+    description: 'โน้ตงานด่วน, โฟกัส Pomodoro, ปฏิทินนัดหมาย และวันหยุดนักขัตฤกษ์',
+    widgetIds: ['digest', 'notes', 'focustimer', 'calendar', 'holidays', 'qrcode'],
+  },
+  {
+    id: 'fieldwork',
+    label: 'เดินทาง & ภาคสนาม',
+    description: 'สภาพอากาศ PM 2.5, ราคาน้ำมัน, โน้ตงานด่วน และสร้าง QR Code',
+    widgetIds: ['digest', 'weather', 'oilprice', 'notes', 'holidays', 'qrcode'],
+  },
+  {
+    id: 'minimal',
+    label: 'มินิมอล (คลีน & รวดเร็ว)',
+    description: 'สรุปข้อมูลประจำวัน, โน้ตด่วน, อุณหภูมิ และราคาน้ำมันล่าสุด',
+    widgetIds: ['digest', 'notes', 'weather', 'oilprice'],
+  },
+];
+
 export const widgetNames: Record<string, string> = {
   digest: 'สรุปประจำวันอัจฉริยะ',
   notes: 'โน้ตด่วน / To-do วันนี้',
@@ -264,6 +298,26 @@ export function useDashboardLayout() {
     persistLayout(newWidgets, newVisible);
   };
 
+  const applyRolePreset = useCallback(
+    (presetId: string) => {
+      const preset = ROLE_PRESETS.find((p) => p.id === presetId);
+      if (!preset) return;
+      const currentWidgets = widgetsRef.current;
+      const ordered = [
+        ...currentWidgets.filter((w) => preset.widgetIds.includes(w.id)),
+        ...currentWidgets.filter((w) => !preset.widgetIds.includes(w.id)),
+      ];
+      for (const id of preset.widgetIds) {
+        if (!ordered.some((w) => w.id === id)) {
+          const defaultW = defaultWidgets.find((w) => w.id === id);
+          ordered.unshift(defaultW || { id, w: 1 });
+        }
+      }
+      persistLayout(ordered, preset.widgetIds);
+    },
+    [persistLayout],
+  );
+
   const resetToDefaultLayout = useCallback(() => {
     const resetLayout = [...defaultWidgets];
     const resetVisible = defaultWidgets.map((w) => w.id);
@@ -280,6 +334,7 @@ export function useDashboardLayout() {
     handleResize,
     toggleWidgetVisibility,
     resetToDefaultLayout,
+    applyRolePreset,
     currentView,
     setCurrentView,
   };
