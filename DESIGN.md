@@ -50,6 +50,24 @@ All product buttons follow the HIG specifications:
 - Icon-only controls must include an `aria-label` and a visible focus ring.
 - Touch targets: 24×24 px is the floor for every control (WCAG 2.5.8, AA). The 44×44 Apple HIG size is applied only on coarse pointers (touch) through the `@media (pointer: coarse)` rule in `globals.css`; forcing it on desktop turned compact widget chips into 44px blocks.
 
+## Iconography & Brand Logos
+
+ART Workspace maintains strict iconography standards split between general UI controls and third-party brand logos:
+
+1. **System & UI Icons (`lucide-react`)**:
+   - Primary icon set for all interface actions, status markers, navigation, and controls.
+   - Example: `import { Search, ChevronDown, Check, Settings, Trash2 } from 'lucide-react';`
+   - Stroke width is centralized in `globals.css` (`svg.lucide { stroke-width: 1.75 }`). Avoid hardcoding `strokeWidth` inline.
+
+2. **Brand, Social & Tech Logos (`@icons-pack/react-simple-icons`)**:
+   - Official logos for third-party services, social networks, and technologies (Google, GitHub, Line, Facebook, Apple, Microsoft, etc.).
+   - Example: `import { SiGoogle, SiGithub, SiLine, SiFacebook } from '@icons-pack/react-simple-icons';`
+   - Never create makeshift custom SVGs or low-res images for external brand logos.
+
+3. **Accessibility & Best Practices**:
+   - Decorative icons beside text: specify `aria-hidden="true"`.
+   - Standalone icon buttons: MUST provide an accessible name via `aria-label` and have an `active:scale-[0.95]` press state.
+
 ## Dialogs (Radix UI)
 
 All modal dialogs use `components/ui/Dialog.tsx`, wrapping Radix UI `@radix-ui/react-dialog` with HIG styles.

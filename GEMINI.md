@@ -38,6 +38,10 @@ Before modifying or creating any frontend code, components, or styles:
 5. **Accessibility & Usability**:
    - Every icon-only button must have an `aria-label` and visible focus ring.
    - Check WCAG contrast compliance and provide `prefers-reduced-motion` alternatives.
+6. **Iconography & Logo Standards (Mandatory)**:
+   - **UI & System Icons**: MUST use `lucide-react` (e.g., `import { Search, ChevronDown, Check, Settings, Trash2 } from 'lucide-react'`). Never create inline or custom SVGs for general UI controls.
+   - **Brand, Social & Tech Logos**: MUST use `@icons-pack/react-simple-icons` (e.g., `import { SiGoogle, SiGithub, SiFacebook, SiLine, SiApple } from '@icons-pack/react-simple-icons'`). Never guess or draw logos manually.
+   - Sizing: `w-4 h-4` (16px), `w-5 h-5` (20px), `w-6 h-6` (24px). Purely decorative icons require `aria-hidden="true"`. Global line weight `1.75` from `globals.css` applies to Lucide.
 
 ---
 

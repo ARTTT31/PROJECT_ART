@@ -52,9 +52,13 @@ The scale is **four values, nothing else**. Tailwind's named radii (`rounded-xl`
 - **Pills, badges, segmented controls, switches:** `rounded-full`
 
 ### 4. Iconography Style
-- Consistent line weight: one global rule sets `svg.lucide { stroke-width: 1.75 }`. Do **not** pass `strokeWidth` per icon; use `stroke-[2]` only when an icon must read heavier at 11–13px.
-- Tinted squircle icon badge containers (`bg-[#0066cc]/10 text-[#0066cc]`, etc.)
-- Enclosed icon buttons with springy click feedback (`active:scale-[0.95]`)
+- **System & UI Controls:** `lucide-react` (e.g. `import { Search, ChevronDown, Check, Settings } from 'lucide-react'`).
+  - Consistent line weight: one global rule sets `svg.lucide { stroke-width: 1.75 }`. Do **not** pass `strokeWidth` per icon; use `stroke-[2]` only when an icon must read heavier at 11–13px.
+  - Tinted squircle icon badge containers (`bg-[#0066cc]/10 text-[#0066cc]`, etc.)
+  - Enclosed icon buttons with springy click feedback (`active:scale-[0.95]`)
+- **Brand & Tech Logos:** `@icons-pack/react-simple-icons` (e.g. `import { SiGoogle, SiGithub, SiLine, SiApple } from '@icons-pack/react-simple-icons'`).
+  - Use official brand icons for third-party integrations, OAuth, external quick links, and social platforms.
+  - Maintain color integrity or use `--ink` / `--ink-muted` tokens for monochrome representations.
 
 ### 5. Motion
 - Durations: `150ms` interactions (`duration-apple-1`), `200ms` state/panel changes (`duration-apple-2`), `300ms` layout moves (`duration-apple-3`). No other values.

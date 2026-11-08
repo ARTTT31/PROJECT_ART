@@ -1,6 +1,29 @@
 'use client';
 
+import type { ComponentType, CSSProperties } from 'react';
 import type { LucideIcon } from 'lucide-react';
+import {
+  SiGoogle,
+  SiGoogledrive,
+  SiGmail,
+  SiGithub,
+  SiLine,
+  SiFacebook,
+  SiYoutube,
+  SiX,
+  SiApple,
+  SiInstagram,
+  SiTiktok,
+  SiDiscord,
+  SiTelegram,
+  SiNotion,
+  SiFigma,
+  SiTrello,
+  SiSpotify,
+  SiWhatsapp,
+  SiReddit,
+  SiDocker,
+} from '@icons-pack/react-simple-icons';
 import { ALL_PAGES, canAccessPage, type PageAccessSubject } from './accessiblePages';
 import {
   Bookmark,
@@ -83,7 +106,35 @@ export type QuickLinkIconKey =
   | 'target'
   | 'trending'
   | 'wifi'
-  | 'wrench';
+  | 'wrench'
+  | 'google'
+  | 'googledrive'
+  | 'gmail'
+  | 'github'
+  | 'line'
+  | 'facebook'
+  | 'youtube'
+  | 'x'
+  | 'apple'
+  | 'instagram'
+  | 'tiktok'
+  | 'discord'
+  | 'telegram'
+  | 'notion'
+  | 'figma'
+  | 'trello'
+  | 'spotify'
+  | 'whatsapp'
+  | 'reddit'
+  | 'docker';
+
+export type QuickLinkIconComponent = ComponentType<{
+  size?: number | string;
+  className?: string;
+  color?: string;
+  style?: CSSProperties;
+  'aria-hidden'?: boolean | 'true' | 'false';
+}>;
 
 /** Alternate destinations a single shortcut can point at (internal tools). */
 export type QuickLinkEnvironment = 'staging' | 'development';
@@ -107,7 +158,7 @@ export interface QuickLink {
   envs?: Partial<Record<QuickLinkEnvironment, string>>;
 }
 
-export const QUICK_LINK_ICON_MAP: Record<QuickLinkIconKey, LucideIcon> = {
+export const QUICK_LINK_ICON_MAP: Record<QuickLinkIconKey, QuickLinkIconComponent> = {
   link: LinkIcon,
   globe: Globe,
   calendar: Calendar,
@@ -147,48 +198,100 @@ export const QUICK_LINK_ICON_MAP: Record<QuickLinkIconKey, LucideIcon> = {
   trending: TrendingUp,
   wifi: Wifi,
   wrench: Wrench,
+  google: SiGoogle,
+  googledrive: SiGoogledrive,
+  gmail: SiGmail,
+  github: SiGithub,
+  line: SiLine,
+  facebook: SiFacebook,
+  youtube: SiYoutube,
+  x: SiX,
+  apple: SiApple,
+  instagram: SiInstagram,
+  tiktok: SiTiktok,
+  discord: SiDiscord,
+  telegram: SiTelegram,
+  notion: SiNotion,
+  figma: SiFigma,
+  trello: SiTrello,
+  spotify: SiSpotify,
+  whatsapp: SiWhatsapp,
+  reddit: SiReddit,
+  docker: SiDocker,
 };
 
-export const QUICK_LINK_ICON_OPTIONS: Array<{ key: QuickLinkIconKey; label: string }> = [
-  { key: 'link', label: 'ลิงก์' },
-  { key: 'globe', label: 'เว็บไซต์' },
-  { key: 'calendar', label: 'ปฏิทิน' },
-  { key: 'file', label: 'ไฟล์/เอกสาร' },
-  { key: 'bookmark', label: 'บุ๊คมาร์ค' },
-  { key: 'star', label: 'รายการโปรด' },
-  { key: 'settings', label: 'ตั้งค่า' },
-  { key: 'mail', label: 'อีเมล' },
-  { key: 'briefcase', label: 'งาน/โปรเจกต์' },
-  { key: 'home', label: 'หน้าแรก' },
-  { key: 'database', label: 'ฐานข้อมูล' },
-  { key: 'users', label: 'ผู้ใช้' },
-  { key: 'heart', label: 'หัวใจ' },
-  { key: 'music', label: 'เพลง' },
-  { key: 'camera', label: 'กล้อง' },
-  { key: 'shopping', label: 'ช้อปปิ้ง' },
-  { key: 'mappin', label: 'แผนที่' },
-  { key: 'phone', label: 'โทรศัพท์' },
-  { key: 'clock', label: 'นาฬิกา' },
-  { key: 'bell', label: 'กระดิ่ง' },
-  { key: 'chart', label: 'กราฟ' },
-  { key: 'code', label: 'โค้ด' },
-  { key: 'image', label: 'รูปภาพ' },
-  { key: 'video', label: 'วิดีโอ' },
-  { key: 'zap', label: 'สายฟ้า' },
-  { key: 'shield', label: 'โล่' },
-  { key: 'book', label: 'หนังสือ' },
-  { key: 'coffee', label: 'กาแฟ' },
-  { key: 'gamepad', label: 'เกม' },
-  { key: 'headphones', label: 'หูฟัง' },
-  { key: 'layers', label: 'ชั้น' },
-  { key: 'monitor', label: 'จอ' },
-  { key: 'palette', label: 'จานสี' },
-  { key: 'rocket', label: 'จรวด' },
-  { key: 'tag', label: 'แท็ก' },
-  { key: 'target', label: 'เป้าหมาย' },
-  { key: 'trending', label: 'แนวโน้ม' },
-  { key: 'wifi', label: 'ไวไฟ' },
-  { key: 'wrench', label: 'ประแจ' },
+export type QuickLinkIconCategory = 'general' | 'brand';
+
+export interface QuickLinkIconOption {
+  key: QuickLinkIconKey;
+  label: string;
+  category: QuickLinkIconCategory;
+  brandColor?: string;
+}
+
+export const QUICK_LINK_ICON_OPTIONS: QuickLinkIconOption[] = [
+  // General UI Icons
+  { key: 'link', label: 'ลิงก์', category: 'general' },
+  { key: 'globe', label: 'เว็บไซต์', category: 'general' },
+  { key: 'calendar', label: 'ปฏิทิน', category: 'general' },
+  { key: 'file', label: 'ไฟล์/เอกสาร', category: 'general' },
+  { key: 'bookmark', label: 'บุ๊คมาร์ค', category: 'general' },
+  { key: 'star', label: 'รายการโปรด', category: 'general' },
+  { key: 'settings', label: 'ตั้งค่า', category: 'general' },
+  { key: 'mail', label: 'อีเมล', category: 'general' },
+  { key: 'briefcase', label: 'งาน/โปรเจกต์', category: 'general' },
+  { key: 'home', label: 'หน้าแรก', category: 'general' },
+  { key: 'database', label: 'ฐานข้อมูล', category: 'general' },
+  { key: 'users', label: 'ผู้ใช้', category: 'general' },
+  { key: 'heart', label: 'หัวใจ', category: 'general' },
+  { key: 'music', label: 'เพลง', category: 'general' },
+  { key: 'camera', label: 'กล้อง', category: 'general' },
+  { key: 'shopping', label: 'ช้อปปิ้ง', category: 'general' },
+  { key: 'mappin', label: 'แผนที่', category: 'general' },
+  { key: 'phone', label: 'โทรศัพท์', category: 'general' },
+  { key: 'clock', label: 'นาฬิกา', category: 'general' },
+  { key: 'bell', label: 'กระดิ่ง', category: 'general' },
+  { key: 'chart', label: 'กราฟ', category: 'general' },
+  { key: 'code', label: 'โค้ด', category: 'general' },
+  { key: 'image', label: 'รูปภาพ', category: 'general' },
+  { key: 'video', label: 'วิดีโอ', category: 'general' },
+  { key: 'zap', label: 'สายฟ้า', category: 'general' },
+  { key: 'shield', label: 'โล่', category: 'general' },
+  { key: 'book', label: 'หนังสือ', category: 'general' },
+  { key: 'coffee', label: 'กาแฟ', category: 'general' },
+  { key: 'gamepad', label: 'เกม', category: 'general' },
+  { key: 'headphones', label: 'หูฟัง', category: 'general' },
+  { key: 'layers', label: 'ชั้น', category: 'general' },
+  { key: 'monitor', label: 'จอ', category: 'general' },
+  { key: 'palette', label: 'จานสี', category: 'general' },
+  { key: 'rocket', label: 'จรวด', category: 'general' },
+  { key: 'tag', label: 'แท็ก', category: 'general' },
+  { key: 'target', label: 'เป้าหมาย', category: 'general' },
+  { key: 'trending', label: 'แนวโน้ม', category: 'general' },
+  { key: 'wifi', label: 'ไวไฟ', category: 'general' },
+  { key: 'wrench', label: 'ประแจ', category: 'general' },
+
+  // Brand & Social Icons
+  { key: 'google', label: 'Google', category: 'brand', brandColor: '#4285F4' },
+  { key: 'googledrive', label: 'Google Drive', category: 'brand', brandColor: '#34A853' },
+  { key: 'gmail', label: 'Gmail', category: 'brand', brandColor: '#EA4335' },
+  { key: 'github', label: 'GitHub', category: 'brand', brandColor: '#24292e' },
+  { key: 'line', label: 'LINE', category: 'brand', brandColor: '#06C755' },
+  { key: 'facebook', label: 'Facebook', category: 'brand', brandColor: '#1877F2' },
+  { key: 'youtube', label: 'YouTube', category: 'brand', brandColor: '#FF0000' },
+  { key: 'x', label: 'X (Twitter)', category: 'brand', brandColor: '#000000' },
+  { key: 'apple', label: 'Apple', category: 'brand', brandColor: '#000000' },
+  { key: 'instagram', label: 'Instagram', category: 'brand', brandColor: '#E4405F' },
+  { key: 'tiktok', label: 'TikTok', category: 'brand', brandColor: '#000000' },
+  { key: 'discord', label: 'Discord', category: 'brand', brandColor: '#5865F2' },
+  { key: 'telegram', label: 'Telegram', category: 'brand', brandColor: '#26A5E4' },
+  { key: 'notion', label: 'Notion', category: 'brand', brandColor: '#000000' },
+  { key: 'figma', label: 'Figma', category: 'brand', brandColor: '#F24E1E' },
+  { key: 'trello', label: 'Trello', category: 'brand', brandColor: '#0052CC' },
+  { key: 'spotify', label: 'Spotify', category: 'brand', brandColor: '#1DB954' },
+  { key: 'whatsapp', label: 'WhatsApp', category: 'brand', brandColor: '#25D366' },
+  { key: 'reddit', label: 'Reddit', category: 'brand', brandColor: '#FF4500' },
+  { key: 'docker', label: 'Docker', category: 'brand', brandColor: '#2496ED' },
 ];
 
 export function isExternalUrl(url: string) {

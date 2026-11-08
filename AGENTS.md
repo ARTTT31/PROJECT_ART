@@ -61,6 +61,14 @@ Before writing, modifying, or refactoring ANY frontend page, component, or style
    - Dialogs must use `components/ui/Dialog.tsx` (built on Radix UI).
    - In-app toasts must use `useToast()` from `components/Toast/ToastProvider`.
 
+6. **Iconography & Logo Standards (Mandatory)**:
+   - **UI & System Icons**: MUST use `lucide-react` (e.g. `import { Search, ChevronDown, Check, Settings, Trash2 } from 'lucide-react'`). Never create custom or inline SVGs for standard UI actions/controls.
+   - **Brand, Social & Tech Logos**: MUST use `@icons-pack/react-simple-icons` (e.g. `import { SiGoogle, SiGithub, SiFacebook, SiLine, SiApple } from '@icons-pack/react-simple-icons'`). Never hand-craft or guess brand logos.
+   - **Styling & Sizing**:
+     - Standard sizes: `w-4 h-4` (16px), `w-5 h-5` (20px), or `w-6 h-6` (24px).
+     - Stroke width: Governed globally by `globals.css` (`svg.lucide { stroke-width: 1.75 }`). Do not pass ad-hoc `strokeWidth` props.
+     - Purely decorative icons placed alongside text must have `aria-hidden="true"`.
+
 ---
 
 ## ⚡ Backend, Database & PWA Standards

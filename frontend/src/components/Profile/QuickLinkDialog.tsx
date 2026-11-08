@@ -67,6 +67,7 @@ export function QuickLinkDialog({ open, onOpenChange, link, onSubmit }: QuickLin
   const [stagingUrl, setStagingUrl] = useState('');
   const [devUrl, setDevUrl] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [iconTab, setIconTab] = useState<'all' | 'general' | 'brand'>('all');
 
   // Reset the form each time the dialog opens (or the edited link changes).
   useEffect(() => {
@@ -83,6 +84,11 @@ export function QuickLinkDialog({ open, onOpenChange, link, onSubmit }: QuickLin
   const PreviewIcon = QUICK_LINK_ICON_MAP[icon];
   const previewIconLabel =
     QUICK_LINK_ICON_OPTIONS.find((option) => option.key === icon)?.label ?? 'ลิงก์';
+
+  const filteredOptions = useMemo(() => {
+    if (iconTab === 'all') return QUICK_LINK_ICON_OPTIONS;
+    return QUICK_LINK_ICON_OPTIONS.filter((option) => option.category === iconTab);
+  }, [iconTab]);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -215,35 +221,78 @@ export function QuickLinkDialog({ open, onOpenChange, link, onSubmit }: QuickLin
               />
             </div>
 
-            {/* Icon Picker (with scroll container to avoid huge modal on laptops/phones) */}
+            {/* Icon Picker (with scroll container and category tabs) */}
             <div>
-              <span className="mb-1.5 ml-1 block text-[11px] font-bold tracking-wide uppercase text-[var(--ink-muted)]">
-                ไอคอน ·{' '}
-                <span className="text-[var(--accent-text)] font-normal normal-case tracking-normal">
-                  {previewIconLabel}
+              <div className="mb-1.5 ml-1 flex items-center justify-between">
+                <span className="block text-[11px] font-bold tracking-wide uppercase text-[var(--ink-muted)]">
+                  ไอคอน ·{' '}
+                  <span className="text-[var(--accent-text)] font-normal normal-case tracking-normal">
+                    {previewIconLabel}
+                  </span>
                 </span>
-              </span>
+                {/* Category Filter Pills */}
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setIconTab('all')}
+                    className={`px-2 py-0.5 text-[11px] font-medium rounded-full transition-all active:scale-[0.95] ${
+                      iconTab === 'all'
+                        ? 'bg-[var(--accent)] text-white'
+                        : 'text-[var(--ink-muted)] hover:bg-[var(--surface)] ring-1 ring-[var(--hairline)]'
+                    }`}
+                  >
+                    ทั้งหมด
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIconTab('general')}
+                    className={`px-2 py-0.5 text-[11px] font-medium rounded-full transition-all active:scale-[0.95] ${
+                      iconTab === 'general'
+                        ? 'bg-[var(--accent)] text-white'
+                        : 'text-[var(--ink-muted)] hover:bg-[var(--surface)] ring-1 ring-[var(--hairline)]'
+                    }`}
+                  >
+                    ทั่วไป
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIconTab('brand')}
+                    className={`px-2 py-0.5 text-[11px] font-medium rounded-full transition-all active:scale-[0.95] ${
+                      iconTab === 'brand'
+                        ? 'bg-[var(--accent)] text-white'
+                        : 'text-[var(--ink-muted)] hover:bg-[var(--surface)] ring-1 ring-[var(--hairline)]'
+                    }`}
+                  >
+                    แบรนด์/บริการ
+                  </button>
+                </div>
+              </div>
               <div className="rounded-[18px] bg-[var(--surface-subtle)] p-2 ring-1 ring-[var(--hairline)] max-h-44 overflow-y-auto">
                 <div className="grid grid-cols-6 sm:grid-cols-8 gap-1.5">
-                  {QUICK_LINK_ICON_OPTIONS.map((option) => {
+                  {filteredOptions.map((option) => {
                     const OptionIcon = QUICK_LINK_ICON_MAP[option.key];
                     const active = icon === option.key;
                     return (
                       <button
                         key={option.key}
                         type="button"
-                        onClick={() => setIcon(option.key)}
+                        onClick={() => {
+                          setIcon(option.key);
+                          if (option.brandColor && (!color || color === '#0066cc')) {
+                            setColor(option.brandColor);
+                          }
+                        }}
                         title={option.label}
                         aria-label={option.label}
                         className={[
-                          'relative flex h-9 w-9 items-center justify-center rounded-[14px] transition-all duration-150',
+                          'relative flex h-9 w-9 items-center justify-center rounded-[14px] transition-all duration-150 active:scale-[0.95]',
                           active
                             ? 'bg-[var(--surface)] shadow-xs ring-2 ring-[var(--accent)]'
                             : 'bg-[var(--glass-60)] hover:bg-[var(--surface)] ring-1 ring-[var(--hairline)] hover:ring-[var(--hairline)]',
                         ].join(' ')}
                       >
                         <OptionIcon
-                          size={15}
+                          size={16}
                           aria-hidden="true"
                           className={active ? 'text-[var(--accent-text)]' : 'text-slate-500'}
                         />

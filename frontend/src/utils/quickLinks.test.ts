@@ -141,4 +141,18 @@ describe('icon catalogue', () => {
     const keys = QUICK_LINK_ICON_OPTIONS.map((option) => option.key);
     expect(new Set(keys).size).toBe(keys.length);
   });
+
+  it('includes both general UI icons and brand icons with categories', () => {
+    const generalIcons = QUICK_LINK_ICON_OPTIONS.filter((o) => o.category === 'general');
+    const brandIcons = QUICK_LINK_ICON_OPTIONS.filter((o) => o.category === 'brand');
+
+    expect(generalIcons.length).toBeGreaterThan(30);
+    expect(brandIcons.length).toBeGreaterThanOrEqual(20);
+
+    const brandKeys = brandIcons.map((o) => o.key);
+    expect(brandKeys).toContain('google');
+    expect(brandKeys).toContain('github');
+    expect(brandKeys).toContain('line');
+    expect(brandKeys).toContain('youtube');
+  });
 });
