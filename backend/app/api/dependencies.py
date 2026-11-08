@@ -34,6 +34,7 @@ PROFILE_COLUMNS = (
     "quick_notes",
     "finance_entries",
     "finance_budget",
+    "finance_deleted",
     "watchlist",
     "main_menu",
 )

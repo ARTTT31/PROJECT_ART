@@ -93,7 +93,7 @@
 | Single instance by default | The WebSocket registry can fan out through Redis (`WS_BROADCAST_REDIS_URL`) and the rate limiter can use Redis (`SLOWAPI_STORAGE_URI`), but both default to process-local and startup logs a `[SCALING]` notice. See README -> *Horizontal scaling*. |
 | Third-party market data | Yahoo Finance / Frankfurter / Thai Gold API have no SLA; the widget shows the last known value (or an empty block) rather than failing the whole page. |
 | Partial i18n | A `th`/`en` message catalogue (`lib/i18n`) exists and drives 12 of the 97 components; the rest still hardcode Thai copy. Adding a language means migrating a screen at a time, not flipping a switch. |
-| Partial frontend coverage | 313 Vitest tests across 42 files; 517 backend tests at 85.0% coverage. 24 test files cover 84 screens/components, so `npm run test:coverage` remains the honest number. Playwright runs axe checks on the auth pages and a live register → login E2E against the backend in CI. |
+| Partial frontend coverage | 323 Vitest tests across 44 files; 522 backend tests at 85.1% coverage. 26 test files cover 84 screens/components, so `npm run test:coverage` remains the honest number. Playwright runs axe checks on the auth pages and a live register → login E2E against the backend in CI. |
 
 ---
 

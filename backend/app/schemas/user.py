@@ -249,11 +249,17 @@ class FinanceUpdate(BaseModel):
     # only when the client never sends the field — the widget always sends it so
     # clearing the input clears the budget.
     budget: Optional[float] = Field(None, ge=0, le=1_000_000_000, allow_inf_nan=False)
+    # Rows this client just deleted. Recorded as tombstones so another device
+    # holding an older copy cannot write them back with its next full-list save.
+    deleted_ids: list[str] = Field(default_factory=list, max_length=2000)
 
 
 class FinanceResponse(BaseModel):
     entries: list[FinanceEntry] = Field(default_factory=list)
     budget: Optional[float] = None
+    # Deletions recorded for this account (newest first), omitted when empty so
+    # the payload of an untouched account stays byte-identical.
+    deleted_ids: Optional[list[str]] = None
 
 
 class WatchlistItem(BaseModel):

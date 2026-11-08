@@ -626,3 +626,31 @@ password-reset email, remove it, and do the rest of the list.
 7. **Not done in this pass:** the i18n migration across the remaining components, cross-device
    versioning for finance deletions, and the deployed-only checks (production WebSocket origin,
    Render CSP/CORS boot log, `EMAIL_BACKEND`).
+
+## Cross-Device Finance Deletions and the Profile Split (November 8, 2026, later pass)
+
+1. **The finance widget could resurrect a deleted row from a stale device.**
+   `PUT /profile/finance` has always replaced the whole list, and the merge step only knew about
+   deletions this browser had made (`deletedRef`), so a second device that still had the row in
+   its cache wrote it straight back on its next save. The fix is server-side tombstones:
+   `users.finance_deleted` (migration `20261108_finance_deleted`) stores `{entry_id: unix_seconds}`,
+   `FinanceUpdate` accepts `deleted_ids`, and `FinanceResponse.deleted_ids` returns them. A client
+   drops tombstoned ids on load and again during the pre-save merge, so the deletion propagates
+   instead of being undone. Tombstones expire after 90 days and are capped at 500 to keep the
+   column small; an id that reappears in `entries` clears its tombstone, so "undo" still works.
+2. **The profile page finished splitting.** The two remaining forms moved into
+   `components/Profile/AccountDetailsCard.tsx` (name/email plus the JSON export) and
+   `components/Profile/PasswordCard.tsx` (change password with its strength meter), and the shared
+   `apiMessage` helper became `lib/api/apiMessage.ts` so an extracted card does not have to
+   re-implement error unpacking. `profile/page.tsx` is now 568 lines (1,082 before the work of
+   8 November, 977 before this pass) and keeps only page-level state: tabs, avatar, quick links and
+   the menu order.
+3. **New tests:** four backend cases (tombstone round-trip, unusable values, expiry/cap, deletion
+   and re-add through the API) and six frontend cases (three for account details, five for the
+   password card, two for the finance merge). The two widget cases that matter: a row deleted on
+   another device is dropped before the save, and a local delete sends `deleted_ids`.
+4. **Verified:** backend 522 passed at 85.14% (75% gate), flake8 and mypy clean, the new migration
+   applies and `alembic check` reports no drift; frontend `tsc --noEmit`, ESLint, 323 Vitest tests.
+5. **Still open:** the page-level tests (`/camera`, `/audit`, `/dashboard`, `/notifications`,
+   `/profile`, `/verify-email` still have none), the i18n migration across the remaining screens,
+   list virtualization, and the deployed-only checks.

@@ -6,20 +6,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   User,
   Lock,
-  Info,
-  Check,
-  Save,
-  Eye,
-  EyeOff,
-  KeyRound,
-  Mail,
   Sliders,
   LayoutGrid,
   Palette,
   Building2,
   BellRing,
-  Loader2,
-  Download,
 } from 'lucide-react';
 import { showDeleteConfirm, showToast, showSuccess, showError } from '@/utils/sweetalert';
 import { canAccessPage } from '@/utils/accessiblePages';
@@ -29,7 +20,9 @@ import { useAuth } from '@/hooks/useAuth';
 import { useI18n } from '@/lib/i18n/I18nProvider';
 
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
-import { InsetField, SectionCard } from '@/components/Profile/SectionCard';
+import { apiMessage } from '@/lib/api/apiMessage';
+import AccountDetailsCard from '@/components/Profile/AccountDetailsCard';
+import PasswordCard from '@/components/Profile/PasswordCard';
 import { QuickLinkDialog, type QuickLinkFormValues } from '@/components/Profile/QuickLinkDialog';
 import SecurityCard from '@/components/Profile/SecurityCard';
 import ProfileHero from '@/components/Profile/ProfileHero';
@@ -94,20 +87,6 @@ function SubNav<T extends string>({
   );
 }
 
-/** Extract readable error message from API response body, handling Pydantic arrays */
-function apiMessage(data: unknown, fallback: string): string {
-  const detail = (data as { detail?: unknown } | null)?.detail;
-  if (typeof detail === 'string' && detail) return detail;
-  if (Array.isArray(detail) && detail.length > 0) {
-    const first = detail[0] as { msg?: string; loc?: unknown[] };
-    if (first?.msg) {
-      const field = Array.isArray(first.loc) ? first.loc[first.loc.length - 1] : undefined;
-      return field ? `${field}: ${first.msg}` : first.msg;
-    }
-  }
-  return fallback;
-}
-
 // ─────────────────────────────────────────────────────────────
 // Main Profile Page Component
 // ─────────────────────────────────────────────────────────────
@@ -128,45 +107,6 @@ export default function ProfilePage() {
   // Avatar Upload
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
-
-  // Personal Info Form
-  const [name, setName] = useState(authUser?.name || '');
-  const [email, setEmail] = useState(authUser?.email || '');
-  const [isSavingProfile, setIsSavingProfile] = useState(false);
-  const [isExporting, setIsExporting] = useState(false);
-
-  const handleExportData = async () => {
-    setIsExporting(true);
-    try {
-      const res = await fetchWithAuth('/api/v1/profile/export');
-      if (!res.ok) throw new Error('ไม่สามารถดาวน์โหลดข้อมูลได้');
-      const data = await res.json();
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `art-workspace-export-${new Date().toISOString().split('T')[0]}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      showToast('ดาวน์โหลดสำเนาข้อมูลเรียบร้อย', 'success');
-    } catch {
-      showToast('เกิดข้อผิดพลาดในการดาวน์โหลดข้อมูล', 'error');
-    } finally {
-      setIsExporting(false);
-    }
-  };
-
-  // Password & Security Form
-  const [oldPassword, setOldPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [passwordStrength, setPasswordStrength] = useState(0);
-  const [showOldPassword, setShowOldPassword] = useState(false);
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [isChangingPassword, setIsChangingPassword] = useState(false);
 
   // Quick Links
   const [quickLinks, setQuickLinks] = useState<QuickLink[]>(() =>
@@ -297,38 +237,9 @@ export default function ProfilePage() {
   useEffect(() => {
     if (authUser) {
       setUser(authUser);
-      setName(authUser.name || '');
-      setEmail(authUser.email || '');
       setQuickLinks(parseQuickLinks(authUser.quick_links));
     }
   }, [authUser]);
-
-  // ── Password strength ─────────────────────────────────────────
-
-  useEffect(() => {
-    if (!newPassword) {
-      setPasswordStrength(0);
-      return;
-    }
-    let strength = 0;
-    if (newPassword.length >= 8) strength++;
-    if (newPassword.length >= 12) strength++;
-    if (/[a-z]/.test(newPassword) && /[A-Z]/.test(newPassword)) strength++;
-    if (/\d/.test(newPassword)) strength++;
-    if (/[^a-zA-Z0-9]/.test(newPassword)) strength++;
-    setPasswordStrength(strength);
-  }, [newPassword]);
-
-  const getStrengthLabel = () => {
-    if (passwordStrength <= 1)
-      return { label: 'อ่อนแอ', color: 'bg-rose-500', text: 'text-rose-700' };
-    if (passwordStrength === 2)
-      return { label: 'ปานกลาง', color: 'bg-amber-500', text: 'text-amber-700' };
-    if (passwordStrength === 3) return { label: 'ดี', color: 'bg-lime-500', text: 'text-lime-700' };
-    if (passwordStrength === 4)
-      return { label: 'แข็งแรง', color: 'bg-emerald-500', text: 'text-emerald-700' };
-    return { label: 'ปลอดภัยสูง', color: 'bg-teal-500', text: 'text-teal-700' };
-  };
 
   // ── Handlers: Avatar Upload ───────────────────────────────────
 
@@ -380,89 +291,6 @@ export default function ProfilePage() {
     } finally {
       setIsUploadingAvatar(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
-    }
-  };
-
-  // ── Handlers: Profile ─────────────────────────────────────────
-
-  const handleUpdateProfile = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user) return;
-    setIsSavingProfile(true);
-    try {
-      const response = await fetchWithAuth('/api/v1/profile/me', {
-        method: 'PUT',
-        body: JSON.stringify({ name: name.trim(), email: email.trim() }),
-      });
-      const data = await response.json();
-      if (response.ok) {
-        updateUser({ name, email });
-        setUser((prev) => (prev ? { ...prev, name, email } : null));
-        window.dispatchEvent(new Event('user-profile-updated'));
-        showSuccess('สำเร็จ', data.message || 'อัปเดตข้อมูลโปรไฟล์เรียบร้อยแล้ว!');
-      } else {
-        showError('เกิดข้อผิดพลาด', apiMessage(data, 'เกิดข้อผิดพลาดในการอัปเดตโปรไฟล์'));
-      }
-    } catch (error) {
-      console.error('Profile update error:', error);
-      showError('ไม่สามารถเชื่อมต่อได้', 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้');
-    } finally {
-      setIsSavingProfile(false);
-    }
-  };
-
-  const handleChangePassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!oldPassword) {
-      showToast('กรุณากรอกรหัสผ่านปัจจุบัน', 'warning');
-      return;
-    }
-    if (!newPassword) {
-      showToast('กรุณากรอกรหัสผ่านใหม่', 'warning');
-      return;
-    }
-    if (newPassword.length < 8) {
-      showToast('รหัสผ่านใหม่ต้องมีอย่างน้อย 8 ตัวอักษร', 'warning');
-      return;
-    }
-    if (!confirmPassword) {
-      showToast('กรุณากรอกยืนยันรหัสผ่านใหม่', 'warning');
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      showToast('รหัสผ่านยืนยันไม่ตรงกับรหัสผ่านใหม่', 'warning');
-      return;
-    }
-    if (passwordStrength < 3) {
-      showToast('รหัสผ่านยังไม่แข็งแรงพอ กรุณาเพิ่มตัวเลขหรืออักขระพิเศษ', 'warning');
-      return;
-    }
-    if (!user) {
-      showError('เซสชันหมดอายุ', 'กรุณาเข้าสู่ระบบใหม่');
-      router.push('/login');
-      return;
-    }
-
-    setIsChangingPassword(true);
-    try {
-      const response = await fetchWithAuth('/api/v1/profile/change-password', {
-        method: 'POST',
-        body: JSON.stringify({ old_password: oldPassword, new_password: newPassword }),
-      });
-      const data = await response.json();
-      if (response.ok) {
-        showSuccess('สำเร็จ', data.message || 'เปลี่ยนรหัสผ่านใหม่สำเร็จแล้ว!');
-        setOldPassword('');
-        setNewPassword('');
-        setConfirmPassword('');
-      } else {
-        showError('เกิดข้อผิดพลาด', apiMessage(data, 'เกิดข้อผิดพลาดในการเปลี่ยนรหัสผ่าน'));
-      }
-    } catch (error) {
-      console.error('Password change error:', error);
-      showError('ไม่สามารถเชื่อมต่อได้', 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้');
-    } finally {
-      setIsChangingPassword(false);
     }
   };
 
@@ -557,8 +385,6 @@ export default function ProfilePage() {
       </div>
     );
   }
-
-  const strengthMeta = getStrengthLabel();
 
   // ── Render ────────────────────────────────────────────────────
 
@@ -677,258 +503,14 @@ export default function ProfilePage() {
             className="min-h-[480px]"
           >
             <div hidden={accountSection !== 'account'}>
-              {/* Card 1.1: ข้อมูลส่วนตัว */}
-            <SectionCard
-              icon={<User size={19} aria-hidden="true" />}
-              iconBg="bg-emerald-50"
-              iconColor="text-emerald-600"
-              iconRing="ring-emerald-200/60"
-              title="ข้อมูลส่วนตัว"
-              subtitle="อัปเดตชื่อที่แสดงและอีเมลสำหรับใช้งานในระบบ"
-            >
-              <form onSubmit={handleUpdateProfile} className="space-y-4">
-                <InsetField
-                  id="profile-name"
-                  label="ชื่อที่แสดง"
-                  value={name}
-                  onChange={setName}
-                  placeholder="เช่น สมชาย ใจดี"
-                  icon={<User size={16} aria-hidden="true" />}
-                  required
-                />
-                <InsetField
-                  id="profile-email"
-                  label="อีเมลสำหรับเข้าสู่ระบบ"
-                  type="email"
-                  value={email}
-                  onChange={setEmail}
-                  placeholder="name@company.com"
-                  icon={<Mail size={16} aria-hidden="true" />}
-                  required
-                  autoComplete="email"
-                />
-                <div className="flex justify-end pt-2">
-                  <button
-                    type="submit"
-                    disabled={isSavingProfile}
-                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-[var(--accent)] px-6 py-2.5 text-[13px] font-bold text-white shadow-xs transition-all duration-150 hover:bg-[var(--accent-hover)] disabled:opacity-50 active:scale-[0.96] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
-                  >
-                    {isSavingProfile ? (
-                      <div className="h-3.5 w-3.5 animate-spin rounded-full border-[2px] border-white/30 border-t-white" />
-                    ) : (
-                      <Check size={14} aria-hidden="true" />
-                    )}
-                    {isSavingProfile ? 'กำลังบันทึก…' : 'บันทึกข้อมูลส่วนตัว'}
-                  </button>
-                </div>
-              </form>
-            </SectionCard>
-
-              {/* Card: ดาวน์โหลดข้อมูลบัญชี (Data Export) */}
-              <div className="mt-4">
-                <SectionCard
-                  icon={<Download size={19} aria-hidden="true" />}
-                  iconBg="bg-blue-50"
-                  iconColor="text-[var(--accent)]"
-                  iconRing="ring-blue-200/60"
-                  title="สำเนาข้อมูลบัญชี (Data Export)"
-                  subtitle="ดาวน์โหลดข้อมูลทั้งหมดของคุณในรูปแบบ JSON เพื่อเก็บสำรอง"
-                >
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 py-1">
-                    <div className="text-[13px] text-[var(--ink-muted)] leading-relaxed">
-                      ดาวน์โหลดข้อมูลส่วนตัว ข้อมูลโปรไฟล์ การตั้งค่า และประวัติที่เกี่ยวข้องในรูปแบบไฟล์ JSON
-                    </div>
-                    <button
-                      type="button"
-                      onClick={handleExportData}
-                      disabled={isExporting}
-                      className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full border border-[var(--hairline-strong)] bg-[var(--surface)] px-5 py-2.5 text-[13px] font-bold text-[var(--ink)] shadow-xs transition-all duration-150 hover:bg-[var(--surface-subtle)] hover:text-[var(--accent)] disabled:opacity-50 active:scale-[0.96] shrink-0"
-                    >
-                      {isExporting ? (
-                        <Loader2 size={15} className="animate-spin text-[var(--accent)]" />
-                      ) : (
-                        <Download size={15} aria-hidden="true" />
-                      )}
-                      {isExporting ? 'กำลังสร้างไฟล์…' : 'ส่งออกข้อมูล (JSON)'}
-                    </button>
-                  </div>
-                </SectionCard>
-              </div>
+              <AccountDetailsCard
+                user={currentUser}
+                onUpdated={(patch) => setUser((prev) => (prev ? { ...prev, ...patch } : prev))}
+              />
             </div>
 
             <div hidden={accountSection !== 'security'}>
-              {/* Card 1.2: รหัสผ่าน & ความปลอดภัย */}
-            <SectionCard
-              icon={<Lock size={19} aria-hidden="true" />}
-              iconBg="bg-rose-50"
-              iconColor="text-rose-600"
-              iconRing="ring-rose-200/60"
-              title="รหัสผ่าน &amp; ความปลอดภัย"
-              subtitle="เปลี่ยนรหัสผ่านเพื่อความปลอดภัยของบัญชีคุณ"
-            >
-              <form onSubmit={handleChangePassword} className="space-y-4">
-                <InsetField
-                  id="current-password"
-                  label="รหัสผ่านปัจจุบัน"
-                  type={showOldPassword ? 'text' : 'password'}
-                  value={oldPassword}
-                  onChange={setOldPassword}
-                  placeholder="กรอกรหัสผ่านปัจจุบัน"
-                  icon={<Lock size={16} aria-hidden="true" />}
-                  autoComplete="current-password"
-                  trailing={
-                    <button
-                      type="button"
-                      onClick={() => setShowOldPassword(!showOldPassword)}
-                      className="p-1.5 text-slate-400 hover:text-slate-600 transition-colors"
-                      aria-label={showOldPassword ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'}
-                    >
-                      {showOldPassword ? (
-                        <EyeOff size={16} aria-hidden="true" />
-                      ) : (
-                        <Eye size={16} aria-hidden="true" />
-                      )}
-                    </button>
-                  }
-                />
-                <InsetField
-                  id="new-password"
-                  label="รหัสผ่านใหม่"
-                  type={showNewPassword ? 'text' : 'password'}
-                  value={newPassword}
-                  onChange={setNewPassword}
-                  placeholder="อย่างน้อย 8 ตัวอักษร"
-                  icon={<KeyRound size={16} aria-hidden="true" />}
-                  autoComplete="new-password"
-                  trailing={
-                    <button
-                      type="button"
-                      onClick={() => setShowNewPassword(!showNewPassword)}
-                      className="p-1.5 text-slate-400 hover:text-slate-600 transition-colors"
-                      aria-label={showNewPassword ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'}
-                    >
-                      {showNewPassword ? (
-                        <EyeOff size={16} aria-hidden="true" />
-                      ) : (
-                        <Eye size={16} aria-hidden="true" />
-                      )}
-                    </button>
-                  }
-                />
-
-                {/* Strength Meter */}
-                {newPassword && (
-                  <div className="-mt-1 rounded-[18px] bg-[var(--surface-subtle)] p-3.5 ring-1 ring-[var(--hairline)]">
-                    <div className="flex items-center justify-between text-[12px] mb-1.5">
-                      <span className="text-[var(--ink-muted)]">ระดับความปลอดภัย</span>
-                      <span className={`font-bold ${strengthMeta.text}`}>{strengthMeta.label}</span>
-                    </div>
-                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
-                      <div
-                        className={`h-full transition-all duration-300 ${strengthMeta.color}`}
-                        style={{ width: `${Math.min(100, (passwordStrength / 5) * 100)}%` }}
-                      />
-                    </div>
-                    <div className="mt-2.5 grid grid-cols-2 gap-x-3 gap-y-1 text-[11px] text-[var(--ink-muted)]">
-                      <span
-                        className={newPassword.length >= 8 ? 'text-emerald-600 font-semibold' : ''}
-                      >
-                        {newPassword.length >= 8 ? '✓' : '○'} อย่างน้อย 8 ตัวอักษร
-                      </span>
-                      <span
-                        className={
-                          /[a-z]/.test(newPassword) && /[A-Z]/.test(newPassword)
-                            ? 'text-emerald-600 font-semibold'
-                            : ''
-                        }
-                      >
-                        {/[a-z]/.test(newPassword) && /[A-Z]/.test(newPassword) ? '✓' : '○'}{' '}
-                        พิมพ์เล็ก+ใหญ่
-                      </span>
-                      <span
-                        className={newPassword.length >= 12 ? 'text-emerald-600 font-semibold' : ''}
-                      >
-                        {newPassword.length >= 12 ? '✓' : '○'} 12 ตัวอักษรขึ้นไป
-                      </span>
-                      <span
-                        className={/\d/.test(newPassword) ? 'text-emerald-600 font-semibold' : ''}
-                      >
-                        {/\d/.test(newPassword) ? '✓' : '○'} มีตัวเลข
-                      </span>
-                      <span
-                        className={
-                          /[^a-zA-Z0-9]/.test(newPassword)
-                            ? 'text-emerald-600 font-semibold col-span-2'
-                            : 'col-span-2'
-                        }
-                      >
-                        {/[^a-zA-Z0-9]/.test(newPassword) ? '✓' : '○'} มีอักขระพิเศษ (!@#$%)
-                      </span>
-                    </div>
-                  </div>
-                )}
-
-                <InsetField
-                  id="confirm-new-password"
-                  label="ยืนยันรหัสผ่านใหม่"
-                  type={showConfirmPassword ? 'text' : 'password'}
-                  value={confirmPassword}
-                  onChange={setConfirmPassword}
-                  placeholder="กรอกรหัสผ่านใหม่อีกครั้ง"
-                  icon={<KeyRound size={16} aria-hidden="true" />}
-                  autoComplete="new-password"
-                  trailing={
-                    <button
-                      type="button"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="p-1.5 text-slate-400 hover:text-slate-600 transition-colors"
-                      aria-label={showConfirmPassword ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'}
-                    >
-                      {showConfirmPassword ? (
-                        <EyeOff size={16} aria-hidden="true" />
-                      ) : (
-                        <Eye size={16} aria-hidden="true" />
-                      )}
-                    </button>
-                  }
-                />
-
-                {confirmPassword && (
-                  <div
-                    className={`-mt-1 flex items-center gap-1.5 rounded-[18px] px-3 py-2 text-[12px] font-semibold ring-1 ${
-                      newPassword === confirmPassword
-                        ? 'bg-emerald-50 text-emerald-700 ring-emerald-200'
-                        : 'bg-rose-50 text-rose-700 ring-rose-200'
-                    }`}
-                  >
-                    {newPassword === confirmPassword ? (
-                      <>
-                        <Check size={13} /> รหัสผ่านยืนยันตรงกัน
-                      </>
-                    ) : (
-                      <>
-                        <Info size={13} /> รหัสผ่านยืนยันยังไม่ตรงกัน
-                      </>
-                    )}
-                  </div>
-                )}
-
-                <div className="flex justify-end pt-2">
-                  <button
-                    type="submit"
-                    disabled={isChangingPassword}
-                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-[var(--accent)] px-6 py-2.5 text-[13px] font-bold text-white shadow-xs transition-all duration-150 hover:bg-[var(--accent-hover)] disabled:opacity-50 active:scale-[0.96] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
-                  >
-                    {isChangingPassword ? (
-                      <div className="h-3.5 w-3.5 animate-spin rounded-full border-[2px] border-white/30 border-t-white" />
-                    ) : (
-                      <Save size={14} aria-hidden="true" />
-                    )}
-                    {isChangingPassword ? 'กำลังบันทึก…' : 'อัปเดตรหัสผ่านใหม่'}
-                  </button>
-                </div>
-              </form>
-            </SectionCard>
+              <PasswordCard user={currentUser} />
 
               {/* Card 1.3: การยืนยันสองขั้นตอน */}
               <div className="mt-4">

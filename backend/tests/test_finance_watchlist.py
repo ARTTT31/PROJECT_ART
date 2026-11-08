@@ -12,11 +12,16 @@ import pytest
 from pydantic import ValidationError
 
 from app.core.personal_lists import (
+    FINANCE_TOMBSTONE_TTL_SECONDS,
     MAX_FINANCE_ENTRIES,
+    MAX_FINANCE_TOMBSTONES,
     MAX_WATCHLIST_SYMBOLS,
     parse_finance_budget,
     parse_finance_entries,
+    parse_finance_tombstones,
     parse_watchlist,
+    prune_finance_tombstones,
+    serialize_finance_tombstones,
     serialize_finance_budget,
     serialize_finance_entries,
     serialize_watchlist,
@@ -383,3 +388,84 @@ async def test_lists_are_per_account(client, make_user, logged_in_user):
 
     assert (await client.get("/api/v1/profile/finance")).json()["entries"] == []
     assert (await client.get("/api/v1/profile/watchlist")).json()["symbols"] == []
+
+
+# ── Deletion tombstones (cross-device) ───────────────────────────────────────
+
+
+def test_tombstone_serialiser_reads_back_what_it_wrote():
+    saved = serialize_finance_tombstones({"f2": 1_762_000_000})
+    assert saved is not None
+    assert parse_finance_tombstones(saved) == {"f2": 1_762_000_000}
+    # No deletions is stored as NULL rather than an empty object.
+    assert serialize_finance_tombstones({}) is None
+
+
+def test_tombstone_serialiser_drops_unusable_values():
+    raw = json.dumps({"f1": "yesterday", "f2": True, "f3": 1_762_000_000, "": 5})
+
+    assert parse_finance_tombstones(raw) == {"f3": 1_762_000_000}
+    assert parse_finance_tombstones("not json") == {}
+    assert parse_finance_tombstones(json.dumps(["f1"])) == {}
+
+
+def test_tombstones_expire_and_stay_capped():
+    now = 2_000_000_000
+    old = now - FINANCE_TOMBSTONE_TTL_SECONDS - 1
+
+    assert prune_finance_tombstones({"gone": old, "kept": now}, now=now) == {"kept": now}
+
+    crowded = {f"f{index}": now - index for index in range(MAX_FINANCE_TOMBSTONES + 50)}
+    pruned = prune_finance_tombstones(crowded, now=now)
+    assert len(pruned) == MAX_FINANCE_TOMBSTONES
+    # The cap keeps the newest stamps, not an arbitrary slice.
+    assert "f0" in pruned
+    assert f"f{MAX_FINANCE_TOMBSTONES + 40}" not in pruned
+
+
+@pytest.mark.asyncio
+async def test_deleting_an_entry_leaves_a_tombstone_for_other_devices(
+    client, logged_in_user
+):
+    csrf = await _csrf_header(client)
+    await client.put(
+        "/api/v1/profile/finance", json={"entries": FINANCE_ENTRIES}, headers=csrf
+    )
+
+    saved = await client.put(
+        "/api/v1/profile/finance",
+        json={"entries": [FINANCE_ENTRIES[0]], "deleted_ids": [FINANCE_ENTRIES[1]["id"]]},
+        headers=csrf,
+    )
+    assert saved.status_code == 200, saved.text
+    assert [item["id"] for item in saved.json()["entries"]] == ["f1"]
+    assert saved.json()["deleted_ids"] == ["f2"]
+
+    # A device that reloads now learns the deletion instead of merging f2 back.
+    fetched = (await client.get("/api/v1/profile/finance")).json()
+    assert [item["id"] for item in fetched["entries"]] == ["f1"]
+    assert fetched["deleted_ids"] == ["f2"]
+
+
+@pytest.mark.asyncio
+async def test_re_adding_an_entry_clears_its_tombstone(client, logged_in_user):
+    csrf = await _csrf_header(client)
+    await client.put(
+        "/api/v1/profile/finance", json={"entries": FINANCE_ENTRIES}, headers=csrf
+    )
+    deleted = await client.put(
+        "/api/v1/profile/finance",
+        json={"entries": [], "deleted_ids": ["f1", "f2"]},
+        headers=csrf,
+    )
+    assert sorted(deleted.json()["deleted_ids"]) == ["f1", "f2"]
+
+    # Undo: the row is back in the list, so its deletion must stop applying.
+    restored = await client.put(
+        "/api/v1/profile/finance",
+        json={"entries": [FINANCE_ENTRIES[0]], "deleted_ids": ["f1"]},
+        headers=csrf,
+    )
+    assert restored.status_code == 200, restored.text
+    assert [item["id"] for item in restored.json()["entries"]] == ["f1"]
+    assert restored.json()["deleted_ids"] == ["f2"]

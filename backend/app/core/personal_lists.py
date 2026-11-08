@@ -11,7 +11,7 @@ import logging
 import math
 import re
 from datetime import date
-from typing import Any, Iterable
+from typing import Any, Iterable, Mapping
 
 logger = logging.getLogger(__name__)
 
@@ -130,6 +130,60 @@ def serialize_finance_entries(entries: Iterable[Any]) -> str:
     """Store the validated request list as compact JSON text."""
     cleaned = [item for item in map(_clean_finance_entry, entries) if item]
     return json.dumps(cleaned[:MAX_FINANCE_ENTRIES], ensure_ascii=False, separators=(",", ":"))
+
+
+# ── Finance deletions (tombstones) ───────────────────────────────────────────
+# ``PUT /profile/finance`` replaces the whole list, so a browser that still has a
+# deleted row in its cache would write it straight back — a second device undoes
+# the deletion without either user doing anything wrong. Deleted ids are kept
+# here (id -> unix seconds) and returned with every read, so each client drops
+# them before merging. Kept far longer than any cache and capped so the column
+# cannot grow without bound.
+FINANCE_TOMBSTONE_TTL_SECONDS = 90 * 24 * 60 * 60
+MAX_FINANCE_TOMBSTONES = 500
+
+
+def parse_finance_tombstones(raw: str | None) -> dict[str, int]:
+    """Return the stored deletions as ``{entry_id: unix_seconds}``."""
+    if not raw:
+        return {}
+    try:
+        parsed = json.loads(raw)
+    except (TypeError, ValueError):
+        logger.warning("finance_deleted column holds invalid JSON; treating as empty")
+        return {}
+    if not isinstance(parsed, dict):
+        return {}
+
+    tombstones: dict[str, int] = {}
+    for key, value in parsed.items():
+        # bool is an int subclass, so it is rejected before the numeric check.
+        if not isinstance(key, str) or not key.strip():
+            continue
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            continue
+        tombstones[key.strip()[:64]] = int(value)
+    return tombstones
+
+
+def prune_finance_tombstones(tombstones: Mapping[str, int], *, now: int) -> dict[str, int]:
+    """Drop expired stamps and keep the newest ids when the cap is exceeded."""
+    fresh = {
+        key: stamp
+        for key, stamp in tombstones.items()
+        if 0 <= now - stamp <= FINANCE_TOMBSTONE_TTL_SECONDS
+    }
+    if len(fresh) <= MAX_FINANCE_TOMBSTONES:
+        return fresh
+    newest = sorted(fresh.items(), key=lambda item: item[1], reverse=True)
+    return dict(newest[:MAX_FINANCE_TOMBSTONES])
+
+
+def serialize_finance_tombstones(tombstones: Mapping[str, int]) -> str | None:
+    """Store the deletions as compact JSON text, or NULL when there are none."""
+    if not tombstones:
+        return None
+    return json.dumps(dict(tombstones), ensure_ascii=False, separators=(",", ":"))
 
 
 # ── Finance budget ───────────────────────────────────────────────────────────

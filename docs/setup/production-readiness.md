@@ -141,7 +141,7 @@ Production ใช้ **Aiven for PostgreSQL** (project `thanyapong-8a15`, servic
 
 ## 8. Checklist ก่อนเปิดสาธารณะ
 
-- [ ] `alembic upgrade head` บน production แล้ว (head ปัจจุบัน `20261029_user_main_menu`)
+- [ ] `alembic upgrade head` บน production แล้ว (head ปัจจุบัน `20261108_finance_deleted`)
 - [ ] ตั้ง env ครบตามข้อ 1 บน Render (backend) และ Vercel (frontend)
 - [ ] `CORS_ORIGINS` = โดเมน frontend จริงเท่านั้น (ห้าม `*`)
 - [ ] `FRONTEND_URL` = โดเมน frontend จริง (ใช้สร้างลิงก์ในอีเมล)

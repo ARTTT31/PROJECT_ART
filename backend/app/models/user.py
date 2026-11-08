@@ -48,6 +48,11 @@ class User(Base, TimestampMixin):
     # NULL means "no budget set", so an untouched account needs no backfill.
     finance_budget: Mapped[str | None] = mapped_column(Text)
 
+    # Finance rows deleted on any device (JSON object of id -> unix seconds).
+    # The widget saves its whole list, so without this a browser holding an old
+    # copy writes a deleted row straight back. NULL means "nothing deleted".
+    finance_deleted: Mapped[str | None] = mapped_column(Text)
+
     # Symbols followed by the watchlist widget (JSON array as text).
     watchlist: Mapped[str | None] = mapped_column(Text)
 

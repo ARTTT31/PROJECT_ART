@@ -50,6 +50,15 @@ interface FinancePendingWrite extends FinanceSnapshot {
   deletedIds: string[];
 }
 
+/**
+ * Ids another device deleted. The API keeps them as tombstones and returns them
+ * with every read; anything in this list must not survive a merge, or a browser
+ * holding an old copy would write the row straight back.
+ */
+function deletedIdSet(raw: unknown): Set<string> {
+  return new Set(Array.isArray(raw) ? raw.filter((id): id is string => typeof id === 'string') : []);
+}
+
 function newId(): string {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) return crypto.randomUUID();
   return `f-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -114,12 +123,26 @@ export default function FinanceWidget({
     try {
       const res = await fetchWithAuth('/api/v1/profile/finance');
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = (await res.json()) as { entries?: FinanceEntry[]; budget?: number | null };
-      const loaded = Array.isArray(data.entries) ? data.entries : [];
+      const data = (await res.json()) as {
+        entries?: FinanceEntry[];
+        budget?: number | null;
+        deleted_ids?: unknown;
+      };
+      const deleted = deletedIdSet(data.deleted_ids);
+      const loaded = (Array.isArray(data.entries) ? data.entries : []).filter(
+        (entry) => !deleted.has(entry.id),
+      );
       const loadedBudget = typeof data.budget === 'number' ? data.budget : null;
       // An edit made offline has not reached the server yet. Replacing the list
       // with the older server copy would silently drop it before the flush.
       if (readPending(FINANCE_OFFLINE_KEY)) {
+        // The unsent local list wins, except for rows another device deleted
+        // while this one was away: the tombstones are newer than the edit.
+        const local = latestRef.current.filter((entry) => !deleted.has(entry.id));
+        if (local.length !== latestRef.current.length) {
+          latestRef.current = local;
+          setEntries(local);
+        }
         setPendingSync(true);
         return;
       }
@@ -149,15 +172,26 @@ export default function FinanceWidget({
     try {
       const res = await fetchWithAuth('/api/v1/profile/finance');
       if (!res.ok) return local;
-      const data = (await res.json()) as { entries?: FinanceEntry[] };
+      const data = (await res.json()) as { entries?: FinanceEntry[]; deleted_ids?: unknown };
       const serverEntries = Array.isArray(data.entries) ? data.entries : [];
-      const localIds = new Set(local.map((entry) => entry.id));
+      const serverDeleted = deletedIdSet(data.deleted_ids);
+      // A row another device deleted must disappear here too, not come back
+      // with this save simply because it is still in this browser's list.
+      const keptLocal = local.filter((entry) => !serverDeleted.has(entry.id));
+      const localIds = new Set(keptLocal.map((entry) => entry.id));
       const remoteOnly = serverEntries.filter(
-        (entry) => !localIds.has(entry.id) && !deletedRef.current.has(entry.id),
+        (entry) =>
+          !localIds.has(entry.id) &&
+          !serverDeleted.has(entry.id) &&
+          !deletedRef.current.has(entry.id),
       );
-      if (remoteOnly.length === 0) return local;
 
-      const merged = [...local, ...remoteOnly].slice(0, MAX_FINANCE_ENTRIES);
+      const merged = [...keptLocal, ...remoteOnly].slice(0, MAX_FINANCE_ENTRIES);
+      const changed =
+        merged.length !== local.length ||
+        merged.some((entry, index) => entry.id !== local[index]?.id);
+      if (!changed) return merged;
+
       latestRef.current = merged;
       if (mountedRef.current) setEntries(merged);
       return merged;
@@ -197,7 +231,11 @@ export default function FinanceWidget({
           const res = await fetchWithAuth('/api/v1/profile/finance', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ entries: merged, budget: nextBudget }),
+            body: JSON.stringify({
+              entries: merged,
+              budget: nextBudget,
+              deleted_ids: Array.from(deletedRef.current),
+            }),
           });
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           retryPendingRef.current = false;

@@ -16,6 +16,7 @@ function putBodies() {
       ([, init]) =>
         JSON.parse(String((init as RequestInit).body)) as {
           entries: Array<{ id: string; type: string; label: string; amount: number; date: string }>;
+          deleted_ids?: string[];
         },
     );
 }
@@ -146,6 +147,52 @@ describe('FinanceWidget safety nets', () => {
         expect(bodies.length).toBeGreaterThan(0);
         const ids = bodies[bodies.length - 1].entries.map((e) => e.id);
         expect(ids).toContain('remote');
+      },
+      { timeout: 3000 },
+    );
+  });
+
+  it('drops a row another device deleted instead of writing it back', async () => {
+    // This browser still has e2 in its list; the server says e2 is deleted.
+    api.fetchWithAuth
+      .mockResolvedValueOnce(jsonResponse({ entries }))
+      .mockResolvedValue(jsonResponse({ entries: [entries[0]], deleted_ids: ['e2'] }));
+
+    render(<FinanceWidget />);
+    await screen.findByText('ค่ากาแฟ');
+
+    fireEvent.change(screen.getByLabelText('ชื่อรายการ'), { target: { value: 'ค่าขนม' } });
+    fireEvent.change(screen.getByLabelText('จำนวนเงิน'), { target: { value: '35.5' } });
+    fireEvent.submit(screen.getByLabelText('เพิ่มรายการ').closest('form') as HTMLFormElement);
+
+    await waitFor(
+      () => {
+        const bodies = putBodies();
+        expect(bodies.length).toBeGreaterThan(0);
+        const sent = bodies[bodies.length - 1];
+        expect(sent.entries.map((entry) => entry.id)).not.toContain('e2');
+      },
+      { timeout: 3000 },
+    );
+    // The stale copy on screen is reconciled with the server's tombstone too.
+    await waitFor(() => expect(screen.queryByText('ค่ากาแฟ')).toBeNull());
+  });
+
+  it('tells the server which ids it deleted', async () => {
+    api.fetchWithAuth
+      .mockResolvedValueOnce(jsonResponse({ entries }))
+      .mockResolvedValue(jsonResponse({ entries: [entries[0]] }));
+
+    render(<FinanceWidget />);
+    await screen.findByText('ค่ากาแฟ');
+
+    fireEvent.click(screen.getByLabelText('ลบ ค่ากาแฟ'));
+
+    await waitFor(
+      () => {
+        const bodies = putBodies();
+        expect(bodies.length).toBeGreaterThan(0);
+        expect(bodies[bodies.length - 1].deleted_ids).toContain('e2');
       },
       { timeout: 3000 },
     );
