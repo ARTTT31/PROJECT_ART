@@ -8,6 +8,8 @@ import logging
 import os
 import secrets
 import time
+from datetime import datetime
+from zoneinfo import ZoneInfo
 from contextlib import asynccontextmanager
 from http.cookies import SimpleCookie
 
@@ -163,9 +165,9 @@ async def _notification_scheduler_loop(check_interval_seconds: int = 60) -> None
     while True:
         await asyncio.sleep(check_interval_seconds)
         try:
-            now = time.localtime()
-            current_hour = now.tm_hour
-            current_time_hhmm = f"{current_hour:02d}:{now.tm_min:02d}"
+            bangkok_now = datetime.now(ZoneInfo("Asia/Bangkok"))
+            current_hour = bangkok_now.hour
+            current_time_hhmm = f"{current_hour:02d}:{bangkok_now.minute:02d}"
 
             # 1. User-scheduled customizable daily briefings
             if last_dispatched_minute.get("briefing") != current_time_hhmm:
