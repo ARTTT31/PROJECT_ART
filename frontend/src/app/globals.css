@@ -1478,3 +1478,21 @@ a,
 [role='button'] {
   -webkit-tap-highlight-color: transparent;
 }
+
+/* One button shape across the product.
+   Deliberately unlayered: individual utilities (`rounded-[11px]`, `rounded-lg`)
+   are layered and would otherwise leave a handful of less-round corners in an
+   otherwise pill-shaped UI. Only `<button>` is affected — inputs, cards and
+   segmented-control containers keep their own radii. */
+button {
+  border-radius: 9999px;
+}
+
+/* Springy press, matching the design system's `active:scale` guideline.
+   Uses the independent `scale` property so it composes with buttons that
+   already position themselves with `transform`. */
+@media (prefers-reduced-motion: no-preference) {
+  button:not(:disabled):active {
+    scale: 0.97;
+  }
+}
