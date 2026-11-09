@@ -911,7 +911,15 @@
 }
 
 button:focus-visible {
-  outline-offset: 4px;
+  outline-offset: 2px;
+}
+
+/* A mouse click should not leave a ring, and on engines that draw `:focus`
+   separately that ring is rectangular regardless of the control's radius. */
+button:focus:not(:focus-visible),
+a:focus:not(:focus-visible),
+[role='button']:focus:not(:focus-visible) {
+  outline: none;
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -1453,4 +1461,20 @@ textarea:focus-visible,
   100% {
     transform: translateX(300%);
   }
+}
+
+/* Tailwind v4 emits `border-radius: calc(infinity * 1px)` for `.rounded-full`.
+   A finite pill radius renders identically but keeps borders and focus outlines
+   following the curve on every engine instead of collapsing to a rectangle. */
+@layer utilities {
+  .rounded-full {
+    border-radius: 9999px;
+  }
+}
+
+/* Touch devices otherwise paint a square highlight over round controls. */
+button,
+a,
+[role='button'] {
+  -webkit-tap-highlight-color: transparent;
 }

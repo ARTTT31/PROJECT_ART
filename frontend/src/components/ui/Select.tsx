@@ -23,6 +23,8 @@ export interface SelectProps {
   disabled?: boolean;
   /** `sm` for widget toolbars, `md` for page-level filters and forms. */
   size?: 'sm' | 'md';
+  /** Fully rounded trigger (filters that sit next to pill buttons). */
+  pill?: boolean;
   /** Extra classes for the trigger (width, spacing). */
   className?: string;
 }
@@ -46,6 +48,7 @@ export default function Select({
   placeholder = 'เลือก…',
   disabled = false,
   size = 'sm',
+  pill = false,
   className = '',
 }: SelectProps) {
   const menuId = useId();
@@ -174,10 +177,11 @@ export default function Select({
     }
   };
 
+  const triggerRadius = pill ? 'rounded-full' : size === 'sm' ? 'rounded-[11px]' : 'rounded-[14px]';
   const triggerSize =
     size === 'sm'
-      ? 'rounded-[11px] px-2.5 py-[7px] text-[12px]'
-      : 'rounded-[14px] px-3 py-2 text-[13px]';
+      ? `${triggerRadius} px-2.5 py-[7px] text-[12px]`
+      : `${triggerRadius} px-3 py-2 text-[13px]`;
 
   // Grouping is derived from the option order, so a caller only sets `group`.
   const groups = useMemo(() => {

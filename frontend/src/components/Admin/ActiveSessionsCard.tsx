@@ -1,16 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import {
-  ChevronDown,
-  Loader2,
-  LogOut,
-  Monitor,
-  MonitorSmartphone,
-  RefreshCw,
-  Search,
-  Smartphone,
-} from 'lucide-react';
+import { Loader2, LogOut, Monitor, MonitorSmartphone, RefreshCw, Search, Smartphone } from 'lucide-react';
+import Select from '@/components/ui/Select';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
 import { apiMessage } from '@/lib/api/apiMessage';
 import { describeDevice, formatRelativeTime, parseUserAgent } from '@/utils/userAgent';
@@ -199,26 +191,20 @@ export default function ActiveSessionsCard() {
           />
         </label>
 
-        <div className="relative">
-          <label className="sr-only" htmlFor="session-role-filter">
-            กรองตามบทบาท
-          </label>
-          <select
-            id="session-role-filter"
-            value={role}
-            onChange={(event) => setRole(event.target.value as '' | 'user' | 'admin')}
-            className="h-9 appearance-none rounded-full border border-[var(--hairline)] bg-[var(--surface)] pl-3.5 pr-8 text-[12px] font-semibold text-[var(--ink)] outline-hidden focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-ring)]"
-          >
-            <option value="">ทุกบทบาท</option>
-            <option value="admin">แอดมิน</option>
-            <option value="user">ผู้ใช้ทั่วไป</option>
-          </select>
-          <ChevronDown
-            size={14}
-            aria-hidden="true"
-            className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[var(--ink-tertiary)]"
-          />
-        </div>
+        <Select
+          id="session-role-filter"
+          ariaLabel="กรองตามบทบาท"
+          value={role}
+          onChange={(value) => setRole(value as '' | 'user' | 'admin')}
+          options={[
+            { value: '', label: 'ทุกบทบาท' },
+            { value: 'admin', label: 'แอดมิน' },
+            { value: 'user', label: 'ผู้ใช้ทั่วไป' },
+          ]}
+          size="sm"
+          pill
+          className="min-w-[132px]"
+        />
       </div>
 
       {error && (

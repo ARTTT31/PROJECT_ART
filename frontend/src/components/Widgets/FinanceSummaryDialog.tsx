@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { ArrowDownCircle, ArrowUpCircle, BarChart3, Download, Search, Wallet } from 'lucide-react';
+import Select from '@/components/ui/Select';
 import {
   Dialog,
   DialogBody,
@@ -139,22 +140,21 @@ export default function FinanceSummaryDialog({
 
         <DialogBody className="space-y-4">
           <div className="flex flex-wrap items-center gap-2">
-            <label htmlFor="finance-period" className="text-[12px] font-semibold text-[var(--ink-muted)]">
+            <span className="text-[12px] font-semibold text-[var(--ink-muted)]">
               ช่วงเวลา
-            </label>
-            <select
+            </span>
+            <Select
               id="finance-period"
+              ariaLabel="ช่วงเวลาของรายงาน"
               value={period}
-              onChange={(event) => setPeriod(event.target.value)}
-              className="min-w-0 flex-1 rounded-[14px] border border-[var(--hairline-strong)] bg-[var(--surface)] px-3 py-1.5 text-[13px] font-semibold text-[var(--ink)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
-            >
-              {options.map((option) => (
-                <option key={option.key} value={option.key}>
-                  {option.label}
-                </option>
-              ))}
-              <option value={ALL_PERIOD}>ทุกเดือน (สะสม)</option>
-            </select>
+              onChange={setPeriod}
+              options={[
+                ...options.map((option) => ({ value: option.key, label: option.label })),
+                { value: ALL_PERIOD, label: 'ทุกเดือน (สะสม)' },
+              ]}
+              size="md"
+              className="min-w-0 flex-1"
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
