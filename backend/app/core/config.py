@@ -5,7 +5,7 @@ Application Configuration
 import logging
 import os
 from typing import List, Literal
-from pydantic import ValidationInfo, field_validator
+from pydantic import Field, ValidationInfo, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 logger = logging.getLogger(__name__)
@@ -143,13 +143,27 @@ class Settings(BaseSettings):
     # not include self-signed provider CAs.
     SSL_CA_CERT_PATH: str = ""
 
+    # The cookie posture is resolved per call (a RENDER/process override must
+    # win immediately). These aliased fields are what pydantic-settings reads
+    # from the process environment *and* from .env — without them a value that
+    # only exists in .env was silently ignored because os.getenv() never sees
+    # the dotenv layer.
+    COOKIE_SECURE_FROM_ENV: str | None = Field(
+        default=None, validation_alias="COOKIE_SECURE", exclude=True
+    )
+    COOKIE_SAMESITE_FROM_ENV: str | None = Field(
+        default=None, validation_alias="COOKIE_SAMESITE", exclude=True
+    )
+
     @property
     def COOKIE_SECURE(self) -> bool:
         if "RENDER" in os.environ:
             return True
         env_val = os.getenv("COOKIE_SECURE")
+        if env_val is None:
+            env_val = self.COOKIE_SECURE_FROM_ENV
         if env_val is not None:
-            return env_val.lower() in ("true", "1", "yes")
+            return str(env_val).strip().lower() in ("true", "1", "yes")
         return not self.DEBUG
 
     @property
@@ -157,8 +171,10 @@ class Settings(BaseSettings):
         if "RENDER" in os.environ:
             return "none"
         env_val = os.getenv("COOKIE_SAMESITE")
+        if env_val is None:
+            env_val = self.COOKIE_SAMESITE_FROM_ENV
         if env_val is not None:
-            return env_val.lower()
+            return str(env_val).strip().lower()
         return "none" if not self.DEBUG else "lax"
 
     @property
@@ -253,12 +269,18 @@ class Settings(BaseSettings):
 
     # Domains allowed to CREATE an account through Google, comma-separated
     # (e.g. "example.co.th,example.com"). Empty means "no domain restriction"
-    # and is only safe for an explicitly open deployment. This value is read at
-    # call time in the auth endpoint so a deployment can change it without a
-    # code change; the property exists for startup diagnostics and docs.
+    # and is only safe for an explicitly open deployment. Resolved at call time
+    # so an environment override wins, with the .env value as the fallback.
+    GOOGLE_ALLOWED_DOMAINS_FROM_ENV: str | None = Field(
+        default=None, validation_alias="GOOGLE_ALLOWED_DOMAINS", exclude=True
+    )
+
     @property
     def GOOGLE_ALLOWED_DOMAINS(self) -> str:
-        return os.getenv("GOOGLE_ALLOWED_DOMAINS", "").strip()
+        env_val = os.getenv("GOOGLE_ALLOWED_DOMAINS")
+        if env_val is None:
+            env_val = self.GOOGLE_ALLOWED_DOMAINS_FROM_ENV
+        return (env_val or "").strip()
 
     # ── Terms / PDPA consent ────────────────────────────────────────────────
     # Version string recorded on an account when it accepts the terms. Bump it

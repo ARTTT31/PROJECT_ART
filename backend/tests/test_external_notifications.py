@@ -64,7 +64,16 @@ async def test_notification_test_endpoint_unconfigured(client: AsyncClient, logg
     assert "ไม่ได้ระบุ" in detail or "Token" in detail
 
 
-async def test_dispatch_external_notification_endpoint(client: AsyncClient, logged_in_user):
+async def test_dispatch_external_notification_requires_admin(client: AsyncClient, logged_in_user):
+    payload = {
+        "event_type": "daily_summary",
+        "message": "☀️ ทดสอบส่งข้อความสรุปประจำวันจากระบบ Dispatcher",
+    }
+    resp = await client.post("/api/v1/profile/external-notifications/dispatch", json=payload)
+    assert resp.status_code == 403
+
+
+async def test_dispatch_external_notification_endpoint(client: AsyncClient, logged_in_admin_user):
     payload = {
         "event_type": "daily_summary",
         "message": "☀️ ทดสอบส่งข้อความสรุปประจำวันจากระบบ Dispatcher",
@@ -76,6 +85,43 @@ async def test_dispatch_external_notification_endpoint(client: AsyncClient, logg
     data = resp.json()
     assert data["result"] == "success"
     assert "sent_count" in data
+
+
+async def test_webhook_test_rejects_private_targets(client: AsyncClient, logged_in_user):
+    resp = await client.post(
+        "/api/v1/profile/external-notifications/test",
+        json={"channel": "webhook", "webhook_url": "http://127.0.0.1:8000/internal"},
+    )
+    assert resp.status_code == 400
+    assert "ภายใน" in resp.json()["message"]
+
+
+async def test_line_token_url_rejects_loopback(client: AsyncClient, logged_in_user):
+    resp = await client.post(
+        "/api/v1/profile/external-notifications/test",
+        json={"channel": "line", "line_token": "http://localhost:8000/hook"},
+    )
+    assert resp.status_code == 400
+    assert "ภายใน" in resp.json()["message"]
+
+
+async def test_saving_channels_keeps_daily_briefing(client: AsyncClient, logged_in_user):
+    put = await client.put(
+        "/api/v1/profile/daily-briefing",
+        json={"enabled": True, "time": "06:45", "topics": {"oil_prices": False}},
+    )
+    assert put.status_code == 200
+
+    patch = await client.patch(
+        "/api/v1/profile/external-notifications",
+        json={"webhook_url": "https://example.com/hook", "events": {"oil_alert": False}},
+    )
+    assert patch.status_code == 200
+
+    updated = (await client.get("/api/v1/profile/daily-briefing")).json()["data"]
+    assert updated["enabled"] is True
+    assert updated["time"] == "06:45"
+    assert updated["topics"]["oil_prices"] is False
 
 
 async def test_web_push_subscription_flow(client: AsyncClient, logged_in_user):
@@ -91,6 +137,13 @@ async def test_web_push_subscription_flow(client: AsyncClient, logged_in_user):
     get_res = await client.get("/api/v1/profile/web-push")
     assert get_res.status_code == 200
     assert get_res.json()["has_subscription"] is False
+
+    # A simulated endpoint must be refused rather than stored as if it worked.
+    fake_res = await client.post(
+        "/api/v1/profile/web-push",
+        json={"endpoint": "browser-native-notification", "keys": {"p256dh": "a", "auth": "b"}},
+    )
+    assert fake_res.status_code == 400
 
     # 2. Subscribe
     sub_payload = {

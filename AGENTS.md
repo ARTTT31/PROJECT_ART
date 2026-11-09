@@ -74,8 +74,8 @@ Before writing, modifying, or refactoring ANY frontend page, component, or style
      - Stroke width: Governed globally by `globals.css` (`svg.lucide { stroke-width: 1.75 }`). Do not pass ad-hoc `strokeWidth` props.
      - Purely decorative icons placed alongside text must have `aria-hidden="true"`.
 
-7. **Next.js 15, React 19 & Tailwind v4 Guardrails (Strict)**:
-   - **Next.js 15 Async APIs**: Page/layout `params` and `searchParams` are Promises — MUST use `const { id } = await params`. Never access `params.id` synchronously.
+7. **Next.js 16, React 19 & Tailwind v4 Guardrails (Strict)**:
+   - **Next.js 16 Async APIs**: Page/layout `params` and `searchParams` are Promises — MUST use `const { id } = await params`. Never access `params.id` synchronously.
    - **Async Headers & Cookies**: `cookies()` and `headers()` from `next/headers` are asynchronous (`await cookies()`).
    - **React 19 Primitives**: Pass `ref` directly as a component prop; do NOT wrap function components in `forwardRef`. Use `useActionState` instead of deprecated `useFormState`.
    - **Tailwind CSS v4 Architecture**: This project uses Tailwind v4 via `@import 'tailwindcss';` and `@config "../../tailwind.config.mts"` in `globals.css`. Never create a legacy `tailwind.config.js` or use deprecated `@tailwind base;` directives.
@@ -99,7 +99,7 @@ Before writing, modifying, or refactoring ANY frontend page, component, or style
 
 ## 🏗️ Architecture Overview & Verification
 
-- **Frontend**: Next.js 15 (App Router), TypeScript, Tailwind CSS, Radix UI, `@dnd-kit`.
+- **Frontend**: Next.js 16 (App Router), TypeScript, Tailwind CSS, Radix UI, `@dnd-kit`.
 - **Backend**: Python 3.11 / 3.14, FastAPI, SQLAlchemy / SQLModel, Alembic, Pydantic v2.
 - **Verification Commands**:
   - Frontend: `npm run test` (Vitest), `npm run type-check`, `npm run lint`.

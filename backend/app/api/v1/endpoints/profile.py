@@ -16,6 +16,7 @@ from app.core.config import settings
 from app.core.database import get_db
 from app.core.rate_limit import get_real_client_ip, limiter
 from app.core.security import decode_token, verify_password
+from app.core.url_safety import UnsafeURLError, ensure_public_http_url
 from app.core.utils import utcnow
 from app.schemas.user import (
     ExternalNotificationDispatchRequest,
@@ -66,6 +67,7 @@ from app.services import account_emails
 from app.services.user_service import UserService, retention_days
 from app.api.dependencies import (
     PROFILE_COLUMNS,
+    get_current_admin_user,
     get_current_user,
     load_profile_columns,
     require_page_access,
@@ -1098,19 +1100,38 @@ async def update_external_notifications(
     db: AsyncSession = Depends(get_db),
 ):
     import json
-    events = payload.events or {
-        "oil_alert": payload.oil_alert,
-        "market_alert": payload.market_alert,
-        "daily_summary": payload.daily_summary,
-    }
-    data = {
-        "line_token": payload.line_token,
-        "line_webhook_url": payload.line_webhook_url,
-        "telegram_bot_token": payload.telegram_bot_token,
-        "telegram_chat_id": payload.telegram_chat_id,
-        "webhook_url": payload.webhook_url,
-        "events": events,
-    }
+    # This column is shared with the daily-briefing settings. Writing a fresh
+    # object (the previous behaviour) deleted "daily_briefing" every time a user
+    # saved their channels, so the two settings now merge instead of replacing.
+    try:
+        data = json.loads(current_user.external_notifications or "{}")
+    except Exception:
+        data = {}
+    if not isinstance(data, dict):
+        data = {}
+
+    supplied = payload.model_fields_set
+    for field in (
+        "line_token",
+        "line_webhook_url",
+        "telegram_bot_token",
+        "telegram_chat_id",
+        "webhook_url",
+    ):
+        if field in supplied:
+            data[field] = getattr(payload, field) or ""
+
+    event_keys = ("oil_alert", "market_alert", "daily_summary")
+    incoming_events = payload.events if payload.events is not None else {}
+    if payload.events is not None or supplied.intersection(event_keys):
+        events = dict(data.get("events") or {})
+        if payload.events is not None:
+            events.update({k: bool(v) for k, v in incoming_events.items() if k in event_keys})
+        for key in event_keys:
+            if key in supplied:
+                events[key] = bool(getattr(payload, key))
+        data["events"] = events
+
     current_user.external_notifications = json.dumps(data, ensure_ascii=False)
     db.add(current_user)
     await db.commit()
@@ -1177,10 +1198,15 @@ async def test_daily_briefing(
             "data": result,
         }
     except Exception as exc:
-        logger.exception("Error dispatching test daily briefing: %s", exc)
+        # Exception text can quote connection strings or library internals; the
+        # full context stays in the server log.
+        profile_logger.exception("Error dispatching test daily briefing: %s", exc)
         return JSONResponse(
             status_code=500,
-            content={"result": "error", "message": f"ไม่สามารถส่งการแจ้งเตือนได้: {str(exc)}"},
+            content={
+                "result": "error",
+                "message": "ไม่สามารถส่งการแจ้งเตือนได้ กรุณาลองอีกครั้งภายหลัง",
+            },
         )
 
 
@@ -1197,13 +1223,16 @@ async def test_external_notification(
     test_msg = f"🔔 [ART Workspace] ทดสอบการแจ้งเตือนสำหรับคุณ {user_name} สำเร็จเรียบร้อยแล้ว!"
 
     try:
-        async with httpx.AsyncClient(timeout=10.0) as client:
+        # Redirects stay off: the SSRF check below resolves the host before the
+        # request, and a redirect could point it back at an internal address.
+        async with httpx.AsyncClient(timeout=10.0, follow_redirects=False) as client:
             if channel == "line":
                 token = (payload.line_token or "").strip()
                 if not token:
                     raise HTTPException(status_code=400, detail="กรุณาระบุ LINE Token")
                 if token.startswith("http://") or token.startswith("https://"):
-                    res = await client.post(token, json={"message": test_msg})
+                    safe_url = await ensure_public_http_url(token)
+                    res = await client.post(safe_url, json={"message": test_msg})
                 else:
                     res = await client.post(
                         "https://notify-api.line.me/api/notify",
@@ -1229,7 +1258,8 @@ async def test_external_notification(
                 webhook_url = (payload.webhook_url or "").strip()
                 if not webhook_url or not (webhook_url.startswith("http://") or webhook_url.startswith("https://")):
                     raise HTTPException(status_code=400, detail="กรุณาระบุ Webhook URL ที่ถูกต้อง")
-                res = await client.post(webhook_url, json={"content": test_msg, "text": test_msg})
+                safe_url = await ensure_public_http_url(webhook_url)
+                res = await client.post(safe_url, json={"content": test_msg, "text": test_msg})
                 if res.status_code not in (200, 204):
                     err = f"Webhook ตอบกลับสถานะ {res.status_code}"
                     return JSONResponse(status_code=400, content={"result": "error", "message": err})
@@ -1238,6 +1268,8 @@ async def test_external_notification(
 
     except HTTPException:
         raise
+    except UnsafeURLError as e:
+        return JSONResponse(status_code=400, content={"result": "error", "message": str(e)})
     except Exception as e:
         err = f"ส่งข้อความทดสอบไม่สำเร็จ: {str(e)[:100]}"
         return JSONResponse(status_code=400, content={"result": "error", "message": err})
@@ -1248,7 +1280,7 @@ async def test_external_notification(
 async def dispatch_external_notification(
     request: Request,
     payload: ExternalNotificationDispatchRequest,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_admin_user),
     db: AsyncSession = Depends(get_db),
 ):
     from app.services.notification_dispatcher import dispatch_event_notifications
@@ -1261,9 +1293,11 @@ async def dispatch_external_notification(
 async def get_web_push_vapid_key(
     request: Request,
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
-    from app.services.web_push_service import get_vapid_public_key
-    return {"result": "success", "public_key": get_vapid_public_key()}
+    from app.services.web_push_service import ensure_persistent_vapid_keys
+    _, pub_key = await ensure_persistent_vapid_keys(db)
+    return {"result": "success", "public_key": pub_key}
 
 
 @router.get("/web-push")
@@ -1286,8 +1320,31 @@ async def save_web_push_subscription(
     db: AsyncSession = Depends(get_db),
 ):
     import json
-    sub_data = {"endpoint": payload.endpoint, "keys": payload.keys}
-    current_user.web_push_subscription = json.dumps(sub_data)
+    endpoint = (payload.endpoint or "").strip()
+    keys = payload.keys or {}
+    if not endpoint.startswith(("http://", "https://")):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Push endpoint ไม่ถูกต้อง",
+        )
+    if not (keys.get("p256dh") and keys.get("auth")):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="ข้อมูลกุญแจของ push subscription ไม่ครบถ้วน",
+        )
+
+    # One browser per row used to be overwritten by the next device. Keep a
+    # bounded list so a phone and a laptop can both receive notifications.
+    existing: list[dict[str, Any]] = []
+    if current_user.web_push_subscription:
+        try:
+            parsed = json.loads(current_user.web_push_subscription)
+            existing = parsed if isinstance(parsed, list) else [parsed]
+        except Exception:
+            existing = []
+    remaining = [sub for sub in existing if sub.get("endpoint") != endpoint]
+    remaining.append({"endpoint": endpoint, "keys": keys})
+    current_user.web_push_subscription = json.dumps(remaining[-5:], ensure_ascii=False)
     db.add(current_user)
     await db.commit()
     return {"result": "success", "message": "บันทึกการสมัครรับแจ้งเตือนเบราว์เซอร์สำเร็จ"}

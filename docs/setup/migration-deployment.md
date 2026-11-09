@@ -37,7 +37,7 @@ The API now ships with several security defaults that deployments must be aware 
 * `CSRF_PROTECTION_ENABLED` (default `True`): cookie-authenticated writes must send the `X-CSRF-Token` header echoing the readable `csrf_token` cookie. Login/register/refresh endpoints stay exempt so a session can always be established or renewed.
 * `ENABLE_API_DOCS` (default `False`): `/docs`, `/redoc` and `/openapi.json` are only served when this is `True` (or when `DEBUG=True`).
 * `SECRET_KEY` must be at least 32 characters and must not be a placeholder when `DEBUG=False`, otherwise the API refuses to start.
-* Security headers: strict CSP with `connect-src` derived from `CORS_ORIGINS`, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy`, `Permissions-Policy`, and HSTS with `includeSubDomains; preload` outside `DEBUG`.
+* Security headers: strict CSP with `connect-src` derived from `CORS_ORIGINS`, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy`, `Permissions-Policy`, and HSTS (one year, `includeSubDomains`) outside `DEBUG`.
 
 ### 2.4 Health Checks and Release Verification
 The backend answers two probes; which one a platform points at changes what a database outage does to traffic:

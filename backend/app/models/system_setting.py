@@ -19,4 +19,11 @@ class SystemSetting(Base, TimestampMixin):
     description: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     def __repr__(self) -> str:
+        # This table also stores the VAPID private key. A repr ends up in log
+        # lines and exception traces, so anything key-like is masked.
+        if self.value and any(
+            marker in self.key.lower()
+            for marker in ("secret", "private", "token", "key")
+        ):
+            return f"<SystemSetting(key='{self.key}', value='***')>"
         return f"<SystemSetting(key='{self.key}', value='{self.value}')>"

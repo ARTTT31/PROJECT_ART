@@ -88,50 +88,47 @@ export function useWebPush(): UseWebPushReturn {
         return false;
       }
 
-      let endpoint = 'browser-native-notification';
-      let p256dh = '';
-      let auth = '';
-
-      try {
-        const vapidRes = await fetchWithAuth('/api/v1/profile/web-push/vapid-key');
-        let applicationServerKey: BufferSource | undefined;
-        if (vapidRes.ok) {
-          const vapidData = (await vapidRes.json()) as { public_key?: string };
-          if (vapidData.public_key) {
-            applicationServerKey = urlBase64ToUint8Array(vapidData.public_key);
-          }
-        }
-
-        const reg = await navigator.serviceWorker.ready;
-        if (reg.pushManager) {
-          let sub = await reg.pushManager.getSubscription();
-          if (sub && applicationServerKey) {
-            try {
-              await sub.unsubscribe();
-              sub = null;
-            } catch (unsubErr) {
-              console.warn('Could not reset stale push subscription:', unsubErr);
-            }
-          }
-          if (!sub && applicationServerKey) {
-            sub = await reg.pushManager.subscribe({
-              userVisibleOnly: true,
-              applicationServerKey,
-            });
-          }
-          if (sub) {
-            endpoint = sub.endpoint;
-            p256dh = sub.getKey('p256dh')
-              ? btoa(String.fromCharCode.apply(null, Array.from(new Uint8Array(sub.getKey('p256dh')!))))
-              : '';
-            auth = sub.getKey('auth')
-              ? btoa(String.fromCharCode.apply(null, Array.from(new Uint8Array(sub.getKey('auth')!))))
-              : '';
-          }
-        }
-      } catch (subErr) {
-        console.warn('Native PushManager subscription fallback:', subErr);
+      // A subscription needs the server's VAPID public key. Without it there is
+      // nothing to register with the push service, and reporting success anyway
+      // left users with a "subscribed" switch that could never deliver.
+      const vapidRes = await fetchWithAuth('/api/v1/profile/web-push/vapid-key');
+      if (!vapidRes.ok) {
+        throw new Error('ไม่สามารถรับกุญแจสำหรับการแจ้งเตือนได้ กรุณาลองใหม่');
       }
+      const vapidData = (await vapidRes.json()) as { public_key?: string };
+      if (!vapidData.public_key) {
+        throw new Error('เซิร์ฟเวอร์ยังไม่พร้อมสำหรับการแจ้งเตือน');
+      }
+      const applicationServerKey = urlBase64ToUint8Array(vapidData.public_key);
+
+      const reg = await navigator.serviceWorker.ready;
+      if (!reg.pushManager) {
+        throw new Error('เบราว์เซอร์นี้ไม่รองรับ Web Push Notification');
+      }
+
+      let sub = await reg.pushManager.getSubscription();
+      if (sub) {
+        try {
+          await sub.unsubscribe();
+          sub = null;
+        } catch (unsubErr) {
+          console.warn('Could not reset stale push subscription:', unsubErr);
+        }
+      }
+      if (!sub) {
+        sub = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey,
+        });
+      }
+
+      const endpoint = sub.endpoint;
+      const p256dh = sub.getKey('p256dh')
+        ? btoa(String.fromCharCode.apply(null, Array.from(new Uint8Array(sub.getKey('p256dh')!))))
+        : '';
+      const auth = sub.getKey('auth')
+        ? btoa(String.fromCharCode.apply(null, Array.from(new Uint8Array(sub.getKey('auth')!))))
+        : '';
 
       const res = await fetchWithAuth('/api/v1/profile/web-push', {
         method: 'POST',

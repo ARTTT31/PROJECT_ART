@@ -12,7 +12,7 @@ from typing import Any, List, Optional
 from urllib.parse import urlencode
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Body, Depends, HTTPException, Request, status
 from fastapi.responses import RedirectResponse, JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -30,7 +30,7 @@ except ImportError:
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.disposable_email import is_disposable_email
-from app.core.rate_limit import limiter
+from app.core.rate_limit import get_real_client_ip, limiter
 from app.core.turnstile import verify_turnstile
 from app.core.utils import encode_user_cookie, user_cookie_payload, utcnow as utils_utcnow
 from app.core.security import (
@@ -52,6 +52,8 @@ from app.core.totp import (
     provisioning_uri,
     verify as verify_totp,
 )
+from pydantic import BaseModel
+
 from app.models.session import UserSession
 from app.models.user import User
 from app.schemas.response import ResponseModel
@@ -755,7 +757,9 @@ def _get_allowed_google_domains() -> List[str]:
     empty list means no domain restriction; that is only acceptable when
     ``GOOGLE_SIGNUP_ENABLED`` is intentionally on for an open deployment.
     """
-    multi = os.getenv("GOOGLE_ALLOWED_DOMAINS", "").strip()
+    # The settings accessor falls back to .env; reading os.getenv() directly
+    # silently ignored a value that only existed in the dotenv file.
+    multi = settings.GOOGLE_ALLOWED_DOMAINS
     return [d.strip().lower() for d in multi.split(",") if d.strip()]
 
 
@@ -1375,19 +1379,50 @@ async def get_session(request: Request, db: AsyncSession = Depends(get_db)):
     )
 
 
+class LogoutRequest(BaseModel):
+    session_id: Optional[str] = None
+
+
 @router.post("/logout", response_model=ResponseModel)
 async def logout(
     request: Request,
     session_id: Optional[str] = None,
+    body: Optional[LogoutRequest] = Body(None),
     db: AsyncSession = Depends(get_db),
 ):
     """
     Logout and invalidate session, clearing HTTP-only cookies.
+
+    The session may be named in the body (never the query string, which is
+    written to access logs) or omitted entirely, in which case the caller's own
+    ``sid`` from the access-token cookie is revoked.
     """
     auth_service = AuthService(db)
     audit_service = AuditService(db)
-    client_ip = request.client.host if request.client else None
+    client_ip = get_real_client_ip(request)
     user_agent = request.headers.get("user-agent")
+
+    # Identify the caller from their own cookies. Revoking whatever session id
+    # arrives in the query string let anyone sign another account out if they
+    # learned its id (ids appear in URLs and logs).
+    caller_id: Optional[int] = None
+    caller_sid: Optional[str] = None
+    for cookie_name in ("access_token", "refresh_token"):
+        payload = decode_token(request.cookies.get(cookie_name) or "")
+        if not payload:
+            continue
+        raw_id = payload.get("user_id")
+        try:
+            caller_id = int(raw_id) if raw_id is not None else None
+        except (TypeError, ValueError):
+            caller_id = None
+        raw_sid = payload.get("sid")
+        caller_sid = raw_sid if isinstance(raw_sid, str) and raw_sid else None
+        if caller_id is not None:
+            break
+
+    requested_session = session_id or (body.session_id if body else None)
+    target_session = requested_session or caller_sid
 
     from fastapi.responses import JSONResponse
 
@@ -1402,28 +1437,35 @@ async def logout(
 
     # Invalidate session in DB if session_id is provided
     try:
-        if session_id:
-            stmt = select(UserSession).where(UserSession.session_id == session_id)
+        if target_session:
+            stmt = select(UserSession).where(UserSession.session_id == target_session)
             result = await db.execute(stmt)
             session_obj = result.scalar_one_or_none()
-            user_id = session_obj.user_id if session_obj else None
 
-            await auth_service.logout(session_id)
+            if session_obj is None:
+                # Already revoked (or invented): logout stays idempotent.
+                return response
 
-            if user_id:
-                await audit_service.log_action(
-                    action="LOGOUT",
-                    user_id=user_id,
-                    details=f"Logged out session: {session_id}",
-                    ip_address=client_ip,
-                    user_agent=user_agent,
+            if caller_id is None or session_obj.user_id != caller_id:
+                logger.warning(
+                    "Refusing to revoke session that does not belong to the caller"
                 )
-                await db.commit()
+                return response
+
+            await auth_service.logout(target_session)
+            await audit_service.log_action(
+                action="LOGOUT",
+                user_id=session_obj.user_id,
+                details="Logged out the caller's own session",
+                ip_address=client_ip,
+                user_agent=user_agent,
+            )
+            await db.commit()
 
         return response
 
     except Exception as e:
-        logger.info(f"[LOGOUT] Error: {str(e)}")
+        logger.info("[LOGOUT] Error: %s", e)
         return response
 
 

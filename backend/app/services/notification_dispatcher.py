@@ -4,6 +4,7 @@ Dispatches scheduled notifications (oil price alerts, market summaries, daily di
 to users who have configured external notifications (LINE, Telegram, Webhook).
 """
 
+import asyncio
 import json
 import logging
 from typing import Any, Dict
@@ -11,9 +12,14 @@ import httpx
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.url_safety import UnsafeURLError, ensure_public_http_url
 from app.models.user import User
 
 logger = logging.getLogger(__name__)
+
+# One slow webhook must not serialise the whole broadcast: users are dispatched
+# concurrently, bounded so a large audience cannot open hundreds of sockets.
+DISPATCH_CONCURRENCY = 10
 
 
 async def send_to_channel(
@@ -29,6 +35,7 @@ async def send_to_channel(
             webhook = (target_config.get("line_webhook_url") or "").strip()
             url = webhook if webhook.startswith("http") else token
             if url and url.startswith("http"):
+                url = await ensure_public_http_url(url)
                 res = await client.post(url, json={"message": message})
                 return res.status_code in (200, 204)
             elif token:
@@ -50,6 +57,7 @@ async def send_to_channel(
         elif channel == "webhook":
             webhook_url = (target_config.get("webhook_url") or "").strip()
             if webhook_url and webhook_url.startswith("http"):
+                webhook_url = await ensure_public_http_url(webhook_url)
                 res = await client.post(
                     webhook_url,
                     json={
@@ -61,10 +69,42 @@ async def send_to_channel(
                 )
                 return res.status_code in (200, 204)
 
+    except UnsafeURLError as exc:
+        logger.warning("Refused %s notification target: %s", channel, exc)
     except Exception as exc:
         logger.warning("Failed to send %s notification: %s", channel, exc)
 
     return False
+
+
+async def _dispatch_to_user(
+    client: httpx.AsyncClient,
+    config: Dict[str, Any],
+    event_type: str,
+    message: str,
+) -> int:
+    """Send to every configured channel of one user; return successes."""
+    events = config.get("events") or {}
+    # Check subscription
+    if not events.get(event_type, True):
+        return 0
+
+    sent = 0
+
+    # Dispatch to each configured channel
+    if config.get("line_token") or config.get("line_webhook_url"):
+        if await send_to_channel(client, "line", config, message):
+            sent += 1
+
+    if config.get("telegram_bot_token") and config.get("telegram_chat_id"):
+        if await send_to_channel(client, "telegram", config, message):
+            sent += 1
+
+    if config.get("webhook_url"):
+        if await send_to_channel(client, "webhook", config, message):
+            sent += 1
+
+    return sent
 
 
 async def dispatch_event_notifications(
@@ -80,30 +120,22 @@ async def dispatch_event_notifications(
     result = await db.execute(stmt)
     users = result.scalars().all()
 
-    success_count = 0
-    async with httpx.AsyncClient(timeout=10.0) as client:
-        for user in users:
-            try:
-                config = json.loads(user.external_notifications or "{}")
-            except Exception:
-                continue
+    configs: list[Dict[str, Any]] = []
+    for user in users:
+        try:
+            configs.append(json.loads(user.external_notifications or "{}"))
+        except Exception:
+            continue
 
-            events = config.get("events") or {}
-            # Check subscription
-            if not events.get(event_type, True):
-                continue
+    semaphore = asyncio.Semaphore(DISPATCH_CONCURRENCY)
 
-            # Dispatch to each configured channel
-            if config.get("line_token") or config.get("line_webhook_url"):
-                if await send_to_channel(client, "line", config, message):
-                    success_count += 1
+    async def _bounded(client: httpx.AsyncClient, config: Dict[str, Any]) -> int:
+        async with semaphore:
+            return await _dispatch_to_user(client, config, event_type, message)
 
-            if config.get("telegram_bot_token") and config.get("telegram_chat_id"):
-                if await send_to_channel(client, "telegram", config, message):
-                    success_count += 1
+    # Redirects are off so an allowed public host cannot bounce the request to
+    # an internal address after the SSRF check above.
+    async with httpx.AsyncClient(timeout=10.0, follow_redirects=False) as client:
+        results = await asyncio.gather(*(_bounded(client, cfg) for cfg in configs))
 
-            if config.get("webhook_url"):
-                if await send_to_channel(client, "webhook", config, message):
-                    success_count += 1
-
-    return success_count
+    return sum(results)

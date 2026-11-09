@@ -3,8 +3,6 @@ from app.services.daily_briefing_service import (
     get_user_briefing_config,
     set_user_briefing_config,
     build_briefing_content,
-    dispatch_user_briefing,
-    dispatch_scheduled_briefings,
 )
 
 
@@ -35,7 +33,24 @@ def test_briefing_config_defaults_and_mutation(registered_user, db_session):
 @pytest.mark.asyncio
 async def test_build_briefing_content(db_session):
     from app.models.user import User
-    user = User(id=1, email="test@example.com", username="testuser", quick_notes='[{"id":"1","text":"Review PR","done":false}]')
+    from app.services import weather_cache
+
+    # Seed the same snapshot the oil-prices endpoint persists (L2 cache); the
+    # briefing must report observed prices, not hardcoded constants.
+    await weather_cache.store(db_session, "oil-prices", ("latest",), {
+        "prices": [
+            {"key": "gasohol_95", "name": "แก๊สโซฮอล์ 95", "price": 37.69, "unit": "บาท/ลิตร"},
+            {"key": "diesel", "name": "ดีเซล", "price": 38.39, "unit": "บาท/ลิตร"},
+        ],
+        "is_stale": False,
+    })
+
+    user = User(
+        id=1,
+        email="test@example.com",
+        username="testuser",
+        quick_notes='[{"id":"1","text":"Review PR","done":false}]',
+    )
 
     content = await build_briefing_content(db_session, user, {
         "oil_prices": True,
@@ -44,9 +59,30 @@ async def test_build_briefing_content(db_session):
     })
 
     assert "สรุปข้อมูลเช้านี้" in content["title"]
-    assert "แก๊สโซฮอล์ 95" in content["body"]
+    assert "แก๊สโซฮอล์ 95: 37.69" in content["body"]
+    assert "ดีเซล: 38.39" in content["body"]
     assert "สภาพอากาศ" in content["body"]
     assert "1 รายการในโน้ตด่วน" in content["body"]
+
+
+@pytest.mark.asyncio
+async def test_briefing_does_not_invent_missing_data(db_session):
+    """No oil/market snapshot means an explicit "no data" line, not a fake one."""
+    from app.models.user import User
+
+    user = User(id=2, email="nodata@example.com", username="nodata")
+    content = await build_briefing_content(db_session, user, {
+        "oil_prices": True,
+        "weather": True,
+        "market": True,
+        "holidays": True,
+    })
+
+    body = content["body"]
+    assert "37.69" not in body
+    assert "38.39" not in body
+    assert "กรอบปกติ" not in body
+    assert body.count("ยังไม่มี") >= 3
 
 
 @pytest.mark.asyncio

@@ -26,6 +26,26 @@ def test_get_vapid_private_key():
     assert key is not None
 
 
+def test_vapid_private_key_is_sealed_at_rest():
+    from app.services.web_push_service import _seal_private_key, _unseal_private_key
+
+    pem = "-----BEGIN PRIVATE KEY-----\nMIIBfake\n-----END PRIVATE KEY-----\n"
+    sealed = _seal_private_key(pem)
+    assert sealed.startswith("enc:v1:")
+    assert pem not in sealed
+    assert _unseal_private_key(sealed) == pem
+    # Legacy plaintext rows stay readable so a deploy does not rotate keys.
+    assert _unseal_private_key(pem) == pem
+
+
+def test_system_setting_repr_masks_secrets():
+    from app.models.system_setting import SystemSetting
+
+    rendered = repr(SystemSetting(key="vapid_private_key", value="super-secret-pem"))
+    assert "super-secret-pem" not in rendered
+    assert "***" in rendered
+
+
 @pytest.mark.asyncio
 async def test_send_web_push_skips_simulated_endpoint():
     sub = {"endpoint": "browser-native-notification", "keys": {"p256dh": "a", "auth": "b"}}

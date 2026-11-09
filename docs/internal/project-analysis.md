@@ -654,3 +654,39 @@ password-reset email, remove it, and do the rest of the list.
 5. **Still open:** the page-level tests (`/camera`, `/audit`, `/dashboard`, `/notifications`,
    `/profile`, `/verify-email` still have none), the i18n migration across the remaining screens,
    list virtualization, and the deployed-only checks.
+
+## Security and Notification Hardening (November 9, 2026)
+
+1. **Backend boot fixed.** An uncommitted VAPID edit left six dead lines after a `return` in
+   `profile.py`, so `import app.main` raised `SyntaxError` and every backend check was blocked.
+   Removed the dead block, fixed the latent `logger` → `profile_logger` name error, and the
+   flake8/mypy findings that had been hidden behind the syntax error.
+2. **SSRF guard and admin-only broadcast.** User-supplied webhook / LINE targets now pass through
+   `core/url_safety.ensure_public_http_url` (http(s) only, DNS resolution, every answer must be a
+   public address) and outbound clients no longer follow redirects.
+   `POST /profile/external-notifications/dispatch` requires an admin; a normal account gets 403.
+3. **Secrets leave the user payload.** `UserResponse` no longer serialises
+   `external_notifications` or `web_push_subscription` — the admin list was returning every
+   account's channel tokens and push keys.
+4. **VAPID is stable across deploys.** Keys resolve at startup (env → DB → generated), the stored
+   private key is sealed with a SECRET_KEY-derived Fernet key (legacy plaintext rows stay
+   readable), and the first-run insert race re-reads the winner instead of falling back to a
+   per-process key. `SystemSetting.__repr__` masks key-like values.
+5. **Scheduler claims are durable.** `services/scheduler_state.claim_slot` claims each window with
+   a conditional `UPDATE` in `system_settings`; the loop no longer dedupes in process memory, and
+   the fuel-warning window is 17:00–17:59 (the old comment promised a 17:30 check the code did not
+   implement).
+6. **Data bugs.** `fuel_warning_service` reads the `oil_alert` key the UI writes; saving external
+   channels merges the shared JSON column instead of deleting `daily_briefing`; briefings report
+   cached observed prices (or say "no data") instead of hardcoded 37.69/38.39, "SET ปกติ" and a
+   fabricated forecast; the holiday line reads the imported company calendar.
+7. **`.env` is honoured.** `COOKIE_SECURE`, `COOKIE_SAMESITE` and `GOOGLE_ALLOWED_DOMAINS` gained
+   aliased mirror fields, so a value that only exists in the dotenv file is no longer ignored
+   (a process-environment value still wins per call).
+8. **Web Push honesty.** The browser no longer stores a fake
+   `browser-native-notification` endpoint when the VAPID key cannot be fetched, the server rejects
+   such endpoints and incomplete keys, and a user keeps up to five device subscriptions instead of
+   the next device overwriting the previous one.
+9. **Verification:** backend 565 passed at 82.3% (75% gate), flake8 and mypy clean (67 source
+   files), `alembic upgrade head` + `alembic check` no drift on throwaway SQLite; frontend
+   type-check, ESLint, 367 Vitest tests and `next build` clean.

@@ -12,15 +12,13 @@ from typing import Any, Dict, List, Optional
 import httpx
 from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel
-from slowapi import Limiter
-from slowapi.util import get_remote_address
 
 from app.api.dependencies import get_current_user
 from app.core.config import settings
+from app.core.rate_limit import limiter
 from app.models.user import User
 
 logger = logging.getLogger(__name__)
-limiter = Limiter(key_func=get_remote_address)
 router = APIRouter()
 
 _AI_LIMIT = "30/minute"
@@ -208,7 +206,11 @@ def parse_builtin_intent(message: str, context: Optional[Dict[str, Any]] = None)
             )
 
     # 2. Reminder creation intent: "เตือนว่า...", "ช่วยเตือน...", "นัดหมาย..."
-    reminder_match = re.search(r"(?:เตือน(?:ว่า)?|ช่วยเตือน(?:ว่า)?|ตั้งเตือน(?:ว่า)?|นัดหมาย(?:ว่า)?)\s*(.+)", text, re.IGNORECASE)
+    reminder_match = re.search(
+        r"(?:เตือน(?:ว่า)?|ช่วยเตือน(?:ว่า)?|ตั้งเตือน(?:ว่า)?|นัดหมาย(?:ว่า)?)\s*(.+)",
+        text,
+        re.IGNORECASE,
+    )
     if reminder_match:
         content = reminder_match.group(1).strip()
         if content:
@@ -239,7 +241,11 @@ def parse_builtin_intent(message: str, context: Optional[Dict[str, Any]] = None)
     # 7. Greetings
     if any(k in lower for k in ["สวัสดี", "หวัดดี", "hello", "hi", "hey"]):
         return AIChatResponse(
-            reply="สวัสดีครับ! ผมคือ AI Copilot ผู้ช่วยประจำ ART Workspace สามารถสอบถามราคาน้ำมันวันนี้, รายงานสภาพอากาศ, สรุปงานค้าง หรือสั่งให้ผม 'จดโน้ตว่า...' ได้ทันทีครับ 😊",
+            reply=(
+                "สวัสดีครับ! ผมคือ AI Copilot ผู้ช่วยประจำ ART Workspace "
+                "สามารถสอบถามราคาน้ำมันวันนี้, รายงานสภาพอากาศ, สรุปงานค้าง "
+                "หรือสั่งให้ผม 'จดโน้ตว่า...' ได้ทันทีครับ 😊"
+            ),
         )
 
     # 8. Help / Capabilities
@@ -255,7 +261,10 @@ def parse_builtin_intent(message: str, context: Optional[Dict[str, Any]] = None)
 
     # Default fallback
     return AIChatResponse(
-        reply=f"รับทราบครับ \"{text}\" มีสิ่งใดใน ART Workspace ที่ต้องการให้ผมช่วยจดโน้ต ตั้งเตือนความจำ ตรวจสอบราคาน้ำมัน หรือสรุปภาพรวม แจ้งได้เสมอครับ!",
+        reply=(
+            f"รับทราบครับ \"{text}\" มีสิ่งใดใน ART Workspace ที่ต้องการให้ผมช่วยจดโน้ต "
+            "ตั้งเตือนความจำ ตรวจสอบราคาน้ำมัน หรือสรุปภาพรวม แจ้งได้เสมอครับ!"
+        ),
     )
 
 
@@ -265,7 +274,9 @@ async def call_gemini_api(prompt: str, context: Optional[Dict[str, Any]]) -> Opt
     if not key:
         return None
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={key}"
+    # The key travels in a header, not the query string: query strings are
+    # written to access logs, proxies and Sentry breadcrumbs.
+    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
     sys_instruction = (
         "You are the executive AI Copilot for ART Workspace, a personal & team productivity dashboard. "
         "Answer politely, helpfully, and concisely in Thai with rich details and bullet points. "
@@ -284,7 +295,7 @@ async def call_gemini_api(prompt: str, context: Optional[Dict[str, Any]]) -> Opt
 
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
-            resp = await client.post(url, json=payload)
+            resp = await client.post(url, json=payload, headers={"x-goog-api-key": key})
             if resp.status_code == 200:
                 data = resp.json()
                 candidates = data.get("candidates", [])

@@ -309,7 +309,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // 2. Notify backend in background to invalidate session & clear httpOnly cookies
     try {
-      await fetchWithAuth(`/api/v1/auth/logout${sessionId ? `?session_id=${sessionId}` : ''}`, {
+      // The id travels in the body, never the query string (URLs land in
+      // access logs and browser history).
+      await fetchWithAuth('/api/v1/auth/logout', {
         method: 'POST',
         body: JSON.stringify({ session_id: sessionId }),
       });

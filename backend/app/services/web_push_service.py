@@ -5,13 +5,17 @@ notifications to browser endpoints (Google FCM, Apple APNs, Mozilla Autopush).
 """
 
 import base64
+import hashlib
 import json
 import logging
 from typing import Any, Dict, List, Optional, Tuple
 
+from cryptography.fernet import Fernet, InvalidToken
 from cryptography.hazmat.primitives import serialization
 from py_vapid import Vapid
 from pywebpush import WebPushException, webpush_async
+from sqlalchemy import delete
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
@@ -22,6 +26,38 @@ logger = logging.getLogger(__name__)
 # Cached VAPID keypair when not explicitly provided in environment
 _in_memory_vapid: Optional[Vapid] = None
 _in_memory_public_key: Optional[str] = None
+# True once the pair has been resolved from env/DB. Without this every push to
+# every user would re-read the two rows.
+_vapid_ready = False
+
+# Private keys used to sit in ``system_settings`` as cleartext PEM. They are now
+# sealed with a key derived from SECRET_KEY; the prefix keeps a row written by
+# an older version readable for one deploy.
+_VAPID_ENC_PREFIX = "enc:v1:"
+
+
+def _secret_cipher() -> Fernet:
+    digest = hashlib.sha256(settings.SECRET_KEY.encode("utf-8")).digest()
+    return Fernet(base64.urlsafe_b64encode(digest))
+
+
+def _seal_private_key(pem: str) -> str:
+    token = _secret_cipher().encrypt(pem.encode("ascii")).decode("ascii")
+    return f"{_VAPID_ENC_PREFIX}{token}"
+
+
+def _unseal_private_key(value: str) -> str:
+    if not value.startswith(_VAPID_ENC_PREFIX):
+        # Legacy plaintext row: keep working, and it will be re-sealed the next
+        # time the keys are written.
+        return value
+    token = value[len(_VAPID_ENC_PREFIX):].encode("ascii")
+    try:
+        return _secret_cipher().decrypt(token).decode("ascii")
+    except InvalidToken as exc:
+        raise ValueError(
+            "stored VAPID key cannot be decrypted with the current SECRET_KEY"
+        ) from exc
 
 
 def _init_in_memory_vapid() -> Tuple[Vapid, str]:
@@ -38,6 +74,107 @@ def _init_in_memory_vapid() -> Tuple[Vapid, str]:
         _in_memory_vapid = vapid
         _in_memory_public_key = pub_b64
     return _in_memory_vapid, _in_memory_public_key or ""
+
+
+def _generate_keypair() -> Tuple[Vapid, str, str]:
+    """Create a new VAPID keypair, returning (vapid, sealed private PEM, public b64)."""
+    vapid = Vapid()
+    vapid.generate_keys()
+    raw_pub = vapid.public_key.public_bytes(
+        encoding=serialization.Encoding.X962,
+        format=serialization.PublicFormat.UncompressedPoint,
+    )
+    pub_b64 = base64.urlsafe_b64encode(raw_pub).rstrip(b"=").decode("ascii")
+    pem = vapid.private_key.private_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PrivateFormat.PKCS8,
+        encryption_algorithm=serialization.NoEncryption(),
+    ).decode("ascii")
+    return vapid, _seal_private_key(pem), pub_b64
+
+
+async def _stored_keys(db: AsyncSession) -> Tuple[Any, str] | None:
+    """Load the pair from ``system_settings``, or None when not stored yet."""
+    from app.models.system_setting import SystemSetting
+
+    priv_setting = await db.get(SystemSetting, "vapid_private_key")
+    pub_setting = await db.get(SystemSetting, "vapid_public_key")
+    if not (priv_setting and pub_setting and priv_setting.value and pub_setting.value):
+        return None
+    vapid = Vapid.from_pem(_unseal_private_key(priv_setting.value).encode("ascii"))
+    return vapid, pub_setting.value
+
+
+async def ensure_persistent_vapid_keys(db: AsyncSession) -> Tuple[Any, str]:
+    """Ensure VAPID keys persist across restarts and deploys.
+
+    Resolution order: explicit environment pair, then the pair stored in the
+    database, then a newly generated pair written to the database. Web Push
+    subscriptions are bound to the public key, so a fresh key on every cold
+    start silently invalidated every existing subscription.
+    """
+    global _in_memory_vapid, _in_memory_public_key, _vapid_ready
+    if _vapid_ready and _in_memory_vapid is not None:
+        return _in_memory_vapid, _in_memory_public_key or ""
+
+    if settings.VAPID_PRIVATE_KEY.strip() and settings.VAPID_PUBLIC_KEY.strip():
+        _in_memory_vapid = settings.VAPID_PRIVATE_KEY.strip()
+        _in_memory_public_key = settings.VAPID_PUBLIC_KEY.strip()
+        _vapid_ready = True
+        return _in_memory_vapid, _in_memory_public_key
+
+    try:
+        stored = await _stored_keys(db)
+        if stored is not None:
+            _in_memory_vapid, _in_memory_public_key = stored
+            _vapid_ready = True
+            return _in_memory_vapid, _in_memory_public_key
+    except Exception as exc:
+        # A corrupt or undecryptable row must not disable push forever: log it,
+        # drop the unusable pair, and fall through to generating a new one. The
+        # subscriptions are already invalid for that key anyway.
+        logger.error("Stored VAPID keys unusable (%s); generating a new pair", exc)
+        from app.models.system_setting import SystemSetting
+
+        try:
+            await db.rollback()
+            await db.execute(
+                delete(SystemSetting).where(
+                    SystemSetting.key.in_(("vapid_private_key", "vapid_public_key"))
+                )
+            )
+            await db.commit()
+        except Exception as cleanup_exc:
+            logger.warning("Could not clear unusable VAPID rows: %s", cleanup_exc)
+            await db.rollback()
+
+    try:
+        from app.models.system_setting import SystemSetting
+
+        vapid, sealed_pem, pub_b64 = _generate_keypair()
+        db.add(SystemSetting(key="vapid_private_key", value=sealed_pem))
+        db.add(SystemSetting(key="vapid_public_key", value=pub_b64))
+        try:
+            await db.commit()
+        except IntegrityError:
+            # Another worker created the pair between our read and this insert;
+            # use the winner's key instead of falling back to an in-memory one.
+            await db.rollback()
+            stored = await _stored_keys(db)
+            if stored is None:
+                raise
+            _in_memory_vapid, _in_memory_public_key = stored
+            _vapid_ready = True
+            return _in_memory_vapid, _in_memory_public_key
+
+        _in_memory_vapid = vapid
+        _in_memory_public_key = pub_b64
+        _vapid_ready = True
+        return _in_memory_vapid, _in_memory_public_key
+    except Exception as exc:
+        logger.warning("Could not persist VAPID keys to DB, using in-memory: %s", exc)
+        await db.rollback()
+        return _init_in_memory_vapid()
 
 
 def get_vapid_public_key() -> str:

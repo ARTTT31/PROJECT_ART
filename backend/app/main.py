@@ -157,47 +157,51 @@ async def _session_cleanup_loop(interval_hours: int) -> None:
 
 
 async def _notification_scheduler_loop(check_interval_seconds: int = 60) -> None:
-    """Periodically check and dispatch scheduled notifications (daily briefings, fuel price warning, market summary)."""
+    """Periodically check and dispatch scheduled notifications (daily briefings, fuel price warning, market summary).
+
+    Every window is claimed in the database before dispatch, so a restart or a
+    second instance cannot send the same digest twice.
+    """
     from app.services.notification_dispatcher import dispatch_event_notifications
-    last_dispatched_hour: dict[str, int] = {}
-    last_dispatched_minute: dict[str, str] = {}
+    from app.services.scheduler_state import claim_slot
 
     while True:
         await asyncio.sleep(check_interval_seconds)
         try:
             bangkok_now = datetime.now(ZoneInfo("Asia/Bangkok"))
             current_hour = bangkok_now.hour
+            day = bangkok_now.date().isoformat()
             current_time_hhmm = f"{current_hour:02d}:{bangkok_now.minute:02d}"
 
-            # 1. User-scheduled customizable daily briefings
-            if last_dispatched_minute.get("briefing") != current_time_hhmm:
-                async with SessionLocal() as db:
+            # 1. User-scheduled customizable daily briefings (once per minute)
+            async with SessionLocal() as db:
+                if await claim_slot(db, "briefing", f"{day}T{current_time_hhmm}"):
                     from app.services.daily_briefing_service import dispatch_scheduled_briefings
                     await dispatch_scheduled_briefings(db, current_time_hhmm)
-                last_dispatched_minute["briefing"] = current_time_hhmm
 
             # 2. Morning broadcast daily digest at 08:00
-            if current_hour == 8 and last_dispatched_hour.get("daily_summary") != current_hour:
+            if current_hour == 8:
                 async with SessionLocal() as db:
-                    await dispatch_event_notifications(
-                        db, "daily_summary", "☀️ [ART Workspace] สรุปภารกิจและรายงานประจำวันพร้อมแล้ว"
-                    )
-                last_dispatched_hour["daily_summary"] = current_hour
+                    if await claim_slot(db, "daily_summary", f"{day}T{current_hour:02d}"):
+                        await dispatch_event_notifications(
+                            db, "daily_summary", "☀️ [ART Workspace] สรุปภารกิจและรายงานประจำวันพร้อมแล้ว"
+                        )
 
-            # 3. Fuel price change early warning check at 17:00 & 17:30
-            if current_hour in (17, 18) and last_dispatched_hour.get("fuel_warning") != current_hour:
+            # 3. Fuel price change early warning, hourly during 17:00–17:59
+            #    (covers the 17:00 and 17:30 checks without a second window at 18:00)
+            if current_hour == 17:
                 async with SessionLocal() as db:
-                    from app.services.fuel_warning_service import dispatch_fuel_warning_if_changed
-                    await dispatch_fuel_warning_if_changed(db)
-                last_dispatched_hour["fuel_warning"] = current_hour
+                    if await claim_slot(db, "fuel_warning", f"{day}T{current_hour:02d}"):
+                        from app.services.fuel_warning_service import dispatch_fuel_warning_if_changed
+                        await dispatch_fuel_warning_if_changed(db)
 
             # 4. Evening market summary at 17:00
-            if current_hour == 17 and last_dispatched_hour.get("market_alert") != current_hour:
+            if current_hour == 17:
                 async with SessionLocal() as db:
-                    await dispatch_event_notifications(
-                        db, "market_alert", "📈 [ART Workspace] สรุปภาพรวมตลาด SET และค่าเงินหลังปิดตลาด"
-                    )
-                last_dispatched_hour["market_alert"] = current_hour
+                    if await claim_slot(db, "market_alert", f"{day}T{current_hour:02d}"):
+                        await dispatch_event_notifications(
+                            db, "market_alert", "📈 [ART Workspace] สรุปภาพรวมตลาด SET และค่าเงินหลังปิดตลาด"
+                        )
         except asyncio.CancelledError:
             raise
         except Exception as exc:
@@ -222,6 +226,17 @@ async def lifespan(app: FastAPI):
 
     except Exception as e:
         logger.warning("Startup schema check failed: %s", e)
+
+    # Resolve the persistent VAPID pair at boot. Waiting for the first
+    # /web-push/vapid-key request meant every push right after a deploy used a
+    # freshly generated in-memory key and failed with a VAPID mismatch.
+    try:
+        from app.services.web_push_service import ensure_persistent_vapid_keys
+
+        async with SessionLocal() as db:
+            await ensure_persistent_vapid_keys(db)
+    except Exception as exc:
+        logger.warning("VAPID key initialisation failed: %s", exc)
 
     # Subscribe to the broadcast fan-out (a no-op unless WS_BROADCAST_REDIS_URL
     # is set), then report which single-instance assumptions still apply.

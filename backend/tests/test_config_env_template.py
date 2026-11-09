@@ -34,8 +34,9 @@ NOT_A_SETTINGS_FIELD = {
     "SENTRY_AUTH_TOKEN",
     "SENTRY_ORG",
     "SENTRY_PROJECT",
-    # Read per call through os.getenv() rather than at import, so a change does
-    # not need a redeploy (/auth responses and the cookie posture depend on them).
+    # Resolved per call: os.getenv() wins, then the aliased fields below read the
+    # same key from .env (so a value that only exists in the dotenv file is not
+    # ignored). They stay out of model_fields by design.
     "COOKIE_SAMESITE",
     "COOKIE_SECURE",
     "GOOGLE_ALLOWED_DOMAINS",

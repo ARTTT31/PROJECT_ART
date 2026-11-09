@@ -123,12 +123,18 @@ async def dispatch_fuel_warning_if_changed(
         max_inc = max(c["diff"] for c in increases)
         sample_names = ", ".join(c["name"] for c in increases[:2])
         title = "⚠️ ราคาน้ำมันจะปรับขึ้นพรุ่งนี้"
-        body = f"พรุ่งนี้ราคาน้ำมันปรับขึ้นสูงสุด +{max_inc:.2f} บาท/ลิตร ({sample_names}) แนะนำแวะเติมน้ำมันก่อนกลับบ้านครับ"
+        body = (
+            f"พรุ่งนี้ราคาน้ำมันปรับขึ้นสูงสุด +{max_inc:.2f} บาท/ลิตร ({sample_names}) "
+            "แนะนำแวะเติมน้ำมันก่อนกลับบ้านครับ"
+        )
     elif decreases:
         max_dec = abs(min(c["diff"] for c in decreases))
         sample_names = ", ".join(c["name"] for c in decreases[:2])
         title = "🎉 ราคาน้ำมันจะปรับลดลงพรุ่งนี้"
-        body = f"พรุ่งนี้ราคาน้ำมันปรับลดลงสูงสุด -{max_dec:.2f} บาท/ลิตร ({sample_names}) อดใจรอเติมพรุ่งนี้เพื่อความประหยัดครับ"
+        body = (
+            f"พรุ่งนี้ราคาน้ำมันปรับลดลงสูงสุด -{max_dec:.2f} บาท/ลิตร ({sample_names}) "
+            "อดใจรอเติมพรุ่งนี้เพื่อความประหยัดครับ"
+        )
     else:
         return {"sent": False, "reason": "No net price difference", "changes": []}
 
@@ -161,7 +167,9 @@ async def dispatch_fuel_warning_if_changed(
                 try:
                     config = json.loads(user.external_notifications)
                     events = config.get("events") or {}
-                    if events.get("oil_prices", True):
+                    # The settings API stores this switch as ``oil_alert``;
+                    # reading ``oil_prices`` here silently ignored the toggle.
+                    if events.get("oil_alert", True):
                         msg = f"{title}\n{body}"
                         if config.get("line_token") or config.get("line_webhook_url"):
                             if await send_to_channel(http_client, "line", config, msg):
@@ -179,12 +187,12 @@ async def dispatch_fuel_warning_if_changed(
             now_utc = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
             client_id = f"fuel-warn-{today_str}-{int(now_utc.timestamp())}-{user.id}"
             try:
-                stmt = select(NotificationLog).where(
+                log_stmt = select(NotificationLog).where(
                     NotificationLog.user_id == user.id,
                     NotificationLog.client_id == client_id,
                 )
-                res = await db.execute(stmt)
-                existing_log = res.scalar_one_or_none()
+                log_res = await db.execute(log_stmt)
+                existing_log = log_res.scalar_one_or_none()
                 if existing_log:
                     existing_log.title = title
                     existing_log.body = body

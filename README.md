@@ -8,8 +8,8 @@ Production URL: configure this in your deployment environment; do not commit a p
 
 The GitHub Actions pipeline (`ci.yml`) runs on every push and pull request to `main`:
 
-- **Backend:** Python 3.11 — flake8 7.4 lint (`--max-line-length=120`) + mypy 2.4 type check + `alembic upgrade head` and `alembic check` against a throwaway SQLite database + pytest (**523 passed**, coverage 85.2% against a 75% gate)
-- **Frontend:** Node 26 — ESLint + TypeScript type-check + **293** Vitest unit tests + Next.js production build + Playwright smoke tests (3) + axe accessibility checks on the auth pages + a live auth E2E (register → login) that starts the backend on SQLite
+- **Backend:** Python 3.11 — flake8 7.4 lint (`--max-line-length=120`) + mypy 2.4 type check + `alembic upgrade head` and `alembic check` against a throwaway SQLite database + pytest (**565 passed**, coverage 82.3% against a 75% gate)
+- **Frontend:** Node 26 — ESLint + TypeScript type-check + **367** Vitest unit tests + Next.js production build + Playwright smoke tests (3) + axe accessibility checks on the auth pages + a live auth E2E (register → login) that starts the backend on SQLite
 - **Dependency audit (blocking):** `pip-audit` gates every push and pull request and re-runs weekly (`cron: 0 2 * * 1`, Mondays 02:00 UTC). The pinned backend set currently reports no known advisories; Dependabot opens the upgrade pull requests (see `.github/dependabot.yml`).
 
 > The coverage gate in `backend/pytest.ini` is `--cov-fail-under=75`: Python 3.11 measures ~75.8% on this suite while 3.14 measures ~86.7%, so the old 80 gate failed on the interpreter difference rather than on untested code. The number is a ratchet — raise it as 3.11 coverage climbs back toward 80 (see [Project Analysis](docs/internal/project-analysis.md)).
@@ -270,7 +270,7 @@ When developing with AI assistants (Antigravity, Gemini CLI, Claude Code), the a
 | `GET /health/ready` | Readiness: `200` only when the database answers, `503` otherwise. | Same shape with `"ready"` / `"not_ready"` |
 | `GET /api/v1/system/health` | Admin-only detailed report (CPU, memory, disk, database latency). | `SystemHealth` |
 
-Both public probes use a 2-second timeout, so a hung database cannot make the probe itself hang. Before this, `/health` returned a hardcoded `"healthy"` string and never touched the database.
+Both public probes use a 5-second timeout, so a hung database cannot make the probe itself hang. Before this, `/health` returned a hardcoded `"healthy"` string and never touched the database.
 
 ### Request Correlation
 
@@ -299,7 +299,7 @@ There is no cron in this deployment: expired trash rows are purged opportunistic
 - **CSRF (double-submit cookie).** Authenticated browser writes (`POST`/`PUT`/`PATCH`/`DELETE` under `/api/`) must echo the readable `csrf_token` cookie in the `X-CSRF-Token` header. Requests without any session cookie keep their normal 401, and `/login`, `/register`, `/refresh` and `/csrf` are exempt so a session can always be established or renewed. Failed checks return `403 {"code":"csrf_failed"}`.
 - **Frontend handling.** [`frontend/src/lib/api/fetchWithAuth.ts`](frontend/src/lib/api/fetchWithAuth.ts) reads the cookie (or bootstraps one from `GET /api/v1/auth/csrf`), attaches the header on mutating calls, and retries once on `csrf_failed`. Set `CSRF_PROTECTION_ENABLED=False` only for non-browser clients.
 - **API documentation.** `/docs`, `/redoc` and `/openapi.json` are served only when `DEBUG=True` or `ENABLE_API_DOCS=True`.
-- **Security headers.** The backend sends a strict CSP (`connect-src` is built from `CORS_ORIGINS`), `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`, `Permissions-Policy`, and HSTS (two years, `includeSubDomains; preload`) outside `DEBUG`.
+- **Security headers.** The backend sends a strict CSP (`connect-src` is built from `CORS_ORIGINS`), `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`, `Permissions-Policy`, and HSTS (one year, `includeSubDomains`) outside `DEBUG`.
 - **WebSocket notifications require a session.** The subscribe endpoint (`/api/v1/ws/notifications`) authenticates during the handshake and closes with `1008` when the token is missing, expired, belongs to a deleted/inactive/locked account, or does not exist. Nothing is read, sent or registered on that socket, so an anonymous visitor cannot hold a socket or receive admin broadcasts. The rejection is delivered as a WebSocket close frame (`accept()` then `close(1008)`) rather than a pre-accept rejection: an ASGI server answers the latter with HTTP `403`, which browsers surface as the generic abnormal closure `1006` — indistinguishable from a network blip, so the client would retry forever instead of stopping. The token is read from the HTTP-only `access_token` cookie (sent automatically with the upgrade request) or an `Authorization: Bearer` header — never from the query string, which would write credentials into access logs.
 - **Connection caps.** `WS_MAX_CONNECTIONS` (default 200) and `WS_MAX_CONNECTIONS_PER_USER` (default 3) bound the in-process registry. Over-capacity handshakes are closed with `1013`. Without them, one account — or a client stuck in a reconnect loop — could grow the registry without bound. The frontend treats `1008` as terminal (no retry) and backs off progressively for any other close.
 - **Signing keys.** With `DEBUG=False` the app refuses to start unless `SECRET_KEY` is at least 32 characters and not a known placeholder.
@@ -307,7 +307,7 @@ There is no cron in this deployment: expired trash rows are purged opportunistic
 
 ## Horizontal Scaling
 
-The current deployment is a **single instance**, and one piece of state still assumes that:
+The current deployment is a **single instance**, and two pieces of state still assume that:
 
 | Component | State | Consequence of running >1 instance | Fix |
 |---|---|---|---|
@@ -315,6 +315,8 @@ The current deployment is a **single instance**, and one piece of state still as
 | WebSocket notifications | In-process connection registry | Delivery reaches clients on every instance because the payload is published to Redis pub/sub | Set `WS_BROADCAST_REDIS_URL=redis://…` (empty = process-local) |
 
 The WebSocket registry is also *capped per process* (`WS_MAX_CONNECTIONS`, `WS_MAX_CONNECTIONS_PER_USER`), so scaling out raises the total socket ceiling rather than the per-user one.
+
+The notification scheduler is no longer process-local: each send window (daily summary, fuel warning, market alert, per-user briefing minute) is claimed in `system_settings` with a conditional `UPDATE`, so a restart and any sibling instance skip a window that has already been sent.
 
 Both surface a `[SCALING]` notice in the startup log so the assumption is never silent, and the log states which mode is active. The fan-out degrades safely: if Redis is unreachable — or the `redis` package is missing — the broadcast is still delivered to this instance's clients and the failure is logged.
 

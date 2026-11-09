@@ -93,6 +93,15 @@ describe('useWebPush', () => {
     });
 
     const fetchSpy = vi.spyOn(fetchWithAuthModule, 'fetchWithAuth').mockImplementation((url) => {
+      if (url.toString().includes('vapid-key')) {
+        return Promise.resolve({
+          ok: true,
+          json: vi.fn().mockResolvedValue({
+            result: 'success',
+            public_key: 'BFakeVapidPublicKeyForTest1234567890',
+          }),
+        } as unknown as Response);
+      }
       if (url.toString().includes('test')) {
         return Promise.resolve({
           ok: true,
@@ -183,5 +192,40 @@ describe('useWebPush', () => {
         userVisibleOnly: true,
       })
     );
+  });
+
+  it('does not store a fake subscription when the VAPID key is unavailable', async () => {
+    window.Notification = {
+      permission: 'default',
+      requestPermission: vi.fn().mockResolvedValue('granted'),
+    } as unknown as typeof Notification;
+    (window as unknown as { PushManager: unknown }).PushManager = {};
+
+    Object.defineProperty(navigator, 'serviceWorker', {
+      value: {
+        ready: Promise.resolve({
+          pushManager: { getSubscription: vi.fn().mockResolvedValue(null) },
+        }),
+      },
+      configurable: true,
+    });
+
+    const fetchSpy = vi
+      .spyOn(fetchWithAuthModule, 'fetchWithAuth')
+      .mockResolvedValue({ ok: false, json: vi.fn() } as unknown as Response);
+
+    const { result } = renderHook(() => useWebPush());
+
+    let success = true;
+    await act(async () => {
+      success = await result.current.subscribe();
+    });
+
+    expect(success).toBe(false);
+    expect(result.current.isSubscribed).toBe(false);
+    // No POST /web-push with a placeholder endpoint.
+    expect(
+      fetchSpy.mock.calls.some(([url, init]) => url.toString().endsWith('/web-push') && init?.method === 'POST')
+    ).toBe(false);
   });
 });

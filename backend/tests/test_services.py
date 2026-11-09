@@ -746,3 +746,29 @@ class TestCookieSameSiteGuard:
             s = Settings()
             assert s.COOKIE_SECURE is False
             assert s.COOKIE_SAMESITE_EFFECTIVE == "lax"
+
+    def test_dotenv_values_are_honoured(self, tmp_path):
+        """A value that only exists in .env must not be ignored.
+
+        The accessors read os.environ first, but pydantic-settings puts .env
+        entries on the model rather than in os.environ; without the aliased
+        mirror fields a local .env silently had no effect.
+        """
+        from app.core.config import Settings
+
+        env_file = tmp_path / ".env"
+        env_file.write_text(
+            "COOKIE_SECURE=true\n"
+            "COOKIE_SAMESITE=none\n"
+            "GOOGLE_ALLOWED_DOMAINS=example.co.th,example.com\n",
+            encoding="utf-8",
+        )
+
+        env = os.environ.copy()
+        for key in ("COOKIE_SECURE", "COOKIE_SAMESITE", "GOOGLE_ALLOWED_DOMAINS", "RENDER"):
+            env.pop(key, None)
+        with patch.dict(os.environ, env, clear=True):
+            s = Settings(_env_file=str(env_file))
+            assert s.COOKIE_SECURE is True
+            assert s.COOKIE_SAMESITE == "none"
+            assert s.GOOGLE_ALLOWED_DOMAINS == "example.co.th,example.com"

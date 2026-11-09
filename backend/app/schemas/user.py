@@ -353,8 +353,10 @@ class UserResponse(BaseModel):
     dashboard_layout: Optional[str] = None
     camera_config: Optional[str] = None
     accessible_pages: Optional[str] = None
-    external_notifications: Optional[str] = None
-    web_push_subscription: Optional[str] = None
+    # Channel tokens / push keys are deliberately absent: this schema is also
+    # returned for every account by the admin list, and those values are
+    # per-user secrets. The owning account reads them from
+    # /profile/external-notifications and /profile/web-push instead.
     # Sign-up lifecycle: None (normal account), "pending", "rejected".
     status: Optional[str] = None
     # Address confirmation; None only for accounts that never confirmed.

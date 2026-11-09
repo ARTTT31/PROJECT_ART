@@ -12,23 +12,28 @@ import httpx
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.company_holidays import SETTING_KEY as HOLIDAY_SETTING_KEY, parse_company_calendar
 from app.models.notification_log import NotificationLog
+from app.models.system_setting import SystemSetting
 from app.models.user import User
+from app.services import weather_cache
 from app.services.notification_dispatcher import send_to_channel
 from app.services.web_push_service import send_web_push_to_user
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_BRIEFING_CONFIG = {
+DEFAULT_TOPICS: Dict[str, bool] = {
+    "oil_prices": True,
+    "weather": True,
+    "market": True,
+    "tasks": True,
+    "holidays": True,
+}
+
+DEFAULT_BRIEFING_CONFIG: Dict[str, Any] = {
     "enabled": False,
     "time": "07:30",
-    "topics": {
-        "oil_prices": True,
-        "weather": True,
-        "market": True,
-        "tasks": True,
-        "holidays": True,
-    },
+    "topics": DEFAULT_TOPICS,
 }
 
 
@@ -41,7 +46,7 @@ def get_user_briefing_config(user: User) -> Dict[str, Any]:
         data = json.loads(raw)
         cfg = data.get("daily_briefing")
         if isinstance(cfg, dict):
-            topics = dict(DEFAULT_BRIEFING_CONFIG["topics"])
+            topics: Dict[str, bool] = dict(DEFAULT_TOPICS)
             topics.update(cfg.get("topics", {}))
             return {
                 "enabled": bool(cfg.get("enabled", False)),
@@ -71,21 +76,74 @@ def set_user_briefing_config(user: User, config: Dict[str, Any]) -> None:
     user.external_notifications = json.dumps(data, ensure_ascii=False)
 
 
+async def _latest_oil_payload(db: AsyncSession) -> Optional[Dict[str, Any]]:
+    """Last oil-price snapshot persisted by the oil-prices endpoint."""
+    # Keeping the namespace/key literal here avoids importing an API module from
+    # a service; they mirror NS_OIL_PRICES / _L2_KEY in endpoints/oil_prices.py.
+    payload = await weather_cache.get_stale(db, "oil-prices", ("latest",))
+    return payload if isinstance(payload, dict) else None
+
+
+def _oil_price_line(payload: Optional[Dict[str, Any]]) -> str:
+    """Format observed prices, or say plainly that none are available.
+
+    The previous version printed a fixed "37.69 / 38.39" pair that was never
+    fetched from anywhere, so every briefing carried invented numbers.
+    """
+    prices = (payload or {}).get("prices")
+    if not isinstance(prices, list):
+        return "⛽ ยังไม่มีข้อมูลราคาน้ำมันล่าสุดในระบบ"
+
+    wanted = ("gasohol_95", "diesel")
+    picked = [
+        item
+        for item in prices
+        if isinstance(item, dict)
+        and item.get("key") in wanted
+        and item.get("price") is not None
+    ]
+    if not picked:
+        return "⛽ ยังไม่มีข้อมูลราคาน้ำมันล่าสุดในระบบ"
+
+    parts = [f"{item.get('name')}: {item.get('price')} บ." for item in picked]
+    line = "⛽ ราคาน้ำมันล่าสุด " + " | ".join(parts)
+    if (payload or {}).get("is_stale"):
+        line += " (ข้อมูลอาจไม่ใช่ราคาปัจจุบัน)"
+    return line
+
+
+async def _holiday_line(db: AsyncSession) -> str:
+    """Today's status from the workspace holiday calendar (if imported)."""
+    setting = await db.get(SystemSetting, HOLIDAY_SETTING_KEY)
+    calendar = parse_company_calendar(setting.value if setting else None)
+    today = datetime.date.today()
+    entries = calendar.get(today.year, [])
+    if not entries:
+        return "📅 ยังไม่มีปฏิทินวันหยุดบริษัทในระบบ"
+    todays = [entry for entry in entries if entry.get("date") == today.isoformat()]
+    if todays:
+        titles = ", ".join(str(entry.get("title")) for entry in todays)
+        return f"📅 วันนี้เป็นวันหยุด: {titles}"
+    return "📅 วันนี้เป็นวันทำการปกติ (ตามปฏิทินบริษัท)"
+
+
 async def build_briefing_content(db: AsyncSession, user: User, topics: Dict[str, bool]) -> Dict[str, str]:
     """Compile morning briefing text based on enabled topics."""
     lines: List[str] = []
 
-    # 1. Fuel Prices
+    # 1. Fuel Prices — observed data from the shared cache, never constants.
     if topics.get("oil_prices"):
-        lines.append("⛽ แก๊สโซฮอล์ 95: 37.69 บ. | ดีเซล: 38.39 บ.")
+        lines.append(_oil_price_line(await _latest_oil_payload(db)))
 
     # 2. Weather & Air Quality
+    #    The weather widget keeps its coordinates in the browser, so the server
+    #    has no location to query. Say so instead of asserting a fake forecast.
     if topics.get("weather"):
-        lines.append("🌿 สภาพอากาศ: มีเมฆบางส่วน ค่าฝุ่น PM2.5 อยู่ในเกณฑ์มาตรฐาน")
+        lines.append("🌿 สภาพอากาศ: ยังไม่มีข้อมูลสภาพอากาศล่าสุดในระบบ")
 
-    # 3. Market & SET
+    # 3. Market & SET — no market data source is wired into this backend yet.
     if topics.get("market"):
-        lines.append("📈 ตลาดการเงิน: ดัชนี SET เคลื่อนไหวในกรอบปกติ")
+        lines.append("📈 ตลาดการเงิน: ยังไม่มีแหล่งข้อมูลตลาดล่าสุดในระบบ")
 
     # 4. Pending Tasks from Quick Notes
     if topics.get("tasks"):
@@ -107,9 +165,9 @@ async def build_briefing_content(db: AsyncSession, user: User, topics: Dict[str,
         else:
             lines.append("✨ ไม่มีงานค้างในโน้ตด่วน พร้อมลุยวันใหม่!")
 
-    # 5. Holidays
+    # 5. Holidays — read the calendar an admin imported for this workspace.
     if topics.get("holidays"):
-        lines.append("📅 วันนี้เป็นวันทำการปกติ")
+        lines.append(await _holiday_line(db))
 
     title = f"☀️ สรุปข้อมูลเช้านี้ ({datetime.date.today().strftime('%d/%m/%Y')})"
     body = "\n".join(lines) if lines else "ขอให้เป็นวันที่ราบรื่นและประสบความสำเร็จครับ!"
