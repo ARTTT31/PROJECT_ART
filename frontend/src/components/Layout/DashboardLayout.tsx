@@ -147,9 +147,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             />
 
             {/* Page Content */}
-            {/* Reading width: Apple keeps long-form content near 1200px; the
-                widget grid expands inside it rather than across the monitor. */}
-            <main className="mx-auto min-h-[calc(100dvh-52px)] w-full max-w-[1280px] flex-1 p-4 pb-16 sm:p-6 sm:pb-16 lg:p-8 lg:pb-20">
+            {/* Page Content: Fluid responsive width that adapts cleanly across mobile, laptop, and desktop monitors */}
+            <main className="min-h-[calc(100dvh-52px)] w-full flex-1 p-4 pb-16 sm:p-6 sm:pb-16 lg:px-8 xl:px-10 lg:pb-20">
               <div key={pathname} className="page-enter h-full">
                 {children}
               </div>
