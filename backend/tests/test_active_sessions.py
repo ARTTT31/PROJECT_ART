@@ -51,6 +51,22 @@ async def test_admin_can_force_logout(client, logged_in_admin_user):
     assert me.status_code == 401
 
 
+async def test_admin_can_filter_sessions_by_role(client, logged_in_admin_user):
+    resp = await client.get("/api/v1/users/sessions", params={"role": "admin"})
+    assert resp.status_code == 200
+    assert all(row["role"] == "admin" for row in resp.json())
+
+
+async def test_user_list_reports_active_sessions(client, logged_in_admin_user):
+    user_id = logged_in_admin_user["data"]["user"]["id"]
+    resp = await client.get("/api/v1/users")
+    assert resp.status_code == 200
+
+    row = next(item for item in resp.json() if item["id"] == user_id)
+    assert row["active_sessions"] >= 1
+    assert "last_login" in row
+
+
 async def test_revoke_unknown_session_returns_404(client, logged_in_admin_user):
     resp = await client.delete("/api/v1/users/sessions/does-not-exist")
     assert resp.status_code == 404

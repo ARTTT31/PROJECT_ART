@@ -359,6 +359,23 @@ class AuthService:
             )
         ).scalar_one_or_none()
 
+        # "New device" means this account has never signed in with this exact
+        # user agent before. It drives the security notice email; without a
+        # user agent (API clients) the notice would say nothing useful.
+        new_device = False
+        if user_agent and existing_session is None:
+            prior_device = (
+                await self.db.execute(
+                    select(UserSession.id)
+                    .where(
+                        UserSession.user_id == user.id,
+                        UserSession.user_agent == user_agent,
+                    )
+                    .limit(1)
+                )
+            ).first()
+            new_device = prior_device is None
+
         if existing_session:
             # A client may send a session id (two tabs sharing one login). It
             # must never be another account's id: reusing that row would rewrite
@@ -425,6 +442,9 @@ class AuthService:
             "refresh_token": refresh_token,
             "token_type": "bearer",
             "session_id": session_id,
+            "new_device": new_device,
+            "device_label": device_label,
+            "ip_address": ip_address,
             "user": {
                 "id": user.id,
                 "email": user.email,

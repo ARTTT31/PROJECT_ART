@@ -68,6 +68,27 @@ export function parseUserAgent(ua: string | null | undefined): ParsedUA {
   return { browser, os, isMobile };
 }
 
+/** Labels that are too coarse to tell two devices apart. */
+const GENERIC_DEVICE_LABELS = new Set(['mobile', 'desktop', 'tablet']);
+
+/**
+ * A human device name: the stored label when specific, otherwise browser + OS
+ * parsed from the user agent. Shared by the admin panel and the profile's own
+ * device list so both describe a session the same way.
+ */
+export function describeDevice(
+  userAgent: string | null | undefined,
+  deviceLabel: string | null | undefined,
+): string {
+  if (deviceLabel && !GENERIC_DEVICE_LABELS.has(deviceLabel.toLowerCase())) {
+    return deviceLabel;
+  }
+  const parsed = parseUserAgent(userAgent);
+  const parts = [parsed.browser, parsed.os].filter((part) => part && part !== 'ไม่ระบุ');
+  if (parts.length > 0) return parts.join(' · ');
+  return deviceLabel || 'ไม่ระบุอุปกรณ์';
+}
+
 /**
  * Format an ISO date string into a relative + absolute Thai display.
  * e.g. "2 ชั่วโมงที่แล้ว · 14:30 9 มิ.ย."

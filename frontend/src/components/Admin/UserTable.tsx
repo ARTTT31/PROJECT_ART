@@ -73,7 +73,12 @@ export default function UserTable({
                   <th className="px-5 py-4 border-b border-[var(--hairline-soft)]">เหลือเวลา</th>
                 </>
               ) : (
-                <th className="px-5 py-4 border-b border-[var(--hairline-soft)]">สถานะ</th>
+                <>
+                  <th className="px-5 py-4 border-b border-[var(--hairline-soft)]">สถานะ</th>
+                  <th className="px-5 py-4 border-b border-[var(--hairline-soft)]">
+                    ออนไลน์ / ล่าสุด
+                  </th>
+                </>
               )}
               <th className="px-5 py-4 border-b border-[var(--hairline-soft)] text-right">จัดการ</th>
             </tr>
@@ -167,6 +172,7 @@ export default function UserTable({
                           <Clock size={11} /> รออนุมัติ
                         </span>
                       </td>
+                      <td className="px-5 py-4 text-[12px] text-[var(--ink-tertiary)]">—</td>
                       <td className="px-5 py-4 text-right">
                         <div className="inline-flex items-center gap-2">
                           <button
@@ -227,6 +233,24 @@ export default function UserTable({
                           ) : (
                             <span className="inline-flex items-center rounded-full bg-rose-50 px-2.5 py-1 text-[11px] font-bold text-rose-700 ring-1 ring-inset ring-rose-600/20">
                               ระงับบัญชี
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-5 py-4">
+                          {(u.active_sessions ?? 0) > 0 ? (
+                            <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-[var(--success-ink)]">
+                              <span
+                                aria-hidden="true"
+                                className="h-1.5 w-1.5 rounded-full bg-[var(--success)]"
+                              />
+                              ออนไลน์
+                              <span className="font-normal text-[var(--ink-tertiary)]">
+                                · {u.active_sessions} อุปกรณ์
+                              </span>
+                            </span>
+                          ) : (
+                            <span className="text-[12px] text-[var(--ink-muted)]">
+                              {u.last_login ? formatDateTime(u.last_login) : 'ยังไม่เคย'}
                             </span>
                           )}
                         </td>

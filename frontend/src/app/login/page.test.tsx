@@ -80,9 +80,10 @@ describe('LoginPage', () => {
     expect(registerLink).toBeDefined();
     expect(registerLink.getAttribute('href')).toBe('/register');
 
-    // Google sign-in and the forgot-password link were removed from this page.
+    // Google sign-in is still gone; password reset is self-service again.
     expect(screen.queryByRole('button', { name: /google/i })).toBeNull();
-    expect(screen.queryByRole('link', { name: /ลืมรหัสผ่าน/ })).toBeNull();
+    const forgotLink = screen.getByRole('link', { name: /ลืมรหัสผ่าน/ });
+    expect(forgotLink.getAttribute('href')).toBe('/forgot-password');
 
     // Wait for on-mount fetches (branding + registration-mode) to settle
     await waitFor(() => {

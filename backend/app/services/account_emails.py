@@ -21,6 +21,7 @@ from app.services import email_service
 
 
 PURPOSE_EMAIL_VERIFY = "email_verify"
+PURPOSE_PASSWORD_RESET = "password_reset"
 
 
 def _hash_token(raw: str) -> str:
@@ -64,6 +65,43 @@ async def consume_token(
     token.used_at = utcnow()
     await db.flush()
     return token
+
+
+async def send_password_reset_email(db: AsyncSession, user: object) -> None:
+    """Issue a reset token and mail the link.
+
+    Deliberately silent about whether the address exists: the caller answers
+    the same way either way. A one-minute cooldown per account stops the
+    endpoint being used to flood someone's inbox.
+    """
+    user_id = int(getattr(user, "id"))
+    recent = (
+        await db.execute(
+            select(EmailToken.id).where(
+                EmailToken.user_id == user_id,
+                EmailToken.purpose == PURPOSE_PASSWORD_RESET,
+                EmailToken.created_at > utcnow() - timedelta(minutes=1),
+            )
+        )
+    ).first()
+    if recent is not None:
+        return
+
+    raw = await issue_token(
+        db,
+        user_id,
+        PURPOSE_PASSWORD_RESET,
+        settings.PASSWORD_RESET_TOKEN_MINUTES,
+    )
+    link = f"{settings.FRONTEND_BASE_URL}/reset-password?token={raw}"
+    await email_service.get_email_service().send(
+        email_service.password_reset_email(
+            str(getattr(user, "email")),
+            str(getattr(user, "name") or ""),
+            link,
+            settings.PASSWORD_RESET_TOKEN_MINUTES,
+        )
+    )
 
 
 async def purge_expired_tokens(db: AsyncSession) -> int:

@@ -25,6 +25,7 @@ import AccountDetailsCard from '@/components/Profile/AccountDetailsCard';
 import PasswordCard from '@/components/Profile/PasswordCard';
 import { QuickLinkDialog, type QuickLinkFormValues } from '@/components/Profile/QuickLinkDialog';
 import SecurityCard from '@/components/Profile/SecurityCard';
+import { MyDevicesCard } from '@/components/Profile/MyDevicesCard';
 import ProfileHero from '@/components/Profile/ProfileHero';
 import PreferencesPanels, {
   type PreferenceSection,
@@ -515,6 +516,11 @@ export default function ProfilePage() {
               {/* Card 1.3: การยืนยันสองขั้นตอน */}
               <div className="mt-4">
                 <SecurityCard />
+              </div>
+
+              {/* Card 1.4: อุปกรณ์ที่เข้าสู่ระบบของฉัน */}
+              <div className="mt-4">
+                <MyDevicesCard />
               </div>
             </div>
           </motion.div>

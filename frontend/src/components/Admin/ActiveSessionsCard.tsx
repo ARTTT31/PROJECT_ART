@@ -2,16 +2,18 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import {
+  ChevronDown,
   Loader2,
   LogOut,
   Monitor,
   MonitorSmartphone,
   RefreshCw,
+  Search,
   Smartphone,
 } from 'lucide-react';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
 import { apiMessage } from '@/lib/api/apiMessage';
-import { formatRelativeTime, parseUserAgent } from '@/utils/userAgent';
+import { describeDevice, formatRelativeTime, parseUserAgent } from '@/utils/userAgent';
 import { showDeleteConfirm, showToast } from '@/utils/sweetalert';
 
 export interface AdminSession {
@@ -31,18 +33,6 @@ export interface AdminSession {
   expires_at: string | null;
 }
 
-/** Human label: the stored label when specific, otherwise browser + OS from the UA. */
-export function describeDevice(session: AdminSession): string {
-  const generic = new Set(['mobile', 'desktop', 'tablet']);
-  if (session.device_label && !generic.has(session.device_label.toLowerCase())) {
-    return session.device_label;
-  }
-  const parsed = parseUserAgent(session.user_agent);
-  const parts = [parsed.browser, parsed.os].filter((part) => part && part !== 'ไม่ระบุ');
-  if (parts.length > 0) return parts.join(' · ');
-  return session.device_label || 'ไม่ระบุอุปกรณ์';
-}
-
 function accountLabel(session: AdminSession): string {
   return session.name || session.username || session.email || `ผู้ใช้ #${session.user_id}`;
 }
@@ -52,7 +42,8 @@ function accountLabel(session: AdminSession): string {
  *
  * One row per live session, not per account: the same person can be signed in
  * on a phone and a laptop, and the point of this panel is to see those devices
- * and force one out if it is not theirs.
+ * and force one out if it is not theirs. Search and the role filter run on the
+ * server; the page grows with "โหลดเพิ่ม" rather than silently truncating.
  */
 export default function ActiveSessionsCard() {
   const [sessions, setSessions] = useState<AdminSession[]>([]);
@@ -61,30 +52,52 @@ export default function ActiveSessionsCard() {
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+  const [query, setQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
+  const [role, setRole] = useState<'' | 'user' | 'admin'>('');
+  const [limit, setLimit] = useState(50);
 
   useEffect(() => {
     setCurrentSessionId(localStorage.getItem('session_id'));
   }, []);
 
-  const load = useCallback(async (showSpinner = true) => {
-    if (showSpinner) setLoading(true);
-    try {
-      const res = await fetchWithAuth('/api/v1/users/sessions?limit=100');
-      if (!res.ok) {
-        const body = await res.json().catch(() => null);
-        throw new Error(apiMessage(body, 'ไม่สามารถโหลดรายการอุปกรณ์ได้'));
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedQuery(query.trim()), 300);
+    return () => window.clearTimeout(timer);
+  }, [query]);
+
+  // A new filter starts a new page window; keeping skip-based "load more"
+  // across a filter change would mix two result sets.
+  useEffect(() => {
+    setLimit(50);
+  }, [debouncedQuery, role]);
+
+  const load = useCallback(
+    async (showSpinner = true) => {
+      if (showSpinner) setLoading(true);
+      try {
+        const params = new URLSearchParams({ limit: String(limit) });
+        if (debouncedQuery) params.set('q', debouncedQuery);
+        if (role) params.set('role', role);
+
+        const res = await fetchWithAuth(`/api/v1/users/sessions?${params.toString()}`);
+        if (!res.ok) {
+          const body = await res.json().catch(() => null);
+          throw new Error(apiMessage(body, 'ไม่สามารถโหลดรายการอุปกรณ์ได้'));
+        }
+        const rows = (await res.json()) as AdminSession[];
+        const headerTotal = Number.parseInt(res.headers.get('X-Total-Count') ?? '', 10);
+        setSessions(rows);
+        setTotal(Number.isFinite(headerTotal) ? headerTotal : rows.length);
+        setError(null);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'ไม่สามารถโหลดรายการอุปกรณ์ได้');
+      } finally {
+        setLoading(false);
       }
-      const rows = (await res.json()) as AdminSession[];
-      const headerTotal = Number.parseInt(res.headers.get('X-Total-Count') ?? '', 10);
-      setSessions(rows);
-      setTotal(Number.isFinite(headerTotal) ? headerTotal : rows.length);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'ไม่สามารถโหลดรายการอุปกรณ์ได้');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    },
+    [debouncedQuery, limit, role],
+  );
 
   useEffect(() => {
     void load();
@@ -98,7 +111,7 @@ export default function ActiveSessionsCard() {
     async (session: AdminSession) => {
       const confirmed = await showDeleteConfirm(
         'บังคับออกจากระบบ?',
-        `${accountLabel(session)} · ${describeDevice(session)} จะต้องเข้าสู่ระบบใหม่`
+        `${accountLabel(session)} · ${describeDevice(session.user_agent, session.device_label)} จะต้องเข้าสู่ระบบใหม่`,
       );
       if (!confirmed.isConfirmed) return;
 
@@ -106,7 +119,7 @@ export default function ActiveSessionsCard() {
       try {
         const res = await fetchWithAuth(
           `/api/v1/users/sessions/${encodeURIComponent(session.session_id)}`,
-          { method: 'DELETE' }
+          { method: 'DELETE' },
         );
         const body = await res.json().catch(() => null);
         if (!res.ok) {
@@ -120,8 +133,10 @@ export default function ActiveSessionsCard() {
         setBusyId(null);
       }
     },
-    [load]
+    [load],
   );
+
+  const hasMore = total !== null && sessions.length < total;
 
   return (
     <section
@@ -167,6 +182,45 @@ export default function ActiveSessionsCard() {
         </button>
       </div>
 
+      <div className="flex flex-wrap items-center gap-2 border-b border-[var(--hairline-soft)] px-5 py-3 sm:px-6">
+        <label className="relative min-w-[180px] flex-1">
+          <span className="sr-only">ค้นหาอุปกรณ์หรือผู้ใช้</span>
+          <Search
+            size={14}
+            aria-hidden="true"
+            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--ink-tertiary)]"
+          />
+          <input
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="ค้นหาชื่อ อีเมล อุปกรณ์ หรือ IP"
+            className="h-9 w-full rounded-full border border-[var(--hairline)] bg-[var(--surface-grouped)] pl-9 pr-3 text-[12px] font-medium text-[var(--ink)] outline-hidden transition-all placeholder:text-[var(--ink-tertiary)] focus:border-[var(--accent)] focus:bg-[var(--surface)] focus:ring-2 focus:ring-[var(--accent-ring)]"
+          />
+        </label>
+
+        <div className="relative">
+          <label className="sr-only" htmlFor="session-role-filter">
+            กรองตามบทบาท
+          </label>
+          <select
+            id="session-role-filter"
+            value={role}
+            onChange={(event) => setRole(event.target.value as '' | 'user' | 'admin')}
+            className="h-9 appearance-none rounded-full border border-[var(--hairline)] bg-[var(--surface)] pl-3.5 pr-8 text-[12px] font-semibold text-[var(--ink)] outline-hidden focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-ring)]"
+          >
+            <option value="">ทุกบทบาท</option>
+            <option value="admin">แอดมิน</option>
+            <option value="user">ผู้ใช้ทั่วไป</option>
+          </select>
+          <ChevronDown
+            size={14}
+            aria-hidden="true"
+            className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[var(--ink-tertiary)]"
+          />
+        </div>
+      </div>
+
       {error && (
         <p
           role="alert"
@@ -186,7 +240,9 @@ export default function ActiveSessionsCard() {
         </div>
       ) : sessions.length === 0 ? (
         <p className="px-5 py-8 text-center text-[12px] text-[var(--ink-muted)] sm:px-6">
-          ยังไม่มีอุปกรณ์ที่เข้าสู่ระบบอยู่
+          {debouncedQuery || role
+            ? 'ไม่พบอุปกรณ์ที่ตรงกับตัวกรอง'
+            : 'ยังไม่มีอุปกรณ์ที่เข้าสู่ระบบอยู่'}
         </p>
       ) : (
         <ul className="divide-y divide-[var(--hairline-soft)]">
@@ -219,7 +275,7 @@ export default function ActiveSessionsCard() {
                     )}
                   </p>
                   <p className="mt-0.5 truncate text-[12px] text-[var(--ink-secondary)]">
-                    {describeDevice(session)}
+                    {describeDevice(session.user_agent, session.device_label)}
                     {session.ip_address ? ` · ${session.ip_address}` : ''}
                   </p>
                   <p className="mt-0.5 text-[11px] text-[var(--ink-tertiary)]" title={absolute}>
@@ -246,6 +302,19 @@ export default function ActiveSessionsCard() {
             );
           })}
         </ul>
+      )}
+
+      {hasMore && (
+        <div className="border-t border-[var(--hairline-soft)] px-5 py-3 text-center sm:px-6">
+          <button
+            type="button"
+            onClick={() => setLimit((current) => Math.min(current + 50, 200))}
+            disabled={loading}
+            className="inline-flex h-8 items-center rounded-full border border-[var(--hairline)] px-4 text-[12px] font-semibold text-[var(--ink)] transition-all hover:bg-[var(--surface-grouped)] active:scale-[0.95] disabled:opacity-50"
+          >
+            {loading ? 'กำลังโหลด…' : `โหลดเพิ่ม (${sessions.length}/${total})`}
+          </button>
+        </div>
       )}
     </section>
   );

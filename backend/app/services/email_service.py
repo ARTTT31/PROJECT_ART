@@ -269,6 +269,59 @@ def account_rejected_email(to: str, name: str) -> EmailMessage:
     )
 
 
+def password_reset_email(to: str, name: str, link: str, minutes: int) -> EmailMessage:
+    """The self-service reset link. Short-lived and single-use."""
+    greeting = f"สวัสดี {name}" if name else "สวัสดี"
+    text = (
+        f"{greeting}\n\n"
+        "เราได้รับคำขอตั้งรหัสผ่านใหม่สำหรับบัญชีนี้\n"
+        f"ลิงก์นี้ใช้ได้ครั้งเดียวและหมดอายุใน {minutes} นาที:\n\n{link}\n\n"
+        "หากคุณไม่ได้เป็นผู้ขอ ไม่ต้องทำอะไร — รหัสผ่านเดิมยังใช้งานได้\n"
+    )
+    html = _wrap_html(
+        "ตั้งรหัสผ่านใหม่",
+        f"<p>{greeting}</p><p>เราได้รับคำขอตั้งรหัสผ่านใหม่สำหรับบัญชีนี้ "
+        f"ลิงก์นี้ใช้ได้ครั้งเดียวและหมดอายุใน <strong>{minutes} นาที</strong></p>"
+        "<p>หากคุณไม่ได้เป็นผู้ขอ ไม่ต้องทำอะไร — รหัสผ่านเดิมยังใช้งานได้</p>",
+        link,
+        "ตั้งรหัสผ่านใหม่",
+    )
+    return EmailMessage(
+        to=to,
+        subject="ตั้งรหัสผ่านใหม่ — ART Workspace",
+        text=text,
+        html=html,
+    )
+
+
+def new_device_login_email(
+    to: str, name: str, device: str, ip_address: str, when: str
+) -> EmailMessage:
+    """Tell the owner about a sign-in from a device the account has not used."""
+    greeting = f"สวัสดี {name}" if name else "สวัสดี"
+    text = (
+        f"{greeting}\n\n"
+        "มีอุปกรณ์ใหม่เข้าสู่ระบบบัญชีของคุณ\n"
+        f"อุปกรณ์: {device}\nIP: {ip_address}\nเวลา: {when}\n\n"
+        "หากไม่ใช่คุณ ให้เปลี่ยนรหัสผ่านทันทีและออกจากระบบทุกอุปกรณ์ในหน้าโปรไฟล์\n"
+        f"{settings.FRONTEND_BASE_URL}/profile\n"
+    )
+    html = _wrap_html(
+        "มีอุปกรณ์ใหม่เข้าสู่ระบบ",
+        f"<p>{greeting}</p><p>มีอุปกรณ์ใหม่เข้าสู่ระบบบัญชีของคุณ</p>"
+        f"<p>อุปกรณ์: <strong>{device}</strong><br>IP: {ip_address}<br>เวลา: {when}</p>"
+        "<p>หากไม่ใช่คุณ ให้เปลี่ยนรหัสผ่านทันทีและออกจากระบบทุกอุปกรณ์ในหน้าโปรไฟล์</p>",
+        f"{settings.FRONTEND_BASE_URL}/profile",
+        "เปิดหน้าโปรไฟล์",
+    )
+    return EmailMessage(
+        to=to,
+        subject="มีอุปกรณ์ใหม่เข้าสู่ระบบ — ART Workspace",
+        text=text,
+        html=html,
+    )
+
+
 def admin_new_request_email(
     to: str, name: str, applicant_email: str, review_url: str
 ) -> EmailMessage:

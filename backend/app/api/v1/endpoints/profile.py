@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field
 from fastapi import APIRouter, Depends, HTTPException, status, Request, UploadFile, File
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import or_, select
 
 from app.core.config import settings
 from app.core.database import get_db
@@ -587,11 +587,19 @@ async def get_my_sessions(
     """
 
     try:
+        now = utcnow()
         result = await db.execute(
             select(UserSession)
-            .filter(UserSession.user_id == current_user.id)
-            .order_by(UserSession.created_at.desc())
-            .limit(10)
+            .filter(
+                UserSession.user_id == current_user.id,
+                UserSession.is_active.is_(True),
+                or_(
+                    UserSession.expires_at.is_(None),
+                    UserSession.expires_at > now,
+                ),
+            )
+            .order_by(UserSession.last_activity.desc())
+            .limit(50)
         )
         sessions = result.scalars().all()
 
@@ -607,6 +615,7 @@ async def get_my_sessions(
                 if s.last_activity
                 else None,
                 "created_at": s.created_at.isoformat() if s.created_at else None,
+                "expires_at": s.expires_at.isoformat() if s.expires_at else None,
             }
             for s in sessions
         ]

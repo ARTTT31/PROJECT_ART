@@ -660,6 +660,15 @@ function LoginContent() {
               </label>
             </div>
 
+            <div className="login-hint" style={{ textAlign: 'right', marginTop: -4 }}>
+              <Link
+                href="/forgot-password"
+                className="font-semibold text-[var(--accent)] hover:underline"
+              >
+                ลืมรหัสผ่าน?
+              </Link>
+            </div>
+
             {totpRequired && (
               <label htmlFor="login-totp" className="login-field">
                 <span>รหัสยืนยัน 6 หลัก</span>

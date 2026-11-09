@@ -691,6 +691,31 @@ password-reset email, remove it, and do the rest of the list.
    files), `alembic upgrade head` + `alembic check` no drift on throwaway SQLite; frontend
    type-check, ESLint, 367 Vitest tests and `next build` clean.
 
+## Usability Pass (November 9, 2026)
+
+1. **Password recovery is self-service again.** `POST /auth/forgot-password` mails a single-use
+   link (only the SHA-256 hash is stored, reusing `EmailToken` with purpose `password_reset`,
+   30-minute TTL, 1-minute per-account cooldown) and answers identically for unknown addresses.
+   `POST /auth/reset-password` redeems it, clears lockout and revokes every session. The two
+   routes join the CSRF middleware's pre-authentication exemptions because the body carries the
+   account-bound token. `/forgot-password` and `/reset-password` reuse `AuthPageShell`.
+2. **New-device notices.** `AuthService.login` reports whether the account had never used that
+   user agent; the endpoint sends a best-effort email (background task) with device, IP and time.
+3. **Users can manage their own devices.** The existing `/profile/sessions` list/revoke endpoints
+   finally have a UI: Profile → Security shows each device, marks the current one, signs out a
+   single device or every other device. The list is now active-only with `expires_at`.
+4. **Admin clarity.** `GET /users` adds `active_sessions` per account (one grouped query), the
+   user table shows an online dot or last sign-in, and the live-sessions panel gained server-side
+   search, a role filter and incremental loading instead of a silent 100-row cap.
+5. **Discoverability.** The header has a visible search button that opens the command palette; a
+   dismissible 3-step getting-started card on the dashboard links to quick links, notification
+   settings and the palette.
+6. **Known limit.** i18n remains partial: the new screens follow the existing Thai copy of their
+   neighbours rather than the `th`/`en` catalogue (which still drives 12 of 97 components).
+   Finishing it is a per-screen migration, not a mechanical change, and was not attempted here.
+7. **Verification:** backend 574 passed at 82.4%, flake8/mypy clean, `alembic check` no drift;
+   frontend type-check, ESLint, 373 Vitest tests and `next build` clean.
+
 ## Live Sessions Panel (November 9, 2026)
 
 1. **Admin visibility.** `GET /api/v1/users/sessions` returns every live session joined to its
@@ -702,5 +727,4 @@ password-reset email, remove it, and do the rest of the list.
    user agent, so Google sign-ins and older rows still show a real device.
 3. **Admin UI.** `components/Admin/ActiveSessionsCard.tsx` lists the sessions on the admin page,
    marks the viewer's own device, refreshes every 30 seconds and offers per-device sign-out.
-4. **Verification:** backend 570 passed at 82.4%, flake8/mypy clean, `alembic check` no drift;
-   frontend type-check, ESLint, 370 Vitest tests and `next build` clean.
+4. **Verification:** covered by the Usability Pass totals below (backend 574, frontend 373).

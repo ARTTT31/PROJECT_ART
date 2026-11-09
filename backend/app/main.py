@@ -411,6 +411,11 @@ class CSRFMiddleware:
         # a victim's cookies cannot verify anyone but the token's owner.
         "/api/v1/auth/verify-email",
         "/api/v1/auth/resend-verification",
+        # A reset link is opened from an inbox, often in a fresh browser with no
+        # CSRF cookie. The body carries the single-use token, which is bound to
+        # its account, so riding a victim's cookies cannot reset their password.
+        "/api/v1/auth/forgot-password",
+        "/api/v1/auth/reset-password",
     )
 
     def __init__(self, app):

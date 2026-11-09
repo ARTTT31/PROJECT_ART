@@ -306,6 +306,10 @@ class Settings(BaseSettings):
     RESEND_API_KEY: str = ""
     # How long the verification link stays valid.
     EMAIL_VERIFY_TOKEN_MINUTES: int = 1440
+    # A password-reset link is more sensitive than a verification link, so it
+    # expires in minutes rather than a day, and the request endpoint will not
+    # send another one for the same account within a minute.
+    PASSWORD_RESET_TOKEN_MINUTES: int = 30
     # Require a verified email before a password login succeeds. Off by default
     # so a deployment whose email backend is not configured yet cannot lock
     # everyone out; turn it on once delivery works. Google sign-ins are always

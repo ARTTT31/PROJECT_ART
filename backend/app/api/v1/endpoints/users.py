@@ -15,6 +15,7 @@ from app.core.utils import utcnow
 from app.models.session import UserSession
 from app.schemas.user import (
     ActiveSessionResponse,
+    AdminUserResponse,
     UserResponse,
     UserCreate,
     UserAdminUpdate,
@@ -37,8 +38,32 @@ router = APIRouter()
 _GENERAL_LIMIT = f"{settings.RATE_LIMIT_GENERAL_PER_MINUTE}/minute"
 
 
-@router.get("", response_model=List[UserResponse])
-@router.get("/", response_model=List[UserResponse], include_in_schema=False)
+async def _active_session_counts(
+    db: AsyncSession, user_ids: List[int]
+) -> dict[int, int]:
+    """How many live devices each account has, in one grouped query."""
+    if not user_ids:
+        return {}
+    now = utcnow()
+    rows = (
+        await db.execute(
+            select(UserSession.user_id, func.count())
+            .where(
+                UserSession.user_id.in_(user_ids),
+                UserSession.is_active.is_(True),
+                or_(
+                    UserSession.expires_at.is_(None),
+                    UserSession.expires_at > now,
+                ),
+            )
+            .group_by(UserSession.user_id)
+        )
+    ).all()
+    return {int(user_id): int(count) for user_id, count in rows}
+
+
+@router.get("", response_model=List[AdminUserResponse])
+@router.get("/", response_model=List[AdminUserResponse], include_in_schema=False)
 @limiter.limit(_GENERAL_LIMIT)
 async def list_users(
     request: Request,
@@ -69,7 +94,15 @@ async def list_users(
     )
     total = await user_service.count_users(q=q, role=role, is_active=is_active)
     response.headers["X-Total-Count"] = str(total)
-    return users
+
+    counts = await _active_session_counts(db, [user.id for user in users])
+    return [
+        AdminUserResponse(
+            **UserResponse.model_validate(user).model_dump(),
+            active_sessions=counts.get(user.id, 0),
+        )
+        for user in users
+    ]
 
 
 @router.get("/deleted", response_model=List[UserTrashResponse])
@@ -243,6 +276,7 @@ async def list_active_sessions(
     limit: int = Query(50, ge=1, le=200),
     q: Optional[str] = Query(None, max_length=100, description="ค้นหาชื่อ/อีเมล/อุปกรณ์/IP"),
     active_only: bool = Query(True, description="แสดงเฉพาะ session ที่ยังไม่ถูกเพิกถอน"),
+    role: Optional[Literal["user", "admin"]] = Query(None, description="กรองตามบทบาท"),
     current_user: User = Depends(get_current_admin_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -260,6 +294,8 @@ async def list_active_sessions(
     if active_only:
         filters.append(UserSession.is_active.is_(True))
         filters.append(or_(UserSession.expires_at.is_(None), UserSession.expires_at > now))
+    if role:
+        filters.append(User.role == role)
     if q:
         pattern = f"%{q.strip()}%"
         filters.append(

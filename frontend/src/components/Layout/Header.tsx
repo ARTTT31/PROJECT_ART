@@ -3,9 +3,10 @@
 import { memo, useEffect, useState, useSyncExternalStore } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { Clock, Menu } from 'lucide-react';
+import { Clock, Menu, Search } from 'lucide-react';
 import { AuthUser } from '@/types';
 import NotificationBell from './NotificationBell';
+import { openCommandPalette } from './CommandPalette';
 import { PwaHeaderButton } from '@/components/PWA/PwaInstallPrompt';
 import { useI18n } from '@/lib/i18n/I18nProvider';
 import { usePreferences } from '@/hooks/usePreferences';
@@ -116,6 +117,24 @@ export default function Header({ user, onMenuClick, sidebarCollapsed = false }: 
           <div className="hidden min-h-[36px] items-center gap-2 rounded-full border border-[var(--hairline)] bg-[var(--glass-80)] px-3.5 py-1.5 text-[12px] font-semibold text-[var(--ink)] shadow-[0_1px_2px_rgba(0,0,0,0.04)] md:flex">
             <ClockTime />
           </div>
+
+          {/* The palette is keyboard-first, but a feature nobody can see is a
+              feature nobody uses; this is its visible entry point. */}
+          <button
+            type="button"
+            onClick={openCommandPalette}
+            aria-label={t('nav.search.aria')}
+            title={t('nav.search.title')}
+            className="flex h-9 items-center gap-1.5 rounded-full border border-[var(--hairline)] bg-[var(--glass-80)] px-2.5 text-[var(--ink-secondary)] transition-all hover:bg-[var(--surface-chip)] hover:text-[var(--ink)] active:scale-[0.95] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)] xl:pr-2"
+          >
+            <Search size={16} aria-hidden="true" />
+            <span className="hidden text-[12px] font-semibold xl:inline">
+              {t('nav.search.label')}
+            </span>
+            <kbd className="hidden rounded-[6px] border border-[var(--hairline)] bg-[var(--surface)] px-1.5 py-0.5 font-sans text-[10px] font-bold text-[var(--ink-tertiary)] xl:inline">
+              ⌘K
+            </kbd>
+          </button>
 
           <NotificationBell />
         </div>

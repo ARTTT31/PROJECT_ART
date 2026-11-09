@@ -59,10 +59,17 @@
 - **Authorisation:** `role` plus per-user `accessible_pages`; the sidebar and profile page hide
   what a user cannot reach, and the backend enforces page access for page-scoped APIs.
 - **Admin:** a dedicated `/admin` console for user management, page-permission editing,
-  password reset/lockout reset, registration policy and pending approvals; `/audit` adds a
-  searchable, paginated activity log.
+  registration policy and pending approvals; the user table shows who is online and when they
+  were last seen, and a live-sessions panel lists every signed-in device with search, role filter
+  and per-device forced logout. `/audit` adds a searchable, paginated activity log.
+- **Account recovery:** self-service "forgot password" emails a single-use, 30-minute link; a
+  successful reset clears lockout and revokes every session. Login from an unrecognised user
+  agent sends a security notice email.
 - **Personalisation:** per-account workspace name/tagline/logo, sidebar menu order stored on the
   account (not localStorage), dashboard layout, quick notes, finance entries and watchlist.
+  Profile → Security lists the account's own signed-in devices and can sign the others out;
+  a dismissible 3-step getting-started card appears on the dashboard for new accounts, and the
+  header exposes the ⌘K command palette as a visible button.
 - **Market data:** authenticated proxy for exchange rates, Thai gold, COMEX gold, the SET index,
   watchlist quotes and OHLC candles; every provider degrades independently.
 - **Notifications:** notification bell with derived alerts (holidays, weather, oil prices) plus

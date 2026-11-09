@@ -12,8 +12,9 @@ from typing import Any, List, Optional
 from urllib.parse import urlencode
 
 import httpx
-from fastapi import APIRouter, Body, Depends, HTTPException, Request, status
+from fastapi import APIRouter, BackgroundTasks, Body, Depends, HTTPException, Request, status
 from fastapi.responses import RedirectResponse, JSONResponse
+from sqlalchemy import func, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
@@ -37,6 +38,7 @@ from app.core.security import (
     create_access_token,
     create_refresh_token,
     decode_token,
+    get_password_hash,
     new_refresh_jti,
     verify_password,
 )
@@ -58,7 +60,9 @@ from app.models.session import UserSession
 from app.models.user import User
 from app.schemas.response import ResponseModel
 from app.schemas.user import (
+    ForgotPasswordRequest,
     ResendVerificationRequest,
+    ResetPasswordRequest,
     TwoFactorCodeRequest,
     TwoFactorDisableRequest,
     UserCreate,
@@ -213,6 +217,109 @@ async def get_csrf_token(request: Request):
     return response
 
 
+async def _send_new_device_notice(
+    email: str, name: str, device: str, ip_address: Optional[str]
+) -> None:
+    """Best-effort security notice; a mail failure must not fail the login."""
+    try:
+        await email_service.get_email_service().send(
+            email_service.new_device_login_email(
+                email,
+                name,
+                device,
+                ip_address or "ไม่ทราบ",
+                utils_utcnow().strftime("%d/%m/%Y %H:%M UTC"),
+            )
+        )
+    except Exception:
+        logger.warning("new-device notice could not be sent", exc_info=True)
+
+
+@router.post("/forgot-password", response_model=ResponseModel)
+@limiter.limit(_AUTH_LIMIT)
+async def forgot_password(
+    request: Request,
+    payload: ForgotPasswordRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """Mail a single-use reset link.
+
+    Answers the same message whether or not the address exists, so the endpoint
+    cannot be used to enumerate accounts. Inactive (pending/rejected) and
+    deleted accounts get no mail — an admin still owns those decisions.
+    """
+    user = (
+        await db.execute(
+            select(User).where(func.lower(User.email) == str(payload.email).lower())
+        )
+    ).scalar_one_or_none()
+
+    if user is not None and user.is_active and user.deleted_at is None and user.email:
+        await account_emails.send_password_reset_email(db, user)
+        await AuditService(db).log_action(
+            action="PASSWORD_RESET_REQUESTED",
+            user_id=user.id,
+            details="Self-service password reset requested",
+            ip_address=get_real_client_ip(request),
+            user_agent=request.headers.get("user-agent"),
+        )
+        await db.commit()
+
+    return ResponseModel(
+        result="success",
+        message="หากอีเมลนี้มีบัญชีอยู่ เราได้ส่งลิงก์ตั้งรหัสผ่านใหม่ให้แล้ว",
+    )
+
+
+@router.post("/reset-password", response_model=ResponseModel)
+@limiter.limit(_AUTH_LIMIT)
+async def reset_password(
+    request: Request,
+    payload: ResetPasswordRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """Redeem a reset link, then invalidate every existing session."""
+    token = await account_emails.consume_token(
+        db, account_emails.PURPOSE_PASSWORD_RESET, payload.token
+    )
+    if token is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="ลิงก์ตั้งรหัสผ่านไม่ถูกต้องหรือหมดอายุแล้ว",
+        )
+
+    user = await db.get(User, token.user_id)
+    if user is None or user.deleted_at is not None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="ลิงก์ตั้งรหัสผ่านไม่ถูกต้องหรือหมดอายุแล้ว",
+        )
+
+    user.hashed_password = get_password_hash(payload.password)
+    user.failed_login_attempts = 0
+    user.locked_until = None
+    # A reset is also the remedy for a suspected compromise: every device has
+    # to sign in again with the new password.
+    await db.execute(
+        update(UserSession)
+        .where(UserSession.user_id == user.id, UserSession.is_active.is_(True))
+        .values(is_active=False)
+    )
+    await AuditService(db).log_action(
+        action="PASSWORD_RESET_COMPLETED",
+        user_id=user.id,
+        details="Password reset completed; all sessions revoked",
+        ip_address=get_real_client_ip(request),
+        user_agent=request.headers.get("user-agent"),
+    )
+    await db.commit()
+
+    return ResponseModel(
+        result="success",
+        message="ตั้งรหัสผ่านใหม่สำเร็จ กรุณาเข้าสู่ระบบอีกครั้ง",
+    )
+
+
 @router.get("/registration-mode")
 @limiter.limit(_GENERAL_LIMIT)
 async def get_registration_mode(request: Request, db: AsyncSession = Depends(get_db)):
@@ -234,6 +341,7 @@ async def get_registration_mode(request: Request, db: AsyncSession = Depends(get
 async def login(
     request: Request,
     user_login: UserLogin,
+    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -282,6 +390,15 @@ async def login(
 
         # 🛡️ SECURITY: Set tokens as HTTP-only cookies (mitigating XSS token theft)
         # We exclude tokens from the JSON response body.
+        if result.get("new_device") and result["user"].get("email"):
+            background_tasks.add_task(
+                _send_new_device_notice,
+                result["user"]["email"],
+                result["user"].get("name") or "",
+                result.get("device_label") or "ไม่ทราบอุปกรณ์",
+                result.get("ip_address"),
+            )
+
         response_data = {"session_id": result["session_id"], "user": result["user"]}
 
         resp = ResponseModel(

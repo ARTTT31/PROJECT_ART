@@ -8,6 +8,7 @@ import PullToRefresh from '@/components/Layout/PullToRefresh';
 import { getGreeting } from '@/utils/greeting';
 import { showConfirm } from '@/utils/sweetalert';
 import { usePageHeading } from '@/components/ui/PageHeader';
+import GettingStartedCard from '@/components/Onboarding/GettingStartedCard';
 
 import {
   Dialog,
@@ -508,6 +509,8 @@ export default function DashboardPage() {
           </span>
         </div>
       </section>
+
+      <GettingStartedCard user={user} />
 
       {/* ── Widget grid ─────────────────────────────────────────────────── */}
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>

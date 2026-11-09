@@ -15,6 +15,10 @@ export interface AdminUser {
   deleted_at?: string | null;
   /** Sign-up lifecycle: null (normal), 'pending', 'rejected'. */
   status?: string | null;
+  /** Last successful sign-in, ISO string. */
+  last_login?: string | null;
+  /** Live devices for this account, counted by the admin list endpoint. */
+  active_sessions?: number;
 }
 
 /** A soft-deleted account, as returned by `GET /api/v1/users/deleted`. */

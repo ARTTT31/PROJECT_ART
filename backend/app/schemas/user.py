@@ -83,6 +83,26 @@ class TwoFactorDisableRequest(BaseModel):
     code: Optional[str] = Field(None, max_length=10)
 
 
+class ForgotPasswordRequest(BaseModel):
+    """Ask for a reset link. The response never reveals whether the address exists."""
+
+    email: EmailStr
+
+
+class ResetPasswordRequest(BaseModel):
+    """Redeem a reset link. The token is single-use and short-lived."""
+
+    token: str = Field(..., min_length=16, max_length=128)
+    password: str = Field(..., min_length=8, max_length=100)
+
+    @field_validator("password")
+    @classmethod
+    def validate_password(cls, v):
+        if len(v) < 8:
+            raise ValueError("Password must be at least 8 characters")
+        return v
+
+
 class VerifyEmailRequest(BaseModel):
     """Redeem an email-verification link."""
 
@@ -372,6 +392,16 @@ class UserResponse(BaseModel):
     deleted_at: Optional[datetime] = None
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class AdminUserResponse(UserResponse):
+    """A user row in the admin table, plus how many devices are signed in.
+
+    ``active_sessions`` is counted per request/page (the admin list is small),
+    so the panel can show an online dot without a second round trip.
+    """
+
+    active_sessions: int = 0
 
 
 class UserTrashResponse(UserResponse):
