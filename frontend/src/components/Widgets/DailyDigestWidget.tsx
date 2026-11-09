@@ -239,7 +239,7 @@ export default function DailyDigestWidget({
                 สรุปประจำวันอัจฉริยะ
               </h2>
               <span className="shrink-0 rounded-full bg-[var(--accent-soft)] px-2 py-0.5 text-[11px] font-bold text-[var(--accent-text)]">
-                Smart Briefing
+                AI
               </span>
             </div>
             <p className="mt-0.5 truncate text-[11px] text-[var(--ink-tertiary)] flex items-center gap-1">

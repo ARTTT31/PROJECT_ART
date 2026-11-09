@@ -10,8 +10,8 @@ export interface Candle {
   c: number;
 }
 
-const UP = '#12a150';
-const DOWN = '#e5484d';
+const UP = 'var(--success)';
+const DOWN = 'var(--danger)';
 
 /** Small quotes (yen is ~0.21 THB) need more decimals than gold at 4,000. */
 function formatPrice(value: number) {
@@ -161,7 +161,7 @@ export default function CandleChart({
             x2={WIDTH - PAD_RIGHT}
             y1={line.y}
             y2={line.y}
-            stroke="#ececf0"
+            stroke="var(--hairline)"
             strokeWidth={1}
             vectorEffect="non-scaling-stroke"
           />
@@ -169,7 +169,7 @@ export default function CandleChart({
             x={WIDTH - PAD_RIGHT + 8}
             y={line.y + 3.5}
             fontSize={10}
-            fill="#a1a1a6"
+            fill="var(--ink-faint)"
             className="tabular-nums"
           >
             {formatPrice(line.price)}
@@ -225,7 +225,7 @@ export default function CandleChart({
         y={lastY + 4}
         fontSize={10}
         fontWeight={700}
-        fill="#ffffff"
+        fill="white"
         className="tabular-nums"
       >
         {formatPrice(last.c)}
@@ -237,7 +237,7 @@ export default function CandleChart({
           x={tick.x}
           y={HEIGHT - PAD_BOTTOM + 14}
           fontSize={10}
-          fill="#a1a1a6"
+          fill="var(--ink-faint)"
           textAnchor={tick.index === 0 ? 'start' : tick.index === points.length - 1 ? 'end' : 'middle'}
         >
           {tick.text}

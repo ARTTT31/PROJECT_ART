@@ -57,7 +57,7 @@ describe('DailyDigestWidget', () => {
       render(<DailyDigestWidget width={2} />);
     });
     expect(screen.getByText('สรุปประจำวันอัจฉริยะ')).toBeDefined();
-    expect(screen.getByText('Smart Briefing')).toBeDefined();
+    expect(screen.getByText('AI')).toBeDefined();
 
     await waitFor(() => {
       expect(screen.getByText('อากาศ')).toBeDefined();

@@ -3,7 +3,7 @@
 # stayed in the file long after the venv had moved on.
 #
 # FastAPI Framework
-fastapi==0.162.0
+fastapi==0.162.2
 uvicorn[standard]==0.54.0
 python-multipart>=0.0.32
 
@@ -14,7 +14,7 @@ python-multipart>=0.0.32
 # an older pin) and then every deploy dies on
 # "The SQLAlchemy asyncio module requires that the Python 'greenlet' library is
 # installed", so the `asyncio` extra is part of the pin, not an optional nicety.
-sqlalchemy[asyncio]==2.1.6
+sqlalchemy[asyncio]==2.1.8
 psycopg2-binary==2.9.13
 alembic==1.20.1
 

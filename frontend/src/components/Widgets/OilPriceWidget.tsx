@@ -155,7 +155,7 @@ function buildOilPriceNotification(changes: PriceChange[]): Notification | null 
 const fuelDotColor: Record<string, string> = {
   benzene_95: 'bg-[var(--danger)]',
   gasohol_95: 'bg-[var(--warning)]',
-  gasohol_91: 'bg-[#ffcc00]',
+  gasohol_91: 'bg-[var(--warning)]',
   gasohol_e20: 'bg-[var(--success)]',
   gasohol_e85: 'bg-[var(--success)]',
   diesel: 'bg-[var(--accent)]',

@@ -64,7 +64,7 @@ export default function VerifyEmailPage() {
             }}
           >
             <Loader2 size={26} className="login-submit-spinner" aria-hidden="true" />
-            <span style={{ color: '#6e6e73', fontSize: 14 }}>กำลังยืนยันอีเมล...</span>
+            <span className="text-[var(--ink-tertiary)]" style={{ fontSize: 14 }}>กำลังยืนยันอีเมล...</span>
           </div>
         )}
 

@@ -574,7 +574,7 @@ export default function QuickNotesWidget({
                     <path
                       d="M5 13.5 9.5 18 19 6.5"
                       style={{
-                        stroke: note.done ? '#ffffff' : 'transparent',
+                        stroke: note.done ? 'white' : 'transparent',
                         strokeDasharray: 26,
                         strokeDashoffset: note.done ? 0 : 26,
                         transition: 'stroke-dashoffset 200ms ease-out, stroke 120ms linear',

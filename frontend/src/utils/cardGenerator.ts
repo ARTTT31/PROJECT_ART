@@ -145,7 +145,7 @@ export function drawDailyCardCanvas(
 
   ctx.fillStyle = colors.inkTertiary;
   ctx.font = `500 15px ${fontMain}`;
-  ctx.fillText('Smart Briefing · สรุปภาพรวมประจำวัน', padX + iconW + 16, headerY + 52);
+  ctx.fillText('สรุปภาพรวมประจำวัน', padX + iconW + 16, headerY + 52);
 
   // Date Badge (Right-aligned pill)
   const dateW = 320;

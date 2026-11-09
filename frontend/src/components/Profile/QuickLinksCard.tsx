@@ -83,9 +83,9 @@ export function QuickLinksCard({ links, onAdd, onEdit, onDelete, onMove }: Quick
                 <div className="shrink-0">
                   <div
                     className="flex h-10 w-10 items-center justify-center rounded-[14px] shadow-2xs ring-1 ring-[var(--hairline)]"
-                    style={{ backgroundColor: `${link.color || '#0066cc'}15` }}
+                    style={{ backgroundColor: `${link.color || 'var(--accent)'}15` }}
                   >
-                    <Icon size={17} aria-hidden="true" style={{ color: link.color || '#0066cc' }} />
+                    <Icon size={17} aria-hidden="true" style={{ color: link.color || 'var(--accent)' }} />
                   </div>
                 </div>
 
