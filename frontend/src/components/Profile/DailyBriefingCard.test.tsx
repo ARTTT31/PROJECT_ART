@@ -47,7 +47,7 @@ describe('DailyBriefingCard', () => {
       } as Response)
       .mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ result: 'success' }),
+        json: async () => ({ result: 'success', data: { web_push_sent: true } }),
       } as Response);
 
     render(<DailyBriefingCard />);

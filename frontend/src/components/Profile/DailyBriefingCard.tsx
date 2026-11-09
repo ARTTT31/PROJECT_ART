@@ -99,8 +99,20 @@ export function DailyBriefingCard() {
         method: 'POST',
       });
       if (res.ok) {
+        const payload = (await res.json()) as { data?: { web_push_sent?: boolean; external_sent?: boolean } };
+        const data = payload?.data;
         hapticSuccess();
-        showToast('ส่งสรุปประจำวันทดสอบเข้าอุปกรณ์เรียบร้อย', 'success');
+        if (data?.web_push_sent || data?.external_sent) {
+          const channels = [];
+          if (data.web_push_sent) channels.push('Web Push');
+          if (data.external_sent) channels.push('LINE/Telegram');
+          showToast(`ส่งสรุปทดสอบเรียบร้อย (${channels.join(', ')})`, 'success');
+        } else {
+          showToast(
+            'ส่งข้อมูลสำเร็จ แต่ยังไม่มีอุปกรณ์เปิดรับการแจ้งเตือน (กรุณาเปิดสวิตช์ Web Push บนมือถือ หรือตั้งค่า LINE/Telegram)',
+            'warning'
+          );
+        }
       } else {
         throw new Error('ส่งไม่สำเร็จ');
       }
