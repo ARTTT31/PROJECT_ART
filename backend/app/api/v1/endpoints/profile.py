@@ -1169,12 +1169,19 @@ async def test_daily_briefing(
     db: AsyncSession = Depends(get_db),
 ):
     from app.services.daily_briefing_service import dispatch_user_briefing
-    result = await dispatch_user_briefing(db, current_user)
-    return {
-        "result": "success",
-        "message": "ส่งสรุปประจำวันทดสอบเรียบร้อยแล้ว",
-        "data": result,
-    }
+    try:
+        result = await dispatch_user_briefing(db, current_user, is_test=True)
+        return {
+            "result": "success",
+            "message": "ส่งสรุปประจำวันทดสอบเรียบร้อยแล้ว",
+            "data": result,
+        }
+    except Exception as exc:
+        logger.exception("Error dispatching test daily briefing: %s", exc)
+        return JSONResponse(
+            status_code=500,
+            content={"result": "error", "message": f"ไม่สามารถส่งการแจ้งเตือนได้: {str(exc)}"},
+        )
 
 
 @router.post("/external-notifications/test")

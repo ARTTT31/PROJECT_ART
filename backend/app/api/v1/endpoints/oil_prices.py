@@ -219,6 +219,8 @@ async def trigger_fuel_warning_check(
     return await dispatch_fuel_warning_if_changed(db, force=force)
 
 
+@router.get("", response_model=dict)
+@router.get("/", response_model=dict)
 @router.get("/oil-prices", response_model=dict)
 @limiter.limit(_GENERAL_LIMIT)
 async def get_oil_prices(

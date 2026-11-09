@@ -90,14 +90,18 @@ async def build_briefing_content(db: AsyncSession, user: User, topics: Dict[str,
     # 4. Pending Tasks from Quick Notes
     if topics.get("tasks"):
         pending_count = 0
-        raw_notes = getattr(user, "quick_notes", None)
-        if raw_notes:
-            try:
+        try:
+            from sqlalchemy import inspect
+            insp = inspect(user)
+            if "quick_notes" in getattr(insp, "unloaded", set()):
+                await db.refresh(user, ["quick_notes"])
+            raw_notes = getattr(user, "quick_notes", None)
+            if raw_notes:
                 parsed_notes = json.loads(raw_notes)
                 if isinstance(parsed_notes, list):
                     pending_count = len([n for n in parsed_notes if not n.get("done")])
-            except Exception:
-                pass
+        except Exception as exc:
+            logger.debug("Failed to read quick_notes for daily briefing: %s", exc)
         if pending_count > 0:
             lines.append(f"📝 มีงานค้าง {pending_count} รายการในโน้ตด่วน")
         else:
@@ -112,13 +116,15 @@ async def build_briefing_content(db: AsyncSession, user: User, topics: Dict[str,
     return {"title": title, "body": body}
 
 
-async def dispatch_user_briefing(db: AsyncSession, user: User) -> Dict[str, Any]:
+async def dispatch_user_briefing(db: AsyncSession, user: User, is_test: bool = False) -> Dict[str, Any]:
     """Compile and send briefing to user via Web Push and external channels."""
     config = get_user_briefing_config(user)
     topics = config.get("topics", {})
     content = await build_briefing_content(db, user, topics)
 
     title = content["title"]
+    if is_test:
+        title = f"🔔 [ทดสอบ] {title}"
     body = content["body"]
 
     # Web Push
@@ -153,20 +159,38 @@ async def dispatch_user_briefing(db: AsyncSession, user: User) -> Dict[str, Any]
         except Exception:
             pass
 
-    # History Log
+    # History Log (idempotent & safe against duplicate key conflicts)
     now_utc = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
-    log_entry = NotificationLog(
-        user_id=user.id,
-        client_id=f"briefing-{datetime.date.today()}-{user.id}",
-        type="system",
-        level="info",
-        title=title,
-        body=body,
-        occurred_at=now_utc,
-        read_at=None,
-    )
-    db.add(log_entry)
-    await db.commit()
+    prefix = "briefing-test" if is_test else "briefing"
+    client_id = f"{prefix}-{int(now_utc.timestamp())}-{user.id}"
+    try:
+        stmt = select(NotificationLog).where(
+            NotificationLog.user_id == user.id,
+            NotificationLog.client_id == client_id,
+        )
+        res = await db.execute(stmt)
+        existing_log = res.scalar_one_or_none()
+        if existing_log:
+            existing_log.title = title
+            existing_log.body = body
+            existing_log.occurred_at = now_utc
+            existing_log.read_at = None
+        else:
+            log_entry = NotificationLog(
+                user_id=user.id,
+                client_id=client_id,
+                type="system",
+                level="info",
+                title=title,
+                body=body,
+                occurred_at=now_utc,
+                read_at=None,
+            )
+            db.add(log_entry)
+        await db.commit()
+    except Exception as exc:
+        logger.warning("Failed to save briefing notification log: %s", exc)
+        await db.rollback()
 
     return {
         "success": True,

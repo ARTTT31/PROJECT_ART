@@ -66,7 +66,12 @@ async def test_api_daily_briefing_lifecycle(client, logged_in_admin_user):
     assert put_res.json()["data"]["enabled"] is True
     assert put_res.json()["data"]["time"] == "07:00"
 
-    # 3. Test send
+    # 3. Test send (with tasks enabled by default, and sending twice)
     test_res = await client.post("/api/v1/profile/daily-briefing/test")
     assert test_res.status_code == 200
     assert test_res.json()["result"] == "success"
+
+    # 4. Test send second time (must not crash on duplicate key)
+    test_res_2 = await client.post("/api/v1/profile/daily-briefing/test")
+    assert test_res_2.status_code == 200
+    assert test_res_2.json()["result"] == "success"

@@ -175,28 +175,49 @@ async def dispatch_fuel_warning_if_changed(
                 except Exception:
                     pass
 
-            # C) Notification History Log
-            log_entry = NotificationLog(
-                user_id=user.id,
-                client_id=f"fuel-warn-{today_str}-{user.id}",
-                type="oilprice",
-                level="warning" if increases else "info",
-                title=title,
-                body=body,
-                occurred_at=datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None),
-                read_at=None,
-            )
-            db.add(log_entry)
+            # C) Notification History Log (Idempotent & safe against duplicate key conflicts)
+            now_utc = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
+            client_id = f"fuel-warn-{today_str}-{int(now_utc.timestamp())}-{user.id}"
+            try:
+                stmt = select(NotificationLog).where(
+                    NotificationLog.user_id == user.id,
+                    NotificationLog.client_id == client_id,
+                )
+                res = await db.execute(stmt)
+                existing_log = res.scalar_one_or_none()
+                if existing_log:
+                    existing_log.title = title
+                    existing_log.body = body
+                    existing_log.occurred_at = now_utc
+                    existing_log.read_at = None
+                else:
+                    log_entry = NotificationLog(
+                        user_id=user.id,
+                        client_id=client_id,
+                        type="oilprice",
+                        level="warning" if increases else "info",
+                        title=title,
+                        body=body,
+                        occurred_at=now_utc,
+                        read_at=None,
+                    )
+                    db.add(log_entry)
+            except Exception:
+                pass
 
     # 4. Record last sent date for de-duplication
-    setting = await db.get(SystemSetting, LAST_WARNING_SETTING_KEY)
-    if not setting:
-        setting = SystemSetting(key=LAST_WARNING_SETTING_KEY, value=today_str)
-        db.add(setting)
-    else:
-        setting.value = today_str
+    try:
+        setting = await db.get(SystemSetting, LAST_WARNING_SETTING_KEY)
+        if not setting:
+            setting = SystemSetting(key=LAST_WARNING_SETTING_KEY, value=today_str)
+            db.add(setting)
+        else:
+            setting.value = today_str
 
-    await db.commit()
+        await db.commit()
+    except Exception as exc:
+        logger.warning("Failed to commit fuel warning record: %s", exc)
+        await db.rollback()
 
     return {
         "sent": True,

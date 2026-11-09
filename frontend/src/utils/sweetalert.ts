@@ -45,7 +45,6 @@ export const showToast = (
     showCloseButton: false,
     timer: 3000,
     timerProgressBar: true,
-    backdrop: false, // Prevents any dark background overlay behind the toast
     buttonsStyling: false,
     didOpen: (toast) => {
       toast.addEventListener('mouseenter', Swal.stopTimer);
