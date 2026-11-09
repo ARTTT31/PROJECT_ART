@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Clock, Send, Loader2, Fuel, CloudSun, TrendingUp, CheckSquare, Calendar } from 'lucide-react';
+import { Clock, Send, Loader2, Fuel, CloudSun, TrendingUp, CheckSquare, Calendar, Smartphone, MessageSquare } from 'lucide-react';
 import { SectionCard } from './SectionCard';
 import Switch from '@/components/ui/Switch';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
+import { useWebPush } from '@/hooks/useWebPush';
 import { showToast } from '@/utils/sweetalert';
 import { hapticSuccess, hapticTap } from '@/utils/haptics';
 
@@ -19,6 +20,7 @@ interface BriefingTopics {
 const TIME_OPTIONS = ['06:30', '07:00', '07:30', '08:00', '08:30', '09:00'];
 
 export function DailyBriefingCard() {
+  const webPush = useWebPush();
   const [enabled, setEnabled] = useState(false);
   const [deliveryTime, setDeliveryTime] = useState('07:30');
   const [topics, setTopics] = useState<BriefingTopics>({
@@ -162,6 +164,33 @@ export function DailyBriefingCard() {
                 void saveSettings(next, deliveryTime, topics);
               }}
             />
+          </div>
+        </div>
+
+        {/* Delivery Channels Status Indicator */}
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-[14px] bg-[var(--surface-grouped)] px-3.5 py-2.5 text-[11px] ring-1 ring-[var(--hairline)]">
+          <div className="flex items-center gap-1.5 font-bold text-[var(--ink-secondary)]">
+            <span>ช่องทางจัดส่งการแจ้งเตือน:</span>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span
+              className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 font-semibold ${
+                webPush.isSubscribed
+                  ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/60'
+                  : 'bg-amber-50 text-amber-700 ring-1 ring-amber-200/60'
+              }`}
+            >
+              <Smartphone size={12} aria-hidden="true" />
+              <span>
+                {webPush.isSubscribed
+                  ? 'แจ้งเตือนเข้ามือถือ (Web Push) พร้อมส่ง ✅'
+                  : 'แจ้งเตือนเข้ามือถือ (Web Push) ยังไม่เปิดสวิตช์'}
+              </span>
+            </span>
+            <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-1 font-semibold text-blue-700 ring-1 ring-blue-200/60">
+              <MessageSquare size={12} aria-hidden="true" />
+              <span>LINE / Telegram (เสริมถ้าเชื่อมต่อ)</span>
+            </span>
           </div>
         </div>
 
