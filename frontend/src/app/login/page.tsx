@@ -24,6 +24,7 @@ import TurnstileWidget from '@/components/Auth/TurnstileWidget';
 import ApprovalPending from '@/components/Auth/ApprovalPending';
 import AuthTransitionOverlay from '@/components/Auth/AuthTransitionOverlay';
 import { useToast } from '@/components/Toast/ToastProvider';
+import { parseUserAgent } from '@/utils/userAgent';
 
 /** Thai date, short month (e.g. "วันพฤหัสบดีที่ 9 ต.ค. 2569") — fits one line. */
 const dateFormatter = new Intl.DateTimeFormat('th-TH', {
@@ -360,7 +361,13 @@ function LoginContent() {
       }
 
       const userAgent = navigator.userAgent;
-      const deviceLabel = /Mobile|Android|iPhone|iPad/.test(userAgent) ? 'Mobile' : 'Desktop';
+      // A specific label (browser + OS) is what the admin device panel shows;
+      // "Mobile"/"Desktop" alone cannot tell two phones apart.
+      const parsedUa = parseUserAgent(userAgent);
+      const deviceLabel =
+        [parsedUa.browser, parsedUa.os]
+          .filter((part) => part && part !== 'ไม่ระบุ')
+          .join(' · ') || (parsedUa.isMobile ? 'Mobile' : 'Desktop');
       const secondFactor = totpCode.trim();
       const payload = {
         email,

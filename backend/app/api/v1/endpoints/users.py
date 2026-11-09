@@ -3,15 +3,18 @@ User Management Endpoints (Admin Only)
 """
 
 import math
-from typing import List, Literal, Optional
+from typing import Any, List, Literal, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status, Request, Response
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.database import get_db
-from app.core.rate_limit import limiter
+from app.core.rate_limit import get_real_client_ip, limiter
 from app.core.utils import utcnow
+from app.models.session import UserSession
 from app.schemas.user import (
+    ActiveSessionResponse,
     UserResponse,
     UserCreate,
     UserAdminUpdate,
@@ -228,6 +231,120 @@ async def reject_user(
         result="success",
         message="ปฏิเสธคำขอสมัครแล้ว",
         data={"user_id": rejected.id, "status": rejected.status},
+    )
+
+
+@router.get("/sessions", response_model=List[ActiveSessionResponse])
+@limiter.limit(_GENERAL_LIMIT)
+async def list_active_sessions(
+    request: Request,
+    response: Response,
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=200),
+    q: Optional[str] = Query(None, max_length=100, description="ค้นหาชื่อ/อีเมล/อุปกรณ์/IP"),
+    active_only: bool = Query(True, description="แสดงเฉพาะ session ที่ยังไม่ถูกเพิกถอน"),
+    current_user: User = Depends(get_current_admin_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Who is signed in right now, and from which device (Admin only).
+
+    Declared before ``/{user_id}`` on purpose: that path parameter is an int, so
+    its route would swallow "sessions" (422) if it were registered first.
+
+    A session is live while ``is_active`` and not past ``expires_at``. A refresh
+    token (every 15 minutes in the app) touches ``last_activity``, so the
+    timestamp is the most recent token refresh/login rather than every request.
+    """
+    now = utcnow()
+    filters: list[Any] = []
+    if active_only:
+        filters.append(UserSession.is_active.is_(True))
+        filters.append(or_(UserSession.expires_at.is_(None), UserSession.expires_at > now))
+    if q:
+        pattern = f"%{q.strip()}%"
+        filters.append(
+            or_(
+                User.email.ilike(pattern),
+                User.username.ilike(pattern),
+                User.name.ilike(pattern),
+                UserSession.device_label.ilike(pattern),
+                UserSession.ip_address.ilike(pattern),
+            )
+        )
+
+    base = select(UserSession, User).join(User, User.id == UserSession.user_id)
+    count_stmt = select(func.count()).select_from(UserSession).join(
+        User, User.id == UserSession.user_id
+    )
+    if filters:
+        base = base.where(*filters)
+        count_stmt = count_stmt.where(*filters)
+
+    total = (await db.execute(count_stmt)).scalar_one()
+    rows = (
+        await db.execute(
+            base.order_by(UserSession.last_activity.desc()).offset(skip).limit(limit)
+        )
+    ).all()
+
+    response.headers["X-Total-Count"] = str(total)
+    return [
+        ActiveSessionResponse(
+            id=session.id,
+            session_id=session.session_id,
+            user_id=session.user_id,
+            email=user.email,
+            username=user.username,
+            name=user.name,
+            role=user.role,
+            device_label=session.device_label,
+            user_agent=session.user_agent,
+            ip_address=session.ip_address,
+            is_active=session.is_active,
+            last_activity=session.last_activity,
+            created_at=session.created_at,
+            expires_at=session.expires_at,
+        )
+        for session, user in rows
+    ]
+
+
+@router.delete("/sessions/{session_id}", response_model=ResponseModel)
+@limiter.limit(_GENERAL_LIMIT)
+async def revoke_active_session(
+    session_id: str,
+    request: Request,
+    current_user: User = Depends(get_current_admin_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Force a signed-in device out (Admin only)."""
+    session = (
+        await db.execute(
+            select(UserSession).where(UserSession.session_id == session_id)
+        )
+    ).scalar_one_or_none()
+    if session is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="ไม่พบ session ที่ระบุ",
+        )
+
+    session.is_active = False
+    await AuditService(db).log_action(
+        action="ADMIN_REVOKE_SESSION",
+        user_id=current_user.id,
+        details=(
+            f"Admin revoked session {session_id[:8]}… of user {session.user_id}"
+        ),
+        ip_address=get_real_client_ip(request),
+        user_agent=request.headers.get("user-agent"),
+    )
+    await db.commit()
+
+    return ResponseModel(
+        result="success",
+        message="ยกเลิก session ของอุปกรณ์นั้นแล้ว",
+        data={"session_id": session_id, "user_id": session.user_id},
     )
 
 

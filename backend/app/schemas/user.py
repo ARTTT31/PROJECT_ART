@@ -381,6 +381,25 @@ class UserTrashResponse(UserResponse):
     purge_at: datetime
 
 
+class ActiveSessionResponse(BaseModel):
+    """One signed-in device, joined to the account that owns it (admin view)."""
+
+    id: int
+    session_id: str
+    user_id: int
+    email: Optional[str] = None
+    username: Optional[str] = None
+    name: Optional[str] = None
+    role: str
+    device_label: Optional[str] = None
+    user_agent: Optional[str] = None
+    ip_address: Optional[str] = None
+    is_active: bool
+    last_activity: Optional[datetime] = None
+    created_at: Optional[datetime] = None
+    expires_at: Optional[datetime] = None
+
+
 class ExternalNotificationDispatchRequest(BaseModel):
     event_type: str = Field(..., pattern="^(oil_alert|market_alert|daily_summary)$")
     message: str = Field(..., min_length=1, max_length=2000)

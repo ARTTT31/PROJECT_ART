@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
+import ActiveSessionsCard from '@/components/Admin/ActiveSessionsCard';
 import { RegistrationPolicyCard } from '@/components/Admin/RegistrationPolicyCard';
 import PageAccessCard from '@/components/Admin/PageAccessCard';
 import UserManagement from '@/components/Admin/UserManagement';
@@ -167,6 +168,9 @@ export default function AdminPage() {
           ข้อมูลอัปเดตเมื่อเปิดหน้านี้ — กดรีเฟรชเพื่อดูใหม่
         </div>
       </section>
+
+      {/* ── Who is signed in right now ───────────────────────────── */}
+      <ActiveSessionsCard />
 
       {/* ── Pages open for the whole workspace ───────────────────── */}
       <PageAccessCard />

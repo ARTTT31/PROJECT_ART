@@ -690,3 +690,17 @@ password-reset email, remove it, and do the rest of the list.
 9. **Verification:** backend 565 passed at 82.3% (75% gate), flake8 and mypy clean (67 source
    files), `alembic upgrade head` + `alembic check` no drift on throwaway SQLite; frontend
    type-check, ESLint, 367 Vitest tests and `next build` clean.
+
+## Live Sessions Panel (November 9, 2026)
+
+1. **Admin visibility.** `GET /api/v1/users/sessions` returns every live session joined to its
+   account (name, email, role, device label, raw user agent, IP, last activity, expiry), with
+   search, pagination and an `X-Total-Count` header. `DELETE /api/v1/users/sessions/{id}` forces
+   one device out and writes an `ADMIN_REVOKE_SESSION` audit entry; both endpoints are admin-only.
+2. **Device labels.** The login page now stores "browser · OS" from the existing `parseUserAgent`
+   helper instead of just "Mobile"/"Desktop", and the admin card falls back to parsing the stored
+   user agent, so Google sign-ins and older rows still show a real device.
+3. **Admin UI.** `components/Admin/ActiveSessionsCard.tsx` lists the sessions on the admin page,
+   marks the viewer's own device, refreshes every 30 seconds and offers per-device sign-out.
+4. **Verification:** backend 570 passed at 82.4%, flake8/mypy clean, `alembic check` no drift;
+   frontend type-check, ESLint, 370 Vitest tests and `next build` clean.
