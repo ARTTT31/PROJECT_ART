@@ -19,12 +19,11 @@ function urlBase64ToUint8Array(base64String: string): BufferSource {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
   const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
   const rawData = window.atob(base64);
-  const buffer = new ArrayBuffer(rawData.length);
-  const outputArray = new Uint8Array(buffer);
+  const outputArray = new Uint8Array(rawData.length);
   for (let i = 0; i < rawData.length; ++i) {
     outputArray[i] = rawData.charCodeAt(i);
   }
-  return buffer;
+  return outputArray as unknown as BufferSource;
 }
 
 export function useWebPush(): UseWebPushReturn {
@@ -106,6 +105,14 @@ export function useWebPush(): UseWebPushReturn {
         const reg = await navigator.serviceWorker.ready;
         if (reg.pushManager) {
           let sub = await reg.pushManager.getSubscription();
+          if (sub && applicationServerKey) {
+            try {
+              await sub.unsubscribe();
+              sub = null;
+            } catch (unsubErr) {
+              console.warn('Could not reset stale push subscription:', unsubErr);
+            }
+          }
           if (!sub && applicationServerKey) {
             sub = await reg.pushManager.subscribe({
               userVisibleOnly: true,

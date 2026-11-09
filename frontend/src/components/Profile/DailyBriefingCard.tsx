@@ -101,7 +101,14 @@ export function DailyBriefingCard() {
         method: 'POST',
       });
       if (res.ok) {
-        const payload = (await res.json()) as { data?: { web_push_sent?: boolean; external_sent?: boolean } };
+        const payload = (await res.json()) as {
+          data?: {
+            web_push_sent?: boolean;
+            external_sent?: boolean;
+            title?: string;
+            body?: string;
+          };
+        };
         const data = payload?.data;
         hapticSuccess();
         if (data?.web_push_sent || data?.external_sent) {
@@ -109,6 +116,27 @@ export function DailyBriefingCard() {
           if (data.web_push_sent) channels.push('Web Push');
           if (data.external_sent) channels.push('LINE/Telegram');
           showToast(`ส่งสรุปทดสอบเรียบร้อย (${channels.join(', ')})`, 'success');
+        } else if (
+          typeof window !== 'undefined' &&
+          'serviceWorker' in navigator &&
+          Notification.permission === 'granted'
+        ) {
+          // Device has permission; display notification locally if server push was simulated
+          try {
+            const reg = await navigator.serviceWorker.ready;
+            await reg.showNotification(data?.title || '☀️ สรุปข้อมูลเช้านี้', {
+              body: data?.body || 'ไม่มีงานค้างในโน้ตด่วน พร้อมลุยวันใหม่!',
+              icon: '/icons/icon-192x192.png',
+              badge: '/icons/icon-192x192.png',
+              data: { url: '/dashboard' },
+            });
+            showToast('ส่งสรุปทดสอบเข้าอุปกรณ์เรียบร้อย', 'success');
+          } catch {
+            showToast(
+              'ส่งข้อมูลสำเร็จ แต่ยังไม่มีอุปกรณ์เปิดรับการแจ้งเตือน (กรุณาเปิดสวิตช์ Web Push บนมือถือ หรือตั้งค่า LINE/Telegram)',
+              'warning'
+            );
+          }
         } else {
           showToast(
             'ส่งข้อมูลสำเร็จ แต่ยังไม่มีอุปกรณ์เปิดรับการแจ้งเตือน (กรุณาเปิดสวิตช์ Web Push บนมือถือ หรือตั้งค่า LINE/Telegram)',
