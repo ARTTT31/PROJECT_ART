@@ -206,6 +206,19 @@ async def check_oil_prices_health(
     return status
 
 
+@router.post("/check-warning", response_model=dict)
+@limiter.limit(_GENERAL_LIMIT)
+async def trigger_fuel_warning_check(
+    request: Request,
+    force: bool = False,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Check Bangchak API for tomorrow's price changes and dispatch early warnings."""
+    from app.services.fuel_warning_service import dispatch_fuel_warning_if_changed
+    return await dispatch_fuel_warning_if_changed(db, force=force)
+
+
 @router.get("/oil-prices", response_model=dict)
 @limiter.limit(_GENERAL_LIMIT)
 async def get_oil_prices(

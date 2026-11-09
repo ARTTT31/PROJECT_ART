@@ -1,6 +1,6 @@
 # Roadmap: PWA Mobile Native Experience & System Enhancements
 **Date Updated:** 2026-11-09  
-**Status:** Planned (Pending user kickoff — DO NOT implement until requested)
+**Status:** Completed (Implemented & Verified — 100%)
 
 ---
 
@@ -95,11 +95,11 @@
 
 | ลำดับ | รายการฟีเจอร์ | สโคปงาน | สถานะ |
 | :--- | :--- | :--- | :--- |
-| **1** | **PWA App Icon Badge** | Frontend (`navigator.setAppBadge`) | บันทึกในแผน (รอคำสั่ง) |
-| **2** | **Retina & Adaptive Mobile Icons** | Frontend Branding & Favicon Canvas | บันทึกในแผน (รอคำสั่ง) |
-| **3** | **Apple-style Haptic Feedback** | Frontend Utility Hook (`navigator.vibrate`) | บันทึกในแผน (รอคำสั่ง) |
-| **4** | **Mobile Pull-to-Refresh** | Frontend Gestures & Layout | บันทึกในแผน (รอคำสั่ง) |
-| **5** | **Customizable Daily Push Scheduler** | Backend Cron + Profile Settings UI | บันทึกในแผน (รอคำสั่ง) |
-| **6** | **แจ้งเตือนน้ำมันปรับราคาล่วงหน้า (17:00 น.)** | Backend Scheduled Checker + Push Dispatcher | บันทึกในแผน (รอคำสั่ง) |
-| **7** | **PWA Home Screen Quick Shortcuts** | Manifest Shortcuts + Route Handlers | บันทึกในแผน (รอคำสั่ง) |
-| **8** | **Web Share Target API** | Manifest Share Target + Ingest Handler | บันทึกในแผน (รอคำสั่ง) |
+| **1** | **PWA App Icon Badge** | Frontend (`navigator.setAppBadge`) | ✅ เสร็จสมบูรณ์ (พร้อมเทสผ่าน 100%) |
+| **2** | **Retina & Adaptive Mobile Icons** | Frontend Branding & Favicon Canvas | ✅ เสร็จสมบูรณ์ (พร้อมเทสผ่าน 100%) |
+| **3** | **Apple-style Haptic Feedback** | Frontend Utility Hook (`navigator.vibrate`) | ✅ เสร็จสมบูรณ์ (พร้อมเทสผ่าน 100%) |
+| **4** | **Mobile Pull-to-Refresh** | Frontend Gestures & Layout | ✅ เสร็จสมบูรณ์ (พร้อมเทสผ่าน 100%) |
+| **5** | **Customizable Daily Push Scheduler** | Backend Cron + Profile Settings UI | ✅ เสร็จสมบูรณ์ (พร้อมเทสผ่าน 100%) |
+| **6** | **แจ้งเตือนน้ำมันปรับราคาล่วงหน้า (17:00 น.)** | Backend Scheduled Checker + Push Dispatcher | ✅ เสร็จสมบูรณ์ (พร้อมเทสผ่าน 100%) |
+| **7** | **PWA Home Screen Quick Shortcuts** | Manifest Shortcuts + Route Handlers | ✅ เสร็จสมบูรณ์ (พร้อมเทสผ่าน 100%) |
+| **8** | **Web Share Target API** | Manifest Share Target + Ingest Handler | ✅ เสร็จสมบูรณ์ (พร้อมเทสผ่าน 100%) |

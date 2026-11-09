@@ -47,6 +47,7 @@ import { playBellSound } from '@/utils/sound';
 import { appendHistory, syncHistoryToServer } from '@/lib/notifications/history';
 import { useAuth } from '@/hooks/useAuth';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
+import { setAppBadge, clearAppBadge } from '@/utils/appBadge';
 
 /*
  * Late-subscriber guarantee: when a second <NotificationBell/> (e.g. soft
@@ -487,6 +488,14 @@ export default function NotificationBell() {
   const unreadCount = useMemo(() => {
     return notifications.filter((n) => !readIds.has(n.id)).length;
   }, [notifications, readIds]);
+
+  useEffect(() => {
+    if (unreadCount > 0) {
+      void setAppBadge(unreadCount);
+    } else {
+      void clearAppBadge();
+    }
+  }, [unreadCount]);
 
   const markAllRead = () => {
     const allIds = new Set(notifications.map((n) => n.id));

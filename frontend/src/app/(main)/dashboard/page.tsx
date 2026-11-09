@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { SlidersHorizontal, RotateCcw, AlertTriangle } from 'lucide-react';
 import { WidgetConfig } from '@/types';
 import ErrorBoundary from '@/components/ErrorBoundary';
+import PullToRefresh from '@/components/Layout/PullToRefresh';
 import { getGreeting } from '@/utils/greeting';
 import { showConfirm } from '@/utils/sweetalert';
 import { usePageHeading } from '@/components/ui/PageHeader';
@@ -187,6 +188,7 @@ function SortableWidget({
   return (
     <div
       ref={setNodeRef}
+      data-widget-id={widget.id}
       style={style}
       className={`group relative min-w-0 self-stretch ${getColSpanClass(widget.w)}`}
     >
@@ -386,6 +388,30 @@ export default function DashboardPage() {
   const [greeting, setGreeting] = useState<string>(getGreeting);
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const action = params.get('action');
+    if (action === 'quick-note') {
+      setTimeout(() => {
+        const input = document.querySelector<HTMLInputElement>(
+          'input[placeholder*="โน้ต"], input[placeholder*="พิมพ์โน้ต"], input[aria-label*="โน้ต"]'
+        );
+        if (input) {
+          input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          input.focus();
+        }
+      }, 400);
+    } else if (action === 'oil-prices') {
+      setTimeout(() => {
+        const oilCard = document.querySelector('[data-widget-id="oilprice"]');
+        if (oilCard) {
+          oilCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 400);
+    }
+  }, []);
+
+  useEffect(() => {
     setGreeting(getGreeting());
     const timer = setInterval(() => {
       setGreeting(getGreeting());
@@ -422,7 +448,7 @@ export default function DashboardPage() {
   // ── Render ───────────────────────────────────────────────────────────────
 
   return (
-    <>
+    <PullToRefresh>
       {/* ── Apple HIG Hero Welcome Banner ───────────────────────────────── */}
       <section
         aria-label="การทักทายและสถานะประจำวัน"
@@ -643,6 +669,6 @@ export default function DashboardPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </>
+    </PullToRefresh>
   );
 }

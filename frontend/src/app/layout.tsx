@@ -34,9 +34,9 @@ export const metadata: Metadata = {
   // The workspace logo an admin uploads lives in the database, so the icon is
   // resolved by a route that returns a PNG (or the bundled mark as fallback).
   icons: {
-    icon: [{ url: '/branding-icon?size=192', sizes: '192x192', type: 'image/png' }],
+    icon: [{ url: '/branding-icon?size=192', sizes: '192x192', type: 'image/png' }, { url: '/branding-icon?size=512', sizes: '512x512', type: 'image/png' }],
     shortcut: '/branding-icon?size=192',
-    apple: [{ url: '/branding-icon?size=192', sizes: '192x192', type: 'image/png' }],
+    apple: [{ url: '/branding-icon?size=180&safe=1', sizes: '180x180', type: 'image/png' }, { url: '/branding-icon?size=192&safe=1', sizes: '192x192', type: 'image/png' }],
   },
   manifest: '/manifest.json',
   openGraph: {

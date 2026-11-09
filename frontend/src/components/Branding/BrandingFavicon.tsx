@@ -41,7 +41,9 @@ export function BrandingFavicon() {
 
     selectors.forEach((selector) => {
       document.head.querySelectorAll<HTMLLinkElement>(selector).forEach((link) => {
-        link.href = href;
+        link.href = link.rel.includes('apple-touch')
+          ? href.replace('size=192', 'size=180&safe=1')
+          : href;
       });
     });
   }, [brandLogoUrl]);

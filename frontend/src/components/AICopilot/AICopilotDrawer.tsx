@@ -74,6 +74,20 @@ export default function AICopilotDrawer() {
     }
   }, [isOpen, messages]);
 
+  useEffect(() => {
+    const handleOpen = () => setIsOpen(true);
+    window.addEventListener('copilot:open', handleOpen);
+
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('action') === 'copilot') {
+        setIsOpen(true);
+      }
+    }
+
+    return () => window.removeEventListener('copilot:open', handleOpen);
+  }, []);
+
   const executeAction = async (action: { type: string; data: Record<string, unknown> }) => {
     try {
       if (action.type === 'add_note') {

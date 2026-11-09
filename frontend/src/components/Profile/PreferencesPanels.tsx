@@ -2,6 +2,7 @@
 
 import BrandingCard from './BrandingCard';
 import CompanyHolidayCard from './CompanyHolidayCard';
+import DailyBriefingCard from './DailyBriefingCard';
 import DateFormatCard from './DateFormatCard';
 import ExternalNotificationCard from './ExternalNotificationCard';
 import MainMenuCard from './MainMenuCard';
@@ -59,6 +60,7 @@ export default function PreferencesPanels({
 
       <div hidden={section !== 'alerts'} className="space-y-5">
         <NotificationSettingsCard />
+        <DailyBriefingCard />
         <ExternalNotificationCard />
         <DateFormatCard />
       </div>

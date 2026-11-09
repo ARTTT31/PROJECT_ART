@@ -5,6 +5,7 @@ User Profile Endpoints
 import logging
 from datetime import datetime, timezone
 from typing import Any
+from pydantic import BaseModel, Field
 
 from fastapi import APIRouter, Depends, HTTPException, status, Request, UploadFile, File
 from fastapi.responses import JSONResponse
@@ -1118,6 +1119,61 @@ async def update_external_notifications(
         "result": "success",
         "message": "บันทึกการตั้งค่าการแจ้งเตือนภายนอกเรียบร้อยแล้ว",
         "data": data,
+    }
+
+
+class DailyBriefingUpdate(BaseModel):
+    enabled: bool = False
+    time: str = "07:30"
+    topics: dict[str, bool] = Field(default_factory=dict)
+
+
+@router.get("/daily-briefing")
+@limiter.limit(_GENERAL_LIMIT)
+async def get_daily_briefing_settings(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+):
+    from app.services.daily_briefing_service import get_user_briefing_config
+    return {
+        "result": "success",
+        "data": get_user_briefing_config(current_user),
+    }
+
+
+@router.put("/daily-briefing")
+@limiter.limit(_GENERAL_LIMIT)
+async def update_daily_briefing_settings(
+    request: Request,
+    payload: DailyBriefingUpdate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    from app.services.daily_briefing_service import set_user_briefing_config, get_user_briefing_config
+    set_user_briefing_config(current_user, payload.model_dump())
+    db.add(current_user)
+    await db.commit()
+    await db.refresh(current_user)
+    return {
+        "result": "success",
+        "message": "บันทึกการตั้งค่าสรุปประจำวันเรียบร้อยแล้ว",
+        "data": get_user_briefing_config(current_user),
+    }
+
+
+@router.post("/daily-briefing/test")
+@limiter.limit(_GENERAL_LIMIT)
+async def test_daily_briefing(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    from app.services.daily_briefing_service import dispatch_user_briefing
+    result = await dispatch_user_briefing(db, current_user)
+    return {
+        "result": "success",
+        "message": "ส่งสรุปประจำวันทดสอบเรียบร้อยแล้ว",
+        "data": result,
     }
 
 

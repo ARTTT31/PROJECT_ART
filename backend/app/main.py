@@ -154,17 +154,27 @@ async def _session_cleanup_loop(interval_hours: int) -> None:
             logger.warning("Scheduled session cleanup failed: %s", exc)
 
 
-async def _notification_scheduler_loop(check_interval_seconds: int = 1800) -> None:
-    """Periodically check and dispatch scheduled external notifications (daily digest, market summary)."""
+async def _notification_scheduler_loop(check_interval_seconds: int = 60) -> None:
+    """Periodically check and dispatch scheduled notifications (daily briefings, fuel price warning, market summary)."""
     from app.services.notification_dispatcher import dispatch_event_notifications
     last_dispatched_hour: dict[str, int] = {}
+    last_dispatched_minute: dict[str, str] = {}
 
     while True:
         await asyncio.sleep(check_interval_seconds)
         try:
             now = time.localtime()
             current_hour = now.tm_hour
-            # Morning daily digest at 08:00
+            current_time_hhmm = f"{current_hour:02d}:{now.tm_min:02d}"
+
+            # 1. User-scheduled customizable daily briefings
+            if last_dispatched_minute.get("briefing") != current_time_hhmm:
+                async with SessionLocal() as db:
+                    from app.services.daily_briefing_service import dispatch_scheduled_briefings
+                    await dispatch_scheduled_briefings(db, current_time_hhmm)
+                last_dispatched_minute["briefing"] = current_time_hhmm
+
+            # 2. Morning broadcast daily digest at 08:00
             if current_hour == 8 and last_dispatched_hour.get("daily_summary") != current_hour:
                 async with SessionLocal() as db:
                     await dispatch_event_notifications(
@@ -172,7 +182,14 @@ async def _notification_scheduler_loop(check_interval_seconds: int = 1800) -> No
                     )
                 last_dispatched_hour["daily_summary"] = current_hour
 
-            # Evening market summary at 17:00
+            # 3. Fuel price change early warning check at 17:00 & 17:30
+            if current_hour in (17, 18) and last_dispatched_hour.get("fuel_warning") != current_hour:
+                async with SessionLocal() as db:
+                    from app.services.fuel_warning_service import dispatch_fuel_warning_if_changed
+                    await dispatch_fuel_warning_if_changed(db)
+                last_dispatched_hour["fuel_warning"] = current_hour
+
+            # 4. Evening market summary at 17:00
             if current_hour == 17 and last_dispatched_hour.get("market_alert") != current_hour:
                 async with SessionLocal() as db:
                     await dispatch_event_notifications(

@@ -283,6 +283,12 @@ async def test_brand_logo_icon_returns_png_for_favicon(client, logged_in_admin_u
     with Image.open(io.BytesIO(icon.content)) as rendered:
         assert rendered.size == (192, 192)
 
+    icon_safe = await client.get("/api/v1/system/branding/logo.png?size=192&safe=true")
+    assert icon_safe.status_code == 200, icon_safe.text
+    assert icon_safe.headers["content-type"] == "image/png"
+    with Image.open(io.BytesIO(icon_safe.content)) as rendered:
+        assert rendered.size == (192, 192)
+
 
 @pytest.mark.asyncio
 async def test_brand_logo_icon_is_404_when_no_logo_is_set(client):

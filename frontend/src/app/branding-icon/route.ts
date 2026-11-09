@@ -25,7 +25,9 @@ function parseSize(value: string | null): number {
 }
 
 export async function GET(request: Request) {
-  const size = parseSize(new URL(request.url).searchParams.get('size'));
+  const url = new URL(request.url);
+  const size = parseSize(url.searchParams.get('size'));
+  const isSafe = url.searchParams.get('safe') === '1' || url.searchParams.get('maskable') === '1';
 
   let hasLogo = false;
   try {
@@ -41,7 +43,7 @@ export async function GET(request: Request) {
   // Both targets are same-origin: the API path is proxied by the Next rewrite,
   // which keeps the icon usable as a manifest icon as well.
   const target = hasLogo
-    ? `/api/v1/system/branding/logo.png?size=${size}`
+    ? `/api/v1/system/branding/logo.png?size=${size}${isSafe ? '&safe=1' : ''}`
     : size >= MAX_SIZE
       ? '/app-icon-512.png'
       : '/app-icon-192.png';

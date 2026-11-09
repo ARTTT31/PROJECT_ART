@@ -11,7 +11,7 @@ from typing import Optional
 
 import psutil
 from PIL import Image
-from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile, status
 from fastapi.responses import RedirectResponse, Response
 from pydantic import BaseModel
 from sqlalchemy import select, text
@@ -280,6 +280,7 @@ async def update_branding(
 @router.get("/branding/logo.png")
 async def get_branding_logo_icon(
     size: int = 192,
+    safe: bool = Query(False),
     db: AsyncSession = Depends(get_db),
 ):
     """Serve the workspace logo as a real PNG.
@@ -306,7 +307,14 @@ async def get_branding_logo_icon(
         encoded = stored.split(",", 1)[1]
         with Image.open(io.BytesIO(base64.b64decode(encoded))) as source:
             image = source.convert("RGBA")
-            image.thumbnail((target, target))
+            if safe:
+                inner = max(16, int(target * 0.72))
+                image.thumbnail((inner, inner))
+                canvas = Image.new("RGBA", (target, target), (0, 0, 0, 0))
+                canvas.paste(image, ((target - image.width) // 2, (target - image.height) // 2), image)
+                image = canvas
+            else:
+                image.thumbnail((target, target))
             buffer = io.BytesIO()
             image.save(buffer, format="PNG", optimize=True)
     except Exception:

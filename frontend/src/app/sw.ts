@@ -72,11 +72,31 @@ self.addEventListener('push', (event: PushEvent) => {
     }
   }
 
-  event.waitUntil(self.registration.showNotification(title, options));
+  event.waitUntil(
+    (async () => {
+      if ('setAppBadge' in self.navigator) {
+        try {
+          const badgeCount =
+            event.data && typeof event.data.json === 'function'
+              ? (event.data.json()?.badgeCount ?? 1)
+              : 1;
+          await (self.navigator as unknown as { setAppBadge: (c?: number) => Promise<void> }).setAppBadge(badgeCount);
+        } catch {
+          // Badging may fail gracefully
+        }
+      }
+      await self.registration.showNotification(title, options);
+    })()
+  );
 });
 
 self.addEventListener('notificationclick', (event: NotificationEvent) => {
   event.notification.close();
+  if ('clearAppBadge' in self.navigator) {
+    try {
+      void (self.navigator as unknown as { clearAppBadge: () => Promise<void> }).clearAppBadge();
+    } catch {}
+  }
   const targetUrl = (event.notification.data as { url?: string } | undefined)?.url || '/dashboard';
 
   event.waitUntil(

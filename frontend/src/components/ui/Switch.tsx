@@ -1,5 +1,7 @@
 'use client';
 
+import { hapticTap } from '@/utils/haptics';
+
 interface SwitchProps {
   checked: boolean;
   onChange: (checked: boolean) => void;
@@ -23,7 +25,10 @@ export function Switch({ checked, onChange, label, disabled = false, id, classNa
       aria-checked={checked}
       aria-label={label}
       disabled={disabled}
-      onClick={() => onChange(!checked)}
+      onClick={() => {
+        hapticTap();
+        onChange(!checked);
+      }}
       className={[
         // `small-control` opts out of the global 24×44px button target in
         // globals.css; that rule also sets `justify-content: center`, which

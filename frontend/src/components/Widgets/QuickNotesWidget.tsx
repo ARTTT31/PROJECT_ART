@@ -14,6 +14,7 @@ import {
 } from '@/lib/offline/localStore';
 import { useOnlineStatus } from '@/lib/offline/useOnlineStatus';
 import { readUserCookie } from '@/lib/api/userCookie';
+import { hapticTap, hapticSuccess } from '@/utils/haptics';
 
 // Mirrors the backend caps (app/schemas/user.py) so a hopeless save is refused
 // before it leaves the browser.
@@ -291,6 +292,7 @@ export default function QuickNotesWidget({
       return;
     }
     setDraft('');
+    hapticSuccess();
     update([
       ...latestRef.current,
       { id: newId(), text: text.slice(0, MAX_NOTE_LENGTH), done: false },
@@ -301,12 +303,14 @@ export default function QuickNotesWidget({
   };
 
   const toggleNote = (id: string) => {
+    hapticTap();
     update(
       latestRef.current.map((note) => (note.id === id ? { ...note, done: !note.done } : note)),
     );
   };
 
   const removeNote = (id: string) => {
+    hapticTap();
     if (editing?.id === id) setEditing(null);
     update(latestRef.current.filter((note) => note.id !== id));
   };
