@@ -1,7 +1,28 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { SlidersHorizontal, RotateCcw, AlertTriangle } from 'lucide-react';
+import {
+  AlertTriangle,
+  ArrowLeftRight,
+  CalendarDays,
+  CalendarHeart,
+  Calculator,
+  ChevronDown,
+  CloudSun,
+  Fuel,
+  QrCode,
+  RotateCcw,
+  Search,
+  SlidersHorizontal,
+  Sparkles,
+  Star,
+  StickyNote,
+  Timer,
+  TrendingUp,
+  Wallet,
+  X,
+  type LucideIcon,
+} from 'lucide-react';
 import { WidgetConfig } from '@/types';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import PullToRefresh from '@/components/Layout/PullToRefresh';
@@ -106,6 +127,34 @@ const DailyDigestWidget = dynamic(() => import('@/components/Widgets/DailyDigest
 import { useDashboardLayout, widgetNames, widgetDescriptions, DASHBOARD_VIEWS, VIEW_WIDGET_PRESETS, ROLE_PRESETS } from '@/hooks/useDashboardLayout';
 import { useI18n } from '@/lib/i18n/I18nProvider';
 import { WIDGET_DESCRIPTION_KEYS, WIDGET_NAME_KEYS } from '@/lib/i18n/messages';
+
+// ── Widget manager metadata ──────────────────────────────────────────────────
+// Grouping and icons exist only for the manager dialog: with thirteen widgets a
+// flat list forced a long, hard-to-scan scroll. Order here is the order shown.
+
+type WidgetGroupId = 'daily' | 'work' | 'finance';
+
+const WIDGET_GROUPS: Array<{ id: WidgetGroupId; label: string }> = [
+  { id: 'daily', label: 'ข้อมูลประจำวัน' },
+  { id: 'work', label: 'งานและเวลา' },
+  { id: 'finance', label: 'การเงิน & ตลาด' },
+];
+
+const WIDGET_META: Record<string, { icon: LucideIcon; group: WidgetGroupId }> = {
+  digest: { icon: Sparkles, group: 'daily' },
+  weather: { icon: CloudSun, group: 'daily' },
+  oilprice: { icon: Fuel, group: 'daily' },
+  holidays: { icon: CalendarHeart, group: 'daily' },
+  notes: { icon: StickyNote, group: 'work' },
+  calendar: { icon: CalendarDays, group: 'work' },
+  focustimer: { icon: Timer, group: 'work' },
+  calc: { icon: Calculator, group: 'work' },
+  qrcode: { icon: QrCode, group: 'work' },
+  market: { icon: TrendingUp, group: 'finance' },
+  finance: { icon: Wallet, group: 'finance' },
+  watchlist: { icon: Star, group: 'finance' },
+  converter: { icon: ArrowLeftRight, group: 'finance' },
+};
 
 // ── Col-span helper ──────────────────────────────────────────────────────────
 
@@ -387,6 +436,17 @@ export default function DashboardPage() {
 
   const [showConfigModal, setShowConfigModal] = useState(false);
   const [greeting, setGreeting] = useState<string>(getGreeting);
+  const [widgetQuery, setWidgetQuery] = useState('');
+  const [showPresets, setShowPresets] = useState(false);
+
+  const normalizedWidgetQuery = widgetQuery.trim().toLowerCase();
+  const filteredWidgets = defaultWidgets.filter((widget) => {
+    if (widget.id === 'syshealth' && user?.role !== 'admin') return false;
+    if (!normalizedWidgetQuery) return true;
+    return `${widgetLabel(widget.id)} ${widgetDescription(widget.id)} ${widget.id}`
+      .toLowerCase()
+      .includes(normalizedWidgetQuery);
+  });
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -536,8 +596,17 @@ export default function DashboardPage() {
       </DndContext>
 
       {/* ── Widget manager modal ─────────────────────────────────────────── */}
-      <Dialog open={showConfigModal} onOpenChange={setShowConfigModal}>
-        <DialogContent className="max-w-md">
+      <Dialog
+        open={showConfigModal}
+        onOpenChange={(open) => {
+          setShowConfigModal(open);
+          if (!open) {
+            setWidgetQuery('');
+            setShowPresets(false);
+          }
+        }}
+      >
+        <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>การแสดงผลวิดเจ็ต</DialogTitle>
             <DialogDescription>
@@ -545,106 +614,179 @@ export default function DashboardPage() {
             </DialogDescription>
           </DialogHeader>
 
-          <DialogBody className="space-y-4">
-            {/* 1-Click Role Presets */}
-            <div>
-              <div className="mb-2 px-1">
-                <span className="text-[12px] font-bold text-[var(--ink-secondary)]">
-                  แม่แบบจัดหน้าตามสายงาน (Role Presets)
-                </span>
-                <p className="text-[11px] text-[var(--ink-muted)]">
-                  เลือกแม่แบบเพื่อจัดเรียงและเปิดใช้วิดเจ็ตที่เกี่ยวข้องใน 1 คลิก
-                </p>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                {ROLE_PRESETS.map((preset) => (
+          <DialogBody className="space-y-3">
+            {/* Sticky search: the list scrolls under it, so finding a widget
+                never means scanning the whole set. */}
+            <div className="sticky top-0 z-10 -mx-6 -mt-4 bg-[var(--surface)] px-6 pb-2 pt-4">
+              <div className="relative">
+                <Search
+                  size={15}
+                  aria-hidden="true"
+                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--ink-tertiary)]"
+                />
+                <input
+                  type="search"
+                  value={widgetQuery}
+                  onChange={(event) => setWidgetQuery(event.target.value)}
+                  placeholder="ค้นหาวิดเจ็ต เช่น น้ำมัน, ปฏิทิน, SET"
+                  aria-label="ค้นหาวิดเจ็ต"
+                  className="h-10 w-full rounded-[11px] border border-[var(--hairline)] bg-[var(--surface-grouped)] pl-9 pr-9 text-[13px] text-[var(--ink)] placeholder:text-[var(--ink-tertiary)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)] [&::-webkit-search-cancel-button]:hidden"
+                />
+                {widgetQuery && (
                   <button
-                    key={preset.id}
                     type="button"
-                    onClick={() => applyRolePreset(preset.id)}
-                    className="flex flex-col items-start gap-1 rounded-[14px] border border-[var(--hairline)] bg-[var(--surface)] p-2.5 text-left transition-all hover:bg-[var(--surface-grouped)] hover:border-[var(--accent)] active:scale-[0.97]"
+                    onClick={() => setWidgetQuery('')}
+                    aria-label="ล้างคำค้นหา"
+                    className="absolute right-1.5 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-[var(--ink-tertiary)] transition-colors hover:bg-[var(--surface-chip)] hover:text-[var(--ink)] active:scale-[0.95]"
                   >
-                    <span className="text-[12px] font-bold text-[var(--ink)]">
-                      {preset.label}
-                    </span>
-                    <span className="line-clamp-1 text-[10px] text-[var(--ink-muted)]">
-                      {preset.description}
-                    </span>
+                    <X size={14} aria-hidden="true" />
                   </button>
-                ))}
+                )}
               </div>
             </div>
 
-            {/* Individual Widget Switches */}
-            <div>
-              <div className="mb-2 px-1">
-                <span className="text-[12px] font-bold text-[var(--ink-secondary)]">
-                  เลือกเปิด-ปิดวิดเจ็ตรายตัว
+            {/* Role presets stay one tap away but collapsed by default, so the
+                widget list gets the modal's height first. */}
+            <div className="space-y-2">
+              <button
+                type="button"
+                onClick={() => setShowPresets((open) => !open)}
+                aria-expanded={showPresets}
+                className="flex w-full items-center gap-2 rounded-[11px] border border-[var(--hairline)] bg-[var(--surface-grouped)] px-3 py-2.5 text-left transition-colors hover:bg-[var(--surface-chip)] active:scale-[0.99]"
+              >
+                <Sparkles size={15} aria-hidden="true" className="text-[var(--accent-text)]" />
+                <span className="flex-1 text-[12px] font-semibold text-[var(--ink-secondary)]">
+                  แม่แบบจัดหน้าตามสายงาน
                 </span>
-              </div>
-              <div className="rounded-[18px] bg-[var(--surface-grouped)] p-2 space-y-1.5">
-              {defaultWidgets
-                .filter((widget) => widget.id !== 'syshealth' || user?.role === 'admin')
-                .map((widget) => {
-                  const isVisible = visibleWidgetIds.includes(widget.id);
-                  const isLocked = isVisible && visibleWidgetIds.length <= 1;
-                  return (
-                    <div
-                      key={widget.id}
-                      className={`flex items-center gap-3 rounded-[14px] p-3.5 transition-all duration-150 ${
-                        isVisible
-                          ? 'bg-[var(--surface)] shadow-xs ring-1 ring-[var(--hairline)]'
-                          : 'hover:bg-[var(--glass-80)]'
-                      }`}
-                    >
-                      <div className="min-w-0 flex-1">
-                        <span className="block truncate text-[14px] font-semibold text-[var(--ink)]">
-                          {widgetLabel(widget.id)}
-                        </span>
-                        <span className="mt-0.5 block text-[12px] leading-[1.4] text-[var(--ink-muted)]">
-                          {widgetDescription(widget.id)}
-                        </span>
-                      </div>
+                <span className="text-[11px] text-[var(--ink-tertiary)]">
+                  {ROLE_PRESETS.length} แบบ
+                </span>
+                <ChevronDown
+                  size={15}
+                  aria-hidden="true"
+                  className={`text-[var(--ink-tertiary)] transition-transform duration-200 ${
+                    showPresets ? 'rotate-180' : ''
+                  }`}
+                />
+              </button>
 
-                      {/* Custom Apple-style Toggle Switch */}
-                      <button
-                        type="button"
-                        role="switch"
-                        aria-checked={isVisible}
-                        disabled={isLocked}
-                        onClick={() => toggleWidgetVisibility(widget.id)}
-                        style={{
-                          width: '44px',
-                          height: '28px',
-                          minWidth: '44px',
-                          minHeight: '28px',
-                          padding: '2px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'flex-start',
-                        }}
-                        className={`relative shrink-0 cursor-pointer rounded-full transition-colors duration-200 ease-in-out focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 disabled:cursor-not-allowed ${
-                          isLocked ? 'opacity-50' : ''
-                        } ${isVisible ? 'bg-[var(--accent)]' : 'bg-[var(--surface-chip)]'}`}
-                      >
-                        <span className="sr-only">
-                          {t('dashboard.toggleWidget', { name: widgetLabel(widget.id) })}
-                        </span>
-                        <span
-                          aria-hidden="true"
-                          style={{
-                            width: '24px',
-                            height: '24px',
-                            transform: isVisible ? 'translateX(16px)' : 'translateX(0px)',
-                          }}
-                          className="pointer-events-none inline-block rounded-full bg-[var(--surface)] shadow-[0_2px_4px_rgba(0,0,0,0.15),0_0_1px_rgba(0,0,0,0.1)] transition-transform duration-200 ease-in-out"
-                        />
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
+              {showPresets && (
+                <div className="grid grid-cols-2 gap-2">
+                  {ROLE_PRESETS.map((preset) => (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      onClick={() => applyRolePreset(preset.id)}
+                      title={preset.description}
+                      className="flex flex-col items-start gap-1 rounded-[11px] border border-[var(--hairline)] bg-[var(--surface)] p-2.5 text-left transition-colors hover:border-[var(--accent-border)] hover:bg-[var(--surface-grouped)] active:scale-[0.97]"
+                    >
+                      <span className="text-[12px] font-bold text-[var(--ink)]">{preset.label}</span>
+                      <span className="line-clamp-1 text-[10px] text-[var(--ink-muted)]">
+                        {preset.description}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
+
+            {filteredWidgets.length === 0 ? (
+              <div className="rounded-[14px] border border-dashed border-[var(--hairline-strong)] px-4 py-8 text-center">
+                <p className="text-[13px] font-semibold text-[var(--ink)]">
+                  ไม่พบวิดเจ็ตที่ตรงกับ “{widgetQuery.trim()}”
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setWidgetQuery('')}
+                  className="mt-2 text-[12px] font-semibold text-[var(--accent-text)] active:scale-[0.95]"
+                >
+                  ล้างคำค้นหา
+                </button>
+              </div>
+            ) : (
+              WIDGET_GROUPS.map((group) => {
+                const groupWidgets = filteredWidgets.filter(
+                  (widget) => (WIDGET_META[widget.id]?.group ?? 'work') === group.id,
+                );
+                if (groupWidgets.length === 0) return null;
+                const enabledCount = groupWidgets.filter((widget) =>
+                  visibleWidgetIds.includes(widget.id),
+                ).length;
+
+                return (
+                  <section key={group.id} className="space-y-2">
+                    <div className="flex items-center justify-between px-1">
+                      <h3 className="text-[11px] font-bold uppercase tracking-wider text-[var(--ink-tertiary)]">
+                        {group.label}
+                      </h3>
+                      <span className="text-[11px] tabular-nums text-[var(--ink-tertiary)]">
+                        {enabledCount}/{groupWidgets.length}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                      {groupWidgets.map((widget) => {
+                        const isVisible = visibleWidgetIds.includes(widget.id);
+                        const isLocked = isVisible && visibleWidgetIds.length <= 1;
+                        const Icon = WIDGET_META[widget.id]?.icon ?? Sparkles;
+
+                        return (
+                          <button
+                            key={widget.id}
+                            type="button"
+                            role="switch"
+                            aria-checked={isVisible}
+                            disabled={isLocked}
+                            onClick={() => toggleWidgetVisibility(widget.id)}
+                            title={isLocked ? 'ต้องเปิดอย่างน้อย 1 วิดเจ็ต' : undefined}
+                            className={`flex items-start gap-2.5 rounded-[14px] border p-3 text-left transition-colors duration-150 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent-ring)] ${
+                              isVisible
+                                ? 'border-[var(--accent-border)] bg-[var(--accent-soft-weak)]'
+                                : 'border-[var(--hairline)] bg-[var(--surface)] hover:border-[var(--hairline-strong)] hover:bg-[var(--surface-grouped)]'
+                            }`}
+                          >
+                            <span
+                              aria-hidden="true"
+                              className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-[9px] ${
+                                isVisible
+                                  ? 'bg-[var(--accent-soft)] text-[var(--accent-text)]'
+                                  : 'bg-[var(--surface-grouped)] text-[var(--ink-tertiary)]'
+                              }`}
+                            >
+                              <Icon size={15} />
+                            </span>
+
+                            <span className="min-w-0 flex-1">
+                              <span className="block text-[13px] font-semibold leading-tight text-[var(--ink)]">
+                                {widgetLabel(widget.id)}
+                              </span>
+                              <span className="mt-1 block line-clamp-2 text-[11px] leading-snug text-[var(--ink-muted)]">
+                                {widgetDescription(widget.id)}
+                              </span>
+                            </span>
+
+                            {/* The whole card is the switch, so the target is
+                                never a 44px hit area in a long list. */}
+                            <span
+                              aria-hidden="true"
+                              className={`mt-0.5 flex h-[22px] w-[36px] shrink-0 items-center rounded-full p-0.5 transition-colors duration-200 ${
+                                isVisible ? 'bg-[var(--accent)]' : 'bg-[var(--surface-chip)]'
+                              }`}
+                            >
+                              <span
+                                className={`h-[18px] w-[18px] rounded-full bg-[var(--surface)] shadow-[0_1px_3px_rgba(0,0,0,0.2)] transition-transform duration-200 ${
+                                  isVisible ? 'translate-x-[14px]' : 'translate-x-0'
+                                }`}
+                              />
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </section>
+                );
+              })
+            )}
           </DialogBody>
 
           <DialogFooter className="flex flex-row items-center justify-between">

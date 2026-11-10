@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.rate_limit import get_real_client_ip, limiter
-from app.core.utils import utcnow
+from app.core.utils import as_utc, utcnow
 from app.models.session import UserSession
 from app.schemas.user import (
     ActiveSessionResponse,
@@ -337,9 +337,9 @@ async def list_active_sessions(
             user_agent=session.user_agent,
             ip_address=session.ip_address,
             is_active=session.is_active,
-            last_activity=session.last_activity,
-            created_at=session.created_at,
-            expires_at=session.expires_at,
+            last_activity=as_utc(session.last_activity),
+            created_at=as_utc(session.created_at),
+            expires_at=as_utc(session.expires_at),
         )
         for session, user in rows
     ]

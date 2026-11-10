@@ -70,3 +70,15 @@ async def test_user_list_reports_active_sessions(client, logged_in_admin_user):
 async def test_revoke_unknown_session_returns_404(client, logged_in_admin_user):
     resp = await client.delete("/api/v1/users/sessions/does-not-exist")
     assert resp.status_code == 404
+
+
+async def test_session_timestamps_carry_their_utc_offset(client, logged_in_admin_user):
+    """Without an offset the browser reads UTC as local time (7 hours off in TH)."""
+    admin_rows = (await client.get("/api/v1/users/sessions")).json()
+    own_rows = (await client.get("/api/v1/profile/sessions")).json()["data"]
+
+    for row in [*admin_rows, *own_rows]:
+        for field in ("last_activity", "created_at"):
+            value = row[field]
+            if value:
+                assert value.endswith(("+00:00", "Z")), f"{field} must be UTC: {value}"

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Bookmark, Check, Info, Layers, Link2, Palette } from 'lucide-react';
+import { Bookmark, Check, ChevronDown, Info, Layers, Link2, Palette } from 'lucide-react';
 import {
   Dialog,
   DialogBody,
@@ -68,6 +68,9 @@ export function QuickLinkDialog({ open, onOpenChange, link, onSubmit }: QuickLin
   const [devUrl, setDevUrl] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [iconTab, setIconTab] = useState<'all' | 'general' | 'brand'>('all');
+  // The two environment links are optional and used by a minority of links,
+  // so they start folded unless this link already has one.
+  const [showEnvs, setShowEnvs] = useState(false);
 
   // Reset the form each time the dialog opens (or the edited link changes).
   useEffect(() => {
@@ -78,6 +81,7 @@ export function QuickLinkDialog({ open, onOpenChange, link, onSubmit }: QuickLin
     setColor(link?.color || '#0066cc');
     setStagingUrl(link?.envs?.staging ?? '');
     setDevUrl(link?.envs?.development ?? '');
+    setShowEnvs(Boolean(link?.envs?.staging || link?.envs?.development));
   }, [open, link]);
 
   const previewMeta = useMemo(() => describeQuickLink(url), [url]);
@@ -137,7 +141,9 @@ export function QuickLinkDialog({ open, onOpenChange, link, onSubmit }: QuickLin
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg w-[calc(100%-2rem)] mx-auto max-h-[90vh] overflow-y-auto">
+      {/* Only the body scrolls: the header and the save buttons stay visible no
+          matter how many icon/colour options are on screen. */}
+      <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>{link ? 'แก้ไขควิกลิ้งค์' : 'สร้างควิกลิ้งค์ใหม่'}</DialogTitle>
           <DialogDescription>
@@ -149,14 +155,11 @@ export function QuickLinkDialog({ open, onOpenChange, link, onSubmit }: QuickLin
 
         <form onSubmit={handleSubmit}>
           <DialogBody className="space-y-4">
-            {/* Preview card */}
-            <div className="rounded-[18px] bg-[var(--surface-grouped)] p-3.5 ring-1 ring-[var(--hairline)]">
-              <div className="text-[11px] font-bold uppercase tracking-wider text-[var(--ink-tertiary)] mb-2">
-                ตัวอย่างการแสดงผล
-              </div>
-              <div className="flex items-center gap-3 rounded-[18px] bg-[var(--surface)] p-3 ring-1 ring-[var(--hairline)]">
+            {/* Live preview: the row itself is the preview, so it needs no
+                wrapper heading taking up height in a scrollable dialog. */}
+            <div className="flex items-center gap-3 rounded-[14px] border border-[var(--hairline)] bg-[var(--surface-grouped)] p-2.5">
                 <div
-                  className="flex h-10 w-10 items-center justify-center rounded-[14px]"
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px]"
                   style={{ backgroundColor: `${color}15` }}
                 >
                   <PreviewIcon size={17} aria-hidden="true" style={{ color }} />
@@ -180,7 +183,6 @@ export function QuickLinkDialog({ open, onOpenChange, link, onSubmit }: QuickLin
                 >
                   {previewMeta.tone}
                 </span>
-              </div>
             </div>
 
             {/* Label + URL */}
@@ -203,22 +205,50 @@ export function QuickLinkDialog({ open, onOpenChange, link, onSubmit }: QuickLin
                 icon={<Link2 size={16} aria-hidden="true" />}
                 required
               />
-              <InsetField
-                id="ql-staging"
-                label="Staging URL (ไม่บังคับ)"
-                value={stagingUrl}
-                onChange={setStagingUrl}
-                placeholder="https://staging.example.com"
-                icon={<Layers size={16} aria-hidden="true" />}
-              />
-              <InsetField
-                id="ql-dev"
-                label="Dev URL (ไม่บังคับ)"
-                value={devUrl}
-                onChange={setDevUrl}
-                placeholder="https://dev.example.com"
-                icon={<Layers size={16} aria-hidden="true" />}
-              />
+              <div className="rounded-[14px] border border-[var(--hairline)]">
+                <button
+                  type="button"
+                  onClick={() => setShowEnvs((shown) => !shown)}
+                  aria-expanded={showEnvs}
+                  className="flex w-full items-center gap-2 rounded-[14px] px-3 py-2.5 text-left transition-colors hover:bg-[var(--surface-grouped)] active:scale-[0.99]"
+                >
+                  <Layers size={15} aria-hidden="true" className="text-[var(--ink-tertiary)]" />
+                  <span className="flex-1 text-[12px] font-semibold text-[var(--ink-secondary)]">
+                    ลิงก์สภาพแวดล้อม (Staging / Dev)
+                  </span>
+                  <span className="text-[11px] text-[var(--ink-tertiary)]">
+                    {stagingUrl.trim() || devUrl.trim() ? 'ตั้งค่าแล้ว' : 'ไม่บังคับ'}
+                  </span>
+                  <ChevronDown
+                    size={15}
+                    aria-hidden="true"
+                    className={`text-[var(--ink-tertiary)] transition-transform duration-200 ${
+                      showEnvs ? 'rotate-180' : ''
+                    }`}
+                  />
+                </button>
+
+                {showEnvs && (
+                  <div className="space-y-3 border-t border-[var(--hairline-soft)] p-3">
+                    <InsetField
+                      id="ql-staging"
+                      label="Staging URL"
+                      value={stagingUrl}
+                      onChange={setStagingUrl}
+                      placeholder="https://staging.example.com"
+                      icon={<Layers size={16} aria-hidden="true" />}
+                    />
+                    <InsetField
+                      id="ql-dev"
+                      label="Dev URL"
+                      value={devUrl}
+                      onChange={setDevUrl}
+                      placeholder="https://dev.example.com"
+                      icon={<Layers size={16} aria-hidden="true" />}
+                    />
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Icon Picker (with scroll container and category tabs) */}
@@ -267,8 +297,8 @@ export function QuickLinkDialog({ open, onOpenChange, link, onSubmit }: QuickLin
                   </button>
                 </div>
               </div>
-              <div className="rounded-[18px] bg-[var(--surface-subtle)] p-2 ring-1 ring-[var(--hairline)] max-h-44 overflow-y-auto">
-                <div className="grid grid-cols-6 sm:grid-cols-8 gap-1.5">
+              <div className="max-h-44 overflow-y-auto rounded-[14px] border border-[var(--hairline)] bg-[var(--surface-subtle)] p-2">
+                <div className="grid grid-cols-6 gap-2 sm:grid-cols-8">
                   {filteredOptions.map((option) => {
                     const OptionIcon = QUICK_LINK_ICON_MAP[option.key];
                     const active = icon === option.key;
@@ -285,14 +315,14 @@ export function QuickLinkDialog({ open, onOpenChange, link, onSubmit }: QuickLin
                         title={option.label}
                         aria-label={option.label}
                         className={[
-                          'relative flex h-9 w-9 items-center justify-center rounded-[14px] transition-all duration-150 active:scale-[0.95]',
+                          'relative flex h-10 w-10 items-center justify-center rounded-[12px] transition-all duration-150 active:scale-[0.95]',
                           active
                             ? 'bg-[var(--surface)] shadow-xs ring-2 ring-[var(--accent)]'
                             : 'bg-[var(--glass-60)] hover:bg-[var(--surface)] ring-1 ring-[var(--hairline)] hover:ring-[var(--hairline)]',
                         ].join(' ')}
                       >
                         <OptionIcon
-                          size={16}
+                          size={17}
                           aria-hidden="true"
                           className={active ? 'text-[var(--accent-text)]' : 'text-slate-500'}
                         />
@@ -351,26 +381,24 @@ export function QuickLinkDialog({ open, onOpenChange, link, onSubmit }: QuickLin
               </div>
             </div>
 
-            {/* Validation Hint */}
-            <div className="flex items-start gap-2 rounded-[18px] bg-slate-50 p-3 text-[11px] text-[var(--ink-muted)] ring-1 ring-slate-200/60 leading-relaxed">
-              <Info size={13} className="mt-0.5 shrink-0 text-slate-400" aria-hidden="true" />
-              <div>
-                <strong className="font-bold text-[var(--ink-secondary)]">รูปแบบลิงก์ที่รองรับ:</strong>
-                <ul className="mt-0.5 ml-3 space-y-0.5 list-disc text-[11px]">
-                  <li>
-                    ภายนอก:{' '}
-                    <code className="px-1 py-0.2 rounded bg-[var(--surface)] text-[var(--accent-text)]">https://...</code>
-                  </li>
-                  <li>
-                    ภายใน:{' '}
-                    <code className="px-1 py-0.2 rounded bg-[var(--surface)] text-[var(--accent-text)]">/dashboard</code>
-                  </li>
-                </ul>
-              </div>
+            {/* Validation hint, condensed to one wrapping line. */}
+            <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 rounded-[11px] bg-[var(--surface-grouped)] px-3 py-2 text-[11px] text-[var(--ink-muted)]">
+              <Info size={13} className="shrink-0 text-[var(--ink-tertiary)]" aria-hidden="true" />
+              <span>รองรับ</span>
+              <code className="rounded bg-[var(--surface)] px-1 py-0.5 text-[var(--accent-text)]">
+                https://...
+              </code>
+              <span>สำหรับเว็บภายนอก และ</span>
+              <code className="rounded bg-[var(--surface)] px-1 py-0.5 text-[var(--accent-text)]">
+                /dashboard
+              </code>
+              <span>สำหรับหน้าในระบบ</span>
             </div>
           </DialogBody>
 
-          <DialogFooter className="flex-col-reverse gap-2 sm:flex-row">
+          {/* Stacked on phones with the primary action last, so it sits where
+              the thumb already is. */}
+          <DialogFooter className="flex-col gap-2 sm:flex-row">
             <button
               type="button"
               onClick={() => onOpenChange(false)}

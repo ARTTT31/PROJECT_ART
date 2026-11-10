@@ -17,7 +17,7 @@ from app.core.database import get_db
 from app.core.rate_limit import get_real_client_ip, limiter
 from app.core.security import decode_token, verify_password
 from app.core.url_safety import UnsafeURLError, ensure_public_http_url
-from app.core.utils import utcnow
+from app.core.utils import utc_iso, utcnow
 from app.schemas.user import (
     ExternalNotificationDispatchRequest,
     WebPushSubscriptionRequest,
@@ -611,11 +611,9 @@ async def get_my_sessions(
                 "user_agent": s.user_agent or None,
                 "ip_address": s.ip_address or "Unknown IP",
                 "is_active": s.is_active,
-                "last_activity": s.last_activity.isoformat()
-                if s.last_activity
-                else None,
-                "created_at": s.created_at.isoformat() if s.created_at else None,
-                "expires_at": s.expires_at.isoformat() if s.expires_at else None,
+                "last_activity": utc_iso(s.last_activity),
+                "created_at": utc_iso(s.created_at),
+                "expires_at": utc_iso(s.expires_at),
             }
             for s in sessions
         ]

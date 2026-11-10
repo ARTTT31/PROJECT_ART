@@ -19,6 +19,24 @@ def utcnow() -> datetime:
     return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
+def as_utc(value: Optional[datetime]) -> Optional[datetime]:
+    """Tag a stored (naive UTC) timestamp with its real timezone."""
+    if value is None or value.tzinfo is not None:
+        return value
+    return value.replace(tzinfo=timezone.utc)
+
+
+def utc_iso(value: Optional[datetime]) -> Optional[str]:
+    """Serialise a stored timestamp with an explicit UTC offset.
+
+    Timestamps live in the database without a timezone (see ``utcnow``). Emitting
+    them as-is made the browser read UTC as local time, so a session refreshed
+    seconds ago showed "7 hours ago" in UTC+7.
+    """
+    tagged = as_utc(value)
+    return tagged.isoformat() if tagged is not None else None
+
+
 # The readable ``user`` cookie is a display cache for the frontend. It is
 # readable (not httpOnly) so the shell can paint before the session request
 # answers — which also means a script on the origin, an extension, or the user

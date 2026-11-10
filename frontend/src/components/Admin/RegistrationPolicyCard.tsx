@@ -92,39 +92,37 @@ export function RegistrationPolicyCard() {
                     .item(nextIndex)
                     ?.focus();
                 }}
-                className={`flex h-full flex-col rounded-[14px] border p-3.5 text-left transition-colors duration-150 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent-ring)] focus-visible:ring-offset-2 ${
+                className={`flex h-full flex-col items-center rounded-[11px] border p-3.5 text-center transition-colors duration-150 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent-ring)] focus-visible:ring-offset-2 ${
                   selected
                     ? 'border-[var(--accent-border)] bg-[var(--accent-soft-weak)]'
                     : 'border-[var(--hairline)] bg-[var(--surface)] hover:border-[var(--hairline-strong)] hover:bg-[var(--surface-grouped)]'
                 }`}
               >
-                <span className="flex w-full items-start justify-between gap-2">
-                  <span className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1">
-                    <span className="text-[13px] font-semibold leading-snug text-[var(--ink)]">
-                      {opt.label}
-                    </span>
-                    {opt.badge && (
-                      <span className="shrink-0 rounded-full bg-[var(--surface)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--accent-text)] ring-1 ring-[var(--hairline)]">
-                        {opt.badge}
-                      </span>
-                    )}
-                  </span>
-
-                  {/* Radio mark: the selection reads clearly without a heavy
-                      second outline around the whole card. */}
-                  <span
-                    aria-hidden="true"
-                    className={`mt-px flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border transition-colors duration-150 ${
-                      selected
-                        ? 'border-[var(--accent)] bg-[var(--accent)] text-white'
-                        : 'border-[var(--hairline-strong)] bg-[var(--surface)]'
-                    }`}
-                  >
-                    {selected && <Check size={11} strokeWidth={3.2} />}
-                  </span>
+                {/* Centered stack: the label sits directly under the radio mark
+                    so the three options line up on the same axis. */}
+                <span
+                  aria-hidden="true"
+                  className={`flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border transition-colors duration-150 ${
+                    selected
+                      ? 'border-[var(--accent)] bg-[var(--accent)] text-white'
+                      : 'border-[var(--hairline-strong)] bg-[var(--surface)]'
+                  }`}
+                >
+                  {selected && <Check size={11} strokeWidth={3.2} />}
                 </span>
 
-                <span className="mt-1.5 block text-[12px] leading-relaxed text-[var(--ink-muted)]">
+                <span className="mt-2 flex flex-wrap items-center justify-center gap-x-1.5 gap-y-1">
+                  <span className="text-[13px] font-semibold leading-snug text-[var(--ink)]">
+                    {opt.label}
+                  </span>
+                  {opt.badge && (
+                    <span className="shrink-0 rounded-full bg-[var(--surface)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--accent-text)] ring-1 ring-[var(--hairline)]">
+                      {opt.badge}
+                    </span>
+                  )}
+                </span>
+
+                <span className="mt-1.5 block text-[12px] leading-relaxed text-[var(--ink-muted)] text-balance">
                   {opt.desc}
                 </span>
               </button>
@@ -141,7 +139,7 @@ export function RegistrationPolicyCard() {
             type="button"
             onClick={handleSave}
             disabled={isSaving || mode === (registrationMode || 'approval')}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[var(--accent)] px-5 py-2.5 text-[13px] font-semibold text-white transition-colors duration-150 hover:bg-[var(--accent-hover)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 active:scale-[0.95] disabled:opacity-40 sm:w-auto"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-[11px] bg-[var(--accent)] px-5 py-2.5 text-[13px] font-semibold text-white transition-colors duration-150 hover:bg-[var(--accent-hover)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 active:scale-[0.95] disabled:opacity-40 sm:w-auto"
           >
             {isSaving ? (
               <Loader2 size={15} className="animate-spin" aria-hidden="true" />
