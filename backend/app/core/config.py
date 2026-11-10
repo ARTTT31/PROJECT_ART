@@ -344,8 +344,23 @@ class Settings(BaseSettings):
     VAPID_PRIVATE_KEY: str = ""
     VAPID_SUBJECT: str = "mailto:admin@example.com"
 
-    # ── AI & Gemini API ─────────────────────────────────────────────────────
+    # ── AI Copilot ──────────────────────────────────────────────────────────
+    # Which provider answers `/api/v1/ai/chat`:
+    #   auto   — Gemini when GEMINI_API_KEY is set, else an OpenAI-compatible
+    #            endpoint when AI_API_KEY is set, else the built-in Thai intent
+    #            engine (always available, no key required).
+    #   gemini — Gemini only.
+    #   openai — any OpenAI-compatible /chat/completions endpoint.
+    AI_PROVIDER: Literal["auto", "gemini", "openai"] = "auto"
+    # OpenAI-compatible provider: OpenAI, Groq, Z.ai (GLM), OpenRouter, ...
+    AI_API_KEY: str = ""
+    AI_BASE_URL: str = "https://api.openai.com/v1"
+    AI_MODEL: str = "gpt-4.1-mini"
+    # Google Gemini (AI Studio key). Model ids retire on a schedule, so the id
+    # is configurable rather than hard-coded: gemini-2.5-flash is being retired
+    # and gemini-1.5-flash already is.
     GEMINI_API_KEY: str = ""
+    GEMINI_MODEL: str = "gemini-3.5-flash"
 
     def require_google_client_id(self) -> str:
         """Return the configured Google client ID or raise a clear 500 error."""

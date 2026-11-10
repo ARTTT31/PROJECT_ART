@@ -11,6 +11,7 @@ import {
   Palette,
   Building2,
   BellRing,
+  Sparkles,
 } from 'lucide-react';
 import { showDeleteConfirm, showToast, showSuccess, showError } from '@/utils/sweetalert';
 import { canAccessPage } from '@/utils/accessiblePages';
@@ -480,6 +481,11 @@ export default function ProfilePage() {
               value: 'alerts',
               label: t('profile.sub.alerts'),
               icon: <BellRing size={13} aria-hidden="true" />,
+            },
+            {
+              value: 'ai',
+              label: t('profile.sub.ai'),
+              icon: <Sparkles size={13} aria-hidden="true" />,
             },
             {
               value: 'workspace',

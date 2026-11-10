@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Info, Loader2, Save, UserPlus } from 'lucide-react';
+import { Check, Info, Loader2, Save, UserPlus } from 'lucide-react';
 import { SectionCard } from '@/components/Profile/SectionCard';
 import { useBranding } from '@/context/BrandingContext';
 import { showError, showSuccess } from '@/utils/sweetalert';
@@ -60,33 +60,79 @@ export function RegistrationPolicyCard() {
       subtitle="กำหนดว่าใครสมัครเข้าใช้งาน workspace นี้ได้บ้าง"
     >
       <div className="space-y-3">
-        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
-          {REGISTRATION_OPTIONS.map((opt) => (
-            <button
-              key={opt.value}
-              type="button"
-              disabled={isSaving}
-              onClick={() => setMode(opt.value)}
-              className={`flex flex-col rounded-[14px] border p-3.5 text-left transition-all ${
-                mode === opt.value
-                  ? 'border-[var(--accent)] bg-[var(--accent-soft-weak)] ring-2 ring-[var(--accent-ring)]'
-                  : 'border-[var(--hairline-strong)] bg-[var(--surface)] hover:bg-slate-50'
-              } disabled:cursor-not-allowed disabled:opacity-50`}
-            >
-              <div className="mb-1 flex w-full items-center justify-between gap-2">
-                <span className="text-[13px] font-bold text-[var(--ink)]">{opt.label}</span>
-                {opt.badge && (
-                  <span className="shrink-0 rounded-full bg-blue-100 px-2 py-0.5 text-[11px] font-bold text-[var(--accent-text)]">
-                    {opt.badge}
+        <div
+          role="radiogroup"
+          aria-label="นโยบายการรับสมัครสมาชิก"
+          className="grid grid-cols-1 gap-2.5 sm:grid-cols-3"
+        >
+          {REGISTRATION_OPTIONS.map((opt) => {
+            const selected = mode === opt.value;
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                role="radio"
+                aria-checked={selected}
+                disabled={isSaving}
+                onClick={() => setMode(opt.value)}
+                onKeyDown={(event) => {
+                  const forward = event.key === 'ArrowRight' || event.key === 'ArrowDown';
+                  const backward = event.key === 'ArrowLeft' || event.key === 'ArrowUp';
+                  if (!forward && !backward) return;
+                  event.preventDefault();
+                  const index = REGISTRATION_OPTIONS.findIndex(
+                    (option) => option.value === opt.value,
+                  );
+                  const nextIndex =
+                    (index + (forward ? 1 : -1) + REGISTRATION_OPTIONS.length) %
+                    REGISTRATION_OPTIONS.length;
+                  setMode(REGISTRATION_OPTIONS[nextIndex].value);
+                  event.currentTarget.parentElement
+                    ?.querySelectorAll<HTMLButtonElement>('[role="radio"]')
+                    .item(nextIndex)
+                    ?.focus();
+                }}
+                className={`flex h-full flex-col rounded-[14px] border p-3.5 text-left transition-colors duration-150 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent-ring)] focus-visible:ring-offset-2 ${
+                  selected
+                    ? 'border-[var(--accent-border)] bg-[var(--accent-soft-weak)]'
+                    : 'border-[var(--hairline)] bg-[var(--surface)] hover:border-[var(--hairline-strong)] hover:bg-[var(--surface-grouped)]'
+                }`}
+              >
+                <span className="flex w-full items-start justify-between gap-2">
+                  <span className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1">
+                    <span className="text-[13px] font-semibold leading-snug text-[var(--ink)]">
+                      {opt.label}
+                    </span>
+                    {opt.badge && (
+                      <span className="shrink-0 rounded-full bg-[var(--surface)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--accent-text)] ring-1 ring-[var(--hairline)]">
+                        {opt.badge}
+                      </span>
+                    )}
                   </span>
-                )}
-              </div>
-              <span className="text-[12px] leading-relaxed text-[var(--ink-muted)]">{opt.desc}</span>
-            </button>
-          ))}
+
+                  {/* Radio mark: the selection reads clearly without a heavy
+                      second outline around the whole card. */}
+                  <span
+                    aria-hidden="true"
+                    className={`mt-px flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border transition-colors duration-150 ${
+                      selected
+                        ? 'border-[var(--accent)] bg-[var(--accent)] text-white'
+                        : 'border-[var(--hairline-strong)] bg-[var(--surface)]'
+                    }`}
+                  >
+                    {selected && <Check size={11} strokeWidth={3.2} />}
+                  </span>
+                </span>
+
+                <span className="mt-1.5 block text-[12px] leading-relaxed text-[var(--ink-muted)]">
+                  {opt.desc}
+                </span>
+              </button>
+            );
+          })}
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+        <div className="flex flex-col gap-2.5 pt-1 sm:flex-row sm:items-center sm:justify-between">
           <p className="flex items-center gap-1.5 text-[12px] text-[var(--ink-tertiary)]">
             <Info size={13} className="shrink-0" aria-hidden="true" />
             มีผลกับหน้าเข้าสู่ระบบของทุกคนทันทีหลังบันทึก
@@ -95,9 +141,13 @@ export function RegistrationPolicyCard() {
             type="button"
             onClick={handleSave}
             disabled={isSaving || mode === (registrationMode || 'approval')}
-            className="inline-flex items-center gap-2 rounded-full bg-[var(--accent)] px-5 py-2 text-[13px] font-bold text-white shadow-xs transition-all hover:bg-[var(--accent-hover)] active:scale-95 disabled:opacity-40"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[var(--accent)] px-5 py-2.5 text-[13px] font-semibold text-white transition-colors duration-150 hover:bg-[var(--accent-hover)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 active:scale-[0.95] disabled:opacity-40 sm:w-auto"
           >
-            {isSaving ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
+            {isSaving ? (
+              <Loader2 size={15} className="animate-spin" aria-hidden="true" />
+            ) : (
+              <Save size={15} aria-hidden="true" />
+            )}
             <span>{isSaving ? 'กำลังบันทึก...' : 'บันทึกนโยบาย'}</span>
           </button>
         </div>

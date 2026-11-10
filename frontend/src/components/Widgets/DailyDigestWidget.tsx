@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useTransition } from 'react';
+import { useCallback, useEffect, useRef, useState, useTransition } from 'react';
 import {
   Sparkles,
   Sun,
@@ -14,6 +14,7 @@ import {
   Share2,
 } from 'lucide-react';
 import WidgetSizeToggle from './WidgetSizeToggle';
+import Select from '@/components/ui/Select';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
 import { showToast } from '@/utils/sweetalert';
 import { usePreferences } from '@/hooks/usePreferences';
@@ -22,6 +23,8 @@ import { getGreeting } from '@/utils/greeting';
 import { shareOrDownloadDailyCard } from '@/utils/cardGenerator';
 import { useBranding } from '@/context/BrandingContext';
 import { useTheme } from '@/context/ThemeContext';
+import { readCached, writeCached } from '@/lib/offline/localStore';
+import { pendingQuickNotes, QUICK_NOTES_UPDATED_EVENT } from '@/lib/quickNotes';
 
 interface DigestData {
   weather: {
@@ -33,6 +36,8 @@ interface DigestData {
     diesel: number | null;
     gasohol95: number | null;
     status: string;
+    /** Every fuel the provider returned, keyed like `diesel` / `gasohol_95`. */
+    prices?: Record<string, number>;
   };
   market: {
     setIndex: number | null;
@@ -49,6 +54,120 @@ const INITIAL_DIGEST: DigestData = {
   pendingTasks: 0,
 };
 
+// Shown only when nothing has ever loaded and the provider is unreachable;
+// a card with numbers beats an empty one, and the next refresh replaces them.
+const FALLBACK_DIGEST: DigestData = {
+  weather: { temp: 31, condition: 'ท้องฟ้าแจ่มใส', pm25: 18 },
+  oil: { diesel: 32.94, gasohol95: 38.55, status: 'ราคาคงที่' },
+  market: { setIndex: 1425.5, setChange: 4.2, usdRate: 35.8 },
+  pendingTasks: 0,
+};
+
+// Last payload this account saw, scoped per account by localStore. The card
+// used to open on "กำลังประมวลผล…" and only paint once three serial requests
+// finished, so every visit looked like the dashboard was still loading.
+const DIGEST_CACHE_KEY = 'dashboard/digest';
+
+/** Fuel types offered by the oil tile, in the provider's display order. */
+const FUEL_OPTIONS = [
+  { value: 'diesel', label: 'ดีเซล' },
+  { value: 'gasohol_95', label: 'แก๊ส 95' },
+  { value: 'gasohol_91', label: 'แก๊ส 91' },
+  { value: 'gasohol_e20', label: 'E20' },
+  { value: 'gasohol_e85', label: 'E85' },
+  { value: 'benzene_95', label: 'เบนซิน 95' },
+];
+
+// Which fuel the tile shows is a display preference, so it lives per device
+// like the theme rather than on the account.
+const FUEL_STORAGE_KEY = 'artDigestFuelV1';
+
+function readFuelChoice(): string {
+  try {
+    const stored = localStorage.getItem(FUEL_STORAGE_KEY);
+    if (stored && FUEL_OPTIONS.some((option) => option.value === stored)) return stored;
+  } catch {
+    // Private mode: fall back to diesel.
+  }
+  return 'diesel';
+}
+
+function readDigestCache(): DigestData | null {
+  return readCached<DigestData>(DIGEST_CACHE_KEY)?.data ?? null;
+}
+
+// Count what is actually in Quick Notes, including a tick/clear/delete done a
+// second ago, instead of a copy that only updated on page load.
+function currentPendingTasks(): number {
+  return pendingQuickNotes().length;
+}
+
+/** Weather/air-quality pair, or null when the provider answered unusable data. */
+async function loadWeather(): Promise<DigestData['weather'] | null> {
+  try {
+    const res = await fetchWithAuth('/api/v1/weather/forecast?latitude=13.75&longitude=100.5');
+    if (!res.ok) return null;
+    const json = await res.json();
+    const cur = json.current || json;
+    if (cur.temperature == null && cur.temperature_2m == null) return null;
+    return {
+      temp: Math.round(cur.temperature ?? cur.temperature_2m ?? 31),
+      condition: 'อากาศทั่วไปแจ่มใส',
+      pm25: json.air_quality?.pm2_5 ? Math.round(json.air_quality.pm2_5) : 18,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/** Retail fuel prices keyed by fuel, or null when the payload carried none. */
+async function loadOil(): Promise<DigestData['oil'] | null> {
+  try {
+    const res = await fetchWithAuth('/api/v1/oil-prices');
+    if (!res.ok) return null;
+    const json = await res.json();
+    // The endpoint answers `{ prices: [{ key, name, price, unit }] }`. Reading
+    // `stations[].fuels[]` (an older upstream shape) meant the tile never saw a
+    // live price and silently kept the baked-in sample numbers.
+    const fuels = Array.isArray(json.prices)
+      ? json.prices
+      : Array.isArray(json.oil_prices)
+        ? json.oil_prices
+        : [];
+    const prices: Record<string, number> = {};
+    for (const fuel of fuels) {
+      if (typeof fuel?.key === 'string' && typeof fuel?.price === 'number') {
+        prices[fuel.key] = fuel.price;
+      }
+    }
+    if (Object.keys(prices).length === 0) return null;
+    return {
+      diesel: prices.diesel ?? null,
+      gasohol95: prices.gasohol_95 ?? null,
+      status: json.is_stale ? 'ข้อมูลอาจไม่เป็นปัจจุบัน' : 'ราคาล่าสุด',
+      prices,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/** SET index and USD reference rate, or null when the payload is empty. */
+async function loadMarket(): Promise<DigestData['market'] | null> {
+  try {
+    const res = await fetchWithAuth('/api/v1/market/summary');
+    if (!res.ok) return null;
+    const json = await res.json();
+    return {
+      setIndex: json.set_index?.value ? Number(json.set_index.value.toFixed(2)) : 1425.5,
+      setChange: json.set_index?.change ? Number(json.set_index.change.toFixed(2)) : 4.2,
+      usdRate: json.currency?.value ? Number(json.currency.value.toFixed(2)) : 35.8,
+    };
+  } catch {
+    return null;
+  }
+}
+
 export default function DailyDigestWidget({
   width = 2,
   onResize,
@@ -59,96 +178,55 @@ export default function DailyDigestWidget({
   const preferences = usePreferences();
   const { companyName } = useBranding();
   const { resolvedMode } = useTheme();
-  const [data, setData] = useState<DigestData>(INITIAL_DIGEST);
-  const [isLoading, setIsLoading] = useState(true);
+  // Paint the last saved digest on the first render; nothing is gained by
+  // hiding usable numbers behind the network round-trip.
+  const [data, setData] = useState<DigestData>(() => readDigestCache() ?? INITIAL_DIGEST);
+  const [isLoading, setIsLoading] = useState(() => readDigestCache() === null);
+  const [fuel, setFuel] = useState(readFuelChoice);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isGeneratingCard, setIsGeneratingCard] = useState(false);
   const [copied, setCopied] = useState(false);
   const [greeting, setGreeting] = useState<string>(getGreeting);
   const [, startTransition] = useTransition();
+  // Fallbacks for a failed refresh read the CURRENT card, not the state closed
+  // over when the request started.
+  const dataRef = useRef(data);
 
-  const fetchDigestData = async () => {
-    let pendingCount = 0;
+  const changeFuel = (next: string) => {
+    setFuel(next);
     try {
-      const rawTasks = localStorage.getItem('quick_notes_tasks');
-      if (rawTasks) {
-        const parsed = JSON.parse(rawTasks);
-        if (Array.isArray(parsed)) {
-          pendingCount = parsed.filter((t: { done?: boolean }) => !t.done).length;
-        }
-      }
+      localStorage.setItem(FUEL_STORAGE_KEY, next);
     } catch {
-      // Ignore localStorage parse errors
+      // The choice just does not survive a reload.
     }
+  };
 
-    let weather = { temp: 31, condition: 'ท้องฟ้าแจ่มใส', pm25: 18 };
-    let oil = { diesel: 32.94, gasohol95: 38.55, status: 'ราคาคงที่' };
-    let market = { setIndex: 1425.5, setChange: 4.2, usdRate: 35.8 };
+  const fetchDigestData = useCallback(async () => {
+    const pendingCount = currentPendingTasks();
 
-    // Fetch Weather
-    try {
-      const res = await fetchWithAuth('/api/v1/weather/forecast?latitude=13.75&longitude=100.5');
-      if (res.ok) {
-        const json = await res.json();
-        const cur = json.current || json;
-        if (cur.temperature != null || cur.temperature_2m != null) {
-          weather = {
-            temp: Math.round(cur.temperature ?? cur.temperature_2m ?? 31),
-            condition: 'อากาศทั่วไปแจ่มใส',
-            pm25: json.air_quality?.pm2_5 ? Math.round(json.air_quality.pm2_5) : 18,
-          };
-        }
-      }
-    } catch {
-      // Use fallback
-    }
+    // All three in parallel: serially they added up (weather alone can take
+    // seconds on a cold backend) before anything reached the card.
+    const [weather, oil, market] = await Promise.all([loadWeather(), loadOil(), loadMarket()]);
 
-    // Fetch Oil
-    try {
-      const res = await fetchWithAuth('/api/v1/oil-prices');
-      if (res.ok) {
-        const json = await res.json();
-        const ptt = json.stations?.find((s: { code: string }) => s.code === 'PTT') || json.stations?.[0];
-        if (ptt?.fuels) {
-          const d = ptt.fuels.find((f: { name: string }) => f.name.includes('ดีเซล'));
-          const g95 = ptt.fuels.find((f: { name: string }) => f.name.includes('95'));
-          oil = {
-            diesel: d?.price ?? 32.94,
-            gasohol95: g95?.price ?? 38.55,
-            status: json.has_change ? 'มีการปรับราคา' : 'ราคาคงที่',
-          };
-        }
-      }
-    } catch {
-      // Use fallback
-    }
-
-    // Fetch Market
-    try {
-      const res = await fetchWithAuth('/api/v1/market/summary');
-      if (res.ok) {
-        const json = await res.json();
-        market = {
-          setIndex: json.set_index?.value ? Number(json.set_index.value.toFixed(2)) : 1425.5,
-          setChange: json.set_index?.change ? Number(json.set_index.change.toFixed(2)) : 4.2,
-          usdRate: json.currency?.value ? Number(json.currency.value.toFixed(2)) : 35.8,
-        };
-      }
-    } catch {
-      // Use fallback
-    }
+    const previous = dataRef.current;
+    const next: DigestData = {
+      // A provider that failed keeps the value already on screen; only a card
+      // that never had data falls back to the bundled sample numbers.
+      weather: weather ?? (previous.weather.temp != null ? previous.weather : FALLBACK_DIGEST.weather),
+      oil: oil ?? (previous.oil.diesel != null ? previous.oil : FALLBACK_DIGEST.oil),
+      market:
+        market ?? (previous.market.setIndex != null ? previous.market : FALLBACK_DIGEST.market),
+      pendingTasks: pendingCount,
+    };
+    dataRef.current = next;
+    writeCached(DIGEST_CACHE_KEY, next);
 
     startTransition(() => {
-      setData({
-        weather,
-        oil,
-        market,
-        pendingTasks: pendingCount,
-      });
+      setData(next);
       setIsLoading(false);
       setIsRefreshing(false);
     });
-  };
+  }, []);
 
   useEffect(() => {
     fetchDigestData();
@@ -156,13 +234,37 @@ export default function DailyDigestWidget({
     const timer = setInterval(() => {
       setGreeting(getGreeting());
     }, 60000);
-    return () => clearInterval(timer);
-  }, []);
+
+    // The notes widget announces every tick/clear/delete; update the tile and
+    // the cached snapshot without refetching weather, oil and market.
+    const onNotesUpdated = () => {
+      const pendingTasks = currentPendingTasks();
+      const previous = dataRef.current;
+      if (previous.pendingTasks === pendingTasks) return;
+      const next = { ...previous, pendingTasks };
+      dataRef.current = next;
+      writeCached(DIGEST_CACHE_KEY, next);
+      setData(next);
+    };
+    window.addEventListener(QUICK_NOTES_UPDATED_EVENT, onNotesUpdated);
+
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener(QUICK_NOTES_UPDATED_EVENT, onNotesUpdated);
+    };
+  }, [fetchDigestData]);
 
   const handleRefresh = () => {
     setIsRefreshing(true);
     fetchDigestData();
   };
+
+  // A cached digest can be a day old; the task count always reflects this
+  // browser's current Quick Notes.
+  const pendingTasks = currentPendingTasks();
+  const fuelPrice =
+    data.oil.prices?.[fuel] ??
+    (fuel === 'diesel' ? data.oil.diesel : fuel === 'gasohol_95' ? data.oil.gasohol95 : null);
 
   const generateDigestText = () => {
     const dateStr = formatLongDate(new Date(), preferences);
@@ -170,7 +272,7 @@ export default function DailyDigestWidget({
       `- สภาพอากาศ: ${data.weather.temp ?? 31}°C (${data.weather.condition}, PM2.5: ${data.weather.pm25 ?? 'ปกติ'})\n` +
       `- ราคาน้ำมัน: ดีเซล ${data.oil.diesel ?? '-'} บาท / แก๊สโซฮอล์ 95 ${data.oil.gasohol95 ?? '-'} บาท (${data.oil.status})\n` +
       `- ดัชนีตลาด: SET ${data.market.setIndex ?? '-'} (${(data.market.setChange ?? 0) >= 0 ? '+' : ''}${data.market.setChange ?? 0}), USD/THB: ${data.market.usdRate ?? '-'}\n` +
-      `- สิ่งที่ต้องทำ: มี ${data.pendingTasks} งานค้างใน To-Do List`;
+      `- สิ่งที่ต้องทำ: มี ${pendingTasks} งานค้างใน To-Do List`;
   };
 
   const handleCopy = async () => {
@@ -209,7 +311,7 @@ export default function DailyDigestWidget({
           setChange: data.market.setChange,
           usdRate: data.market.usdRate,
         },
-        pendingTasks: data.pendingTasks,
+        pendingTasks,
       });
       showToast('สร้างภาพการ์ดสรุปประจำวันสำเร็จ', 'success');
     } catch {
@@ -238,9 +340,6 @@ export default function DailyDigestWidget({
               >
                 สรุปประจำวันอัจฉริยะ
               </h2>
-              <span className="shrink-0 rounded-full bg-[var(--accent-soft)] px-2 py-0.5 text-[11px] font-bold text-[var(--accent-text)]">
-                AI
-              </span>
             </div>
             <p className="mt-0.5 truncate text-[11px] text-[var(--ink-tertiary)] flex items-center gap-1">
               <Calendar size={11} aria-hidden="true" />
@@ -296,7 +395,7 @@ export default function DailyDigestWidget({
             'กำลังประมวลผลข้อมูลสรุปประจำวัน…'
           ) : (
             <>
-              อุณหภูมิวันนี้ประมาณ <span className="font-semibold text-[var(--ink)]">{data.weather.temp ?? 31}°C</span> ({data.weather.condition}) · ราคาน้ำมัน: <span className="font-semibold text-[var(--ink)]">{data.oil.status}</span> · ดัชนี SET:  <span className="font-semibold text-[var(--ink)]">{data.market.setIndex ?? '-'}</span> · งานค้างในระบบ: <span className="font-semibold text-[var(--ink)]">{data.pendingTasks} รายการ</span>
+              อุณหภูมิวันนี้ประมาณ <span className="font-semibold text-[var(--ink)]">{data.weather.temp ?? 31}°C</span> ({data.weather.condition}) · ราคาน้ำมัน: <span className="font-semibold text-[var(--ink)]">{data.oil.status}</span> · ดัชนี SET:  <span className="font-semibold text-[var(--ink)]">{data.market.setIndex ?? '-'}</span> · งานค้างในระบบ: <span className="font-semibold text-[var(--ink)]">{pendingTasks} รายการ</span>
             </>
           )}
         </p>
@@ -326,13 +425,19 @@ export default function DailyDigestWidget({
 
         {/* Metric 2: Oil Price */}
         <div className="flex flex-col justify-between rounded-[14px] bg-[var(--surface-grouped)] p-2.5 ring-1 ring-[var(--hairline-soft)]">
-          <div className="flex items-center justify-between text-[var(--ink-tertiary)]">
-            <span className="text-[11px] font-bold">น้ำมัน</span>
-            <Fuel size={14} className="text-blue-500" />
+          <div className="flex items-center justify-between gap-1 text-[var(--ink-tertiary)]">
+            <Select
+              value={fuel}
+              onChange={changeFuel}
+              options={FUEL_OPTIONS}
+              ariaLabel="เลือกชนิดน้ำมันที่แสดงบนสรุปประจำวัน"
+              className="max-w-[96px]"
+            />
+            <Fuel size={14} className="shrink-0 text-blue-500" aria-hidden="true" />
           </div>
           <div className="mt-2">
             <p className="text-[16px] font-black text-[var(--ink)]">
-              {data.oil.diesel != null ? `฿${data.oil.diesel}` : '–'}
+              {fuelPrice != null ? `฿${fuelPrice}` : '–'}
             </p>
             <p className="text-[10px] text-[var(--ink-muted)] truncate">{data.oil.status}</p>
           </div>
@@ -366,7 +471,7 @@ export default function DailyDigestWidget({
             <CheckSquare size={14} className="text-purple-500" />
           </div>
           <div className="mt-2">
-            <p className="text-[16px] font-black text-[var(--ink)]">{data.pendingTasks}</p>
+            <p className="text-[16px] font-black text-[var(--ink)]">{pendingTasks}</p>
             <p className="text-[10px] text-[var(--ink-muted)] truncate">รายการค้างอยู่</p>
           </div>
         </div>

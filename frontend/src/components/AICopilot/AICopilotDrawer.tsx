@@ -16,6 +16,7 @@ import {
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
 import { showToast } from '@/utils/sweetalert';
 import { readCached, writeCached } from '@/lib/offline/localStore';
+import { notifyQuickNotesUpdated, pendingQuickNotes } from '@/lib/quickNotes';
 
 interface ChatMessage {
   id: string;
@@ -27,6 +28,23 @@ interface ChatMessage {
   };
   timestamp: string;
 }
+
+/** What the daily digest last cached; sent along so replies quote real values. */
+interface DigestContext {
+  weather?: { temp: number | null; condition: string; pm25: number | null };
+  oil?: {
+    diesel: number | null;
+    gasohol95: number | null;
+    status: string;
+    prices?: Record<string, number>;
+  };
+  market?: { setIndex: number | null; setChange: number | null; usdRate: number | null };
+}
+
+const DIGEST_CACHE_KEY = 'dashboard/digest';
+
+/** Turns of the conversation sent back so follow-ups keep their subject. */
+const HISTORY_LIMIT = 8;
 
 function generateId(prefix: string): string {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
@@ -116,17 +134,9 @@ export default function AICopilotDrawer() {
           // Offline fallback
         }
 
-        // 2. Also save to localStorage for widget compatibility
-        try {
-          const raw = localStorage.getItem('quick_notes_tasks');
-          const currentLocal = raw ? JSON.parse(raw) : [];
-          const updatedLocal = [...currentLocal, newNote];
-          localStorage.setItem('quick_notes_tasks', JSON.stringify(updatedLocal));
-        } catch {
-          // Ignore storage errors
-        }
-
-        window.dispatchEvent(new CustomEvent('art-quick-notes-updated'));
+        // The offline cache written above is the list every card reads, so a
+        // second, legacy copy only created a counter that could disagree.
+        notifyQuickNotesUpdated();
         showToast(`บันทึกโน้ตสำเร็จ: "${text}"`, 'success');
       } else if (action.type === 'add_reminder') {
         const title = String(action.data?.title || 'รายการเตือนใหม่');
@@ -180,30 +190,29 @@ export default function AICopilotDrawer() {
     setIsLoading(true);
 
     try {
-      // Gather context
-      let pendingTasks = 0;
-      let taskList: string[] = [];
-      try {
-        const raw = localStorage.getItem('quick_notes_tasks');
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          if (Array.isArray(parsed)) {
-            const pending = parsed.filter((t: { done?: boolean }) => !t.done);
-            pendingTasks = pending.length;
-            taskList = pending.map((t: { text?: string }) => t.text || '').filter(Boolean);
-          }
-        }
-      } catch {
-        // Ignore storage error
-      }
+      // Context comes from the same caches the dashboard paints, so the reply
+      // talks about the tasks and prices the user is looking at.
+      const pending = pendingQuickNotes();
+      const digest = readCached<DigestContext>(DIGEST_CACHE_KEY)?.data;
+      const history = [...messages, userMsg]
+        .filter((message) => message.id !== 'welcome')
+        .slice(-HISTORY_LIMIT)
+        .map((message) => ({ role: message.sender, text: message.text }));
 
       const res = await fetchWithAuth('/api/v1/ai/chat', {
         method: 'POST',
         body: JSON.stringify({
           message: text,
+          history,
           context: {
-            pendingTasks,
-            tasks: taskList.slice(0, 5),
+            pendingTasks: pending.length,
+            tasks: pending
+              .map((note) => note.text)
+              .filter(Boolean)
+              .slice(0, 5),
+            weather: digest?.weather,
+            oil: digest?.oil,
+            market: digest?.market,
             page: window.location.pathname,
           },
         }),

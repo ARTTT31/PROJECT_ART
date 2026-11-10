@@ -14,6 +14,7 @@ import {
 } from '@/lib/offline/localStore';
 import { useOnlineStatus } from '@/lib/offline/useOnlineStatus';
 import { readUserCookie } from '@/lib/api/userCookie';
+import { QUICK_NOTES_STORAGE_KEY, QUICK_NOTES_UPDATED_EVENT } from '@/lib/quickNotes';
 import { hapticTap, hapticSuccess } from '@/utils/haptics';
 
 // Mirrors the backend caps (app/schemas/user.py) so a hopeless save is refused
@@ -31,7 +32,7 @@ interface NotesResponse {
   notes?: QuickNote[];
 }
 
-const NOTES_OFFLINE_KEY = 'profile/quick-notes';
+const NOTES_OFFLINE_KEY = QUICK_NOTES_STORAGE_KEY;
 
 // Module-level cache. Opening the dashboard remounts this widget, and refetching
 // on every mount made the card flash its spinner each time. Keeping the last
@@ -64,6 +65,11 @@ function readNotesCache(): QuickNote[] | null {
 function writeNotesCache(notes: QuickNote[]) {
   notesCache = { userId: currentUserId(), notes };
   writeCached<NotesResponse>(NOTES_OFFLINE_KEY, { notes });
+  // The daily digest and the AI Copilot count these notes; they must not keep
+  // showing a stale count after a tick, a clear or a delete.
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent(QUICK_NOTES_UPDATED_EVENT));
+  }
 }
 
 /** Test helper: clear the cache so each case starts from a clean slate. */

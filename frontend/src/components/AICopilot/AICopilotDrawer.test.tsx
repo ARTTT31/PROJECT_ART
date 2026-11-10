@@ -98,9 +98,12 @@ describe('AICopilotDrawer', () => {
       expect(screen.getByText('เพิ่มลงใน Quick Notes แล้ว')).toBeDefined();
     });
 
-    // Check localStorage fallback sync
-    const raw = localStorage.getItem('quick_notes_tasks');
-    expect(raw).toContain('ซื้อกาแฟ');
+    // The note is mirrored into the account-scoped offline cache that the
+    // Quick Notes widget and the daily digest read.
+    await waitFor(() => {
+      const raw = localStorage.getItem('artOffline:v1:local:cache:profile/quick-notes');
+      expect(raw).toContain('ซื้อกาแฟ');
+    });
   });
 
   it('closes when close button is clicked', () => {

@@ -50,6 +50,20 @@ services:
         sync: false
       - key: GOOGLE_REDIRECT_URI
         sync: false
+      # AI Copilot. Leave all of these empty to keep the built-in Thai intent
+      # engine; set a key to let an external model answer the chat.
+      - key: AI_PROVIDER
+        value: "auto"
+      - key: AI_API_KEY
+        sync: false
+      - key: AI_BASE_URL
+        sync: false
+      - key: AI_MODEL
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        sync: false
       - key: EMAIL_BACKEND
         sync: false
       - key: EMAIL_FROM

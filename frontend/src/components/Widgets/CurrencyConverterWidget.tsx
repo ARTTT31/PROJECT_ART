@@ -5,6 +5,7 @@ import { ArrowLeftRight, Loader2, RefreshCw, Wallet } from 'lucide-react';
 import Select from '@/components/ui/Select';
 import WidgetSizeToggle from './WidgetSizeToggle';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
+import { readCached, writeCached } from '@/lib/offline/localStore';
 
 interface CurrencyRate {
   code: string;
@@ -21,6 +22,16 @@ interface MarketSummary {
 // so reopening the dashboard should not hit the API again.
 let ratesCache: CurrencyRate[] | null = null;
 
+// The module copy dies with the page, so the last snapshot is also kept in
+// storage: opening the dashboard paints it instead of an empty spinner while
+// a cold backend wakes up.
+const RATES_CACHE_KEY = 'dashboard/currency-rates';
+
+function readRatesCache(): CurrencyRate[] | null {
+  const cached = readCached<CurrencyRate[]>(RATES_CACHE_KEY);
+  return cached && Array.isArray(cached.data) && cached.data.length > 0 ? cached.data : null;
+}
+
 const THB_CODE = 'THB';
 const numberFormat = new Intl.NumberFormat('th-TH', {
   minimumFractionDigits: 2,
@@ -34,25 +45,33 @@ export default function CurrencyConverterWidget({
   width?: number;
   onResize?: (size: number) => void;
 }) {
-  const [rates, setRates] = useState<CurrencyRate[]>(() => ratesCache ?? []);
-  const [loading, setLoading] = useState(() => ratesCache === null);
+  const [rates, setRates] = useState<CurrencyRate[]>(() => ratesCache ?? readRatesCache() ?? []);
+  const [loading, setLoading] = useState(() => ratesCache === null && readRatesCache() === null);
   const [error, setError] = useState<string | null>(null);
   const [amount, setAmount] = useState('100');
   const [from, setFrom] = useState('THB');
   const [to, setTo] = useState('USD');
 
   const load = useCallback(async () => {
-    setLoading(true);
+    // A saved snapshot is already on screen, so the refresh happens silently.
+    setLoading(!ratesCache && !readRatesCache());
     setError(null);
     try {
       const res = await fetchWithAuth('/api/v1/market/summary');
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = (await res.json()) as MarketSummary;
       const loaded = Array.isArray(data.currency?.rates) ? data.currency!.rates : [];
-      ratesCache = loaded;
-      setRates(loaded);
+      // An empty 200 (upstream returned nothing) must not wipe the rates the
+      // card is already showing.
+      if (loaded.length > 0) {
+        ratesCache = loaded;
+        writeCached(RATES_CACHE_KEY, loaded);
+        setRates(loaded);
+      }
     } catch {
-      setError('โหลดอัตราแลกเปลี่ยนไม่สำเร็จ');
+      // With a saved snapshot the conversion stays usable; only a card with no
+      // rates at all needs the retry action.
+      if (!ratesCache && !readRatesCache()) setError('โหลดอัตราแลกเปลี่ยนไม่สำเร็จ');
     } finally {
       setLoading(false);
     }

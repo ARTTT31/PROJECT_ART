@@ -1,6 +1,7 @@
 'use client';
 
 import BrandingCard from './BrandingCard';
+import AISettingsCard from './AISettingsCard';
 import CompanyHolidayCard from './CompanyHolidayCard';
 import DailyBriefingCard from './DailyBriefingCard';
 import DateFormatCard from './DateFormatCard';
@@ -13,7 +14,7 @@ import WorkspaceBackupCard from './WorkspaceBackupCard';
 import type { MainMenuItemConfig } from '@/utils/mainMenu';
 import type { QuickLink } from '@/utils/quickLinks';
 
-export type PreferenceSection = 'menu' | 'appearance' | 'alerts' | 'workspace';
+export type PreferenceSection = 'menu' | 'appearance' | 'alerts' | 'ai' | 'workspace';
 
 export default function PreferencesPanels({
   section,
@@ -63,6 +64,10 @@ export default function PreferencesPanels({
         <DailyBriefingCard />
         <ExternalNotificationCard />
         <DateFormatCard />
+      </div>
+
+      <div hidden={section !== 'ai'} className="space-y-5">
+        <AISettingsCard />
       </div>
 
       <div hidden={section !== 'workspace'} className="space-y-5">

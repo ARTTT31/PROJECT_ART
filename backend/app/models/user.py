@@ -67,6 +67,16 @@ class User(Base, TimestampMixin):
 
     # Camera streams configuration (JSON stored as text)
     camera_config: Mapped[str | None] = mapped_column(Text)
+
+    # Per-account AI provider. NULL means "no personal key": the chat endpoint
+    # then uses the deployment-wide env key (or the built-in intent engine).
+    # ``ai_api_key_enc`` is a Fernet token, never the key itself, and is never
+    # returned by any response schema.
+    ai_provider: Mapped[str | None] = mapped_column(String(20))
+    ai_api_key_enc: Mapped[str | None] = mapped_column(Text)
+    ai_base_url: Mapped[str | None] = mapped_column(String(500))
+    ai_model: Mapped[str | None] = mapped_column(String(100))
+
     accessible_pages: Mapped[str | None] = mapped_column(Text)
     # External notifications configuration (JSON stored as text: line, telegram, webhook)
     external_notifications: Mapped[str | None] = mapped_column(Text)
