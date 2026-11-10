@@ -606,7 +606,7 @@ export default function DashboardPage() {
           }
         }}
       >
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>การแสดงผลวิดเจ็ต</DialogTitle>
             <DialogDescription>
@@ -678,7 +678,7 @@ export default function DashboardPage() {
                       type="button"
                       onClick={() => applyRolePreset(preset.id)}
                       title={preset.description}
-                      className="flex flex-col items-start gap-1 rounded-[11px] border border-[var(--hairline)] bg-[var(--surface)] p-2.5 text-left transition-colors hover:border-[var(--accent-border)] hover:bg-[var(--surface-grouped)] active:scale-[0.97]"
+                      className="flex flex-col items-start gap-1 rounded-[11px]! border border-[var(--hairline)] bg-[var(--surface)] p-2.5 text-left transition-colors hover:border-[var(--accent-border)] hover:bg-[var(--surface-grouped)] active:scale-[0.97]"
                     >
                       <span className="text-[12px] font-bold text-[var(--ink)]">{preset.label}</span>
                       <span className="line-clamp-1 text-[10px] text-[var(--ink-muted)]">
@@ -739,7 +739,7 @@ export default function DashboardPage() {
                             disabled={isLocked}
                             onClick={() => toggleWidgetVisibility(widget.id)}
                             title={isLocked ? 'ต้องเปิดอย่างน้อย 1 วิดเจ็ต' : undefined}
-                            className={`flex items-start gap-2.5 rounded-[14px] border p-3 text-left transition-colors duration-150 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent-ring)] ${
+                            className={`flex items-start gap-2.5 rounded-[14px]! border p-3 text-left transition-colors duration-150 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent-ring)] ${
                               isVisible
                                 ? 'border-[var(--accent-border)] bg-[var(--accent-soft-weak)]'
                                 : 'border-[var(--hairline)] bg-[var(--surface)] hover:border-[var(--hairline-strong)] hover:bg-[var(--surface-grouped)]'

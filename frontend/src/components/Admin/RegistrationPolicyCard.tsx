@@ -92,7 +92,9 @@ export function RegistrationPolicyCard() {
                     .item(nextIndex)
                     ?.focus();
                 }}
-                className={`flex h-full flex-col items-center rounded-[11px] border p-3.5 text-center transition-colors duration-150 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent-ring)] focus-visible:ring-offset-2 ${
+                // `!` because globals.css forces every button into a pill; these
+                // are selectable surfaces and must keep the control radius.
+                className={`flex h-full flex-col items-center rounded-[11px]! border p-3.5 text-center transition-colors duration-150 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent-ring)] focus-visible:ring-offset-2 ${
                   selected
                     ? 'border-[var(--accent-border)] bg-[var(--accent-soft-weak)]'
                     : 'border-[var(--hairline)] bg-[var(--surface)] hover:border-[var(--hairline-strong)] hover:bg-[var(--surface-grouped)]'

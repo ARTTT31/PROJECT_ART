@@ -315,7 +315,7 @@ export function QuickLinkDialog({ open, onOpenChange, link, onSubmit }: QuickLin
                         title={option.label}
                         aria-label={option.label}
                         className={[
-                          'relative flex h-10 w-10 items-center justify-center rounded-[12px] transition-all duration-150 active:scale-[0.95]',
+                          'relative flex h-10 w-10 items-center justify-center rounded-[12px]! transition-all duration-150 active:scale-[0.95]',
                           active
                             ? 'bg-[var(--surface)] shadow-xs ring-2 ring-[var(--accent)]'
                             : 'bg-[var(--glass-60)] hover:bg-[var(--surface)] ring-1 ring-[var(--hairline)] hover:ring-[var(--hairline)]',
