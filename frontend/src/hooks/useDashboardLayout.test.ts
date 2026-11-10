@@ -137,6 +137,54 @@ describe('useDashboardLayout — initialization', () => {
 });
 
 describe('useDashboardLayout — unsupported widgets', () => {
+  it('applies a layout saved on another device while this one is open', async () => {
+    mockUser = {
+      dashboard_layout: JSON.stringify({
+        widgets: [{ id: 'weather', w: 1 }],
+        visibleWidgetIds: ['weather'],
+      }),
+    };
+    const { result, rerender } = await renderLayout();
+    expect(result.current.visibleWidgetIds).toContain('weather');
+
+    // The second device hid everything except the QR widget and saved that to
+    // the profile; this tab has to follow without a reload.
+    mockUser = {
+      dashboard_layout: JSON.stringify({
+        widgets: DEFAULT_IDS.map((id) => ({ id, w: 1 })),
+        visibleWidgetIds: ['qrcode'],
+      }),
+    };
+    rerender();
+
+    await waitFor(() => expect(result.current.visibleWidgetIds).toEqual(['qrcode']));
+  });
+
+  it('sends the visible list to the profile so the next device sees it', async () => {
+    const { result } = await renderLayout();
+    const { fetchWithAuth } = await import('@/lib/api/fetchWithAuth');
+
+    vi.useFakeTimers();
+    try {
+      act(() => result.current.toggleWidgetVisibility('weather'));
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(400);
+      });
+
+      const calls = vi.mocked(fetchWithAuth).mock.calls;
+      const [, init] = calls[calls.length - 1];
+      const payload = JSON.parse(String(init?.body));
+      const saved = JSON.parse(payload.dashboard_layout);
+
+      expect(saved.visibleWidgetIds).not.toContain('weather');
+      // Hidden widgets stay in the ordered list, so a later device can show
+      // them again in the same place.
+      expect(saved.widgets.map((w: WidgetConfig) => w.id)).toContain('weather');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('drops a retired widget id from a cloud layout', async () => {
     mockUser = {
       dashboard_layout: JSON.stringify([
