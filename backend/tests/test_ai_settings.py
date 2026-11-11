@@ -67,17 +67,39 @@ async def test_ai_settings_encrypts_key_and_never_returns_it(
 
 @pytest.mark.asyncio
 async def test_ai_settings_rejects_private_base_url(client: AsyncClient, logged_in_user):
+    # https on purpose: over plain http the DEBUG=False deployment also rejects
+    # it for the scheme, so the address check would never be reached in CI and
+    # the assertion below would depend on whether a local .env sets DEBUG.
     resp = await client.put(
         "/api/v1/ai/settings",
         json={
             "provider": "openai",
             "api_key": KEY,
-            "base_url": "http://127.0.0.1:8000/v1",
+            "base_url": "https://127.0.0.1:8000/v1",
         },
     )
 
     assert resp.status_code == 400
     assert "ภายใน" in resp.json()["detail"]
+
+
+@pytest.mark.asyncio
+async def test_ai_settings_requires_https_when_not_in_debug(
+    client: AsyncClient, logged_in_user, monkeypatch
+):
+    monkeypatch.setattr(settings, "DEBUG", False)
+
+    resp = await client.put(
+        "/api/v1/ai/settings",
+        json={
+            "provider": "openai",
+            "api_key": KEY,
+            "base_url": "http://example.com/v1",
+        },
+    )
+
+    assert resp.status_code == 400
+    assert "https" in resp.json()["detail"]
 
 
 @pytest.mark.asyncio

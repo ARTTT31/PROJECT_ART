@@ -1,6 +1,6 @@
 # ART Workspace — Current Status
 
-**Verified:** November 11, 2026 · `main` at `623fd3a` plus the coverage pass below · Windows dev
+**Verified:** November 11, 2026 · `main` at `612243a` plus the CI repair below · Windows dev
 machine, Python 3.14.6 local and 3.11 in a throwaway venv (what CI runs), Node 26
 
 > **What this file is.** The single place that states what is true *right now*: verified numbers, what
@@ -14,7 +14,7 @@ machine, Python 3.14.6 local and 3.11 in a throwaway venv (what CI runs), Node 2
 
 | Check | Command | Result |
 |---|---|---|
-| Backend tests | `cd backend && ./venv/Scripts/python.exe -m pytest -q` | **620 passed**; coverage **84.04%** on 3.14 and **76.32%** on 3.11 (gate 75%) |
+| Backend tests | `cd backend && ./venv/Scripts/python.exe -m pytest -q` | **620 passed, 1 skipped**; coverage **84.25%** on 3.14 and **76.48%** on 3.11 (gate 75%), both with no `.env` — i.e. the CI configuration |
 | Backend lint | `./venv/Scripts/python.exe -m flake8 app` | clean |
 | Backend types | `./venv/Scripts/python.exe -m mypy app` | clean, 68 source files |
 | Migrations | `alembic upgrade head` + `alembic check` on a throwaway SQLite file | full chain applies, **no drift** |
@@ -22,9 +22,13 @@ machine, Python 3.14.6 local and 3.11 in a throwaway venv (what CI runs), Node 2
 | Frontend types | `npx tsc --noEmit` | clean |
 | Frontend lint | `npx eslint .` | clean |
 
-The CI job runs the suite on 3.11 only, and that interpreter measures ~8 points lower, so a green
-local 3.14 number says nothing about the gate. Re-measure on 3.11 whenever tests are added around
-interpreter-sensitive code.
+The CI job runs the suite on 3.11 **and with no `.env`**, so the numbers above were measured that
+way. Both differences matter: 3.11 measures ~8 points lower than 3.14, and a local `.env` silently
+changes behaviour the suite can assert on — that is exactly how `test_ai_settings.py` passed here and
+failed in CI (the test sent `http://` and expected the private-address error, which a `DEBUG=False`
+CI only reaches after the earlier https-scheme rejection). The skipped test is
+`test_security_headers.py`'s docs check, which skips itself when `DEBUG=False`. Re-measure with
+`mv .env .env.bak` before running whenever a test asserts on configuration-driven behaviour.
 
 **Not re-run in this pass** (last green in CI or in the pass noted in `changelog.md`): `next build`,
 Playwright smoke (3), axe on the auth pages, the live register→login E2E, `pip-audit`, and every
@@ -73,8 +77,8 @@ no `profile_version` column, and `backend/scripts/admin/check_password.py` still
 
 | Item | Status |
 |---|---|
-| Backend CI was red from 2026-11-10 to 2026-11-11 | **Closed** — 3.11 coverage had fallen to 74.32% under the 75 gate. Three new test modules restored it (see `changelog.md`). |
-| Frontend CI job failed once on `94c9ede` with every later step skipped | **Open** — the suite passes locally (387 tests, also under `TZ=UTC` and `--maxWorkers=2`) and passed in CI on the previous commit, so it is a flake that needs the failing test named from the run log (GitHub login required) or a re-run. |
+| Backend CI was red from 2026-11-10 to 2026-11-11 | **Closed** — two causes, both fixed: 3.11 coverage had fallen to 74.32% under the 75 gate (three new test modules restored it) and `test_ai_settings_rejects_private_base_url` only passed when a local `.env` set `DEBUG` (it now uses an `https://` URL, and a new test pins the non-debug scheme rejection). Verified at 620 passed / 76.48% on 3.11 with no `.env`. See `changelog.md`. |
+| Frontend CI job failed once on `94c9ede` with every later step skipped | **Closed** — the same job passed end to end on `612243a` (387 tests, build, smoke, a11y, live E2E), so the failure was a flake and not a deterministically broken test. Nothing was changed for it; if it recurs, name the test from the run log. |
 
 ## 4. Accepted constraints
 

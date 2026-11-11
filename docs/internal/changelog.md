@@ -789,3 +789,32 @@ password-reset email, remove it, and do the rest of the list.
 4. **Still open:** one frontend CI failure on `94c9ede` (`Run unit tests`, every later step skipped)
    that reproduces neither locally nor on the previous commit. It is recorded as a flake in
    `status.md` section 3 until the failing test is named from the run log.
+
+## That CI Job Had a Second Cause: a Test That Only Passed With a Local `.env` (November 11, 2026)
+
+1. **The coverage fix was not enough.** Run `42950892112` on `612243a` came back with the frontend
+   job fully green — 387 unit tests, `next build`, Playwright smoke, axe and the live E2E, so the
+   `94c9ede` failure was a flake, now closed in `status.md` — and the backend job still red at
+   `Run backend tests`, i.e. at `pytest`, not at lint, types or migrations.
+2. **Reproduced by removing the one thing CI does not have.** With `.env` moved aside, the 3.14 run
+   gave `1 failed, 618 passed, 1 skipped` and 84.21% coverage: the failure was
+   `tests/test_ai_settings.py::test_ai_settings_rejects_private_base_url`, not the ratio. The test
+   sent `http://127.0.0.1:8000/v1` and asserted the Thai "internal address" message. With `DEBUG=True`
+   from the local `.env`, `PUT /api/v1/ai/settings` skips the https-scheme check and reaches
+   `ensure_public_http_url`, which raises the internal-address error. CI has no `.env`, so `DEBUG`
+   is `False`, the scheme check fires first with "Base URL ต้องขึ้นต้นด้วย https://", and the
+   assertion fails. The test, not the endpoint, was wrong: it asserted configuration-dependent
+   behaviour while depending on a local secret file that CI never sees.
+3. **Fixed by making the case deterministic instead of by weakening it.**
+   - `test_ai_settings_rejects_private_base_url` now sends `https://127.0.0.1:8000/v1`, so the scheme
+     check passes under either `DEBUG` value and the private-address guard is what gets exercised.
+   - New `test_ai_settings_requires_https_when_not_in_debug` monkeypatches `DEBUG=False` and pins the
+     scheme rejection with its own message, so both guards are covered without relying on the
+     environment. The file is 9 tests, passing with `.env` **and** with it moved aside.
+4. **Verified under the CI configuration.** Backend, `.env` moved aside, 3.11 venv: **620 passed,
+   1 skipped, 0 failed**, coverage **76.48%** (75 gate), `flake8 app` clean, `mypy app` clean across
+   68 source files. Same repository with `.env` present on 3.14: 84.25%, no failures. The one skip is
+   `test_security_headers.py`'s docs check, which skips itself when `DEBUG=False` — expected in CI.
+5. **Lesson recorded in `status.md`:** the CI job runs 3.11 *and* without `.env`; a local run that
+   has both differences hidden reports a green that means nothing. Measure with `mv .env .env.bak`
+   when a test asserts on configuration-driven behaviour.

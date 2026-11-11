@@ -8,11 +8,11 @@ Production URL: configure this in your deployment environment; do not commit a p
 
 The GitHub Actions pipeline (`ci.yml`) runs on every push and pull request to `main`:
 
-- **Backend:** Python 3.11 — flake8 7.4 lint (`--max-line-length=120`) + mypy 2.4 type check + `alembic upgrade head` and `alembic check` against a throwaway SQLite database + pytest (**620 passed**, coverage 76.32% on 3.11 / 84.04% on 3.14 against a 75% gate)
+- **Backend:** Python 3.11 — flake8 7.4 lint (`--max-line-length=120`) + mypy 2.4 type check + `alembic upgrade head` and `alembic check` against a throwaway SQLite database + pytest (**620 passed, 1 skipped**, coverage 76.48% on 3.11 / 84.25% on 3.14 against a 75% gate, with no `.env` — the CI configuration)
 - **Frontend:** Node 26 — ESLint + TypeScript type-check + **387** Vitest unit tests + Next.js production build + Playwright smoke tests (3) + axe accessibility checks on the auth pages + a live auth E2E (register → login) that starts the backend on SQLite
 - **Dependency audit (blocking):** `pip-audit` gates every push and pull request and re-runs weekly (`cron: 0 2 * * 1`, Mondays 02:00 UTC). The pinned backend set currently reports no known advisories; Dependabot opens the upgrade pull requests (see `.github/dependabot.yml`).
 
-> The coverage gate in `backend/pytest.ini` is `--cov-fail-under=75`, and it is a ratchet: Python 3.11 (what CI runs) measures lower than 3.14 on this suite — an earlier measurement put them at ~75.8% and ~86.7%, and the current pair is 76.32% and 84.04% — so a gate fixed to the higher interpreter would fail on the difference rather than on untested code. Raise the number as 3.11 coverage climbs (see [Current Status](docs/internal/status.md)).
+> The coverage gate in `backend/pytest.ini` is `--cov-fail-under=75`, and it is a ratchet: Python 3.11 (what CI runs) measures lower than 3.14 on this suite — an earlier measurement put them at ~75.8% and ~86.7%, and the current pair is 76.48% and 84.25% — so a gate fixed to the higher interpreter would fail on the difference rather than on untested code. Raise the number as 3.11 coverage climbs (see [Current Status](docs/internal/status.md)).
 
 The migration step matters: the test suite builds its schema from the models, so a broken or forgotten Alembic revision used to pass CI and only fail against production. `alembic check` additionally fails when the models drift from the migration head.
 
