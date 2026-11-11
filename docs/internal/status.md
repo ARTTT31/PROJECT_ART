@@ -1,7 +1,7 @@
 # ART Workspace — Current Status
 
-**Verified:** November 11, 2026 · `main` at `623fd3a` · Windows dev machine, Python 3.14.6 local
-(CI runs 3.11), Node 26
+**Verified:** November 11, 2026 · `main` at `623fd3a` plus the coverage pass below · Windows dev
+machine, Python 3.14.6 local and 3.11 in a throwaway venv (what CI runs), Node 26
 
 > **What this file is.** The single place that states what is true *right now*: verified numbers, what
 > that verification covered, and every known gap with its status. `architecture.md` explains how the
@@ -14,7 +14,7 @@
 
 | Check | Command | Result |
 |---|---|---|
-| Backend tests | `cd backend && ./venv/Scripts/python.exe -m pytest -q` | **590 passed**, coverage **82.83%** (gate 75%) |
+| Backend tests | `cd backend && ./venv/Scripts/python.exe -m pytest -q` | **620 passed**; coverage **84.04%** on 3.14 and **76.32%** on 3.11 (gate 75%) |
 | Backend lint | `./venv/Scripts/python.exe -m flake8 app` | clean |
 | Backend types | `./venv/Scripts/python.exe -m mypy app` | clean, 68 source files |
 | Migrations | `alembic upgrade head` + `alembic check` on a throwaway SQLite file | full chain applies, **no drift** |
@@ -22,9 +22,13 @@
 | Frontend types | `npx tsc --noEmit` | clean |
 | Frontend lint | `npx eslint .` | clean |
 
+The CI job runs the suite on 3.11 only, and that interpreter measures ~8 points lower, so a green
+local 3.14 number says nothing about the gate. Re-measure on 3.11 whenever tests are added around
+interpreter-sensitive code.
+
 **Not re-run in this pass** (last green in CI or in the pass noted in `changelog.md`): `next build`,
 Playwright smoke (3), axe on the auth pages, the live register→login E2E, `pip-audit`, and every
-deployed-only check in §4. Two interpreter differences matter when reading coverage: Python 3.11
+deployed-only check in §5. Two interpreter differences matter when reading coverage: Python 3.11
 (what CI runs) measures lower than 3.14 on this suite, and the gate is deliberately 75 rather than 80.
 
 ## 2. Open findings from the November 10, 2026 audit
@@ -65,7 +69,14 @@ no `profile_version` column, and `backend/scripts/admin/check_password.py` still
 | U13 | All enabled widgets mount on page entry (13 `dynamic()` imports) | M | Open |
 | U14 | The bell re-derives weather/oil numbers from the same caches the widgets fetch, duplicating work and risking different values | M | Open |
 
-## 3. Accepted constraints
+## 3. Open infrastructure risk
+
+| Item | Status |
+|---|---|
+| Backend CI was red from 2026-11-10 to 2026-11-11 | **Closed** — 3.11 coverage had fallen to 74.32% under the 75 gate. Three new test modules restored it (see `changelog.md`). |
+| Frontend CI job failed once on `94c9ede` with every later step skipped | **Open** — the suite passes locally (387 tests, also under `TZ=UTC` and `--maxWorkers=2`) and passed in CI on the previous commit, so it is a flake that needs the failing test named from the run log (GitHub login required) or a re-run. |
+
+## 4. Accepted constraints
 
 These are decisions, not defects — recorded so they are not re-litigated as bugs:
 
@@ -78,7 +89,7 @@ These are decisions, not defects — recorded so they are not re-litigated as bu
 | Whole-document JSON blobs | Cheapest model that worked for single-user-per-account data; conflict detection is finding P2. |
 | No password-reset email in CI | Password recovery is shipped, but delivery depends on `EMAIL_BACKEND` being configured on Render — unverified from a local checkout. |
 
-## 4. Deployed-only checks that remain open
+## 5. Deployed-only checks that remain open
 
 These need the real environment and cannot be closed locally:
 
@@ -90,7 +101,7 @@ These need the real environment and cannot be closed locally:
 5. `alembic upgrade head` against the production database before the backend deploy (Render's
    `preDeployCommand` runs it; confirm it did).
 
-## 5. Document ownership
+## 6. Document ownership
 
 | Question | Owner |
 |---|---|
@@ -106,7 +117,7 @@ Rule that keeps this set honest: **a dated narrative belongs in `changelog.md` o
 lands, update `status.md` (numbers and gaps) and `architecture.md` (if the shape changed), then append
 to `changelog.md`. Do not add a new dated section to `status.md`.
 
-## 6. How to refresh this file
+## 7. How to refresh this file
 
 ```bash
 cd backend && ./venv/Scripts/python.exe -m pytest -q           # count + coverage

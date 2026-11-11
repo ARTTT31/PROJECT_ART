@@ -760,3 +760,32 @@ password-reset email, remove it, and do the rest of the list.
    (75% gate), `flake8 app` clean, `mypy app` clean across 68 files, the full Alembic chain applies and
    `alembic check` reports no drift; frontend 387 Vitest tests across 60 files with `tsc --noEmit` and
    `eslint .` clean. `next build`, the Playwright suites and the deployed-only checks were not re-run.
+
+## Backend CI Repair and Coverage for the Untested Services (November 11, 2026)
+
+1. **The backend job had been red since November 10, and the code was not the problem.** All 590 tests
+   passed; CI measures coverage on Python 3.11, where this suite reports roughly eight points lower
+   than a local 3.14 run, and the AI and notification surface added on 9-10 November had pulled the
+   3.11 figure to **74.32%** against the 75 gate. Reproduced in a throwaway 3.11 venv before changing
+   anything: the same suite passed at 74.32% coverage, so the failure was the ratio, not a test.
+2. **Three test modules, aimed at what was actually unexercised.**
+   - `tests/test_notification_dispatcher.py` (14 tests). `notification_dispatcher` had **no direct
+     test** (23% on 3.11). Covers line webhook vs. line token, Telegram, the webhook payload shape,
+     non-2xx statuses, transport errors, an SSRF refusal (asserting the request is never made), a
+     per-event opt-out, multi-channel counting and the bounded-dispatch wrapper. The module is now at
+     100%.
+   - `tests/test_daily_briefing_dispatch.py` (6 tests). The sending half of the briefing service was
+     untested: push plus external channels and the history row, the `[ทดสอบ]` title and `briefing-test-`
+     prefix, a failing push not aborting the briefing, a failed history write rolling back and still
+     answering success, and the scheduler sending only to accounts whose enabled time matches
+     (57% -> 86%).
+   - `tests/test_user_service_blob_writers.py` (10 tests). The profile JSON writers and the quick-link
+     sanitiser path: unknown scheme dropped, duplicate id and duplicate url dropped, relative in-app
+     path kept, the stored blob equal to what the writer returns, and each writer refusing an unknown
+     account.
+3. **Verified:** **620 passed** at **84.04%** on Python 3.14 and **76.32%** on Python 3.11 (75 gate);
+   `flake8 app tests` clean; `mypy app` clean across 68 files. `next build`, the Playwright suites and
+   the deployed-only checks were not re-run in this pass.
+4. **Still open:** one frontend CI failure on `94c9ede` (`Run unit tests`, every later step skipped)
+   that reproduces neither locally nor on the previous commit. It is recorded as a flake in
+   `status.md` section 3 until the failing test is named from the run log.
