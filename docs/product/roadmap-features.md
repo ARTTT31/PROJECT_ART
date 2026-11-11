@@ -1,6 +1,6 @@
 # Roadmap & Feature Inventory
 
-**Last updated:** November 6, 2026
+**Last updated:** November 11, 2026
 
 > **Sources of truth.** This file inventories what exists and what is planned. It must not
 > restate or contradict the documents that own those decisions:
@@ -8,8 +8,10 @@
 > - Product brief, users, brand personality: [`PRODUCT.md`](../../PRODUCT.md)
 > - Design language, colour, typography, motion: [`DESIGN.md`](../../DESIGN.md) and
 >   [`design-system/art-workspace/MASTER.md`](../../design-system/art-workspace/MASTER.md)
-> - Architecture, verified test state, known gaps:
->   [`docs/internal/project-analysis.md`](../internal/project-analysis.md)
+> - How the system is built today: [`docs/internal/architecture.md`](../internal/architecture.md)
+> - Verified test state, open findings, accepted constraints:
+>   [`docs/internal/status.md`](../internal/status.md)
+> - When a behaviour changed and why: [`docs/internal/changelog.md`](../internal/changelog.md)
 >
 > An earlier revision of this file declared gradients and glassmorphism part of the brand and
 > targeted WCAG AAA. Both contradicted the Apple-HIG design system ("no decorative gradients;
@@ -25,9 +27,11 @@
 | Route | Purpose |
 |---|---|
 | `/login` | Email/password sign-in |
-| `/register`, `/verify-email` | Registration policy and email verification (no self-service password reset — an admin re-issues the password from `/admin`) |
+| `/register`, `/verify-email` | Registration policy and email verification |
+| `/forgot-password`, `/reset-password` | Self-service password recovery — single-use emailed link, 30-minute TTL, clears lockout and revokes every session on success |
 | `/dashboard` | Widget grid — rearrange, resize (S/M/L), show/hide |
-| `/profile` | Name/email/password, Quick Links, main-menu config, camera config, per-account branding |
+| `/profile` | Name/email/password, 2FA, own devices, Quick Links, main-menu config, camera config, per-account branding, AI provider, data export |
+| `/notifications` | Full alert archive with read/dismissed state |
 | `/admin` | Admin console — registration policy, pending approvals, user management |
 | `/audit` | Searchable/filterable activity log (admin only) |
 | `/camera` | CCTV monitor — permission-gated per user |
@@ -100,7 +104,7 @@
 | Single instance by default | The WebSocket registry can fan out through Redis (`WS_BROADCAST_REDIS_URL`) and the rate limiter can use Redis (`SLOWAPI_STORAGE_URI`), but both default to process-local and startup logs a `[SCALING]` notice. See README -> *Horizontal scaling*. |
 | Third-party market data | Yahoo Finance / Frankfurter / Thai Gold API have no SLA; the widget shows the last known value (or an empty block) rather than failing the whole page. |
 | Partial i18n | A `th`/`en` message catalogue (`lib/i18n`) exists and drives 12 of the 97 components; the rest still hardcode Thai copy. Adding a language means migrating a screen at a time, not flipping a switch. |
-| Partial frontend coverage | 323 Vitest tests across 44 files; 522 backend tests at 85.1% coverage. 26 test files cover 84 screens/components, so `npm run test:coverage` remains the honest number. Playwright runs axe checks on the auth pages and a live register → login E2E against the backend in CI. |
+| Partial frontend coverage | 387 Vitest tests across 60 files; 590 backend tests at 82.83% coverage (Python 3.14, verified 2026-11-11). Route-level tests exist only for `login`, `register`, `forgot-password` and `share-target`, so `npm run test:coverage` remains the honest number. Playwright runs axe checks on the auth pages and a live register → login E2E against the backend in CI. |
 
 ---
 
@@ -156,7 +160,8 @@ scope is not re-litigated as "still planned".
 
 A static audit of the auth, persistence, AI and CSP paths produced the fix plan in
 [`docs/superpowers/plans/2026-11-10-security-hardening.md`](../superpowers/plans/2026-11-10-security-hardening.md).
-Nothing in this list has shipped yet.
+Nothing in this list has shipped yet (re-checked 2026-11-11; see
+[`status.md`](../internal/status.md) for the live status of each finding).
 
 1. **Real client IP for account state (High).** `POST /auth/login` and the other auth/admin paths
    read `request.client.host`, which is the platform proxy behind Render, so the `(email, IP)`

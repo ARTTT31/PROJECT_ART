@@ -6,7 +6,9 @@ Welcome to **ART Workspace**. Whenever you interact with or modify this codebase
 
 ## 🧭 Automatic Skill Routing Matrix
 
-Before modifying or creating any code, AI agents MUST identify the relevant area and consult the installed skill in `.agent/skills/`:
+Before modifying or creating any code, AI agents MUST identify the relevant area and consult the installed skill in `.agent/skills/`.
+
+**Scope discipline:** load only the skill whose `paths` / `when-to-use` matches the file being touched. The three project-specific skills at the end of this table are deliberately narrow — loading them for unrelated work is a mistake, not thoroughness.
 
 | Domain / Task | Target Files / Scope | Mandatory Skills to Check & Follow |
 | :--- | :--- | :--- |
@@ -20,6 +22,9 @@ Before modifying or creating any code, AI agents MUST identify the relevant area
 | **Brand Identity & Voice** | Branding, tone, copy, logo assets | `.agent/skills/brand/` + `.agent/skills/design/` (Visual identity, CIP mockups) |
 | **Banners, Share Cards & Visuals** | Infographic cards, social banners, canvas export | `.agent/skills/banner-design/` + `.agent/skills/ui-styling/` |
 | **HTML Slides & Presentations** | Presentation decks, reports, Chart.js views | `.agent/skills/slides/` |
+| **Project Documentation Discipline** | `docs/internal/**`, `docs/product/roadmap-features.md`, `README.md` | `.agent/skills/project-docs-discipline/` — only when behaviour, routes, numbers or a finding changed |
+| **Auth, Sessions & Identity Surface** | `backend/app/api/v1/endpoints/{auth,users,profile,system,websockets}.py`, `backend/app/core/{security,rate_limit,totp}.py`, `frontend/src/lib/api/**`, `frontend/src/components/Auth/**` | `.agent/skills/auth-surface-rules/` — only for IP/cookie/payload/session changes |
+| **Deployed Environment Checks** | `render.yaml`, `frontend/next.config.js`, `.github/workflows/**`, `docs/setup/production-*.md` | `.agent/skills/deployed-verification/` — only for live-origin checks; local runs stay with `verification-before-completion` |
 
 ---
 

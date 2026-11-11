@@ -8,11 +8,11 @@ Production URL: configure this in your deployment environment; do not commit a p
 
 The GitHub Actions pipeline (`ci.yml`) runs on every push and pull request to `main`:
 
-- **Backend:** Python 3.11 — flake8 7.4 lint (`--max-line-length=120`) + mypy 2.4 type check + `alembic upgrade head` and `alembic check` against a throwaway SQLite database + pytest (**574 passed**, coverage 82.4% against a 75% gate)
-- **Frontend:** Node 26 — ESLint + TypeScript type-check + **373** Vitest unit tests + Next.js production build + Playwright smoke tests (3) + axe accessibility checks on the auth pages + a live auth E2E (register → login) that starts the backend on SQLite
+- **Backend:** Python 3.11 — flake8 7.4 lint (`--max-line-length=120`) + mypy 2.4 type check + `alembic upgrade head` and `alembic check` against a throwaway SQLite database + pytest (**590 passed**, coverage 82.83% against a 75% gate)
+- **Frontend:** Node 26 — ESLint + TypeScript type-check + **387** Vitest unit tests + Next.js production build + Playwright smoke tests (3) + axe accessibility checks on the auth pages + a live auth E2E (register → login) that starts the backend on SQLite
 - **Dependency audit (blocking):** `pip-audit` gates every push and pull request and re-runs weekly (`cron: 0 2 * * 1`, Mondays 02:00 UTC). The pinned backend set currently reports no known advisories; Dependabot opens the upgrade pull requests (see `.github/dependabot.yml`).
 
-> The coverage gate in `backend/pytest.ini` is `--cov-fail-under=75`: Python 3.11 measures ~75.8% on this suite while 3.14 measures ~86.7%, so the old 80 gate failed on the interpreter difference rather than on untested code. The number is a ratchet — raise it as 3.11 coverage climbs back toward 80 (see [Project Analysis](docs/internal/project-analysis.md)).
+> The coverage gate in `backend/pytest.ini` is `--cov-fail-under=75`, and it is a ratchet: Python 3.11 (what CI runs) measures lower than 3.14 on this suite — an earlier measurement put them at ~75.8% and ~86.7%, and 3.14 currently reports 82.83% — so a gate fixed to the higher interpreter would fail on the difference rather than on untested code. Raise the number as 3.11 coverage climbs (see [Current Status](docs/internal/status.md)).
 
 The migration step matters: the test suite builds its schema from the models, so a broken or forgotten Alembic revision used to pass CI and only fail against production. `alembic check` additionally fails when the models drift from the migration head.
 
@@ -38,7 +38,10 @@ The migration step matters: the test suite builds its schema from the models, so
 
 - [Roadmap and Requirements](docs/product/roadmap-features.md)
 - [Widget Updates](docs/product/widget-updates.md)
-- [Current Project Analysis](docs/internal/project-analysis.md)
+- [Architecture](docs/internal/architecture.md) — how the system is built today
+- [Current Status](docs/internal/status.md) — verified numbers and open findings
+- [Change Log](docs/internal/changelog.md) — dated record of every pass
+- [Project Analysis index](docs/internal/project-analysis.md) — kept for existing links
 
 ## Tech Stack
 
@@ -216,8 +219,8 @@ PROJECT_ART/
 ├── backend/                     # FastAPI
 │   └── app/
 │       ├── api/v1/endpoints/    # auth, profile, users, audit, system, market, weather,
-│       │                        # oil_prices, websockets
-│       └── core/                # config.py, database.py, security.py, personal_lists.py
+│       │                        # oil_prices, notifications, planner, websockets, ai
+│       └── core/                # config, database, security, rate_limit, totp, secret_box
 ├── design-system/art-workspace/ # MASTER.md + page overrides
 └── .github/workflows/ci.yml     # CI: flake8 + pytest + ESLint + build
 ```
