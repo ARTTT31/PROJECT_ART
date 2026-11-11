@@ -130,10 +130,14 @@ export function WidgetManagerDialog({
           <DialogDescription>เปิดหรือปิดสวิตช์เพื่อจัดการวิดเจ็ตบนแดชบอร์ดหลักของคุณ</DialogDescription>
         </DialogHeader>
 
-        <DialogBody className="space-y-4">
+        {/* `pt-0` is load-bearing: a sticky child cannot paint over its scroll
+            container's top padding, so with `py-4` the list showed through a
+            16px strip under the header. The sticky bar below carries that
+            padding itself. */}
+        <DialogBody className="space-y-4 pt-0">
           {/* Sticky search + count: the list scrolls under them, so finding a
               widget never means scanning the whole set. */}
-          <div className="sticky top-0 z-10 -mx-6 -mt-4 space-y-1.5 bg-[var(--surface)] px-6 pb-2 pt-4">
+          <div className="sticky top-0 z-10 -mx-6 space-y-1.5 border-b border-[var(--hairline)] bg-[var(--surface)] px-6 pb-2 pt-4">
             <div className="relative">
               <Search
                 size={15}
