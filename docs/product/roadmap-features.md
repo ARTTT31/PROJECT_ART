@@ -151,3 +151,52 @@ scope is not re-litigated as "still planned".
      double-submit CSRF token plus a rotated auth cookie, and a replay from a background worker
      would carry neither, so the request would be rejected after the fact. The only thing SW-level
      sync would add is flushing while the tab is closed; today that waits for the next visit.
+
+### Phase 2b: Audit Follow-ups (planned 2026-11-10)
+
+A static audit of the auth, persistence, AI and CSP paths produced the fix plan in
+[`docs/superpowers/plans/2026-11-10-security-hardening.md`](../superpowers/plans/2026-11-10-security-hardening.md).
+Nothing in this list has shipped yet.
+
+1. **Real client IP for account state (High).** `POST /auth/login` and the other auth/admin paths
+   read `request.client.host`, which is the platform proxy behind Render, so the `(email, IP)`
+   backoff collapses to per-email and anyone can lock a known account out; audit rows and
+   “new device” mails record the proxy address. Fix: `get_real_client_ip()` at every site.
+2. **Stale-write detection for profile JSON (High).** Notes, finance, reminders and watchlist are
+   whole-document columns replaced on each save, so two devices overwrite each other. Add a
+   `profile_version` compare-and-set and a `409` the UI reports instead of claiming success.
+3. **Per-account AI quota (Medium).** `/ai/chat` is limited only per IP (30/min); a deployment key
+   has no daily budget. Claim a per-user/day counter before an external model call.
+4. **CSP without `'unsafe-inline'` scripts (Medium).** Pin the theme bootstrap by SHA-256 and drop
+   the blanket `img-src http:`, keeping LAN camera origins behind an explicit env allow-list.
+5. **No shipped default admin credentials (Medium).** Delete `scripts/admin/check_password.py` and
+   make `create_admin.py` require `ADMIN_EMAIL` / `ADMIN_PASSWORD`.
+6. **Cookie lifetimes from settings (Low).** Replace the hardcoded `30*60` / `7*24*60*60`
+   `max_age` values so changing `ACCESS_TOKEN_EXPIRE_MINUTES` cannot desynchronise them.
+7. **Fail loudly when shared state is required (Low).** `REQUIRE_SHARED_STATE=true` makes startup
+   refuse an in-memory limiter or a process-local WebSocket bus.
+
+### Phase 2c: UX & Usability (planned 2026-11-10)
+
+The same audit reviewed the signed-in UI. The full task list is in
+[`docs/superpowers/plans/2026-11-10-ux-usability-pass.md`](../superpowers/plans/2026-11-10-ux-usability-pass.md).
+
+1. **Camera cache leaks across accounts (High).** `artWorkspaceCameraConfig` is unscoped and survives
+   logout, so the next account on a shared browser sees the previous account’s streams. Scope it with
+   `offlineScope()` and purge it with the rest of the offline data.
+2. **Notification read state never leaves one device (Medium).** The bell and history page keep read /
+   dismissed ids in localStorage only; move them to the account with a cache-first local copy.
+3. **Missing route and widget states (Medium).** Only 3 of 29 routes have a `loading.tsx`, and four
+   widgets render nothing when their API fails. Add skeletons and one shared empty/error/retry state.
+4. **No shared Button, global pill override (Medium).** 252 raw `<button>`s and an unlayered
+   `button { border-radius: 9999px }` force `!` overrides; add `ui/Button` and move the rule into
+   `@layer base`.
+5. **Authenticated pages are never audited (Medium).** axe covers only the three public auth pages;
+   add a signed-in storage state and run it on dashboard/admin/profile/planner.
+6. **Tablet sizing and touch targets (Medium).** Small widgets are half-width from `md` (charts squeeze
+   at 768px) and the drag handle is 13px tall; give the grid a tested breakpoint helper and a 44px hit
+   area, plus a keyboard-sorting hint.
+7. **Save status and undo (Low-Medium).** Autosave gives no confirmation, and deleting a note cannot be
+   undone; add a save indicator wired to the real request result and a 5-second undo.
+8. **Widgets all mount at once (Low-Medium).** Thirteen dynamic widgets mount on entry; mount them as
+   they approach the viewport, and share one market/weather snapshot with the notification bell.
