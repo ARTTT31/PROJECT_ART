@@ -74,6 +74,12 @@ async def test_requires_auth(client):
     assert (await client.get("/api/v1/football/premier-league")).status_code == 401
 
 
+def test_normalize_date_accepts_both_forms():
+    assert football.normalize_date("2026-11-08") == "20261108"
+    assert football.normalize_date("20261108") == "20261108"
+    assert football.normalize_date(None) is None
+
+
 def test_parse_events_flattens_the_scoreboard():
     events = football._parse_events(SCOREBOARD_PAYLOAD)
 
@@ -89,7 +95,7 @@ def test_parse_events_flattens_the_scoreboard():
 
 @pytest.mark.asyncio
 async def test_returns_latest_results(client, logged_in_user, monkeypatch):
-    async def _load():
+    async def _load(date):
         return _payload()
 
     monkeypatch.setattr(football, "_fetch_events", _load)
@@ -107,7 +113,7 @@ async def test_returns_latest_results(client, logged_in_user, monkeypatch):
 async def test_fresh_cache_skips_the_provider(client, logged_in_user, monkeypatch):
     calls = {"count": 0}
 
-    async def _load():
+    async def _load(date):
         calls["count"] += 1
         return _payload()
 
@@ -119,8 +125,31 @@ async def test_fresh_cache_skips_the_provider(client, logged_in_user, monkeypatc
 
 
 @pytest.mark.asyncio
+async def test_selected_date_is_forwarded_to_the_provider(
+    client, logged_in_user, monkeypatch
+):
+    seen = {}
+
+    async def _load(date):
+        seen["date"] = date
+        return _payload()
+
+    monkeypatch.setattr(football, "_fetch_events", _load)
+
+    response = await client.get("/api/v1/football/premier-league?date=2026-11-08")
+    assert response.status_code == 200
+    assert seen["date"] == "20261108"
+
+
+@pytest.mark.asyncio
+async def test_invalid_date_is_rejected(client, logged_in_user):
+    response = await client.get("/api/v1/football/premier-league?date=08-11-2026")
+    assert response.status_code == 400
+
+
+@pytest.mark.asyncio
 async def test_provider_failure_reports_unavailable(client, logged_in_user, monkeypatch):
-    async def _load():
+    async def _load(date):
         raise RuntimeError("espn down")
 
     monkeypatch.setattr(football, "_fetch_events", _load)

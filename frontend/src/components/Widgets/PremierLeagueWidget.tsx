@@ -1,7 +1,15 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AlertCircle, CalendarClock, RefreshCw, Trophy } from 'lucide-react';
+import Image from 'next/image';
+import {
+  AlertCircle,
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  RefreshCw,
+  Trophy,
+} from 'lucide-react';
 import WidgetSizeToggle from './WidgetSizeToggle';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
 
@@ -12,6 +20,7 @@ export interface FootballTeam {
   name: string;
   full_name: string;
   abbreviation: string;
+  logo: string | null;
   score: number | null;
   winner: boolean;
 }
@@ -21,53 +30,60 @@ export interface FootballMatch {
   kickoff: string | null;
   status: string;
   detail: string;
+  clock: string;
   state: 'pre' | 'in' | 'post' | string;
   completed: boolean;
   home: FootballTeam;
   away: FootballTeam;
   venue: string;
+  broadcast: string;
 }
 
 interface FootballData {
   success: boolean;
   league: string;
+  date: string | null;
   events: FootballMatch[];
+  is_live?: boolean;
   fetched_at: string | null;
   is_stale?: boolean;
   source?: string;
 }
 
-const CACHE_KEY = 'artPremierLeagueCacheV1';
+const CACHE_PREFIX = 'artPremierLeagueCacheV2';
 const CACHE_TTL_MS = 10 * 60_000;
-const REFRESH_MS = 5 * 60_000;
+const LIVE_REFRESH_MS = 60_000;
+const IDLE_REFRESH_MS = 5 * 60_000;
 
-type EplCache = { savedAt: number; data: FootballData };
+// ── Helpers ──────────────────────────────────────────────────────────────────
 
-function loadCache(): EplCache | null {
-  if (typeof window === 'undefined') return null;
-  try {
-    const raw = localStorage.getItem(CACHE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as EplCache;
-    return parsed?.savedAt && parsed?.data ? parsed : null;
-  } catch {
-    return null;
-  }
+function isoDate(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
-function saveCache(data: FootballData) {
-  try {
-    localStorage.setItem(CACHE_KEY, JSON.stringify({ savedAt: Date.now(), data }));
-  } catch {
-    /* private mode — the widget still works without a cache */
-  }
+function parseIso(iso: string): Date {
+  return new Date(`${iso}T12:00:00`);
 }
 
 function formatDay(iso: string | null): string {
   if (!iso) return '';
-  const date = new Date(iso);
+  const date = iso.length === 10 ? parseIso(iso) : new Date(iso);
   if (Number.isNaN(date.getTime())) return '';
   return date.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
+}
+
+function formatFullDay(iso: string): string {
+  const date = parseIso(iso);
+  if (Number.isNaN(date.getTime())) return iso;
+  return date.toLocaleDateString('th-TH', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
 }
 
 function formatTime(iso: string | null): string {
@@ -75,6 +91,35 @@ function formatTime(iso: string | null): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return '';
   return date.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+}
+
+function loadCache(key: string): { savedAt: number; data: FootballData } | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { savedAt: number; data: FootballData };
+    return parsed?.savedAt && parsed?.data ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveCache(key: string, data: FootballData) {
+  try {
+    localStorage.setItem(key, JSON.stringify({ savedAt: Date.now(), data }));
+  } catch {
+    /* private mode — the widget still works without a cache */
+  }
+}
+
+function newestEventDate(data: FootballData | null): string | null {
+  if (!data?.events?.length) return null;
+  const times = data.events
+    .map((event) => (event.kickoff ? new Date(event.kickoff) : null))
+    .filter((value): value is Date => value !== null && !Number.isNaN(value.getTime()));
+  if (times.length === 0) return null;
+  return isoDate(new Date(Math.max(...times.map((value) => value.getTime()))));
 }
 
 // ── Component ────────────────────────────────────────────────────────────────
@@ -87,13 +132,14 @@ export default function PremierLeagueWidget({
   onResize?: (size: number) => void;
 }) {
   const [data, setData] = useState<FootballData | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fromCache, setFromCache] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
 
-  const load = useCallback(async (opts?: { refresh?: boolean }) => {
+  const load = useCallback(async (date: string | null, opts?: { refresh?: boolean }) => {
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
@@ -102,7 +148,8 @@ export default function PremierLeagueWidget({
     setError(null);
 
     try {
-      const res = await fetchWithAuth('/api/v1/football/premier-league', {
+      const query = date ? `?date=${date}` : '';
+      const res = await fetchWithAuth(`/api/v1/football/premier-league${query}`, {
         signal: controller.signal,
       });
       if (!res.ok) {
@@ -114,7 +161,7 @@ export default function PremierLeagueWidget({
       }
       setData(result);
       setFromCache(false);
-      saveCache(result);
+      saveCache(`${CACHE_PREFIX}:${date ?? 'latest'}`, result);
     } catch (err) {
       if ((err as Error)?.name === 'AbortError') return;
       console.warn('Premier League fetch failed:', err);
@@ -125,57 +172,50 @@ export default function PremierLeagueWidget({
     }
   }, []);
 
+  // Date change: show the cached day immediately, then refresh from the API.
   useEffect(() => {
-    const cached = loadCache();
+    const key = `${CACHE_PREFIX}:${selectedDate ?? 'latest'}`;
+    const cached = loadCache(key);
     if (cached && Date.now() - cached.savedAt <= CACHE_TTL_MS) {
       setData(cached.data);
       setFromCache(true);
       setLoading(false);
+    } else {
+      setData(null);
     }
-    void load();
-    const interval = setInterval(() => void load({ refresh: true }), REFRESH_MS);
+    void load(selectedDate);
+  }, [selectedDate, load]);
+
+  // Live scores refresh every minute; a finished matchday is checked every five.
+  useEffect(() => {
+    const delay = data?.is_live ? LIVE_REFRESH_MS : IDLE_REFRESH_MS;
+    const interval = setInterval(() => void load(selectedDate, { refresh: true }), delay);
     return () => clearInterval(interval);
-  }, [load]);
+  }, [data?.is_live, selectedDate, load]);
 
   useEffect(() => () => abortRef.current?.abort(), []);
 
-  const finishPanel = loading && !data;
+  const todayIso = isoDate(new Date());
+  const latestDay = newestEventDate(data);
+  const anchorDate = selectedDate ?? latestDay ?? todayIso;
 
-  if (finishPanel) {
-    return (
-      <div
-        className="flex h-full min-h-[300px] flex-col rounded-apple-lg border border-[var(--hairline)] bg-[var(--surface)] p-5"
-        role="status"
-        aria-live="polite"
-        aria-label="กำลังโหลดผลพรีเมียร์ลีก"
-      >
-        <div className="mb-4 flex items-center gap-2.5">
-          <div className="h-9 w-9 animate-pulse rounded-apple-md bg-[var(--surface-grouped-2)]" />
-          <div className="space-y-2">
-            <div className="h-4 w-28 animate-pulse rounded-full bg-[var(--surface-chip)]" />
-            <div className="h-3 w-36 animate-pulse rounded-full bg-[var(--surface-grouped-2)]" />
-          </div>
-        </div>
-        <div className="space-y-2">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-12 animate-pulse rounded-apple-widget bg-[var(--surface-grouped)]" />
-          ))}
-        </div>
-      </div>
-    );
-  }
+  const shiftDay = (delta: number) => {
+    const next = parseIso(anchorDate);
+    next.setDate(next.getDate() + delta);
+    setSelectedDate(isoDate(next));
+  };
 
   const events = data?.events ?? [];
+  const live = events.filter((event) => event.state === 'in');
   const finished = events
-    .filter((event) => event.state === 'post' && event.completed)
+    .filter((event) => event.state === 'post')
     .sort((a, b) => new Date(b.kickoff ?? 0).getTime() - new Date(a.kickoff ?? 0).getTime());
-  const nextMatch = events
+  const upcoming = events
     .filter((event) => event.state === 'pre')
-    .sort((a, b) => new Date(a.kickoff ?? 0).getTime() - new Date(b.kickoff ?? 0).getTime())[0];
+    .sort((a, b) => new Date(a.kickoff ?? 0).getTime() - new Date(b.kickoff ?? 0).getTime());
+  const shownFinished = width === 1 ? finished.slice(0, 4) : finished;
 
-  // A one-column tile only has room for the last few results; wider tiles show
-  // the whole matchday.
-  const shown = width === 1 ? finished.slice(0, 3) : finished;
+  const loadingFirst = loading && !data;
 
   return (
     <section
@@ -198,11 +238,13 @@ export default function PremierLeagueWidget({
             <p className="mt-0.5 truncate text-[11px] text-[var(--ink-tertiary)]">
               {loading || refreshing
                 ? 'กำลังอัปเดต...'
-                : fromCache
-                  ? 'แสดงข้อมูลจากแคช'
-                  : data?.is_stale
-                    ? 'ข้อมูลอาจไม่เป็นปัจจุบัน'
-                    : `ผลล่าสุด ${finished.length} นัด`}
+                : data?.is_live
+                  ? 'กำลังแข่งขัน · อัปเดตทุกนาที'
+                  : fromCache
+                    ? 'แสดงข้อมูลจากแคช'
+                    : data?.is_stale
+                      ? 'ข้อมูลอาจไม่เป็นปัจจุบัน'
+                      : `${finished.length} ผล · ${upcoming.length} โปรแกรม`}
             </p>
           </div>
         </div>
@@ -210,7 +252,7 @@ export default function PremierLeagueWidget({
         <div className="flex shrink-0 items-center gap-1">
           <button
             type="button"
-            onClick={() => void load({ refresh: true })}
+            onClick={() => void load(selectedDate, { refresh: true })}
             aria-label="รีเฟรชผลพรีเมียร์ลีก"
             title="รีเฟรช"
             className="flex h-6 w-6 items-center justify-center rounded-full text-[var(--ink-tertiary)] transition-colors hover:bg-[var(--surface-grouped)] hover:text-[var(--ink)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)] active:scale-[0.95]"
@@ -221,16 +263,62 @@ export default function PremierLeagueWidget({
         </div>
       </div>
 
+      {/* ── Date picker ─────────────────────────────────────────────────── */}
+      <div className="mt-2.5 flex items-center gap-1">
+        <button
+          type="button"
+          onClick={() => shiftDay(-1)}
+          aria-label="วันก่อนหน้า"
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[var(--ink-secondary)] transition-colors hover:bg-[var(--surface-grouped)] hover:text-[var(--ink)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)] active:scale-[0.95]"
+        >
+          <ChevronLeft size={15} aria-hidden="true" />
+        </button>
+
+        <label className="relative flex min-w-0 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-full bg-[var(--surface-grouped)] px-2.5 py-1 text-[11px] font-semibold text-[var(--ink)] ring-1 ring-[var(--hairline)] transition-colors hover:bg-[var(--surface-chip)] focus-within:ring-2 focus-within:ring-[var(--accent)]">
+          <CalendarDays size={12} className="shrink-0 text-[var(--ink-tertiary)]" aria-hidden="true" />
+          <span className="truncate">
+            {formatFullDay(anchorDate)}
+            {!selectedDate && <span className="text-[var(--ink-tertiary)]"> · ล่าสุด</span>}
+          </span>
+          <input
+            type="date"
+            value={anchorDate}
+            onChange={(event) => setSelectedDate(event.target.value || null)}
+            aria-label="เลือกวันที่ดูผลพรีเมียร์ลีก"
+            className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+          />
+        </label>
+
+        <button
+          type="button"
+          onClick={() => shiftDay(1)}
+          aria-label="วันถัดไป"
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[var(--ink-secondary)] transition-colors hover:bg-[var(--surface-grouped)] hover:text-[var(--ink)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)] active:scale-[0.95]"
+        >
+          <ChevronRight size={15} aria-hidden="true" />
+        </button>
+
+        {selectedDate && (
+          <button
+            type="button"
+            onClick={() => setSelectedDate(null)}
+            className="small-control shrink-0 rounded-full bg-[var(--accent-soft)] px-2 py-1 text-[10px] font-bold text-[var(--accent-text)] transition-colors hover:bg-[var(--accent-soft-weak)]"
+          >
+            ล่าสุด
+          </button>
+        )}
+      </div>
+
       {/* ── Error ───────────────────────────────────────────────────────── */}
       {error && (
-        <div className="mt-3 flex items-center justify-between gap-2 rounded-apple-widget bg-[var(--danger-soft)] px-3 py-2 text-[12px] font-medium text-[var(--danger)]">
+        <div className="mt-2.5 flex items-center justify-between gap-2 rounded-apple-widget bg-[var(--danger-soft)] px-3 py-2 text-[12px] font-medium text-[var(--danger)]">
           <span className="flex min-w-0 items-center gap-1.5">
             <AlertCircle size={13} className="shrink-0" aria-hidden="true" />
             <span className="truncate">{error}</span>
           </span>
           <button
             type="button"
-            onClick={() => void load({ refresh: true })}
+            onClick={() => void load(selectedDate, { refresh: true })}
             className="shrink-0 font-bold underline"
           >
             ลองใหม่
@@ -238,55 +326,47 @@ export default function PremierLeagueWidget({
         </div>
       )}
 
-      {data?.is_stale && !error && (
-        <p className="mt-2 flex items-center gap-1 text-[11px] font-medium text-[var(--warning)]">
-          <AlertCircle size={11} aria-hidden="true" /> ข้อมูลอาจไม่เป็นปัจจุบัน
-        </p>
-      )}
-
-      {/* ── Results ─────────────────────────────────────────────────────── */}
-      {shown.length > 0 ? (
-        <ul className="mt-3 flex flex-col gap-1.5">
-          {shown.map((match) => (
-            <li
-              key={match.id}
-              className="rounded-apple-widget border border-[var(--hairline-soft)] bg-[var(--surface-grouped)] px-3 py-2"
-            >
-              <div className="flex items-center justify-between gap-3">
-                <div className="min-w-0 flex-1 space-y-0.5">
-                  <TeamLine team={match.home} opponent={match.away} />
-                  <TeamLine team={match.away} opponent={match.home} />
-                </div>
-                <div className="shrink-0 space-y-0.5 text-right tabular-nums">
-                  <ScoreLine team={match.home} opponent={match.away} />
-                  <ScoreLine team={match.away} opponent={match.home} />
-                </div>
-              </div>
-              <p className="mt-1.5 truncate text-[10px] font-medium text-[var(--ink-tertiary)]">
-                {formatDay(match.kickoff)} · {match.detail || match.status || 'จบเกม'}
-                {match.venue ? ` · ${match.venue}` : ''}
-              </p>
-            </li>
+      {/* ── Body ────────────────────────────────────────────────────────── */}
+      {loadingFirst ? (
+        <div className="mt-3 space-y-2" role="status" aria-label="กำลังโหลดผลพรีเมียร์ลีก">
+          {[1, 2, 3, 4].map((i) => (
+            <div
+              key={i}
+              className="h-[62px] animate-pulse rounded-apple-widget bg-[var(--surface-grouped)]"
+            />
           ))}
-        </ul>
-      ) : (
+        </div>
+      ) : events.length === 0 ? (
         !error && (
-          <p className="mt-4 flex flex-1 items-center justify-center text-center text-sm text-[var(--ink-secondary)]">
-            ยังไม่มีผลการแข่งขัน
+          <p className="mt-6 flex flex-1 items-center justify-center text-center text-sm text-[var(--ink-secondary)]">
+            ไม่มีแมตช์ในวันที่เลือก
           </p>
         )
-      )}
+      ) : (
+        <div className="mt-2.5 max-h-72 space-y-2 overflow-y-auto pr-0.5">
+          {live.length > 0 && (
+            <MatchGroup label="กำลังแข่งขัน">
+              {live.map((match) => (
+                <MatchRow key={match.id} match={match} live />
+              ))}
+            </MatchGroup>
+          )}
 
-      {/* ── Next fixture ────────────────────────────────────────────────── */}
-      {nextMatch && (
-        <div className="mt-auto flex items-center gap-2.5 border-t border-[var(--hairline-soft)] pt-2.5">
-          <CalendarClock size={15} className="shrink-0 text-[var(--accent-text)]" aria-hidden="true" />
-          <p className="min-w-0 flex-1 truncate text-[11px] font-medium text-[var(--ink-secondary)]">
-            นัดถัดไป: {nextMatch.home.name} – {nextMatch.away.name}
-          </p>
-          <span className="shrink-0 rounded-full bg-[var(--accent-soft)] px-2 py-0.5 text-[10px] font-bold text-[var(--accent-text)]">
-            {formatDay(nextMatch.kickoff)} {formatTime(nextMatch.kickoff)}
-          </span>
+          {shownFinished.length > 0 && (
+            <MatchGroup label="ผลการแข่งขัน">
+              {shownFinished.map((match) => (
+                <MatchRow key={match.id} match={match} />
+              ))}
+            </MatchGroup>
+          )}
+
+          {upcoming.length > 0 && (
+            <MatchGroup label="โปรแกรมถัดไป">
+              {upcoming.map((match) => (
+                <MatchRow key={match.id} match={match} />
+              ))}
+            </MatchGroup>
+          )}
         </div>
       )}
     </section>
@@ -295,16 +375,102 @@ export default function PremierLeagueWidget({
 
 // ── Rows ─────────────────────────────────────────────────────────────────────
 
+function MatchGroup({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-[var(--ink-tertiary)]">
+        {label}
+      </p>
+      <ul className="space-y-1.5">{children}</ul>
+    </div>
+  );
+}
+
+function MatchRow({ match, live = false }: { match: FootballMatch; live?: boolean }) {
+  const hasScore = match.home.score !== null && match.away.score !== null;
+  return (
+    <li
+      className={`rounded-apple-widget border px-2.5 py-2 ${
+        live
+          ? 'border-[var(--danger-soft)] bg-[var(--danger-soft)]'
+          : 'border-[var(--hairline-soft)] bg-[var(--surface-grouped)]'
+      }`}
+    >
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0 flex-1 space-y-1">
+          <TeamLine team={match.home} opponent={match.away} />
+          <TeamLine team={match.away} opponent={match.home} />
+        </div>
+        <div className="shrink-0 space-y-1 text-right tabular-nums">
+          {hasScore ? (
+            <>
+              <ScoreLine team={match.home} opponent={match.away} />
+              <ScoreLine team={match.away} opponent={match.home} />
+            </>
+          ) : (
+            <span className="text-[12px] font-bold text-[var(--ink)]">
+              {formatTime(match.kickoff) || '—'}
+            </span>
+          )}
+        </div>
+      </div>
+      <div className="mt-1.5 flex items-center gap-1.5 text-[10px] font-medium text-[var(--ink-tertiary)]">
+        {live ? (
+          <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[var(--danger)] px-1.5 py-0.5 font-bold text-white">
+            <span className="h-1 w-1 animate-pulse rounded-full bg-white" aria-hidden="true" />
+            LIVE {match.clock || ''}
+          </span>
+        ) : (
+          <span className="shrink-0 rounded-full bg-[var(--surface-chip)] px-1.5 py-0.5 font-bold text-[var(--ink-secondary)]">
+            {match.state === 'pre' ? formatDay(match.kickoff) : match.detail || 'FT'}
+          </span>
+        )}
+        {match.venue && <span className="truncate">{match.venue}</span>}
+        {match.broadcast && (
+          <span className="ml-auto shrink-0 truncate text-[var(--ink-muted)]">
+            {match.broadcast}
+          </span>
+        )}
+      </div>
+    </li>
+  );
+}
+
+function TeamLogo({ team }: { team: FootballTeam }) {
+  if (!team.logo) {
+    return (
+      <span
+        className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[var(--surface-chip)] text-[9px] font-bold text-[var(--ink-secondary)]"
+        aria-hidden="true"
+      >
+        {team.name.slice(0, 1)}
+      </span>
+    );
+  }
+  return (
+    <Image
+      src={team.logo}
+      alt=""
+      width={20}
+      height={20}
+      unoptimized
+      className="h-5 w-5 shrink-0 object-contain"
+      aria-hidden="true"
+    />
+  );
+}
+
 function TeamLine({ team, opponent }: { team: FootballTeam; opponent: FootballTeam }) {
   const decided = opponent.score !== null && team.score !== null;
   const dimmed = decided && !team.winner;
   return (
     <p
-      className={`truncate text-[13px] leading-tight ${
+      className={`flex min-w-0 items-center gap-1.5 text-[13px] leading-tight ${
         dimmed ? 'font-medium text-[var(--ink-secondary)]' : 'font-semibold text-[var(--ink)]'
       }`}
     >
-      {team.name}
+      <TeamLogo team={team} />
+      <span className="truncate">{team.name}</span>
     </p>
   );
 }

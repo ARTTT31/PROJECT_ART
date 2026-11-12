@@ -7,15 +7,16 @@ party, trip CORS, and let any page in the app hammer the feed. The proxy keeps a
 short-lived cache (L1 in-process, L2 in the shared ``weather_cache`` table) so a
 dashboard full of widgets costs ESPN one request per TTL window.
 
-Only the parsed match list is returned — team names, badges and scores — so the
-widget never depends on the provider's full payload shape.
+``date`` selects a calendar day (``YYYY-MM-DD`` or ``YYYYMMDD``); without it the
+provider answers with the current matchday, which is the widget's default view.
 """
 
+import datetime
 import logging
-from typing import Any, Optional
+from typing import Optional
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_current_user
@@ -35,29 +36,44 @@ ESPN_SCOREBOARD_URL = (
     "https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/scoreboard"
 )
 
-# Scores change only while matches are being played, and the widget refreshes
-# every five minutes anyway.
+# A finished matchday barely moves, but a live score does. The TTL is picked per
+# payload so an in-progress match is refreshed about once a minute.
 CACHE_TTL = 5 * 60
+LIVE_CACHE_TTL = 60
 
 NS_FOOTBALL = "football"
-_L2_KEY: tuple = ("premier-league",)
 
-# Annotated explicitly: mypy infers dict[str, None] from bare None values and
-# then rejects every later assignment into it.
-_cache: dict[str, Any] = {
-    "timestamp": None,
-    "data": None,
-}
+# date key ("latest" or YYYYMMDD) → (fetched_at, payload)
+_CACHE: dict[str, tuple[datetime.datetime, dict]] = {}
 
 
 def reset_cache() -> None:
     """Drop the process cache (tests and manual refreshes)."""
-    _cache["timestamp"] = None
-    _cache["data"] = None
+    _CACHE.clear()
 
 
 def _iso_now() -> str:
     return utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def normalize_date(value: Optional[str]) -> Optional[str]:
+    """Validate a widget date and return it as ESPN's ``YYYYMMDD`` form."""
+    if value is None:
+        return None
+    cleaned = value.strip()
+    if not cleaned:
+        return None
+    for fmt in ("%Y-%m-%d", "%Y%m%d"):
+        try:
+            parsed = datetime.datetime.strptime(cleaned, fmt)
+        except ValueError:
+            continue
+        return parsed.strftime("%Y%m%d")
+    raise HTTPException(status_code=400, detail="รูปแบบวันที่ไม่ถูกต้อง (YYYY-MM-DD)")
+
+
+def _ttl_for(payload: dict) -> int:
+    return LIVE_CACHE_TTL if payload.get("is_live") else CACHE_TTL
 
 
 def _team(competitor: dict) -> dict:
@@ -72,6 +88,7 @@ def _team(competitor: dict) -> dict:
         "name": team.get("shortDisplayName") or team.get("displayName") or "—",
         "full_name": team.get("displayName") or "",
         "abbreviation": team.get("abbreviation") or "",
+        "logo": team.get("logo") or None,
         "score": numeric_score,
         "winner": bool(competitor.get("winner")),
     }
@@ -92,6 +109,10 @@ def _parse_events(payload: dict) -> list[dict]:
         status = raw.get("status") or {}
         status_type = status.get("type") or {}
         venue = competition.get("venue") or {}
+        broadcasts = competition.get("broadcasts") or []
+        broadcast_names: list[str] = []
+        for entry in broadcasts:
+            broadcast_names.extend(entry.get("names") or [])
 
         parsed.append(
             {
@@ -99,36 +120,40 @@ def _parse_events(payload: dict) -> list[dict]:
                 "kickoff": raw.get("date"),
                 "status": status_type.get("description") or "",
                 "detail": status_type.get("shortDetail") or "",
+                "clock": status.get("displayClock") or "",
                 "state": status_type.get("state") or "pre",
                 "completed": bool(status_type.get("completed")),
                 "home": _team(home),
                 "away": _team(away),
                 "venue": venue.get("fullName") or "",
+                "broadcast": ", ".join(dict.fromkeys(broadcast_names)),
             }
         )
     return parsed
 
 
-async def _fetch_events() -> dict:
-    """Fetch and parse the current scoreboard; raises when ESPN fails."""
+async def _fetch_events(date: Optional[str]) -> dict:
+    """Fetch and parse one scoreboard day; raises when ESPN fails."""
+    params = {"dates": date} if date else None
     async with httpx.AsyncClient(
         timeout=httpx.Timeout(10.0, connect=5.0),
         follow_redirects=True,
     ) as client:
         response = await client.get(
             ESPN_SCOREBOARD_URL,
+            params=params,
             headers={"User-Agent": "Mozilla/5.0 (compatible; ARTWorkspace/1.0)"},
         )
     response.raise_for_status()
 
     events = _parse_events(response.json())
-    if not events:
-        raise ValueError("ESPN scoreboard returned no events")
 
     return {
         "success": True,
         "league": "English Premier League",
+        "date": date,
         "events": events,
+        "is_live": any(event["state"] == "in" for event in events),
         "fetched_at": _iso_now(),
         "is_stale": False,
         "source": "ESPN",
@@ -144,9 +169,13 @@ def _mark_stale(payload: dict) -> dict:
     return stale
 
 
-async def _stale_from_l2(db: AsyncSession) -> Optional[dict]:
-    persisted = await weather_cache.get_stale(db, NS_FOOTBALL, _L2_KEY)
+async def _stale_from_l2(db: AsyncSession, date: Optional[str]) -> Optional[dict]:
+    persisted = await weather_cache.get_stale(db, NS_FOOTBALL, _l2_key(date))
     return _mark_stale(persisted) if persisted else None
+
+
+def _l2_key(date: Optional[str]) -> tuple:
+    return (date or "latest",)
 
 
 @router.get("", response_model=dict)
@@ -155,37 +184,35 @@ async def _stale_from_l2(db: AsyncSession) -> Optional[dict]:
 @limiter.limit(_GENERAL_LIMIT)
 async def get_premier_league(
     request: Request,
+    date: Optional[str] = Query(None, max_length=10),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Latest Premier League results, with a last-known-good fallback."""
+    """Premier League results for a day (or the current matchday)."""
+    day = normalize_date(date)
+    cache_key = day or "latest"
     now = utcnow()
 
-    if (
-        _cache["data"]
-        and _cache["timestamp"]
-        and (now - _cache["timestamp"]).total_seconds() < CACHE_TTL
-    ):
-        return _cache["data"]
+    cached = _CACHE.get(cache_key)
+    if cached and (now - cached[0]).total_seconds() < _ttl_for(cached[1]):
+        return cached[1]
 
-    persisted = await weather_cache.get_fresh(db, NS_FOOTBALL, _L2_KEY, CACHE_TTL)
+    persisted = await weather_cache.get_fresh(db, NS_FOOTBALL, _l2_key(day), CACHE_TTL)
     if persisted:
-        _cache["data"] = persisted
-        _cache["timestamp"] = now
+        _CACHE[cache_key] = (now, persisted)
         return persisted
 
     try:
-        data = await _fetch_events()
+        data = await _fetch_events(day)
     except Exception as exc:
         logger.warning("Premier League fetch failed: %s", exc)
-        if _cache["data"]:
-            return _mark_stale(_cache["data"])
-        stale = await _stale_from_l2(db)
+        if cached:
+            return _mark_stale(cached[1])
+        stale = await _stale_from_l2(db, day)
         if stale is not None:
             return stale
         raise HTTPException(status_code=503, detail="ไม่สามารถโหลดผลพรีเมียร์ลีกได้")
 
-    _cache["data"] = data
-    _cache["timestamp"] = now
-    await weather_cache.store(db, NS_FOOTBALL, _L2_KEY, data)
+    _CACHE[cache_key] = (now, data)
+    await weather_cache.store(db, NS_FOOTBALL, _l2_key(day), data)
     return data
