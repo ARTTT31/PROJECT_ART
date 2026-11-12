@@ -125,6 +125,65 @@ async def test_fresh_cache_skips_the_provider(client, logged_in_user, monkeypatc
 
 
 @pytest.mark.asyncio
+async def test_expired_live_l2_entry_is_refetched(client, logged_in_user, monkeypatch):
+    calls = {"count": 0}
+    live = {**_payload(), "is_live": True}
+
+    async def _aged(db, namespace, key):
+        return live, football.LIVE_CACHE_TTL + 1
+
+    async def _load(date):
+        calls["count"] += 1
+        return live
+
+    monkeypatch.setattr(football.weather_cache, "get_fresh_with_age", _aged)
+    monkeypatch.setattr(football, "_fetch_events", _load)
+
+    await client.get("/api/v1/football/premier-league")
+    assert calls["count"] == 1
+
+
+@pytest.mark.asyncio
+async def test_fresh_live_l2_entry_is_served(client, logged_in_user, monkeypatch):
+    calls = {"count": 0}
+    live = {**_payload(), "is_live": True}
+
+    async def _aged(db, namespace, key):
+        return live, football.LIVE_CACHE_TTL - 10
+
+    async def _load(date):
+        calls["count"] += 1
+        return live
+
+    monkeypatch.setattr(football.weather_cache, "get_fresh_with_age", _aged)
+    monkeypatch.setattr(football, "_fetch_events", _load)
+
+    response = await client.get("/api/v1/football/premier-league")
+    assert response.json()["is_live"] is True
+    assert calls["count"] == 0
+
+
+@pytest.mark.asyncio
+async def test_l2_entry_without_live_match_keeps_the_long_ttl(
+    client, logged_in_user, monkeypatch
+):
+    calls = {"count": 0}
+
+    async def _aged(db, namespace, key):
+        return _payload(), football.LIVE_CACHE_TTL + 1
+
+    async def _load(date):
+        calls["count"] += 1
+        return _payload()
+
+    monkeypatch.setattr(football.weather_cache, "get_fresh_with_age", _aged)
+    monkeypatch.setattr(football, "_fetch_events", _load)
+
+    await client.get("/api/v1/football/premier-league")
+    assert calls["count"] == 0
+
+
+@pytest.mark.asyncio
 async def test_selected_date_is_forwarded_to_the_provider(
     client, logged_in_user, monkeypatch
 ):

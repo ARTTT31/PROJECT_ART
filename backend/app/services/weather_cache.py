@@ -87,6 +87,24 @@ async def get_fresh(
     return _decode(row.payload)
 
 
+async def get_fresh_with_age(
+    db: AsyncSession, namespace: str, key: tuple
+) -> Optional[tuple[dict, float]]:
+    """Return a stored payload and its age in seconds, regardless of TTL.
+
+    Callers whose freshness window depends on the payload itself (a scoreboard
+    cached while a match is live must expire in a minute, a finished day may sit
+    for five) need the age, not a fixed TTL.
+    """
+    row = await _load(db, build_key(namespace, key))
+    if row is None:
+        return None
+    payload = _decode(row.payload)
+    if payload is None:
+        return None
+    return payload, (utcnow() - row.updated_at).total_seconds()
+
+
 async def get_stale(db: AsyncSession, namespace: str, key: tuple) -> Optional[dict]:
     """Return a stored payload regardless of its TTL (last-resort fallback)."""
     row = await _load(db, build_key(namespace, key))

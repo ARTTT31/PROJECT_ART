@@ -57,6 +57,11 @@ const nextConfig = {
       'https://api.bigdatacloud.net',
       // Cloudflare Turnstile (optional CAPTCHA) verifies against this origin.
       'https://challenges.cloudflare.com',
+      // Team crests in the football widget. `img-src` already allows https, but
+      // the Serwist service worker re-fetches cached images, and that fetch is
+      // governed by connect-src — without this the crests fail only in
+      // production, where the SW is enabled.
+      'https://a.espncdn.com',
     ].join(' ');
     return [
       {

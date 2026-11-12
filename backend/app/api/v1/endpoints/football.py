@@ -197,10 +197,14 @@ async def get_premier_league(
     if cached and (now - cached[0]).total_seconds() < _ttl_for(cached[1]):
         return cached[1]
 
-    persisted = await weather_cache.get_fresh(db, NS_FOOTBALL, _l2_key(day), CACHE_TTL)
+    # The L2 TTL depends on the payload: a day with a match in progress must be
+    # re-fetched after LIVE_CACHE_TTL, not after the finished-day CACHE_TTL.
+    persisted = await weather_cache.get_fresh_with_age(db, NS_FOOTBALL, _l2_key(day))
     if persisted:
-        _CACHE[cache_key] = (now, persisted)
-        return persisted
+        payload, age = persisted
+        if age <= _ttl_for(payload):
+            _CACHE[cache_key] = (now, payload)
+            return payload
 
     try:
         data = await _fetch_events(day)
