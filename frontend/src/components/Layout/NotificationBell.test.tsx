@@ -1,7 +1,17 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 
-import NotificationBell, { resolveNotificationsWsUrl } from './NotificationBell';
+import NotificationBell, {
+  isCrossOriginSocket,
+  resolveNotificationsWsUrl,
+} from './NotificationBell';
+
+// The ticket endpoint and the history sync both go through fetchWithAuth; mocking
+// it keeps these tests off the network and lets a case decide whether a ticket
+// is issued.
+const { fetchWithAuthMock } = vi.hoisted(() => ({ fetchWithAuthMock: vi.fn() }));
+
+vi.mock('@/lib/api/fetchWithAuth', () => ({ fetchWithAuth: fetchWithAuthMock }));
 
 // The bell reads the session only to add admin-only alerts; the socket behaviour
 // below is the same for every signed-in account, so mount as a plain member.
@@ -61,6 +71,8 @@ beforeEach(() => {
   FakeWebSocket.instances = [];
   vi.stubGlobal('WebSocket', FakeWebSocket);
   stubOrigins();
+  fetchWithAuthMock.mockReset();
+  fetchWithAuthMock.mockResolvedValue({ ok: true, json: async () => ({}) });
 });
 
 afterEach(() => {
@@ -86,6 +98,17 @@ describe('resolveNotificationsWsUrl', () => {
     );
   });
 
+  it('only a real origin change counts as cross-origin', () => {
+    expect(isCrossOriginSocket('ws://localhost:3000/api/v1/ws/notifications', { host: 'localhost:3000' })).toBe(
+      false,
+    );
+    expect(
+      isCrossOriginSocket('wss://api.example.com/api/v1/ws/notifications', {
+        host: 'app.example.com',
+      }),
+    ).toBe(true);
+  });
+
   it('falls back to this origin and upgrades the scheme', () => {
     expect(resolveNotificationsWsUrl({ protocol: 'https:', host: 'art.example.com' })).toBe(
       'wss://art.example.com/api/v1/ws/notifications',
@@ -97,13 +120,57 @@ describe('resolveNotificationsWsUrl', () => {
 });
 
 describe('NotificationBell — live feed', () => {
-  it('opens the socket against the resolved origin', () => {
+  it('opens the socket against the resolved origin', async () => {
     stubOrigins('http://localhost:8080');
+    fetchWithAuthMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({ ticket: 'ticket-1' }),
+    } as unknown as Response);
 
     render(<NotificationBell />);
+    await act(async () => {});
 
     expect(FakeWebSocket.instances).toHaveLength(1);
-    expect(FakeWebSocket.instances[0].url).toBe('ws://localhost:8080/api/v1/ws/notifications');
+    expect(FakeWebSocket.instances[0].url).toBe(
+      'ws://localhost:8080/api/v1/ws/notifications?ticket=ticket-1',
+    );
+  });
+
+  it('trades the cookie for a ticket before a cross-origin upgrade', async () => {
+    // The cookie belongs to the page origin, so the API origin cannot see it on
+    // the handshake — that is the deployment bug this covers.
+    stubOrigins('https://api.example.com');
+    fetchWithAuthMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({ ticket: 'ticket-9' }),
+    } as unknown as Response);
+
+    render(<NotificationBell />);
+    await act(async () => {});
+
+    expect(fetchWithAuthMock).toHaveBeenCalledWith('/api/v1/ws/ticket', { method: 'POST' });
+    expect(FakeWebSocket.instances[0].url).toBe(
+      'wss://api.example.com/api/v1/ws/notifications?ticket=ticket-9',
+    );
+  });
+
+  it('still opens the socket when no ticket can be issued', async () => {
+    stubOrigins('https://api.example.com');
+    fetchWithAuthMock.mockResolvedValue({ ok: false, json: async () => ({}) } as unknown as Response);
+
+    render(<NotificationBell />);
+    await act(async () => {});
+
+    expect(FakeWebSocket.instances[0].url).toBe('wss://api.example.com/api/v1/ws/notifications');
+  });
+
+  it('does not ask for a ticket on a same-origin socket', async () => {
+    render(<NotificationBell />);
+    await act(async () => {});
+
+    const paths = fetchWithAuthMock.mock.calls.map(([path]) => path);
+    expect(paths).not.toContain('/api/v1/ws/ticket');
+    expect(FakeWebSocket.instances[0].url).toBe('ws://localhost:3000/api/v1/ws/notifications');
   });
 
   it('turns a broadcast frame into a visible notification', async () => {

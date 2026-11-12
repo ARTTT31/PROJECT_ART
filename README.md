@@ -254,7 +254,7 @@ When developing with AI assistants (Antigravity, Gemini CLI, Claude Code), the a
 - Set `NEXT_PUBLIC_SITE_URL` to the canonical frontend URL.
 - Set `NEXT_PUBLIC_API_URL` to the public API URL, or leave it unset to route browser requests through `/api`.
 - When using the `/api` rewrite, set `API_INTERNAL_URL` to the backend URL. This server-only variable keeps the backend address out of browser bundles.
-- The notification WebSocket follows `NEXT_PUBLIC_WS_URL` → `NEXT_PUBLIC_API_URL` → this origin. If the deployment's rewrite forwards plain HTTP requests but drops the WebSocket upgrade, set `NEXT_PUBLIC_WS_URL` to the backend origin (`wss://…`); the session cookie is already `SameSite=None; Secure`, so it is sent cross-site.
+- The notification WebSocket follows `NEXT_PUBLIC_WS_URL` → `NEXT_PUBLIC_API_URL` → this origin. A socket on another origin cannot use the session cookie: `access_token` is stored for the origin that set it — this frontend, because browser calls go through the `/api` rewrite — so the bell first redeems a one-time ticket from `POST /api/v1/ws/ticket` and connects as `wss://…/api/v1/ws/notifications?ticket=…`. Nothing has to be configured for that; `NEXT_PUBLIC_WS_URL` is only needed when the socket lives somewhere else entirely.
 - Sentry source-map upload only runs when `SENTRY_AUTH_TOKEN`, `SENTRY_ORG` and `SENTRY_PROJECT` are all set.
 
 ### Release Checklist

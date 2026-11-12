@@ -818,3 +818,36 @@ password-reset email, remove it, and do the rest of the list.
 5. **Lesson recorded in `status.md`:** the CI job runs 3.11 *and* without `.env`; a local run that
    has both differences hidden reports a green that means nothing. Measure with `mv .env .env.bak`
    when a test asserts on configuration-driven behaviour.
+
+## The Notification Socket Could Not Authenticate Cross-Origin — Fixed With a One-Time Ticket (November 12, 2026)
+
+1. **Symptom.** The deployed dashboard logged `WebSocket connection to
+   'wss://project-art-c7eh.onrender.com/api/v1/ws/notifications' failed` on every load, so the bell
+   only ever showed locally generated alerts.
+2. **Cause: the cookie belongs to the frontend origin.** The Vercel `/api/*` rewrite answers
+   `Set-Cookie: access_token=…` on `project-art-sigma.vercel.app`, so the browser stores the HttpOnly
+   session cookie *there*. A `wss://` handshake to `onrender.com` is a cross-origin subresource: it
+   carries no `access_token`, the backend accepts and closes with `1008`, and Chrome reports the
+   generic "connection failed". The earlier note that "the cookie is already `SameSite=None; Secure`,
+   so it is sent cross-site" was wrong — in this deployment the cookie never exists on the API origin.
+   Measured against the live hosts: the upgrade itself is fine (`curl` returns
+   `101 Switching Protocols`, with and without the Vercel `Origin`), and `GET /api/v1/auth/me`
+   through the rewrite answers `Set-Cookie: csrf_token=…` with no `Domain` attribute.
+3. **Fix: a single-use ticket for the handshake.** `POST /api/v1/ws/ticket` runs on the same-origin
+   rewrite, where the cookie *is* sent, and answers `{ticket, expires_in}` with `Cache-Control:
+   no-store`. `app/services/ws_tickets.py` holds ticket → access token for 30 seconds, pops it on
+   redemption, purges expired entries and caps the table at 1024. `authenticate_websocket` accepts
+   `?ticket=` (and still refuses `?access_token=`), then re-runs the normal token/session checks, so
+   revocation, inactive accounts and lockouts keep applying. The bell only pays for a ticket when the
+   socket would leave the page origin; a same-origin socket keeps using the cookie directly.
+4. **Why a ticket and not the token.** A raw JWT in the query string lands in proxy and access logs as
+   a 30-minute credential; a ticket is random, single-use and expires in seconds, so a logged upgrade
+   URL is worthless by the time anyone reads it.
+5. **Verified.** `pytest tests/test_api.py -k websocket` — 33 passed (4 new handshake cases, 2 store
+   cases, 2 endpoint cases); full backend suite **629 passed**, coverage **84.10%** (3.14, local
+   `.env`); `flake8 app` and `mypy app` clean (69 source files). Frontend: `NotificationBell`
+   **14/14** (5 new); full Vitest **390 passed, 1 failed** — `DailyDigestWidget › switches the oil
+   tile to another fuel type`, which fails on the uncommitted i18n work in the tree (`{th, en}`
+   labels), not on this change. Same pre-existing cause for the four `{th, en}` errors
+   `tsc --noEmit` reports in `audit/page.tsx` and `DailyDigestWidget.tsx`. Not yet re-checked on the
+   deployed origin.

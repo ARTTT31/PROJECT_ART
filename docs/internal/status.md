@@ -97,7 +97,7 @@ These are decisions, not defects — recorded so they are not re-litigated as bu
 
 These need the real environment and cannot be closed locally:
 
-1. Notification WebSocket origin on the deployed frontend (`NEXT_PUBLIC_WS_URL` vs `/api` rewrite).
+1. ~~Notification WebSocket origin on the deployed frontend~~ **Closed 2026-11-12** — the code was the bug, not the variable: the security cookie belongs to the frontend origin, so a cross-origin `wss://` upgrade arrived unauthenticated and was closed with `1008`. The bell now redeems a single-use ticket (`POST /api/v1/ws/ticket`) before a cross-origin upgrade. What remains is one look at the deployed console after the next deploy.
 2. Render boot log for the CSP/CORS posture, and a curl of the served CSP header.
 3. `EMAIL_BACKEND` on Render (password reset + new-device notices actually arrive).
 4. Pointing `SLOWAPI_STORAGE_URI` at Redis and confirming shared buckets across instances, if the

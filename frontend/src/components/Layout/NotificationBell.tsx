@@ -109,6 +109,7 @@ const READ_STORAGE_KEY = 'artNotificationReadV2';
 const DISMISSED_STORAGE_KEY = 'artNotificationDismissedV2';
 
 const WS_PATH = '/api/v1/ws/notifications';
+const WS_TICKET_PATH = '/api/v1/ws/ticket';
 
 /**
  * WebSocket endpoint for the notification feed.
@@ -132,6 +133,42 @@ export function resolveNotificationsWsUrl(location: { protocol: string; host: st
 
   const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
   return `${protocol}//${location.host}${WS_PATH}`;
+}
+
+/**
+ * Whether the socket would leave this origin.
+ *
+ * The page and the API are different sites in the Vercel → Render deployment;
+ * a same-site socket (localhost:3000 → localhost:8080) is fine either way, so
+ * only a real origin change has to pay for a ticket.
+ */
+export function isCrossOriginSocket(url: string, location: { host: string }) {
+  try {
+    return new URL(url).host !== location.host;
+  } catch {
+    return true;
+  }
+}
+
+/**
+ * Trade the session cookie for a one-time handshake ticket.
+ *
+ * The HttpOnly `access_token` cookie belongs to the origin that *set* it — the
+ * frontend, because every browser call goes through the same-origin `/api`
+ * rewrite. A socket opened against the API origin therefore arrives without a
+ * cookie and the backend closes it with 1008 ("WebSocket connection failed").
+ * The ticket is issued over the same-origin rewrite, where the cookie is
+ * sent, and is single-use, so a logged upgrade URL cannot be replayed.
+ */
+async function fetchWsTicket(): Promise<string | null> {
+  try {
+    const res = await fetchWithAuth(WS_TICKET_PATH, { method: 'POST' });
+    if (!res.ok) return null;
+    const body = (await res.json()) as { ticket?: unknown };
+    return typeof body.ticket === 'string' && body.ticket ? body.ticket : null;
+  } catch {
+    return null;
+  }
 }
 
 export default function NotificationBell() {
@@ -396,13 +433,9 @@ export default function NotificationBell() {
       reconnectTimer = setTimeout(connectWs, Math.min(5000 * 2 ** (attempts - 1), 60000));
     };
 
-    const connectWs = () => {
-      if (typeof window === 'undefined' || stopped) return;
-
-      const wsUrl = resolveNotificationsWsUrl(window.location);
-
+    const openSocket = (url: string) => {
       try {
-        ws = new WebSocket(wsUrl);
+        ws = new WebSocket(url);
         ws.onopen = () => {
           attempts = 0;
         };
@@ -440,6 +473,28 @@ export default function NotificationBell() {
         console.error('WebSocket connection failed:', err);
         scheduleReconnect();
       }
+    };
+
+    const connectWs = () => {
+      if (typeof window === 'undefined' || stopped) return;
+
+      const wsUrl = resolveNotificationsWsUrl(window.location);
+
+      // Same origin: the first-party session cookie rides the handshake.
+      if (!isCrossOriginSocket(wsUrl, window.location)) {
+        openSocket(wsUrl);
+        return;
+      }
+
+      // Cross origin: the cookie is first-party to the page, not to the API,
+      // so the upgrade would arrive unauthenticated. Buy a ticket first, and
+      // fall back to the bare URL (which at least still works for a deployment
+      // that serves the API from the same origin as the socket) if the ticket
+      // endpoint is unreachable.
+      void fetchWsTicket().then((ticket) => {
+        if (stopped) return;
+        openSocket(ticket ? `${wsUrl}?ticket=${encodeURIComponent(ticket)}` : wsUrl);
+      });
     };
 
     connectWs();

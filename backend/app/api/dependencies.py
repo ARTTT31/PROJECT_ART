@@ -13,6 +13,7 @@ from app.core.database import get_db
 from app.core.security import decode_token
 from app.models.user import User
 from app.services.user_service import UserService
+from app.services.ws_tickets import ws_tickets
 
 logger = logging.getLogger(__name__)
 
@@ -208,14 +209,23 @@ async def authenticate_websocket(websocket: WebSocket, db: AsyncSession) -> Opti
     primary source; an ``Authorization: Bearer`` header is accepted for
     non-browser clients and tests.
 
-    The token is deliberately NOT read from the query string: query strings end
-    up in proxy and access logs, which would turn a short-lived credential into a
-    long-lived one sitting in plaintext.
+    The token itself is deliberately NOT read from the query string: query
+    strings end up in proxy and access logs, which would turn a short-lived
+    credential into a long-lived one sitting in plaintext. Only a ticket from
+    ``app.services.ws_tickets`` is accepted there — single use, ~30 seconds, and
+    it is the only credential a cross-origin browser handshake can carry
+    (``access_token`` belongs to the frontend origin in the Vercel → Render
+    deployment, so it is never sent to the API origin).
     """
     token: Optional[str] = None
 
+    query = getattr(websocket, "query_params", None)
+    ticket = query.get("ticket") if query is not None else None
+    if ticket:
+        token = ws_tickets.redeem(ticket)
+
     cookie_token = websocket.cookies.get("access_token")
-    if cookie_token:
+    if not token and cookie_token:
         token = cookie_token.removeprefix("Bearer ").strip()
 
     if not token:

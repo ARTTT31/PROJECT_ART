@@ -14,15 +14,21 @@ mode is active at startup so it cannot fail silently.
 import json
 import logging
 
-from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Depends, HTTPException, Request, WebSocket, WebSocketDisconnect
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.dependencies import authenticate_websocket, get_current_admin_user
+from app.api.dependencies import (
+    authenticate_websocket,
+    get_current_admin_user,
+    get_current_user,
+)
 from app.core.config import settings
 from app.core.database import get_db
 from app.models.user import User
 from app.services.ws_bus import broadcast_bus
+from app.services.ws_tickets import ws_tickets
 
 logger = logging.getLogger(__name__)
 
@@ -106,6 +112,42 @@ class ConnectionManager:
 manager = ConnectionManager()
 
 
+@router.post("/ticket")
+async def issue_websocket_ticket(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+) -> JSONResponse:
+    """Trade the first-party session cookie for a one-time socket ticket.
+
+    A browser cannot attach headers to a WebSocket handshake, and in the
+    Vercel → Render deployment ``access_token`` belongs to the frontend origin
+    (it is set through the same-origin ``/api`` rewrite), so the cross-origin
+    upgrade arrives unauthenticated and is closed with 1008. This route runs on
+    that same-origin rewrite, where the cookie *is* sent, and answers with a
+    ticket the socket presents exactly once.
+
+    ``get_current_user`` has already validated the session, so the ticket only
+    has to carry that same access token; every revocation/inactive-account rule
+    is re-applied when the handshake redeems it. A POST off the CSRF exemption
+    list, so the calling browser echoes ``X-CSRF-Token`` (``fetchWithAuth``).
+    """
+    token = (request.cookies.get("access_token") or "").removeprefix("Bearer ").strip()
+    if not token:
+        header = request.headers.get("authorization", "")
+        if header.lower().startswith("bearer "):
+            token = header[len("bearer "):].strip()
+
+    if not token:
+        # A bearer-only client cannot reuse the ticket flow; it can send the
+        # Authorization header on the handshake instead.
+        raise HTTPException(status_code=401, detail="Could not validate credentials")
+
+    return JSONResponse(
+        {"ticket": ws_tickets.issue(token), "expires_in": ws_tickets.ttl_seconds},
+        headers={"Cache-Control": "no-store"},
+    )
+
+
 @router.websocket("/notifications")
 async def websocket_notifications(
     websocket: WebSocket,
@@ -123,6 +165,10 @@ async def websocket_notifications(
     code ``1006``: indistinguishable from a network blip, so `NotificationBell`
     would keep retrying instead of stopping on ``1008``. Nothing is read, sent or
     registered on that socket, so no broadcast can reach it.
+
+    The credential is the ``access_token`` cookie, a ``?ticket=`` from
+    ``POST /ws/ticket`` (single use, ~30s — the only way a cross-origin browser
+    handshake can authenticate, see that endpoint), or a Bearer header.
 
     The Origin is checked first: a handshake from a foreign origin (CSWSH
     attempt) is closed with 1008 without ever authenticating. A MISSING Origin

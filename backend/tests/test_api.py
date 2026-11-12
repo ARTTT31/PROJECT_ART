@@ -288,9 +288,10 @@ class TestWebsocketBroadcast:
 class _StubWebSocket:
     """Minimal stand-in for the handshake attributes the auth helper reads."""
 
-    def __init__(self, cookies=None, headers=None):
+    def __init__(self, cookies=None, headers=None, query_params=None):
         self.cookies = cookies or {}
         self.headers = headers or {}
+        self.query_params = query_params or {}
 
 
 @pytest.fixture(autouse=False)
@@ -403,6 +404,91 @@ class TestWebsocketAuthentication:
         socket = _StubWebSocket(headers={"query_string": f"access_token={_token_for(ws_user)}"})
 
         assert await authenticate_websocket(socket, db_session) is None
+
+    # ── Ticket handshake ──────────────────────────────────────
+    # The cross-origin upgrade (Vercel page → Render API) carries no session
+    # cookie, so the browser presents a single-use ticket instead.
+
+    async def test_ticket_authenticates_a_handshake_without_a_cookie(
+        self, db_session, ws_user
+    ):
+        from app.api.dependencies import authenticate_websocket
+        from app.services.ws_tickets import ws_tickets
+
+        socket = _StubWebSocket(query_params={"ticket": ws_tickets.issue(_token_for(ws_user))})
+        user = await authenticate_websocket(socket, db_session)
+
+        assert user is not None
+        assert user.id == ws_user.id
+
+    async def test_ticket_is_single_use(self, db_session, ws_user):
+        from app.api.dependencies import authenticate_websocket
+        from app.services.ws_tickets import ws_tickets
+
+        ticket = ws_tickets.issue(_token_for(ws_user))
+
+        first = _StubWebSocket(query_params={"ticket": ticket})
+        second = _StubWebSocket(query_params={"ticket": ticket})
+
+        assert await authenticate_websocket(first, db_session) is not None
+        assert await authenticate_websocket(second, db_session) is None
+
+    async def test_unknown_ticket_is_rejected(self, db_session):
+        from app.api.dependencies import authenticate_websocket
+
+        socket = _StubWebSocket(query_params={"ticket": "made-up"})
+
+        assert await authenticate_websocket(socket, db_session) is None
+
+    async def test_ticket_for_a_revoked_session_is_rejected(self, db_session, ws_user):
+        """The ticket only carries the token; session rules still apply."""
+        from app.api.dependencies import authenticate_websocket
+        from app.models.session import UserSession
+        from app.services.ws_tickets import ws_tickets
+        from sqlalchemy import delete
+
+        ticket = ws_tickets.issue(_token_for(ws_user))
+        await db_session.execute(delete(UserSession).where(UserSession.session_id == WS_SESSION_ID))
+        await db_session.commit()
+
+        socket = _StubWebSocket(query_params={"ticket": ticket})
+
+        assert await authenticate_websocket(socket, db_session) is None
+
+
+class TestWsTicketStore:
+    def test_expired_ticket_is_rejected(self):
+        from app.services.ws_tickets import WsTicketStore
+
+        store = WsTicketStore(ttl_seconds=0)
+
+        assert store.redeem(store.issue("token")) is None
+
+    def test_oldest_ticket_is_dropped_at_the_cap(self):
+        from app.services.ws_tickets import WsTicketStore
+
+        store = WsTicketStore(ttl_seconds=60, max_tickets=2)
+        oldest = store.issue("a")
+        store.issue("b")
+        store.issue("c")
+
+        assert store.redeem(oldest) is None
+
+
+class TestWebsocketTicketEndpoint:
+    async def test_signed_in_user_gets_a_redeemable_ticket(self, client, logged_in_user):
+        from app.services.ws_tickets import ws_tickets
+
+        resp = await client.post("/api/v1/ws/ticket")
+
+        assert resp.status_code == 200
+        assert resp.headers["cache-control"] == "no-store"
+        assert ws_tickets.redeem(resp.json()["ticket"])
+
+    async def test_anonymous_request_is_rejected(self, client):
+        resp = await client.post("/api/v1/ws/ticket")
+
+        assert resp.status_code == 401
 
 
 class _StubSocket:
