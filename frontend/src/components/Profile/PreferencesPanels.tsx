@@ -14,7 +14,7 @@ import WorkspaceBackupCard from './WorkspaceBackupCard';
 import type { MainMenuItemConfig } from '@/utils/mainMenu';
 import type { QuickLink } from '@/utils/quickLinks';
 
-export type PreferenceSection = 'menu' | 'appearance' | 'alerts' | 'ai' | 'workspace';
+export type PreferenceSection = 'appearance' | 'notifications' | 'alerts' | 'menu' | 'ai' | 'workspace';
 
 export default function PreferencesPanels({
   section,
@@ -39,10 +39,10 @@ export default function PreferencesPanels({
 }) {
   return (
     <>
-      <div hidden={section !== 'menu'} className="space-y-5">
-        {/* Which pages exist in the sidebar is an admin decision: hiding
-            this card keeps ordinary users from rearranging (or hiding)
-            pages while the workspace is still being built. */}
+      {/* ── Appearance & Navigation ── */}
+      <div hidden={section !== 'appearance' && section !== 'menu'} className="space-y-5">
+        <ThemeCard />
+        <DateFormatCard />
         <div className={isAdmin ? 'grid gap-5 lg:grid-cols-2' : ''}>
           {isAdmin && <MainMenuCard items={menuItems} onMove={onMoveMenuItem} />}
           <QuickLinksCard
@@ -55,21 +55,19 @@ export default function PreferencesPanels({
         </div>
       </div>
 
-      <div hidden={section !== 'appearance'}>
-        <ThemeCard />
-      </div>
-
-      <div hidden={section !== 'alerts'} className="space-y-5">
+      {/* ── Notifications ── */}
+      <div hidden={section !== 'notifications' && section !== 'alerts'} className="space-y-5">
         <NotificationSettingsCard />
         <DailyBriefingCard />
         <ExternalNotificationCard />
-        <DateFormatCard />
       </div>
 
+      {/* ── AI Services ── */}
       <div hidden={section !== 'ai'} className="space-y-5">
         <AISettingsCard />
       </div>
 
+      {/* ── Workspace (Admin) ── */}
       <div hidden={section !== 'workspace'} className="space-y-5">
         <BrandingCard isAdmin={isAdmin} />
         {/* Company holidays live in general settings, not the admin console:
