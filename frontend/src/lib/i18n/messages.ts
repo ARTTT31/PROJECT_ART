@@ -61,6 +61,10 @@ const th = {
 
   'profile.tab.profile': 'ข้อมูลส่วนตัว & ความปลอดภัย',
   'profile.tab.preferences': 'ทางลัด & ปรับแต่งเมนู',
+  'profile.tab.appearance': 'การแสดงผล & เมนู',
+  'profile.tab.notifications': 'การแจ้งเตือน',
+  'profile.tab.ai': 'เชื่อมต่อ AI',
+  'profile.tab.workspace': 'พื้นที่ทำงาน',
   'profile.group.menu': 'เมนูและทางลัด',
   'profile.group.appearance': 'รูปลักษณ์',
   'profile.group.alerts': 'การแจ้งเตือนและรูปแบบ',
@@ -191,6 +195,10 @@ const en: Record<keyof typeof th, string> = {
 
   'profile.tab.profile': 'Personal & security',
   'profile.tab.preferences': 'Shortcuts & menu',
+  'profile.tab.appearance': 'Appearance & menu',
+  'profile.tab.notifications': 'Notifications',
+  'profile.tab.ai': 'AI connection',
+  'profile.tab.workspace': 'Workspace',
   'profile.group.menu': 'Menu & shortcuts',
   'profile.group.appearance': 'Appearance',
   'profile.group.alerts': 'Alerts & formats',

@@ -30,4 +30,18 @@ describe('i18n messages', () => {
       expect(messages.th[key]).toBeTruthy();
     });
   });
+
+  it('defines required profile tab keys', () => {
+    const requiredKeys: MessageKey[] = [
+      'profile.tab.profile',
+      'profile.tab.appearance',
+      'profile.tab.notifications',
+      'profile.tab.ai',
+      'profile.tab.workspace',
+    ];
+    requiredKeys.forEach((key) => {
+      expect(messages.th[key]).toBeTruthy();
+      expect(messages.en[key]).toBeTruthy();
+    });
+  });
 });
