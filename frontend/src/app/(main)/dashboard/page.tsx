@@ -100,17 +100,10 @@ const DailyDigestWidget = dynamic(() => import('@/components/Widgets/DailyDigest
 import { useDashboardLayout, widgetNames, widgetDescriptions, DASHBOARD_VIEWS, VIEW_WIDGET_PRESETS } from '@/hooks/useDashboardLayout';
 import { useI18n } from '@/lib/i18n/I18nProvider';
 import { WIDGET_DESCRIPTION_KEYS, WIDGET_NAME_KEYS } from '@/lib/i18n/messages';
+import { widgetColSpan } from '@/utils/widgetGrid';
 
 // ── Col-span helper ──────────────────────────────────────────────────────────
-
-const getColSpanClass = (w: number) => {
-  if (w === 3) return 'col-span-full';
-  // Half-width only once the shell is wide enough to give a chart ~500px. At
-  // `md` a half tile was ~340px, which squeezed the charts into unreadable
-  // slivers.
-  if (w === 2) return 'col-span-full lg:col-span-8';
-  return 'col-span-full lg:col-span-6';
-};
+// Lives in utils/widgetGrid so the breakpoints are pinned by a test.
 
 // ── Inline error fallback ────────────────────────────────────────────────────
 
@@ -188,7 +181,7 @@ function SortableWidget({
       ref={setNodeRef}
       data-widget-id={widget.id}
       style={style}
-      className={`group relative min-w-0 self-stretch ${getColSpanClass(widget.w)}`}
+      className={`group relative min-w-0 self-stretch ${widgetColSpan(widget.w)}`}
     >
       <div className="widget-enter h-full" style={{ animationDelay: `${index * 70}ms` }}>
         {/* Drag handle — a slim grip pill centred on the card's top edge. It sits

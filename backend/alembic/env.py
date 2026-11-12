@@ -11,7 +11,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from app.core.config import settings
 from app.core.database import to_sync_database_url
 from app.models.base import Base
-from app.models import audit_log, session, user, weather_cache  # Import all models
+from app.models import ai_usage, audit_log, session, user, weather_cache  # Import all models
 
 # this is the Alembic Config object
 config = context.config

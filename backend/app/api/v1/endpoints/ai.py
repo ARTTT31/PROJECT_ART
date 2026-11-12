@@ -25,6 +25,7 @@ from app.core.rate_limit import limiter
 from app.core.secret_box import decrypt_secret, encrypt_secret
 from app.core.url_safety import UnsafeURLError, ensure_public_http_url
 from app.models.user import User
+from app.services.ai_quota import claim_daily_request
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -651,6 +652,7 @@ async def ai_chat(
     request: Request,
     payload: AIChatRequest,
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
     """Interactive AI chat endpoint.
 
@@ -669,6 +671,20 @@ async def ai_chat(
     # 2. Ask the configured external model (account key first, then env key)
     provider = resolve_ai_provider(current_user)
     if provider.name != "none":
+        # A per-IP limiter does nothing for a deployment key: the same account can
+        # rotate addresses, and every call spends the owner's credits. Reserve one
+        # message from this account's daily budget first.
+        allowed, used = await claim_daily_request(
+            db, current_user.id, settings.AI_DAILY_MESSAGE_LIMIT
+        )
+        if not allowed:
+            raise HTTPException(
+                status_code=429,
+                detail=(
+                    f"ใช้โควตา AI ของวันนี้ครบ {used} ข้อความแล้ว "
+                    "โควตาจะรีเซ็ตเที่ยงคืนตามเวลา UTC"
+                ),
+            )
         reply = await call_ai_model(provider, message, payload.context, payload.history)
         if reply:
             return AIChatResponse(reply=reply)

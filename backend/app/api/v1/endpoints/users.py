@@ -196,7 +196,7 @@ async def approve_user(
             f"Admin approved sign-up request: "
             f"{approved.email or approved.username or approved.name} (ID: {user_id})"
         ),
-        ip_address=request.client.host if request.client else None,
+        ip_address=get_real_client_ip(request),
         user_agent=request.headers.get("user-agent"),
     )
     # Best-effort notice to the applicant; the decision stands even if email
@@ -249,7 +249,7 @@ async def reject_user(
             f"Admin rejected sign-up request: "
             f"{rejected.email or rejected.username or rejected.name} (ID: {user_id})"
         ),
-        ip_address=request.client.host if request.client else None,
+        ip_address=get_real_client_ip(request),
         user_agent=request.headers.get("user-agent"),
     )
     # Best-effort notice to the applicant; the decision stands even if email
@@ -422,7 +422,7 @@ async def create_user(
     user_service = UserService(db)
 
     audit_service = AuditService(db)
-    client_ip = request.client.host if request.client else None
+    client_ip = get_real_client_ip(request)
     user_agent = request.headers.get("user-agent")
 
     try:
@@ -470,7 +470,7 @@ async def admin_create_user(
     user_service = UserService(db)
 
     audit_service = AuditService(db)
-    client_ip = request.client.host if request.client else None
+    client_ip = get_real_client_ip(request)
     user_agent = request.headers.get("user-agent")
 
     try:
@@ -552,7 +552,7 @@ async def update_user(
             )
 
     audit_service = AuditService(db)
-    client_ip = request.client.host if request.client else None
+    client_ip = get_real_client_ip(request)
     user_agent = request.headers.get("user-agent")
 
     try:
@@ -639,7 +639,7 @@ async def delete_user(
         )
 
     audit_service = AuditService(db)
-    client_ip = request.client.host if request.client else None
+    client_ip = get_real_client_ip(request)
     user_agent = request.headers.get("user-agent")
 
     target_identifier = target_user.email or target_user.username or f"ID {user_id}"
@@ -716,7 +716,7 @@ async def restore_user(
         details=(
             f"Admin restored user: {restored.email or restored.username} (ID: {user_id})"
         ),
-        ip_address=request.client.host if request.client else None,
+        ip_address=get_real_client_ip(request),
         user_agent=request.headers.get("user-agent"),
     )
     await db.commit()
@@ -778,7 +778,7 @@ async def admin_reset_two_factor(
             "Admin cleared two-factor authentication for "
             f"{target.email or target.username or target.name} (ID: {user_id})"
         ),
-        ip_address=request.client.host if request.client else None,
+        ip_address=get_real_client_ip(request),
         user_agent=request.headers.get("user-agent"),
     )
     await db.commit()

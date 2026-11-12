@@ -257,7 +257,7 @@ async def update_branding(
             db.add(SystemSetting(key=key, value=val, created_at=current_time, updated_at=current_time))
 
     audit_service = AuditService(db)
-    client_ip = request.client.host if request.client else None
+    client_ip = get_real_client_ip(request)
     mode_label = payload.registration_mode or "unchanged"
     await audit_service.log_action(
         action="UPDATE_BRANDING",

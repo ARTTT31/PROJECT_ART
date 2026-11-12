@@ -101,6 +101,17 @@ class User(Base, TimestampMixin):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     is_locked: Mapped[bool] = mapped_column(Boolean, default=False)
 
+    # ── Optimistic concurrency for the JSON-blob profile columns ─────────
+    # Notes, finance, watchlist, layout, camera config, quick links and the main
+    # menu are whole-document columns replaced on every save. Every such write
+    # bumps this counter; a client that sends the version it last saw is refused
+    # with 409 instead of silently overwriting another device's rows.
+    profile_version: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+
+    # Read / dismissed notification ids as JSON ({"read": [...], "dismissed":
+    # [...]}), so clearing the badge on the phone clears it on the desktop too.
+    notification_state: Mapped[str | None] = mapped_column(Text)
+
     # Soft delete. A NULL value means a live account; a timestamp means the
     # account is in the trash: it is hidden from every list, cannot log in
     # (is_active is cleared with it) and is permanently purged once the

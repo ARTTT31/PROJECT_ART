@@ -182,6 +182,14 @@ export default function QuickNotesWidget({
   // One-click clearing is still a delete, so it leaves a short window to take it
   // back instead of asking for a confirmation every time.
   const [clearedAt, setClearedAt] = useState<number | null>(null);
+  // Deleting one line is as easy to misfire as clearing the list, so it gets the
+  // same undo offer — one slot, so a second delete replaces it.
+  const [deletedAt, setDeletedAt] = useState<number | null>(null);
+  const undoDeleteRef = useRef<{
+    note: QuickNote;
+    index: number;
+    timer: ReturnType<typeof setTimeout>;
+  } | null>(null);
   const undoClearRef = useRef<{ notes: QuickNote[]; timer: ReturnType<typeof setTimeout> } | null>(
     null,
   );
@@ -362,7 +370,36 @@ export default function QuickNotesWidget({
   const removeNote = (id: string) => {
     hapticTap();
     if (editing?.id === id) setEditing(null);
-    update(latestRef.current.filter((note) => note.id !== id));
+    const before = latestRef.current;
+    const index = before.findIndex((note) => note.id === id);
+    if (index === -1) return;
+    update(before.filter((note) => note.id !== id));
+
+    if (undoDeleteRef.current) clearTimeout(undoDeleteRef.current.timer);
+    undoDeleteRef.current = {
+      note: before[index],
+      index,
+      timer: setTimeout(() => {
+        undoDeleteRef.current = null;
+        setDeletedAt(null);
+      }, 8000),
+    };
+    setDeletedAt(Date.now());
+  };
+
+  const undoDelete = () => {
+    const entry = undoDeleteRef.current;
+    if (!entry) return;
+    clearTimeout(entry.timer);
+    undoDeleteRef.current = null;
+    setDeletedAt(null);
+
+    // Restore at the original position: the list order is the user's, so an undo
+    // must not move the line to the bottom.
+    const restored = [...latestRef.current];
+    restored.splice(Math.min(entry.index, restored.length), 0, entry.note);
+    update(restored);
+    hapticTap();
   };
 
   const startEdit = (note: QuickNote) => {
@@ -499,6 +536,18 @@ export default function QuickNotesWidget({
         </div>
 
         <div className="flex shrink-0 items-center gap-1.5">
+          {deletedAt !== null && (
+            <button
+              type="button"
+              onClick={undoDelete}
+              aria-label={tr('เลิกทำการลบโน้ต', 'Undo deleting the note')}
+              title={tr('เลิกทำการลบโน้ต', 'Undo deleting the note')}
+              className="inline-flex h-8 items-center gap-1 rounded-full px-2.5 text-[11px] font-bold text-[var(--accent-text)] transition-colors hover:bg-[var(--accent)]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-ring)]"
+            >
+              <RotateCcw size={14} aria-hidden="true" />
+              {tr('เลิกทำ', 'Undo')}
+            </button>
+          )}
           {/* Lives in the header, not above the list: it appears the moment the
               first item is ticked, and a row of its own used to shove every
               entry down as you worked down the list. */}

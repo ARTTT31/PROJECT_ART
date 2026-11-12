@@ -136,6 +136,20 @@ def log_shared_state_limitations() -> None:
     else:
         logger.warning(SHARED_STATE_NOTICE.format(component="WebSocket notifications"))
 
+    # A warning is easy to miss on a deploy log; when the operator says the
+    # process-local defaults are unacceptable, refuse to serve instead.
+    if settings.REQUIRE_SHARED_STATE:
+        missing = []
+        if settings.SLOWAPI_STORAGE_URI == "memory://":
+            missing.append("SLOWAPI_STORAGE_URI is memory://")
+        if not broadcast_bus.shared:
+            missing.append("WS_BROADCAST_REDIS_URL is unset")
+        if missing:
+            raise RuntimeError(
+                "REQUIRE_SHARED_STATE is set but shared state is not configured: "
+                + ", ".join(missing)
+            )
+
 
 async def _session_cleanup_loop(interval_hours: int) -> None:
     """Delete expired sessions every ``interval_hours`` until cancelled.

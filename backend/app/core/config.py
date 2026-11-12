@@ -40,6 +40,11 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+    # Refuse to boot when the rate limiter or the WebSocket bus is process-local.
+    # Off by default (a single instance is a supported deployment); set it to true
+    # on any multi-instance deploy so a silent scaling bug becomes a failed start
+    # instead of per-instance limits and half-delivered broadcasts.
+    REQUIRE_SHARED_STATE: bool = False
     AUTO_CREATE_TABLES: bool = False
     # CSRF protection (double-submit cookie). Disable only for non-browser clients
     # that cannot send the X-CSRF-Token header.
@@ -196,6 +201,17 @@ class Settings(BaseSettings):
             )
             return "lax"
         return self.COOKIE_SAMESITE
+
+    # Cookie lifetimes derive from the token lifetimes. Hardcoded values in
+    # auth.py (30*60 / 7*24*60*60) desynchronised the cookie from the JWT the day
+    # someone changed ACCESS_TOKEN_EXPIRE_MINUTES.
+    @property
+    def ACCESS_COOKIE_MAX_AGE(self) -> int:
+        return self.ACCESS_TOKEN_EXPIRE_MINUTES * 60
+
+    @property
+    def REFRESH_COOKIE_MAX_AGE(self) -> int:
+        return self.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60
 
     # CORS — explicit origins required (no wildcards) because allow_credentials=True
     CORS_ORIGINS: str = "http://localhost:3000,http://localhost:3001"
@@ -356,6 +372,10 @@ class Settings(BaseSettings):
     AI_API_KEY: str = ""
     AI_BASE_URL: str = "https://api.openai.com/v1"
     AI_MODEL: str = "gpt-4.1-mini"
+    # Messages one account may send to an external model per UTC day. 0 disables
+    # the budget (the per-IP limiter still applies). The built-in intent engine is
+    # free and never counted, so this only caps calls that spend credits.
+    AI_DAILY_MESSAGE_LIMIT: int = 50
     # Google Gemini (AI Studio key). Model ids retire on a schedule, so the id
     # is configurable rather than hard-coded: gemini-2.5-flash is being retired
     # and gemini-1.5-flash already is.

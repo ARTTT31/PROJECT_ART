@@ -886,3 +886,65 @@ password-reset email, remove it, and do the rest of the list.
    `DailyDigestWidget › switches the oil tile to another fuel type` failure is gone), `npm run build`
    succeeds and emits the `apple-widget` utility. Not viewed in a browser yet: light/dark and 375px /
    768px behaviour of the moved toolbar, the bottom toasts and the new skeletons.
+
+## Security hardening and usability pass (November 12, 2026)
+
+The two fix plans from the November 10 audit (`plans/2026-11-10-security-hardening.md`,
+`plans/2026-11-10-ux-usability-pass.md`). Every finding below was re-checked against the tree first;
+two of them had already been fixed by the design pass and are recorded as such.
+
+### Security and data integrity
+
+1. **P1 — the client IP is the proxy, not the caller.** `request.client.host` is Render's edge, so
+   the login backoff keyed on `(email, IP)` collapsed to per-email and any stranger could lock a known
+   account out; audit rows, session rows and "new device" mail recorded the edge's address. All of
+   `auth`, `users`, `profile` and `system` now read `get_real_client_ip(request)`, which walks
+   `X-Forwarded-For` behind a trusted proxy (the helper already existed and only `rate_limit` used it).
+2. **P2 — whole-document JSON writes could lose rows.** `users.profile_version` is bumped by every
+   blob write and an optional `base_version` on the payload is refused with **409** plus
+   `X-Profile-Version`. Wired for quick links, main menu, dashboard layout, camera config, quick notes,
+   finance, watchlist and the new notification state. `base_version` stays optional so the current
+   widgets keep saving; until they send it, this is a guard the API offers rather than one the UI uses.
+3. **P3 — `/ai/chat` had no per-account budget.** Per-IP limiting does nothing for a deployment key:
+   one account can rotate addresses and spend the owner's credits. `ai_usage` (unique `user_id`+`day`,
+   UTC) plus `AI_DAILY_MESSAGE_LIMIT` (default 50, `0` disables) reserves a message before every paid
+   call and answers **429** when the budget is gone. The built-in intent engine is free and uncounted.
+4. **P4 — CSP.** `img-src` takes an allow-list from `NEXT_PUBLIC_CAMERA_IMG_ORIGINS` instead of a
+   blanket `http:`; without the variable the old value stays, so no working LAN camera breaks.
+   `script-src 'unsafe-inline'` is unchanged and recorded as a limitation: a nonce needs middleware and
+   dynamic rendering, and this frontend is statically prerendered.
+5. **P5 — default admin credentials are gone.** `scripts/admin/check_password.py` is deleted. The
+   create scripts prompt for the address and password (no defaults, `getpass`, never echoed) or read
+   `ADMIN_EMAIL`/`ADMIN_PASSWORD` and refuse to run without them.
+6. **P6 — a silently wrong multi-instance deploy can now fail fast.** `REQUIRE_SHARED_STATE=true`
+   turns the startup `[SCALING]` notice into a `RuntimeError` when rate limiting, login backoff or the
+   WebSocket registry is still process-local.
+7. **P7 — cookie lifetimes follow the tokens.** `settings.ACCESS_COOKIE_MAX_AGE` /
+   `REFRESH_COOKIE_MAX_AGE` replace fifteen hardcoded `max_age` values.
+
+### UX and usability
+
+8. **U1 — cameras no longer leak across accounts.** The stream list lives under
+   `scopedStorageKey('camera-config')`; the old bare `artWorkspaceCameraConfig` is migrated once and
+   deleted, and `clearOfflineData()` now also purges it and the legacy notification keys.
+9. **U2 — the badge clears everywhere.** `GET/PUT /profile/notification-state` stores read/dismissed
+   ids on the account. The bell merges the account copy on mount (union, so an offline mark survives)
+   and pushes a debounced merged set. localStorage remains the offline fallback.
+10. **U7 — signed-in pages get an axe gate.** `tests/a11y-authenticated.spec.ts` scans `/dashboard`,
+    `/notifications`, `/profile` and `/camera` with the same critical/serious filter as the auth pages.
+    It skips itself without `E2E_USER_EMAIL`/`E2E_USER_PASSWORD`, so it has not been run here.
+11. **U8 — the breakpoint is a contract.** Half-width tiles start at `lg` (unchanged from the design
+    pass) and now come from `utils/widgetGrid.ts`, which a test pins — including "no `md:` anywhere".
+12. **U12 — a deleted note can come back.** Deleting a line offers an 8-second undo that restores it
+    at its original index, reusing the clear-all affordance in the widget header.
+13. **U4 was already fixed.** All four widgets named in the audit already render an error state with a
+    retry; a shared `WidgetState` would have added an abstraction without changing behaviour, so none
+    was added.
+
+### Verified
+
+`pytest -q` **639 passed / 84.08%**, `flake8 app` clean, `mypy app` clean (70 files), `alembic upgrade
+head` + `alembic check` on a throwaway SQLite file with no drift, `npx tsc --noEmit` clean, `npx eslint
+src` 0 errors, `npx vitest run` **395 passed / 61 files**, `npm run build` succeeds. Not run: the axe
+signed-in spec (needs a test account), Playwright smoke, and any deployed-only check. Not viewed in a
+browser.

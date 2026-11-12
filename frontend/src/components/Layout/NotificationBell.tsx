@@ -520,6 +520,63 @@ export default function NotificationBell() {
     } catch {}
   }, [readIds]);
 
+  // ── Read state shared with the account ────────────────────────────────────
+  // localStorage alone meant clearing the badge on the phone left the desktop
+  // lit. The account copy is then the source of truth; the browser copy stays as
+  // the offline fallback.
+  const remoteStateLoadedRef = useRef(false);
+
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+
+    void (async () => {
+      try {
+        const res = await fetchWithAuth('/api/v1/profile/notification-state');
+        if (!res.ok) return;
+        const body = (await res.json()) as { read?: unknown; dismissed?: unknown };
+        if (cancelled || !Array.isArray(body.read)) return;
+        // Union, not replace: a mark made offline on this device is kept.
+        const remote = body.read.filter((id): id is string => typeof id === 'string');
+        setReadIds((current) => new Set([...current, ...remote]));
+      } catch {
+        // Offline: the local copy already rendered.
+      } finally {
+        if (!cancelled) remoteStateLoadedRef.current = true;
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
+  useEffect(() => {
+    if (!user || !remoteStateLoadedRef.current) return;
+
+    // Debounced: marking six items read in a row is one write, not six.
+    const timer = setTimeout(() => {
+      let dismissed: string[] = [];
+      try {
+        dismissed = JSON.parse(localStorage.getItem(DISMISSED_STORAGE_KEY) || '[]');
+      } catch {
+        dismissed = [];
+      }
+      void fetchWithAuth('/api/v1/profile/notification-state', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          read: Array.from(readIds).slice(-500),
+          dismissed: Array.from(new Set(dismissed)).slice(-500),
+        }),
+      }).catch(() => {
+        // Best effort: the next change pushes the merged set again.
+      });
+    }, 1200);
+
+    return () => clearTimeout(timer);
+  }, [readIds, user]);
+
   // Close panel on outside click
   useEffect(() => {
     if (!open) return;

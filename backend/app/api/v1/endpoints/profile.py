@@ -2,9 +2,10 @@
 User Profile Endpoints
 """
 
+import json
 import logging
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, Optional
 from pydantic import BaseModel, Field
 
 from fastapi import APIRouter, Depends, HTTPException, status, Request, UploadFile, File
@@ -242,7 +243,7 @@ async def update_my_profile(
     user_service = UserService(db)
 
     audit_service = AuditService(db)
-    client_ip = request.client.host if request.client else None
+    client_ip = get_real_client_ip(request)
     user_agent = request.headers.get("user-agent")
 
     try:
@@ -306,7 +307,7 @@ async def change_password(
     user_service = UserService(db)
 
     audit_service = AuditService(db)
-    client_ip = request.client.host if request.client else None
+    client_ip = get_real_client_ip(request)
     user_agent = request.headers.get("user-agent")
 
     try:
@@ -442,6 +443,7 @@ async def update_quick_links(
     """
     Update user quick links (JSON string)
     """
+    await _claim_profile_version(current_user, quick_links_update.base_version, db)
     user_service = UserService(db)
 
     try:
@@ -490,6 +492,7 @@ async def update_main_menu(
     Without this the menu lived in localStorage, so arranging it on a laptop
     never reached the phone the same person signs in from.
     """
+    await _claim_profile_version(current_user, menu_update.base_version, db)
     user_service = UserService(db)
 
     try:
@@ -516,6 +519,7 @@ async def update_dashboard_layout(
     """
     Update user dashboard layout preferences (JSON string)
     """
+    await _claim_profile_version(current_user, layout_update.base_version, db)
     user_service = UserService(db)
 
     try:
@@ -553,6 +557,7 @@ async def update_camera_config(
     who never received that page could still write camera settings by calling
     this endpoint directly.
     """
+    await _claim_profile_version(current_user, camera_update.base_version, db)
     user_service = UserService(db)
 
     try:
@@ -673,6 +678,92 @@ async def revoke_session(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="เกิดข้อผิดพลาดภายในระบบ กรุณาลองอีกครั้งภายหลัง",
         )
+
+
+async def _claim_profile_version(
+    user: User, base_version: Optional[int], db: AsyncSession
+) -> None:
+    """Refuse a whole-document write built on a version another device replaced.
+
+    ``base_version`` is optional so an older client keeps saving; when it is sent
+    and no longer matches, the write is refused with 409 plus the version to
+    reload from — better than overwriting rows the caller never saw.
+    """
+    if base_version is not None and base_version != user.profile_version:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="มีข้อมูลใหม่จากอุปกรณ์อื่น กรุณาโหลดหน้าใหม่ก่อนบันทึก",
+            headers={"X-Profile-Version": str(user.profile_version)},
+        )
+
+    user.profile_version += 1
+    db.add(user)
+
+
+# ── Notification read/dismissed state (shared across devices) ────────────────
+# The bell kept this in localStorage only, so clearing the badge on a phone left
+# the desktop lit. The ids now live on the account; the browser keeps its copy as
+# the offline fallback.
+
+NOTIFICATION_ID_LIMIT = 500
+
+
+class NotificationStatePayload(BaseModel):
+    read: list[str] = Field(default_factory=list, max_length=NOTIFICATION_ID_LIMIT)
+    dismissed: list[str] = Field(default_factory=list, max_length=NOTIFICATION_ID_LIMIT)
+    base_version: Optional[int] = None
+
+
+def _parse_notification_state(raw: str | None) -> dict[str, list[str]]:
+    try:
+        parsed = json.loads(raw or "{}")
+    except (TypeError, ValueError):
+        parsed = {}
+    if not isinstance(parsed, dict):
+        parsed = {}
+    return {
+        "read": [str(item) for item in parsed.get("read", [])][:NOTIFICATION_ID_LIMIT],
+        "dismissed": [str(item) for item in parsed.get("dismissed", [])][
+            :NOTIFICATION_ID_LIMIT
+        ],
+    }
+
+
+@router.get("/notification-state")
+@limiter.limit(_GENERAL_LIMIT)
+async def get_notification_state(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """This account's read/dismissed notification ids."""
+    user = await load_profile_columns(db, current_user, "notification_state")
+    return {**_parse_notification_state(user.notification_state),
+            "profile_version": user.profile_version}
+
+
+@router.put("/notification-state")
+@limiter.limit(_GENERAL_LIMIT)
+async def update_notification_state(
+    request: Request,
+    payload: NotificationStatePayload,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Replace the stored ids with the merged set the client just computed."""
+    await _claim_profile_version(current_user, payload.base_version, db)
+    read_ids = payload.read[:NOTIFICATION_ID_LIMIT]
+    dismissed_ids = payload.dismissed[:NOTIFICATION_ID_LIMIT]
+    current_user.notification_state = json.dumps(
+        {"read": read_ids, "dismissed": dismissed_ids}, ensure_ascii=False
+    )
+    version = current_user.profile_version
+    await db.commit()
+    return {
+        "read": read_ids,
+        "dismissed": dismissed_ids,
+        "profile_version": version,
+    }
 
 
 @router.get("/export", response_model=None)
@@ -945,6 +1036,7 @@ async def update_quick_notes(
     db: AsyncSession = Depends(get_db),
 ):
     """Replace the account's quick notes with the list in the request."""
+    await _claim_profile_version(current_user, payload.base_version, db)
     saved_notes = serialize_quick_notes(payload.notes)
     current_user.quick_notes = saved_notes
     await db.commit()
@@ -1008,6 +1100,7 @@ async def update_finance_entries(
     present in ``entries`` clears its tombstone — re-adding a row on purpose
     (an undo) must win over the old deletion.
     """
+    await _claim_profile_version(current_user, payload.base_version, db)
     saved = serialize_finance_entries(payload.entries)
     saved_budget = serialize_finance_budget(payload.budget)
 
@@ -1062,6 +1155,7 @@ async def update_watchlist(
     db: AsyncSession = Depends(get_db),
 ):
     """Replace the followed symbols with the list in the request."""
+    await _claim_profile_version(current_user, payload.base_version, db)
     saved = serialize_watchlist(payload.symbols)
     current_user.watchlist = saved
     await db.commit()

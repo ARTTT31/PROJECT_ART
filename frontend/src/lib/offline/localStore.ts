@@ -65,6 +65,17 @@ function scopedKey(name: string): string {
   return `${PREFIX}:${offlineScope()}:${name}`;
 }
 
+/**
+ * A per-account storage key for data that is not a cache/pending pair.
+ *
+ * Exported so no component invents its own unscoped key: the camera stream list
+ * used to live under the bare name `artWorkspaceCameraConfig`, which survived
+ * logout — the next account on the same browser saw the previous one's cameras.
+ */
+export function scopedStorageKey(name: string): string {
+  return scopedKey(name);
+}
+
 function readJson<T>(key: string): T | null {
   const store = storage();
   if (!store) return null;
@@ -141,7 +152,17 @@ export function isOffline(): boolean {
   return typeof navigator !== 'undefined' && navigator.onLine === false;
 }
 
-/** Delete every offline mirror and queued write for all accounts. */
+/**
+ * Keys written before scoping existed. They carry account data under a name that
+ * knows nothing about the account, so logout deletes them too.
+ */
+const LEGACY_ACCOUNT_KEYS = [
+  'artWorkspaceCameraConfig',
+  'artNotificationReadV2',
+  'artNotificationDismissedV2',
+];
+
+/** Delete every offline mirror, queued write and legacy account key. */
 export function clearOfflineData(): void {
   const store = storage();
   if (!store) return;
@@ -149,8 +170,11 @@ export function clearOfflineData(): void {
     const keys: string[] = [];
     for (let index = 0; index < store.length; index += 1) {
       const key = store.key(index);
-      if (key && key.startsWith(`${PREFIX}:`)) keys.push(key);
+      if (key && (key.startsWith(`${PREFIX}:`) || key.startsWith('artNotificationHistoryV1'))) {
+        keys.push(key);
+      }
     }
+    keys.push(...LEGACY_ACCOUNT_KEYS);
     keys.forEach((key) => store.removeItem(key));
   } catch {
     // Storage unavailable; nothing was persisted to begin with.

@@ -29,6 +29,24 @@ const nextConfig = {
     const isDev = process.env.NODE_ENV !== 'production';
     const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || process.env.API_INTERNAL_URL || '';
     const apiOrigin = apiBaseUrl ? new URL(apiBaseUrl).origin : '';
+    // Camera feeds are LAN snapshots over http, which `https:` alone blocks. An
+    // allow-list keeps that hole narrow: set NEXT_PUBLIC_CAMERA_IMG_ORIGINS to the
+    // exact origins (comma separated, e.g. "http://192.168.1.50") a deployment
+    // uses. Without it the previous blanket `http:` stays, so no camera that
+    // works today silently stops loading. (Scripts still need 'unsafe-inline':
+    // a nonce needs middleware plus dynamic rendering, and this site is
+    // statically prerendered.)
+    const cameraImgOrigins = (process.env.NEXT_PUBLIC_CAMERA_IMG_ORIGINS || '')
+      .split(',')
+      .map((origin) => origin.trim())
+      .filter(Boolean);
+    const imgSources = [
+      "'self'",
+      'data:',
+      'blob:',
+      'https:',
+      ...(cameraImgOrigins.length ? cameraImgOrigins : ['http:']),
+    ].join(' ');
     const connectSources = [
       "'self'",
       ...(apiOrigin ? [apiOrigin, apiOrigin.replace('http', 'ws')] : []),
@@ -46,10 +64,7 @@ const nextConfig = {
         headers: [
           {
             key: 'Content-Security-Policy',
-            // img-src includes http: so LAN/IP camera feeds (snapshot / MJPEG
-            // URLs like http://192.168.1.50/snapshot.jpg) configured on the
-            // camera page are not blocked when the site is served over HTTPS.
-            value: `default-src 'self'; script-src 'self' 'unsafe-inline' ${isDev ? "'unsafe-eval'" : ''} https://apis.google.com https://accounts.google.com https://va.vercel-scripts.com https://vercel.live https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https: http: blob:; font-src 'self' https://fonts.gstatic.com https://vercel.live; connect-src ${connectSources}; frame-src 'self' https://accounts.google.com https://vercel.live https://challenges.cloudflare.com; object-src 'none'; base-uri 'self'; form-action 'self'`,
+            value: `default-src 'self'; script-src 'self' 'unsafe-inline' ${isDev ? "'unsafe-eval'" : ''} https://apis.google.com https://accounts.google.com https://va.vercel-scripts.com https://vercel.live https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src ${imgSources}; font-src 'self' https://fonts.gstatic.com https://vercel.live; connect-src ${connectSources}; frame-src 'self' https://accounts.google.com https://vercel.live https://challenges.cloudflare.com; object-src 'none'; base-uri 'self'; form-action 'self'`,
           },
           {
             key: 'X-Content-Type-Options',

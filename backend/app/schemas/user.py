@@ -158,24 +158,29 @@ class UserQuickLinksUpdate(BaseModel):
     """Schema for updating user quick links"""
 
     quick_links: str = Field(..., min_length=0, max_length=100_000)
+    # Version the client last saw; a stale one is refused with 409.
+    base_version: Optional[int] = None
 
 
 class UserMainMenuUpdate(BaseModel):
     """Schema for updating the sidebar menu config (JSON array as text)"""
 
     main_menu: str = Field(..., min_length=0, max_length=20_000)
+    base_version: Optional[int] = None
 
 
 class UserDashboardLayoutUpdate(BaseModel):
     """Schema for updating user dashboard layout"""
 
     dashboard_layout: str = Field(..., min_length=0, max_length=100_000)
+    base_version: Optional[int] = None
 
 
 class UserCameraConfigUpdate(BaseModel):
     """Schema for updating user camera configuration"""
 
     camera_config: str = Field(..., min_length=0, max_length=100_000)
+    base_version: Optional[int] = None
 
 
 class ExternalNotificationsUpdate(BaseModel):
@@ -245,6 +250,7 @@ class QuickNotesUpdate(BaseModel):
     """Replace the whole list — the widget always saves its current state."""
 
     notes: list[QuickNote] = Field(default_factory=list, max_length=MAX_QUICK_NOTES)
+    base_version: Optional[int] = None
 
 
 class QuickNotesResponse(BaseModel):
@@ -292,6 +298,7 @@ class FinanceUpdate(BaseModel):
     # Rows this client just deleted. Recorded as tombstones so another device
     # holding an older copy cannot write them back with its next full-list save.
     deleted_ids: list[str] = Field(default_factory=list, max_length=2000)
+    base_version: Optional[int] = None
 
 
 class FinanceResponse(BaseModel):
@@ -319,6 +326,7 @@ class WatchlistItem(BaseModel):
 
 class WatchlistUpdate(BaseModel):
     symbols: list[WatchlistItem] = Field(default_factory=list, max_length=30)
+    base_version: Optional[int] = None
 
 
 class WatchlistResponse(BaseModel):
@@ -385,6 +393,9 @@ class UserResponse(BaseModel):
     # Read from the model's `two_factor_enabled` property, so the admin console
     # can offer a reset only for accounts that actually use a second factor.
     two_factor_enabled: bool = False
+    # Bumped by every whole-document profile write; clients echo it as
+    # `base_version` so a stale save is refused instead of overwriting.
+    profile_version: int = 0
     last_login: Optional[datetime] = None
     created_at: datetime
     updated_at: datetime

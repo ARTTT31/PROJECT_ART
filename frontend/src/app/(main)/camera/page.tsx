@@ -24,6 +24,7 @@ import SegmentedControl from '@/components/ui/SegmentedControl';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
 import { CameraStreamConfig, CameraStreamType } from '@/types';
 import { sanitizeCameraStreams, stripCameraCredentials } from '@/utils/cameraUrl';
+import { scopedStorageKey } from '@/lib/offline/localStore';
 import { showToast, showDeleteConfirm } from '@/utils/sweetalert';
 import { useI18n, translateText } from '@/lib/i18n/I18nProvider';
 import {
@@ -124,10 +125,22 @@ export default function CameraPage() {
         console.error('Failed to parse camera_config:', e);
       }
     } else {
-      const saved = localStorage.getItem('artWorkspaceCameraConfig');
-      if (saved) {
+      // Account-scoped: the old bare key survived logout, so the next person on
+      // this browser inherited the previous account's cameras. Read the legacy
+      // key once, move it under the account, then delete it.
+      const legacyKey = 'artWorkspaceCameraConfig';
+      const saved = localStorage.getItem(scopedStorageKey('camera-config'));
+      const legacy = saved ? null : localStorage.getItem(legacyKey);
+      if (!saved && legacy) {
         try {
-          const parsed = JSON.parse(saved);
+          localStorage.setItem(scopedStorageKey('camera-config'), legacy);
+          localStorage.removeItem(legacyKey);
+        } catch {}
+      }
+      const stored = saved ?? legacy;
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
           if (Array.isArray(parsed) && parsed.length > 0) {
             loaded = sanitizeCameraStreams(parsed) as CameraStreamConfig[];
           }
@@ -150,7 +163,7 @@ export default function CameraPage() {
       const payload = JSON.stringify(sanitizeCameraStreams(nextStreams));
 
       try {
-        localStorage.setItem('artWorkspaceCameraConfig', payload);
+        localStorage.setItem(scopedStorageKey('camera-config'), payload);
       } catch {}
 
       try {

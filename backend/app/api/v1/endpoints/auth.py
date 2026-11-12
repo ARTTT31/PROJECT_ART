@@ -353,7 +353,7 @@ async def login(
     audit_service = AuditService(db)
 
     # Get client IP & User Agent
-    client_ip = request.client.host if request.client else None
+    client_ip = get_real_client_ip(request)
     user_agent = request.headers.get("user-agent")
 
     try:
@@ -414,14 +414,14 @@ async def login(
         response.set_cookie(
             key="access_token",
             value=result["access_token"],
-            max_age=30 * 60,
+            max_age=settings.ACCESS_COOKIE_MAX_AGE,
             httponly=True,
             **COOKIE_OPTIONS,
         )
         response.set_cookie(
             key="refresh_token",
             value=result["refresh_token"],
-            max_age=7 * 24 * 60 * 60,
+            max_age=settings.REFRESH_COOKIE_MAX_AGE,
             httponly=True,
             **COOKIE_OPTIONS,
         )
@@ -431,14 +431,14 @@ async def login(
         response.set_cookie(
             key="user",
             value=encode_user_cookie(user_cookie_payload(response_data["user"])),
-            max_age=7 * 24 * 60 * 60,
+            max_age=settings.REFRESH_COOKIE_MAX_AGE,
             httponly=False,
             **COOKIE_OPTIONS,
         )
         response.set_cookie(
             key="csrf_token",
             value=secrets.token_urlsafe(32),
-            max_age=7 * 24 * 60 * 60,
+            max_age=settings.REFRESH_COOKIE_MAX_AGE,
             httponly=False,
             **COOKIE_OPTIONS,
         )
@@ -501,7 +501,7 @@ async def register(
     auth_service = AuthService(db)
     audit_service = AuditService(db)
     user_service = UserService(db)
-    client_ip = request.client.host if request.client else None
+    client_ip = get_real_client_ip(request)
     user_agent = request.headers.get("user-agent")
     mode = await get_effective_registration_mode(db)
 
@@ -656,7 +656,7 @@ async def verify_email(
         action="EMAIL_VERIFIED",
         user_id=user.id,
         details=f"Email verified: {user.email}",
-        ip_address=request.client.host if request.client else None,
+        ip_address=get_real_client_ip(request),
         user_agent=request.headers.get("user-agent"),
     )
     await db.commit()
@@ -673,7 +673,7 @@ async def resend_verification(
 ):
     """Send a fresh verification link, answering the same way for every address."""
     audit_service = AuditService(db)
-    client_ip = request.client.host if request.client else None
+    client_ip = get_real_client_ip(request)
     user_agent = request.headers.get("user-agent")
 
     user = await UserService(db).get_user_by_email(payload.email)
@@ -737,7 +737,7 @@ async def refresh_token(
         response.set_cookie(
             key="access_token",
             value=new_tokens.access_token,
-            max_age=30 * 60,
+            max_age=settings.ACCESS_COOKIE_MAX_AGE,
             httponly=True,
             **COOKIE_OPTIONS,
         )
@@ -745,7 +745,7 @@ async def refresh_token(
             response.set_cookie(
                 key="refresh_token",
                 value=new_tokens.refresh_token,
-                max_age=7 * 24 * 60 * 60,
+                max_age=settings.REFRESH_COOKIE_MAX_AGE,
                 httponly=True,
                 **COOKIE_OPTIONS,
             )
@@ -777,7 +777,7 @@ async def refresh_token(
                 response.set_cookie(
                     key="user",
                     value=encode_user_cookie(user_cookie_payload(user_data)),
-                    max_age=7 * 24 * 60 * 60,
+                    max_age=settings.REFRESH_COOKIE_MAX_AGE,
                     httponly=False,
                     **COOKIE_OPTIONS,
                 )
@@ -1141,7 +1141,7 @@ async def google_verify_token(
     _assert_signin_allowed(user)
 
     # Issue tokens — with a real UserSession row + sid so logout/revoke works.
-    client_ip_tok = request.client.host if request.client else None
+    client_ip_tok = get_real_client_ip(request)
     user_agent_tok = request.headers.get("user-agent")
     refresh_jti = new_refresh_jti()
     session_id = await _create_user_session(
@@ -1172,28 +1172,28 @@ async def google_verify_token(
     response.set_cookie(
         key="access_token",
         value=access_jwt,
-        max_age=30 * 60,
+        max_age=settings.ACCESS_COOKIE_MAX_AGE,
         httponly=True,
         **COOKIE_OPTIONS,
     )
     response.set_cookie(
         key="refresh_token",
         value=refresh_jwt,
-        max_age=7 * 24 * 60 * 60,
+        max_age=settings.REFRESH_COOKIE_MAX_AGE,
         httponly=True,
         **COOKIE_OPTIONS,
     )
     response.set_cookie(
         key="user",
         value=encode_user_cookie(user_cookie_payload(user_data)),
-        max_age=7 * 24 * 60 * 60,
+        max_age=settings.REFRESH_COOKIE_MAX_AGE,
         httponly=False,
         **COOKIE_OPTIONS,
     )
     response.set_cookie(
         key="csrf_token",
         value=secrets.token_urlsafe(32),
-        max_age=7 * 24 * 60 * 60,
+        max_age=settings.REFRESH_COOKIE_MAX_AGE,
         httponly=False,
         **COOKIE_OPTIONS,
     )
@@ -1306,7 +1306,7 @@ async def _finish_google_callback(
     refresh_jti = new_refresh_jti()
     session_id = await _create_user_session(
         db, user,
-        request.client.host if request.client else None,
+        get_real_client_ip(request),
         request.headers.get("user-agent"),
         refresh_jti,
     )
@@ -1339,28 +1339,28 @@ async def _finish_google_callback(
     response.set_cookie(
         key="access_token",
         value=access_jwt,
-        max_age=30 * 60,
+        max_age=settings.ACCESS_COOKIE_MAX_AGE,
         httponly=True,
         **COOKIE_OPTIONS,
     )
     response.set_cookie(
         key="refresh_token",
         value=refresh_jwt,
-        max_age=7 * 24 * 60 * 60,
+        max_age=settings.REFRESH_COOKIE_MAX_AGE,
         httponly=True,
         **COOKIE_OPTIONS,
     )
     response.set_cookie(
         key="user",
         value=encode_user_cookie(user_cookie_payload(user_data)),
-        max_age=7 * 24 * 60 * 60,
+        max_age=settings.REFRESH_COOKIE_MAX_AGE,
         httponly=False,
         **COOKIE_OPTIONS,
     )
     response.set_cookie(
         key="csrf_token",
         value=secrets.token_urlsafe(32),
-        max_age=7 * 24 * 60 * 60,
+        max_age=settings.REFRESH_COOKIE_MAX_AGE,
         httponly=False,
         **COOKIE_OPTIONS,
     )
@@ -1673,7 +1673,7 @@ async def two_factor_enable(
     current_user.totp_enabled = True
     current_user.totp_recovery_codes = json.dumps(hashes)
 
-    client_ip = request.client.host if request.client else None
+    client_ip = get_real_client_ip(request)
     await AuditService(db).log_action(
         action="2FA_ENABLED",
         user_id=current_user.id,
@@ -1723,7 +1723,7 @@ async def two_factor_disable(
     current_user.totp_secret = None
     current_user.totp_recovery_codes = None
 
-    client_ip = request.client.host if request.client else None
+    client_ip = get_real_client_ip(request)
     await AuditService(db).log_action(
         action="2FA_DISABLED",
         user_id=current_user.id,
