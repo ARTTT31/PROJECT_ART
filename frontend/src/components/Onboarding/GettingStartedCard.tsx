@@ -80,7 +80,7 @@ export default function GettingStartedCard({ user }: { user: AuthUser }) {
       id: 'palette',
       done: paletteTried,
       icon: <Search size={15} aria-hidden="true" />,
-      title: 'ลองค้นหาด้วย ⌘K',
+      title: 'ลองค้นหาด้วย Ctrl K',
       description: 'กระโดดไปหน้า โน้ต หรือรายการติดตามได้ทันที',
       action: (
         <button

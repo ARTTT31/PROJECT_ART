@@ -11,7 +11,6 @@ const REGISTRATION_OPTIONS = [
     value: 'approval',
     label: 'ต้องรอแอดมินอนุมัติ',
     desc: 'สมัครได้ทันที แต่แอดมินต้องกดอนุมัติก่อนจึงจะเข้าใช้งานได้',
-    badge: 'แนะนำ',
   },
   {
     value: 'open',
@@ -92,8 +91,8 @@ export function RegistrationPolicyCard() {
                     .item(nextIndex)
                     ?.focus();
                 }}
-                // `!` because globals.css forces every button into a pill; these
-                // are selectable surfaces and must keep the control radius.
+                // These are selectable surfaces, so they keep the control
+                // radius instead of the default pill button.
                 className={`flex h-full flex-col items-center rounded-apple-md border p-3.5 text-center transition-colors duration-150 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent-ring)] focus-visible:ring-offset-2 ${
                   selected
                     ? 'border-[var(--accent-border)] bg-[var(--accent-soft-weak)]'
@@ -113,15 +112,8 @@ export function RegistrationPolicyCard() {
                   {selected && <Check size={11} strokeWidth={3.2} />}
                 </span>
 
-                <span className="mt-2 flex flex-wrap items-center justify-center gap-x-1.5 gap-y-1">
-                  <span className="text-[13px] font-semibold leading-snug text-[var(--ink)]">
-                    {opt.label}
-                  </span>
-                  {opt.badge && (
-                    <span className="shrink-0 rounded-full bg-[var(--surface)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--accent-text)] ring-1 ring-[var(--hairline)]">
-                      {opt.badge}
-                    </span>
-                  )}
+                <span className="mt-2 text-[13px] font-semibold leading-snug text-[var(--ink)]">
+                  {opt.label}
                 </span>
 
                 <span className="mt-1.5 block text-[12px] leading-relaxed text-[var(--ink-muted)] text-balance">

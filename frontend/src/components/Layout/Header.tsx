@@ -131,8 +131,10 @@ export default function Header({ user, onMenuClick, sidebarCollapsed = false }: 
             <span className="hidden text-[12px] font-semibold xl:inline">
               {t('nav.search.label')}
             </span>
+            {/* The shortcut is Ctrl+K here — the app targets Windows users, so
+                the macOS command glyph read as a mystery symbol. */}
             <kbd className="hidden rounded-apple-xs border border-[var(--hairline)] bg-[var(--surface)] px-1.5 py-0.5 font-sans text-[10px] font-bold text-[var(--ink-tertiary)] xl:inline">
-              ⌘K
+              Ctrl K
             </kbd>
           </button>
 
