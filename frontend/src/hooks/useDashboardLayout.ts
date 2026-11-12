@@ -17,6 +17,7 @@ const defaultWidgets: WidgetConfig[] = [
   { id: 'holidays', w: 1 },
   { id: 'weather', w: 1 },
   { id: 'oilprice', w: 1 },
+  { id: 'epl', w: 1 },
   { id: 'qrcode', w: 1 },
 ];
 
@@ -80,6 +81,7 @@ export const widgetNames: Record<string, string> = {
   holidays: 'วันหยุดนักขัตฤกษ์',
   weather: 'สภาพอากาศ & PM 2.5',
   oilprice: 'ราคาน้ำมัน',
+  epl: 'ผลพรีเมียร์ลีก',
   qrcode: 'สร้าง QR Code',
   finance: 'รายรับ – รายจ่ายวันนี้',
   watchlist: 'รายการติดตาม',
@@ -96,6 +98,7 @@ export const widgetDescriptions: Record<string, string> = {
   holidays: 'ปฏิทินวันหยุดนักขัตฤกษ์ พร้อมระบบนับถอยหลัง',
   weather: 'ตรวจสอบสภาพอากาศ อุณหภูมิ และดัชนีฝุ่น PM 2.5 รายวัน',
   oilprice: 'ติดตามราคาน้ำมันล่าสุดในหน้าแดชบอร์ด',
+  epl: 'ผลการแข่งขันพรีเมียร์ลีกนัดล่าสุด พร้อมโปรแกรมนัดถัดไป',
   qrcode: 'เปิดเครื่องมือสร้าง QR Code อย่างรวดเร็ว',
   finance: 'บันทึกรายรับรายจ่ายของวันนี้ พร้อมยอดคงเหลือ',
   watchlist: 'ติดตามหุ้น คริปโต หรือค่าเงินที่สนใจ พร้อมราคาล่าสุด',

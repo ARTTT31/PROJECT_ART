@@ -18,6 +18,7 @@ has them.
 | 🌤️ `WeatherWidget` | S/M/L | Open-Meteo + MET Norway, Open-Meteo AQI | GPS + district-level Thai names |
 | 🇹🇭 `HolidayWidget` | S/M/L | Bundled Thai calendars (2026, 2027) | No network needed |
 | ⛽ `OilPriceWidget` | S/M/L | Bangchak API via backend | Cached fallback when upstream throttles |
+| ⚽ `PremierLeagueWidget` | S/M/L | ESPN scoreboard via `/football/premier-league` | Latest results + next fixture, 5-min cache with stale fallback |
 | 📱 `QRCodeWidget` | S/M/L | Client-side | QR and barcode generation |
 
 ## 💰 Finance widget (October 2026)

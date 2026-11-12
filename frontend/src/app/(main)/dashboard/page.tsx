@@ -96,6 +96,10 @@ const DailyDigestWidget = dynamic(() => import('@/components/Widgets/DailyDigest
   ssr: false,
   loading: () => <WeatherSkeleton />,
 });
+const PremierLeagueWidget = dynamic(() => import('@/components/Widgets/PremierLeagueWidget'), {
+  ssr: false,
+  loading: () => <ListWidgetSkeleton />,
+});
 
 import { useDashboardLayout, widgetNames, widgetDescriptions, DASHBOARD_VIEWS, VIEW_WIDGET_PRESETS } from '@/hooks/useDashboardLayout';
 import { useI18n } from '@/lib/i18n/I18nProvider';
@@ -301,6 +305,18 @@ function SortableWidget({
             )}
           >
             <OilPriceWidget width={widget.w} onResize={(newSize) => onResize(widget.id, newSize)} />
+          </ErrorBoundary>
+        )}
+        {widget.id === 'epl' && (
+          <ErrorBoundary
+            fallback={(err, reset) => (
+              <WidgetErrorFallback name="ผลพรีเมียร์ลีก" error={err} reset={reset} />
+            )}
+          >
+            <PremierLeagueWidget
+              width={widget.w}
+              onResize={(newSize) => onResize(widget.id, newSize)}
+            />
           </ErrorBoundary>
         )}
         {widget.id === 'finance' && (

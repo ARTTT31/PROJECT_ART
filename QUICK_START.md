@@ -376,6 +376,7 @@ curl http://localhost:8080/api/v1/oil-prices/health
 | วันหยุดนักขัตฤกษ์ | S/M/L | ข้อมูลคงที่ (ไทย) |
 | สภาพอากาศ & PM 2.5 | S/M/L | open-meteo.com / MET Norway |
 | ราคาน้ำมัน | S/M/L | Bangchak API (ผ่าน backend) |
+| ผลพรีเมียร์ลีก | S/M/L | ESPN scoreboard (ผ่าน backend) |
 | สร้าง QR Code | S/M/L | client-side |
 
 ---
