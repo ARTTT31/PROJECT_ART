@@ -5,7 +5,7 @@ import { SiLine, SiTelegram } from '@icons-pack/react-simple-icons';
 import { BellRing, Check, Globe, Loader2, Save, Send } from 'lucide-react';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
 import { apiMessage } from '@/lib/api/apiMessage';
-import { showError, showSuccess, showToast } from '@/utils/sweetalert';
+import { showError, showSuccess } from '@/utils/sweetalert';
 import Switch from '@/components/ui/Switch';
 import { InsetField, SectionCard } from './SectionCard';
 
@@ -42,8 +42,11 @@ const DEFAULT_STATE: ExternalNotificationsState = {
   },
 };
 
+type ExternalChannel = 'line' | 'telegram' | 'webhook';
+
 export default function ExternalNotificationCard() {
   const [config, setConfig] = useState<ExternalNotificationsState>(DEFAULT_STATE);
+  const [activeChannel, setActiveChannel] = useState<ExternalChannel>('line');
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [testingChannel, setTestingChannel] = useState<string | null>(null);
@@ -155,6 +158,10 @@ export default function ExternalNotificationCard() {
     );
   }
 
+  const isLineConnected = Boolean(config.line_token || config.line_webhook_url);
+  const isTelegramConnected = Boolean(config.telegram_bot_token && config.telegram_chat_id);
+  const isWebhookConnected = Boolean(config.webhook_url);
+
   return (
     <SectionCard
       icon={<BellRing size={19} aria-hidden="true" />}
@@ -169,7 +176,7 @@ export default function ExternalNotificationCard() {
           type="button"
           onClick={() => handleSave()}
           disabled={isSaving}
-          className="inline-flex items-center gap-1.5 rounded-apple-md bg-[var(--accent)] px-3.5 py-1.5 text-[12px] font-bold text-white shadow-2xs transition-all duration-150 hover:bg-[var(--accent-hover)] active:scale-[0.95] disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 rounded-full bg-[var(--accent)] px-3.5 py-1.5 text-[12px] font-bold text-white shadow-2xs transition-all duration-150 hover:bg-[var(--accent-hover)] active:scale-[0.95] disabled:opacity-50"
         >
           {isSaving ? (
             <Loader2 size={13} className="animate-spin" />
@@ -180,153 +187,237 @@ export default function ExternalNotificationCard() {
         </button>
       }
     >
-      <form onSubmit={handleSave} className="space-y-6">
-        {/* LINE Notification Section */}
-        <div className="rounded-apple-lg border border-[var(--hairline)] bg-[var(--surface-subtle)] p-4 sm:p-5 space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-apple-md"
-                style={{ backgroundColor: `${LINE_BRAND}1a`, color: LINE_BRAND }}
-              >
-                <SiLine className="h-5 w-5" aria-hidden="true" />
-              </div>
-              <div className="min-w-0">
-                <h3 className="text-[14px] font-bold text-[var(--ink)]">LINE Messaging / Webhook</h3>
-                <p className="text-[11px] text-[var(--ink-muted)]">รับแจ้งเตือนผ่าน LINE Channel Access Token หรือ Webhook</p>
-              </div>
-            </div>
-            <button
-              type="button"
-              disabled={testingChannel === 'line' || (!config.line_token && !config.line_webhook_url)}
-              onClick={() => handleTestNotification('line')}
-              className="self-end sm:self-auto inline-flex items-center gap-1.5 rounded-apple-md border border-[var(--hairline)] bg-[var(--surface)] px-2.5 py-1 text-[11px] font-semibold text-[var(--ink-secondary)] transition-all hover:bg-[var(--surface-grouped)] active:scale-[0.95] disabled:opacity-40"
-            >
-              {testingChannel === 'line' ? (
-                <Loader2 size={12} className="animate-spin" />
-              ) : (
-                <Send size={12} aria-hidden="true" />
-              )}
-              <span>ทดสอบ LINE</span>
-            </button>
+      <form onSubmit={handleSave} className="space-y-5">
+        {/* Channel Segmented Switcher */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-[12px] font-bold text-[var(--ink-secondary)]">
+              เลือกช่องทางส่งการแจ้งเตือน
+            </span>
+            <span className="text-[11px] text-[var(--ink-muted)]">
+              {isLineConnected || isTelegramConnected || isWebhookConnected ? '🟢 มีการเชื่อมต่อแล้ว' : '⚪ ยังไม่ได้ตั้งค่า'}
+            </span>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div
+            className="grid grid-cols-3 gap-1 rounded-apple-lg border border-[var(--hairline)] bg-[var(--surface-grouped)] p-1"
+            role="tablist"
+            aria-label="ช่องทางการแจ้งเตือน"
+          >
+            {/* LINE Tab */}
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeChannel === 'line'}
+              onClick={() => setActiveChannel('line')}
+              className={`inline-flex items-center justify-center gap-2 rounded-apple-md py-2.5 px-3 text-[12px] font-bold transition-all duration-150 active:scale-[0.98] ${
+                activeChannel === 'line'
+                  ? 'bg-[var(--surface)] text-[var(--ink)] shadow-2xs ring-1 ring-[var(--hairline)]'
+                  : 'text-[var(--ink-muted)] hover:text-[var(--ink)] hover:bg-[var(--surface-chip)]'
+              }`}
+            >
+              <SiLine className="h-4 w-4 shrink-0" style={{ color: LINE_BRAND }} aria-hidden="true" />
+              <span>LINE</span>
+              {isLineConnected && (
+                <span className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.7)]" title="เชื่อมต่อแล้ว" />
+              )}
+            </button>
+
+            {/* Telegram Tab */}
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeChannel === 'telegram'}
+              onClick={() => setActiveChannel('telegram')}
+              className={`inline-flex items-center justify-center gap-2 rounded-apple-md py-2.5 px-3 text-[12px] font-bold transition-all duration-150 active:scale-[0.98] ${
+                activeChannel === 'telegram'
+                  ? 'bg-[var(--surface)] text-[var(--ink)] shadow-2xs ring-1 ring-[var(--hairline)]'
+                  : 'text-[var(--ink-muted)] hover:text-[var(--ink)] hover:bg-[var(--surface-chip)]'
+              }`}
+            >
+              <SiTelegram className="h-4 w-4 shrink-0" style={{ color: TELEGRAM_BRAND }} aria-hidden="true" />
+              <span>Telegram</span>
+              {isTelegramConnected && (
+                <span className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.7)]" title="เชื่อมต่อแล้ว" />
+              )}
+            </button>
+
+            {/* Webhook Tab */}
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeChannel === 'webhook'}
+              onClick={() => setActiveChannel('webhook')}
+              className={`inline-flex items-center justify-center gap-2 rounded-apple-md py-2.5 px-3 text-[12px] font-bold transition-all duration-150 active:scale-[0.98] ${
+                activeChannel === 'webhook'
+                  ? 'bg-[var(--surface)] text-[var(--ink)] shadow-2xs ring-1 ring-[var(--hairline)]'
+                  : 'text-[var(--ink-muted)] hover:text-[var(--ink)] hover:bg-[var(--surface-chip)]'
+              }`}
+            >
+              <Globe className="h-4 w-4 shrink-0 text-purple-600 dark:text-purple-400" aria-hidden="true" />
+              <span className="hidden sm:inline">Custom</span>
+              <span>Webhook</span>
+              {isWebhookConnected && (
+                <span className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.7)]" title="เชื่อมต่อแล้ว" />
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* ── Active Channel Panel ── */}
+
+        {/* LINE Panel */}
+        {activeChannel === 'line' && (
+          <div className="rounded-apple-lg border border-[var(--hairline)] bg-[var(--surface-subtle)] p-4 sm:p-5 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-apple-md"
+                  style={{ backgroundColor: `${LINE_BRAND}1a`, color: LINE_BRAND }}
+                >
+                  <SiLine className="h-5 w-5" aria-hidden="true" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="text-[14px] font-bold text-[var(--ink)]">LINE Messaging / Webhook</h3>
+                  <p className="text-[11px] text-[var(--ink-muted)]">รับแจ้งเตือนผ่าน LINE Channel Access Token หรือ Relay Webhook</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                disabled={testingChannel === 'line' || (!config.line_token && !config.line_webhook_url)}
+                onClick={() => handleTestNotification('line')}
+                className="self-end sm:self-auto inline-flex items-center gap-1.5 rounded-full border border-[var(--hairline)] bg-[var(--surface)] px-3 py-1.5 text-[11px] font-bold text-[var(--ink)] transition-all hover:bg-[var(--surface-grouped)] active:scale-[0.95] disabled:opacity-40 shadow-2xs"
+              >
+                {testingChannel === 'line' ? (
+                  <Loader2 size={12} className="animate-spin" />
+                ) : (
+                  <Send size={12} aria-hidden="true" />
+                )}
+                <span>ทดสอบ LINE</span>
+              </button>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <InsetField
+                label="LINE Access Token"
+                type="password"
+                placeholder="Channel Access Token หรือ Notify Token"
+                value={config.line_token}
+                onChange={(v) => setConfig((prev) => ({ ...prev, line_token: v }))}
+                icon={<SiLine className="h-4 w-4" aria-hidden="true" />}
+                hint="สำหรับ Messaging API หรือ Line Notify"
+              />
+              <InsetField
+                label="LINE Webhook URL"
+                type="url"
+                placeholder="https://api.line.me/v2/bot/message/push หรือ Relay URL"
+                value={config.line_webhook_url}
+                onChange={(v) => setConfig((prev) => ({ ...prev, line_webhook_url: v }))}
+                icon={<Globe className="h-4 w-4" aria-hidden="true" />}
+                hint="ตัวเลือกเสริม"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Telegram Panel */}
+        {activeChannel === 'telegram' && (
+          <div className="rounded-apple-lg border border-[var(--hairline)] bg-[var(--surface-subtle)] p-4 sm:p-5 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-apple-md"
+                  style={{ backgroundColor: `${TELEGRAM_BRAND}1a`, color: TELEGRAM_BRAND }}
+                >
+                  <SiTelegram className="h-5 w-5" aria-hidden="true" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="text-[14px] font-bold text-[var(--ink)]">Telegram Bot</h3>
+                  <p className="text-[11px] text-[var(--ink-muted)]">รับแจ้งเตือนผ่านบอท Telegram ของคุณเอง</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                disabled={testingChannel === 'telegram' || !config.telegram_bot_token || !config.telegram_chat_id}
+                onClick={() => handleTestNotification('telegram')}
+                className="self-end sm:self-auto inline-flex items-center gap-1.5 rounded-full border border-[var(--hairline)] bg-[var(--surface)] px-3 py-1.5 text-[11px] font-bold text-[var(--ink)] transition-all hover:bg-[var(--surface-grouped)] active:scale-[0.95] disabled:opacity-40 shadow-2xs"
+              >
+                {testingChannel === 'telegram' ? (
+                  <Loader2 size={12} className="animate-spin" />
+                ) : (
+                  <Send size={12} aria-hidden="true" />
+                )}
+                <span>ทดสอบ Telegram</span>
+              </button>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <InsetField
+                label="Telegram Bot Token"
+                type="password"
+                placeholder="123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ"
+                value={config.telegram_bot_token}
+                onChange={(v) => setConfig((prev) => ({ ...prev, telegram_bot_token: v }))}
+                icon={<SiTelegram className="h-4 w-4" aria-hidden="true" />}
+                hint="ได้จาก @BotFather"
+              />
+              <InsetField
+                label="Telegram Chat ID"
+                placeholder="เช่น 123456789 หรือ @yourchannel"
+                value={config.telegram_chat_id}
+                onChange={(v) => setConfig((prev) => ({ ...prev, telegram_chat_id: v }))}
+                icon={<Globe className="h-4 w-4" aria-hidden="true" />}
+                hint="Chat หรือ Group ID"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Webhook Panel */}
+        {activeChannel === 'webhook' && (
+          <div className="rounded-apple-lg border border-[var(--hairline)] bg-[var(--surface-subtle)] p-4 sm:p-5 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-apple-md bg-purple-500/10 text-purple-600 dark:text-purple-400">
+                  <Globe className="h-5 w-5" aria-hidden="true" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="text-[14px] font-bold text-[var(--ink)]">Custom Webhook (HTTP POST)</h3>
+                  <p className="text-[11px] text-[var(--ink-muted)]">ส่ง Payload JSON ไปยัง Discord, Slack, n8n หรือ API ภายนอก</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                disabled={testingChannel === 'webhook' || !config.webhook_url}
+                onClick={() => handleTestNotification('webhook')}
+                className="self-end sm:self-auto inline-flex items-center gap-1.5 rounded-full border border-[var(--hairline)] bg-[var(--surface)] px-3 py-1.5 text-[11px] font-bold text-[var(--ink)] transition-all hover:bg-[var(--surface-grouped)] active:scale-[0.95] disabled:opacity-40 shadow-2xs"
+              >
+                {testingChannel === 'webhook' ? (
+                  <Loader2 size={12} className="animate-spin" />
+                ) : (
+                  <Send size={12} aria-hidden="true" />
+                )}
+                <span>ทดสอบ Webhook</span>
+              </button>
+            </div>
+
             <InsetField
-              label="LINE Access Token"
-              type="password"
-              placeholder="Channel Access Token หรือ Notify Token"
-              value={config.line_token}
-              onChange={(v) => setConfig((prev) => ({ ...prev, line_token: v }))}
-              icon={<SiLine className="h-4 w-4" aria-hidden="true" />}
-              hint="สำหรับ Bot หรือ Notify"
-            />
-            <InsetField
-              label="LINE Webhook URL"
+              label="Webhook URL"
               type="url"
-              placeholder="https://api.line.me/v2/bot/message/push หรือ Relay URL"
-              value={config.line_webhook_url}
-              onChange={(v) => setConfig((prev) => ({ ...prev, line_webhook_url: v }))}
+              placeholder="https://discord.com/api/webhooks/... หรือ https://hook.integromat.com/..."
+              value={config.webhook_url}
+              onChange={(v) => setConfig((prev) => ({ ...prev, webhook_url: v }))}
               icon={<Globe className="h-4 w-4" aria-hidden="true" />}
-              hint="ตัวเลือกเสริม"
+              hint="รองรับ HTTP POST JSON"
             />
           </div>
-        </div>
-
-        {/* Telegram Notification Section */}
-        <div className="rounded-apple-lg border border-[var(--hairline)] bg-[var(--surface-subtle)] p-4 sm:p-5 space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-apple-md"
-                style={{ backgroundColor: `${TELEGRAM_BRAND}1a`, color: TELEGRAM_BRAND }}
-              >
-                <SiTelegram className="h-5 w-5" aria-hidden="true" />
-              </div>
-              <div className="min-w-0">
-                <h3 className="text-[14px] font-bold text-[var(--ink)]">Telegram Bot</h3>
-                <p className="text-[11px] text-[var(--ink-muted)]">รับแจ้งเตือนผ่านบอท Telegram ของคุณเอง</p>
-              </div>
-            </div>
-            <button
-              type="button"
-              disabled={testingChannel === 'telegram' || !config.telegram_bot_token || !config.telegram_chat_id}
-              onClick={() => handleTestNotification('telegram')}
-              className="self-end sm:self-auto inline-flex items-center gap-1.5 rounded-apple-md border border-[var(--hairline)] bg-[var(--surface)] px-2.5 py-1 text-[11px] font-semibold text-[var(--ink-secondary)] transition-all hover:bg-[var(--surface-grouped)] active:scale-[0.95] disabled:opacity-40"
-            >
-              {testingChannel === 'telegram' ? (
-                <Loader2 size={12} className="animate-spin" />
-              ) : (
-                <Send size={12} aria-hidden="true" />
-              )}
-              <span>ทดสอบ Telegram</span>
-            </button>
-          </div>
-
-          <div className="grid gap-3 sm:grid-cols-2">
-            <InsetField
-              label="Telegram Bot Token"
-              type="password"
-              placeholder="123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ"
-              value={config.telegram_bot_token}
-              onChange={(v) => setConfig((prev) => ({ ...prev, telegram_bot_token: v }))}
-              icon={<SiTelegram className="h-4 w-4" aria-hidden="true" />}
-              hint="ได้จาก @BotFather"
-            />
-            <InsetField
-              label="Telegram Chat ID"
-              placeholder="เช่น 123456789 หรือ @yourchannel"
-              value={config.telegram_chat_id}
-              onChange={(v) => setConfig((prev) => ({ ...prev, telegram_chat_id: v }))}
-              icon={<Globe className="h-4 w-4" aria-hidden="true" />}
-              hint="Chat หรือ Group ID"
-            />
-          </div>
-        </div>
-
-        {/* Custom Webhook Section */}
-        <div className="rounded-apple-lg border border-[var(--hairline)] bg-[var(--surface-subtle)] p-4 sm:p-5 space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-apple-md bg-purple-500/10 text-purple-600 dark:text-purple-400">
-                <Globe className="h-5 w-5" aria-hidden="true" />
-              </div>
-              <div className="min-w-0">
-                <h3 className="text-[14px] font-bold text-[var(--ink)]">Custom Webhook (HTTP POST)</h3>
-                <p className="text-[11px] text-[var(--ink-muted)]">ส่ง Payload JSON ไปยัง Discord, Slack, n8n หรือ API ภายนอก</p>
-              </div>
-            </div>
-            <button
-              type="button"
-              disabled={testingChannel === 'webhook' || !config.webhook_url}
-              onClick={() => handleTestNotification('webhook')}
-              className="self-end sm:self-auto inline-flex items-center gap-1.5 rounded-apple-md border border-[var(--hairline)] bg-[var(--surface)] px-2.5 py-1 text-[11px] font-semibold text-[var(--ink-secondary)] transition-all hover:bg-[var(--surface-grouped)] active:scale-[0.95] disabled:opacity-40"
-            >
-              {testingChannel === 'webhook' ? (
-                <Loader2 size={12} className="animate-spin" />
-              ) : (
-                <Send size={12} aria-hidden="true" />
-              )}
-              <span>ทดสอบ Webhook</span>
-            </button>
-          </div>
-
-          <InsetField
-            label="Webhook URL"
-            type="url"
-            placeholder="https://discord.com/api/webhooks/... หรือ https://hook.integromat.com/..."
-            value={config.webhook_url}
-            onChange={(v) => setConfig((prev) => ({ ...prev, webhook_url: v }))}
-            icon={<Globe className="h-4 w-4" aria-hidden="true" />}
-            hint="รองรับ HTTP POST JSON"
-          />
-        </div>
+        )}
 
         {/* Subscription Topics */}
         <div className="rounded-apple-lg border border-[var(--hairline)] bg-[var(--surface-subtle)] p-4 sm:p-5 space-y-3">
           <h3 className="text-[13px] font-bold text-[var(--ink)]">หัวข้อการแจ้งเตือนที่ต้องการรับ (Event Subscriptions)</h3>
           <div className="space-y-2">
-            <div className="flex items-center justify-between gap-3 rounded-apple-widget bg-[var(--surface)] p-3 ring-1 ring-[var(--hairline)]">
+            <div className="flex items-center justify-between gap-3 rounded-apple-widget bg-[var(--surface)] p-3 ring-1 ring-[var(--hairline)] shadow-2xs">
               <div className="min-w-0 flex-1">
                 <p className="text-[13px] font-bold text-[var(--ink)]">แจ้งเตือนราคาน้ำมัน (Oil Price Alert)</p>
                 <p className="mt-0.5 text-[11px] leading-relaxed text-[var(--ink-muted)]">แจ้งเตือนเมื่อมีการประกาศปรับเปลี่ยนราคาน้ำมันขายปลีก</p>
@@ -345,7 +436,7 @@ export default function ExternalNotificationCard() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between gap-3 rounded-apple-widget bg-[var(--surface)] p-3 ring-1 ring-[var(--hairline)]">
+            <div className="flex items-center justify-between gap-3 rounded-apple-widget bg-[var(--surface)] p-3 ring-1 ring-[var(--hairline)] shadow-2xs">
               <div className="min-w-0 flex-1">
                 <p className="text-[13px] font-bold text-[var(--ink)]">สรุปภาพรวมตลาด (Market Summary Alert)</p>
                 <p className="mt-0.5 text-[11px] leading-relaxed text-[var(--ink-muted)]">แจ้งเตือนภาพรวมตลาดหุ้น, อัตราแลกเปลี่ยน และดัชนีสำคัญ</p>
@@ -364,7 +455,7 @@ export default function ExternalNotificationCard() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between gap-3 rounded-apple-widget bg-[var(--surface)] p-3 ring-1 ring-[var(--hairline)]">
+            <div className="flex items-center justify-between gap-3 rounded-apple-widget bg-[var(--surface)] p-3 ring-1 ring-[var(--hairline)] shadow-2xs">
               <div className="min-w-0 flex-1">
                 <p className="text-[13px] font-bold text-[var(--ink)]">สรุปภาพรวมประจำวัน (Daily Digest)</p>
                 <p className="mt-0.5 text-[11px] leading-relaxed text-[var(--ink-muted)]">รับสรุปงาน พยากรณ์อากาศ และภารกิจสำคัญประจำวัน</p>
@@ -393,7 +484,7 @@ export default function ExternalNotificationCard() {
           <button
             type="submit"
             disabled={isSaving}
-            className="self-end sm:self-auto inline-flex items-center gap-1.5 rounded-apple-md bg-[var(--accent)] px-4 py-2 text-[13px] font-bold text-white shadow-2xs transition-all duration-150 hover:bg-[var(--accent-hover)] active:scale-[0.95] disabled:opacity-50"
+            className="self-end sm:self-auto inline-flex items-center gap-1.5 rounded-full bg-[var(--accent)] px-4 py-2 text-[13px] font-bold text-white shadow-2xs transition-all duration-150 hover:bg-[var(--accent-hover)] active:scale-[0.95] disabled:opacity-50"
           >
             {isSaving ? (
               <Loader2 size={14} className="animate-spin" />
