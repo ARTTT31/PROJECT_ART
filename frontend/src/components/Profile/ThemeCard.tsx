@@ -24,6 +24,8 @@ const MODE_ICON: Record<ThemeMode, React.ReactNode> = {
  *
  * The choice is stored per browser on purpose — it is a display preference, so
  * a shared account on a second device should not inherit this screen's dark mode.
+ * That is why the card says nothing about it: the labels below describe what the
+ * controls do, and a footer explaining storage scope only competed with them.
  */
 export function ThemeCard() {
   const { t } = useI18n();
@@ -33,6 +35,14 @@ export function ThemeCard() {
     resetTheme();
     showToast('กลับไปใช้ธีมเริ่มต้นแล้ว', 'success');
   };
+
+  const activeAccent = THEME_ACCENTS.find((option) => option.id === accent);
+  const modeSummary =
+    mode === 'system'
+      ? `ตามระบบ · ${resolvedMode === 'dark' ? 'มืด' : 'สว่าง'}`
+      : mode === 'dark'
+        ? 'มืด'
+        : 'สว่าง';
 
   return (
     <SectionCard
@@ -46,18 +56,25 @@ export function ThemeCard() {
         <button
           type="button"
           onClick={handleReset}
-          className="inline-flex items-center gap-1.5 rounded-full bg-[var(--surface)] px-3 py-1.5 text-[12px] font-bold text-[var(--ink-muted)] ring-1 ring-[var(--hairline)] transition-all hover:bg-[var(--surface-grouped)] active:scale-95"
+          className="inline-flex items-center gap-1.5 rounded-full bg-[var(--surface)] px-3 py-1.5 text-[12px] font-bold text-[var(--ink-muted)] ring-1 ring-[var(--hairline)] transition-all hover:bg-[var(--surface-grouped)] active:scale-[0.95]"
         >
           <RotateCcw size={12} aria-hidden="true" />
           ค่าเริ่มต้น
         </button>
       }
     >
-      <div className="space-y-5">
-        <div>
-          <span className="mb-2 block text-[12px] font-bold uppercase tracking-wider text-[var(--ink-tertiary)]">
-            โหมดการแสดงผล
-          </span>
+      <div className="space-y-3">
+        {/* Appearance */}
+        <div className="rounded-apple-lg bg-[var(--surface-grouped)] p-4 ring-1 ring-[var(--hairline)]">
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <span className="text-[12px] font-semibold text-[var(--ink-secondary)]">
+              โหมดการแสดงผล
+            </span>
+            <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[var(--surface)] px-2.5 py-1 text-[11px] font-semibold text-[var(--ink-muted)] ring-1 ring-[var(--hairline)]">
+              {MODE_ICON[mode]}
+              <span className="tabular-nums">{modeSummary}</span>
+            </span>
+          </div>
           <SegmentedControl
             label="โหมดการแสดงผล"
             fullWidth
@@ -69,18 +86,19 @@ export function ThemeCard() {
               icon: MODE_ICON[option.id],
             }))}
           />
-          <p className="mt-2 text-[12px] text-[var(--ink-tertiary)]">
-            {mode === 'system'
-              ? `ตอนนี้ระบบของคุณใช้โหมด${resolvedMode === 'dark' ? 'มืด' : 'สว่าง'}`
-              : `กำลังใช้โหมด${mode === 'dark' ? 'มืด' : 'สว่าง'}อยู่`}
-          </p>
         </div>
 
-        <div>
-          <span className="mb-2 block text-[12px] font-bold uppercase tracking-wider text-[var(--ink-tertiary)]">
-            สีหลัก (Accent)
-          </span>
-          <div className="flex flex-wrap gap-2.5">
+        {/* Accent */}
+        <div className="rounded-apple-lg bg-[var(--surface-grouped)] p-4 ring-1 ring-[var(--hairline)]">
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <span className="text-[12px] font-semibold text-[var(--ink-secondary)]">
+              สีหลัก (Accent)
+            </span>
+            <span className="truncate text-[11px] font-semibold text-[var(--ink-muted)]">
+              {activeAccent?.label ?? '—'}
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-3">
             {THEME_ACCENTS.map((option) => {
               const selected = accent === option.id;
               return (
@@ -91,25 +109,26 @@ export function ThemeCard() {
                   title={option.label}
                   aria-label={`ใช้สี ${option.label}`}
                   aria-pressed={selected}
-                  className={`relative flex h-11 w-11 items-center justify-center rounded-full transition-all active:scale-95 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface)] ${
+                  className={`relative flex h-10 w-10 items-center justify-center rounded-full transition-all duration-apple-2 active:scale-[0.95] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-grouped)] ${
                     selected
-                      ? 'ring-2 ring-[var(--ink)] ring-offset-2 ring-offset-[var(--surface)]'
+                      ? 'ring-2 ring-[var(--ink)] ring-offset-2 ring-offset-[var(--surface-grouped)]'
                       : 'ring-1 ring-[var(--hairline)] hover:ring-[var(--hairline-strong)]'
                   }`}
                   style={{ backgroundColor: option.color }}
                 >
                   {selected && (
-                    <Check size={17} className="text-white" aria-hidden="true" strokeWidth={3} />
+                    <Check
+                      size={16}
+                      className="text-[var(--surface)]"
+                      aria-hidden="true"
+                      strokeWidth={3}
+                    />
                   )}
                 </button>
               );
             })}
           </div>
         </div>
-
-        <p className="rounded-apple-widget bg-[var(--surface-grouped)] px-3.5 py-2.5 text-[12px] leading-relaxed text-[var(--ink-muted)]">
-          การตั้งค่านี้ถูกจำไว้ในเบราว์เซอร์เครื่องนี้เท่านั้น ไม่กระทบผู้ใช้คนอื่นใน workspace
-        </p>
       </div>
     </SectionCard>
   );
