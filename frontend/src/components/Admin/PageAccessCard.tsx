@@ -110,10 +110,10 @@ export default function PageAccessCard() {
   const visiblePages = pages.filter((page) => !isPageAdminOnly(page));
 
   return (
-    <section className="overflow-hidden rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)]">
+    <section className="overflow-hidden rounded-apple-lg border border-[var(--hairline)] bg-[var(--surface)]">
       <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[var(--hairline-soft)] bg-[var(--surface-subtle)] px-5 py-4 sm:px-6">
         <div className="flex min-w-0 items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] bg-[var(--accent-soft)] text-[var(--accent-text)]">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-apple-widget bg-[var(--accent-soft)] text-[var(--accent-text)]">
             <PanelsTopLeft size={19} aria-hidden="true" />
           </div>
           <div className="min-w-0">
@@ -147,7 +147,7 @@ export default function PageAccessCard() {
           return (
             <div key={page.id} className="flex items-center gap-3 px-5 py-3 sm:px-6">
               <span
-                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-[11px] ${
+                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-apple-md ${
                   page.enabled
                     ? 'bg-[var(--success-soft)] text-[var(--success-ink)]'
                     : 'bg-[var(--surface-grouped-2)] text-[var(--ink-tertiary)]'

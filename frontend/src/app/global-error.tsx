@@ -3,6 +3,7 @@
 import * as Sentry from '@sentry/nextjs';
 import { useEffect } from 'react';
 import { AlertTriangle, RotateCcw } from 'lucide-react';
+import { translateText } from '@/lib/i18n/translate';
 
 // The styles for this boundary live here instead of in a CSS file. Next emits a
 // <link rel="preload" as="style"> for every CSS file reachable from a route, so
@@ -163,10 +164,14 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
             <span className="global-error-icon" aria-hidden="true">
               <AlertTriangle size={24} />
             </span>
-            <h1 className="global-error-title">เกิดข้อผิดพลาด</h1>
+            <h1 className="global-error-title">
+              {translateText('เกิดข้อผิดพลาด', 'Something went wrong')}
+            </h1>
             <p className="global-error-text">
-              ระบบไม่สามารถโหลดหน้าเพจได้ในขณะนี้ กรุณาลองใหม่อีกครั้ง
-              หากยังพบปัญหาเดิมกรุณาติดต่อผู้ดูแลระบบ
+              {translateText(
+                'ระบบไม่สามารถโหลดหน้าเพจได้ในขณะนี้ กรุณาลองใหม่อีกครั้ง หากยังพบปัญหาเดิมกรุณาติดต่อผู้ดูแลระบบ',
+                'The page cannot be loaded right now. Please try again, and contact your administrator if the problem persists.',
+              )}
             </p>
             {process.env.NODE_ENV === 'development' && (
               <pre className="global-error-detail">
@@ -176,7 +181,7 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
             )}
             <button type="button" onClick={reset} className="global-error-retry">
               <RotateCcw size={16} aria-hidden="true" />
-              ลองใหม่
+              {translateText('ลองใหม่', 'Try again')}
             </button>
           </section>
         </main>

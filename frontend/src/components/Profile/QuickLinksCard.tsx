@@ -50,8 +50,8 @@ export function QuickLinksCard({ links, onAdd, onEdit, onDelete, onMove }: Quick
       }
     >
       {links.length === 0 ? (
-        <div className="rounded-[18px] border border-dashed border-slate-200 bg-slate-50/60 p-8 text-center">
-          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-[18px] bg-[var(--surface)] text-sky-600 shadow-xs ring-1 ring-[var(--hairline)]">
+        <div className="rounded-apple-lg border border-dashed border-slate-200 bg-slate-50/60 p-8 text-center">
+          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-apple-lg bg-[var(--surface)] text-sky-600 shadow-xs ring-1 ring-[var(--hairline)]">
             <Link2 size={20} aria-hidden="true" />
           </div>
           <h3 className="text-[14px] font-bold text-[var(--ink)]">
@@ -78,11 +78,11 @@ export function QuickLinksCard({ links, onAdd, onEdit, onDelete, onMove }: Quick
             return (
               <div
                 key={link.id}
-                className="group flex items-center gap-3 rounded-[18px] bg-[var(--surface)] p-2.5 sm:p-3 ring-1 ring-[var(--hairline)] transition-all hover:bg-[var(--surface-subtle)] shadow-2xs"
+                className="group flex items-center gap-3 rounded-apple-lg bg-[var(--surface)] p-2.5 sm:p-3 ring-1 ring-[var(--hairline)] transition-all hover:bg-[var(--surface-subtle)] shadow-2xs"
               >
                 <div className="shrink-0">
                   <div
-                    className="flex h-10 w-10 items-center justify-center rounded-[14px] shadow-2xs ring-1 ring-[var(--hairline)]"
+                    className="flex h-10 w-10 items-center justify-center rounded-apple-widget shadow-2xs ring-1 ring-[var(--hairline)]"
                     style={{ backgroundColor: `${link.color || 'var(--accent)'}15` }}
                   >
                     <Icon size={17} aria-hidden="true" style={{ color: link.color || 'var(--accent)' }} />
@@ -118,7 +118,7 @@ export function QuickLinksCard({ links, onAdd, onEdit, onDelete, onMove }: Quick
                     onClick={() => onMove(link.id, 'up')}
                     disabled={index === 0}
                     aria-label="ย้ายขึ้น"
-                    className="flex h-7 w-7 items-center justify-center rounded-[11px] text-slate-400 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-30 disabled:hover:bg-transparent"
+                    className="flex h-7 w-7 items-center justify-center rounded-apple-md text-slate-400 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-30 disabled:hover:bg-transparent"
                   >
                     <ChevronUp size={14} aria-hidden="true" />
                   </button>
@@ -127,7 +127,7 @@ export function QuickLinksCard({ links, onAdd, onEdit, onDelete, onMove }: Quick
                     onClick={() => onMove(link.id, 'down')}
                     disabled={index === links.length - 1}
                     aria-label="ย้ายลง"
-                    className="flex h-7 w-7 items-center justify-center rounded-[11px] text-slate-400 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-30 disabled:hover:bg-transparent"
+                    className="flex h-7 w-7 items-center justify-center rounded-apple-md text-slate-400 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-30 disabled:hover:bg-transparent"
                   >
                     <ChevronDown size={14} aria-hidden="true" />
                   </button>
@@ -135,7 +135,7 @@ export function QuickLinksCard({ links, onAdd, onEdit, onDelete, onMove }: Quick
                     href={link.url}
                     target={external ? '_blank' : undefined}
                     rel={external ? 'noopener noreferrer' : undefined}
-                    className="flex h-7 items-center justify-center sm:gap-1 rounded-[11px] px-2 text-[11px] font-bold text-slate-600 hover:bg-slate-100"
+                    className="flex h-7 items-center justify-center sm:gap-1 rounded-apple-md px-2 text-[11px] font-bold text-slate-600 hover:bg-slate-100"
                     aria-label={`เปิดลิงก์ ${link.label}`}
                   >
                     <ExternalLink size={12} aria-hidden="true" />
@@ -144,7 +144,7 @@ export function QuickLinksCard({ links, onAdd, onEdit, onDelete, onMove }: Quick
                   <button
                     type="button"
                     onClick={() => onEdit(link)}
-                    className="inline-flex h-7 items-center gap-1 rounded-[11px] px-2 text-[11px] font-bold text-slate-600 hover:bg-slate-100"
+                    className="inline-flex h-7 items-center gap-1 rounded-apple-md px-2 text-[11px] font-bold text-slate-600 hover:bg-slate-100"
                     aria-label="แก้ไขลิงก์"
                   >
                     <PencilLine size={12} aria-hidden="true" />
@@ -153,7 +153,7 @@ export function QuickLinksCard({ links, onAdd, onEdit, onDelete, onMove }: Quick
                   <button
                     type="button"
                     onClick={() => onDelete(link.id)}
-                    className="inline-flex h-7 items-center gap-1 rounded-[11px] px-2 text-[11px] font-bold text-rose-600 hover:bg-rose-50"
+                    className="inline-flex h-7 items-center gap-1 rounded-apple-md px-2 text-[11px] font-bold text-rose-600 hover:bg-rose-50"
                     aria-label="ลบลิงก์"
                   >
                     <Trash2 size={12} aria-hidden="true" />

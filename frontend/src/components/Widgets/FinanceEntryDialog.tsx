@@ -122,7 +122,7 @@ export default function FinanceEntryDialog({
               onChange={(event) => setLabel(event.target.value)}
               placeholder="เช่น ค่ากาแฟ"
               maxLength={MAX_FINANCE_LABEL}
-              className="w-full rounded-[14px] border border-[var(--hairline-strong)] bg-[var(--surface)] px-3 py-2 text-[13px] text-[var(--ink)] placeholder:text-[var(--ink-tertiary)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
+              className="w-full rounded-apple-widget border border-[var(--hairline-strong)] bg-[var(--surface)] px-3 py-2 text-[13px] text-[var(--ink)] placeholder:text-[var(--ink-tertiary)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
             />
           </label>
 
@@ -136,7 +136,7 @@ export default function FinanceEntryDialog({
                 inputMode="decimal"
                 value={amount}
                 onChange={(event) => setAmount(event.target.value)}
-                className="w-full rounded-[14px] border border-[var(--hairline-strong)] bg-[var(--surface)] px-3 py-2 text-[13px] tabular-nums text-[var(--ink)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
+                className="w-full rounded-apple-widget border border-[var(--hairline-strong)] bg-[var(--surface)] px-3 py-2 text-[13px] tabular-nums text-[var(--ink)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
               />
             </label>
             <label className="block">
@@ -145,7 +145,7 @@ export default function FinanceEntryDialog({
                 type="date"
                 value={date}
                 onChange={(event) => setDate(event.target.value)}
-                className="w-full rounded-[14px] border border-[var(--hairline-strong)] bg-[var(--surface)] px-3 py-2 text-[13px] text-[var(--ink)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
+                className="w-full rounded-apple-widget border border-[var(--hairline-strong)] bg-[var(--surface)] px-3 py-2 text-[13px] text-[var(--ink)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
               />
             </label>
           </div>
@@ -159,7 +159,7 @@ export default function FinanceEntryDialog({
               onChange={(event) => setCategory(event.target.value)}
               placeholder="เช่น อาหาร"
               maxLength={40}
-              className="w-full rounded-[14px] border border-[var(--hairline-strong)] bg-[var(--surface)] px-3 py-2 text-[13px] text-[var(--ink)] placeholder:text-[var(--ink-tertiary)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
+              className="w-full rounded-apple-widget border border-[var(--hairline-strong)] bg-[var(--surface)] px-3 py-2 text-[13px] text-[var(--ink)] placeholder:text-[var(--ink-tertiary)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
             />
             <datalist id="finance-categories-edit">
               {FINANCE_CATEGORIES.map((option) => (
@@ -171,7 +171,7 @@ export default function FinanceEntryDialog({
           {error && (
             <p
               role="alert"
-              className="rounded-[11px] bg-[var(--danger-soft)] px-3 py-1.5 text-[12px] text-[var(--danger-ink)]"
+              className="rounded-apple-md bg-[var(--danger-soft)] px-3 py-1.5 text-[12px] text-[var(--danger-ink)]"
             >
               {error}
             </p>

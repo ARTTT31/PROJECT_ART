@@ -32,9 +32,9 @@ export function PwaInstallPrompt() {
         aria-label="แนะนำการติดตั้งแอป"
         className="fixed bottom-4 left-3 right-3 z-40 mx-auto max-w-md transform transition-all duration-300 animate-in fade-in slide-in-from-bottom-5"
       >
-        <div className="flex items-center justify-between gap-3 rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)]/95 p-3.5 shadow-lg backdrop-blur-md">
+        <div className="flex items-center justify-between gap-3 rounded-apple-lg border border-[var(--hairline)] bg-[var(--surface)]/95 p-3.5 shadow-lg backdrop-blur-md">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-[12px] bg-[var(--surface-grouped)] ring-1 ring-[var(--hairline)]">
+            <div className="relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-apple-md bg-[var(--surface-grouped)] ring-1 ring-[var(--hairline)]">
               <Image
                 src="/branding-icon?size=192"
                 alt="ART Workspace"
@@ -58,7 +58,7 @@ export function PwaInstallPrompt() {
             <button
               type="button"
               onClick={handleInstallClick}
-              className="inline-flex items-center gap-1.5 rounded-[11px] bg-[var(--accent)] px-3 py-1.5 text-[12px] font-bold text-white shadow-2xs transition-all duration-150 hover:bg-[var(--accent-hover)] active:scale-[0.95]"
+              className="inline-flex items-center gap-1.5 rounded-apple-md bg-[var(--accent)] px-3 py-1.5 text-[12px] font-bold text-white shadow-2xs transition-all duration-150 hover:bg-[var(--accent-hover)] active:scale-[0.95]"
             >
               <Download size={13} aria-hidden="true" />
               <span>ติดตั้ง</span>
@@ -77,7 +77,7 @@ export function PwaInstallPrompt() {
 
       {/* ── iOS Step-by-Step Installation Modal ───────────────────────── */}
       <Dialog open={showIosGuide} onOpenChange={setShowIosGuide}>
-        <DialogContent className="max-w-sm rounded-[18px]">
+        <DialogContent className="max-w-sm rounded-apple-lg">
           <DialogHeader>
             <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-[var(--accent-soft)] text-[var(--accent-text)]">
               <Smartphone size={24} aria-hidden="true" />
@@ -90,7 +90,7 @@ export function PwaInstallPrompt() {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="my-2 space-y-3 rounded-[14px] bg-[var(--surface-subtle)] p-3.5 border border-[var(--hairline)]">
+          <div className="my-2 space-y-3 rounded-apple-widget bg-[var(--surface-subtle)] p-3.5 border border-[var(--hairline)]">
             {/* Step 1 */}
             <div className="flex items-start gap-3">
               <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--accent)] text-[11px] font-bold text-white">
@@ -98,7 +98,7 @@ export function PwaInstallPrompt() {
               </span>
               <p className="text-[12px] text-[var(--ink-secondary)] leading-relaxed">
                 แตะปุ่มแชร์{' '}
-                <span className="inline-flex items-center gap-1 rounded-md bg-[var(--surface)] px-1.5 py-0.5 font-semibold text-[var(--ink)] ring-1 ring-[var(--hairline)]">
+                <span className="inline-flex items-center gap-1 rounded-apple-sm bg-[var(--surface)] px-1.5 py-0.5 font-semibold text-[var(--ink)] ring-1 ring-[var(--hairline)]">
                   <Share size={12} className="text-blue-500" aria-hidden="true" /> แชร์ (Share)
                 </span>{' '}
                 ที่แถบเมนูด้านล่างของ Safari
@@ -112,7 +112,7 @@ export function PwaInstallPrompt() {
               </span>
               <p className="text-[12px] text-[var(--ink-secondary)] leading-relaxed">
                 เลื่อนลงมาแล้วเลือก{' '}
-                <span className="inline-flex items-center gap-1 rounded-md bg-[var(--surface)] px-1.5 py-0.5 font-semibold text-[var(--ink)] ring-1 ring-[var(--hairline)]">
+                <span className="inline-flex items-center gap-1 rounded-apple-sm bg-[var(--surface)] px-1.5 py-0.5 font-semibold text-[var(--ink)] ring-1 ring-[var(--hairline)]">
                   <PlusSquare size={12} className="text-blue-500" aria-hidden="true" />{' '}
                   เพิ่มไปยังหน้าจอโฮม
                 </span>
@@ -135,7 +135,7 @@ export function PwaInstallPrompt() {
             <button
               type="button"
               onClick={() => setShowIosGuide(false)}
-              className="w-full rounded-[11px] bg-[var(--accent)] py-2 text-[13px] font-bold text-white shadow-2xs transition-all hover:bg-[var(--accent-hover)] active:scale-[0.98]"
+              className="w-full rounded-apple-md bg-[var(--accent)] py-2 text-[13px] font-bold text-white shadow-2xs transition-all hover:bg-[var(--accent-hover)] active:scale-[0.98]"
             >
               เข้าใจแล้ว
             </button>
@@ -177,7 +177,7 @@ export function PwaHeaderButton() {
 
       {/* iOS Step-by-Step Installation Modal */}
       <Dialog open={showIosGuide} onOpenChange={setShowIosGuide}>
-        <DialogContent className="max-w-sm rounded-[18px]">
+        <DialogContent className="max-w-sm rounded-apple-lg">
           <DialogHeader>
             <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-[var(--accent-soft)] text-[var(--accent-text)]">
               <Smartphone size={24} aria-hidden="true" />
@@ -190,14 +190,14 @@ export function PwaHeaderButton() {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="my-2 space-y-3 rounded-[14px] bg-[var(--surface-subtle)] p-3.5 border border-[var(--hairline)]">
+          <div className="my-2 space-y-3 rounded-apple-widget bg-[var(--surface-subtle)] p-3.5 border border-[var(--hairline)]">
             <div className="flex items-start gap-3">
               <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--accent)] text-[11px] font-bold text-white">
                 1
               </span>
               <p className="text-[12px] text-[var(--ink-secondary)] leading-relaxed">
                 แตะปุ่มแชร์{' '}
-                <span className="inline-flex items-center gap-1 rounded-md bg-[var(--surface)] px-1.5 py-0.5 font-semibold text-[var(--ink)] ring-1 ring-[var(--hairline)]">
+                <span className="inline-flex items-center gap-1 rounded-apple-sm bg-[var(--surface)] px-1.5 py-0.5 font-semibold text-[var(--ink)] ring-1 ring-[var(--hairline)]">
                   <Share size={12} className="text-blue-500" aria-hidden="true" /> แชร์ (Share)
                 </span>{' '}
                 ที่แถบเมนูด้านล่างของ Safari
@@ -210,7 +210,7 @@ export function PwaHeaderButton() {
               </span>
               <p className="text-[12px] text-[var(--ink-secondary)] leading-relaxed">
                 เลื่อนลงมาแล้วเลือก{' '}
-                <span className="inline-flex items-center gap-1 rounded-md bg-[var(--surface)] px-1.5 py-0.5 font-semibold text-[var(--ink)] ring-1 ring-[var(--hairline)]">
+                <span className="inline-flex items-center gap-1 rounded-apple-sm bg-[var(--surface)] px-1.5 py-0.5 font-semibold text-[var(--ink)] ring-1 ring-[var(--hairline)]">
                   <PlusSquare size={12} className="text-blue-500" aria-hidden="true" />{' '}
                   เพิ่มไปยังหน้าจอโฮม
                 </span>
@@ -232,7 +232,7 @@ export function PwaHeaderButton() {
             <button
               type="button"
               onClick={() => setShowIosGuide(false)}
-              className="w-full rounded-[11px] bg-[var(--accent)] py-2 text-[13px] font-bold text-white shadow-2xs transition-all hover:bg-[var(--accent-hover)] active:scale-[0.98]"
+              className="w-full rounded-apple-md bg-[var(--accent)] py-2 text-[13px] font-bold text-white shadow-2xs transition-all hover:bg-[var(--accent-hover)] active:scale-[0.98]"
             >
               เข้าใจแล้ว
             </button>

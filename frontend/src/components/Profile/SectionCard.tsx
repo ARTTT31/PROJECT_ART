@@ -30,11 +30,11 @@ export function SectionCard({
   children,
 }: SectionCardProps) {
   return (
-    <section className="overflow-hidden rounded-[18px] bg-[var(--surface)] border border-[var(--hairline)] transition-all duration-200">
+    <section className="overflow-hidden rounded-apple-lg bg-[var(--surface)] border border-[var(--hairline)] transition-all duration-200">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--hairline-soft)] bg-[var(--surface-subtle)] px-5 sm:px-6 py-4">
         <div className="flex items-center gap-3 min-w-0">
           <div
-            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] ${iconBg} ${iconColor} ring-1 ${iconRing}`}
+            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-apple-widget ${iconBg} ${iconColor} ring-1 ${iconRing}`}
           >
             {icon}
           </div>
@@ -121,7 +121,7 @@ export function InsetField({
           autoComplete={autoComplete}
           readOnly={readOnly}
           className={[
-            'w-full rounded-[14px] py-3 text-[16px] sm:text-[14px] font-medium text-[var(--ink)] placeholder:text-[var(--ink-tertiary)] transition-all duration-150',
+            'w-full rounded-apple-widget py-3 text-[16px] sm:text-[14px] font-medium text-[var(--ink)] placeholder:text-[var(--ink-tertiary)] transition-all duration-150',
             readOnly
               ? 'bg-[var(--surface-grouped-2)] cursor-default select-text'
               : 'bg-[var(--surface-grouped)] focus:bg-[var(--surface)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent)] focus:shadow-xs',

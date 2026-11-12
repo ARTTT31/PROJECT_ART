@@ -28,7 +28,7 @@ export default function AuthTransitionOverlay({
       aria-live="polite"
       className="fade-in fixed inset-0 z-[1100] flex items-center justify-center bg-[var(--glass-80)] px-6 backdrop-blur-xl"
     >
-      <div className="auth-transition-card w-full max-w-[330px] rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] px-7 py-8 text-center">
+      <div className="auth-transition-card w-full max-w-[330px] rounded-apple-lg border border-[var(--hairline)] bg-[var(--surface)] px-7 py-8 text-center">
         <div className="relative mx-auto flex h-16 w-16 items-center justify-center">
           <Image
             src={logoSrc}
@@ -37,7 +37,7 @@ export default function AuthTransitionOverlay({
             height={56}
             priority
             draggable={false}
-            className="h-14 w-14 rounded-[18px] object-contain"
+            className="h-14 w-14 rounded-apple-lg object-contain"
           />
           <span
             aria-hidden="true"

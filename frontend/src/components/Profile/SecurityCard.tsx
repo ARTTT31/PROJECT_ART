@@ -190,8 +190,8 @@ export function SecurityCard() {
         </div>
       ) : phase === 'setup' && setup ? (
         <div className="space-y-4">
-          <div className="flex flex-col items-center gap-3 rounded-[14px] bg-[var(--surface-grouped)] p-4 sm:flex-row sm:items-start">
-            <div className="rounded-[11px] bg-white p-2.5 ring-1 ring-[var(--hairline)]">
+          <div className="flex flex-col items-center gap-3 rounded-apple-widget bg-[var(--surface-grouped)] p-4 sm:flex-row sm:items-start">
+            <div className="rounded-apple-md bg-white p-2.5 ring-1 ring-[var(--hairline)]">
               <QRCodeSVG
                 value={setup.otpauth_uri}
                 size={132}
@@ -207,7 +207,7 @@ export function SecurityCard() {
               <p className="text-[12px] leading-relaxed text-[var(--ink-muted)]">
                 สแกนไม่ได้? กรอกรหัสนี้ในแอปแทน
               </p>
-              <code className="block select-all break-all rounded-[11px] bg-[var(--surface)] px-3 py-2 font-mono text-[12px] text-[var(--ink)] ring-1 ring-[var(--hairline)]">
+              <code className="block select-all break-all rounded-apple-md bg-[var(--surface)] px-3 py-2 font-mono text-[12px] text-[var(--ink)] ring-1 ring-[var(--hairline)]">
                 {setup.secret}
               </code>
             </div>
@@ -256,7 +256,7 @@ export function SecurityCard() {
         </div>
       ) : phase === 'codes' ? (
         <div className="space-y-4">
-          <div className="flex items-start gap-2 rounded-[14px] bg-[var(--warning-soft)] p-3 text-[12px] leading-relaxed text-[var(--ink)]">
+          <div className="flex items-start gap-2 rounded-apple-widget bg-[var(--warning-soft)] p-3 text-[12px] leading-relaxed text-[var(--ink)]">
             <AlertTriangle size={15} className="mt-0.5 shrink-0" aria-hidden="true" />
             <span>
               เก็บรหัสสำรองเหล่านี้ไว้ให้ปลอดภัย — แต่ละรหัสใช้ได้ครั้งเดียว
@@ -267,7 +267,7 @@ export function SecurityCard() {
             {recoveryCodes.map((recovery) => (
               <li
                 key={recovery}
-                className="select-all rounded-[11px] bg-[var(--surface-grouped)] px-3 py-2 text-center ring-1 ring-[var(--hairline)]"
+                className="select-all rounded-apple-md bg-[var(--surface-grouped)] px-3 py-2 text-center ring-1 ring-[var(--hairline)]"
               >
                 {recovery}
               </li>
@@ -293,7 +293,7 @@ export function SecurityCard() {
         </div>
       ) : enabled ? (
         <div className="space-y-4">
-          <div className="flex items-start justify-between gap-4 rounded-[14px] bg-[var(--surface-grouped)] p-4">
+          <div className="flex items-start justify-between gap-4 rounded-apple-widget bg-[var(--surface-grouped)] p-4">
             <div className="min-w-0">
               <p className="text-[13px] font-semibold text-[var(--ink)]">
                 เปิดใช้งานอยู่ — ต้องกรอกรหัสจากแอปทุกครั้งที่เข้าสู่ระบบ

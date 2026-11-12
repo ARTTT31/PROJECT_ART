@@ -61,7 +61,7 @@ function SubNav<T extends string>({
 }) {
   return (
     <div
-      className="flex items-center gap-1 overflow-x-auto no-scrollbar rounded-[18px] border border-[var(--hairline-soft)] bg-[var(--surface)] p-1.5 shadow-2xs"
+      className="flex items-center gap-1 overflow-x-auto no-scrollbar rounded-apple-lg border border-[var(--hairline-soft)] bg-[var(--surface)] p-1.5 shadow-2xs"
       role="tablist"
       aria-label={label}
     >
@@ -74,7 +74,7 @@ function SubNav<T extends string>({
             role="tab"
             aria-selected={selected}
             onClick={() => onChange(option.value)}
-            className={`inline-flex shrink-0 items-center gap-1.5 rounded-[11px] px-3 py-2 text-[12px] font-bold whitespace-nowrap transition-all duration-150 active:scale-[0.98] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)] ${
+            className={`inline-flex shrink-0 items-center gap-1.5 rounded-apple-md px-3 py-2 text-[12px] font-bold whitespace-nowrap transition-all duration-150 active:scale-[0.98] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)] ${
               selected
                 ? 'bg-[var(--accent)] text-white shadow-[0_4px_10px_-4px_var(--accent)]'
                 : 'text-[var(--ink-muted)] hover:bg-[var(--surface-grouped)] hover:text-[var(--ink)]'
@@ -413,12 +413,12 @@ export default function ProfilePage() {
           ══════════════════════════════════════════════════ */}
       <nav
         aria-label="แท็บตั้งค่าโปรไฟล์"
-        className="inline-flex max-w-full items-center gap-1 overflow-x-auto no-scrollbar rounded-[18px] border border-[var(--hairline-soft)] bg-[var(--surface-chip)] p-1 backdrop-blur-md"
+        className="inline-flex max-w-full items-center gap-1 overflow-x-auto no-scrollbar rounded-apple-lg border border-[var(--hairline-soft)] bg-[var(--surface-chip)] p-1 backdrop-blur-md"
       >
         <button
           type="button"
           onClick={() => handleTabChange('profile')}
-          className={`inline-flex shrink-0 items-center justify-center gap-2 px-4 py-2 rounded-[14px] text-[13px] font-bold whitespace-nowrap transition-all duration-200 active:scale-[0.98] ${
+          className={`inline-flex shrink-0 items-center justify-center gap-2 px-4 py-2 rounded-apple-widget text-[13px] font-bold whitespace-nowrap transition-all duration-200 active:scale-[0.98] ${
             activeTab === 'profile'
               ? 'bg-[var(--surface)] text-[var(--accent-text)] shadow-[0_2px_8px_rgba(0,0,0,0.06)]'
               : 'text-[var(--ink-muted)] hover:text-[var(--ink)] hover:bg-[var(--glass-60)]'
@@ -431,7 +431,7 @@ export default function ProfilePage() {
         <button
           type="button"
           onClick={() => handleTabChange('preferences')}
-          className={`inline-flex shrink-0 items-center justify-center gap-2 px-4 py-2 rounded-[14px] text-[13px] font-bold whitespace-nowrap transition-all duration-200 active:scale-[0.98] ${
+          className={`inline-flex shrink-0 items-center justify-center gap-2 px-4 py-2 rounded-apple-widget text-[13px] font-bold whitespace-nowrap transition-all duration-200 active:scale-[0.98] ${
             activeTab === 'preferences'
               ? 'bg-[var(--surface)] text-[var(--accent-text)] shadow-[0_2px_8px_rgba(0,0,0,0.06)]'
               : 'text-[var(--ink-muted)] hover:text-[var(--ink)] hover:bg-[var(--glass-60)]'

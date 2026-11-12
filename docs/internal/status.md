@@ -18,7 +18,7 @@ machine, Python 3.14.6 local and 3.11 in a throwaway venv (what CI runs), Node 2
 | Backend lint | `./venv/Scripts/python.exe -m flake8 app` | clean |
 | Backend types | `./venv/Scripts/python.exe -m mypy app` | clean, 68 source files |
 | Migrations | `alembic upgrade head` + `alembic check` on a throwaway SQLite file | full chain applies, **no drift** |
-| Frontend tests | `cd frontend && npx vitest run` | **387 passed**, 60 files |
+| Frontend tests | `cd frontend && npx vitest run` | **391 passed**, 60 files |
 | Frontend types | `npx tsc --noEmit` | clean |
 | Frontend lint | `npx eslint .` | clean |
 
@@ -60,14 +60,14 @@ no `profile_version` column, and `backend/scripts/admin/check_password.py` still
 |---|---|---|---|
 | U1 | Camera stream list is cached under an unscoped key and survives logout, so the next account on a shared browser sees the previous account's cameras | S | Open |
 | U2 | Notification read/dismissed state is localStorage-only — clearing on the phone leaves the desktop badge lit | M | Open |
-| U3 | Only 3 of 14 pages have `loading.tsx` (`camera`, `dashboard`, `profile`); admin/audit/notifications render an empty frame | S–M | Open |
+| U3 | 6 of 14 pages have `loading.tsx` (`camera`, `dashboard`, `profile`, `admin`, `audit`, `notifications`); the remaining routes still paint an empty frame while their first request runs | S–M | Partial |
 | U4 | Four widgets render a blank card when their API fails, with no message or retry | S | Open |
-| U5 | No shared `Button` (`components/ui/` has Dialog, PageHeader, SegmentedControl, Select, Switch); an unlayered `button { border-radius: 9999px }` beats Tailwind, which is why card-shaped buttons needed `!` overrides | M | Open |
-| U6 | Toasts are fixed top-centre, under the mobile header and notch | S | Open |
+| U5 | The unlayered `button { border-radius: 9999px }` now lives in `@layer base`, so a utility wins and the four `!` radius overrides are gone — radii below 18px all come from the `apple-*` scale (`apple-widget` 14px was added for tiles). Still no shared `Button` primitive (`components/ui/` has Dialog, PageHeader, SegmentedControl, Select, Switch) | M | Partial |
+| U6 | Toasts are bottom-centre on a phone (clearing the notch and sticky header) and top-right from `sm` up | S | Closed |
 | U7 | axe covers only `/login`, `/register`, `/verify-email`; no signed-in surface is audited | M | Open |
 | U8 | Small widgets are half-width from `md`, squeezing charts at 768px | M | Open |
-| U9 | The dashboard drag handle is ~13px tall, far under the 44px touch target | S | Open |
-| U10 | Widgets are keyboard-sortable but nothing tells the user how | S | Open |
+| U9 | The dashboard grip is padded to a ~30px target (grip 14px, plus pointer padding) and keeps its slim look | S | Closed |
+| U10 | The widget manager states how reordering works (drag the edge grip, or Tab to it and press Space then the arrow keys) | S | Closed |
 | U11 | Autosave confirms nothing — no signal that the server accepted the change | M | Open |
 | U12 | Quick notes cannot be undone after delete (finance entries can) | S | Open |
 | U13 | All enabled widgets mount on page entry (13 `dynamic()` imports) | M | Open |

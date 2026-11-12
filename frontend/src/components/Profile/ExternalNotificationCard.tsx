@@ -9,6 +9,11 @@ import { showError, showSuccess, showToast } from '@/utils/sweetalert';
 import Switch from '@/components/ui/Switch';
 import { InsetField, SectionCard } from './SectionCard';
 
+// Fixed provider colours: the one place a literal hex is correct, because they
+// are the brands' own values rather than theme tokens.
+const LINE_BRAND = '#06C755';
+const TELEGRAM_BRAND = '#24A1DE';
+
 interface NotificationEvents {
   oil_alert: boolean;
   market_alert: boolean;
@@ -164,7 +169,7 @@ export default function ExternalNotificationCard() {
           type="button"
           onClick={() => handleSave()}
           disabled={isSaving}
-          className="inline-flex items-center gap-1.5 rounded-[11px] bg-[var(--accent)] px-3.5 py-1.5 text-[12px] font-bold text-white shadow-2xs transition-all duration-150 hover:bg-[var(--accent-hover)] active:scale-[0.95] disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 rounded-apple-md bg-[var(--accent)] px-3.5 py-1.5 text-[12px] font-bold text-white shadow-2xs transition-all duration-150 hover:bg-[var(--accent-hover)] active:scale-[0.95] disabled:opacity-50"
         >
           {isSaving ? (
             <Loader2 size={13} className="animate-spin" />
@@ -177,10 +182,13 @@ export default function ExternalNotificationCard() {
     >
       <form onSubmit={handleSave} className="space-y-6">
         {/* LINE Notification Section */}
-        <div className="rounded-[18px] border border-[var(--hairline)] bg-[var(--surface-subtle)] p-4 sm:p-5 space-y-4">
+        <div className="rounded-apple-lg border border-[var(--hairline)] bg-[var(--surface-subtle)] p-4 sm:p-5 space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-2.5 min-w-0">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-[#06C755]/10 text-[#06C755]">
+              <div
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-apple-md"
+                style={{ backgroundColor: `${LINE_BRAND}1a`, color: LINE_BRAND }}
+              >
                 <SiLine className="h-5 w-5" aria-hidden="true" />
               </div>
               <div className="min-w-0">
@@ -192,7 +200,7 @@ export default function ExternalNotificationCard() {
               type="button"
               disabled={testingChannel === 'line' || (!config.line_token && !config.line_webhook_url)}
               onClick={() => handleTestNotification('line')}
-              className="self-end sm:self-auto inline-flex items-center gap-1.5 rounded-[9px] border border-[var(--hairline)] bg-[var(--surface)] px-2.5 py-1 text-[11px] font-semibold text-[var(--ink-secondary)] transition-all hover:bg-[var(--surface-grouped)] active:scale-[0.95] disabled:opacity-40"
+              className="self-end sm:self-auto inline-flex items-center gap-1.5 rounded-apple-md border border-[var(--hairline)] bg-[var(--surface)] px-2.5 py-1 text-[11px] font-semibold text-[var(--ink-secondary)] transition-all hover:bg-[var(--surface-grouped)] active:scale-[0.95] disabled:opacity-40"
             >
               {testingChannel === 'line' ? (
                 <Loader2 size={12} className="animate-spin" />
@@ -226,10 +234,13 @@ export default function ExternalNotificationCard() {
         </div>
 
         {/* Telegram Notification Section */}
-        <div className="rounded-[18px] border border-[var(--hairline)] bg-[var(--surface-subtle)] p-4 sm:p-5 space-y-4">
+        <div className="rounded-apple-lg border border-[var(--hairline)] bg-[var(--surface-subtle)] p-4 sm:p-5 space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-2.5 min-w-0">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-[#24A1DE]/10 text-[#24A1DE]">
+              <div
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-apple-md"
+                style={{ backgroundColor: `${TELEGRAM_BRAND}1a`, color: TELEGRAM_BRAND }}
+              >
                 <SiTelegram className="h-5 w-5" aria-hidden="true" />
               </div>
               <div className="min-w-0">
@@ -241,7 +252,7 @@ export default function ExternalNotificationCard() {
               type="button"
               disabled={testingChannel === 'telegram' || !config.telegram_bot_token || !config.telegram_chat_id}
               onClick={() => handleTestNotification('telegram')}
-              className="self-end sm:self-auto inline-flex items-center gap-1.5 rounded-[9px] border border-[var(--hairline)] bg-[var(--surface)] px-2.5 py-1 text-[11px] font-semibold text-[var(--ink-secondary)] transition-all hover:bg-[var(--surface-grouped)] active:scale-[0.95] disabled:opacity-40"
+              className="self-end sm:self-auto inline-flex items-center gap-1.5 rounded-apple-md border border-[var(--hairline)] bg-[var(--surface)] px-2.5 py-1 text-[11px] font-semibold text-[var(--ink-secondary)] transition-all hover:bg-[var(--surface-grouped)] active:scale-[0.95] disabled:opacity-40"
             >
               {testingChannel === 'telegram' ? (
                 <Loader2 size={12} className="animate-spin" />
@@ -274,10 +285,10 @@ export default function ExternalNotificationCard() {
         </div>
 
         {/* Custom Webhook Section */}
-        <div className="rounded-[18px] border border-[var(--hairline)] bg-[var(--surface-subtle)] p-4 sm:p-5 space-y-4">
+        <div className="rounded-apple-lg border border-[var(--hairline)] bg-[var(--surface-subtle)] p-4 sm:p-5 space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-2.5 min-w-0">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-purple-500/10 text-purple-600 dark:text-purple-400">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-apple-md bg-purple-500/10 text-purple-600 dark:text-purple-400">
                 <Globe className="h-5 w-5" aria-hidden="true" />
               </div>
               <div className="min-w-0">
@@ -289,7 +300,7 @@ export default function ExternalNotificationCard() {
               type="button"
               disabled={testingChannel === 'webhook' || !config.webhook_url}
               onClick={() => handleTestNotification('webhook')}
-              className="self-end sm:self-auto inline-flex items-center gap-1.5 rounded-[9px] border border-[var(--hairline)] bg-[var(--surface)] px-2.5 py-1 text-[11px] font-semibold text-[var(--ink-secondary)] transition-all hover:bg-[var(--surface-grouped)] active:scale-[0.95] disabled:opacity-40"
+              className="self-end sm:self-auto inline-flex items-center gap-1.5 rounded-apple-md border border-[var(--hairline)] bg-[var(--surface)] px-2.5 py-1 text-[11px] font-semibold text-[var(--ink-secondary)] transition-all hover:bg-[var(--surface-grouped)] active:scale-[0.95] disabled:opacity-40"
             >
               {testingChannel === 'webhook' ? (
                 <Loader2 size={12} className="animate-spin" />
@@ -312,10 +323,10 @@ export default function ExternalNotificationCard() {
         </div>
 
         {/* Subscription Topics */}
-        <div className="rounded-[18px] border border-[var(--hairline)] bg-[var(--surface-subtle)] p-4 sm:p-5 space-y-3">
+        <div className="rounded-apple-lg border border-[var(--hairline)] bg-[var(--surface-subtle)] p-4 sm:p-5 space-y-3">
           <h3 className="text-[13px] font-bold text-[var(--ink)]">หัวข้อการแจ้งเตือนที่ต้องการรับ (Event Subscriptions)</h3>
           <div className="space-y-2">
-            <div className="flex items-center justify-between gap-3 rounded-[14px] bg-[var(--surface)] p-3 ring-1 ring-[var(--hairline)]">
+            <div className="flex items-center justify-between gap-3 rounded-apple-widget bg-[var(--surface)] p-3 ring-1 ring-[var(--hairline)]">
               <div className="min-w-0 flex-1">
                 <p className="text-[13px] font-bold text-[var(--ink)]">แจ้งเตือนราคาน้ำมัน (Oil Price Alert)</p>
                 <p className="mt-0.5 text-[11px] leading-relaxed text-[var(--ink-muted)]">แจ้งเตือนเมื่อมีการประกาศปรับเปลี่ยนราคาน้ำมันขายปลีก</p>
@@ -334,7 +345,7 @@ export default function ExternalNotificationCard() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between gap-3 rounded-[14px] bg-[var(--surface)] p-3 ring-1 ring-[var(--hairline)]">
+            <div className="flex items-center justify-between gap-3 rounded-apple-widget bg-[var(--surface)] p-3 ring-1 ring-[var(--hairline)]">
               <div className="min-w-0 flex-1">
                 <p className="text-[13px] font-bold text-[var(--ink)]">สรุปภาพรวมตลาด (Market Summary Alert)</p>
                 <p className="mt-0.5 text-[11px] leading-relaxed text-[var(--ink-muted)]">แจ้งเตือนภาพรวมตลาดหุ้น, อัตราแลกเปลี่ยน และดัชนีสำคัญ</p>
@@ -353,7 +364,7 @@ export default function ExternalNotificationCard() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between gap-3 rounded-[14px] bg-[var(--surface)] p-3 ring-1 ring-[var(--hairline)]">
+            <div className="flex items-center justify-between gap-3 rounded-apple-widget bg-[var(--surface)] p-3 ring-1 ring-[var(--hairline)]">
               <div className="min-w-0 flex-1">
                 <p className="text-[13px] font-bold text-[var(--ink)]">สรุปภาพรวมประจำวัน (Daily Digest)</p>
                 <p className="mt-0.5 text-[11px] leading-relaxed text-[var(--ink-muted)]">รับสรุปงาน พยากรณ์อากาศ และภารกิจสำคัญประจำวัน</p>
@@ -382,7 +393,7 @@ export default function ExternalNotificationCard() {
           <button
             type="submit"
             disabled={isSaving}
-            className="self-end sm:self-auto inline-flex items-center gap-1.5 rounded-[11px] bg-[var(--accent)] px-4 py-2 text-[13px] font-bold text-white shadow-2xs transition-all duration-150 hover:bg-[var(--accent-hover)] active:scale-[0.95] disabled:opacity-50"
+            className="self-end sm:self-auto inline-flex items-center gap-1.5 rounded-apple-md bg-[var(--accent)] px-4 py-2 text-[13px] font-bold text-white shadow-2xs transition-all duration-150 hover:bg-[var(--accent-hover)] active:scale-[0.95] disabled:opacity-50"
           >
             {isSaving ? (
               <Loader2 size={14} className="animate-spin" />

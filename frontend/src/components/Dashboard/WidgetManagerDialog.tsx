@@ -150,7 +150,7 @@ export function WidgetManagerDialog({
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder="ค้นหาวิดเจ็ต เช่น น้ำมัน, ปฏิทิน, SET"
                 aria-label="ค้นหาวิดเจ็ต"
-                className="h-10 w-full rounded-[11px] border border-[var(--hairline)] bg-[var(--surface-grouped)] pl-9 pr-9 text-[13px] text-[var(--ink)] placeholder:text-[var(--ink-tertiary)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)] [&::-webkit-search-cancel-button]:hidden"
+                className="h-10 w-full rounded-apple-md border border-[var(--hairline)] bg-[var(--surface-grouped)] pl-9 pr-9 text-[13px] text-[var(--ink)] placeholder:text-[var(--ink-tertiary)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)] [&::-webkit-search-cancel-button]:hidden"
               />
               {query && (
                 <button
@@ -167,6 +167,12 @@ export function WidgetManagerDialog({
               เปิดใช้งาน {visibleWidgetIds.length} จาก {widgets.length} วิดเจ็ต
               {normalizedQuery && ` · พบ ${filteredWidgets.length} รายการ`}
             </p>
+            {/* Reordering exists but nothing said so: the grip on the card edge
+                is invisible until hover, and it is also the keyboard entry. */}
+            <p className="px-1 text-[11px] leading-snug text-[var(--ink-tertiary)]">
+              ลากแถบบนขอบวิดเจ็ตเพื่อเรียงลำดับ · กด Tab ถึงแถบนั้นแล้วกด Space
+              ตามด้วยลูกศรขึ้น/ลง
+            </p>
           </div>
 
           {/* Presets stay one tap away but folded, so the list gets the height. */}
@@ -175,7 +181,7 @@ export function WidgetManagerDialog({
               type="button"
               onClick={() => setShowPresets((shown) => !shown)}
               aria-expanded={showPresets}
-              className="flex w-full items-center gap-2 rounded-[11px] border border-[var(--hairline)] bg-[var(--surface-grouped)] px-3 py-2.5 text-left transition-colors hover:bg-[var(--surface-chip)] active:scale-[0.99]"
+              className="flex w-full items-center gap-2 rounded-apple-md border border-[var(--hairline)] bg-[var(--surface-grouped)] px-3 py-2.5 text-left transition-colors hover:bg-[var(--surface-chip)] active:scale-[0.99]"
             >
               <Sparkles size={15} aria-hidden="true" className="text-[var(--accent-text)]" />
               <span className="flex-1 text-[12px] font-semibold text-[var(--ink-secondary)]">
@@ -201,7 +207,7 @@ export function WidgetManagerDialog({
                     type="button"
                     onClick={() => onApplyPreset(preset.id)}
                     title={preset.description}
-                    className="flex flex-col items-start gap-1 rounded-[11px]! border border-[var(--hairline)] bg-[var(--surface)] p-2.5 text-left transition-colors hover:border-[var(--accent-border)] hover:bg-[var(--surface-grouped)] active:scale-[0.97]"
+                    className="flex flex-col items-start gap-1 rounded-apple-md border border-[var(--hairline)] bg-[var(--surface)] p-2.5 text-left transition-colors hover:border-[var(--accent-border)] hover:bg-[var(--surface-grouped)] active:scale-[0.97]"
                   >
                     <span className="text-[12px] font-bold text-[var(--ink)]">{preset.label}</span>
                     <span className="line-clamp-1 text-[10px] text-[var(--ink-muted)]">
@@ -214,7 +220,7 @@ export function WidgetManagerDialog({
           </div>
 
           {filteredWidgets.length === 0 ? (
-            <div className="rounded-[14px] border border-dashed border-[var(--hairline-strong)] px-4 py-8 text-center">
+            <div className="rounded-apple-widget border border-dashed border-[var(--hairline-strong)] px-4 py-8 text-center">
               <p className="text-[13px] font-semibold text-[var(--ink)]">
                 ไม่พบวิดเจ็ตที่ตรงกับ “{query.trim()}”
               </p>
@@ -266,7 +272,7 @@ export function WidgetManagerDialog({
                           }
                           // `!` on the radius because globals.css forces every
                           // button into a pill; these are cards, not buttons.
-                          className={`flex h-full min-h-[76px] items-start gap-3 overflow-hidden rounded-[14px]! border p-3.5 text-left transition-colors duration-150 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent-ring)] ${
+                          className={`flex h-full min-h-[76px] items-start gap-3 overflow-hidden rounded-apple-widget border p-3.5 text-left transition-colors duration-150 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent-ring)] ${
                             isVisible
                               ? 'border-[var(--accent-border)] bg-[var(--accent-soft-weak)]'
                               : 'border-[var(--hairline)] bg-[var(--surface)] hover:border-[var(--hairline-strong)] hover:bg-[var(--surface-grouped)]'
@@ -274,7 +280,7 @@ export function WidgetManagerDialog({
                         >
                           <span
                             aria-hidden="true"
-                            className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] ${
+                            className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-apple-md ${
                               isVisible
                                 ? 'bg-[var(--accent-soft)] text-[var(--accent-text)]'
                                 : 'bg-[var(--surface-grouped)] text-[var(--ink-tertiary)]'

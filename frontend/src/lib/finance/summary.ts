@@ -8,6 +8,8 @@
  * rounding.
  */
 
+import { getActiveLocale, translateText, type Locale } from '@/lib/i18n/translate';
+
 export type EntryType = 'income' | 'expense';
 
 export interface FinanceEntry {
@@ -124,20 +126,21 @@ export function parseAmountInput(raw: string): number | null {
   return Math.round(value * 100) / 100;
 }
 
-/** Full Thai month label for a `YYYY-MM` key (Buddhist era, e.g. "มกราคม 2569"). */
-export function monthLabel(key: string): string {
+/** Full month label for a `YYYY-MM` key (Thai Buddhist era by default, e.g. "มกราคม 2569"). */
+export function monthLabel(key: string, locale: Locale = getActiveLocale()): string {
   const parts = parseMonthKey(key);
   if (!parts) return key;
-  return new Intl.DateTimeFormat('th-TH', { month: 'long', year: 'numeric' }).format(
-    new Date(parts.year, parts.month - 1, 1),
-  );
+  return new Intl.DateTimeFormat(locale === 'en' ? 'en-US' : 'th-TH', {
+    month: 'long',
+    year: 'numeric',
+  }).format(new Date(parts.year, parts.month - 1, 1));
 }
 
-/** Short Thai month label for chart axes (e.g. "ม.ค."). */
-export function shortMonthLabel(key: string): string {
+/** Short month label for chart axes (e.g. "ม.ค."). */
+export function shortMonthLabel(key: string, locale: Locale = getActiveLocale()): string {
   const parts = parseMonthKey(key);
   if (!parts) return key;
-  return new Intl.DateTimeFormat('th-TH', { month: 'short' }).format(
+  return new Intl.DateTimeFormat(locale === 'en' ? 'en-US' : 'th-TH', { month: 'short' }).format(
     new Date(parts.year, parts.month - 1, 1),
   );
 }
@@ -152,7 +155,11 @@ export function dateKey(date: Date): string {
  * month" is selectable), then every month that actually has entries, newest
  * first.
  */
-export function monthOptions(entries: FinanceEntry[], now: Date = new Date()): MonthOption[] {
+export function monthOptions(
+  entries: FinanceEntry[],
+  now: Date = new Date(),
+  locale: Locale = getActiveLocale(),
+): MonthOption[] {
   const keys = new Set<string>([currentMonthKey(now)]);
   for (const entry of entries) {
     const key = monthKeyOf(entry.date);
@@ -160,7 +167,7 @@ export function monthOptions(entries: FinanceEntry[], now: Date = new Date()): M
   }
   return [...keys]
     .sort((a, b) => (a < b ? 1 : a > b ? -1 : 0))
-    .map((key) => ({ key, label: monthLabel(key) }));
+    .map((key) => ({ key, label: monthLabel(key, locale) }));
 }
 
 /** Entries inside one month key, or all entries when the period is "all". */
@@ -182,17 +189,21 @@ export function summarize(entries: FinanceEntry[]): Totals {
   return { income, expense, balance: round2(income - expense), count: entries.length };
 }
 
-/** Day label: "วันนี้", "เมื่อวาน", or a Thai date for older days. */
-export function dayLabel(date: string, today: Date = new Date()): string {
+/** Day label: "วันนี้", "เมื่อวาน", or a dated label for older days. */
+export function dayLabel(
+  date: string,
+  today: Date = new Date(),
+  locale: Locale = getActiveLocale(),
+): string {
   const todayKey = dateKey(today);
-  if (date === todayKey) return 'วันนี้';
+  if (date === todayKey) return translateText('วันนี้', 'Today');
 
   const yesterday = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1);
-  if (date === dateKey(yesterday)) return 'เมื่อวาน';
+  if (date === dateKey(yesterday)) return translateText('เมื่อวาน', 'Yesterday');
 
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
   if (!match) return date;
-  return new Intl.DateTimeFormat('th-TH', {
+  return new Intl.DateTimeFormat(locale === 'en' ? 'en-US' : 'th-TH', {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
@@ -200,7 +211,11 @@ export function dayLabel(date: string, today: Date = new Date()): string {
 }
 
 /** Entries grouped per day, newest day first, newest entry first inside a day. */
-export function groupByDay(entries: FinanceEntry[], now: Date = new Date()): DayGroup[] {
+export function groupByDay(
+  entries: FinanceEntry[],
+  now: Date = new Date(),
+  locale: Locale = getActiveLocale(),
+): DayGroup[] {
   const buckets = new Map<string, FinanceEntry[]>();
   for (const entry of entries) {
     const key = entry.date || '';
@@ -215,7 +230,7 @@ export function groupByDay(entries: FinanceEntry[], now: Date = new Date()): Day
       const totals = summarize(dayEntries);
       return {
         date,
-        label: dayLabel(date, now),
+        label: dayLabel(date, now, locale),
         entries: dayEntries,
         income: totals.income,
         expense: totals.expense,
@@ -231,6 +246,7 @@ export function monthlySeries(
   entries: FinanceEntry[],
   months = 6,
   now: Date = new Date(),
+  locale: Locale = getActiveLocale(),
 ): MonthPoint[] {
   const points: MonthPoint[] = [];
   const buckets = new Map<string, FinanceEntry[]>();
@@ -248,7 +264,7 @@ export function monthlySeries(
     const totals = summarize(buckets.get(key) ?? []);
     points.push({
       key,
-      label: shortMonthLabel(key),
+      label: shortMonthLabel(key, locale),
       income: totals.income,
       expense: totals.expense,
     });
@@ -296,10 +312,11 @@ export function categoryTotals(
   entries: FinanceEntry[],
   type: EntryType = 'expense',
 ): CategoryTotal[] {
+  const uncategorized = translateText(UNCATEGORIZED_LABEL, 'Uncategorized');
   const buckets = new Map<string, CategoryTotal>();
   for (const entry of entries) {
     if (entry.type !== type) continue;
-    const category = (entry.category ?? '').trim() || UNCATEGORIZED_LABEL;
+    const category = (entry.category ?? '').trim() || uncategorized;
     const amount = Number.isFinite(entry.amount) ? entry.amount : 0;
     const bucket = buckets.get(category);
     if (bucket) {
@@ -315,7 +332,16 @@ export function categoryTotals(
     .sort((a, b) => b.total - a.total);
 }
 
-const CSV_HEADERS = ['วันที่', 'ประเภท', 'หมวดหมู่', 'รายการ', 'จำนวนเงิน'] as const;
+/** CSV header row, translated at call time so the export follows the UI language. */
+function csvHeaders(): string[] {
+  return [
+    translateText('วันที่', 'Date'),
+    translateText('ประเภท', 'Type'),
+    translateText('หมวดหมู่', 'Category'),
+    translateText('รายการ', 'Entry'),
+    translateText('จำนวนเงิน', 'Amount'),
+  ];
+}
 
 function csvCell(value: string): string {
   // Quote every field: labels and categories are free text and may contain
@@ -333,7 +359,9 @@ export function toCsv(entries: FinanceEntry[]): string {
     .map((entry) =>
       [
         entry.date,
-        entry.type === 'income' ? 'รายรับ' : 'รายจ่าย',
+        entry.type === 'income'
+          ? translateText('รายรับ', 'Income')
+          : translateText('รายจ่าย', 'Expense'),
         entry.category ?? '',
         entry.label,
         entry.amount.toFixed(2),
@@ -342,5 +370,5 @@ export function toCsv(entries: FinanceEntry[]): string {
         .join(','),
     );
 
-  return [CSV_HEADERS.map(csvCell).join(','), ...rows].join('\r\n');
+  return [csvHeaders().map(csvCell).join(','), ...rows].join('\r\n');
 }

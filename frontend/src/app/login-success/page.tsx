@@ -7,10 +7,12 @@ import AuthTransitionOverlay from '@/components/Auth/AuthTransitionOverlay';
 import { AuthUserSchema } from '@/lib/api/schemas';
 import { getApiBaseUrl } from '@/lib/api/apiBase';
 import { readUserCookie } from '@/lib/api/userCookie';
+import { useI18n } from '@/lib/i18n/I18nProvider';
 
 export default function LoginSuccessPage() {
   const router = useRouter();
   const { login } = useAuth();
+  const { tr } = useI18n();
   const hasRedirected = useRef(false);
 
   useEffect(() => {
@@ -80,8 +82,8 @@ export default function LoginSuccessPage() {
   return (
     <AuthTransitionOverlay
       tone="success"
-      title="เข้าสู่ระบบสำเร็จ"
-      subtitle="กำลังพาคุณเข้าสู่แดชบอร์ด…"
+      title={tr('เข้าสู่ระบบสำเร็จ', 'Signed in')}
+      subtitle={tr('กำลังพาคุณเข้าสู่แดชบอร์ด…', 'Taking you to your dashboard…')}
     />
   );
 }

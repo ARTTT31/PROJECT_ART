@@ -191,7 +191,7 @@ export default function AISettingsCard() {
     >
       <div className="space-y-5">
         {/* Current connection */}
-        <div className="flex flex-col gap-2 rounded-[14px] border border-[var(--hairline)] bg-[var(--surface-subtle)] p-3.5 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-2 rounded-apple-widget border border-[var(--hairline)] bg-[var(--surface-subtle)] p-3.5 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex min-w-0 items-start gap-2.5">
             <span
               aria-hidden="true"
@@ -276,7 +276,7 @@ export default function AISettingsCard() {
           hint="เว้นว่างเพื่อใช้ค่าเริ่มต้น"
         />
 
-        <div className="rounded-[14px] border border-[var(--hairline-soft)] bg-[var(--surface-subtle)] px-3.5 py-3">
+        <div className="rounded-apple-widget border border-[var(--hairline-soft)] bg-[var(--surface-subtle)] px-3.5 py-3">
           <p className="text-[11px] leading-relaxed text-[var(--ink-tertiary)]">
             คีย์ถูกเข้ารหัสก่อนจัดเก็บและไม่ถูกส่งกลับมาแสดงผลอีก · ผู้ให้บริการที่ตั้งค่าไว้จะถูกใช้กับแชท
             AI ของบัญชีนี้เท่านั้น

@@ -25,6 +25,7 @@ import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
 import { CameraStreamConfig, CameraStreamType } from '@/types';
 import { sanitizeCameraStreams, stripCameraCredentials } from '@/utils/cameraUrl';
 import { showToast, showDeleteConfirm } from '@/utils/sweetalert';
+import { useI18n, translateText } from '@/lib/i18n/I18nProvider';
 import {
   Dialog,
   DialogBody,
@@ -35,48 +36,58 @@ import {
   DialogTitle,
 } from '@/components/ui/Dialog';
 
-const DEFAULT_STREAMS: CameraStreamConfig[] = [
-  {
-    id: '1',
-    name: 'หน้าบ้าน (Front Entrance)',
-    location: 'ภายนอก — ประตูหลัก',
-    streamType: 'simulated',
-    status: 'online',
-    fps: 30,
-    resolution: '1920x1080',
-  },
-  {
-    id: '2',
-    name: 'โรงจอดรถ (Garage)',
-    location: 'ภายนอก — ลานจอดรถ',
-    streamType: 'simulated',
-    status: 'online',
-    fps: 24,
-    resolution: '1920x1080',
-  },
-  {
-    id: '3',
-    name: 'ห้องนั่งเล่น (Living Room)',
-    location: 'ภายใน — ชั้น 1',
-    streamType: 'simulated',
-    status: 'online',
-    fps: 30,
-    resolution: '1280x720',
-  },
-  {
-    id: '4',
-    name: 'หลังบ้าน (Backyard)',
-    location: 'ภายนอก — สวนหลังบ้าน',
-    streamType: 'simulated',
-    status: 'offline',
-    fps: 0,
-    resolution: 'N/A',
-  },
-];
+/**
+ * Seed cameras for a workspace that has not saved a layout yet.
+ *
+ * Built at call time rather than kept as a module constant so the seeded names
+ * follow the interface language; once the user edits a camera the names become
+ * their own data and are stored as typed.
+ */
+function createDefaultStreams(): CameraStreamConfig[] {
+  return [
+    {
+      id: '1',
+      name: translateText('หน้าบ้าน', 'Front entrance'),
+      location: translateText('ภายนอก — ประตูหลัก', 'Outside — main door'),
+      streamType: 'simulated',
+      status: 'online',
+      fps: 30,
+      resolution: '1920x1080',
+    },
+    {
+      id: '2',
+      name: translateText('โรงจอดรถ', 'Garage'),
+      location: translateText('ภายนอก — ลานจอดรถ', 'Outside — parking area'),
+      streamType: 'simulated',
+      status: 'online',
+      fps: 24,
+      resolution: '1920x1080',
+    },
+    {
+      id: '3',
+      name: translateText('ห้องนั่งเล่น', 'Living room'),
+      location: translateText('ภายใน — ชั้น 1', 'Inside — floor 1'),
+      streamType: 'simulated',
+      status: 'online',
+      fps: 30,
+      resolution: '1280x720',
+    },
+    {
+      id: '4',
+      name: translateText('หลังบ้าน', 'Backyard'),
+      location: translateText('ภายนอก — สวนหลังบ้าน', 'Outside — back garden'),
+      streamType: 'simulated',
+      status: 'offline',
+      fps: 0,
+      resolution: 'N/A',
+    },
+  ];
+}
 
 export default function CameraPage() {
   const { user, updateUser } = useAuth();
-  const [streams, setStreams] = useState<CameraStreamConfig[]>(DEFAULT_STREAMS);
+  const { tr } = useI18n();
+  const [streams, setStreams] = useState<CameraStreamConfig[]>(() => createDefaultStreams());
   const [activeCameraId, setActiveCameraId] = useState<string>('1');
   const [refreshing, setRefreshing] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -100,7 +111,7 @@ export default function CameraPage() {
   // ── Load streams from user.camera_config or localStorage ──
   useEffect(() => {
     setIsClient(true);
-    let loaded: CameraStreamConfig[] = DEFAULT_STREAMS;
+    let loaded: CameraStreamConfig[] = createDefaultStreams();
 
     if (user?.camera_config) {
       try {
@@ -192,7 +203,7 @@ export default function CameraPage() {
           fps: s.fps || 30,
         })),
       );
-      showToast('รีเฟรชสถานะกล้องทั้งหมดสำเร็จ', 'success');
+      showToast(tr('รีเฟรชสถานะกล้องทั้งหมดสำเร็จ', 'All camera statuses refreshed'), 'success');
     }, 1000);
   };
 
@@ -257,7 +268,7 @@ export default function CameraPage() {
   const handleSaveCamera = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formName.trim()) {
-      showToast('กรุณาระบุชื่อกล้อง', 'warning');
+      showToast(tr('กรุณาระบุชื่อกล้อง', 'Enter a camera name'), 'warning');
       return;
     }
 
@@ -272,7 +283,7 @@ export default function CameraPage() {
             ? {
                 ...s,
                 name: formName.trim(),
-                location: formLocation.trim() || 'ไม่ระบุตำแหน่ง',
+                location: formLocation.trim() || tr('ไม่ระบุตำแหน่ง', 'Location not specified'),
                 url: formUrl.trim(),
                 streamType: formStreamType,
                 refreshInterval: formRefreshInterval,
@@ -282,13 +293,13 @@ export default function CameraPage() {
               }
             : s,
         );
-        showToast('อัปเดตข้อมูลกล้องสำเร็จ', 'success');
+        showToast(tr('อัปเดตข้อมูลกล้องสำเร็จ', 'Camera updated'), 'success');
       } else {
         // Add new
         const newCam: CameraStreamConfig = {
           id: `cam-${Date.now()}`,
           name: formName.trim(),
-          location: formLocation.trim() || 'ไม่ระบุตำแหน่ง',
+          location: formLocation.trim() || tr('ไม่ระบุตำแหน่ง', 'Location not specified'),
           url: formUrl.trim(),
           streamType: formStreamType,
           refreshInterval: formRefreshInterval,
@@ -298,13 +309,13 @@ export default function CameraPage() {
         };
         updated = [...streams, newCam];
         setActiveCameraId(newCam.id);
-        showToast('เพิ่มกล้องวงจรปิดใหม่สำเร็จ', 'success');
+        showToast(tr('เพิ่มกล้องวงจรปิดใหม่สำเร็จ', 'Camera added'), 'success');
       }
 
       await persistStreams(updated);
       setIsDialogOpen(false);
     } catch {
-      showToast('เกิดข้อผิดพลาดในการบันทึก', 'error');
+      showToast(tr('เกิดข้อผิดพลาดในการบันทึก', 'Could not save the camera'), 'error');
     } finally {
       setIsSaving(false);
     }
@@ -312,13 +323,15 @@ export default function CameraPage() {
 
   const handleDeleteCamera = async (camId: string, camName: string) => {
     if (streams.length <= 1) {
-      showToast('ต้องมีกล้องอย่างน้อย 1 ตัวในระบบ', 'warning');
+      showToast(tr('ต้องมีกล้องอย่างน้อย 1 ตัวในระบบ', 'At least one camera must remain'), 'warning');
       return;
     }
 
     const confirm = await showDeleteConfirm(
-      'ต้องการลบกล้องนี้หรือไม่?',
-      `ลบกล้อง "${camName}" ออกจากระบบ`,
+      tr('ต้องการลบกล้องนี้หรือไม่?', 'Delete this camera?'),
+      tr('ลบกล้อง "{name}" ออกจากระบบ', 'Remove camera "{name}" from the workspace', {
+        name: camName,
+      }),
     );
     if (!confirm.isConfirmed) return;
 
@@ -328,20 +341,20 @@ export default function CameraPage() {
     if (activeCameraId === camId) {
       setActiveCameraId(updated[0]?.id || '');
     }
-    showToast('ลบกล้องสำเร็จ', 'success');
+    showToast(tr('ลบกล้องสำเร็จ', 'Camera deleted'), 'success');
   };
 
   // ── Render Helpers ──
   const getStreamTypeLabel = (type: CameraStreamType) => {
     switch (type) {
       case 'snapshot':
-        return 'ภาพนิ่ง Snapshot (Auto-refresh)';
+        return tr('ภาพนิ่ง Snapshot (Auto-refresh)', 'Snapshot (auto-refresh)');
       case 'mjpeg':
         return 'MJPEG / Web Stream';
       case 'iframe':
         return 'Web Embed / Lovelace NVR';
       case 'simulated':
-        return 'โหมดจำลอง (Simulated Live)';
+        return tr('โหมดจำลอง (Simulated Live)', 'Simulated live');
     }
   };
 
@@ -366,31 +379,34 @@ export default function CameraPage() {
       <div className="flex flex-col gap-5">
         {/* ── Page header ────────────────────────────────────────────── */}
         <PageHeader
-          title="กล้องวงจรปิด"
-          subtitle="ดูภาพสดและจัดการรายการกล้องใน workspace"
+          title={tr('กล้องวงจรปิด', 'CCTV cameras')}
+          subtitle={tr(
+            'ดูภาพสดและจัดการรายการกล้องใน workspace',
+            'Watch live video and manage the cameras in this workspace',
+          )}
           actions={
             <div className="flex items-center gap-2">
             <button
               onClick={openAddDialog}
               className="inline-flex items-center gap-2 rounded-full bg-[var(--accent)] px-4 py-2 text-[13px] font-semibold text-white  transition-all duration-150 hover:bg-[var(--accent-hover)]  focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 active:scale-[0.95]"
-              aria-label="เพิ่มกล้องใหม่"
+              aria-label={tr('เพิ่มกล้องใหม่', 'Add a camera')}
             >
               <Plus size={15} aria-hidden="true" />
-              เพิ่มกล้อง
+              {tr('เพิ่มกล้อง', 'Add camera')}
             </button>
 
             <button
               onClick={handleRefresh}
               disabled={refreshing}
               className="inline-flex items-center gap-2 rounded-full bg-[var(--surface)] px-4 py-2 text-[13px] font-semibold text-[var(--ink)] ring-1 ring-[var(--hairline)] transition-colors duration-150 hover:bg-[var(--surface-grouped)] disabled:opacity-50 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 active:scale-[0.95]"
-              aria-label="รีเฟรชสถานะกล้อง"
+              aria-label={tr('รีเฟรชสถานะกล้อง', 'Refresh camera status')}
             >
               <RefreshCw
                 size={13}
                 className={refreshing ? 'animate-spin text-[var(--accent-text)]' : ''}
                 aria-hidden="true"
               />
-              รีเฟรชสถานะ
+              {tr('รีเฟรชสถานะ', 'Refresh status')}
             </button>
             </div>
           }
@@ -402,7 +418,7 @@ export default function CameraPage() {
           <div className="lg:col-span-2">
             <div
               ref={videoContainerRef}
-              className="relative aspect-video overflow-hidden rounded-[18px] bg-slate-950 ring-1 ring-[var(--hairline)] shadow-[0_8px_32px_rgba(15,23,42,0.12)]"
+              className="relative aspect-video overflow-hidden rounded-apple-lg bg-slate-950 ring-1 ring-[var(--hairline)] shadow-[0_8px_32px_rgba(15,23,42,0.12)]"
             >
               {activeCamera?.status === 'online' ? (
                 <div className="relative h-full w-full">
@@ -459,7 +475,11 @@ export default function CameraPage() {
                           aria-hidden="true"
                         />
                         <span className="text-xs font-medium tracking-wide text-slate-400">
-                          จำลองภาพสตรีมความละเอียด {activeCamera.resolution || '1080p'}
+                          {tr(
+                            'จำลองภาพสตรีมความละเอียด {resolution}',
+                            'Simulated stream at {resolution}',
+                            { resolution: activeCamera.resolution || '1080p' },
+                          )}
                         </span>
                       </div>
                     </div>
@@ -495,7 +515,7 @@ export default function CameraPage() {
                           <button
                             onClick={() => openEditDialog(activeCamera)}
                             className="rounded-full bg-[var(--glass-20)] p-1 text-white hover:bg-[var(--glass-40)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-white"
-                            aria-label="แก้ไขข้อมูลกล้องนี้"
+                            aria-label={tr('แก้ไขข้อมูลกล้องนี้', 'Edit this camera')}
                           >
                             <Pencil size={12} />
                           </button>
@@ -507,7 +527,11 @@ export default function CameraPage() {
                         <button
                           onClick={toggleFullscreen}
                           className="rounded-full bg-[var(--glass-20)] p-2 text-white transition-colors hover:bg-[var(--glass-40)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-white/60"
-                          aria-label={isFullscreen ? 'ย่อหน้าจอ' : 'ขยายเต็มจอ'}
+                          aria-label={
+                            isFullscreen
+                              ? tr('ย่อหน้าจอ', 'Exit full screen')
+                              : tr('ขยายเต็มจอ', 'Enter full screen')
+                          }
                         >
                           {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
                         </button>
@@ -520,11 +544,14 @@ export default function CameraPage() {
                   <CameraOff size={48} className="text-slate-600" aria-hidden="true" />
                   <div>
                     <p className="font-semibold text-slate-300">
-                      {activeCamera?.name || 'กล้อง'} ตัดการเชื่อมต่อ (Offline)
+                      {activeCamera?.name || tr('กล้อง', 'Camera')}{' '}
+                      {tr('ตัดการเชื่อมต่อ (Offline)', 'is offline')}
                     </p>
                     <p className="mt-1 text-xs text-slate-500">
-                      ไม่สามารถเชื่อมต่อ URL ของกล้องได้ กรุณาตรวจสอบการตั้งค่าเครือข่ายหรือ URL
-                      สตรีม
+                      {tr(
+                        'ไม่สามารถเชื่อมต่อ URL ของกล้องได้ กรุณาตรวจสอบการตั้งค่าเครือข่ายหรือ URL สตรีม',
+                        'Cannot reach the camera URL. Check the network settings or the stream URL.',
+                      )}
                     </p>
                   </div>
                   <div className="mt-2 flex items-center gap-2">
@@ -532,14 +559,14 @@ export default function CameraPage() {
                       onClick={handleRefresh}
                       className="rounded-full bg-[var(--glass-10)] px-4 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-[var(--glass-20)]"
                     >
-                      ลองใหม่
+                      {tr('ลองใหม่', 'Try again')}
                     </button>
                     {activeCamera && (
                       <button
                         onClick={() => openEditDialog(activeCamera)}
                         className="rounded-full bg-[var(--accent)] px-4 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-[var(--accent-hover)]"
                       >
-                        แก้ไขการตั้งค่า
+                        {tr('แก้ไขการตั้งค่า', 'Edit settings')}
                       </button>
                     )}
                   </div>
@@ -550,13 +577,15 @@ export default function CameraPage() {
 
           {/* Camera List Sidebar */}
           <div className="flex flex-col gap-3">
-            <div className="rounded-[18px] bg-[var(--surface)] p-5 ring-1 ring-[var(--hairline)]">
+            <div className="rounded-apple-lg bg-[var(--surface)] p-5 ring-1 ring-[var(--hairline)]">
               <div className="mb-4 flex items-center justify-between">
                 <h2 className="flex items-center gap-2.5 text-[15px] font-bold text-[var(--ink)]">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-[11px] bg-[var(--surface-grouped)]">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-apple-md bg-[var(--surface-grouped)]">
                     <Shield size={15} className="text-[var(--ink)]" aria-hidden="true" />
                   </div>
-                  รายการกล้องทั้งหมด ({streams.length})
+                  {tr('รายการกล้องทั้งหมด ({count})', 'All cameras ({count})', {
+                    count: streams.length,
+                  })}
                 </h2>
               </div>
 
@@ -567,7 +596,7 @@ export default function CameraPage() {
                     <li key={cam.id} className="group relative">
                       <div
                         className={[
-                          'flex w-full items-center justify-between rounded-[14px] p-3 text-left transition-all duration-150',
+                          'flex w-full items-center justify-between rounded-apple-widget p-3 text-left transition-all duration-150',
                           isSelected
                             ? 'bg-[var(--accent-soft)] ring-1 ring-[var(--accent-ring)]'
                             : 'bg-[var(--surface-grouped)] hover:bg-[var(--surface)] hover:ring-1 hover:ring-[var(--hairline)]',
@@ -575,13 +604,17 @@ export default function CameraPage() {
                       >
                         <button
                           onClick={() => setActiveCameraId(cam.id)}
-                          className="flex min-w-0 flex-1 items-center gap-3 rounded-[14px] text-left focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
-                          aria-label={`${cam.name} — ${cam.status === 'online' ? 'ออนไลน์' : 'ออฟไลน์'}`}
+                          className="flex min-w-0 flex-1 items-center gap-3 rounded-apple-widget text-left focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+                          aria-label={`${cam.name} — ${
+                            cam.status === 'online'
+                              ? tr('ออนไลน์', 'Online')
+                              : tr('ออฟไลน์', 'Offline')
+                          }`}
                         >
                           {/* Icon badge */}
                           <div
                             className={[
-                              'flex h-9 w-9 shrink-0 items-center justify-center rounded-[11px]',
+                              'flex h-9 w-9 shrink-0 items-center justify-center rounded-apple-md',
                               cam.status === 'online'
                                 ? 'bg-emerald-100 text-emerald-700'
                                 : 'bg-rose-100 text-rose-600',
@@ -611,8 +644,8 @@ export default function CameraPage() {
                               e.stopPropagation();
                               openEditDialog(cam);
                             }}
-                            className="rounded-[11px] p-2 text-slate-400 opacity-0 transition-opacity hover:bg-[var(--surface-chip)] hover:text-slate-700 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-[var(--accent)] [@media(hover:none)]:opacity-100"
-                            aria-label={`แก้ไข ${cam.name}`}
+                            className="rounded-apple-md p-2 text-slate-400 opacity-0 transition-opacity hover:bg-[var(--surface-chip)] hover:text-slate-700 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-[var(--accent)] [@media(hover:none)]:opacity-100"
+                            aria-label={tr('แก้ไข {name}', 'Edit {name}', { name: cam.name })}
                           >
                             <Pencil size={13} />
                           </button>
@@ -622,8 +655,8 @@ export default function CameraPage() {
                               e.stopPropagation();
                               handleDeleteCamera(cam.id, cam.name);
                             }}
-                            className="rounded-[11px] p-2 text-slate-400 opacity-0 transition-opacity hover:bg-rose-50 hover:text-rose-600 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-[var(--danger)] [@media(hover:none)]:opacity-100"
-                            aria-label={`ลบ ${cam.name}`}
+                            className="rounded-apple-md p-2 text-slate-400 opacity-0 transition-opacity hover:bg-rose-50 hover:text-rose-600 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-[var(--danger)] [@media(hover:none)]:opacity-100"
+                            aria-label={tr('ลบ {name}', 'Delete {name}', { name: cam.name })}
                           >
                             <Trash2 size={13} />
                           </button>
@@ -636,7 +669,9 @@ export default function CameraPage() {
                                 : 'bg-rose-100 text-rose-600',
                             ].join(' ')}
                           >
-                            {cam.status === 'online' ? 'ออนไลน์' : 'ออฟไลน์'}
+                            {cam.status === 'online'
+                              ? tr('ออนไลน์', 'Online')
+                              : tr('ออฟไลน์', 'Offline')}
                           </span>
                         </div>
                       </div>
@@ -653,10 +688,15 @@ export default function CameraPage() {
           <DialogContent className="sm:max-w-[500px]">
             <DialogHeader>
               <DialogTitle>
-                {editingCameraId ? 'แก้ไขข้อมูลกล้องวงจรปิด' : 'เพิ่มกล้องวงจรปิดใหม่'}
+                {editingCameraId
+                  ? tr('แก้ไขข้อมูลกล้องวงจรปิด', 'Edit camera')
+                  : tr('เพิ่มกล้องวงจรปิดใหม่', 'Add a camera')}
               </DialogTitle>
               <DialogDescription>
-                กรอกรายละเอียดการเชื่อมต่อกล้องวงจรปิด ข้อมูลจะถูกบันทึกลงระบบคลาวด์อัตโนมัติ
+                {tr(
+                  'กรอกรายละเอียดการเชื่อมต่อกล้องวงจรปิด ข้อมูลจะถูกบันทึกลงระบบคลาวด์อัตโนมัติ',
+                  'Enter the camera connection details. They are saved to your account automatically.',
+                )}
               </DialogDescription>
             </DialogHeader>
 
@@ -667,7 +707,7 @@ export default function CameraPage() {
                     htmlFor="camera-name"
                     className="block text-xs font-semibold text-slate-700"
                   >
-                    ชื่อกล้อง <span className="text-red-500">*</span>
+                    {tr('ชื่อกล้อง', 'Camera name')} <span className="text-red-500">*</span>
                   </label>
                   <input
                     id="camera-name"
@@ -675,8 +715,8 @@ export default function CameraPage() {
                     required
                     value={formName}
                     onChange={(e) => setFormName(e.target.value)}
-                    placeholder="เช่น หน้าบ้าน (Front Entrance)"
-                    className="mt-1 block w-full rounded-[14px] border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 transition-colors focus:border-[var(--accent)] focus:bg-[var(--surface)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
+                    placeholder={tr('เช่น หน้าบ้าน (Front Entrance)', 'e.g. Front entrance')}
+                    className="mt-1 block w-full rounded-apple-widget border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 transition-colors focus:border-[var(--accent)] focus:bg-[var(--surface)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
                   />
                 </div>
 
@@ -685,32 +725,32 @@ export default function CameraPage() {
                     htmlFor="camera-location"
                     className="block text-xs font-semibold text-slate-700"
                   >
-                    ตำแหน่งที่ตั้ง
+                    {tr('ตำแหน่งที่ตั้ง', 'Location')}
                   </label>
                   <input
                     id="camera-location"
                     type="text"
                     value={formLocation}
                     onChange={(e) => setFormLocation(e.target.value)}
-                    placeholder="เช่น ภายนอก — ประตูหลัก"
-                    className="mt-1 block w-full rounded-[14px] border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 transition-colors focus:border-[var(--accent)] focus:bg-[var(--surface)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
+                    placeholder={tr('เช่น ภายนอก — ประตูหลัก', 'e.g. Outside — main door')}
+                    className="mt-1 block w-full rounded-apple-widget border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 transition-colors focus:border-[var(--accent)] focus:bg-[var(--surface)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
                   />
                 </div>
 
                 <div>
                   <span className="block text-xs font-semibold text-[var(--ink-secondary)]">
-                    ประเภทการเชื่อมต่อ (Stream Type)
+                    {tr('ประเภทการเชื่อมต่อ (Stream Type)', 'Connection type (stream type)')}
                   </span>
                   <SegmentedControl
-                    label="ประเภทการเชื่อมต่อ (Stream Type)"
+                    label={tr('ประเภทการเชื่อมต่อ (Stream Type)', 'Connection type (stream type)')}
                     className="mt-1.5"
                     fullWidth
                     value={formStreamType}
                     onChange={setFormStreamType}
                     options={[
-                      { value: 'snapshot', label: 'ภาพนิ่ง' },
+                      { value: 'snapshot', label: tr('ภาพนิ่ง', 'Snapshot') },
                       { value: 'mjpeg', label: 'MJPEG' },
-                      { value: 'simulated', label: 'จำลอง' },
+                      { value: 'simulated', label: tr('จำลอง', 'Simulated') },
                     ]}
                   />
                 </div>
@@ -721,7 +761,8 @@ export default function CameraPage() {
                       htmlFor="camera-url"
                       className="block text-xs font-semibold text-slate-700"
                     >
-                      URL สตรีม / Snapshot URL <span className="text-red-500">*</span>
+                      {tr('URL สตรีม / Snapshot URL', 'Stream URL / snapshot URL')}{' '}
+                      <span className="text-red-500">*</span>
                     </label>
                     <input
                       id="camera-url"
@@ -736,7 +777,7 @@ export default function CameraPage() {
                             ? 'http://192.168.1.50:8080/video.mjpg'
                             : 'https://homeassistant.local/lovelace/cctv'
                       }
-                      className="mt-1 block w-full rounded-[14px] border border-slate-200 bg-slate-50 px-3 py-2 font-mono text-xs text-slate-900 transition-colors focus:border-[var(--accent)] focus:bg-[var(--surface)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
+                      className="mt-1 block w-full rounded-apple-widget border border-slate-200 bg-slate-50 px-3 py-2 font-mono text-xs text-slate-900 transition-colors focus:border-[var(--accent)] focus:bg-[var(--surface)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
                     />
                   </div>
                 )}
@@ -744,19 +785,25 @@ export default function CameraPage() {
                 {formStreamType === 'snapshot' && (
                   <div>
                     <label className="block text-xs font-semibold text-slate-700">
-                      รอบการรีเฟรชภาพนิ่ง (วินาที)
+                      {tr('รอบการรีเฟรชภาพนิ่ง (วินาที)', 'Snapshot refresh interval (seconds)')}
                     </label>
                     <Select
-                      ariaLabel="รอบการรีเฟรชภาพนิ่ง (วินาที)"
+                      ariaLabel={tr(
+                        'รอบการรีเฟรชภาพนิ่ง (วินาที)',
+                        'Snapshot refresh interval (seconds)',
+                      )}
                       value={String(formRefreshInterval)}
                       onChange={(next) => setFormRefreshInterval(Number(next))}
                       size="md"
                       options={[
-                        { value: '1', label: 'ทุก 1 วินาที (เร็ว)' },
-                        { value: '2', label: 'ทุก 2 วินาที' },
-                        { value: '3', label: 'ทุก 3 วินาที (แนะนำ)' },
-                        { value: '5', label: 'ทุก 5 วินาที' },
-                        { value: '10', label: 'ทุก 10 วินาที' },
+                        { value: '1', label: tr('ทุก 1 วินาที (เร็ว)', 'Every 1 second (fast)') },
+                        { value: '2', label: tr('ทุก 2 วินาที', 'Every 2 seconds') },
+                        {
+                          value: '3',
+                          label: tr('ทุก 3 วินาที (แนะนำ)', 'Every 3 seconds (recommended)'),
+                        },
+                        { value: '5', label: tr('ทุก 5 วินาที', 'Every 5 seconds') },
+                        { value: '10', label: tr('ทุก 10 วินาที', 'Every 10 seconds') },
                       ]}
                       className="mt-1 w-full"
                     />
@@ -769,7 +816,7 @@ export default function CameraPage() {
                       htmlFor="camera-resolution"
                       className="block text-xs font-semibold text-slate-700"
                     >
-                      ความละเอียด
+                      {tr('ความละเอียด', 'Resolution')}
                     </label>
                     <input
                       id="camera-resolution"
@@ -777,7 +824,7 @@ export default function CameraPage() {
                       value={formResolution}
                       onChange={(e) => setFormResolution(e.target.value)}
                       placeholder="1920x1080"
-                      className="mt-1 block w-full rounded-[14px] border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 transition-colors focus:border-[var(--accent)] focus:bg-[var(--surface)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
+                      className="mt-1 block w-full rounded-apple-widget border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 transition-colors focus:border-[var(--accent)] focus:bg-[var(--surface)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
                     />
                   </div>
                   <div>
@@ -785,7 +832,7 @@ export default function CameraPage() {
                       htmlFor="camera-fps"
                       className="block text-xs font-semibold text-slate-700"
                     >
-                      อัตราเฟรมเรต (FPS)
+                      {tr('อัตราเฟรมเรต (FPS)', 'Frame rate (FPS)')}
                     </label>
                     <input
                       id="camera-fps"
@@ -794,7 +841,7 @@ export default function CameraPage() {
                       max={60}
                       value={formFps}
                       onChange={(e) => setFormFps(Number(e.target.value))}
-                      className="mt-1 block w-full rounded-[14px] border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 transition-colors focus:border-[var(--accent)] focus:bg-[var(--surface)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
+                      className="mt-1 block w-full rounded-apple-widget border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 transition-colors focus:border-[var(--accent)] focus:bg-[var(--surface)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
                     />
                   </div>
                 </div>
@@ -806,7 +853,7 @@ export default function CameraPage() {
                   onClick={() => setIsDialogOpen(false)}
                   className="rounded-full px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100"
                 >
-                  ยกเลิก
+                  {tr('ยกเลิก', 'Cancel')}
                 </button>
                 <button
                   type="submit"
@@ -818,7 +865,7 @@ export default function CameraPage() {
                   ) : (
                     <Check size={14} />
                   )}
-                  {editingCameraId ? 'บันทึกการแก้ไข' : 'เพิ่มกล้อง'}
+                  {editingCameraId ? tr('บันทึกการแก้ไข', 'Save changes') : tr('เพิ่มกล้อง', 'Add camera')}
                 </button>
               </DialogFooter>
             </form>

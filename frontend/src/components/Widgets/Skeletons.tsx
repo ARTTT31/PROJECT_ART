@@ -3,7 +3,7 @@
 export function DashboardPageSkeleton() {
   return (
     <div className="space-y-5" aria-label="กำลังโหลดหน้าหลัก" aria-busy="true">
-      <div className="flex min-h-[142px] animate-pulse flex-col justify-between gap-5 rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] p-6 sm:flex-row sm:items-center sm:p-7">
+      <div className="flex min-h-[142px] animate-pulse flex-col justify-between gap-5 rounded-apple-lg border border-[var(--hairline)] bg-[var(--surface)] p-6 sm:flex-row sm:items-center sm:p-7">
         <div className="space-y-3">
           <div className="h-8 w-64 max-w-full rounded-full bg-[var(--surface-chip)]" />
           <div className="h-4 w-48 rounded-full bg-[var(--surface-grouped-2)]" />
@@ -14,20 +14,20 @@ export function DashboardPageSkeleton() {
         {[0, 1, 2, 3, 4, 5].map((item) => (
           <div
             key={item}
-            className={`min-h-[300px] animate-pulse rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] p-5 ${item === 2 ? 'col-span-full md:col-span-8' : 'col-span-full md:col-span-6'}`}
+            className={`min-h-[300px] animate-pulse rounded-apple-lg border border-[var(--hairline)] bg-[var(--surface)] p-5 ${item === 2 ? 'col-span-full md:col-span-8' : 'col-span-full md:col-span-6'}`}
             style={{ animationDelay: `${item * 70}ms` }}
           >
             <div className="mb-6 flex items-center gap-3">
-              <div className="h-10 w-10 rounded-[14px] bg-[var(--surface-grouped-2)]" />
+              <div className="h-10 w-10 rounded-apple-widget bg-[var(--surface-grouped-2)]" />
               <div className="space-y-2">
                 <div className="h-4 w-32 rounded-full bg-[var(--surface-chip)]" />
                 <div className="h-3 w-40 rounded-full bg-[var(--surface-grouped-2)]" />
               </div>
             </div>
             <div className="space-y-3">
-              <div className="h-12 rounded-[14px] bg-[var(--surface-grouped)]" />
-              <div className="h-12 rounded-[14px] bg-[var(--surface-grouped)]" />
-              <div className="h-12 rounded-[14px] bg-[var(--surface-grouped)]" />
+              <div className="h-12 rounded-apple-widget bg-[var(--surface-grouped)]" />
+              <div className="h-12 rounded-apple-widget bg-[var(--surface-grouped)]" />
+              <div className="h-12 rounded-apple-widget bg-[var(--surface-grouped)]" />
             </div>
           </div>
         ))}
@@ -38,11 +38,11 @@ export function DashboardPageSkeleton() {
 
 export function WeatherSkeleton() {
   return (
-    <div className="flex h-full min-h-[300px] flex-col justify-between rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] p-5">
+    <div className="flex h-full min-h-[300px] flex-col justify-between rounded-apple-lg border border-[var(--hairline)] bg-[var(--surface)] p-5">
       <div>
         <div className="flex items-start justify-between gap-3 mb-4">
           <div className="flex items-start gap-3">
-            <div className="h-10 w-10 shrink-0 rounded-[14px] skeleton-shimmer" />
+            <div className="h-10 w-10 shrink-0 rounded-apple-widget skeleton-shimmer" />
             <div className="space-y-2 py-1">
               <div className="h-4 w-24 rounded-full skeleton-shimmer" />
               <div className="h-3 w-32 rounded-full skeleton-shimmer" />
@@ -53,7 +53,7 @@ export function WeatherSkeleton() {
 
         <div className="flex items-end justify-between mt-6">
           <div className="space-y-2">
-            <div className="h-12 w-28 rounded-[11px] skeleton-shimmer" />
+            <div className="h-12 w-28 rounded-apple-md skeleton-shimmer" />
             <div className="h-4 w-20 rounded-full skeleton-shimmer" />
           </div>
           <div className="space-y-2 text-right">
@@ -78,11 +78,11 @@ export function WeatherSkeleton() {
 
 export function HolidaySkeleton() {
   return (
-    <div className="flex h-full min-h-[300px] flex-col justify-between rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] p-5">
+    <div className="flex h-full min-h-[300px] flex-col justify-between rounded-apple-lg border border-[var(--hairline)] bg-[var(--surface)] p-5">
       <div>
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-start gap-3">
-            <div className="h-10 w-10 shrink-0 rounded-[14px] skeleton-shimmer" />
+            <div className="h-10 w-10 shrink-0 rounded-apple-widget skeleton-shimmer" />
             <div className="space-y-2 py-1">
               <div className="h-4 w-32 rounded-full skeleton-shimmer" />
               <div className="h-3 w-40 rounded-full skeleton-shimmer" />
@@ -91,7 +91,7 @@ export function HolidaySkeleton() {
           <div className="h-8 w-16 rounded-full skeleton-shimmer" />
         </div>
 
-        <div className="mt-4 rounded-[18px] bg-slate-50 p-4 border border-slate-100 skeleton-shimmer">
+        <div className="mt-4 rounded-apple-lg bg-slate-50 p-4 border border-slate-100 skeleton-shimmer">
           <div className="h-3 w-24 rounded-full bg-slate-200 mb-2" />
           <div className="h-5 w-48 rounded-full bg-slate-200 mb-2" />
           <div className="h-3 w-full max-w-[200px] rounded-full bg-slate-200" />
@@ -102,10 +102,10 @@ export function HolidaySkeleton() {
         {[...Array(3)].map((_, i) => (
           <div
             key={i}
-            className="flex items-center justify-between rounded-[14px] bg-[var(--surface)] p-3 ring-1 ring-slate-100 skeleton-shimmer"
+            className="flex items-center justify-between rounded-apple-widget bg-[var(--surface)] p-3 ring-1 ring-slate-100 skeleton-shimmer"
           >
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-[14px] bg-slate-50" />
+              <div className="h-10 w-10 rounded-apple-widget bg-slate-50" />
               <div className="space-y-1.5">
                 <div className="h-4 w-32 rounded-full bg-slate-100" />
                 <div className="h-3 w-20 rounded-full bg-slate-50" />
@@ -121,10 +121,10 @@ export function HolidaySkeleton() {
 
 export function OilPriceSkeleton() {
   return (
-    <div className="flex h-full min-h-[300px] flex-col justify-between rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] p-5">
+    <div className="flex h-full min-h-[300px] flex-col justify-between rounded-apple-lg border border-[var(--hairline)] bg-[var(--surface)] p-5">
       <div className="flex items-start justify-between gap-3 mb-6">
         <div className="flex items-start gap-3">
-          <div className="h-10 w-10 shrink-0 rounded-[14px] skeleton-shimmer" />
+          <div className="h-10 w-10 shrink-0 rounded-apple-widget skeleton-shimmer" />
           <div className="space-y-2 py-1">
             <div className="h-4 w-24 rounded-full skeleton-shimmer" />
             <div className="h-3 w-32 rounded-full skeleton-shimmer" />
@@ -137,7 +137,7 @@ export function OilPriceSkeleton() {
         {[...Array(4)].map((_, i) => (
           <div
             key={i}
-            className="rounded-[18px] bg-slate-50 p-3 ring-1 ring-slate-100 skeleton-shimmer"
+            className="rounded-apple-lg bg-slate-50 p-3 ring-1 ring-slate-100 skeleton-shimmer"
           >
             <div className="h-3 w-16 rounded-full bg-slate-200 mb-2" />
             <div className="h-6 w-20 rounded-full bg-slate-200" />
@@ -150,10 +150,10 @@ export function OilPriceSkeleton() {
 
 export function QuickNotesSkeleton() {
   return (
-    <div className="flex h-full min-h-[300px] flex-col rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] p-5">
+    <div className="flex h-full min-h-[300px] flex-col rounded-apple-lg border border-[var(--hairline)] bg-[var(--surface)] p-5">
       <div className="flex items-start justify-between gap-3 mb-4">
         <div className="flex items-start gap-3">
-          <div className="h-10 w-10 shrink-0 rounded-[14px] skeleton-shimmer" />
+          <div className="h-10 w-10 shrink-0 rounded-apple-widget skeleton-shimmer" />
           <div className="space-y-2 py-1">
             <div className="h-4 w-40 rounded-full skeleton-shimmer" />
             <div className="h-3 w-28 rounded-full skeleton-shimmer" />
@@ -162,11 +162,11 @@ export function QuickNotesSkeleton() {
         <div className="h-8 w-16 rounded-full skeleton-shimmer" />
       </div>
 
-      <div className="h-9 w-full rounded-[14px] skeleton-shimmer" />
+      <div className="h-9 w-full rounded-apple-widget skeleton-shimmer" />
 
       <div className="mt-3 space-y-2">
         {[...Array(4)].map((_, i) => (
-          <div key={i} className="h-9 w-full rounded-[14px] skeleton-shimmer" />
+          <div key={i} className="h-9 w-full rounded-apple-widget skeleton-shimmer" />
         ))}
       </div>
     </div>
@@ -175,10 +175,10 @@ export function QuickNotesSkeleton() {
 
 export function ListWidgetSkeleton() {
   return (
-    <div className="flex h-full min-h-[300px] flex-col rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] p-5">
+    <div className="flex h-full min-h-[300px] flex-col rounded-apple-lg border border-[var(--hairline)] bg-[var(--surface)] p-5">
       <div className="mb-4 flex items-start justify-between gap-3">
         <div className="flex items-start gap-3">
-          <div className="h-10 w-10 shrink-0 rounded-[14px] skeleton-shimmer" />
+          <div className="h-10 w-10 shrink-0 rounded-apple-widget skeleton-shimmer" />
           <div className="space-y-2 py-1">
             <div className="h-4 w-32 rounded-full skeleton-shimmer" />
             <div className="h-3 w-40 rounded-full skeleton-shimmer" />
@@ -187,11 +187,11 @@ export function ListWidgetSkeleton() {
         <div className="h-8 w-16 rounded-full skeleton-shimmer" />
       </div>
 
-      <div className="h-9 w-full rounded-[14px] skeleton-shimmer" />
+      <div className="h-9 w-full rounded-apple-widget skeleton-shimmer" />
 
       <div className="mt-3 space-y-2">
         {[...Array(4)].map((_, i) => (
-          <div key={i} className="h-10 w-full rounded-[14px] skeleton-shimmer" />
+          <div key={i} className="h-10 w-full rounded-apple-widget skeleton-shimmer" />
         ))}
       </div>
     </div>
@@ -200,10 +200,10 @@ export function ListWidgetSkeleton() {
 
 export function PriceCalcSkeleton() {
   return (
-    <div className="flex h-full min-h-[300px] flex-col rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] p-5">
+    <div className="flex h-full min-h-[300px] flex-col rounded-apple-lg border border-[var(--hairline)] bg-[var(--surface)] p-5">
       <div className="flex items-start justify-between gap-3 mb-4">
         <div className="flex items-start gap-3">
-          <div className="h-10 w-10 shrink-0 rounded-[14px] skeleton-shimmer" />
+          <div className="h-10 w-10 shrink-0 rounded-apple-widget skeleton-shimmer" />
           <div className="space-y-2 py-1">
             <div className="h-4 w-28 rounded-full skeleton-shimmer" />
             <div className="h-3 w-40 rounded-full skeleton-shimmer" />
@@ -213,13 +213,13 @@ export function PriceCalcSkeleton() {
 
       <div className="grid grid-cols-3 gap-3">
         {[...Array(3)].map((_, i) => (
-          <div key={i} className="h-9 rounded-[14px] skeleton-shimmer" />
+          <div key={i} className="h-9 rounded-apple-widget skeleton-shimmer" />
         ))}
       </div>
 
       <div className="mt-4 grid grid-cols-3 gap-2.5">
         {[...Array(3)].map((_, i) => (
-          <div key={i} className="h-20 rounded-[18px] skeleton-shimmer" />
+          <div key={i} className="h-20 rounded-apple-lg skeleton-shimmer" />
         ))}
       </div>
     </div>
@@ -228,10 +228,10 @@ export function PriceCalcSkeleton() {
 
 export function MarketSkeleton() {
   return (
-    <div className="flex h-full min-h-[300px] flex-col rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] p-5">
+    <div className="flex h-full min-h-[300px] flex-col rounded-apple-lg border border-[var(--hairline)] bg-[var(--surface)] p-5">
       <div className="flex items-start justify-between gap-3 mb-4">
         <div className="flex items-start gap-3">
-          <div className="h-10 w-10 shrink-0 rounded-[14px] skeleton-shimmer" />
+          <div className="h-10 w-10 shrink-0 rounded-apple-widget skeleton-shimmer" />
           <div className="space-y-2 py-1">
             <div className="h-4 w-36 rounded-full skeleton-shimmer" />
             <div className="h-3 w-44 rounded-full skeleton-shimmer" />
@@ -242,7 +242,7 @@ export function MarketSkeleton() {
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         {[...Array(3)].map((_, i) => (
-          <div key={i} className="h-28 rounded-[18px] skeleton-shimmer" />
+          <div key={i} className="h-28 rounded-apple-lg skeleton-shimmer" />
         ))}
       </div>
     </div>
@@ -251,10 +251,10 @@ export function MarketSkeleton() {
 
 export function QRCodeSkeleton() {
   return (
-    <div className="flex h-full min-h-[300px] flex-col justify-between rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] p-5">
+    <div className="flex h-full min-h-[300px] flex-col justify-between rounded-apple-lg border border-[var(--hairline)] bg-[var(--surface)] p-5">
       <div className="flex items-start justify-between gap-3 mb-4">
         <div className="flex items-start gap-3">
-          <div className="h-10 w-10 shrink-0 rounded-[14px] skeleton-shimmer" />
+          <div className="h-10 w-10 shrink-0 rounded-apple-widget skeleton-shimmer" />
           <div className="space-y-2 py-1">
             <div className="h-4 w-32 rounded-full skeleton-shimmer" />
             <div className="h-3 w-40 rounded-full skeleton-shimmer" />
@@ -264,8 +264,8 @@ export function QRCodeSkeleton() {
       </div>
 
       <div className="flex flex-col items-center justify-center p-4">
-        <div className="h-40 w-40 rounded-[18px] skeleton-shimmer mb-4" />
-        <div className="h-10 w-full max-w-[300px] rounded-[14px] skeleton-shimmer" />
+        <div className="h-40 w-40 rounded-apple-lg skeleton-shimmer mb-4" />
+        <div className="h-10 w-full max-w-[300px] rounded-apple-widget skeleton-shimmer" />
       </div>
     </div>
   );

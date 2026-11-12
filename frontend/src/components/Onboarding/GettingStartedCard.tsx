@@ -104,11 +104,11 @@ export default function GettingStartedCard({ user }: { user: AuthUser }) {
   return (
     <section
       aria-labelledby="getting-started-heading"
-      className="mb-6 rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] p-5 sm:p-6"
+      className="mb-6 rounded-apple-lg border border-[var(--hairline)] bg-[var(--surface)] p-5 sm:p-6"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-start gap-3">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[11px] bg-[var(--accent-soft)] text-[var(--accent-text)] ring-1 ring-[var(--accent-ring)]">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-apple-md bg-[var(--accent-soft)] text-[var(--accent-text)] ring-1 ring-[var(--accent-ring)]">
             <Lightbulb size={17} aria-hidden="true" />
           </div>
           <div>
@@ -140,7 +140,7 @@ export default function GettingStartedCard({ user }: { user: AuthUser }) {
         {steps.map((step) => (
           <li
             key={step.id}
-            className={`flex items-start gap-2.5 rounded-[14px] border p-3 ${
+            className={`flex items-start gap-2.5 rounded-apple-widget border p-3 ${
               step.done
                 ? 'border-[var(--hairline-soft)] bg-[var(--surface-subtle)]'
                 : 'border-[var(--hairline)] bg-[var(--surface)]'

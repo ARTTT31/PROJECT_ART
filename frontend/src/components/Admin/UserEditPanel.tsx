@@ -30,7 +30,7 @@ export default function UserEditPanel({
   onResetTwoFactor: (user: AdminUser) => void;
 }) {
   return (
-    <div className="overflow-hidden rounded-[18px] bg-[var(--surface)] ring-1 ring-[var(--hairline)]">
+    <div className="overflow-hidden rounded-apple-lg bg-[var(--surface)] ring-1 ring-[var(--hairline)]">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[var(--hairline-soft)] bg-[var(--surface-subtle)] px-6 py-5">
         <div className="flex items-center gap-3 mb-3 sm:mb-0">
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--accent-soft)] text-[var(--accent-text)]">
@@ -58,7 +58,7 @@ export default function UserEditPanel({
           <span className="mb-2 block text-[12px] font-bold tracking-wide uppercase text-[var(--ink-muted)]">
             สถานะการใช้งาน
           </span>
-          <div className="flex items-center justify-between gap-4 rounded-[18px] bg-[var(--surface-subtle)] p-4 ring-1 ring-[var(--hairline)]">
+          <div className="flex items-center justify-between gap-4 rounded-apple-lg bg-[var(--surface-subtle)] p-4 ring-1 ring-[var(--hairline)]">
             <div className="min-w-0">
               <span className="block text-[14px] font-semibold text-[var(--ink)]">
                 เปิดใช้งานบัญชี (Active)
@@ -76,7 +76,7 @@ export default function UserEditPanel({
           <span className="mb-2 block text-[12px] font-bold tracking-wide uppercase text-[var(--ink-muted)]">
             ความปลอดภัย (2FA)
           </span>
-          <div className="flex flex-col gap-3 rounded-[18px] bg-[var(--surface-subtle)] p-4 ring-1 ring-[var(--hairline)] sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-3 rounded-apple-lg bg-[var(--surface-subtle)] p-4 ring-1 ring-[var(--hairline)] sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0">
               <span className="block text-[14px] font-semibold text-[var(--ink)]">
                 {user.two_factor_enabled
@@ -121,7 +121,7 @@ export default function UserEditPanel({
             {/* User Role Card */}
             <div
               onClick={() => onRoleChange('user')}
-              className={`group relative flex cursor-pointer items-start gap-3 rounded-[18px] p-4 transition-all duration-200 ${
+              className={`group relative flex cursor-pointer items-start gap-3 rounded-apple-lg p-4 transition-all duration-200 ${
                 role === 'user'
                   ? 'bg-[var(--surface)] ring-2 ring-[var(--accent)]'
                   : 'bg-[var(--surface-subtle)] ring-1 ring-[var(--hairline)] hover:bg-[var(--surface)]'
@@ -158,7 +158,7 @@ export default function UserEditPanel({
             {/* Admin Role Card */}
             <div
               onClick={() => onRoleChange('admin')}
-              className={`group relative flex cursor-pointer items-start gap-3 rounded-[18px] p-4 transition-all duration-200 ${
+              className={`group relative flex cursor-pointer items-start gap-3 rounded-apple-lg p-4 transition-all duration-200 ${
                 role === 'admin'
                   ? 'bg-[var(--surface)] ring-2 ring-purple-600'
                   : 'bg-[var(--surface-subtle)] ring-1 ring-[var(--hairline)] hover:bg-[var(--surface)]'
@@ -194,7 +194,7 @@ export default function UserEditPanel({
           </div>
         </div>
 
-        <p className="rounded-[18px] bg-[var(--surface-subtle)] px-4 py-3 text-[12px] leading-relaxed text-[var(--ink-muted)]">
+        <p className="rounded-apple-lg bg-[var(--surface-subtle)] px-4 py-3 text-[12px] leading-relaxed text-[var(--ink-muted)]">
           การเปิด/ปิดหน้าของทั้ง workspace ตั้งค่าได้ที่การ์ด “เปิด/ปิดหน้าใช้งาน”
           ด้านบนของหน้าจัดการระบบ
         </p>

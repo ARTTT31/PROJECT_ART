@@ -242,7 +242,7 @@ export function BrandingCard({ isAdmin = false }: { isAdmin?: boolean }) {
               placeholder={copy.namePlaceholder}
               disabled={isSavingBranding}
               required
-              className="w-full rounded-[14px] border border-[var(--hairline-strong)] bg-[var(--surface)] px-3.5 py-2.5 text-[14px] text-[var(--ink)] shadow-2xs placeholder:text-[var(--ink-tertiary)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)] disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed"
+              className="w-full rounded-apple-widget border border-[var(--hairline-strong)] bg-[var(--surface)] px-3.5 py-2.5 text-[14px] text-[var(--ink)] shadow-2xs placeholder:text-[var(--ink-tertiary)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)] disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed"
             />
           </div>
 
@@ -260,13 +260,13 @@ export function BrandingCard({ isAdmin = false }: { isAdmin?: boolean }) {
               onChange={(e) => setFormCompanyTagline(e.target.value)}
               placeholder="เช่น ทำงานให้ง่ายขึ้นทุกวัน"
               disabled={isSavingBranding}
-              className="w-full rounded-[14px] border border-[var(--hairline-strong)] bg-[var(--surface)] px-3.5 py-2.5 text-[14px] text-[var(--ink)] shadow-2xs placeholder:text-[var(--ink-tertiary)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)] disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed"
+              className="w-full rounded-apple-widget border border-[var(--hairline-strong)] bg-[var(--surface)] px-3.5 py-2.5 text-[14px] text-[var(--ink)] shadow-2xs placeholder:text-[var(--ink-tertiary)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)] disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed"
             />
           </div>
         </div>
 
         {/* Ready-made name + logo combinations */}
-        <div className="rounded-[14px] border border-[var(--hairline)] bg-[var(--surface-subtle)] p-3.5">
+        <div className="rounded-apple-widget border border-[var(--hairline)] bg-[var(--surface-subtle)] p-3.5">
           <div className="mb-2.5 flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1">
             <span className="text-[12px] font-bold uppercase tracking-wider text-[var(--ink-tertiary)]">
               ชุดชื่อและโลโก้สำเร็จรูป
@@ -287,7 +287,7 @@ export function BrandingCard({ isAdmin = false }: { isAdmin?: boolean }) {
                   disabled={isBusyLogo}
                   aria-pressed={active}
                   aria-label={`ใช้ชุด ${preset.name}`}
-                  className={`flex items-center gap-2 rounded-[14px] border px-2.5 py-2 text-left transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 ${
+                  className={`flex items-center gap-2 rounded-apple-widget border px-2.5 py-2 text-left transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 ${
                     active
                       ? 'border-[var(--accent)] bg-[var(--accent-soft)] ring-2 ring-[var(--accent-ring)]'
                       : 'border-[var(--hairline)] bg-[var(--surface)] hover:border-[var(--hairline-strong)]'
@@ -299,7 +299,7 @@ export function BrandingCard({ isAdmin = false }: { isAdmin?: boolean }) {
                     width={26}
                     height={26}
                     aria-hidden="true"
-                    className="h-[26px] w-[26px] shrink-0 rounded-[11px]"
+                    className="h-[26px] w-[26px] shrink-0 rounded-apple-md"
                   />
                   <span className="min-w-0 flex-1 truncate text-[12px] font-semibold text-[var(--ink)]">
                     {preset.name}
@@ -327,7 +327,7 @@ export function BrandingCard({ isAdmin = false }: { isAdmin?: boolean }) {
           }}
           onDragLeave={() => setIsDraggingLogo(false)}
           onDrop={handleLogoDrop}
-          className={`rounded-[14px] border bg-[var(--surface-grouped)] p-4 transition-all ${
+          className={`rounded-apple-widget border bg-[var(--surface-grouped)] p-4 transition-all ${
             isDraggingLogo
               ? 'border-[var(--accent)] bg-[var(--accent-soft)] ring-2 ring-[var(--accent-ring)]'
               : 'border-[var(--hairline)]'
@@ -337,17 +337,17 @@ export function BrandingCard({ isAdmin = false }: { isAdmin?: boolean }) {
             ตัวอย่างในเมนูด้านข้าง
           </span>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="inline-flex items-center gap-3 rounded-[18px] bg-[var(--glass-95)] p-3 border border-[var(--hairline)] max-w-sm">
+            <div className="inline-flex items-center gap-3 rounded-apple-lg bg-[var(--glass-95)] p-3 border border-[var(--hairline)] max-w-sm">
               <div className="relative shrink-0">
                 <Image
                   src={brandLogoUrl || '/art-workspace-mark.svg'}
                   alt={brandLogoUrl ? 'โลโก้ที่ตั้งไว้' : 'โลโก้เริ่มต้นของระบบ'}
                   width={36}
                   height={36}
-                  className="h-9 w-9 rounded-[14px] object-contain"
+                  className="h-9 w-9 rounded-apple-widget object-contain"
                 />
                 {isUploadingBrandLogo && (
-                  <div className="absolute inset-0 flex items-center justify-center rounded-[14px] bg-black/40">
+                  <div className="absolute inset-0 flex items-center justify-center rounded-apple-widget bg-black/40">
                     <Loader2 size={14} className="animate-spin text-white" />
                   </div>
                 )}

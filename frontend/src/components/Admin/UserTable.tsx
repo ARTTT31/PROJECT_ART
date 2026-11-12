@@ -57,7 +57,7 @@ export default function UserTable({
   onDelete: (user: AdminUser) => void;
 }) {
   return (
-    <div className="overflow-hidden rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] min-h-[420px]">
+    <div className="overflow-hidden rounded-apple-lg border border-[var(--hairline)] bg-[var(--surface)] min-h-[420px]">
       <div
         className={`h-0.5 w-full bg-[var(--accent)] transition-all duration-300 ${isFetching ? 'opacity-100 animate-pulse' : 'opacity-0'}`}
       />

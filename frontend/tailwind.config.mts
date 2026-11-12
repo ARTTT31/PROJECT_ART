@@ -107,6 +107,10 @@ const config: Config = {
         'apple-xs': '5px',
         'apple-sm': '8px',
         'apple-md': '11px',
+        // Dashboard widget tiles: smaller than a dialog (18px) but already a
+        // card, so 11px read as an input. This was used as `rounded-[14px]` in
+        // ~170 places before it became a token.
+        'apple-widget': '14px',
         'apple-lg': '18px',
       },
       boxShadow: {

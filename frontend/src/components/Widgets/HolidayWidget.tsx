@@ -101,13 +101,13 @@ export default function HolidayWidget({
 
   return (
     <section
-      className="flex h-full flex-col rounded-[18px] bg-[var(--surface)] p-4 border border-[var(--hairline)] transition-all duration-200"
+      className="flex h-full flex-col rounded-apple-lg bg-[var(--surface)] p-4 border border-[var(--hairline)] transition-all duration-200"
       aria-labelledby="holiday-widget-title"
     >
       {/* ── Header ──────────────────────────────────────────────────── */}
       <div className="flex items-start justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2.5">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[11px] bg-[var(--accent-soft)] text-[var(--accent-text)]">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-apple-md bg-[var(--accent-soft)] text-[var(--accent-text)]">
             <Palmtree size={18} aria-hidden="true" />
           </div>
           <div className="min-w-0">
@@ -138,7 +138,7 @@ export default function HolidayWidget({
       </div>
 
       {!hasCalendar && (
-        <div className="mt-3 rounded-[14px] border border-dashed border-[var(--accent-border)] bg-[var(--accent-soft-weak)] p-3 text-center">
+        <div className="mt-3 rounded-apple-widget border border-dashed border-[var(--accent-border)] bg-[var(--accent-soft-weak)] p-3 text-center">
           <CalendarHeart className="mx-auto text-[var(--accent-text)]" size={20} aria-hidden="true" />
           <p className="mt-1.5 text-[13px] font-bold text-[var(--ink)]">
             ยังไม่มีปฏิทินวันหยุดปี {formatYear(calendarYear, preferences)}
@@ -151,7 +151,7 @@ export default function HolidayWidget({
 
       {/* ── Next holiday (one compact row) ──────────────────────────── */}
       {nextHoliday && (
-        <div className="mt-3 flex items-center gap-3 rounded-[14px] border border-[var(--accent-border)] bg-[var(--accent-soft)] px-3 py-2.5">
+        <div className="mt-3 flex items-center gap-3 rounded-apple-widget border border-[var(--accent-border)] bg-[var(--accent-soft)] px-3 py-2.5">
           <CalendarDays
             size={16}
             className="shrink-0 text-[var(--accent-text)]"
@@ -225,7 +225,7 @@ export default function HolidayWidget({
           return (
             <div
               key={item.id}
-              className={`flex items-center justify-between gap-2 rounded-[11px] px-2 py-1.5 transition-colors ${
+              className={`flex items-center justify-between gap-2 rounded-apple-md px-2 py-1.5 transition-colors ${
                 isNext
                   ? 'bg-[var(--accent-soft-weak)]'
                   : item.isPast
@@ -235,7 +235,7 @@ export default function HolidayWidget({
             >
               <div className="flex min-w-0 items-center gap-2.5">
                 <div
-                  className={`flex h-8 w-8 shrink-0 flex-col items-center justify-center rounded-[11px] leading-none ${
+                  className={`flex h-8 w-8 shrink-0 flex-col items-center justify-center rounded-apple-md leading-none ${
                     isNext
                       ? 'bg-[var(--accent)] text-white'
                       : 'bg-[var(--surface-grouped-2)] text-[var(--ink)]'

@@ -27,7 +27,7 @@ export default function ProfileHero({
   headingRef: RefObject<HTMLHeadingElement | null>;
 }) {
   return (
-    <section className="overflow-hidden rounded-[18px] bg-[var(--surface)] border border-[var(--hairline)] p-5 sm:p-7 transition-colors">
+    <section className="overflow-hidden rounded-apple-lg bg-[var(--surface)] border border-[var(--hairline)] p-5 sm:p-7 transition-colors">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5">
         {/* Left: Avatar + Identity */}
         <div className="flex items-center gap-4 sm:gap-5">
@@ -42,7 +42,7 @@ export default function ProfileHero({
             />
 
             {avatar ? (
-              <div className="relative h-16 w-16 sm:h-20 sm:w-20 overflow-hidden rounded-[18px] ring-4 ring-[var(--hairline-soft)]">
+              <div className="relative h-16 w-16 sm:h-20 sm:w-20 overflow-hidden rounded-apple-lg ring-4 ring-[var(--hairline-soft)]">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={avatar} alt={name || 'โปรไฟล์'} className="h-full w-full object-cover" />
                 {isUploadingAvatar && (
@@ -52,7 +52,7 @@ export default function ProfileHero({
                 )}
               </div>
             ) : (
-              <div className="relative flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-[18px] bg-[var(--accent)] text-2xl sm:text-3xl font-extrabold text-white ring-4 ring-[var(--hairline-soft)]">
+              <div className="relative flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-apple-lg bg-[var(--accent)] text-2xl sm:text-3xl font-extrabold text-white ring-4 ring-[var(--hairline-soft)]">
                 {isUploadingAvatar ? (
                   <Loader2 size={24} className="animate-spin text-white" />
                 ) : (

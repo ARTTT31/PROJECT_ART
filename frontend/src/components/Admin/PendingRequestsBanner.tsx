@@ -14,9 +14,9 @@ export default function PendingRequestsBanner({
   onFilterPending: () => void;
 }) {
   return (
-    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 rounded-[18px] bg-amber-500/[0.08] border border-amber-500/25 text-[var(--ink)]">
+    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 rounded-apple-lg bg-amber-500/[0.08] border border-amber-500/25 text-[var(--ink)]">
       <div className="flex items-start gap-3">
-        <span className="p-2 rounded-[14px] bg-amber-500/15 text-amber-700 shrink-0 mt-0.5 sm:mt-0">
+        <span className="p-2 rounded-apple-widget bg-amber-500/15 text-amber-700 shrink-0 mt-0.5 sm:mt-0">
           <Clock size={18} />
         </span>
         <div>

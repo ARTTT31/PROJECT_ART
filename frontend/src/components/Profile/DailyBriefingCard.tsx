@@ -164,7 +164,7 @@ export function DailyBriefingCard() {
     >
       <div className="space-y-4">
         {/* Main Master Switch */}
-        <div className="flex items-center justify-between gap-3 rounded-[18px] bg-[var(--surface)] p-3.5 ring-1 ring-[var(--hairline)] shadow-2xs">
+        <div className="flex items-center justify-between gap-3 rounded-apple-lg bg-[var(--surface)] p-3.5 ring-1 ring-[var(--hairline)] shadow-2xs">
           <div className="min-w-0 flex-1">
             <p className="text-[13px] font-bold tracking-tight text-[var(--ink)]">
               เปิดใช้งานการส่งสรุปเช้าอัตโนมัติ
@@ -196,7 +196,7 @@ export function DailyBriefingCard() {
         </div>
 
         {/* Delivery Channels Status Indicator */}
-        <div className="flex flex-wrap items-center justify-between gap-2 rounded-[14px] bg-[var(--surface-grouped)] px-3.5 py-2.5 text-[11px] ring-1 ring-[var(--hairline)]">
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-apple-widget bg-[var(--surface-grouped)] px-3.5 py-2.5 text-[11px] ring-1 ring-[var(--hairline)]">
           <div className="flex items-center gap-1.5 font-bold text-[var(--ink-secondary)]">
             <span>ช่องทางจัดส่งการแจ้งเตือน:</span>
           </div>
@@ -223,7 +223,7 @@ export function DailyBriefingCard() {
         </div>
 
         {/* Delivery Time Selection */}
-        <div className="rounded-[18px] bg-[var(--surface)] p-4 ring-1 ring-[var(--hairline)] space-y-2">
+        <div className="rounded-apple-lg bg-[var(--surface)] p-4 ring-1 ring-[var(--hairline)] space-y-2">
           <label htmlFor="delivery-time-select" className="block text-[12px] font-bold text-[var(--ink-secondary)]">
             เวลาจัดส่งการแจ้งเตือน
           </label>
@@ -252,7 +252,7 @@ export function DailyBriefingCard() {
         </div>
 
         {/* Topic Checkboxes */}
-        <div className="rounded-[18px] bg-[var(--surface)] p-4 ring-1 ring-[var(--hairline)] space-y-2.5">
+        <div className="rounded-apple-lg bg-[var(--surface)] p-4 ring-1 ring-[var(--hairline)] space-y-2.5">
           <span className="block text-[12px] font-bold text-[var(--ink-secondary)]">
             เลือกหัวข้อเนื้อหาที่ต้องการสรุป
           </span>
@@ -261,7 +261,7 @@ export function DailyBriefingCard() {
             <button
               type="button"
               onClick={() => toggleTopic('oil_prices')}
-              className={`flex items-center gap-2.5 rounded-[12px] p-2.5 text-left border transition-all active:scale-[0.98] ${
+              className={`flex items-center gap-2.5 rounded-apple-md p-2.5 text-left border transition-all active:scale-[0.98] ${
                 topics.oil_prices
                   ? 'border-[var(--accent)] bg-[var(--accent-tint)]/40 text-[var(--ink)]'
                   : 'border-[var(--hairline)] bg-[var(--surface-grouped)] text-[var(--ink-muted)]'
@@ -278,7 +278,7 @@ export function DailyBriefingCard() {
             <button
               type="button"
               onClick={() => toggleTopic('weather')}
-              className={`flex items-center gap-2.5 rounded-[12px] p-2.5 text-left border transition-all active:scale-[0.98] ${
+              className={`flex items-center gap-2.5 rounded-apple-md p-2.5 text-left border transition-all active:scale-[0.98] ${
                 topics.weather
                   ? 'border-[var(--accent)] bg-[var(--accent-tint)]/40 text-[var(--ink)]'
                   : 'border-[var(--hairline)] bg-[var(--surface-grouped)] text-[var(--ink-muted)]'
@@ -295,7 +295,7 @@ export function DailyBriefingCard() {
             <button
               type="button"
               onClick={() => toggleTopic('market')}
-              className={`flex items-center gap-2.5 rounded-[12px] p-2.5 text-left border transition-all active:scale-[0.98] ${
+              className={`flex items-center gap-2.5 rounded-apple-md p-2.5 text-left border transition-all active:scale-[0.98] ${
                 topics.market
                   ? 'border-[var(--accent)] bg-[var(--accent-tint)]/40 text-[var(--ink)]'
                   : 'border-[var(--hairline)] bg-[var(--surface-grouped)] text-[var(--ink-muted)]'
@@ -312,7 +312,7 @@ export function DailyBriefingCard() {
             <button
               type="button"
               onClick={() => toggleTopic('tasks')}
-              className={`flex items-center gap-2.5 rounded-[12px] p-2.5 text-left border transition-all active:scale-[0.98] ${
+              className={`flex items-center gap-2.5 rounded-apple-md p-2.5 text-left border transition-all active:scale-[0.98] ${
                 topics.tasks
                   ? 'border-[var(--accent)] bg-[var(--accent-tint)]/40 text-[var(--ink)]'
                   : 'border-[var(--hairline)] bg-[var(--surface-grouped)] text-[var(--ink-muted)]'
@@ -329,7 +329,7 @@ export function DailyBriefingCard() {
             <button
               type="button"
               onClick={() => toggleTopic('holidays')}
-              className={`flex items-center gap-2.5 rounded-[12px] p-2.5 text-left border transition-all active:scale-[0.98] ${
+              className={`flex items-center gap-2.5 rounded-apple-md p-2.5 text-left border transition-all active:scale-[0.98] ${
                 topics.holidays
                   ? 'border-[var(--accent)] bg-[var(--accent-tint)]/40 text-[var(--ink)]'
                   : 'border-[var(--hairline)] bg-[var(--surface-grouped)] text-[var(--ink-muted)]'

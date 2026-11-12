@@ -158,7 +158,7 @@ export default function PasswordCard({ user }: { user: AuthUser | null }) {
 
         {/* Strength Meter */}
         {newPassword && (
-          <div className="-mt-1 rounded-[18px] bg-[var(--surface-subtle)] p-3.5 ring-1 ring-[var(--hairline)]">
+          <div className="-mt-1 rounded-apple-lg bg-[var(--surface-subtle)] p-3.5 ring-1 ring-[var(--hairline)]">
             <div className="flex items-center justify-between text-[12px] mb-1.5">
               <span className="text-[var(--ink-muted)]">ระดับความปลอดภัย</span>
               <span className={`font-bold ${strengthMeta.text}`}>{strengthMeta.label}</span>
@@ -228,7 +228,7 @@ export default function PasswordCard({ user }: { user: AuthUser | null }) {
 
         {confirmPassword && (
           <div
-            className={`-mt-1 flex items-center gap-1.5 rounded-[18px] px-3 py-2 text-[12px] font-semibold ring-1 ${
+            className={`-mt-1 flex items-center gap-1.5 rounded-apple-lg px-3 py-2 text-[12px] font-semibold ring-1 ${
               newPassword === confirmPassword
                 ? 'bg-emerald-50 text-emerald-700 ring-emerald-200'
                 : 'bg-rose-50 text-rose-700 ring-rose-200'

@@ -99,10 +99,10 @@ export default function AdminPage() {
   return (
     <div className="space-y-4">
       {/* ── Overview ─────────────────────────────────────────────── */}
-      <section className="overflow-hidden rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)]">
+      <section className="overflow-hidden rounded-apple-lg border border-[var(--hairline)] bg-[var(--surface)]">
         <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[var(--hairline-soft)] bg-[var(--surface-subtle)] px-5 py-4 sm:px-6">
           <div className="flex min-w-0 items-start gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] bg-[var(--info-soft)] text-[var(--info-ink)] ring-1 ring-[var(--info-soft)]">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-apple-widget bg-[var(--info-soft)] text-[var(--info-ink)] ring-1 ring-[var(--info-soft)]">
               <ShieldCheck size={20} aria-hidden="true" />
             </div>
             <div className="min-w-0">
@@ -122,7 +122,7 @@ export default function AdminPage() {
         <div className="grid grid-cols-1 gap-3 p-5 sm:grid-cols-2 sm:p-6">
           <Link
             href="/audit"
-            className="group flex items-center justify-between gap-3 rounded-[14px] border border-[var(--hairline)] bg-[var(--surface)] px-4 py-3.5 transition-colors duration-150 hover:border-[var(--accent-border)]"
+            className="group flex items-center justify-between gap-3 rounded-apple-widget border border-[var(--hairline)] bg-[var(--surface)] px-4 py-3.5 transition-colors duration-150 hover:border-[var(--accent-border)]"
           >
             <div className="min-w-0">
               <p className="flex items-center gap-1.5 text-[12px] font-semibold text-[var(--ink-muted)]">
@@ -143,7 +143,7 @@ export default function AdminPage() {
 
           <Link
             href="#approval-queue"
-            className="group flex items-center justify-between gap-3 rounded-[14px] border border-[var(--hairline)] bg-[var(--surface)] px-4 py-3.5 transition-colors duration-150 hover:border-[var(--accent-border)]"
+            className="group flex items-center justify-between gap-3 rounded-apple-widget border border-[var(--hairline)] bg-[var(--surface)] px-4 py-3.5 transition-colors duration-150 hover:border-[var(--accent-border)]"
           >
             <div className="min-w-0">
               <p className="flex items-center gap-1.5 text-[12px] font-semibold text-[var(--ink-muted)]">

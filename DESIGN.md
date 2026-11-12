@@ -36,7 +36,8 @@ Rules: sentence case only; `text-wrap: balance` for headings; max 75ch line leng
 - Elevation comes from surface color and hairline borders — not from shadows on cards, buttons, or text. Cards, widgets and settings panels carry no shadow at all, and nothing lifts or gains a shadow on hover.
 - Shadows are allowed only where a surface floats above the page and needs to be separated from it: the Dialog, dropdown menus, popovers and toasts. Chips, tabs and switches use a 1px shadow at most, as their own control affordance.
 - Exactly one drop-shadow exists for product imagery: `3px 5px 30px 0 rgba(0, 0, 0, 0.22)` (`shadow-apple-product`).
-- Radius scale: `none` 0 / `apple-xs` 5px / `apple-sm` 8px / `apple-md` 11px / `apple-lg` 18px / `rounded-full` pill.
+- Radius scale: `none` 0 / `apple-xs` 5px / `apple-sm` 8px / `apple-md` 11px / `apple-widget` 14px / `apple-lg` 18px / `rounded-full` pill. Use the Tailwind classes (`rounded-apple-widget`), never a raw `rounded-[14px]`: the scale is the only place a radius is decided.
+- Buttons default to a pill through `@layer base`, so a card-shaped button just writes its own radius class (`rounded-apple-md`) instead of forcing `!`.
 - Active/press state is `scale(0.95)` on buttons — no hover lift.
 
 ## Buttons

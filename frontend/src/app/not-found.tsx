@@ -3,8 +3,10 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { Home, LogIn, SearchX, ArrowLeft } from 'lucide-react';
+import { useI18n } from '@/lib/i18n/I18nProvider';
 
 export default function NotFound() {
+  const { tr } = useI18n();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -14,7 +16,7 @@ export default function NotFound() {
   return (
     <main className="min-h-[100dvh] text-slate-950" style={{ background: 'var(--art-page-bg)' }}>
       <a href="#main-content" className="skip-link">
-        ข้ามไปยังเนื้อหาหลัก
+        {tr('ข้ามไปยังเนื้อหาหลัก', 'Skip to main content')}
       </a>
 
       <div id="main-content" className="flex min-h-[100dvh] items-center justify-center px-4 py-10">
@@ -28,7 +30,7 @@ export default function NotFound() {
           {/* Left: Visual Panel */}
           <div className="relative min-h-[320px] overflow-hidden bg-[var(--accent-hover)] p-8 text-white sm:p-10">
             <div className="relative flex h-full min-h-[260px] flex-col justify-between">
-              <div className="inline-flex h-16 w-16 items-center justify-center rounded-[11px] border border-white/24 bg-[var(--glass-20)]">
+              <div className="inline-flex h-16 w-16 items-center justify-center rounded-apple-md border border-white/24 bg-[var(--glass-20)]">
                 <SearchX size={32} aria-hidden="true" />
               </div>
               <div>
@@ -39,7 +41,7 @@ export default function NotFound() {
                   404
                 </p>
                 <p className="mt-4 max-w-sm text-xl font-semibold leading-8 text-white/86">
-                  ไม่พบหน้าที่คุณต้องการ
+                  {tr('ไม่พบหน้าที่คุณต้องการ', 'We could not find that page')}
                 </p>
               </div>
             </div>
@@ -49,26 +51,29 @@ export default function NotFound() {
           <div className="flex flex-col justify-center p-8 sm:p-12">
             <p className="text-sm font-bold text-sky-700">ART Workspace</p>
             <h1 className="mt-4 text-3xl font-bold leading-tight tracking-normal text-slate-950">
-              ลิงก์นี้อาจถูกย้าย หรือลบออกแล้ว
+              {tr('ลิงก์นี้อาจถูกย้าย หรือลบออกแล้ว', 'This link may have moved or been deleted')}
             </h1>
             <p className="mt-4 max-w-xl text-base leading-7 text-slate-600">
-              กลับไปยังหน้าหลักของระบบ หรือเข้าสู่ระบบอีกครั้งเพื่อไปยังแดชบอร์ดของคุณ
+              {tr(
+                'กลับไปยังหน้าหลักของระบบ หรือเข้าสู่ระบบอีกครั้งเพื่อไปยังแดชบอร์ดของคุณ',
+                'Go back to the home page, or sign in again to reach your dashboard.',
+              )}
             </p>
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Link
                 href="/dashboard"
-                className="art-primary-button inline-flex items-center justify-center gap-2 !rounded-[18px]"
+                className="art-primary-button inline-flex items-center justify-center gap-2 !rounded-apple-lg"
               >
                 <Home size={18} aria-hidden="true" />
-                กลับหน้า Dashboard
+                {tr('กลับหน้า Dashboard', 'Back to dashboard')}
               </Link>
               <Link
                 href="/login"
-                className="art-soft-button inline-flex items-center justify-center gap-2 !rounded-[18px]"
+                className="art-soft-button inline-flex items-center justify-center gap-2 !rounded-apple-lg"
               >
                 <LogIn size={18} aria-hidden="true" />
-                ไปหน้า Login
+                {tr('ไปหน้า Login', 'Go to login')}
               </Link>
             </div>
 
@@ -77,7 +82,7 @@ export default function NotFound() {
               className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-slate-500 transition-colors hover:text-slate-700"
             >
               <ArrowLeft size={16} aria-hidden="true" />
-              กลับหน้าที่แล้ว
+              {tr('กลับหน้าที่แล้ว', 'Go back')}
             </button>
           </div>
         </section>

@@ -17,7 +17,7 @@ export default function UserCreatePanel({
   onCancel: () => void;
 }) {
   return (
-    <div className="overflow-hidden rounded-[18px] bg-[var(--surface)] ring-1 ring-[var(--hairline)]">
+    <div className="overflow-hidden rounded-apple-lg bg-[var(--surface)] ring-1 ring-[var(--hairline)]">
       <div className="flex items-center justify-between border-b border-[var(--hairline-soft)] bg-[var(--surface-subtle)] px-6 py-5">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--accent-soft)] text-[var(--accent-text)]">
@@ -56,7 +56,7 @@ export default function UserCreatePanel({
               onChange={(e) => onFormChange({ username: e.target.value })}
               placeholder="อย่างน้อย 3 ตัวอักษร"
               autoComplete="off"
-              className="w-full rounded-[18px] border-0 bg-[var(--surface-subtle)] px-4 py-3 text-[14px] font-medium text-[var(--ink)] outline-hidden ring-1 ring-[var(--hairline)] transition-all placeholder:text-[var(--ink-tertiary)] focus:bg-[var(--surface)] focus:ring-2 focus:ring-[var(--accent)]"
+              className="w-full rounded-apple-lg border-0 bg-[var(--surface-subtle)] px-4 py-3 text-[14px] font-medium text-[var(--ink)] outline-hidden ring-1 ring-[var(--hairline)] transition-all placeholder:text-[var(--ink-tertiary)] focus:bg-[var(--surface)] focus:ring-2 focus:ring-[var(--accent)]"
             />
           </div>
           <div>
@@ -71,7 +71,7 @@ export default function UserCreatePanel({
               value={form.display_name}
               onChange={(e) => onFormChange({ display_name: e.target.value })}
               placeholder="ชื่อ-นามสกุล"
-              className="w-full rounded-[18px] border-0 bg-[var(--surface-subtle)] px-4 py-3 text-[14px] font-medium text-[var(--ink)] outline-hidden ring-1 ring-[var(--hairline)] transition-all placeholder:text-[var(--ink-tertiary)] focus:bg-[var(--surface)] focus:ring-2 focus:ring-[var(--accent)]"
+              className="w-full rounded-apple-lg border-0 bg-[var(--surface-subtle)] px-4 py-3 text-[14px] font-medium text-[var(--ink)] outline-hidden ring-1 ring-[var(--hairline)] transition-all placeholder:text-[var(--ink-tertiary)] focus:bg-[var(--surface)] focus:ring-2 focus:ring-[var(--accent)]"
             />
           </div>
           <div>
@@ -88,7 +88,7 @@ export default function UserCreatePanel({
               onChange={(e) => onFormChange({ email: e.target.value })}
               placeholder="name@example.com"
               autoComplete="off"
-              className="w-full rounded-[18px] border-0 bg-[var(--surface-subtle)] px-4 py-3 text-[14px] font-medium text-[var(--ink)] outline-hidden ring-1 ring-[var(--hairline)] transition-all placeholder:text-[var(--ink-tertiary)] focus:bg-[var(--surface)] focus:ring-2 focus:ring-[var(--accent)]"
+              className="w-full rounded-apple-lg border-0 bg-[var(--surface-subtle)] px-4 py-3 text-[14px] font-medium text-[var(--ink)] outline-hidden ring-1 ring-[var(--hairline)] transition-all placeholder:text-[var(--ink-tertiary)] focus:bg-[var(--surface)] focus:ring-2 focus:ring-[var(--accent)]"
             />
           </div>
           <div>
@@ -105,7 +105,7 @@ export default function UserCreatePanel({
               onChange={(e) => onFormChange({ password: e.target.value })}
               placeholder="อย่างน้อย 8 ตัวอักษร"
               autoComplete="new-password"
-              className="w-full rounded-[18px] border-0 bg-[var(--surface-subtle)] px-4 py-3 text-[14px] font-medium text-[var(--ink)] outline-hidden ring-1 ring-[var(--hairline)] transition-all placeholder:text-[var(--ink-tertiary)] focus:bg-[var(--surface)] focus:ring-2 focus:ring-[var(--accent)]"
+              className="w-full rounded-apple-lg border-0 bg-[var(--surface-subtle)] px-4 py-3 text-[14px] font-medium text-[var(--ink)] outline-hidden ring-1 ring-[var(--hairline)] transition-all placeholder:text-[var(--ink-tertiary)] focus:bg-[var(--surface)] focus:ring-2 focus:ring-[var(--accent)]"
             />
           </div>
         </div>
@@ -121,7 +121,7 @@ export default function UserCreatePanel({
                 type="button"
                 onClick={() => onFormChange({ role })}
                 aria-pressed={form.role === role}
-                className={`group relative flex items-center gap-3 rounded-[18px] p-4 text-left transition-all duration-200 ${
+                className={`group relative flex items-center gap-3 rounded-apple-lg p-4 text-left transition-all duration-200 ${
                   form.role === role
                     ? 'bg-[var(--surface)] ring-2 ring-[var(--accent)]'
                     : 'bg-[var(--surface-subtle)] ring-1 ring-[var(--hairline)] hover:bg-[var(--surface)]'
@@ -160,7 +160,7 @@ export default function UserCreatePanel({
           </div>
         </div>
 
-        <p className="rounded-[18px] bg-[var(--surface-subtle)] px-4 py-3 text-[12px] leading-relaxed text-[var(--ink-muted)]">
+        <p className="rounded-apple-lg bg-[var(--surface-subtle)] px-4 py-3 text-[12px] leading-relaxed text-[var(--ink-muted)]">
           ผู้ใช้ใหม่จะได้สิทธิ์หน้าตามค่าเริ่มต้นของระบบ —
           การเปิด/ปิดหน้าทั้ง workspace ตั้งค่าได้ที่การ์ด “เปิด/ปิดหน้าใช้งาน”
         </p>

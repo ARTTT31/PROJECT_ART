@@ -94,7 +94,7 @@ export function RegistrationPolicyCard() {
                 }}
                 // `!` because globals.css forces every button into a pill; these
                 // are selectable surfaces and must keep the control radius.
-                className={`flex h-full flex-col items-center rounded-[11px]! border p-3.5 text-center transition-colors duration-150 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent-ring)] focus-visible:ring-offset-2 ${
+                className={`flex h-full flex-col items-center rounded-apple-md border p-3.5 text-center transition-colors duration-150 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent-ring)] focus-visible:ring-offset-2 ${
                   selected
                     ? 'border-[var(--accent-border)] bg-[var(--accent-soft-weak)]'
                     : 'border-[var(--hairline)] bg-[var(--surface)] hover:border-[var(--hairline-strong)] hover:bg-[var(--surface-grouped)]'
@@ -141,7 +141,7 @@ export function RegistrationPolicyCard() {
             type="button"
             onClick={handleSave}
             disabled={isSaving || mode === (registrationMode || 'approval')}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-[11px] bg-[var(--accent)] px-5 py-2.5 text-[13px] font-semibold text-white transition-colors duration-150 hover:bg-[var(--accent-hover)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 active:scale-[0.95] disabled:opacity-40 sm:w-auto"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-apple-md bg-[var(--accent)] px-5 py-2.5 text-[13px] font-semibold text-white transition-colors duration-150 hover:bg-[var(--accent-hover)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 active:scale-[0.95] disabled:opacity-40 sm:w-auto"
           >
             {isSaving ? (
               <Loader2 size={15} className="animate-spin" aria-hidden="true" />

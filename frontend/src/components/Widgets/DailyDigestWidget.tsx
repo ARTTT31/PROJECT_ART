@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState, useTransition } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import {
   Sparkles,
   Sun,
@@ -25,6 +25,8 @@ import { useBranding } from '@/context/BrandingContext';
 import { useTheme } from '@/context/ThemeContext';
 import { readCached, writeCached } from '@/lib/offline/localStore';
 import { pendingQuickNotes, QUICK_NOTES_UPDATED_EVENT } from '@/lib/quickNotes';
+import { useI18n } from '@/lib/i18n/I18nProvider';
+import { translateText } from '@/lib/i18n/translate';
 
 interface DigestData {
   weather: {
@@ -47,21 +49,39 @@ interface DigestData {
   pendingTasks: number;
 }
 
-const INITIAL_DIGEST: DigestData = {
-  weather: { temp: null, condition: 'กำลังโหลด…', pm25: null },
-  oil: { diesel: null, gasohol95: null, status: 'ปกติ' },
-  market: { setIndex: null, setChange: null, usdRate: null },
-  pendingTasks: 0,
-};
+// Seeded copy is resolved when the card first paints, not at module load, so the
+// placeholder follows the chosen interface language.
+function initialDigest(): DigestData {
+  return {
+    weather: {
+      temp: null,
+      condition: translateText('กำลังโหลด…', 'Loading…'),
+      pm25: null,
+    },
+    oil: {
+      diesel: null,
+      gasohol95: null,
+      status: translateText('ปกติ', 'Normal'),
+    },
+    market: { setIndex: null, setChange: null, usdRate: null },
+    pendingTasks: 0,
+  };
+}
 
 // Shown only when nothing has ever loaded and the provider is unreachable;
 // a card with numbers beats an empty one, and the next refresh replaces them.
-const FALLBACK_DIGEST: DigestData = {
-  weather: { temp: 31, condition: 'ท้องฟ้าแจ่มใส', pm25: 18 },
-  oil: { diesel: 32.94, gasohol95: 38.55, status: 'ราคาคงที่' },
-  market: { setIndex: 1425.5, setChange: 4.2, usdRate: 35.8 },
-  pendingTasks: 0,
-};
+function fallbackDigest(): DigestData {
+  return {
+    weather: { temp: 31, condition: translateText('ท้องฟ้าแจ่มใส', 'Clear sky'), pm25: 18 },
+    oil: {
+      diesel: 32.94,
+      gasohol95: 38.55,
+      status: translateText('ราคาคงที่', 'Price unchanged'),
+    },
+    market: { setIndex: 1425.5, setChange: 4.2, usdRate: 35.8 },
+    pendingTasks: 0,
+  };
+}
 
 // Last payload this account saw, scoped per account by localStore. The card
 // used to open on "กำลังประมวลผล…" and only paint once three serial requests
@@ -69,13 +89,13 @@ const FALLBACK_DIGEST: DigestData = {
 const DIGEST_CACHE_KEY = 'dashboard/digest';
 
 /** Fuel types offered by the oil tile, in the provider's display order. */
-const FUEL_OPTIONS = [
-  { value: 'diesel', label: 'ดีเซล' },
-  { value: 'gasohol_95', label: 'แก๊ส 95' },
-  { value: 'gasohol_91', label: 'แก๊ส 91' },
-  { value: 'gasohol_e20', label: 'E20' },
-  { value: 'gasohol_e85', label: 'E85' },
-  { value: 'benzene_95', label: 'เบนซิน 95' },
+const FUEL_OPTIONS: { value: string; th: string; en: string }[] = [
+  { value: 'diesel', th: 'ดีเซล', en: 'Diesel' },
+  { value: 'gasohol_95', th: 'แก๊ส 95', en: 'Gasohol 95' },
+  { value: 'gasohol_91', th: 'แก๊ส 91', en: 'Gasohol 91' },
+  { value: 'gasohol_e20', th: 'E20', en: 'E20' },
+  { value: 'gasohol_e85', th: 'E85', en: 'E85' },
+  { value: 'benzene_95', th: 'เบนซิน 95', en: 'Benzene 95' },
 ];
 
 // Which fuel the tile shows is a display preference, so it lives per device
@@ -112,7 +132,7 @@ async function loadWeather(): Promise<DigestData['weather'] | null> {
     if (cur.temperature == null && cur.temperature_2m == null) return null;
     return {
       temp: Math.round(cur.temperature ?? cur.temperature_2m ?? 31),
-      condition: 'อากาศทั่วไปแจ่มใส',
+      condition: translateText('อากาศทั่วไปแจ่มใส', 'Generally clear skies'),
       pm25: json.air_quality?.pm2_5 ? Math.round(json.air_quality.pm2_5) : 18,
     };
   } catch {
@@ -144,7 +164,9 @@ async function loadOil(): Promise<DigestData['oil'] | null> {
     return {
       diesel: prices.diesel ?? null,
       gasohol95: prices.gasohol_95 ?? null,
-      status: json.is_stale ? 'ข้อมูลอาจไม่เป็นปัจจุบัน' : 'ราคาล่าสุด',
+      status: json.is_stale
+        ? translateText('ข้อมูลอาจไม่เป็นปัจจุบัน', 'Data may be out of date')
+        : translateText('ราคาล่าสุด', 'Latest price'),
       prices,
     };
   } catch {
@@ -168,6 +190,16 @@ async function loadMarket(): Promise<DigestData['market'] | null> {
   }
 }
 
+/** `getGreeting()` answers in Thai only, so the widget supplies the English copy. */
+const GREETING_EN: Record<string, string> = {
+  'สวัสดีตอนเช้า': 'Good morning',
+  'สวัสดีตอนเที่ยง': 'Good afternoon',
+  'สวัสดีตอนบ่าย': 'Good afternoon',
+  'สวัสดีตอนเย็น': 'Good evening',
+  'สวัสดีตอนค่ำ': 'Good evening',
+  'ราตรีสวัสดิ์': 'Good night',
+};
+
 export default function DailyDigestWidget({
   width = 2,
   onResize,
@@ -175,12 +207,19 @@ export default function DailyDigestWidget({
   width?: number;
   onResize?: (size: number) => void;
 }) {
+  const { tr } = useI18n();
   const preferences = usePreferences();
   const { companyName } = useBranding();
   const { resolvedMode } = useTheme();
+  // The picker takes one label string; the option table keeps both languages so
+  // the tile follows the active one instead of always showing Thai.
+  const fuelOptions = useMemo(
+    () => FUEL_OPTIONS.map((option) => ({ value: option.value, label: tr(option.th, option.en) })),
+    [tr],
+  );
   // Paint the last saved digest on the first render; nothing is gained by
   // hiding usable numbers behind the network round-trip.
-  const [data, setData] = useState<DigestData>(() => readDigestCache() ?? INITIAL_DIGEST);
+  const [data, setData] = useState<DigestData>(() => readDigestCache() ?? initialDigest());
   const [isLoading, setIsLoading] = useState(() => readDigestCache() === null);
   const [fuel, setFuel] = useState(readFuelChoice);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -212,10 +251,10 @@ export default function DailyDigestWidget({
     const next: DigestData = {
       // A provider that failed keeps the value already on screen; only a card
       // that never had data falls back to the bundled sample numbers.
-      weather: weather ?? (previous.weather.temp != null ? previous.weather : FALLBACK_DIGEST.weather),
-      oil: oil ?? (previous.oil.diesel != null ? previous.oil : FALLBACK_DIGEST.oil),
+      weather: weather ?? (previous.weather.temp != null ? previous.weather : fallbackDigest().weather),
+      oil: oil ?? (previous.oil.diesel != null ? previous.oil : fallbackDigest().oil),
       market:
-        market ?? (previous.market.setIndex != null ? previous.market : FALLBACK_DIGEST.market),
+        market ?? (previous.market.setIndex != null ? previous.market : fallbackDigest().market),
       pendingTasks: pendingCount,
     };
     dataRef.current = next;
@@ -265,14 +304,45 @@ export default function DailyDigestWidget({
   const fuelPrice =
     data.oil.prices?.[fuel] ??
     (fuel === 'diesel' ? data.oil.diesel : fuel === 'gasohol_95' ? data.oil.gasohol95 : null);
+  // `getGreeting()` answers in Thai; map its values for the English interface.
+  const greetingLabel = tr(greeting, GREETING_EN[greeting] ?? greeting);
 
   const generateDigestText = () => {
     const dateStr = formatLongDate(new Date(), preferences);
-    return `[ART Workspace สรุปประจำวัน: ${dateStr}]\n` +
-      `- สภาพอากาศ: ${data.weather.temp ?? 31}°C (${data.weather.condition}, PM2.5: ${data.weather.pm25 ?? 'ปกติ'})\n` +
-      `- ราคาน้ำมัน: ดีเซล ${data.oil.diesel ?? '-'} บาท / แก๊สโซฮอล์ 95 ${data.oil.gasohol95 ?? '-'} บาท (${data.oil.status})\n` +
-      `- ดัชนีตลาด: SET ${data.market.setIndex ?? '-'} (${(data.market.setChange ?? 0) >= 0 ? '+' : ''}${data.market.setChange ?? 0}), USD/THB: ${data.market.usdRate ?? '-'}\n` +
-      `- สิ่งที่ต้องทำ: มี ${pendingTasks} งานค้างใน To-Do List`;
+    const change = `${(data.market.setChange ?? 0) >= 0 ? '+' : ''}${data.market.setChange ?? 0}`;
+    return `${tr('[ART Workspace สรุปประจำวัน: {date}]', '[ART Workspace daily summary: {date}]', { date: dateStr })}\n` +
+      `${tr(
+        '- สภาพอากาศ: {temp}°C ({condition}, PM2.5: {pm25})',
+        '- Weather: {temp}°C ({condition}, PM2.5: {pm25})',
+        {
+          temp: data.weather.temp ?? 31,
+          condition: data.weather.condition,
+          pm25: data.weather.pm25 ?? tr('ปกติ', 'Normal'),
+        },
+      )}\n` +
+      `${tr(
+        '- ราคาน้ำมัน: ดีเซล {diesel} บาท / แก๊สโซฮอล์ 95 {gasohol95} บาท ({status})',
+        '- Fuel: Diesel {diesel} THB / Gasohol 95 {gasohol95} THB ({status})',
+        {
+          diesel: data.oil.diesel ?? '-',
+          gasohol95: data.oil.gasohol95 ?? '-',
+          status: data.oil.status,
+        },
+      )}\n` +
+      `${tr(
+        '- ดัชนีตลาด: SET {setIndex} ({change}), USD/THB: {usd}',
+        '- Market index: SET {setIndex} ({change}), USD/THB: {usd}',
+        {
+          setIndex: data.market.setIndex ?? '-',
+          change,
+          usd: data.market.usdRate ?? '-',
+        },
+      )}\n` +
+      `${tr(
+        '- สิ่งที่ต้องทำ: มี {count} งานค้างใน To-Do List',
+        '- To-dos: {count} still open in the to-do list',
+        { count: pendingTasks },
+      )}`;
   };
 
   const handleCopy = async () => {
@@ -280,10 +350,10 @@ export default function DailyDigestWidget({
       const text = generateDigestText();
       await navigator.clipboard.writeText(text);
       setCopied(true);
-      showToast('คัดลอกสรุปประจำวันแล้ว', 'success');
+      showToast(tr('คัดลอกสรุปประจำวันแล้ว', 'Daily summary copied'), 'success');
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      showToast('ไม่สามารถคัดลอกได้', 'error');
+      showToast(tr('ไม่สามารถคัดลอกได้', 'Could not copy'), 'error');
     }
   };
 
@@ -294,7 +364,7 @@ export default function DailyDigestWidget({
       await shareOrDownloadDailyCard({
         companyName: companyName || 'ART WORKSPACE',
         dateStr,
-        greeting: `${greeting} — ภาพรวมพร้อมสำหรับคุณ`,
+        greeting: `${greetingLabel} — ${tr('ภาพรวมพร้อมสำหรับคุณ', 'your overview is ready')}`,
         theme: resolvedMode === 'dark' ? 'dark' : 'light',
         weather: {
           temp: data.weather.temp,
@@ -313,9 +383,9 @@ export default function DailyDigestWidget({
         },
         pendingTasks,
       });
-      showToast('สร้างภาพการ์ดสรุปประจำวันสำเร็จ', 'success');
+      showToast(tr('สร้างภาพการ์ดสรุปประจำวันสำเร็จ', 'Daily summary card created'), 'success');
     } catch {
-      showToast('ไม่สามารถสร้างภาพการ์ดได้', 'error');
+      showToast(tr('ไม่สามารถสร้างภาพการ์ดได้', 'Could not create the card image'), 'error');
     } finally {
       setIsGeneratingCard(false);
     }
@@ -323,13 +393,13 @@ export default function DailyDigestWidget({
 
   return (
     <section
-      className="flex h-full flex-col rounded-[18px] bg-[var(--surface)] p-4 border border-[var(--hairline)] transition-all duration-200"
+      className="flex h-full flex-col rounded-apple-lg bg-[var(--surface)] p-4 border border-[var(--hairline)] transition-all duration-200"
       aria-labelledby="daily-digest-title"
     >
       {/* ── Header ──────────────────────────────────────────────────── */}
       <div className="flex items-start justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2.5">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[11px] bg-[var(--accent-soft)] text-[var(--accent-text)]">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-apple-md bg-[var(--accent-soft)] text-[var(--accent-text)]">
             <Sparkles size={18} aria-hidden="true" />
           </div>
           <div className="min-w-0">
@@ -338,7 +408,7 @@ export default function DailyDigestWidget({
                 id="daily-digest-title"
                 className="truncate text-[15px] font-bold tracking-tight text-[var(--ink)]"
               >
-                สรุปประจำวันอัจฉริยะ
+                {tr('สรุปประจำวันอัจฉริยะ', 'Smart daily summary')}
               </h2>
             </div>
             <p className="mt-0.5 truncate text-[11px] text-[var(--ink-tertiary)] flex items-center gap-1">
@@ -353,8 +423,8 @@ export default function DailyDigestWidget({
             type="button"
             onClick={handleShareCard}
             disabled={isGeneratingCard}
-            title="แชร์การ์ดสรุปประจำวัน (รูปภาพ)"
-            aria-label="แชร์การ์ดสรุปประจำวัน"
+            title={tr('แชร์การ์ดสรุปประจำวัน (รูปภาพ)', 'Share the daily summary card (image)')}
+            aria-label={tr('แชร์การ์ดสรุปประจำวัน', 'Share the daily summary card')}
             className="flex h-7 w-7 items-center justify-center rounded-full text-[var(--ink-tertiary)] transition-colors hover:bg-[var(--surface-grouped)] hover:text-[var(--accent)] active:scale-[0.95] disabled:opacity-50"
           >
             <Share2 size={14} className={isGeneratingCard ? 'animate-pulse text-[var(--accent)]' : ''} />
@@ -362,8 +432,8 @@ export default function DailyDigestWidget({
           <button
             type="button"
             onClick={handleCopy}
-            title="คัดลอกสรุปประจำวัน"
-            aria-label="คัดลอกสรุปประจำวัน"
+            title={tr('คัดลอกสรุปประจำวัน', 'Copy the daily summary')}
+            aria-label={tr('คัดลอกสรุปประจำวัน', 'Copy the daily summary')}
             className="flex h-7 w-7 items-center justify-center rounded-full text-[var(--ink-tertiary)] transition-colors hover:bg-[var(--surface-grouped)] hover:text-[var(--ink)] active:scale-[0.95]"
           >
             {copied ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
@@ -372,8 +442,8 @@ export default function DailyDigestWidget({
             type="button"
             onClick={handleRefresh}
             disabled={isRefreshing}
-            title="อัปเดตข้อมูล"
-            aria-label="อัปเดตข้อมูล"
+            title={tr('อัปเดตข้อมูล', 'Refresh data')}
+            aria-label={tr('อัปเดตข้อมูล', 'Refresh data')}
             className="flex h-7 w-7 items-center justify-center rounded-full text-[var(--ink-tertiary)] transition-colors hover:bg-[var(--surface-grouped)] hover:text-[var(--ink)] active:scale-[0.95] disabled:opacity-50"
           >
             <RefreshCw size={14} className={isRefreshing ? 'animate-spin' : ''} />
@@ -383,7 +453,7 @@ export default function DailyDigestWidget({
       </div>
 
       {/* ── Dynamic AI Narrative Briefing Banner ──────────────────────── */}
-      <div className="mt-3 rounded-[14px] border border-[var(--hairline)] bg-[var(--surface-subtle)] p-3.5">
+      <div className="mt-3 rounded-apple-widget border border-[var(--hairline)] bg-[var(--surface-subtle)] p-3.5">
         <div className="flex items-center gap-2">
           <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
           <p className="text-[12px] font-bold text-[var(--ink)]">
@@ -408,7 +478,7 @@ export default function DailyDigestWidget({
         }`}
       >
         {/* Metric 1: Weather */}
-        <div className="flex flex-col justify-between rounded-[14px] bg-[var(--surface-grouped)] p-2.5 ring-1 ring-[var(--hairline-soft)]">
+        <div className="flex flex-col justify-between rounded-apple-widget bg-[var(--surface-grouped)] p-2.5 ring-1 ring-[var(--hairline-soft)]">
           <div className="flex items-center justify-between text-[var(--ink-tertiary)]">
             <span className="text-[11px] font-bold">อากาศ</span>
             <Sun size={14} className="text-amber-500" />
@@ -424,12 +494,12 @@ export default function DailyDigestWidget({
         </div>
 
         {/* Metric 2: Oil Price */}
-        <div className="flex flex-col justify-between rounded-[14px] bg-[var(--surface-grouped)] p-2.5 ring-1 ring-[var(--hairline-soft)]">
+        <div className="flex flex-col justify-between rounded-apple-widget bg-[var(--surface-grouped)] p-2.5 ring-1 ring-[var(--hairline-soft)]">
           <div className="flex items-center justify-between gap-1 text-[var(--ink-tertiary)]">
             <Select
               value={fuel}
               onChange={changeFuel}
-              options={FUEL_OPTIONS}
+              options={fuelOptions}
               ariaLabel="เลือกชนิดน้ำมันที่แสดงบนสรุปประจำวัน"
               className="max-w-[96px]"
             />
@@ -444,7 +514,7 @@ export default function DailyDigestWidget({
         </div>
 
         {/* Metric 3: Market */}
-        <div className="flex flex-col justify-between rounded-[14px] bg-[var(--surface-grouped)] p-2.5 ring-1 ring-[var(--hairline-soft)]">
+        <div className="flex flex-col justify-between rounded-apple-widget bg-[var(--surface-grouped)] p-2.5 ring-1 ring-[var(--hairline-soft)]">
           <div className="flex items-center justify-between text-[var(--ink-tertiary)]">
             <span className="text-[11px] font-bold">ตลาด SET</span>
             <TrendingUp size={14} className="text-emerald-500" />
@@ -465,7 +535,7 @@ export default function DailyDigestWidget({
         </div>
 
         {/* Metric 4: Tasks */}
-        <div className="flex flex-col justify-between rounded-[14px] bg-[var(--surface-grouped)] p-2.5 ring-1 ring-[var(--hairline-soft)]">
+        <div className="flex flex-col justify-between rounded-apple-widget bg-[var(--surface-grouped)] p-2.5 ring-1 ring-[var(--hairline-soft)]">
           <div className="flex items-center justify-between text-[var(--ink-tertiary)]">
             <span className="text-[11px] font-bold">สิ่งที่ต้องทำ</span>
             <CheckSquare size={14} className="text-purple-500" />

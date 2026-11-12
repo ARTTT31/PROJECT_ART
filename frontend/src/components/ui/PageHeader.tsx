@@ -60,7 +60,7 @@ export function PageHeader({ title, subtitle, icon, actions, children, className
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex min-w-0 items-start gap-3">
           {icon && (
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-[var(--accent-soft)] text-[var(--accent-text)]">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-apple-widget bg-[var(--accent-soft)] text-[var(--accent-text)]">
               {icon}
             </div>
           )}

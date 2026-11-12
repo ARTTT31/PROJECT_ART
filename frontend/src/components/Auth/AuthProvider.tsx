@@ -7,6 +7,7 @@ import { AuthUserSchema } from '@/lib/api/schemas';
 import { readUserCookie } from '@/lib/api/userCookie';
 import { clearOfflineData } from '@/lib/offline/localStore';
 import type { AuthUser, AuthRole } from '@/types';
+import { translateText } from '@/lib/i18n/translate';
 import { ZodError } from 'zod';
 
 export type { AuthUser, AuthRole };
@@ -348,7 +349,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 export function useAuth() {
   const ctx = useContext(AuthContext);
   if (!ctx) {
-    throw new Error('useAuth ต้องถูกเรียกภายใน <AuthProvider>');
+    throw new Error(
+      translateText('useAuth ต้องถูกเรียกภายใน <AuthProvider>', 'useAuth must be used inside <AuthProvider>'),
+    );
   }
   return ctx;
 }

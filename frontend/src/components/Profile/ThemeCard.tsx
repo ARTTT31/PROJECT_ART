@@ -107,7 +107,7 @@ export function ThemeCard() {
           </div>
         </div>
 
-        <p className="rounded-[14px] bg-[var(--surface-grouped)] px-3.5 py-2.5 text-[12px] leading-relaxed text-[var(--ink-muted)]">
+        <p className="rounded-apple-widget bg-[var(--surface-grouped)] px-3.5 py-2.5 text-[12px] leading-relaxed text-[var(--ink-muted)]">
           การตั้งค่านี้ถูกจำไว้ในเบราว์เซอร์เครื่องนี้เท่านั้น ไม่กระทบผู้ใช้คนอื่นใน workspace
         </p>
       </div>

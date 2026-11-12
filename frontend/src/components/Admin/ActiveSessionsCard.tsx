@@ -133,11 +133,11 @@ export default function ActiveSessionsCard() {
   return (
     <section
       aria-labelledby="active-sessions-heading"
-      className="overflow-hidden rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)]"
+      className="overflow-hidden rounded-apple-lg border border-[var(--hairline)] bg-[var(--surface)]"
     >
       <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[var(--hairline-soft)] bg-[var(--surface-subtle)] px-5 py-4 sm:px-6">
         <div className="flex min-w-0 items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] bg-[var(--accent-soft)] text-[var(--accent-text)] ring-1 ring-[var(--accent-soft)]">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-apple-widget bg-[var(--accent-soft)] text-[var(--accent-text)] ring-1 ring-[var(--accent-soft)]">
             <MonitorSmartphone size={20} aria-hidden="true" />
           </div>
           <div className="min-w-0">
@@ -242,7 +242,7 @@ export default function ActiveSessionsCard() {
                 key={session.session_id}
                 className="flex flex-wrap items-start gap-3 px-5 py-3.5 sm:px-6"
               >
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[11px] bg-[var(--surface-grouped)] text-[var(--ink-secondary)]">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-apple-md bg-[var(--surface-grouped)] text-[var(--ink-secondary)]">
                   <DeviceIcon size={16} aria-hidden="true" />
                 </div>
 

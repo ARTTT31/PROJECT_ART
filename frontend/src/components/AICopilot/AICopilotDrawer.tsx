@@ -285,12 +285,12 @@ export default function AICopilotDrawer() {
       {isOpen && (
         <section
           aria-label="หน้าต่างสนทนา AI Copilot"
-          className="fixed bottom-20 right-4 sm:right-6 z-50 flex h-[530px] max-h-[calc(100dvh-6.5rem)] w-[min(calc(100vw-2rem),380px)] flex-col rounded-[20px] border border-[var(--hairline)] bg-[var(--surface)] text-[var(--ink)] shadow-[0_12px_40px_rgba(0,0,0,0.18)] backdrop-blur-2xl transition-all animate-in fade-in zoom-in-95"
+          className="fixed bottom-20 right-4 sm:right-6 z-50 flex h-[530px] max-h-[calc(100dvh-6.5rem)] w-[min(calc(100vw-2rem),380px)] flex-col rounded-apple-lg border border-[var(--hairline)] bg-[var(--surface)] text-[var(--ink)] shadow-[0_12px_40px_rgba(0,0,0,0.18)] backdrop-blur-2xl transition-all animate-in fade-in zoom-in-95"
         >
           {/* Header */}
           <div className="flex items-center justify-between border-b border-[var(--hairline)] px-4 py-3 bg-[var(--glass-40)]">
             <div className="flex items-center gap-2.5">
-              <div className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-[var(--accent-soft)] text-[var(--accent-text)]">
+              <div className="flex h-8 w-8 items-center justify-center rounded-apple-md bg-[var(--accent-soft)] text-[var(--accent-text)]">
                 <Bot size={18} aria-hidden="true" />
               </div>
               <div>
@@ -351,7 +351,7 @@ export default function AICopilotDrawer() {
                   )}
 
                   <div
-                    className={`max-w-[82%] rounded-[16px] px-3.5 py-2.5 text-[13px] leading-relaxed ${
+                    className={`max-w-[82%] rounded-apple-lg px-3.5 py-2.5 text-[13px] leading-relaxed ${
                       isAssistant
                         ? 'rounded-tl-xs bg-[var(--surface-grouped)] text-[var(--ink)] border border-[var(--hairline)] shadow-2xs'
                         : 'rounded-br-xs bg-[var(--accent)] text-white shadow-xs'
@@ -361,7 +361,7 @@ export default function AICopilotDrawer() {
 
                     {/* Action Confirmation Badge */}
                     {msg.action && (
-                      <div className="mt-2 flex items-center gap-2 rounded-[11px] bg-emerald-500/10 px-2.5 py-1.5 text-[11px] font-medium text-emerald-700 dark:text-emerald-300 border border-emerald-500/20">
+                      <div className="mt-2 flex items-center gap-2 rounded-apple-md bg-emerald-500/10 px-2.5 py-1.5 text-[11px] font-medium text-emerald-700 dark:text-emerald-300 border border-emerald-500/20">
                         <CheckCircle2 size={13} className="text-emerald-500 shrink-0" />
                         <span className="truncate">
                           {msg.action.type === 'add_note' ? 'เพิ่มลงใน Quick Notes แล้ว' : 'ตั้งเตือนในระบบแล้ว'}
@@ -392,7 +392,7 @@ export default function AICopilotDrawer() {
                 <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--accent-soft)] text-[var(--accent-text)] mt-0.5">
                   <Sparkles size={14} aria-hidden="true" />
                 </div>
-                <div className="rounded-[16px] rounded-tl-xs bg-[var(--surface-grouped)] border border-[var(--hairline)] px-3.5 py-2.5 shadow-2xs">
+                <div className="rounded-apple-lg rounded-tl-xs bg-[var(--surface-grouped)] border border-[var(--hairline)] px-3.5 py-2.5 shadow-2xs">
                   <div className="flex items-center gap-1.5">
                     <span className="h-2 w-2 rounded-full bg-[var(--accent)] animate-bounce" />
                     <span className="h-2 w-2 rounded-full bg-[var(--accent)] animate-bounce [animation-delay:0.2s]" />

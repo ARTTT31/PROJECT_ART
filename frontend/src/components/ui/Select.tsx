@@ -177,7 +177,7 @@ export default function Select({
     }
   };
 
-  const triggerRadius = pill ? 'rounded-full' : size === 'sm' ? 'rounded-[11px]' : 'rounded-[14px]';
+  const triggerRadius = pill ? 'rounded-full' : size === 'sm' ? 'rounded-apple-md' : 'rounded-apple-widget';
   const triggerSize =
     size === 'sm'
       ? `${triggerRadius} px-2.5 py-[7px] text-[12px]`
@@ -248,7 +248,7 @@ export default function Select({
               bottom: placement.bottom,
               maxHeight: MENU_MAX_HEIGHT,
             }}
-            className="z-[70] overflow-y-auto overscroll-contain rounded-[14px] border border-[var(--hairline)] bg-[var(--glass-95)] p-1 shadow-[0_16px_40px_-12px_rgba(0,0,0,0.28)] outline-hidden backdrop-blur-xl"
+            className="z-[70] overflow-y-auto overscroll-contain rounded-apple-widget border border-[var(--hairline)] bg-[var(--glass-95)] p-1 shadow-[0_16px_40px_-12px_rgba(0,0,0,0.28)] outline-hidden backdrop-blur-xl"
           >
             {groups.map(([group, groupOptions]) => (
               <div key={group || 'default'} role="group" aria-label={group || undefined}>
@@ -272,7 +272,7 @@ export default function Select({
                         if (index >= 0) setActive(index);
                       }}
                       onClick={() => commit(option)}
-                      className={`flex w-full items-center justify-between gap-2 rounded-[11px] px-2.5 py-[7px] text-left text-[13px] transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-40 ${
+                      className={`flex w-full items-center justify-between gap-2 rounded-apple-md px-2.5 py-[7px] text-left text-[13px] transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-40 ${
                         isActive && !option.disabled ? 'bg-[var(--accent-soft)]' : ''
                       } ${isSelected ? 'font-semibold text-[var(--accent-text)]' : 'text-[var(--ink)]'}`}
                     >

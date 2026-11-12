@@ -613,7 +613,7 @@ export default function NotificationBell() {
       </button>
 
       {open && (
-        <div className="absolute right-0 z-50 mt-2.5 w-[min(calc(100vw-2rem),26rem)] overflow-hidden rounded-[18px] border border-[var(--hairline)] bg-[var(--glass-95)] backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.14)] animate-in fade-in zoom-in-95 duration-150">
+        <div className="absolute right-0 z-50 mt-2.5 w-[min(calc(100vw-2rem),26rem)] overflow-hidden rounded-apple-lg border border-[var(--hairline)] bg-[var(--glass-95)] backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.14)] animate-in fade-in zoom-in-95 duration-150">
           {/* Panel Header */}
           <div className="flex items-start justify-between gap-4 border-b border-[var(--hairline)] px-5 py-4 bg-[var(--glass-40)]">
             <div>
@@ -668,7 +668,7 @@ export default function NotificationBell() {
           {/* Notification List */}
           <div className="max-h-[26rem] overflow-y-auto p-3 space-y-2.5">
             {notifications.length === 0 ? (
-              <div className="flex flex-col items-center justify-center rounded-[18px] border border-dashed border-[var(--hairline)] bg-[var(--surface-grouped)] px-6 py-10 text-center text-[var(--ink-tertiary)]">
+              <div className="flex flex-col items-center justify-center rounded-apple-lg border border-dashed border-[var(--hairline)] bg-[var(--surface-grouped)] px-6 py-10 text-center text-[var(--ink-tertiary)]">
                 <div className="mb-2.5 flex h-10 w-10 items-center justify-center rounded-full bg-[var(--surface)] text-[var(--ink-tertiary)] shadow-xs ring-1 ring-[var(--hairline)]">
                   <Bell size={20} />
                 </div>
@@ -685,7 +685,7 @@ export default function NotificationBell() {
                 return (
                   <div
                     key={n.id}
-                    className={`relative flex gap-3 rounded-[18px] border p-3.5 transition-all duration-150 ${
+                    className={`relative flex gap-3 rounded-apple-lg border p-3.5 transition-all duration-150 ${
                       meta.itemClass
                     } ${isRead ? 'opacity-60' : 'shadow-xs ring-1 ring-[var(--hairline)]'}`}
                   >
@@ -697,7 +697,7 @@ export default function NotificationBell() {
                     )}
 
                     <div
-                      className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-[11px] ${meta.iconWrapClass}`}
+                      className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-apple-md ${meta.iconWrapClass}`}
                     >
                       {levelIcon[n.level]}
                     </div>

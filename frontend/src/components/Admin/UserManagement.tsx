@@ -622,7 +622,7 @@ export default function UserManagement() {
           />
 
           {showPagination && (
-            <div className="flex flex-col gap-3 rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-3 rounded-apple-lg border border-[var(--hairline)] bg-[var(--surface)] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
               <span className="text-[13px] font-medium text-[var(--ink-muted)]">
                 {statusFilter === 'trash'
                   ? debouncedQuery.trim()

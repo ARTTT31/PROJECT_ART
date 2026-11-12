@@ -312,7 +312,7 @@ export default function QRCodeWidget({
   // ── Render ───────────────────────────────────────────────────────────────────
   return (
     <section
-      className="flex h-full flex-col justify-between rounded-[18px] bg-[var(--surface)] p-5 border border-[var(--hairline)] transition-all duration-200"
+      className="flex h-full flex-col justify-between rounded-apple-lg bg-[var(--surface)] p-5 border border-[var(--hairline)] transition-all duration-200"
       aria-labelledby="qr-title"
     >
       <div>
@@ -320,7 +320,7 @@ export default function QRCodeWidget({
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-start gap-3 min-w-0">
             {/* Icon badge */}
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] bg-[var(--accent-soft)] text-[var(--accent-text)]">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-apple-widget bg-[var(--accent-soft)] text-[var(--accent-text)]">
               {format === 'qrcode' ? (
                 <QrCode size={20} aria-hidden="true" />
               ) : (
@@ -389,14 +389,14 @@ export default function QRCodeWidget({
                 ? 'พิมพ์ข้อความ, URL, เบอร์โทร หรือ PromptPay...'
                 : 'พิมพ์รหัส เช่น ART-10023, 12345678 (ภาษาอังกฤษ/ตัวเลข)...'
             }
-            className="w-full rounded-[14px] bg-[var(--surface-grouped-2)] px-3.5 py-2.5 text-[14px] text-[var(--ink)] placeholder:text-[var(--ink-tertiary)] transition-all duration-150 focus:bg-[var(--surface)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent)]"
+            className="w-full rounded-apple-widget bg-[var(--surface-grouped-2)] px-3.5 py-2.5 text-[14px] text-[var(--ink)] placeholder:text-[var(--ink-tertiary)] transition-all duration-150 focus:bg-[var(--surface)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent)]"
             aria-label="ข้อความสำหรับสร้างโค้ด"
           />
         </div>
 
         {/* ── Error Banner ─────────────────────────────────────────────── */}
         {error && (
-          <div className="mt-3 flex items-center gap-2 rounded-[14px] bg-[var(--warning-soft)] px-3.5 py-2.5 text-[12px] font-medium text-[var(--warning)]">
+          <div className="mt-3 flex items-center gap-2 rounded-apple-widget bg-[var(--warning-soft)] px-3.5 py-2.5 text-[12px] font-medium text-[var(--warning)]">
             <AlertCircle size={14} className="shrink-0" />
             <span>{error}</span>
           </div>
@@ -408,14 +408,14 @@ export default function QRCodeWidget({
             <div className="flex w-full flex-col items-center gap-3.5 animate-in fade-in duration-200">
               {/* Render Canvas Wrapper */}
               <div
-                className={`flex w-full items-center justify-center overflow-hidden rounded-[18px] bg-[var(--surface-grouped)] p-4 ring-1 ring-[var(--hairline)] transition-all duration-200 ${
+                className={`flex w-full items-center justify-center overflow-hidden rounded-apple-lg bg-[var(--surface-grouped)] p-4 ring-1 ring-[var(--hairline)] transition-all duration-200 ${
                   width >= 3 ? 'min-h-[260px]' : width >= 2 ? 'min-h-[230px]' : 'min-h-[200px]'
                 }`}
               >
                 {format === 'qrcode' ? (
                   <div
                     ref={qrWrapRef}
-                    className="rounded-[14px] bg-[var(--surface)] p-3 ring-1 ring-[var(--hairline)]"
+                    className="rounded-apple-widget bg-[var(--surface)] p-3 ring-1 ring-[var(--hairline)]"
                   >
                     <QRCodeCanvas
                       value={generatedText}
@@ -427,7 +427,7 @@ export default function QRCodeWidget({
                     />
                   </div>
                 ) : (
-                  <div className="flex w-full items-center justify-center overflow-x-auto rounded-[14px] bg-[var(--surface)] p-3 ring-1 ring-[var(--hairline)]">
+                  <div className="flex w-full items-center justify-center overflow-x-auto rounded-apple-widget bg-[var(--surface)] p-3 ring-1 ring-[var(--hairline)]">
                     <canvas ref={barcodeCanvasRef} className="max-w-full" />
                   </div>
                 )}
@@ -484,7 +484,7 @@ export default function QRCodeWidget({
                 width >= 3 ? 'min-h-[310px]' : width >= 2 ? 'min-h-[280px]' : 'min-h-[250px]'
               }`}
             >
-              <div className="flex h-14 w-14 items-center justify-center rounded-[18px] bg-[var(--surface-grouped)] text-[var(--ink-tertiary)]">
+              <div className="flex h-14 w-14 items-center justify-center rounded-apple-lg bg-[var(--surface-grouped)] text-[var(--ink-tertiary)]">
                 {format === 'qrcode' ? <QrCode size={28} /> : <Barcode size={28} />}
               </div>
               <p className="text-[14px] font-semibold text-[var(--ink)]">

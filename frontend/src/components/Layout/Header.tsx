@@ -131,7 +131,7 @@ export default function Header({ user, onMenuClick, sidebarCollapsed = false }: 
             <span className="hidden text-[12px] font-semibold xl:inline">
               {t('nav.search.label')}
             </span>
-            <kbd className="hidden rounded-[6px] border border-[var(--hairline)] bg-[var(--surface)] px-1.5 py-0.5 font-sans text-[10px] font-bold text-[var(--ink-tertiary)] xl:inline">
+            <kbd className="hidden rounded-apple-xs border border-[var(--hairline)] bg-[var(--surface)] px-1.5 py-0.5 font-sans text-[10px] font-bold text-[var(--ink-tertiary)] xl:inline">
               ⌘K
             </kbd>
           </button>

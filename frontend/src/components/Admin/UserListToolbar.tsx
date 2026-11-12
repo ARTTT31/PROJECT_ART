@@ -54,7 +54,7 @@ export default function UserListToolbar({
   };
 
   return (
-    <div className="relative z-20 flex flex-col gap-3 rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] p-4 lg:flex-row lg:items-center lg:justify-between">
+    <div className="relative z-20 flex flex-col gap-3 rounded-apple-lg border border-[var(--hairline)] bg-[var(--surface)] p-4 lg:flex-row lg:items-center lg:justify-between">
       <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
         <label className="relative flex-1">
           {isFetching ? (

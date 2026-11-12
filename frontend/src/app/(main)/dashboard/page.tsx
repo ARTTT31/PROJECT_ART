@@ -105,8 +105,11 @@ import { WIDGET_DESCRIPTION_KEYS, WIDGET_NAME_KEYS } from '@/lib/i18n/messages';
 
 const getColSpanClass = (w: number) => {
   if (w === 3) return 'col-span-full';
-  if (w === 2) return 'col-span-full md:col-span-8';
-  return 'col-span-full md:col-span-6';
+  // Half-width only once the shell is wide enough to give a chart ~500px. At
+  // `md` a half tile was ~340px, which squeezed the charts into unreadable
+  // slivers.
+  if (w === 2) return 'col-span-full lg:col-span-8';
+  return 'col-span-full lg:col-span-6';
 };
 
 // ── Inline error fallback ────────────────────────────────────────────────────
@@ -123,7 +126,7 @@ function WidgetErrorFallback({
   const isChunkError =
     error?.name === 'ChunkLoadError' || error?.message?.includes('Failed to load chunk');
   return (
-    <div className="flex h-full min-h-[300px] w-full flex-col items-center justify-center rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] p-6">
+    <div className="flex h-full min-h-[300px] w-full flex-col items-center justify-center rounded-apple-lg border border-[var(--hairline)] bg-[var(--surface)] p-6">
       <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-red-100/50">
         <AlertTriangle className="h-6 w-6 text-red-500" aria-hidden="true" />
       </div>
@@ -190,7 +193,9 @@ function SortableWidget({
       <div className="widget-enter h-full" style={{ animationDelay: `${index * 70}ms` }}>
         {/* Drag handle — a slim grip pill centred on the card's top edge. It sits
             in the 4–17px band, above the card's 20px content padding, so it can
-            never cover a header control or spill past the widget's border. */}
+            never cover a header control or spill past the widget's border. The
+            button pads the pill out to a ~30px tall target: the grip alone was
+            13px, far under the 24px minimum for a pointer target. */}
         <div className="pointer-events-none absolute inset-x-0 top-1 z-10 flex justify-center">
           <button
             {...attributes}
@@ -198,9 +203,9 @@ function SortableWidget({
             type="button"
             aria-label={t('dashboard.moveWidget', { name: widgetLabel(widget.id) })}
             title="ลากเพื่อจัดลำดับ"
-            className="pointer-events-auto flex cursor-grab touch-none items-center justify-center rounded-full p-1.5 text-[var(--ink-tertiary)] opacity-0 transition-opacity duration-150 hover:opacity-100 active:cursor-grabbing group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent-border)] [@media(hover:none)]:opacity-60"
+            className="pointer-events-auto flex cursor-grab touch-none items-center justify-center rounded-full p-2 text-[var(--ink-tertiary)] opacity-0 transition-opacity duration-150 hover:opacity-100 active:cursor-grabbing group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent-border)] [@media(hover:none)]:opacity-60"
           >
-            <span className="flex h-[13px] w-9 items-center justify-center gap-[3px] rounded-full bg-[var(--surface-chip)] shadow-[0_1px_2px_rgba(0,0,0,0.06)] transition-colors hover:bg-[var(--surface-chip-2)] hover:text-[var(--ink-muted)]">
+            <span className="flex h-[14px] w-10 items-center justify-center gap-[3px] rounded-full bg-[var(--surface-chip)] shadow-[0_1px_2px_rgba(0,0,0,0.06)] transition-colors hover:bg-[var(--surface-chip-2)] hover:text-[var(--ink-muted)]">
               <span className="h-[3px] w-[3px] rounded-full bg-current" />
               <span className="h-[3px] w-[3px] rounded-full bg-current" />
               <span className="h-[3px] w-[3px] rounded-full bg-current" />
@@ -447,9 +452,9 @@ export default function DashboardPage() {
       {/* ── Apple HIG Hero Welcome Banner ───────────────────────────────── */}
       <section
         aria-label="การทักทายและสถานะประจำวัน"
-        className="relative mb-6 overflow-hidden rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] p-6 sm:p-7"
+        className="relative mb-6 overflow-hidden rounded-apple-lg border border-[var(--hairline)] bg-[var(--surface)] p-6 sm:p-7"
       >
-        <div className="relative z-10 flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+        <div className="relative z-10">
           <div className="space-y-1.5">
             <h1
               ref={headingRef}
@@ -462,23 +467,12 @@ export default function DashboardPage() {
               ภาพรวมข้อมูลสำคัญของคุณสำหรับวันนี้
             </p>
           </div>
-
-          <div className="flex flex-wrap items-center gap-2.5">
-            <button
-              type="button"
-              onClick={() => setShowConfigModal(true)}
-              data-testid="manage-widgets-button"
-              className="inline-flex items-center gap-2 rounded-full bg-[var(--surface)] px-4 py-2 text-[13px] font-semibold text-[var(--ink)] ring-1 ring-[var(--hairline)] transition-colors duration-150 hover:bg-[var(--surface-grouped)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 active:scale-[0.95]"
-              aria-label="จัดการวิดเจ็ต"
-            >
-              <SlidersHorizontal className="h-3.5 w-3.5 text-[var(--ink-secondary)]" aria-hidden="true" />
-              จัดการวิดเจ็ต
-            </button>
-          </div>
         </div>
 
-        {/* Dashboard View Segmented Pills */}
-        <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-[var(--hairline)] pt-4">
+        {/* Dashboard View Segmented Pills. No divider under the greeting: the
+            header used to stack three bands (title, action, filters) and read
+            as two cards in one. */}
+        <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
           <div className="inline-flex items-center gap-1 rounded-full bg-[var(--surface-grouped)] p-1 ring-1 ring-[var(--hairline)]">
             {DASHBOARD_VIEWS.map((v) => {
               const active = currentView === v.id;
@@ -506,6 +500,24 @@ export default function DashboardPage() {
 
       <GettingStartedCard user={user} />
 
+      {/* The widget action lives with the widgets it manages, not in the
+          greeting card above them. */}
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <h2 className="text-[11px] font-bold uppercase tracking-wider text-[var(--ink-tertiary)]">
+          วิดเจ็ต
+        </h2>
+        <button
+          type="button"
+          onClick={() => setShowConfigModal(true)}
+          data-testid="manage-widgets-button"
+          className="inline-flex items-center gap-2 rounded-full bg-[var(--surface)] px-3.5 py-1.5 text-[12px] font-semibold text-[var(--ink)] ring-1 ring-[var(--hairline)] transition-colors duration-150 hover:bg-[var(--surface-grouped)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 active:scale-[0.95]"
+          aria-label="จัดการวิดเจ็ต"
+        >
+          <SlidersHorizontal className="h-3.5 w-3.5 text-[var(--ink-secondary)]" aria-hidden="true" />
+          จัดการวิดเจ็ต
+        </button>
+      </div>
+
       {/* ── Widget grid ─────────────────────────────────────────────────── */}
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext
@@ -516,7 +528,7 @@ export default function DashboardPage() {
               (the market widget with its chart), stretching the short cards far
               past their content. `items-stretch` still keeps the cards inside a
               single row equal height. */}
-          <div className="grid grid-cols-1 items-stretch gap-4 sm:gap-5 md:grid-cols-12">
+          <div className="grid grid-cols-1 items-stretch gap-4 sm:gap-5 lg:grid-cols-12">
             {visibleWidgets.map((widget, index) => (
               <SortableWidget
                 key={widget.id}

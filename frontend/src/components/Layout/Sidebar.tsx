@@ -239,7 +239,7 @@ export default function Sidebar({
             alt={companyName}
             width={34}
             height={34}
-            className="rounded-[11px] shrink-0 object-contain shadow-2xs"
+            className="rounded-apple-md shrink-0 object-contain shadow-2xs"
             priority
           />
           <div className="min-w-0 flex-1">
@@ -277,7 +277,7 @@ export default function Sidebar({
                           href={item.href}
                           target={item.external ? '_blank' : undefined}
                           rel={item.external ? 'noopener noreferrer' : undefined}
-                          className={`group flex min-h-[48px] min-w-0 flex-1 items-center gap-2.5 rounded-[11px] px-3 py-2 text-[14px] font-semibold transition-all duration-150 active:scale-[0.95] ${
+                          className={`group flex min-h-[48px] min-w-0 flex-1 items-center gap-2.5 rounded-apple-md px-3 py-2 text-[14px] font-semibold transition-all duration-150 active:scale-[0.95] ${
                             isActive
                               ? 'bg-[var(--accent)] text-white'
                               : 'text-[var(--ink)] hover:bg-[var(--surface-chip)] hover:text-[var(--ink)]'
@@ -285,7 +285,7 @@ export default function Sidebar({
                           onClick={() => !item.external && onClose()}
                         >
                           <span
-                            className={`flex h-7 w-7 items-center justify-center rounded-[11px] transition-colors ${
+                            className={`flex h-7 w-7 items-center justify-center rounded-apple-md transition-colors ${
                               isActive
                                 ? 'bg-[var(--glass-20)] text-white'
                                 : 'text-[var(--ink-muted)] group-hover:text-[var(--ink)]'
@@ -341,7 +341,7 @@ export default function Sidebar({
           </div>
 
           {suggestion && (
-            <div className="mt-4 rounded-[11px] border border-dashed border-[var(--hairline-strong)] bg-[var(--surface-subtle)] p-3">
+            <div className="mt-4 rounded-apple-md border border-dashed border-[var(--hairline-strong)] bg-[var(--surface-subtle)] p-3">
               <p className="text-[11px] leading-relaxed text-[var(--ink-muted)]">
                 {t('nav.suggestion', { path: suggestion.path, count: suggestion.count })}
               </p>
@@ -373,10 +373,10 @@ export default function Sidebar({
               onClose();
               onLogout();
             }}
-            className="flex min-h-[48px] w-full items-center gap-2.5 rounded-[11px] px-3 py-2 text-[14px] font-semibold text-[var(--danger)] transition-all duration-150 hover:bg-[var(--danger-soft)] active:scale-[0.95] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--danger)]"
+            className="flex min-h-[48px] w-full items-center gap-2.5 rounded-apple-md px-3 py-2 text-[14px] font-semibold text-[var(--danger)] transition-all duration-150 hover:bg-[var(--danger-soft)] active:scale-[0.95] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--danger)]"
             aria-label={t('nav.logout')}
           >
-            <span className="flex h-7 w-7 items-center justify-center rounded-[11px] bg-[var(--danger-soft)] text-[var(--danger)]">
+            <span className="flex h-7 w-7 items-center justify-center rounded-apple-md bg-[var(--danger-soft)] text-[var(--danger)]">
               <LogOut size={16} aria-hidden="true" />
             </span>
             <span>{t('nav.logout')}</span>

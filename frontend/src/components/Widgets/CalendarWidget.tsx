@@ -14,12 +14,15 @@ import {
 } from 'lucide-react';
 import WidgetSizeToggle from './WidgetSizeToggle';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
-import { getHolidaysWithDiff } from '@/utils/holidays';
+import { useI18n } from '@/lib/i18n/I18nProvider';
+import { getHolidaysWithDiff, holidayTitle } from '@/utils/holidays';
 
 export interface CalendarEvent {
   id: string;
   date: string; // YYYY-MM-DD
   title: string;
+  /** English title for the bundled public holidays. */
+  titleEn?: string;
   type: 'holiday' | 'reminder';
   kind?: 'errand' | 'leave' | 'other';
   done?: boolean;
@@ -40,7 +43,23 @@ const THAI_MONTH_NAMES = [
   'ธันวาคม',
 ];
 
+const MONTH_NAMES_EN = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+];
+
 const WEEKDAY_NAMES = ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'];
+const WEEKDAY_NAMES_EN = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 
 export default function CalendarWidget({
   width = 1,
@@ -49,6 +68,7 @@ export default function CalendarWidget({
   width?: number;
   onResize?: (size: number) => void;
 }) {
+  const { tr } = useI18n();
   const today = useMemo(() => new Date(), []);
   const [currentYear, setCurrentYear] = useState<number>(() => today.getFullYear());
   const [currentMonth, setCurrentMonth] = useState<number>(() => today.getMonth()); // 0-11
@@ -340,12 +360,12 @@ export default function CalendarWidget({
   return (
     <div
       data-testid="calendar-widget"
-      className="flex h-full min-h-[260px] flex-col justify-between rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] p-4 sm:p-5 transition-colors"
+      className="flex h-full min-h-[260px] flex-col justify-between rounded-apple-lg border border-[var(--hairline)] bg-[var(--surface)] p-4 sm:p-5 transition-colors"
     >
       {/* Top Header: Title, Month Selector & Size Toggle */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-[11px] bg-[var(--surface-chip)] text-[var(--accent)]">
+          <div className="flex h-7 w-7 items-center justify-center rounded-apple-md bg-[var(--surface-chip)] text-[var(--accent)]">
             <CalendarIcon className="h-4 w-4" />
           </div>
           <div>
@@ -436,7 +456,7 @@ export default function CalendarWidget({
             </div>
 
             {/* Selected Day Preview */}
-            <div className="mt-1 rounded-[11px] border border-[var(--hairline)] bg-[var(--surface-grouped)] px-2.5 py-1.5 text-xs">
+            <div className="mt-1 rounded-apple-md border border-[var(--hairline)] bg-[var(--surface-grouped)] px-2.5 py-1.5 text-xs">
               {selectedEvents.length > 0 ? (
                 <div className="space-y-0.5">
                   {selectedEvents.slice(0, 2).map((ev) => (
@@ -464,7 +484,7 @@ export default function CalendarWidget({
           /* Size M / L: Multi-Column View */
           <div className={`grid gap-4 items-start ${width === 2 ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1 md:grid-cols-3'}`}>
             {/* Left Column: Calendar Grid */}
-            <div className="rounded-[14px] border border-[var(--hairline)] bg-[var(--surface-grouped)] p-3">
+            <div className="rounded-apple-widget border border-[var(--hairline)] bg-[var(--surface-grouped)] p-3">
               {/* Weekdays */}
               <div className="grid grid-cols-7 text-center text-xs font-semibold text-[var(--ink-muted)] mb-2">
                 {WEEKDAY_NAMES.map((w, idx) => (
@@ -510,7 +530,7 @@ export default function CalendarWidget({
             </div>
 
             {/* Center Column: Selected Date Inspector */}
-            <div className="flex flex-col gap-2 rounded-[14px] border border-[var(--hairline)] bg-[var(--surface-grouped)] p-3.5">
+            <div className="flex flex-col gap-2 rounded-apple-widget border border-[var(--hairline)] bg-[var(--surface-grouped)] p-3.5">
               <div className="flex items-center justify-between border-b border-[var(--hairline)] pb-2">
                 <span className="text-xs font-semibold text-[var(--ink)]">
                   รายการประจำวันที่ {selectedDate}
@@ -527,13 +547,13 @@ export default function CalendarWidget({
 
               {/* Add Reminder Inline Form */}
               {isAddingReminder && (
-                <form onSubmit={handleAddReminder} className="flex flex-col gap-2 rounded-[11px] bg-[var(--surface)] p-2.5 border border-[var(--hairline)]">
+                <form onSubmit={handleAddReminder} className="flex flex-col gap-2 rounded-apple-md bg-[var(--surface)] p-2.5 border border-[var(--hairline)]">
                   <input
                     type="text"
                     value={newReminderTitle}
                     onChange={(e) => setNewReminderTitle(e.target.value)}
                     placeholder="พิมพ์ชื่อธุระหรือนัดหมาย..."
-                    className="w-full rounded-[11px] border border-[var(--hairline)] bg-[var(--surface-grouped)] px-2.5 py-1 text-xs text-[var(--ink)] focus:outline-hidden focus:ring-1 focus:ring-[var(--accent)]"
+                    className="w-full rounded-apple-md border border-[var(--hairline)] bg-[var(--surface-grouped)] px-2.5 py-1 text-xs text-[var(--ink)] focus:outline-hidden focus:ring-1 focus:ring-[var(--accent)]"
                     autoFocus
                   />
                   <div className="flex items-center justify-between gap-1">
@@ -578,7 +598,7 @@ export default function CalendarWidget({
                   selectedEvents.map((ev) => (
                     <div
                       key={ev.id}
-                      className="flex items-center justify-between rounded-[11px] border border-[var(--hairline)] bg-[var(--surface)] p-2 text-xs"
+                      className="flex items-center justify-between rounded-apple-md border border-[var(--hairline)] bg-[var(--surface)] p-2 text-xs"
                     >
                       <div className="flex items-center gap-2 truncate">
                         {ev.type === 'holiday' ? (
@@ -629,12 +649,12 @@ export default function CalendarWidget({
 
             {/* Right Column (Size L only): Summary Stats */}
             {width === 3 && (
-              <div className="flex flex-col gap-3 rounded-[14px] border border-[var(--hairline)] bg-[var(--surface-grouped)] p-3.5">
+              <div className="flex flex-col gap-3 rounded-apple-widget border border-[var(--hairline)] bg-[var(--surface-grouped)] p-3.5">
                 <span className="text-xs font-semibold text-[var(--ink)]">
                   สรุปวันสำคัญเดือน{THAI_MONTH_NAMES[currentMonth]}
                 </span>
                 <div className="space-y-2 text-xs">
-                  <div className="flex items-center justify-between rounded-[11px] bg-[var(--surface)] p-2.5">
+                  <div className="flex items-center justify-between rounded-apple-md bg-[var(--surface)] p-2.5">
                     <div className="flex items-center gap-2">
                       <Star className="h-4 w-4 text-red-500" />
                       <span className="text-[var(--ink-secondary)]">วันหยุดในเดือนนี้</span>
@@ -647,7 +667,7 @@ export default function CalendarWidget({
                       วัน
                     </span>
                   </div>
-                  <div className="flex items-center justify-between rounded-[11px] bg-[var(--surface)] p-2.5">
+                  <div className="flex items-center justify-between rounded-apple-md bg-[var(--surface)] p-2.5">
                     <div className="flex items-center gap-2">
                       <Briefcase className="h-4 w-4 text-[var(--accent)]" />
                       <span className="text-[var(--ink-secondary)]">นัดหมาย / ธุระ</span>
@@ -656,7 +676,7 @@ export default function CalendarWidget({
                       {reminders.filter((r) => r.kind === 'errand' && !r.done).length} รายการ
                     </span>
                   </div>
-                  <div className="flex items-center justify-between rounded-[11px] bg-[var(--surface)] p-2.5">
+                  <div className="flex items-center justify-between rounded-apple-md bg-[var(--surface)] p-2.5">
                     <div className="flex items-center gap-2">
                       <Palmtree className="h-4 w-4 text-emerald-500" />
                       <span className="text-[var(--ink-secondary)]">วันลาพักผ่อน</span>

@@ -1479,13 +1479,17 @@ a,
   -webkit-tap-highlight-color: transparent;
 }
 
-/* One button shape across the product.
-   Deliberately unlayered: individual utilities (`rounded-[11px]`, `rounded-lg`)
-   are layered and would otherwise leave a handful of less-round corners in an
-   otherwise pill-shaped UI. Only `<button>` is affected — inputs, cards and
-   segmented-control containers keep their own radii. */
-button {
-  border-radius: 9999px;
+/* One button shape across the product: pill by default.
+   It lives in `@layer base` on purpose. Unlayered, it beat every Tailwind
+   utility, so a card-shaped button had to force its radius with an `!`
+   override — and those overrides are why a few controls kept less-round
+   corners than the rest of the UI. Utilities now win; a `<button>` with no
+   radius utility of its own is still a pill. Only `<button>` is affected — inputs,
+   cards and segmented-control containers keep their own radii. */
+@layer base {
+  button {
+    border-radius: 9999px;
+  }
 }
 
 /* Springy press, matching the design system's `active:scale` guideline.

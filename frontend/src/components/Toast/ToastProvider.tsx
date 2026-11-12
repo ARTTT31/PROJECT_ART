@@ -130,8 +130,10 @@ function ToastContainer({ toasts, onRemove }: { toasts: Toast[]; onRemove: (id: 
   if (toasts.length === 0) return null;
 
   return (
+    // Bottom on a phone, where a top anchor sits under the notch and the sticky
+    // header; top-right on a desktop, where that is the quiet corner.
     <div
-      className="fixed left-1/2 top-6 z-[var(--z-toast,1100)] flex -translate-x-1/2 flex-col gap-3"
+      className="pointer-events-none fixed inset-x-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-[var(--z-toast,1100)] flex flex-col items-center gap-3 sm:inset-x-auto sm:bottom-auto sm:right-6 sm:top-6 sm:items-end"
       aria-label="การแจ้งเตือน"
       role="region"
     >
@@ -147,12 +149,12 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: string) =
 
   return (
     <div
-      className="flex w-[min(90vw,400px)] items-center gap-3 rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] p-3.5 shadow-[0_8px_30px_rgba(0,0,0,0.10)] animate-slide-in-top"
+      className="pointer-events-auto flex w-[min(90vw,400px)] items-center gap-3 rounded-apple-lg border border-[var(--hairline)] bg-[var(--surface)] p-3.5 shadow-[0_8px_30px_rgba(0,0,0,0.10)] animate-slide-in-top"
       role={toast.type === 'error' ? 'alert' : 'status'}
       aria-live={toast.type === 'error' ? 'assertive' : 'polite'}
     >
       <div
-        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[11px] ${config.iconBg} ${config.iconColor}`}
+        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-apple-md ${config.iconBg} ${config.iconColor}`}
       >
         {config.icon}
       </div>

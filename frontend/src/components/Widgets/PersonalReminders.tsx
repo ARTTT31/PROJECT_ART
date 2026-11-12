@@ -176,7 +176,7 @@ export default function PersonalReminders() {
   );
 
   return (
-    <div className="mt-4 rounded-[14px] border border-[var(--hairline)] bg-[var(--surface-subtle)] p-3">
+    <div className="mt-4 rounded-apple-widget border border-[var(--hairline)] bg-[var(--surface-subtle)] p-3">
       <div className="flex items-center justify-between gap-2">
         <p className="text-[12px] font-bold text-[var(--ink)]">
           เตือนของฉัน
@@ -205,7 +205,7 @@ export default function PersonalReminders() {
             }}
             placeholder="เช่น ไปธนาคาร, ลาพักร้อน"
             aria-label="ชื่อรายการที่ต้องเตือน"
-            className="w-full rounded-[11px] border border-[var(--hairline)] bg-[var(--surface)] px-2.5 py-1.5 text-[12px] text-[var(--ink)] outline-hidden focus:border-[var(--accent)]"
+            className="w-full rounded-apple-md border border-[var(--hairline)] bg-[var(--surface)] px-2.5 py-1.5 text-[12px] text-[var(--ink)] outline-hidden focus:border-[var(--accent)]"
           />
           <div className="flex flex-wrap items-center gap-2">
             <input
@@ -213,7 +213,7 @@ export default function PersonalReminders() {
               value={date}
               onChange={(event) => setDate(event.target.value)}
               aria-label="วันที่"
-              className="rounded-[11px] border border-[var(--hairline)] bg-[var(--surface)] px-2 py-1 text-[12px] text-[var(--ink)] outline-hidden focus:border-[var(--accent)]"
+              className="rounded-apple-md border border-[var(--hairline)] bg-[var(--surface)] px-2 py-1 text-[12px] text-[var(--ink)] outline-hidden focus:border-[var(--accent)]"
             />
             <div className="inline-flex rounded-full bg-[var(--surface-chip)] p-0.5" role="group" aria-label="ประเภท">
               {(Object.keys(KIND_META) as ReminderKind[]).map((value) => (
@@ -254,7 +254,7 @@ export default function PersonalReminders() {
             const Icon = KIND_META[item.kind].icon;
             const left = daysUntil(item.date);
             return (
-              <li key={item.id} className="flex items-center gap-2 rounded-[11px] px-1.5 py-1">
+              <li key={item.id} className="flex items-center gap-2 rounded-apple-md px-1.5 py-1">
                 <Icon size={12} className="shrink-0 text-[var(--accent-text)]" aria-hidden="true" />
                 <span className="min-w-0 flex-1 truncate text-[12px] text-[var(--ink)]">
                   {item.title}

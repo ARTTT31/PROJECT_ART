@@ -198,9 +198,9 @@ export default function NotificationsPage() {
 
       {/* Inset grouped list: rows share one surface and one hairline divider,
           the way iOS Settings lists are built. */}
-      <section className="overflow-hidden rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)]">
+      <section className="overflow-hidden rounded-apple-lg border border-[var(--hairline)] bg-[var(--surface)]">
         {visible.length === 0 ? (
-          <div className="m-4 flex min-h-[200px] flex-col items-center justify-center rounded-[14px] border border-dashed border-[var(--hairline)] bg-[var(--surface-subtle)] px-4 text-center text-[13px] text-[var(--ink-tertiary)] sm:m-5">
+          <div className="m-4 flex min-h-[200px] flex-col items-center justify-center rounded-apple-widget border border-dashed border-[var(--hairline)] bg-[var(--surface-subtle)] px-4 text-center text-[13px] text-[var(--ink-tertiary)] sm:m-5">
             <Bell size={22} className="mb-2 text-[var(--ink-faint)]" aria-hidden="true" />
             <span>
               {entries.length === 0
@@ -231,7 +231,7 @@ export default function NotificationsPage() {
                     }`}
                   >
                     <span
-                      className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-[11px] ${level.className}`}
+                      className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-apple-md ${level.className}`}
                     >
                       <LevelIcon size={15} aria-hidden="true" />
                     </span>

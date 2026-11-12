@@ -851,3 +851,38 @@ password-reset email, remove it, and do the rest of the list.
    labels), not on this change. Same pre-existing cause for the four `{th, en}` errors
    `tsc --noEmit` reports in `audit/page.tsx` and `DailyDigestWidget.tsx`. Not yet re-checked on the
    deployed origin.
+
+## Design Pass: One Radius Scale, a Layered Button Rule and Honest Loading States (November 12, 2026)
+
+1. **Radius is now a scale, not a habit.** `rounded-[14px]` was used 173 times and existed in no
+   documented step — more often than 11px — so card edges and control edges disagreed by 3px across
+   the product. `apple-widget` (14px) is a Tailwind token now, and the remaining off-scale values were
+   folded in: 6px → `apple-xs`, 9/10/12px → `apple-md`, 16/20px → `apple-lg`, `rounded-md` →
+   `apple-sm`. Every `rounded-[Npx]` in `src/**/*.tsx` is gone (173 widget, 133 lg, 119 md, 4 sm, 1 xs).
+2. **The button rule moved into `@layer base`.** Unlayered, `button { border-radius: 9999px }` beat
+   every utility, so the four card-shaped buttons forced their radius with `!`. Utilities win now, the
+   `!` overrides are deleted, and an unclassed `<button>` is still a pill. Verified in the built CSS:
+   the rule lands in `@layer base` and `@layer utilities` follows it.
+3. **Toasts moved out from under the header.** Top-centre collided with the mobile header and the
+   notch; the stack is bottom-centre on a phone (with `env(safe-area-inset-bottom)`) and top-right from
+   `sm` up, with `pointer-events` limited to the cards themselves.
+4. **The dashboard header stopped reading as two cards.** "จัดการวิดเจ็ต" moved down to the widget grid
+   it manages, the divider under the greeting is gone, and the view pills sit in one band. Half-width
+   tiles now start at `lg` instead of `md`: at 768px a half tile was ~340px, which squeezed the charts.
+5. **Reordering is discoverable and reachable.** The grip is padded to a ~30px target instead of a
+   13px sliver, and the widget manager says how to drag or to sort with the keyboard.
+6. **Loading frames where they were missing.** `admin`, `audit` and `notifications` gained
+   `loading.tsx` skeletons shaped like their real layouts (6 of 14 routes now have one).
+7. **Brand colours are named.** The LINE and Telegram tiles use `LINE_BRAND` / `TELEGRAM_BRAND`
+   constants instead of two loose hex values. The other literal hex in the tree is deliberate and
+   stays: theme accent swatches (`ThemeContext`), the PWA `theme-color` meta (`layout.tsx`), the
+   standalone `global-error` page (it renders without the app's CSS) and the QR printable sheet, which
+   has to stay light to scan and print.
+8. **The in-progress i18n labels type-check again.** `audit/page.tsx` now resolves `ACTION_LABELS`
+   through its existing `actionLabel()` helper (options and badge), and `DailyDigestWidget` maps
+   `FUEL_OPTIONS` to the single-label shape `Select` takes. `tsc --noEmit` is clean again.
+9. **Verified.** `npx tsc --noEmit` clean, `npx eslint src` 0 errors (3 pre-existing warnings in
+   `verify-email` and `WeatherWidget`), `npx vitest run` **391 passed / 60 files** (the
+   `DailyDigestWidget › switches the oil tile to another fuel type` failure is gone), `npm run build`
+   succeeds and emits the `apple-widget` utility. Not viewed in a browser yet: light/dark and 375px /
+   768px behaviour of the moved toolbar, the bottom toasts and the new skeletons.

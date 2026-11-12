@@ -183,6 +183,7 @@ const PRESETS = [
     id: 'aurora',
     name: 'ART Workspace',
     tagline: 'จัดการวันทำงานของคุณให้ง่ายขึ้น',
+    taglineEn: 'Manage your workday with ease',
     color: '#0066cc',
     glyph: 'orbit',
   },
@@ -190,6 +191,7 @@ const PRESETS = [
     id: 'nova',
     name: 'Nova Team',
     tagline: 'ทำงานเป็นทีมได้ลื่นไหล',
+    taglineEn: 'Teamwork that flows',
     color: '#4f46e5',
     glyph: 'peaks',
   },
@@ -197,6 +199,7 @@ const PRESETS = [
     id: 'studio',
     name: 'ART Studio',
     tagline: 'พื้นที่สร้างสรรค์ของทีม',
+    taglineEn: 'A creative space for your team',
     color: '#7c3aed',
     glyph: 'spark',
   },
@@ -204,6 +207,7 @@ const PRESETS = [
     id: 'siam',
     name: 'Siam Workspace',
     tagline: 'ศูนย์รวมทุกงานไว้ในที่เดียว',
+    taglineEn: 'Everything in one place',
     color: '#0f766e',
     glyph: 'wave',
   },
@@ -211,6 +215,7 @@ const PRESETS = [
     id: 'garden',
     name: 'Green Office',
     tagline: 'ทำงานอย่างเป็นระเบียบทุกวัน',
+    taglineEn: 'A tidy workday, every day',
     color: '#15803d',
     glyph: 'bloom',
   },
@@ -218,6 +223,7 @@ const PRESETS = [
     id: 'sunrise',
     name: 'Sunrise Labs',
     tagline: 'เริ่มวันใหม่อย่างมีพลัง',
+    taglineEn: 'Start the day with energy',
     color: '#c2410c',
     glyph: 'tiles',
   },
@@ -225,6 +231,7 @@ const PRESETS = [
     id: 'rose',
     name: 'Rose Desk',
     tagline: 'โต๊ะทำงานที่เป็นของคุณ',
+    taglineEn: 'A desk that feels like yours',
     color: '#db2777',
     glyph: 'heart',
   },
@@ -232,6 +239,7 @@ const PRESETS = [
     id: 'graphite',
     name: 'Graphite',
     tagline: 'เรียบง่ายแต่ทรงพลัง',
+    taglineEn: 'Simple, yet powerful',
     color: '#1d1d1f',
     glyph: 'bars',
   },
@@ -243,6 +251,7 @@ const entries = PRESETS.map((preset) => {
     id: '${preset.id}',
     name: '${preset.name}',
     tagline: '${preset.tagline}',
+    taglineEn: '${preset.taglineEn}',
     color: '${preset.color}',
     logo: '${logo}',
   },`;
@@ -258,6 +267,8 @@ export interface BrandPreset {
   id: string;
   name: string;
   tagline: string;
+  /** English tagline shown when the interface language is English. */
+  taglineEn?: string;
   /** Mark background colour, also used for the swatch in the picker. */
   color: string;
   /** PNG data URL, safe to send to the branding / workspace-branding endpoints. */

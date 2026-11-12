@@ -292,19 +292,19 @@ export default function OilPriceWidget({
   if (loading && !data) {
     return (
       <div
-        className="flex h-full min-h-[300px] items-center justify-center rounded-[18px] bg-[var(--surface)] p-5 ring-1 ring-[var(--hairline)]"
+        className="flex h-full min-h-[300px] items-center justify-center rounded-apple-lg bg-[var(--surface)] p-5 ring-1 ring-[var(--hairline)]"
         role="status"
         aria-live="polite"
         aria-label="กำลังโหลดราคาน้ำมัน"
       >
         <div className="grid w-full animate-pulse grid-cols-2 gap-3 sm:grid-cols-3">
           {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div key={i} className="flex flex-col items-center gap-2 rounded-[18px] bg-[var(--surface-grouped)] p-4">
+            <div key={i} className="flex flex-col items-center gap-2 rounded-apple-lg bg-[var(--surface-grouped)] p-4">
               <div className="flex items-center gap-2">
                 <div className="h-2.5 w-2.5 rounded-full bg-slate-200" />
                 <div className="h-3.5 w-14 rounded-full bg-slate-200" />
               </div>
-              <div className="h-7 w-16 rounded-[11px] bg-slate-200" />
+              <div className="h-7 w-16 rounded-apple-md bg-slate-200" />
               <div className="h-2.5 w-12 rounded-full bg-slate-100" />
             </div>
           ))}
@@ -321,14 +321,14 @@ export default function OilPriceWidget({
 
   return (
     <section
-      className="flex h-full flex-col justify-between rounded-[18px] bg-[var(--surface)] p-5 border border-[var(--hairline)] transition-all duration-200"
+      className="flex h-full flex-col justify-between rounded-apple-lg bg-[var(--surface)] p-5 border border-[var(--hairline)] transition-all duration-200"
       aria-labelledby="oil-price-title"
     >
       <div className="flex flex-1 flex-col gap-4">
         {/* ── Header ────────────────────────────────────────────────────── */}
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-start gap-3 min-w-0">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] bg-[var(--warning-soft)] text-[var(--warning)]">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-apple-widget bg-[var(--warning-soft)] text-[var(--warning)]">
               <Fuel size={20} aria-hidden="true" />
             </div>
 
@@ -366,7 +366,7 @@ export default function OilPriceWidget({
 
         {/* ── Error banner ──────────────────────────────────────────────── */}
         {error && (
-          <div className="flex items-center justify-between gap-2 rounded-[14px] bg-[var(--danger-soft)] px-3.5 py-2.5 text-[12px] font-medium text-[var(--danger)]">
+          <div className="flex items-center justify-between gap-2 rounded-apple-widget bg-[var(--danger-soft)] px-3.5 py-2.5 text-[12px] font-medium text-[var(--danger)]">
             <div className="flex items-center gap-2 min-w-0">
               <AlertCircle size={14} className="shrink-0" aria-hidden="true" />
               <span className="truncate">{error}</span>
@@ -389,7 +389,7 @@ export default function OilPriceWidget({
               return (
                 <div
                   key={item.key || idx}
-                  className="flex cursor-default flex-col items-center justify-center gap-1.5 rounded-[18px] bg-[var(--surface-grouped)] px-3 py-3.5 transition-colors duration-150 hover:bg-[var(--surface)] hover:ring-1 hover:ring-[var(--hairline)]"
+                  className="flex cursor-default flex-col items-center justify-center gap-1.5 rounded-apple-lg bg-[var(--surface-grouped)] px-3 py-3.5 transition-colors duration-150 hover:bg-[var(--surface)] hover:ring-1 hover:ring-[var(--hairline)]"
                 >
                   {/* Dot + name */}
                   <div className="flex items-center gap-1.5">

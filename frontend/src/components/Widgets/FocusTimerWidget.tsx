@@ -151,12 +151,12 @@ export default function FocusTimerWidget({
   return (
     <div
       data-testid="focus-timer-widget"
-      className="flex h-full min-h-[220px] flex-col justify-between rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] p-4 sm:p-5 transition-colors"
+      className="flex h-full min-h-[220px] flex-col justify-between rounded-apple-lg border border-[var(--hairline)] bg-[var(--surface)] p-4 sm:p-5 transition-colors"
     >
       {/* Top Bar: Title & Resize / Sound */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-[11px] bg-[var(--surface-chip)] text-[var(--accent)]">
+          <div className="flex h-7 w-7 items-center justify-center rounded-apple-md bg-[var(--surface-chip)] text-[var(--accent)]">
             <TimerIcon className="h-4 w-4" />
           </div>
           <div>
@@ -294,7 +294,7 @@ export default function FocusTimerWidget({
                 ))}
               </div>
 
-              <div className="rounded-[11px] border border-[var(--hairline)] bg-[var(--surface-grouped)] p-3">
+              <div className="rounded-apple-md border border-[var(--hairline)] bg-[var(--surface-grouped)] p-3">
                 <div className="flex items-center justify-between text-xs text-[var(--ink-secondary)]">
                   <span>เป้าหมายรอบวันนี้</span>
                   <span className="font-semibold text-[var(--ink)]">
@@ -448,7 +448,7 @@ export default function FocusTimerWidget({
                   key={m}
                   type="button"
                   onClick={() => handleModeChange(m)}
-                  className={`flex items-center justify-between rounded-[11px] border p-2.5 text-xs font-medium transition-all active:scale-[0.95] ${
+                  className={`flex items-center justify-between rounded-apple-md border p-2.5 text-xs font-medium transition-all active:scale-[0.95] ${
                     mode === m
                       ? 'border-[var(--accent)] bg-[var(--surface-grouped)] text-[var(--accent)]'
                       : 'border-[var(--hairline)] bg-[var(--surface)] text-[var(--ink-secondary)] hover:text-[var(--ink)]'
@@ -461,7 +461,7 @@ export default function FocusTimerWidget({
             </div>
 
             {/* Stats and Productivity Tips */}
-            <div className="flex flex-col gap-2.5 rounded-[14px] border border-[var(--hairline)] bg-[var(--surface-grouped)] p-3.5">
+            <div className="flex flex-col gap-2.5 rounded-apple-widget border border-[var(--hairline)] bg-[var(--surface-grouped)] p-3.5">
               <div className="flex items-center gap-1.5 text-xs font-semibold text-[var(--ink)]">
                 <Sparkles className="h-3.5 w-3.5 text-[var(--accent)]" />
                 <span>สรุปผลผลิตวันนี้</span>
@@ -474,7 +474,7 @@ export default function FocusTimerWidget({
                 <span className="text-[var(--ink-secondary)]">เวลาโฟกัสสะสม</span>
                 <span className="font-semibold text-[var(--ink)]">{completedSessions * 25} นาที</span>
               </div>
-              <div className="mt-1 flex items-start gap-1.5 rounded-[11px] bg-[var(--surface)] p-2 text-[11px] text-[var(--ink-muted)]">
+              <div className="mt-1 flex items-start gap-1.5 rounded-apple-md bg-[var(--surface)] p-2 text-[11px] text-[var(--ink-muted)]">
                 <CheckCircle2 className="h-3.5 w-3.5 text-[var(--accent)] shrink-0 mt-0.5" />
                 <span>เทคนิค Pomodoro ช่วยลดความล้าของสมองและเพิ่มความต่อเนื่องในการทำงาน</span>
               </div>

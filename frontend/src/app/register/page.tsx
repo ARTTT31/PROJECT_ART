@@ -22,6 +22,7 @@ import TurnstileWidget from '@/components/Auth/TurnstileWidget';
 import ApprovalPending from '@/components/Auth/ApprovalPending';
 import AuthTransitionOverlay from '@/components/Auth/AuthTransitionOverlay';
 import { useToast } from '@/components/Toast/ToastProvider';
+import { useI18n } from '@/lib/i18n/I18nProvider';
 import { getApiBaseUrl } from '@/lib/api/apiBase';
 
 /** Thai date, short month (e.g. "วันพฤหัสบดีที่ 9 ต.ค. 2569") */
@@ -51,6 +52,7 @@ type RegistrationMode = 'closed' | 'approval' | 'open';
 export default function RegisterPage() {
   const { status } = useAuth();
   const { companyName, companyTagline, brandLogoUrl } = useBranding();
+  const { tr } = useI18n();
   const toast = useToast();
   const router = useRouter();
 
@@ -150,19 +152,19 @@ export default function RegisterPage() {
     const trimmedEmail = email.trim();
 
     if (!trimmedName) {
-      setError('กรุณากรอกชื่อที่แสดง');
+      setError(tr('กรุณากรอกชื่อที่แสดง', 'Please enter a display name'));
       return;
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
-      setError('กรุณาตรวจสอบรูปแบบอีเมลอีกครั้ง');
+      setError(tr('กรุณาตรวจสอบรูปแบบอีเมลอีกครั้ง', 'Please check the email format and try again'));
       return;
     }
     if (password.length < 8) {
-      setError('รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร');
+      setError(tr('รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร', 'Password must be at least 8 characters'));
       return;
     }
     if (password !== confirmPassword) {
-      setError('รหัสผ่านและยืนยันรหัสผ่านไม่ตรงกัน');
+      setError(tr('รหัสผ่านและยืนยันรหัสผ่านไม่ตรงกัน', 'The passwords do not match'));
       return;
     }
 
@@ -183,7 +185,11 @@ export default function RegisterPage() {
       const result = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        setError(result.detail || result.message || 'สมัครสมาชิกไม่สำเร็จ กรุณาลองใหม่อีกครั้ง');
+        setError(
+          result.detail ||
+            result.message ||
+            tr('สมัครสมาชิกไม่สำเร็จ กรุณาลองใหม่อีกครั้ง', 'Sign-up failed. Please try again'),
+        );
         return;
       }
 
@@ -195,11 +201,14 @@ export default function RegisterPage() {
       }
 
       // Open mode: account works immediately
-      toast.success('สมัครสมาชิกสำเร็จ', 'กรุณาเข้าสู่ระบบด้วยบัญชีที่สร้างใหม่');
+      toast.success(
+        tr('สมัครสมาชิกสำเร็จ', 'Account created'),
+        tr('กรุณาเข้าสู่ระบบด้วยบัญชีที่สร้างใหม่', 'Please sign in with your new account'),
+      );
       setSignUpDone(true);
     } catch (err) {
       console.error('Registration submit error:', err);
-      setError('เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง');
+      setError(tr('เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง', 'Connection error. Please try again'));
     } finally {
       setIsSubmitting(false);
     }
@@ -209,7 +218,10 @@ export default function RegisterPage() {
 
   return (
     <main className="login-page">
-      <section aria-label={`สมัครสมาชิก ${companyName}`} className="login-shell">
+      <section
+        aria-label={tr('สมัครสมาชิก {name}', 'Sign up for {name}', { name: companyName })}
+        className="login-shell"
+      >
         <div className="login-panel">
           {/* Header */}
           <header className="login-brand">
@@ -224,7 +236,8 @@ export default function RegisterPage() {
             />
             <h1 className="login-title">{companyName}</h1>
             <p className="login-tagline">
-              {companyTagline || 'สมัครสมาชิกเพื่อเริ่มต้นใช้งานแดชบอร์ด'}
+              {companyTagline ||
+                tr('สมัครสมาชิกเพื่อเริ่มต้นใช้งานแดชบอร์ด', 'Sign up to start using the dashboard')}
             </p>
             <p className="login-clock">
               <Clock size={15} strokeWidth={2} aria-hidden="true" className="login-clock-icon" />
@@ -233,7 +246,7 @@ export default function RegisterPage() {
                 className="login-clock-time"
                 dateTime={now.toISOString()}
               >
-                {formatTime(now)} น.
+                {tr('{time} น.', '{time}', { time: formatTime(now) })}
               </time>
               <span aria-hidden="true" className="login-clock-sep">
                 •
@@ -246,7 +259,9 @@ export default function RegisterPage() {
           {isCheckingMode ? (
             <div className="flex flex-col items-center justify-center py-12 gap-3">
               <Loader2 size={28} className="animate-spin text-[var(--accent-text)]" />
-              <p className="text-[13px] text-[var(--ink-tertiary)]">กำลังตรวจสอบระบบการรับสมัคร...</p>
+              <p className="text-[13px] text-[var(--ink-tertiary)]">
+                {tr('กำลังตรวจสอบระบบการรับสมัคร...', 'Checking registration status…')}
+              </p>
             </div>
           ) : isPendingSuccess ? (
             /* Success awaiting approval state */
@@ -257,14 +272,18 @@ export default function RegisterPage() {
               <span className="auth-state-icon auth-state-icon--neutral" aria-hidden="true">
                 <Lock size={28} strokeWidth={2.1} />
               </span>
-              <h2 className="auth-state-title">ปิดรับสมัครสมาชิกชั่วคราว</h2>
+              <h2 className="auth-state-title">
+                {tr('ปิดรับสมัครสมาชิกชั่วคราว', 'Sign-ups are temporarily closed')}
+              </h2>
               <p className="auth-state-text">
-                ระบบนี้กำหนดให้เฉพาะผู้ดูแลระบบสร้างบัญชีให้เท่านั้น
-                หากต้องการใช้งานกรุณาติดต่อผู้ดูแลระบบของคุณ
+                {tr(
+                  'ระบบนี้กำหนดให้เฉพาะผู้ดูแลระบบสร้างบัญชีให้เท่านั้น หากต้องการใช้งานกรุณาติดต่อผู้ดูแลระบบของคุณ',
+                  'This deployment only allows administrators to create accounts. Contact your administrator to get access.',
+                )}
               </p>
               <div className="auth-actions">
                 <Link href="/login" className="login-submit">
-                  <span>เข้าสู่ระบบด้วยบัญชีที่มีอยู่</span>
+                  <span>{tr('เข้าสู่ระบบด้วยบัญชีที่มีอยู่', 'Sign in with an existing account')}</span>
                   <ArrowRight size={18} aria-hidden="true" />
                 </Link>
               </div>
@@ -277,7 +296,7 @@ export default function RegisterPage() {
               aria-busy={isSubmitting}
             >
               <label htmlFor="reg-name" className="login-field">
-                <span>ชื่อที่แสดง</span>
+                <span>{tr('ชื่อที่แสดง', 'Display name')}</span>
                 <div className="login-input-wrap">
                   <User size={18} aria-hidden="true" />
                   <input
@@ -286,7 +305,7 @@ export default function RegisterPage() {
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="เช่น สมชาย ใจดี หรือ ทีมงาน"
+                    placeholder={tr('เช่น สมชาย ใจดี หรือ ทีมงาน', 'e.g. Alex Smith or Design Team')}
                     required
                     autoComplete="name"
                     disabled={isSubmitting}
@@ -295,7 +314,7 @@ export default function RegisterPage() {
               </label>
 
               <label htmlFor="reg-email" className="login-field">
-                <span>อีเมล</span>
+                <span>{tr('อีเมล', 'Email')}</span>
                 <div className="login-input-wrap">
                   <Mail size={18} aria-hidden="true" />
                   <input
@@ -312,7 +331,7 @@ export default function RegisterPage() {
               </label>
 
               <label htmlFor="reg-password" className="login-field">
-                <span>รหัสผ่าน (อย่างน้อย 8 ตัวอักษร)</span>
+                <span>{tr('รหัสผ่าน (อย่างน้อย 8 ตัวอักษร)', 'Password (at least 8 characters)')}</span>
                 <div className="login-input-wrap">
                   <Lock size={18} aria-hidden="true" />
                   <input
@@ -332,7 +351,11 @@ export default function RegisterPage() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    aria-label={showPassword ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'}
+                    aria-label={
+                      showPassword
+                        ? tr('ซ่อนรหัสผ่าน', 'Hide password')
+                        : tr('แสดงรหัสผ่าน', 'Show password')
+                    }
                     className="login-eye"
                     disabled={isSubmitting}
                   >
@@ -342,7 +365,7 @@ export default function RegisterPage() {
               </label>
 
               <label htmlFor="reg-confirm-password" className="login-field">
-                <span>ยืนยันรหัสผ่าน</span>
+                <span>{tr('ยืนยันรหัสผ่าน', 'Confirm password')}</span>
                 <div className="login-input-wrap">
                   <Lock size={18} aria-hidden="true" />
                   <input
@@ -359,7 +382,11 @@ export default function RegisterPage() {
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    aria-label={showConfirmPassword ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'}
+                    aria-label={
+                      showConfirmPassword
+                        ? tr('ซ่อนรหัสผ่าน', 'Hide password')
+                        : tr('แสดงรหัสผ่าน', 'Show password')
+                    }
                     className="login-eye"
                     disabled={isSubmitting}
                   >
@@ -381,12 +408,14 @@ export default function RegisterPage() {
                 {isSubmitting ? (
                   <>
                     <Loader2 size={18} className="login-submit-spinner" aria-hidden="true" />
-                    <span>กำลังส่งข้อมูล...</span>
+                    <span>{tr('กำลังส่งข้อมูล...', 'Sending…')}</span>
                   </>
                 ) : (
                   <>
                     <span>
-                      {registrationMode === 'approval' ? 'ส่งคำขอสมัครสมาชิก' : 'สมัครสมาชิก'}
+                      {registrationMode === 'approval'
+                        ? tr('ส่งคำขอสมัครสมาชิก', 'Send sign-up request')
+                        : tr('สมัครสมาชิก', 'Sign up')}
                     </span>
                     <ArrowRight size={18} aria-hidden="true" />
                   </>
@@ -395,7 +424,7 @@ export default function RegisterPage() {
 
               <div className="text-center pt-2">
                 <Link href="/login" className="login-switch inline-block">
-                  มีบัญชีอยู่แล้ว? เข้าสู่ระบบ
+                  {tr('มีบัญชีอยู่แล้ว? เข้าสู่ระบบ', 'Already have an account? Sign in')}
                 </Link>
               </div>
             </form>
@@ -406,8 +435,8 @@ export default function RegisterPage() {
       {signUpDone && (
         <AuthTransitionOverlay
           tone="success"
-          title="สมัครสมาชิกสำเร็จ"
-          subtitle="กำลังพาคุณไปหน้าเข้าสู่ระบบ…"
+          title={tr('สมัครสมาชิกสำเร็จ', 'Account created')}
+          subtitle={tr('กำลังพาคุณไปหน้าเข้าสู่ระบบ…', 'Taking you to the sign-in page…')}
         />
       )}
     </main>

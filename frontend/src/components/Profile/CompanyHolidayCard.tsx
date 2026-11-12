@@ -168,10 +168,10 @@ export default function CompanyHolidayCard({ canEdit = true }: { canEdit?: boole
   };
 
   return (
-    <section className="overflow-hidden rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)]">
+    <section className="overflow-hidden rounded-apple-lg border border-[var(--hairline)] bg-[var(--surface)]">
       <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[var(--hairline-soft)] bg-[var(--surface-subtle)] px-5 py-4 sm:px-6">
         <div className="flex min-w-0 items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] bg-[var(--accent-soft)] text-[var(--accent-text)]">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-apple-widget bg-[var(--accent-soft)] text-[var(--accent-text)]">
             <Building2 size={19} aria-hidden="true" />
           </div>
           <div className="min-w-0">
@@ -272,7 +272,7 @@ export default function CompanyHolidayCard({ canEdit = true }: { canEdit?: boole
         {message && (
           <div
             role="status"
-            className={`flex items-start gap-2 rounded-[14px] border p-3 text-[13px] ${
+            className={`flex items-start gap-2 rounded-apple-widget border p-3 text-[13px] ${
               message.tone === 'ok'
                 ? 'border-[var(--success-soft)] bg-[var(--success-soft)] text-[var(--success-ink)]'
                 : 'border-[var(--danger-soft)] bg-[var(--danger-soft)] text-[var(--danger-ink)]'
@@ -284,7 +284,7 @@ export default function CompanyHolidayCard({ canEdit = true }: { canEdit?: boole
         )}
 
         {warnings.length > 0 && (
-          <ul className="space-y-1 rounded-[14px] bg-[var(--surface-subtle)] p-3 text-[12px] text-[var(--ink-muted)]">
+          <ul className="space-y-1 rounded-apple-widget bg-[var(--surface-subtle)] p-3 text-[12px] text-[var(--ink-muted)]">
             {warnings.map((warning, index) => (
               <li key={`${warning}-${index}`}>• {warning}</li>
             ))}
@@ -292,13 +292,13 @@ export default function CompanyHolidayCard({ canEdit = true }: { canEdit?: boole
         )}
 
         {rows.length === 0 ? (
-          <p className="rounded-[14px] border border-dashed border-[var(--hairline)] bg-[var(--surface-subtle)] px-4 py-6 text-center text-[13px] text-[var(--ink-tertiary)]">
+          <p className="rounded-apple-widget border border-dashed border-[var(--hairline)] bg-[var(--surface-subtle)] px-4 py-6 text-center text-[13px] text-[var(--ink-tertiary)]">
             {canEdit
               ? `ยังไม่มีปฏิทินปี ${year} — อัปโหลด PDF หรือเพิ่มวันเอง แล้วกดบันทึก`
               : `ยังไม่มีปฏิทินวันหยุดปี ${year}`}
           </p>
         ) : canEdit ? (
-          <div className="overflow-hidden rounded-[14px] border border-[var(--hairline)]">
+          <div className="overflow-hidden rounded-apple-widget border border-[var(--hairline)]">
             <table className="w-full text-left text-[13px]">
               <thead className="bg-[var(--surface-subtle)] text-[11px] font-bold uppercase tracking-wider text-[var(--ink-muted)]">
                 <tr>
@@ -322,7 +322,7 @@ export default function CompanyHolidayCard({ canEdit = true }: { canEdit?: boole
                           )
                         }
                         aria-label={`วันที่รายการที่ ${index + 1}`}
-                        className="rounded-[11px] border border-[var(--hairline)] bg-[var(--surface)] px-2 py-1 text-[12px] outline-hidden focus:border-[var(--accent)]"
+                        className="rounded-apple-md border border-[var(--hairline)] bg-[var(--surface)] px-2 py-1 text-[12px] outline-hidden focus:border-[var(--accent)]"
                       />
                     </td>
                     <td className="px-3 py-1.5">
@@ -336,7 +336,7 @@ export default function CompanyHolidayCard({ canEdit = true }: { canEdit?: boole
                           )
                         }
                         aria-label={`ชื่อวันหยุดรายการที่ ${index + 1}`}
-                        className="w-full rounded-[11px] border border-[var(--hairline)] bg-[var(--surface)] px-2 py-1 text-[12px] outline-hidden focus:border-[var(--accent)]"
+                        className="w-full rounded-apple-md border border-[var(--hairline)] bg-[var(--surface)] px-2 py-1 text-[12px] outline-hidden focus:border-[var(--accent)]"
                       />
                     </td>
                     <td className="px-3 py-1.5 text-right">
@@ -357,7 +357,7 @@ export default function CompanyHolidayCard({ canEdit = true }: { canEdit?: boole
             </table>
           </div>
         ) : (
-          <div className="max-h-72 divide-y divide-[var(--hairline-soft)] overflow-y-auto rounded-[14px] border border-[var(--hairline)]">
+          <div className="max-h-72 divide-y divide-[var(--hairline-soft)] overflow-y-auto rounded-apple-widget border border-[var(--hairline)]">
             {rows.map((row, index) => (
               <div
                 key={`${row.date}-${index}`}

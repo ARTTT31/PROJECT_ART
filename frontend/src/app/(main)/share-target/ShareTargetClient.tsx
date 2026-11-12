@@ -74,7 +74,7 @@ export default function ShareTargetClient({
 
   return (
     <div className="mx-auto max-w-lg px-4 py-8">
-      <div className="rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] p-6 shadow-xs">
+      <div className="rounded-apple-lg border border-[var(--hairline)] bg-[var(--surface)] p-6 shadow-xs">
         {/* Header */}
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--accent-tint)] text-[var(--accent)]">
@@ -101,14 +101,14 @@ export default function ShareTargetClient({
               rows={4}
               value={noteText}
               onChange={(e) => setNoteText(e.target.value)}
-              className="w-full rounded-[11px] border border-[var(--hairline)] bg-[var(--surface-grouped)] p-3 text-[13px] text-[var(--ink)] focus:border-[var(--accent)] focus:outline-hidden"
+              className="w-full rounded-apple-md border border-[var(--hairline)] bg-[var(--surface-grouped)] p-3 text-[13px] text-[var(--ink)] focus:border-[var(--accent)] focus:outline-hidden"
               placeholder="พิมพ์ข้อความที่ต้องการบันทึก..."
             />
           </div>
 
           {/* Details breakdown if title/url separate */}
           {(initialTitle || initialUrl) && (
-            <div className="rounded-[11px] bg-[var(--surface-grouped)] p-3 text-xs text-[var(--ink-secondary)] space-y-1">
+            <div className="rounded-apple-md bg-[var(--surface-grouped)] p-3 text-xs text-[var(--ink-secondary)] space-y-1">
               {initialTitle && (
                 <div className="flex items-center gap-1.5 truncate">
                   <FileText className="h-3.5 w-3.5 shrink-0 text-[var(--ink-muted)]" />

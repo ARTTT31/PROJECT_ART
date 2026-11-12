@@ -2,6 +2,7 @@
 
 import type { ReactNode } from 'react';
 import { ArrowRight, Check, CheckCircle2, Clock, LogIn, Shield } from 'lucide-react';
+import { useI18n } from '@/lib/i18n/I18nProvider';
 
 /**
  * "Your request was received" screen for deployments that approve sign-ups by
@@ -10,7 +11,7 @@ import { ArrowRight, Check, CheckCircle2, Clock, LogIn, Shield } from 'lucide-re
  */
 export default function ApprovalPending({
   email,
-  title = 'ส่งคำขอสมัครสมาชิกสำเร็จแล้ว',
+  title,
   lead,
   note,
   onBack,
@@ -21,17 +22,23 @@ export default function ApprovalPending({
   note?: string;
   onBack: () => void;
 }) {
+  const { tr } = useI18n();
+
   return (
     <div className="auth-state" role="status" aria-live="polite">
       <span className="auth-state-icon" aria-hidden="true">
         <CheckCircle2 size={30} strokeWidth={2.2} />
       </span>
 
-      <h2 className="auth-state-title">{title}</h2>
+      <h2 className="auth-state-title">
+        {title ?? tr('ส่งคำขอสมัครสมาชิกสำเร็จแล้ว', 'Sign-up request sent')}
+      </h2>
       <p className="auth-state-text">
         {lead ?? (
           <>
-            เราได้รับคำขอของ <strong>{email}</strong> เรียบร้อยแล้ว
+            {tr('เราได้รับคำขอของ', 'We received a request from')}{' '}
+            <strong>{email}</strong>
+            {tr(' เรียบร้อยแล้ว', '.')}
           </>
         )}
       </p>
@@ -42,8 +49,10 @@ export default function ApprovalPending({
             <Check size={13} strokeWidth={3} />
           </span>
           <span className="auth-step-body">
-            <span className="auth-step-title">รับคำขอเรียบร้อย</span>
-            <span className="auth-step-text">ระบบบันทึกข้อมูลบัญชีของคุณแล้ว</span>
+            <span className="auth-step-title">{tr('รับคำขอเรียบร้อย', 'Request received')}</span>
+            <span className="auth-step-text">
+              {tr('ระบบบันทึกข้อมูลบัญชีของคุณแล้ว', 'Your account details have been saved')}
+            </span>
           </span>
         </li>
 
@@ -52,8 +61,15 @@ export default function ApprovalPending({
             <Clock size={13} strokeWidth={2.4} />
           </span>
           <span className="auth-step-body">
-            <span className="auth-step-title">รอผู้ดูแลระบบอนุมัติ</span>
-            <span className="auth-step-text">ระบบนี้กำหนดให้แอดมินอนุมัติก่อนเข้าใช้งาน</span>
+            <span className="auth-step-title">
+              {tr('รอผู้ดูแลระบบอนุมัติ', 'Waiting for admin approval')}
+            </span>
+            <span className="auth-step-text">
+              {tr(
+                'ระบบนี้กำหนดให้แอดมินอนุมัติก่อนเข้าใช้งาน',
+                'An admin must approve your account before you can sign in',
+              )}
+            </span>
           </span>
         </li>
 
@@ -62,8 +78,10 @@ export default function ApprovalPending({
             <LogIn size={13} strokeWidth={2.4} />
           </span>
           <span className="auth-step-body">
-            <span className="auth-step-title">เข้าใช้งานได้ทันที</span>
-            <span className="auth-step-text">เข้าสู่ระบบด้วยอีเมลนี้เมื่อได้รับอนุมัติ</span>
+            <span className="auth-step-title">{tr('เข้าใช้งานได้ทันที', 'Ready to use')}</span>
+            <span className="auth-step-text">
+              {tr('เข้าสู่ระบบด้วยอีเมลนี้เมื่อได้รับอนุมัติ', 'Sign in with this email once approved')}
+            </span>
           </span>
         </li>
       </ol>
@@ -71,13 +89,17 @@ export default function ApprovalPending({
       <div className="auth-note">
         <Shield size={15} className="auth-note-icon" aria-hidden="true" />
         <p className="auth-note-text">
-          {note ?? 'เมื่อผู้ดูแลระบบอนุมัติแล้ว บัญชีจะใช้งานได้ทันที และเราจะแจ้งผลให้ทราบทางอีเมล'}
+          {note ??
+            tr(
+              'เมื่อผู้ดูแลระบบอนุมัติแล้ว บัญชีจะใช้งานได้ทันที และเราจะแจ้งผลให้ทราบทางอีเมล',
+              "Once an admin approves, your account works right away and we'll email you the result",
+            )}
         </p>
       </div>
 
       <div className="auth-actions">
         <button type="button" className="login-submit" onClick={onBack}>
-          <span>กลับไปหน้าเข้าสู่ระบบ</span>
+          <span>{tr('กลับไปหน้าเข้าสู่ระบบ', 'Back to sign in')}</span>
           <ArrowRight size={18} aria-hidden="true" />
         </button>
       </div>

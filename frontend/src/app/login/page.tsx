@@ -24,6 +24,7 @@ import TurnstileWidget from '@/components/Auth/TurnstileWidget';
 import ApprovalPending from '@/components/Auth/ApprovalPending';
 import AuthTransitionOverlay from '@/components/Auth/AuthTransitionOverlay';
 import { useToast } from '@/components/Toast/ToastProvider';
+import { useI18n } from '@/lib/i18n/I18nProvider';
 import { parseUserAgent } from '@/utils/userAgent';
 
 /** Thai date, short month (e.g. "วันพฤหัสบดีที่ 9 ต.ค. 2569") — fits one line. */
@@ -71,6 +72,7 @@ type LoginView = 'signin' | 'signup' | 'pending';
 /** Brand block shared by every view of this page. */
 function LoginHeader({ now, tagline }: { now: Date; tagline: string }) {
   const { companyName, companyTagline, brandLogoUrl } = useBranding();
+  const { tr } = useI18n();
   const effectiveLogo = brandLogoUrl || '/art-workspace-mark.svg';
 
   return (
@@ -89,7 +91,7 @@ function LoginHeader({ now, tagline }: { now: Date; tagline: string }) {
       <p className="login-clock">
         <Clock size={15} strokeWidth={2} aria-hidden="true" className="login-clock-icon" />
         <time suppressHydrationWarning className="login-clock-time" dateTime={now.toISOString()}>
-          {formatTime(now)} น.
+          {tr('{time} น.', '{time}', { time: formatTime(now) })}
         </time>
         <span aria-hidden="true" className="login-clock-sep">
           •
@@ -127,6 +129,7 @@ function LoginFrame({
 
 function LoginContent() {
   const { login, status } = useAuth();
+  const { tr } = useI18n();
   const toast = useToast();
   const router = useRouter();
   const [email, setEmail] = useState('');
@@ -263,15 +266,15 @@ function LoginContent() {
     const email = signupEmail.trim();
 
     if (!name) {
-      setSignupError('กรุณากรอกชื่อที่แสดง');
+      setSignupError(tr('กรุณากรอกชื่อที่แสดง', 'Please enter a display name'));
       return;
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setSignupError('กรุณาตรวจสอบรูปแบบอีเมลอีกครั้ง');
+      setSignupError(tr('กรุณาตรวจสอบรูปแบบอีเมลอีกครั้ง', 'Please check the email format and try again'));
       return;
     }
     if (signupPassword.length < 8) {
-      setSignupError('รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร');
+      setSignupError(tr('รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร', 'Password must be at least 8 characters'));
       return;
     }
 
@@ -294,7 +297,9 @@ function LoginContent() {
 
       if (!response.ok) {
         setSignupError(
-          result.detail || result.message || 'สมัครสมาชิกไม่สำเร็จ กรุณาลองใหม่อีกครั้ง',
+          result.detail ||
+            result.message ||
+            tr('สมัครสมาชิกไม่สำเร็จ กรุณาลองใหม่อีกครั้ง', 'Sign-up failed. Please try again'),
         );
         return;
       }
@@ -310,10 +315,13 @@ function LoginContent() {
       setSignupPassword('');
       setSignupName('');
       setView('signin');
-      toast.success('สมัครสมาชิกสำเร็จ', 'กรุณาเข้าสู่ระบบด้วยบัญชีที่สร้างใหม่');
+      toast.success(
+        tr('สมัครสมาชิกสำเร็จ', 'Account created'),
+        tr('กรุณาเข้าสู่ระบบด้วยบัญชีที่สร้างใหม่', 'Please sign in with your new account'),
+      );
     } catch (err) {
       console.error('Signup submit error:', err);
-      setSignupError('เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง');
+      setSignupError(tr('เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง', 'Connection error. Please try again'));
     } finally {
       setIsSigningUp(false);
     }
@@ -345,7 +353,7 @@ function LoginContent() {
 
     if (password.length < 6) {
       setErrorKey((k) => k + 1);
-      setError('รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร');
+      setError(tr('รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร', 'Password must be at least 6 characters'));
       return;
     }
 
@@ -397,7 +405,13 @@ function LoginContent() {
         const retryAfter = parseInt(response.headers.get('Retry-After') || '30', 10);
         setRateLimitSeconds(retryAfter);
         setErrorKey((k) => k + 1);
-        setError(`ลองเข้าสู่ระบบบ่อยเกินไป กรุณารอ ${retryAfter} วินาที`);
+        setError(
+          tr(
+            'ลองเข้าสู่ระบบบ่อยเกินไป กรุณารอ {seconds} วินาที',
+            'Too many sign-in attempts. Please wait {seconds} seconds',
+            { seconds: retryAfter },
+          ),
+        );
         setIsSubmitting(false);
         return;
       }
@@ -426,10 +440,20 @@ function LoginContent() {
           localStorage.removeItem('remembered_email');
         }
 
-        toast.success('เข้าสู่ระบบสำเร็จ', `ยินดีต้อนรับกลับมา ${result.data.user.name || ''}!`);
+        toast.success(
+          tr('เข้าสู่ระบบสำเร็จ', 'Signed in'),
+          tr('ยินดีต้อนรับกลับมา {name}!', 'Welcome back, {name}!', {
+            name: result.data.user.name || '',
+          }),
+        );
       } else {
         setError(
-          result.detail || result.message || 'เข้าสู่ระบบไม่สำเร็จ กรุณาตรวจสอบอีเมลและรหัสผ่าน',
+          result.detail ||
+            result.message ||
+            tr(
+              'เข้าสู่ระบบไม่สำเร็จ กรุณาตรวจสอบอีเมลและรหัสผ่าน',
+              'Sign-in failed. Please check your email and password',
+            ),
         );
         setErrorKey((k) => k + 1);
         setIsSubmitting(false);
@@ -438,9 +462,14 @@ function LoginContent() {
       clearTimeout(timeoutId);
       console.error('Login submit error:', err);
       if (err.name === 'AbortError') {
-        setError('การเชื่อมต่อเซิร์ฟเวอร์ใช้เวลานานเกินไป กรุณากดลองใหม่อีกครั้ง');
+        setError(
+          tr(
+            'การเชื่อมต่อเซิร์ฟเวอร์ใช้เวลานานเกินไป กรุณากดลองใหม่อีกครั้ง',
+            'The server took too long to respond. Please try again',
+          ),
+        );
       } else {
-        setError('เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง');
+        setError(tr('เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง', 'Connection error. Please try again'));
       }
       setErrorKey((k) => k + 1);
       setIsSubmitting(false);
@@ -452,16 +481,24 @@ function LoginContent() {
   // ── Waiting for an admin's decision (approval mode) ──
   if (view === 'pending') {
     return (
-      <LoginFrame now={now} tagline="สถานะการสมัครสมาชิก">
+      <LoginFrame
+        now={now}
+        tagline={tr('สถานะการสมัครสมาชิก', 'Sign-up status')}
+      >
         <ApprovalPending
           email={pendingEmail}
-          title="ได้รับคำขอสมัครสมาชิกแล้ว"
+          title={tr('ได้รับคำขอสมัครสมาชิกแล้ว', 'Sign-up request received')}
           lead={
             <>
-              เราได้รับคำขอของ <strong>{pendingEmail}</strong> แล้ว
+              {tr('เราได้รับคำขอของ', 'We received a request from')}{' '}
+              <strong>{pendingEmail}</strong>
+              {tr(' แล้ว', '.')}
             </>
           }
-          note="บัญชีจะใช้งานได้ทันทีที่ผู้ดูแลระบบอนุมัติ และเราจะแจ้งผลให้ทราบทางอีเมล"
+          note={tr(
+            'บัญชีจะใช้งานได้ทันทีที่ผู้ดูแลระบบอนุมัติ และเราจะแจ้งผลให้ทราบทางอีเมล',
+            "Your account works as soon as an admin approves it, and we'll email you the result",
+          )}
           onBack={() => setView('signin')}
         />
       </LoginFrame>
@@ -471,14 +508,14 @@ function LoginContent() {
   // ── Sign-up (only reachable when the API reports approval/open) ──
   if (view === 'signup') {
     return (
-      <LoginFrame now={now} tagline="สมัครสมาชิกเพื่อใช้งานแดชบอร์ด">
+      <LoginFrame now={now} tagline={tr('สมัครสมาชิกเพื่อใช้งานแดชบอร์ด', 'Sign up to use the dashboard')}>
         <form
           onSubmit={handleSignup}
           className="login-form login-view-enter"
           aria-busy={isSigningUp}
         >
           <label htmlFor="signup-name" className="login-field">
-            <span>ชื่อที่แสดง</span>
+            <span>{tr('ชื่อที่แสดง', 'Display name')}</span>
             <div className="login-input-wrap">
               <User size={18} aria-hidden="true" />
               <input
@@ -487,7 +524,7 @@ function LoginContent() {
                 type="text"
                 value={signupName}
                 onChange={(event) => setSignupName(event.target.value)}
-                placeholder="ชื่อ-นามสกุล"
+                placeholder={tr('ชื่อ-นามสกุล', 'Full name')}
                 required
                 autoComplete="name"
                 disabled={isSigningUp}
@@ -496,7 +533,7 @@ function LoginContent() {
           </label>
 
           <label htmlFor="signup-email" className="login-field">
-            <span>อีเมล</span>
+            <span>{tr('อีเมล', 'Email')}</span>
             <div className="login-input-wrap">
               <Mail size={18} aria-hidden="true" />
               <input
@@ -513,7 +550,7 @@ function LoginContent() {
           </label>
 
           <label htmlFor="signup-password" className="login-field">
-            <span>รหัสผ่าน (อย่างน้อย 8 ตัวอักษร)</span>
+            <span>{tr('รหัสผ่าน (อย่างน้อย 8 ตัวอักษร)', 'Password (at least 8 characters)')}</span>
             <div className="login-input-wrap">
               <Lock size={18} aria-hidden="true" />
               <input
@@ -531,7 +568,12 @@ function LoginContent() {
           </label>
 
           {registrationMode === 'approval' && (
-            <p className="login-hint">บัญชีที่สมัครจะใช้งานได้หลังผู้ดูแลระบบอนุมัติ</p>
+            <p className="login-hint">
+              {tr(
+                'บัญชีที่สมัครจะใช้งานได้หลังผู้ดูแลระบบอนุมัติ',
+                'New accounts work after an admin approves them',
+              )}
+            </p>
           )}
 
           <TurnstileWidget onToken={setTurnstileToken} />
@@ -547,11 +589,11 @@ function LoginContent() {
             {isSigningUp ? (
               <>
                 <Loader2 size={18} className="login-submit-spinner" aria-hidden="true" />
-                <span>กำลังส่งคำขอ...</span>
+                <span>{tr('กำลังส่งคำขอ...', 'Sending request…')}</span>
               </>
             ) : (
               <>
-                <span>ส่งคำขอสมัคร</span>
+                <span>{tr('ส่งคำขอสมัคร', 'Send sign-up request')}</span>
                 <ArrowRight size={18} aria-hidden="true" />
               </>
             )}
@@ -566,7 +608,7 @@ function LoginContent() {
             }}
             disabled={isSigningUp}
           >
-            กลับไปหน้าเข้าสู่ระบบ
+            {tr('กลับไปหน้าเข้าสู่ระบบ', 'Back to sign in')}
           </button>
         </form>
       </LoginFrame>
@@ -575,9 +617,9 @@ function LoginContent() {
 
   return (
     <main className="login-page">
-      <section aria-label="เข้าสู่ระบบ ART Workspace" className="login-shell">
+      <section aria-label={tr('เข้าสู่ระบบ ART Workspace', 'Sign in to ART Workspace')} className="login-shell">
         <div className="login-panel">
-          <LoginHeader now={now} tagline="เข้าสู่ระบบเพื่อใช้งานแดชบอร์ดของคุณ" />
+          <LoginHeader now={now} tagline={tr('เข้าสู่ระบบเพื่อใช้งานแดชบอร์ดของคุณ', 'Sign in to your dashboard')} />
 
           <form
             onSubmit={handleSubmit}
@@ -585,7 +627,7 @@ function LoginContent() {
             aria-busy={isSubmitting}
           >
             <label htmlFor="login-email" className="login-field">
-              <span>อีเมล หรือ ชื่อผู้ใช้</span>
+              <span>{tr('อีเมล หรือ ชื่อผู้ใช้', 'Email or username')}</span>
               <div className="login-input-wrap">
                 <Mail size={18} aria-hidden="true" />
                 <input
@@ -595,7 +637,7 @@ function LoginContent() {
                   type="text"
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
-                  placeholder="อีเมล หรือ ชื่อผู้ใช้"
+                  placeholder={tr('อีเมล หรือ ชื่อผู้ใช้', 'Email or username')}
                   required
                   autoComplete="username"
                   disabled={isSubmitting}
@@ -605,7 +647,7 @@ function LoginContent() {
             </label>
 
             <label htmlFor="login-password" className="login-field">
-              <span>รหัสผ่าน</span>
+              <span>{tr('รหัสผ่าน', 'Password')}</span>
               <div className="login-input-wrap">
                 <Lock size={18} aria-hidden="true" />
                 <input
@@ -628,7 +670,11 @@ function LoginContent() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  aria-label={showPassword ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'}
+                  aria-label={
+                    showPassword
+                      ? tr('ซ่อนรหัสผ่าน', 'Hide password')
+                      : tr('แสดงรหัสผ่าน', 'Show password')
+                  }
                   className="login-eye"
                   disabled={isSubmitting}
                 >
@@ -656,7 +702,7 @@ function LoginContent() {
                 <span aria-hidden="true" className="login-remember-switch">
                   <span className="login-remember-knob" />
                 </span>
-                <span className="login-remember-text">จดจำฉันไว้</span>
+                <span className="login-remember-text">{tr('จดจำฉันไว้', 'Remember me')}</span>
               </label>
             </div>
 
@@ -665,13 +711,13 @@ function LoginContent() {
                 href="/forgot-password"
                 className="font-semibold text-[var(--accent)] hover:underline"
               >
-                ลืมรหัสผ่าน?
+                {tr('ลืมรหัสผ่าน?', 'Forgot password?')}
               </Link>
             </div>
 
             {totpRequired && (
               <label htmlFor="login-totp" className="login-field">
-                <span>รหัสยืนยัน 6 หลัก</span>
+                <span>{tr('รหัสยืนยัน 6 หลัก', '6-digit verification code')}</span>
                 <div className="login-input-wrap">
                   <ShieldCheck size={18} aria-hidden="true" />
                   <input
@@ -693,7 +739,10 @@ function LoginContent() {
 
             {totpRequired && (
               <p id="login-totp-hint" className="login-hint">
-                เปิดรหัสจากแอป Authenticator หรือกรอกรหัสสำรอง (แบบ xxxxx-xxxxx) ในช่องนี้
+                {tr(
+                  'เปิดรหัสจากแอป Authenticator หรือกรอกรหัสสำรอง (แบบ xxxxx-xxxxx) ในช่องนี้',
+                  'Open the code in your authenticator app, or enter a recovery code (xxxxx-xxxxx) here',
+                )}
               </p>
             )}
 
@@ -718,16 +767,20 @@ function LoginContent() {
               {rateLimitSeconds > 0 ? (
                 <>
                   <Loader2 size={18} className="login-submit-spinner" aria-hidden="true" />
-                  <span>รอ {rateLimitSeconds} วินาที...</span>
+                  <span>
+                    {tr('รอ {seconds} วินาที...', 'Wait {seconds} seconds…', {
+                      seconds: rateLimitSeconds,
+                    })}
+                  </span>
                 </>
               ) : isSubmitting ? (
                 <>
                   <Loader2 size={18} className="login-submit-spinner" aria-hidden="true" />
-                  <span>กำลังเข้าสู่ระบบ...</span>
+                  <span>{tr('กำลังเข้าสู่ระบบ...', 'Signing in…')}</span>
                 </>
               ) : (
                 <>
-                  <span>เข้าสู่ระบบ</span>
+                  <span>{tr('เข้าสู่ระบบ', 'Sign in')}</span>
                   <ArrowRight size={18} aria-hidden="true" />
                 </>
               )}
@@ -735,18 +788,23 @@ function LoginContent() {
 
             {/* Dedicated prominent registration box */}
             <div className="pt-4 mt-3 border-t border-[var(--hairline)] text-center">
-              <p className="text-[13px] text-[var(--ink-muted)] mb-2.5">ยังไม่มีบัญชีสำหรับใช้งาน?</p>
+              <p className="text-[13px] text-[var(--ink-muted)] mb-2.5">
+                {tr('ยังไม่มีบัญชีสำหรับใช้งาน?', "Don't have an account yet?")}
+              </p>
               <Link
                 href="/register"
-                className="inline-flex items-center justify-center gap-1.5 w-full py-2.5 px-4 rounded-[14px] border border-[var(--accent-border)] bg-[var(--accent-soft-weak)] text-[var(--accent-text)] font-bold text-[13px] hover:bg-[var(--accent-soft)] hover:border-[var(--accent-border)] transition-all active:scale-[0.98]"
+                className="inline-flex items-center justify-center gap-1.5 w-full py-2.5 px-4 rounded-apple-widget border border-[var(--accent-border)] bg-[var(--accent-soft-weak)] text-[var(--accent-text)] font-bold text-[13px] hover:bg-[var(--accent-soft)] hover:border-[var(--accent-border)] transition-all active:scale-[0.98]"
               >
-                <span>สมัครสมาชิก</span>
+                <span>{tr('สมัครสมาชิก', 'Sign up')}</span>
                 <ArrowRight size={15} aria-hidden="true" />
               </Link>
 
               {registrationMode === 'closed' && (
                 <span className="text-[12px] text-[var(--ink-tertiary)] block mt-1.5">
-                  ระบบปิดรับสมัครสมาชิกใหม่ กรุณาติดต่อผู้ดูแลระบบเพื่อขอสิทธิ์เข้าใช้งาน
+                  {tr(
+                    'ระบบปิดรับสมัครสมาชิกใหม่ กรุณาติดต่อผู้ดูแลระบบเพื่อขอสิทธิ์เข้าใช้งาน',
+                    'Sign-ups are closed. Contact your administrator to request access',
+                  )}
                 </span>
               )}
             </div>
@@ -757,8 +815,8 @@ function LoginContent() {
       {signInDone && (
         <AuthTransitionOverlay
           tone="success"
-          title="เข้าสู่ระบบสำเร็จ"
-          subtitle="กำลังพาคุณเข้าสู่แดชบอร์ด…"
+          title={tr('เข้าสู่ระบบสำเร็จ', 'Signed in')}
+          subtitle={tr('กำลังพาคุณเข้าสู่แดชบอร์ด…', 'Taking you to your dashboard…')}
         />
       )}
     </main>

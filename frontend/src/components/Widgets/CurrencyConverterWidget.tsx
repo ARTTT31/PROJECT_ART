@@ -108,12 +108,12 @@ export default function CurrencyConverterWidget({
 
   return (
     <section
-      className="flex h-full flex-col rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] p-5"
+      className="flex h-full flex-col rounded-apple-lg border border-[var(--hairline)] bg-[var(--surface)] p-5"
       aria-labelledby="currency-converter-title"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] bg-[var(--info-soft)] text-[var(--info-ink)]">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-apple-widget bg-[var(--info-soft)] text-[var(--info-ink)]">
             <Wallet size={20} aria-hidden="true" />
           </div>
           <div className="min-w-0">
@@ -141,7 +141,7 @@ export default function CurrencyConverterWidget({
             value={amount}
             onChange={(event) => setAmount(event.target.value)}
             aria-label="จำนวนเงินที่ต้องการแปลง"
-            className="w-full rounded-[14px] border border-[var(--hairline-strong)] bg-[var(--surface)] px-3 py-2 text-[14px] tabular-nums text-[var(--ink)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
+            className="w-full rounded-apple-widget border border-[var(--hairline-strong)] bg-[var(--surface)] px-3 py-2 text-[14px] tabular-nums text-[var(--ink)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
           />
         </label>
 
@@ -181,7 +181,7 @@ export default function CurrencyConverterWidget({
         </div>
       </div>
 
-      <div className="mt-4 flex flex-1 flex-col justify-center rounded-[18px] bg-[var(--surface-grouped)] px-4 py-3.5">
+      <div className="mt-4 flex flex-1 flex-col justify-center rounded-apple-lg bg-[var(--surface-grouped)] px-4 py-3.5">
         {loading ? (
           <div role="status" className="flex items-center justify-center py-2">
             <Loader2 size={16} className="animate-spin text-[var(--accent-text)]" aria-hidden="true" />

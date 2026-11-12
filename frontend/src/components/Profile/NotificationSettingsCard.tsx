@@ -25,9 +25,9 @@ export function NotificationSettingsCard() {
     >
       <div className="space-y-2.5">
         {/* Web Push Notification */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-[18px] bg-[var(--surface)] p-3.5 ring-1 ring-[var(--hairline)] shadow-2xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-apple-lg bg-[var(--surface)] p-3.5 ring-1 ring-[var(--hairline)] shadow-2xs">
           <div className="flex items-start sm:items-center gap-3 min-w-0 flex-1">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] bg-[var(--accent-soft)] text-[var(--accent-text)]">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-apple-widget bg-[var(--accent-soft)] text-[var(--accent-text)]">
               <Globe size={18} aria-hidden="true" />
             </div>
             <div className="min-w-0 flex-1">
@@ -88,9 +88,9 @@ export function NotificationSettingsCard() {
         </div>
 
         {/* Bell Sound */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-[18px] bg-[var(--surface)] p-3.5 ring-1 ring-[var(--hairline)] shadow-2xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-apple-lg bg-[var(--surface)] p-3.5 ring-1 ring-[var(--hairline)] shadow-2xs">
           <div className="flex items-start sm:items-center gap-3 min-w-0 flex-1">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] bg-[var(--accent-soft)] text-[var(--accent-text)]">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-apple-widget bg-[var(--accent-soft)] text-[var(--accent-text)]">
               <Volume2 size={18} aria-hidden="true" />
             </div>
             <div className="min-w-0 flex-1">
@@ -121,9 +121,9 @@ export function NotificationSettingsCard() {
         </div>
 
         {/* Holiday Alerts */}
-        <div className="flex items-center justify-between gap-3 rounded-[18px] bg-[var(--surface)] p-3.5 ring-1 ring-[var(--hairline)] shadow-2xs">
+        <div className="flex items-center justify-between gap-3 rounded-apple-lg bg-[var(--surface)] p-3.5 ring-1 ring-[var(--hairline)] shadow-2xs">
           <div className="flex items-start sm:items-center gap-3 min-w-0 flex-1">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] bg-[var(--accent-soft)] text-[var(--accent-text)]">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-apple-widget bg-[var(--accent-soft)] text-[var(--accent-text)]">
               <CalendarDays size={18} aria-hidden="true" />
             </div>
             <div className="min-w-0 flex-1">
@@ -145,9 +145,9 @@ export function NotificationSettingsCard() {
         </div>
 
         {/* Personal Reminder Alerts */}
-        <div className="flex items-center justify-between gap-3 rounded-[18px] bg-[var(--surface)] p-3.5 ring-1 ring-[var(--hairline)] shadow-2xs">
+        <div className="flex items-center justify-between gap-3 rounded-apple-lg bg-[var(--surface)] p-3.5 ring-1 ring-[var(--hairline)] shadow-2xs">
           <div className="flex items-start sm:items-center gap-3 min-w-0 flex-1">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] bg-[var(--accent-soft)] text-[var(--accent-text)]">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-apple-widget bg-[var(--accent-soft)] text-[var(--accent-text)]">
               <ListChecks size={18} aria-hidden="true" />
             </div>
             <div className="min-w-0 flex-1">

@@ -12,14 +12,14 @@ export default function UserManagementSkeleton() {
             <div className="h-10 w-28 rounded-full bg-[var(--accent-soft)]" />
           </div>
         </div>
-        <div className="overflow-hidden rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)]">
+        <div className="overflow-hidden rounded-apple-lg border border-[var(--hairline)] bg-[var(--surface)]">
           <div className="h-12 border-b border-[var(--hairline-soft)] bg-[var(--surface-subtle)]" />
           <div className="divide-y divide-[var(--hairline-soft)] p-4 space-y-4">
             {[1, 2, 3, 4, 5].map((idx) => (
               <div key={idx} className="flex items-center justify-between pt-2">
                 <div className="space-y-1.5">
-                  <div className="h-4 w-36 rounded-[11px] bg-[var(--surface-chip)]" />
-                  <div className="h-3 w-48 rounded-[11px] bg-[var(--surface-subtle)]" />
+                  <div className="h-4 w-36 rounded-apple-md bg-[var(--surface-chip)]" />
+                  <div className="h-3 w-48 rounded-apple-md bg-[var(--surface-subtle)]" />
                 </div>
                 <div className="h-6 w-16 rounded-full bg-[var(--surface-chip)]" />
                 <div className="h-6 w-14 rounded-full bg-[var(--surface-chip)]" />

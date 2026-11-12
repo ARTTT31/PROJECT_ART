@@ -183,11 +183,11 @@ export default function WorkspaceBackupCard() {
   return (
     <div
       data-testid="workspace-backup-card"
-      className="rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] p-5 transition-colors"
+      className="rounded-apple-lg border border-[var(--hairline)] bg-[var(--surface)] p-5 transition-colors"
     >
       {/* Header */}
       <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] bg-[var(--surface-chip)] text-[var(--accent)]">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-apple-widget bg-[var(--surface-chip)] text-[var(--accent)]">
           <Database className="h-5 w-5" />
         </div>
         <div>
@@ -203,7 +203,7 @@ export default function WorkspaceBackupCard() {
       {/* Action Grid */}
       <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
         {/* Export Box */}
-        <div className="flex flex-col justify-between rounded-[14px] border border-[var(--hairline)] bg-[var(--surface-grouped)] p-4">
+        <div className="flex flex-col justify-between rounded-apple-widget border border-[var(--hairline)] bg-[var(--surface-grouped)] p-4">
           <div>
             <div className="flex items-center gap-2 text-sm font-semibold text-[var(--ink)]">
               <Download className="h-4 w-4 text-[var(--accent)]" />
@@ -219,7 +219,7 @@ export default function WorkspaceBackupCard() {
               type="button"
               onClick={handleExport}
               disabled={isExporting}
-              className="flex w-full items-center justify-center gap-2 rounded-[11px] bg-[var(--accent)] px-4 py-2 text-xs font-semibold text-white shadow-xs transition-transform active:scale-[0.95] hover:opacity-95 disabled:opacity-50"
+              className="flex w-full items-center justify-center gap-2 rounded-apple-md bg-[var(--accent)] px-4 py-2 text-xs font-semibold text-white shadow-xs transition-transform active:scale-[0.95] hover:opacity-95 disabled:opacity-50"
             >
               {isExporting ? (
                 <>
@@ -237,7 +237,7 @@ export default function WorkspaceBackupCard() {
         </div>
 
         {/* Import Box */}
-        <div className="flex flex-col justify-between rounded-[14px] border border-[var(--hairline)] bg-[var(--surface-grouped)] p-4">
+        <div className="flex flex-col justify-between rounded-apple-widget border border-[var(--hairline)] bg-[var(--surface-grouped)] p-4">
           <div>
             <div className="flex items-center gap-2 text-sm font-semibold text-[var(--ink)]">
               <Upload className="h-4 w-4 text-[var(--accent)]" />
@@ -260,7 +260,7 @@ export default function WorkspaceBackupCard() {
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="flex w-full items-center justify-center gap-2 rounded-[11px] border border-[var(--hairline)] bg-[var(--surface)] px-4 py-2 text-xs font-semibold text-[var(--ink)] shadow-xs transition-transform active:scale-[0.95] hover:bg-[var(--surface-chip)]"
+              className="flex w-full items-center justify-center gap-2 rounded-apple-md border border-[var(--hairline)] bg-[var(--surface)] px-4 py-2 text-xs font-semibold text-[var(--ink)] shadow-xs transition-transform active:scale-[0.95] hover:bg-[var(--surface-chip)]"
             >
               <Upload className="h-3.5 w-3.5 text-[var(--ink-secondary)]" />
               <span>เลือกไฟล์สำรองเพื่อกู้คืน</span>
@@ -285,7 +285,7 @@ export default function WorkspaceBackupCard() {
           </DialogHeader>
 
           <DialogBody className="space-y-3 py-2">
-            <div className="rounded-[11px] border border-[var(--hairline)] bg-[var(--surface-grouped)] p-3 text-xs space-y-2">
+            <div className="rounded-apple-md border border-[var(--hairline)] bg-[var(--surface-grouped)] p-3 text-xs space-y-2">
               <div className="font-semibold text-[var(--ink)]">รายการข้อมูลที่พบในไฟล์:</div>
               <div className="flex items-center justify-between text-[var(--ink-secondary)]">
                 <span>📝 โน้ตด่วน (Quick Notes)</span>
@@ -310,7 +310,7 @@ export default function WorkspaceBackupCard() {
               type="button"
               onClick={() => setConfirmModalOpen(false)}
               disabled={isImporting}
-              className="rounded-[11px] border border-[var(--hairline)] bg-[var(--surface)] px-4 py-2 text-xs font-semibold text-[var(--ink)] active:scale-[0.95]"
+              className="rounded-apple-md border border-[var(--hairline)] bg-[var(--surface)] px-4 py-2 text-xs font-semibold text-[var(--ink)] active:scale-[0.95]"
             >
               ยกเลิก
             </button>
@@ -318,7 +318,7 @@ export default function WorkspaceBackupCard() {
               type="button"
               onClick={handleConfirmRestore}
               disabled={isImporting}
-              className="flex items-center justify-center gap-2 rounded-[11px] bg-[var(--accent)] px-4 py-2 text-xs font-semibold text-white shadow-xs active:scale-[0.95] disabled:opacity-50"
+              className="flex items-center justify-center gap-2 rounded-apple-md bg-[var(--accent)] px-4 py-2 text-xs font-semibold text-white shadow-xs active:scale-[0.95] disabled:opacity-50"
             >
               {isImporting ? (
                 <>

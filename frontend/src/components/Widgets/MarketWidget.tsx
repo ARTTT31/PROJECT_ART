@@ -229,14 +229,14 @@ export default function MarketWidget({
   if (loading && !data) {
     return (
       <div
-        className="flex h-full min-h-[300px] items-center justify-center rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] p-5"
+        className="flex h-full min-h-[300px] items-center justify-center rounded-apple-lg border border-[var(--hairline)] bg-[var(--surface)] p-5"
         role="status"
         aria-live="polite"
         aria-label="กำลังโหลดข้อมูลตลาด"
       >
         <div className="grid w-full animate-pulse grid-cols-1 gap-3 sm:grid-cols-3">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-24 rounded-[18px] bg-[var(--surface-grouped)]" />
+            <div key={i} className="h-24 rounded-apple-lg bg-[var(--surface-grouped)]" />
           ))}
         </div>
       </div>
@@ -249,12 +249,12 @@ export default function MarketWidget({
 
   return (
     <section
-      className="flex h-full flex-col rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] p-5"
+      className="flex h-full flex-col rounded-apple-lg border border-[var(--hairline)] bg-[var(--surface)] p-5"
       aria-labelledby="market-title"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] bg-[var(--warning-soft)] text-[var(--warning-ink)]">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-apple-widget bg-[var(--warning-soft)] text-[var(--warning-ink)]">
             <Coins size={20} aria-hidden="true" />
           </div>
           <div className="min-w-0">
@@ -280,7 +280,7 @@ export default function MarketWidget({
       </div>
 
       {error && (
-        <div className="mt-3 flex items-center justify-between gap-2 rounded-[14px] bg-[var(--danger-soft)] px-3 py-2 text-[12px] font-medium text-[var(--danger)]">
+        <div className="mt-3 flex items-center justify-between gap-2 rounded-apple-widget bg-[var(--danger-soft)] px-3 py-2 text-[12px] font-medium text-[var(--danger)]">
           <span className="flex min-w-0 items-center gap-1.5">
             <AlertCircle size={13} className="shrink-0" aria-hidden="true" />
             <span className="truncate">{error}</span>
@@ -297,9 +297,9 @@ export default function MarketWidget({
 
       <div className="mt-4 grid grid-cols-1 gap-2.5 sm:grid-cols-3">
         {/* ── Gold ─────────────────────────────────────────────────────── */}
-        <div className="flex flex-col justify-between rounded-[18px] border border-[var(--hairline-soft)] bg-[var(--surface-subtle)] p-3.5">
+        <div className="flex flex-col justify-between rounded-apple-lg border border-[var(--hairline-soft)] bg-[var(--surface-subtle)] p-3.5">
           <div className="flex items-center gap-2">
-            <span className="flex h-6 w-6 items-center justify-center rounded-[11px] bg-[var(--warning-soft)] text-[var(--warning-ink)]">
+            <span className="flex h-6 w-6 items-center justify-center rounded-apple-md bg-[var(--warning-soft)] text-[var(--warning-ink)]">
               <Coins size={12} aria-hidden="true" />
             </span>
             <label
@@ -369,9 +369,9 @@ export default function MarketWidget({
         </div>
 
         {/* ── SET index ────────────────────────────────────────────────── */}
-        <div className="flex flex-col justify-between rounded-[18px] border border-[var(--hairline-soft)] bg-[var(--surface-subtle)] p-3.5">
+        <div className="flex flex-col justify-between rounded-apple-lg border border-[var(--hairline-soft)] bg-[var(--surface-subtle)] p-3.5">
           <div className="flex items-center gap-2">
-            <span className="flex h-6 w-6 items-center justify-center rounded-[11px] bg-[var(--accent-soft)] text-[var(--accent-text)]">
+            <span className="flex h-6 w-6 items-center justify-center rounded-apple-md bg-[var(--accent-soft)] text-[var(--accent-text)]">
               <TrendingUp size={12} aria-hidden="true" />
             </span>
             <span className="text-[11px] font-semibold tracking-wide text-[var(--ink-muted)]">ดัชนี SET</span>
@@ -407,9 +407,9 @@ export default function MarketWidget({
         </div>
 
         {/* ── Currency ─────────────────────────────────────────────────── */}
-        <div className="flex flex-col rounded-[18px] border border-[var(--hairline-soft)] bg-[var(--surface-subtle)] p-3.5">
+        <div className="flex flex-col rounded-apple-lg border border-[var(--hairline-soft)] bg-[var(--surface-subtle)] p-3.5">
           <div className="flex items-center gap-2">
-            <span className="flex h-6 w-6 items-center justify-center rounded-[11px] bg-[var(--success-soft)] text-[var(--success-ink)]">
+            <span className="flex h-6 w-6 items-center justify-center rounded-apple-md bg-[var(--success-soft)] text-[var(--success-ink)]">
               <Banknote size={12} aria-hidden="true" />
             </span>
             <label
@@ -465,7 +465,7 @@ export default function MarketWidget({
         </div>
       </div>
 
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-[14px] bg-[var(--surface-grouped)] px-3 py-2.5 ring-1 ring-[var(--hairline)]">
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-apple-widget bg-[var(--surface-grouped)] px-3 py-2.5 ring-1 ring-[var(--hairline)]">
         <div className="flex flex-wrap items-center gap-2">
           <label
             htmlFor="market-chart-asset"
@@ -492,13 +492,13 @@ export default function MarketWidget({
           {candleLabel ? `${candleLabel} · ` : ''}กราฟจาก Yahoo Finance
         </span>
       </div>
-      <div className="mt-2 h-[280px] w-full overflow-hidden rounded-[14px] bg-[var(--surface)] ring-1 ring-[var(--hairline)] sm:h-[320px]">
+      <div className="mt-2 h-[280px] w-full overflow-hidden rounded-apple-widget bg-[var(--surface)] ring-1 ring-[var(--hairline)] sm:h-[320px]">
         {candlesLoading && candles.length === 0 ? (
           <div className="flex h-full animate-pulse flex-col justify-end gap-1 px-3 pb-6">
             {[38, 62, 45, 78, 52, 70, 40, 58].map((height, index) => (
               <div
                 key={index}
-                className="w-full rounded-sm bg-[var(--surface-grouped-2)]"
+                className="w-full rounded-full bg-[var(--surface-grouped-2)]"
                 style={{ height: `${height}%` }}
               />
             ))}

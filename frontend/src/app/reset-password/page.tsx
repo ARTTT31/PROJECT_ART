@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { AlertCircle, ArrowRight, CheckCircle2, Loader2, Lock } from 'lucide-react';
 import AuthPageShell from '@/components/Auth/AuthPageShell';
 import { getApiBaseUrl } from '@/lib/api/apiBase';
+import { useI18n } from '@/lib/i18n/I18nProvider';
 import '../../styles/pages/login.css';
 
 const RESET_ENDPOINT = `${getApiBaseUrl()}/api/v1/auth/reset-password`;
@@ -17,6 +18,7 @@ const RESET_ENDPOINT = `${getApiBaseUrl()}/api/v1/auth/reset-password`;
  * session on the server, so the user must sign in again.
  */
 export default function ResetPasswordPage() {
+  const { tr } = useI18n();
   const [token, setToken] = useState('');
   // The link is only in the query string, which is unavailable during
   // prerender. Rendering nothing until hydration avoids both a hydration
@@ -35,7 +37,7 @@ export default function ResetPasswordPage() {
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     if (password !== confirm) {
-      setError('รหัสผ่านทั้งสองช่องไม่ตรงกัน');
+      setError(tr('รหัสผ่านทั้งสองช่องไม่ตรงกัน', 'The two passwords do not match'));
       return;
     }
     setSubmitting(true);
@@ -49,18 +51,24 @@ export default function ResetPasswordPage() {
       });
       const body = await response.json().catch(() => null);
       if (!response.ok) {
-        throw new Error(body?.detail || 'ตั้งรหัสผ่านใหม่ไม่สำเร็จ');
+        throw new Error(
+          body?.detail || tr('ตั้งรหัสผ่านใหม่ไม่สำเร็จ', 'Could not reset the password'),
+        );
       }
       setDone(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'ตั้งรหัสผ่านใหม่ไม่สำเร็จ');
+      setError(
+        err instanceof Error
+          ? err.message
+          : tr('ตั้งรหัสผ่านใหม่ไม่สำเร็จ', 'Could not reset the password'),
+      );
     } finally {
       setSubmitting(false);
     }
   }
 
   return (
-    <AuthPageShell tagline="ตั้งรหัสผ่านใหม่">
+    <AuthPageShell tagline={tr('ตั้งรหัสผ่านใหม่', 'Reset password')}>
       {!ready ? (
         <div className="login-form" role="status" aria-live="polite">
           <Loader2 size={26} className="login-submit-spinner" aria-hidden="true" />
@@ -69,10 +77,10 @@ export default function ResetPasswordPage() {
         <div className="login-form">
           <div className="login-error" role="alert">
             <AlertCircle size={16} aria-hidden="true" className="login-error-icon" />
-            ลิงก์ตั้งรหัสผ่านไม่ถูกต้องหรือหมดอายุแล้ว
+            {tr('ลิงก์ตั้งรหัสผ่านไม่ถูกต้องหรือหมดอายุแล้ว', 'This reset link is invalid or has expired')}
           </div>
           <Link href="/forgot-password" className="login-submit" style={{ textDecoration: 'none' }}>
-            <span>ขอลิงก์ใหม่</span>
+            <span>{tr('ขอลิงก์ใหม่', 'Request a new link')}</span>
             <ArrowRight size={18} aria-hidden="true" />
           </Link>
         </div>
@@ -81,19 +89,22 @@ export default function ResetPasswordPage() {
           <div className="login-notice" role="status" aria-live="polite">
             <span className="login-notice-title">
               <CheckCircle2 size={16} aria-hidden="true" style={{ verticalAlign: '-2px' }} />{' '}
-              ตั้งรหัสผ่านใหม่สำเร็จ
+              {tr('ตั้งรหัสผ่านใหม่สำเร็จ', 'Password reset')}
             </span>
-            อุปกรณ์ทั้งหมดถูกออกจากระบบแล้ว เข้าสู่ระบบอีกครั้งด้วยรหัสผ่านใหม่
+            {tr(
+              'อุปกรณ์ทั้งหมดถูกออกจากระบบแล้ว เข้าสู่ระบบอีกครั้งด้วยรหัสผ่านใหม่',
+              'All devices have been signed out. Sign in again with your new password.',
+            )}
           </div>
           <Link href="/login" className="login-submit" style={{ textDecoration: 'none' }}>
-            <span>ไปหน้าเข้าสู่ระบบ</span>
+            <span>{tr('ไปหน้าเข้าสู่ระบบ', 'Go to sign in')}</span>
             <ArrowRight size={18} aria-hidden="true" />
           </Link>
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="login-form" aria-busy={submitting}>
           <label htmlFor="reset-password" className="login-field">
-            <span>รหัสผ่านใหม่ (อย่างน้อย 8 ตัวอักษร)</span>
+            <span>{tr('รหัสผ่านใหม่ (อย่างน้อย 8 ตัวอักษร)', 'New password (at least 8 characters)')}</span>
             <div className="login-input-wrap">
               <Lock size={18} aria-hidden="true" />
               <input
@@ -111,7 +122,7 @@ export default function ResetPasswordPage() {
           </label>
 
           <label htmlFor="reset-confirm" className="login-field">
-            <span>ยืนยันรหัสผ่านใหม่</span>
+            <span>{tr('ยืนยันรหัสผ่านใหม่', 'Confirm new password')}</span>
             <div className="login-input-wrap">
               <Lock size={18} aria-hidden="true" />
               <input
@@ -139,11 +150,11 @@ export default function ResetPasswordPage() {
             {submitting ? (
               <>
                 <Loader2 size={18} className="login-submit-spinner" aria-hidden="true" />
-                <span>กำลังบันทึก...</span>
+                <span>{tr('กำลังบันทึก...', 'Saving…')}</span>
               </>
             ) : (
               <>
-                <span>ตั้งรหัสผ่านใหม่</span>
+                <span>{tr('ตั้งรหัสผ่านใหม่', 'Reset password')}</span>
                 <ArrowRight size={18} aria-hidden="true" />
               </>
             )}

@@ -187,9 +187,9 @@ export function MyDevicesCard() {
             return (
               <li
                 key={session.session_id}
-                className="flex flex-wrap items-start gap-3 rounded-[14px] border border-[var(--hairline-soft)] bg-[var(--surface-subtle)] px-3.5 py-3"
+                className="flex flex-wrap items-start gap-3 rounded-apple-widget border border-[var(--hairline-soft)] bg-[var(--surface-subtle)] px-3.5 py-3"
               >
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[11px] bg-[var(--surface)] text-[var(--ink-secondary)] ring-1 ring-[var(--hairline-soft)]">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-apple-md bg-[var(--surface)] text-[var(--ink-secondary)] ring-1 ring-[var(--hairline-soft)]">
                   <DeviceIcon size={15} aria-hidden="true" />
                 </div>
 

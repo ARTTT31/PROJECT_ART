@@ -14,10 +14,13 @@ import {
 } from 'lucide-react';
 import WidgetSizeToggle from './WidgetSizeToggle';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
+import { useI18n } from '@/lib/i18n/I18nProvider';
+import { translateText } from '@/lib/i18n/translate';
 import {
   CACHE_KEY,
   CACHE_TTL_MS,
   CITY_PRESETS,
+  cityName,
   getPM25Meta,
   getWeatherMeta,
   LOCATION_KEY,
@@ -45,7 +48,7 @@ async function resolveLocationName(lat: number, lon: number): Promise<string> {
       if (data.countryName) return data.countryName;
     }
   } catch {}
-  return `พิกัด ${lat.toFixed(2)}, ${lon.toFixed(2)}`;
+  return `${translateText('พิกัด', 'Coordinates')} ${lat.toFixed(2)}, ${lon.toFixed(2)}`;
 }
 
 // ── Main Component ───────────────────────────────────────────────────────────
@@ -57,6 +60,7 @@ export default function WeatherWidget({
   width?: number;
   onResize?: (size: number) => void;
 }) {
+  const { tr, locale } = useI18n();
   const [selectedCity, setSelectedCity] = useState<CityLocation>(CITY_PRESETS[0]);
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [airQuality, setAirQuality] = useState<AirQualityData | null>(null);
@@ -163,7 +167,7 @@ export default function WeatherWidget({
           const formattedHour = `${String(hour).padStart(2, '0')}:00`;
 
           hourlyList.push({
-            time: isNow ? 'ตอนนี้' : formattedHour,
+            time: isNow ? translateText('ตอนนี้', 'Now') : formattedHour,
             rawTime: hourlyTimes[i],
             weatherCode: hourlyCodes[i] ?? 0,
             temp: Math.round(hourlyTemps[i] ?? 0),
@@ -215,7 +219,12 @@ export default function WeatherWidget({
           forecast: weatherRes.status,
           airQuality: aqiRes.status,
         });
-        setStaleNotice('ผู้ให้บริการข้อมูลตอบกลับไม่ครบ — แสดงข้อมูลล่าสุดที่มีอยู่');
+        setStaleNotice(
+          translateText(
+            'ผู้ให้บริการข้อมูลตอบกลับไม่ครบ — แสดงข้อมูลล่าสุดที่มีอยู่',
+            'The data provider returned an incomplete response — showing the latest data',
+          ),
+        );
       } else if (typeof window !== 'undefined') {
         // Only a fully fresh response may claim `savedAt`: marking a cached half
         // as new would stop the widget from retrying it for another TTL.
@@ -238,9 +247,19 @@ export default function WeatherWidget({
       if (dataRef.current.weather && dataRef.current.airQuality) {
         // Something is already on screen. Raising an alarm over a failed refresh
         // reads as a broken widget, so keep the data and say what happened.
-        setStaleNotice('อัปเดตล่าสุดไม่สำเร็จ — กำลังแสดงข้อมูลเดิม');
+        setStaleNotice(
+          translateText(
+            'อัปเดตล่าสุดไม่สำเร็จ — กำลังแสดงข้อมูลเดิม',
+            'The last update failed — showing the previous data',
+          ),
+        );
       } else {
-        setError('เกิดข้อผิดพลาดในการโหลดข้อมูลสภาพอากาศ');
+        setError(
+          translateText(
+            'เกิดข้อผิดพลาดในการโหลดข้อมูลสภาพอากาศ',
+            'Something went wrong while loading the weather data',
+          ),
+        );
       }
     } finally {
       setLoading(false);
@@ -251,7 +270,12 @@ export default function WeatherWidget({
   // ── Auto-Detect Location (GPS) ──────────────────────────────────────────────
   const handleDetectLocation = useCallback(async () => {
     if (typeof window === 'undefined' || !navigator.geolocation) {
-      setError('เบราว์เซอร์ไม่รองรับการระบุพิกัดตำแหน่ง');
+      setError(
+        translateText(
+          'เบราว์เซอร์ไม่รองรับการระบุพิกัดตำแหน่ง',
+          'This browser does not support location detection',
+        ),
+      );
       return;
     }
 
@@ -276,7 +300,7 @@ export default function WeatherWidget({
         } catch {
           const fallbackCity: CityLocation = {
             id: 'gps',
-            name: `ตำแหน่งปัจจุบัน (${latitude.toFixed(2)}, ${longitude.toFixed(2)})`,
+            name: `${translateText('ตำแหน่งปัจจุบัน', 'Current location')} (${latitude.toFixed(2)}, ${longitude.toFixed(2)})`,
             lat: latitude,
             lon: longitude,
             isGps: true,
@@ -358,9 +382,10 @@ export default function WeatherWidget({
   // ── Computed Meta ──────────────────────────────────────────────────────────
   const weatherMeta = useMemo(
     () => getWeatherMeta(weather?.weatherCode ?? 0),
-    [weather?.weatherCode],
+    // `locale` re-resolves the localized label when the language changes.
+    [weather?.weatherCode, locale],
   );
-  const pm25Meta = useMemo(() => getPM25Meta(airQuality?.pm25 ?? 0), [airQuality?.pm25]);
+  const pm25Meta = useMemo(() => getPM25Meta(airQuality?.pm25 ?? 0), [airQuality?.pm25, locale]);
 
   const WeatherIcon = weatherMeta.icon;
   const ShieldIcon = pm25Meta.icon;
@@ -370,14 +395,14 @@ export default function WeatherWidget({
   if (error && !weather && !loading) {
     return (
       <section
-        className="flex h-full flex-col justify-center rounded-[18px] bg-[var(--surface)] p-5 border border-[var(--hairline)]"
+        className="flex h-full flex-col justify-center rounded-apple-lg bg-[var(--surface)] p-5 border border-[var(--hairline)]"
         aria-labelledby="weather-title"
       >
         <div className="flex items-start gap-3">
           <AlertCircle size={20} className="mt-0.5 shrink-0 text-[var(--danger)]" aria-hidden="true" />
           <div className="min-w-0">
             <h2 id="weather-title" className="text-[15px] font-bold text-[var(--ink)]">
-              สภาพอากาศ &amp; PM 2.5
+              {tr('สภาพอากาศ & PM 2.5', 'Weather & PM 2.5')}
             </h2>
             <p className="mt-1 text-[13px] leading-relaxed text-[var(--ink-muted)]">{error}</p>
           </div>
@@ -388,7 +413,7 @@ export default function WeatherWidget({
           className="mt-4 inline-flex items-center justify-center gap-1.5 rounded-full bg-[var(--accent)] px-4 py-2 text-[13px] font-semibold text-white transition-all duration-150 hover:bg-[var(--accent-hover)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2"
         >
           <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} aria-hidden="true" />
-          {refreshing ? 'กำลังลองใหม่…' : 'ลองอีกครั้ง'}
+          {refreshing ? tr('กำลังลองใหม่…', 'Trying again…') : tr('ลองอีกครั้ง', 'Try again')}
         </button>
       </section>
     );
@@ -396,7 +421,7 @@ export default function WeatherWidget({
 
   return (
     <section
-      className="flex h-full flex-col justify-between rounded-[18px] bg-[var(--surface)] p-5 border border-[var(--hairline)] transition-all duration-200"
+      className="flex h-full flex-col justify-between rounded-apple-lg bg-[var(--surface)] p-5 border border-[var(--hairline)] transition-all duration-200"
       aria-labelledby="weather-title"
     >
       <div>
@@ -405,7 +430,7 @@ export default function WeatherWidget({
           <div className="flex items-start gap-3 min-w-0">
             {/* Icon badge */}
             <div
-              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] ${weatherMeta.bgClass} ${weatherMeta.colorClass}`}
+              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-apple-widget ${weatherMeta.bgClass} ${weatherMeta.colorClass}`}
             >
               <WeatherIcon size={20} aria-hidden="true" />
             </div>
@@ -417,7 +442,7 @@ export default function WeatherWidget({
                   id="weather-title"
                   className="text-[16px] font-bold tracking-tight text-[var(--ink)] truncate"
                 >
-                  สภาพอากาศ &amp; PM 2.5
+                  {tr('สภาพอากาศ & PM 2.5', 'Weather & PM 2.5')}
                 </h2>
               </div>
 
@@ -439,7 +464,7 @@ export default function WeatherWidget({
                     />
                   )}
                   <span className="truncate max-w-[140px] sm:max-w-[200px]">
-                    {selectedCity.name}
+                    {cityName(selectedCity)}
                   </span>
                   <ChevronDown
                     size={12}
@@ -451,23 +476,25 @@ export default function WeatherWidget({
 
                 {/* Dropdown Menu */}
                 {isCityDropdownOpen && (
-                  <div className="absolute left-0 top-full z-30 mt-1.5 w-60 rounded-[18px] border border-[var(--hairline)] bg-[var(--glass-95)] backdrop-blur-2xl p-1.5 shadow-[0_16px_36px_rgba(0,0,0,0.12)] animate-in fade-in zoom-in-95 duration-150">
+                  <div className="absolute left-0 top-full z-30 mt-1.5 w-60 rounded-apple-lg border border-[var(--hairline)] bg-[var(--glass-95)] backdrop-blur-2xl p-1.5 shadow-[0_16px_36px_rgba(0,0,0,0.12)] animate-in fade-in zoom-in-95 duration-150">
                     <div className="border-b border-[var(--hairline)] pb-1 mb-1">
                       <button
                         type="button"
                         onClick={handleDetectLocation}
                         disabled={isLocating}
-                        className="flex w-full items-center gap-2 rounded-[11px] px-2.5 py-1.5 text-left text-xs font-semibold text-[var(--accent-text)] hover:bg-[var(--accent-soft)] transition-colors disabled:opacity-50"
+                        className="flex w-full items-center gap-2 rounded-apple-md px-2.5 py-1.5 text-left text-xs font-semibold text-[var(--accent-text)] hover:bg-[var(--accent-soft)] transition-colors disabled:opacity-50"
                       >
                         <LocateFixed size={13} className={isLocating ? 'animate-spin' : ''} />
                         <span>
-                          {isLocating ? 'กำลังค้นหาพิกัด...' : 'ใช้ตำแหน่งเครื่องปัจจุบัน (GPS)'}
+                          {isLocating
+                            ? tr('กำลังค้นหาพิกัด...', 'Locating…')
+                            : tr('ใช้ตำแหน่งเครื่องปัจจุบัน (GPS)', 'Use current device location (GPS)')}
                         </span>
                       </button>
                     </div>
 
                     <div className="px-2 py-1 text-[11px] font-bold uppercase tracking-wider text-[var(--ink-tertiary)]">
-                      จังหวัดยอดนิยม
+                      {tr('จังหวัดยอดนิยม', 'Popular cities')}
                     </div>
 
                     <div className="max-h-48 overflow-y-auto space-y-0.5">
@@ -476,13 +503,13 @@ export default function WeatherWidget({
                           key={c.id}
                           type="button"
                           onClick={() => handleSelectCity(c)}
-                          className={`flex w-full items-center justify-between rounded-[11px] px-2.5 py-1.5 text-left text-xs font-semibold transition-colors ${
+                          className={`flex w-full items-center justify-between rounded-apple-md px-2.5 py-1.5 text-left text-xs font-semibold transition-colors ${
                             selectedCity.id === c.id
                               ? 'bg-[var(--accent-soft)] text-[var(--accent-text)]'
                               : 'text-[var(--ink)] hover:bg-[var(--surface-chip)]'
                           }`}
                         >
-                          <span>{c.name}</span>
+                          <span>{cityName(c)}</span>
                           {selectedCity.id === c.id && (
                             <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)]" />
                           )}
@@ -505,8 +532,8 @@ export default function WeatherWidget({
                 localStorage.setItem('artWeatherUnit', next);
               }}
               className="flex h-8 w-8 items-center justify-center rounded-full text-[12px] font-bold text-[var(--ink-muted)] hover:bg-[var(--surface-chip)] hover:text-[var(--ink)] active:scale-[0.95] transition-all"
-              aria-label="สลับหน่วยอุณหภูมิ"
-              title="สลับ °C / °F"
+              aria-label={tr('สลับหน่วยอุณหภูมิ', 'Switch temperature unit')}
+              title={tr('สลับ °C / °F', 'Switch °C / °F')}
             >
               °{unit}
             </button>
@@ -515,8 +542,8 @@ export default function WeatherWidget({
               onClick={() => fetchWeatherData(selectedCity, true)}
               disabled={refreshing}
               className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--ink-muted)] hover:bg-[var(--surface-chip)] hover:text-[var(--ink)] active:scale-[0.95] transition-all"
-              aria-label="รีเฟรชข้อมูลสภาพอากาศ"
-              title="รีเฟรชข้อมูล"
+              aria-label={tr('รีเฟรชข้อมูลสภาพอากาศ', 'Refresh weather data')}
+              title={tr('รีเฟรชข้อมูล', 'Refresh data')}
             >
               <RefreshCw
                 size={15}
@@ -531,7 +558,7 @@ export default function WeatherWidget({
 
         {/* ── Error Banner ─────────────────────────────────────────────────── */}
         {error && (
-          <div className="mt-3 flex items-center justify-between gap-2 rounded-[11px] bg-[var(--danger-soft)] px-3.5 py-2.5 text-[12px] font-medium text-[var(--danger)]">
+          <div className="mt-3 flex items-center justify-between gap-2 rounded-apple-md bg-[var(--danger-soft)] px-3.5 py-2.5 text-[12px] font-medium text-[var(--danger)]">
             <div className="flex items-center gap-2 min-w-0">
               <AlertCircle size={14} className="shrink-0 text-[var(--danger)]" />
               <span className="truncate">{error}</span>
@@ -541,14 +568,14 @@ export default function WeatherWidget({
               onClick={() => fetchWeatherData(selectedCity, true)}
               className="shrink-0 font-bold underline hover:text-[var(--danger)]"
             >
-              ลองใหม่
+              {tr('ลองใหม่', 'Try again')}
             </button>
           </div>
         )}
 
         {/* ── Stale-data notice (data is on screen, only the update failed) ── */}
         {!error && staleNotice && (
-          <div className="mt-3 flex items-center justify-between gap-2 rounded-[11px] bg-[var(--warning-soft)] px-3.5 py-2.5 text-[12px] font-medium text-[var(--warning-ink)]">
+          <div className="mt-3 flex items-center justify-between gap-2 rounded-apple-md bg-[var(--warning-soft)] px-3.5 py-2.5 text-[12px] font-medium text-[var(--warning-ink)]">
             <div className="flex items-center gap-2 min-w-0">
               <AlertCircle size={14} className="shrink-0 text-[var(--warning)]" />
               <span className="truncate">{staleNotice}</span>
@@ -558,7 +585,7 @@ export default function WeatherWidget({
               onClick={() => fetchWeatherData(selectedCity, true)}
               className="shrink-0 font-bold underline hover:text-[var(--warning-ink)]"
             >
-              ลองใหม่
+              {tr('ลองใหม่', 'Try again')}
             </button>
           </div>
         )}
@@ -567,7 +594,7 @@ export default function WeatherWidget({
         {weather && airQuality && (
           <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
             {/* Card 1: Weather Info */}
-            <div className="flex flex-col justify-between rounded-[18px] bg-[var(--surface-grouped)] p-4 ring-1 ring-[var(--hairline)]">
+            <div className="flex flex-col justify-between rounded-apple-lg bg-[var(--surface-grouped)] p-4 ring-1 ring-[var(--hairline)]">
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <div className="flex items-baseline gap-1">
@@ -586,7 +613,11 @@ export default function WeatherWidget({
                     {displayTemp(weather.tempMax)}° / {displayTemp(weather.tempMin)}°
                   </span>
                   <div className="mt-1 text-[11px] font-medium text-[var(--ink-tertiary)]">
-                    รู้สึกเหมือน {displayTemp(weather.apparentTemp)}°{unit}
+                    {tr(
+                      'รู้สึกเหมือน {temp}°{unit}',
+                      'Feels like {temp}°{unit}',
+                      { temp: displayTemp(weather.apparentTemp), unit },
+                    )}
                   </div>
                 </div>
               </div>
@@ -595,21 +626,27 @@ export default function WeatherWidget({
               <div className="mt-3 flex items-center justify-between border-t border-[var(--hairline-soft)] pt-2 text-[11px] font-medium text-[var(--ink-muted)]">
                 <div className="flex items-center gap-1">
                   <Droplets size={12} className="text-[var(--accent-text)]" />
-                  <span>ความชื้น {weather.humidity}%</span>
+                  <span>
+                    {tr('ความชื้น {value}%', 'Humidity {value}%', { value: weather.humidity })}
+                  </span>
                 </div>
                 {weather.rainProb > 0 ? (
-                  <span className="text-[var(--accent-text)] font-semibold">โอกาสฝน {weather.rainProb}%</span>
+                  <span className="text-[var(--accent-text)] font-semibold">
+                    {tr('โอกาสฝน {value}%', 'Rain chance {value}%', { value: weather.rainProb })}
+                  </span>
                 ) : (
                   <div className="flex items-center gap-1 text-[var(--ink-tertiary)]">
                     <Wind size={12} />
-                    <span>ลม {weather.windSpeed} km/h</span>
+                    <span>
+                      {tr('ลม {value} km/h', 'Wind {value} km/h', { value: weather.windSpeed })}
+                    </span>
                   </div>
                 )}
               </div>
             </div>
 
             {/* Card 2: PM 2.5 & Air Quality */}
-            <div className="flex flex-col justify-between rounded-[18px] bg-[var(--surface-grouped)] p-4 ring-1 ring-[var(--hairline)]">
+            <div className="flex flex-col justify-between rounded-apple-lg bg-[var(--surface-grouped)] p-4 ring-1 ring-[var(--hairline)]">
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div className="min-w-0">
                   <div className="flex items-baseline gap-1.5 flex-wrap">
@@ -619,7 +656,11 @@ export default function WeatherWidget({
                     <span className="text-[11px] font-bold text-[var(--ink-tertiary)]">µg/m³</span>
                   </div>
                   <div className="mt-0.5 text-[11px] font-semibold text-[var(--ink-tertiary)] leading-tight">
-                    ดัชนีฝุ่น PM 2.5 (US AQI: {airQuality.usAqi})
+                    {tr(
+                      'ดัชนีฝุ่น PM 2.5 (US AQI: {aqi})',
+                      'PM 2.5 index (US AQI: {aqi})',
+                      { aqi: airQuality.usAqi },
+                    )}
                   </div>
                 </div>
 
@@ -645,13 +686,15 @@ export default function WeatherWidget({
 
         {/* ── Hourly Forecast Strip (เวลาล่วงหน้า) ──────────────────────────── */}
         {weather && weather.hourlyForecast && (
-          <div className="mt-3.5 rounded-[18px] bg-[var(--surface-grouped)] p-3.5 ring-1 ring-[var(--hairline)]">
+          <div className="mt-3.5 rounded-apple-lg bg-[var(--surface-grouped)] p-3.5 ring-1 ring-[var(--hairline)]">
             <div className="mb-2.5 flex items-center justify-between">
               <span className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-[var(--ink-tertiary)]">
                 <Clock size={12} />
-                <span>พยากรณ์รายชั่วโมง (เวลาล่วงหน้า)</span>
+                <span>{tr('พยากรณ์รายชั่วโมง (เวลาล่วงหน้า)', 'Hourly forecast (upcoming)')}</span>
               </span>
-              <span className="text-[11px] font-medium text-[var(--ink-tertiary)]">อุณหภูมิ / สภาพอากาศ</span>
+              <span className="text-[11px] font-medium text-[var(--ink-tertiary)]">
+                {tr('อุณหภูมิ / สภาพอากาศ', 'Temperature / conditions')}
+              </span>
             </div>
 
             <div
@@ -663,7 +706,7 @@ export default function WeatherWidget({
                 return (
                   <div
                     key={item.rawTime}
-                    className={`flex flex-col items-center justify-center rounded-[14px] p-2 text-center transition-all duration-150 ${
+                    className={`flex flex-col items-center justify-center rounded-apple-widget p-2 text-center transition-all duration-150 ${
                       item.isCurrent
                         ? 'bg-[var(--accent-soft)] ring-1 ring-[var(--accent-ring)] shadow-2xs'
                         : 'bg-[var(--surface)] shadow-2xs ring-1 ring-[var(--hairline)] hover:-translate-y-0.5'
@@ -697,10 +740,15 @@ export default function WeatherWidget({
 
       {/* ── Footer ─────────────────────────────────────────────────────────── */}
       <footer className="mt-3.5 flex items-center justify-between border-t border-[var(--hairline)] pt-2.5 text-[11px] text-[var(--ink-tertiary)]">
-        <span>ข้อมูลสภาพอากาศ &amp; ฝุ่นละอองจาก Open-Meteo</span>
+        <span>{tr('ข้อมูลสภาพอากาศ & ฝุ่นละอองจาก Open-Meteo', 'Weather & air quality data from Open-Meteo')}</span>
         <span>
-          อัปเดต: {lastUpdated.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}{' '}
-          น.
+          {tr('อัปเดต: {time} น.', 'Updated: {time}', {
+            time: lastUpdated.toLocaleTimeString('th-TH', {
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit',
+            }),
+          })}
         </span>
       </footer>
     </section>

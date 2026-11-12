@@ -32,7 +32,7 @@ function Segmented<T extends string>({
     <div>
       <p className="mb-2 text-[12px] font-bold text-[var(--ink-secondary)]">{label}</p>
       <div
-        className="grid grid-cols-2 gap-2 rounded-[16px] bg-[var(--surface-grouped)] p-1.5 ring-1 ring-[var(--hairline)]"
+        className="grid grid-cols-2 gap-2 rounded-apple-lg bg-[var(--surface-grouped)] p-1.5 ring-1 ring-[var(--hairline)]"
         role="group"
         aria-label={label}
       >
@@ -44,7 +44,7 @@ function Segmented<T extends string>({
               type="button"
               onClick={() => onChange(option.value)}
               aria-pressed={selected}
-              className={`!flex !flex-col items-center justify-center gap-1 rounded-[12px] px-3 py-2.5 text-center transition-all duration-150 active:scale-[0.98] ${
+              className={`!flex !flex-col items-center justify-center gap-1 rounded-apple-md px-3 py-2.5 text-center transition-all duration-150 active:scale-[0.98] ${
                 selected
                   ? 'bg-[var(--surface)] text-[var(--ink)] shadow-xs ring-1 ring-[var(--hairline)]'
                   : 'text-[var(--ink-muted)] hover:bg-[var(--surface-chip)] hover:text-[var(--ink)]'
@@ -102,7 +102,7 @@ export function DateFormatCard() {
           onChange={(next) => savePreferences({ locale: next })}
         />
 
-        <div className="rounded-[14px] bg-[var(--surface-subtle)] px-4 py-3 ring-1 ring-[var(--hairline)]">
+        <div className="rounded-apple-widget bg-[var(--surface-subtle)] px-4 py-3 ring-1 ring-[var(--hairline)]">
           <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--ink-tertiary)]">
             {t('card.dateTime.preview')}
           </p>

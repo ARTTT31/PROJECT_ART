@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth, type AuthRole } from '@/hooks/useAuth';
+import { useI18n } from '@/lib/i18n/I18nProvider';
 
 export default function AuthGuard({
   children,
@@ -15,6 +16,7 @@ export default function AuthGuard({
 }) {
   const router = useRouter();
   const { status, user, isAuthenticated } = useAuth();
+  const { tr } = useI18n();
 
   useEffect(() => {
     if (status === 'loading') return;
@@ -38,7 +40,7 @@ export default function AuthGuard({
       <div className="flex min-h-[60dvh] items-center justify-center">
         <div
           className="h-10 w-10 animate-spin rounded-full border-b-2 border-sky-500"
-          aria-label="กำลังโหลด"
+          aria-label={tr('กำลังโหลด', 'Loading')}
         />
       </div>
     );

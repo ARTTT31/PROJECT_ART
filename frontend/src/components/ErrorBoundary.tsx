@@ -59,7 +59,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
           <div className="w-full max-w-md overflow-hidden rounded-[var(--art-radius-lg)] border border-white/30 bg-[var(--glass-80)] backdrop-blur-[24px] shadow-glass-lg">
             {/* Header */}
             <div className="flex items-center gap-3 border-b border-slate-200/50 bg-red-50/50 px-6 py-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-[14px] bg-red-100 text-red-600">
+              <div className="flex h-10 w-10 items-center justify-center rounded-apple-widget bg-red-100 text-red-600">
                 <AlertTriangle size={20} aria-hidden="true" />
               </div>
               <div>
@@ -74,7 +74,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
                 เกิดข้อผิดพลาดที่ไม่คาดคิด คุณสามารถลองโหลดใหม่ หรือกลับไปยังหน้าหลัก
               </p>
               {process.env.NODE_ENV === 'development' && this.state.error && (
-                <pre className="mt-3 max-h-32 overflow-auto rounded-[11px] bg-slate-100 p-3 text-xs text-red-700">
+                <pre className="mt-3 max-h-32 overflow-auto rounded-apple-md bg-slate-100 p-3 text-xs text-red-700">
                   {this.state.error.message}
                 </pre>
               )}
@@ -84,14 +84,14 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
             <div className="flex items-center gap-3 border-t border-slate-200/50 px-6 py-4">
               <button
                 onClick={this.handleReset}
-                className="art-primary-button inline-flex items-center gap-2 !rounded-[14px] text-sm"
+                className="art-primary-button inline-flex items-center gap-2 !rounded-apple-widget text-sm"
               >
                 <RotateCcw size={16} aria-hidden="true" />
                 ลองใหม่
               </button>
               <Link
                 href="/dashboard"
-                className="art-soft-button inline-flex items-center gap-2 !rounded-[14px] text-sm"
+                className="art-soft-button inline-flex items-center gap-2 !rounded-apple-widget text-sm"
               >
                 <Home size={16} aria-hidden="true" />
                 กลับหน้าหลัก

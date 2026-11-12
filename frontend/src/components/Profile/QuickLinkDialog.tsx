@@ -157,9 +157,9 @@ export function QuickLinkDialog({ open, onOpenChange, link, onSubmit }: QuickLin
           <DialogBody className="space-y-4">
             {/* Live preview: the row itself is the preview, so it needs no
                 wrapper heading taking up height in a scrollable dialog. */}
-            <div className="flex items-center gap-3 rounded-[14px] border border-[var(--hairline)] bg-[var(--surface-grouped)] p-2.5">
+            <div className="flex items-center gap-3 rounded-apple-widget border border-[var(--hairline)] bg-[var(--surface-grouped)] p-2.5">
                 <div
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px]"
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-apple-md"
                   style={{ backgroundColor: `${color}15` }}
                 >
                   <PreviewIcon size={17} aria-hidden="true" style={{ color }} />
@@ -205,12 +205,12 @@ export function QuickLinkDialog({ open, onOpenChange, link, onSubmit }: QuickLin
                 icon={<Link2 size={16} aria-hidden="true" />}
                 required
               />
-              <div className="rounded-[14px] border border-[var(--hairline)]">
+              <div className="rounded-apple-widget border border-[var(--hairline)]">
                 <button
                   type="button"
                   onClick={() => setShowEnvs((shown) => !shown)}
                   aria-expanded={showEnvs}
-                  className="flex w-full items-center gap-2 rounded-[14px] px-3 py-2.5 text-left transition-colors hover:bg-[var(--surface-grouped)] active:scale-[0.99]"
+                  className="flex w-full items-center gap-2 rounded-apple-widget px-3 py-2.5 text-left transition-colors hover:bg-[var(--surface-grouped)] active:scale-[0.99]"
                 >
                   <Layers size={15} aria-hidden="true" className="text-[var(--ink-tertiary)]" />
                   <span className="flex-1 text-[12px] font-semibold text-[var(--ink-secondary)]">
@@ -297,7 +297,7 @@ export function QuickLinkDialog({ open, onOpenChange, link, onSubmit }: QuickLin
                   </button>
                 </div>
               </div>
-              <div className="max-h-44 overflow-y-auto rounded-[14px] border border-[var(--hairline)] bg-[var(--surface-subtle)] p-2">
+              <div className="max-h-44 overflow-y-auto rounded-apple-widget border border-[var(--hairline)] bg-[var(--surface-subtle)] p-2">
                 <div className="grid grid-cols-6 gap-2 sm:grid-cols-8">
                   {filteredOptions.map((option) => {
                     const OptionIcon = QUICK_LINK_ICON_MAP[option.key];
@@ -315,7 +315,7 @@ export function QuickLinkDialog({ open, onOpenChange, link, onSubmit }: QuickLin
                         title={option.label}
                         aria-label={option.label}
                         className={[
-                          'relative flex h-10 w-10 items-center justify-center rounded-[12px]! transition-all duration-150 active:scale-[0.95]',
+                          'relative flex h-10 w-10 items-center justify-center rounded-apple-md transition-all duration-150 active:scale-[0.95]',
                           active
                             ? 'bg-[var(--surface)] shadow-xs ring-2 ring-[var(--accent)]'
                             : 'bg-[var(--glass-60)] hover:bg-[var(--surface)] ring-1 ring-[var(--hairline)] hover:ring-[var(--hairline)]',
@@ -339,14 +339,14 @@ export function QuickLinkDialog({ open, onOpenChange, link, onSubmit }: QuickLin
                 <span className="text-[11px] font-bold tracking-wide uppercase text-[var(--ink-muted)]">สีของไอคอน</span>
                 <div className="flex items-center gap-1.5">
                   <div
-                    className="h-4 w-4 rounded-[11px] ring-1 ring-[var(--hairline-strong)]"
+                    className="h-4 w-4 rounded-apple-md ring-1 ring-[var(--hairline-strong)]"
                     style={{ backgroundColor: color }}
                     aria-hidden="true"
                   />
                   <span className="text-[11px] font-mono text-[var(--ink-muted)] uppercase">{color}</span>
                 </div>
               </div>
-              <div className="rounded-[18px] bg-[var(--surface-subtle)] p-2.5 ring-1 ring-[var(--hairline)]">
+              <div className="rounded-apple-lg bg-[var(--surface-subtle)] p-2.5 ring-1 ring-[var(--hairline)]">
                 <div className="flex flex-wrap items-center gap-1.5">
                   {QUICK_LINK_COLOR_PRESETS.map((preset) => {
                     const active = color === preset;
@@ -357,7 +357,7 @@ export function QuickLinkDialog({ open, onOpenChange, link, onSubmit }: QuickLin
                         onClick={() => setColor(preset)}
                         aria-label={`สี ${preset}`}
                         className={[
-                          'h-7 w-7 rounded-[11px] transition-all duration-150 ring-offset-2',
+                          'h-7 w-7 rounded-apple-md transition-all duration-150 ring-offset-2',
                           active
                             ? 'ring-2 ring-[var(--ink)] scale-110 shadow-xs'
                             : 'ring-1 ring-[var(--hairline-strong)] hover:scale-105',
@@ -366,7 +366,7 @@ export function QuickLinkDialog({ open, onOpenChange, link, onSubmit }: QuickLin
                       />
                     );
                   })}
-                  <label className="group relative flex h-7 cursor-pointer items-center justify-center overflow-hidden rounded-[11px] bg-[var(--surface)] text-slate-400 ring-1 ring-[var(--hairline-strong)] transition-all hover:text-slate-600 hover:scale-105 px-2">
+                  <label className="group relative flex h-7 cursor-pointer items-center justify-center overflow-hidden rounded-apple-md bg-[var(--surface)] text-slate-400 ring-1 ring-[var(--hairline-strong)] transition-all hover:text-slate-600 hover:scale-105 px-2">
                     <Palette size={13} aria-hidden="true" />
                     <span className="ml-1 text-[11px] font-bold">อื่นๆ</span>
                     <input
@@ -382,7 +382,7 @@ export function QuickLinkDialog({ open, onOpenChange, link, onSubmit }: QuickLin
             </div>
 
             {/* Validation hint, condensed to one wrapping line. */}
-            <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 rounded-[11px] bg-[var(--surface-grouped)] px-3 py-2 text-[11px] text-[var(--ink-muted)]">
+            <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 rounded-apple-md bg-[var(--surface-grouped)] px-3 py-2 text-[11px] text-[var(--ink-muted)]">
               <Info size={13} className="shrink-0 text-[var(--ink-tertiary)]" aria-hidden="true" />
               <span>รองรับ</span>
               <code className="rounded bg-[var(--surface)] px-1 py-0.5 text-[var(--accent-text)]">

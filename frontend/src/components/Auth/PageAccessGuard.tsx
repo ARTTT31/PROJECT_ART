@@ -5,6 +5,7 @@ import { Lock } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { canAccessPage } from '@/utils/accessiblePages';
 import { isPageEnabled } from '@/hooks/useEnabledPages';
+import { useI18n } from '@/lib/i18n/I18nProvider';
 
 /**
  * Client-side half of the page-access check.
@@ -23,13 +24,14 @@ export default function PageAccessGuard({
   children: React.ReactNode;
 }) {
   const { status, user } = useAuth();
+  const { tr } = useI18n();
 
   if (status === 'loading') {
     return (
       <div className="flex min-h-[60dvh] items-center justify-center">
         <div
           className="h-10 w-10 animate-spin rounded-full border-b-2 border-sky-500"
-          aria-label="กำลังโหลด"
+          aria-label={tr('กำลังโหลด', 'Loading')}
         />
       </div>
     );
@@ -40,7 +42,7 @@ export default function PageAccessGuard({
       <section
         role="status"
         aria-live="polite"
-        className="mx-auto flex max-w-md flex-col items-center gap-3 rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] px-6 py-10 text-center"
+        className="mx-auto flex max-w-md flex-col items-center gap-3 rounded-apple-lg border border-[var(--hairline)] bg-[var(--surface)] px-6 py-10 text-center"
       >
         <span
           aria-hidden="true"
@@ -48,15 +50,20 @@ export default function PageAccessGuard({
         >
           <Lock size={22} />
         </span>
-        <h2 className="text-[17px] font-bold text-[var(--ink)]">คุณไม่มีสิทธิ์เข้าถึงหน้านี้</h2>
+        <h2 className="text-[17px] font-bold text-[var(--ink)]">
+          {tr('คุณไม่มีสิทธิ์เข้าถึงหน้านี้', 'You do not have access to this page')}
+        </h2>
         <p className="text-[13px] leading-relaxed text-[var(--ink-muted)]">
-          บัญชีของคุณไม่ได้รับสิทธิ์ในหน้านี้ กรุณาติดต่อผู้ดูแลระบบหากต้องการเข้าใช้งาน
+          {tr(
+            'บัญชีของคุณไม่ได้รับสิทธิ์ในหน้านี้ กรุณาติดต่อผู้ดูแลระบบหากต้องการเข้าใช้งาน',
+            'Your account has not been granted access to this page. Contact your administrator if you need it.',
+          )}
         </p>
         <Link
           href="/dashboard"
           className="mt-1 inline-flex min-h-[44px] items-center rounded-full bg-[var(--accent)] px-6 text-[13px] font-semibold text-white transition-colors hover:bg-[var(--accent-hover)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 active:scale-[0.95]"
         >
-          กลับหน้าหลัก
+          {tr('กลับหน้าหลัก', 'Back to home')}
         </Link>
       </section>
     );

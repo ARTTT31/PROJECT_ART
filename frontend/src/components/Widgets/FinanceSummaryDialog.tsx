@@ -124,7 +124,7 @@ export default function FinanceSummaryDialog({
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <div className="flex items-center gap-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] bg-[var(--success-soft)] text-[var(--success-ink)]">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-apple-widget bg-[var(--success-soft)] text-[var(--success-ink)]">
               <BarChart3 size={20} aria-hidden="true" />
             </span>
             <div className="min-w-0">
@@ -158,19 +158,19 @@ export default function FinanceSummaryDialog({
           </div>
 
           <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-            <div className="rounded-[14px] bg-[var(--success-soft)] px-3 py-2.5">
+            <div className="rounded-apple-widget bg-[var(--success-soft)] px-3 py-2.5">
               <span className="block text-[11px] font-semibold text-[var(--success-ink)]">รายรับ</span>
               <span className="mt-0.5 block tabular-nums text-[15px] font-extrabold text-[var(--ink)]">
                 {money.format(totals.income)}
               </span>
             </div>
-            <div className="rounded-[14px] bg-[var(--danger-soft)] px-3 py-2.5">
+            <div className="rounded-apple-widget bg-[var(--danger-soft)] px-3 py-2.5">
               <span className="block text-[11px] font-semibold text-[var(--danger-ink)]">รายจ่าย</span>
               <span className="mt-0.5 block tabular-nums text-[15px] font-extrabold text-[var(--ink)]">
                 {money.format(totals.expense)}
               </span>
             </div>
-            <div className="rounded-[14px] bg-[var(--surface-grouped)] px-3 py-2.5">
+            <div className="rounded-apple-widget bg-[var(--surface-grouped)] px-3 py-2.5">
               <span className="block text-[11px] font-semibold text-[var(--ink-muted)]">คงเหลือ</span>
               <span
                 className={`mt-0.5 block tabular-nums text-[15px] font-extrabold ${
@@ -180,7 +180,7 @@ export default function FinanceSummaryDialog({
                 {money.format(totals.balance)}
               </span>
             </div>
-            <div className="rounded-[14px] bg-[var(--surface-grouped)] px-3 py-2.5">
+            <div className="rounded-apple-widget bg-[var(--surface-grouped)] px-3 py-2.5">
               <span className="block text-[11px] font-semibold text-[var(--ink-muted)]">รายการ</span>
               <span className="mt-0.5 block tabular-nums text-[15px] font-extrabold text-[var(--ink)]">
                 {totals.count}
@@ -189,7 +189,7 @@ export default function FinanceSummaryDialog({
           </div>
 
           {isMonth && (
-            <div className="rounded-[14px] border border-[var(--hairline)] bg-[var(--surface)] px-3 py-2.5">
+            <div className="rounded-apple-widget border border-[var(--hairline)] bg-[var(--surface)] px-3 py-2.5">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className="text-[12px] font-semibold text-[var(--ink-muted)]">
                   งบรายจ่ายต่อเดือน
@@ -202,7 +202,7 @@ export default function FinanceSummaryDialog({
                     onChange={(event) => setBudgetDraft(event.target.value)}
                     placeholder="เช่น 15000"
                     aria-label="งบรายจ่ายต่อเดือน"
-                    className="w-[104px] rounded-[11px] border border-[var(--hairline-strong)] bg-[var(--surface)] px-2 py-1 text-[12px] tabular-nums text-[var(--ink)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
+                    className="w-[104px] rounded-apple-md border border-[var(--hairline-strong)] bg-[var(--surface)] px-2 py-1 text-[12px] tabular-nums text-[var(--ink)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
                   />
                   <button
                     type="button"
@@ -263,7 +263,7 @@ export default function FinanceSummaryDialog({
           )}
 
           {/* Trend — always the last six months, independent of the picker. */}
-          <div className="rounded-[14px] border border-[var(--hairline)] bg-[var(--surface)] px-3 py-3">
+          <div className="rounded-apple-widget border border-[var(--hairline)] bg-[var(--surface)] px-3 py-3">
             <div className="flex items-center justify-between">
               <span className="text-[12px] font-semibold text-[var(--ink-muted)]">6 เดือนล่าสุด</span>
               <div className="flex items-center gap-3 text-[11px] text-[var(--ink-muted)]">
@@ -309,7 +309,7 @@ export default function FinanceSummaryDialog({
 
           {/* Category breakdown for the period. */}
           {categories.length > 0 && (
-            <div className="rounded-[14px] border border-[var(--hairline)] bg-[var(--surface)] px-3 py-3">
+            <div className="rounded-apple-widget border border-[var(--hairline)] bg-[var(--surface)] px-3 py-3">
               <span className="text-[12px] font-semibold text-[var(--ink-muted)]">
                 แยกตามหมวด ({typeFilter === 'income' ? 'รายรับ' : 'รายจ่าย'})
               </span>
@@ -349,7 +349,7 @@ export default function FinanceSummaryDialog({
                 onChange={(event) => setSearch(event.target.value)}
                 placeholder="ค้นหารายการหรือหมวดหมู่"
                 aria-label="ค้นหารายการ"
-                className="w-full rounded-[14px] border border-[var(--hairline-strong)] bg-[var(--surface)] py-1.5 pl-8 pr-3 text-[13px] text-[var(--ink)] placeholder:text-[var(--ink-tertiary)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
+                className="w-full rounded-apple-widget border border-[var(--hairline-strong)] bg-[var(--surface)] py-1.5 pl-8 pr-3 text-[13px] text-[var(--ink)] placeholder:text-[var(--ink-tertiary)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
               />
             </div>
             <div
@@ -382,7 +382,7 @@ export default function FinanceSummaryDialog({
           {/* Day-by-day list for the selected period. */}
           <div className="space-y-2">
             {days.length === 0 ? (
-              <div className="flex min-h-[92px] flex-col items-center justify-center rounded-[14px] border border-dashed border-[var(--hairline)] bg-[var(--surface-subtle)] px-3 py-4 text-center text-[13px] text-[var(--ink-tertiary)]">
+              <div className="flex min-h-[92px] flex-col items-center justify-center rounded-apple-widget border border-dashed border-[var(--hairline)] bg-[var(--surface-subtle)] px-3 py-4 text-center text-[13px] text-[var(--ink-tertiary)]">
                 <Wallet size={18} className="mb-1.5 text-[var(--ink-faint)]" aria-hidden="true" />
                 {periodEntries.length === 0
                   ? 'ยังไม่มีรายการในช่วงนี้'
@@ -390,7 +390,7 @@ export default function FinanceSummaryDialog({
               </div>
             ) : (
               days.map((day) => (
-                <div key={day.date} className="rounded-[14px] bg-[var(--surface-subtle)] px-3 py-2">
+                <div key={day.date} className="rounded-apple-widget bg-[var(--surface-subtle)] px-3 py-2">
                   <div className="flex items-baseline justify-between gap-2 pb-1.5">
                     <span className="text-[12px] font-bold text-[var(--ink-muted)]">{day.label}</span>
                     <span className="tabular-nums text-[11px] font-semibold text-[var(--ink-tertiary)]">

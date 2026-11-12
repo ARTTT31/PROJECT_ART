@@ -219,7 +219,7 @@ export default function WatchlistWidget({
   if (loading) {
     return (
       <div
-        className="flex h-full min-h-[300px] items-center justify-center rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] p-5"
+        className="flex h-full min-h-[300px] items-center justify-center rounded-apple-lg border border-[var(--hairline)] bg-[var(--surface)] p-5"
         role="status"
         aria-live="polite"
         aria-label="กำลังโหลดรายการติดตาม"
@@ -231,12 +231,12 @@ export default function WatchlistWidget({
 
   return (
     <section
-      className="flex h-full flex-col rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] p-5"
+      className="flex h-full flex-col rounded-apple-lg border border-[var(--hairline)] bg-[var(--surface)] p-5"
       aria-labelledby="watchlist-title"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] bg-[var(--info-soft)] text-[var(--info-ink)]">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-apple-widget bg-[var(--info-soft)] text-[var(--info-ink)]">
             <TrendingUp size={20} aria-hidden="true" />
           </div>
           <div className="min-w-0">
@@ -268,7 +268,7 @@ export default function WatchlistWidget({
           placeholder="เพิ่มสัญลักษณ์ เช่น PTT.BK"
           aria-label="เพิ่มสัญลักษณ์ในรายการติดตาม"
           maxLength={24}
-          className="min-w-0 flex-1 rounded-[14px] border border-[var(--hairline-strong)] bg-[var(--surface)] px-3 py-2 text-[13px] uppercase text-[var(--ink)] placeholder:normal-case placeholder:text-[var(--ink-tertiary)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
+          className="min-w-0 flex-1 rounded-apple-widget border border-[var(--hairline-strong)] bg-[var(--surface)] px-3 py-2 text-[13px] uppercase text-[var(--ink)] placeholder:normal-case placeholder:text-[var(--ink-tertiary)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
         />
         <button
           type="submit"
@@ -289,7 +289,7 @@ export default function WatchlistWidget({
       </form>
 
       {error && (
-        <p role="alert" className="mt-2.5 rounded-[11px] bg-[var(--danger-soft)] px-3 py-1.5 text-[12px] text-[var(--danger-ink)]">
+        <p role="alert" className="mt-2.5 rounded-apple-md bg-[var(--danger-soft)] px-3 py-1.5 text-[12px] text-[var(--danger-ink)]">
           {error}
         </p>
       )}
@@ -299,7 +299,7 @@ export default function WatchlistWidget({
         aria-label="รายการติดตาม"
       >
         {symbols.length === 0 ? (
-          <li className="flex min-h-[110px] flex-col items-center justify-center rounded-[14px] border border-dashed border-[var(--hairline)] bg-[var(--surface-subtle)] px-3.5 py-5 text-center text-[13px] text-[var(--ink-tertiary)]">
+          <li className="flex min-h-[110px] flex-col items-center justify-center rounded-apple-widget border border-dashed border-[var(--hairline)] bg-[var(--surface-subtle)] px-3.5 py-5 text-center text-[13px] text-[var(--ink-tertiary)]">
             <TrendingUp size={20} className="mb-2 text-[var(--ink-faint)]" aria-hidden="true" />
             <span>ยังไม่มีรายการติดตาม</span>
             <span className="mt-0.5 text-[11px]">ลองพิมพ์ PTT.BK, AAPL หรือ BTC-USD</span>
@@ -324,7 +324,7 @@ export default function WatchlistWidget({
             return (
               <li
                 key={item.symbol}
-                className="group flex items-center gap-2.5 rounded-[14px] bg-[var(--surface-grouped)] px-3 py-2"
+                className="group flex items-center gap-2.5 rounded-apple-widget bg-[var(--surface-grouped)] px-3 py-2"
               >
                 <div className="min-w-0 flex-1">
                   <span className="block truncate text-[13px] font-bold text-[var(--ink)]">

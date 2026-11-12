@@ -16,6 +16,7 @@ import { useAuth } from '@/hooks/useAuth';
 import Select from '@/components/ui/Select';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
 import { datedFilename, downloadCsv, toCsv } from '@/lib/csv';
+import { useI18n } from '@/lib/i18n/I18nProvider';
 
 interface AuditLogEntry {
   id: number;
@@ -39,39 +40,40 @@ interface PaginatedResponse {
 
 const PAGE_SIZE = 20;
 
-// Thai labels for the actions the backend actually writes. Anything else is
-// shown as its raw key so a new action is still visible before it is translated.
-const ACTION_LABELS: Record<string, string> = {
-  LOGIN_SUCCESS: 'เข้าสู่ระบบ',
-  LOGIN_FAILED: 'เข้าสู่ระบบไม่สำเร็จ',
-  LOGOUT: 'ออกจากระบบ',
-  USER_REGISTER: 'สมัครสมาชิก',
-  USER_REGISTER_PENDING: 'สมัครสมาชิก (รออนุมัติ)',
-  USER_REGISTER_RESUBMIT: 'ส่งคำขอสมัครใหม่',
-  USER_REGISTER_BLOCKED: 'ถูกปฏิเสธการสมัคร',
-  USER_REGISTER_DUPLICATE: 'สมัครซ้ำ',
-  PASSWORD_RESET_REQUESTED: 'ขอลืมรหัสผ่าน',
-  PASSWORD_RESET_COMPLETED: 'ตั้งรหัสผ่านใหม่',
-  PASSWORD_CHANGE: 'เปลี่ยนรหัสผ่าน',
-  EMAIL_VERIFIED: 'ยืนยันอีเมล',
-  EMAIL_VERIFICATION_RESENT: 'ส่งอีเมลยืนยันอีกครั้ง',
-  PROFILE_UPDATE: 'แก้ไขโปรไฟล์',
-  AVATAR_UPLOAD: 'เปลี่ยนรูปโปรไฟล์',
-  USER_SELF_DELETE: 'ลบบัญชีตัวเอง',
-  UPDATE_BRANDING: 'แก้ไขแบรนด์ระบบ',
-  UPLOAD_BRAND_LOGO: 'เปลี่ยนโลโก้ระบบ',
-  UPLOAD_WORKSPACE_LOGO: 'เปลี่ยนโลโก้ทีม',
-  ADMIN_USER_CREATE: 'แอดมินสร้างผู้ใช้',
-  ADMIN_USER_CREATE_HYBRID: 'แอดมินสร้างผู้ใช้ (กำหนดเอง)',
-  ADMIN_USER_UPDATE: 'แอดมินแก้ไขผู้ใช้',
-  ADMIN_USER_DELETE: 'แอดมินลบผู้ใช้',
-  ADMIN_USER_RESTORE: 'แอดมินกู้คืนผู้ใช้',
-  ADMIN_USER_APPROVE: 'อนุมัติสมาชิก',
-  ADMIN_USER_REJECT: 'ปฏิเสธสมาชิก',
-  AUTH_UPDATE_COMPANY_HOLIDAYS: 'บันทึกวันหยุดบริษัท',
-  UPDATE_COMPANY_HOLIDAYS: 'บันทึกวันหยุดบริษัท',
-  DELETE_COMPANY_HOLIDAYS: 'ลบปฏิทินวันหยุดบริษัท',
-  UPDATE_PAGE_ACCESS: 'ตั้งค่าหน้าที่เปิดใช้งาน',
+// Thai/English labels for the actions the backend actually writes. Anything
+// else is shown as its raw key so a new action is still visible before it is
+// translated.
+const ACTION_LABELS: Record<string, { th: string; en: string }> = {
+  LOGIN_SUCCESS: { th: 'เข้าสู่ระบบ', en: 'Signed in' },
+  LOGIN_FAILED: { th: 'เข้าสู่ระบบไม่สำเร็จ', en: 'Sign-in failed' },
+  LOGOUT: { th: 'ออกจากระบบ', en: 'Signed out' },
+  USER_REGISTER: { th: 'สมัครสมาชิก', en: 'Signed up' },
+  USER_REGISTER_PENDING: { th: 'สมัครสมาชิก (รออนุมัติ)', en: 'Sign-up (pending approval)' },
+  USER_REGISTER_RESUBMIT: { th: 'ส่งคำขอสมัครใหม่', en: 'Sign-up resubmitted' },
+  USER_REGISTER_BLOCKED: { th: 'ถูกปฏิเสธการสมัคร', en: 'Sign-up rejected' },
+  USER_REGISTER_DUPLICATE: { th: 'สมัครซ้ำ', en: 'Duplicate sign-up' },
+  PASSWORD_RESET_REQUESTED: { th: 'ขอลืมรหัสผ่าน', en: 'Password reset requested' },
+  PASSWORD_RESET_COMPLETED: { th: 'ตั้งรหัสผ่านใหม่', en: 'Password reset' },
+  PASSWORD_CHANGE: { th: 'เปลี่ยนรหัสผ่าน', en: 'Password changed' },
+  EMAIL_VERIFIED: { th: 'ยืนยันอีเมล', en: 'Email verified' },
+  EMAIL_VERIFICATION_RESENT: { th: 'ส่งอีเมลยืนยันอีกครั้ง', en: 'Verification email resent' },
+  PROFILE_UPDATE: { th: 'แก้ไขโปรไฟล์', en: 'Profile updated' },
+  AVATAR_UPLOAD: { th: 'เปลี่ยนรูปโปรไฟล์', en: 'Avatar changed' },
+  USER_SELF_DELETE: { th: 'ลบบัญชีตัวเอง', en: 'Account deleted' },
+  UPDATE_BRANDING: { th: 'แก้ไขแบรนด์ระบบ', en: 'Branding updated' },
+  UPLOAD_BRAND_LOGO: { th: 'เปลี่ยนโลโก้ระบบ', en: 'System logo changed' },
+  UPLOAD_WORKSPACE_LOGO: { th: 'เปลี่ยนโลโก้ทีม', en: 'Workspace logo changed' },
+  ADMIN_USER_CREATE: { th: 'แอดมินสร้างผู้ใช้', en: 'Admin created user' },
+  ADMIN_USER_CREATE_HYBRID: { th: 'แอดมินสร้างผู้ใช้ (กำหนดเอง)', en: 'Admin created user (custom)' },
+  ADMIN_USER_UPDATE: { th: 'แอดมินแก้ไขผู้ใช้', en: 'Admin updated user' },
+  ADMIN_USER_DELETE: { th: 'แอดมินลบผู้ใช้', en: 'Admin deleted user' },
+  ADMIN_USER_RESTORE: { th: 'แอดมินกู้คืนผู้ใช้', en: 'Admin restored user' },
+  ADMIN_USER_APPROVE: { th: 'อนุมัติสมาชิก', en: 'Member approved' },
+  ADMIN_USER_REJECT: { th: 'ปฏิเสธสมาชิก', en: 'Member rejected' },
+  AUTH_UPDATE_COMPANY_HOLIDAYS: { th: 'บันทึกวันหยุดบริษัท', en: 'Company holidays saved' },
+  UPDATE_COMPANY_HOLIDAYS: { th: 'บันทึกวันหยุดบริษัท', en: 'Company holidays saved' },
+  DELETE_COMPANY_HOLIDAYS: { th: 'ลบปฏิทินวันหยุดบริษัท', en: 'Company holidays deleted' },
+  UPDATE_PAGE_ACCESS: { th: 'ตั้งค่าหน้าที่เปิดใช้งาน', en: 'Page access updated' },
 };
 
 const ACTION_OPTIONS = Object.keys(ACTION_LABELS);
@@ -104,8 +106,14 @@ function formatDate(value: string) {
 
 export default function AuditPage() {
   const { user, status } = useAuth();
+  const { tr } = useI18n();
   const router = useRouter();
   const isClient = status !== 'loading';
+
+  const actionLabel = (action: string) => {
+    const pair = ACTION_LABELS[action];
+    return pair ? tr(pair.th, pair.en) : action;
+  };
 
   const [items, setItems] = useState<AuditLogEntry[]>([]);
   const [page, setPage] = useState(1);
@@ -149,7 +157,9 @@ export default function AuditPage() {
       const res = await fetchWithAuth(`/api/v1/audit/paginated?${params.toString()}`);
       if (!res.ok) {
         throw new Error(
-          res.status === 403 ? 'บัญชีนี้ไม่มีสิทธิ์ดูบันทึกกิจกรรม' : `HTTP ${res.status}`,
+          res.status === 403
+            ? tr('บัญชีนี้ไม่มีสิทธิ์ดูบันทึกกิจกรรม', 'This account cannot view the activity log')
+            : `HTTP ${res.status}`,
         );
       }
       const data = (await res.json()) as PaginatedResponse;
@@ -158,12 +168,14 @@ export default function AuditPage() {
       setHasNext(Boolean(data.hasNext));
       setHasPrev(Boolean(data.hasPrev));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'โหลดบันทึกกิจกรรมไม่สำเร็จ');
+      setError(
+        err instanceof Error ? err.message : tr('โหลดบันทึกกิจกรรมไม่สำเร็จ', 'Could not load the activity log'),
+      );
       setItems([]);
     } finally {
       setLoading(false);
     }
-  }, [page, action, debouncedSearch, dateFrom, dateTo]);
+  }, [page, action, debouncedSearch, dateFrom, dateTo, tr]);
 
   useEffect(() => {
     if (!isClient || user?.role !== 'admin') return;
@@ -171,26 +183,35 @@ export default function AuditPage() {
   }, [isClient, user?.role, load]);
 
   const rangeLabel = useMemo(() => {
-    if (total === 0) return 'ไม่มีรายการ';
+    if (total === 0) return tr('ไม่มีรายการ', 'No items');
     const start = (page - 1) * PAGE_SIZE + 1;
     const end = start + items.length - 1;
-    return `แสดง ${start}–${end} จาก ${total} รายการ`;
-  }, [page, items.length, total]);
+    return tr('แสดง {start}–{end} จาก {total} รายการ', 'Showing {start}–{end} of {total}', {
+      start,
+      end,
+      total,
+    });
+  }, [page, items.length, total, tr]);
 
   const lastPage = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   return (
     <div className="space-y-5">
-      <section className="rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] p-6">
+      <section className="rounded-apple-lg border border-[var(--hairline)] bg-[var(--surface)] p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-start gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] bg-[var(--accent-soft)] text-[var(--accent-text)]">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-apple-widget bg-[var(--accent-soft)] text-[var(--accent-text)]">
               <FileText size={20} aria-hidden="true" />
             </div>
             <div>
-              <h2 className="text-[17px] font-bold tracking-tight text-[var(--ink)]">บันทึกกิจกรรม</h2>
+              <h2 className="text-[17px] font-bold tracking-tight text-[var(--ink)]">
+                {tr('บันทึกกิจกรรม', 'Activity log')}
+              </h2>
               <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">
-                ประวัติการเข้าสู่ระบบ การแก้ไขข้อมูล และการจัดการบัญชี — เห็นเฉพาะผู้ดูแลระบบ
+                {tr(
+                  'ประวัติการเข้าสู่ระบบ การแก้ไขข้อมูล และการจัดการบัญชี — เห็นเฉพาะผู้ดูแลระบบ',
+                  'Sign-ins, data changes and account management — visible to admins only',
+                )}
               </p>
             </div>
           </div>
@@ -201,28 +222,37 @@ export default function AuditPage() {
               onClick={() => {
                 const rows = items.map((entry) => [
                   formatDate(entry.created_at),
-                  ACTION_LABELS[entry.action] ?? entry.action,
-                  entry.user?.name ?? entry.user?.email ?? 'ระบบ',
+                  actionLabel(entry.action),
+                  entry.user?.name ?? entry.user?.email ?? tr('ระบบ', 'System'),
                   entry.details ?? '',
                   entry.ip_address ?? '',
                 ]);
                 downloadCsv(
                   datedFilename('audit-log'),
-                  toCsv(['เวลา', 'กิจกรรม', 'ผู้ใช้', 'รายละเอียด', 'IP'], rows),
+                  toCsv(
+                    [
+                      tr('เวลา', 'Time'),
+                      tr('กิจกรรม', 'Activity'),
+                      tr('ผู้ใช้', 'User'),
+                      tr('รายละเอียด', 'Details'),
+                      'IP',
+                    ],
+                    rows,
+                  ),
                 );
               }}
               disabled={items.length === 0}
               className="inline-flex items-center gap-1.5 rounded-full bg-[var(--surface-grouped)] px-4 py-2 text-[13px] font-semibold text-[var(--ink)] transition-colors hover:bg-[var(--surface-chip)] disabled:opacity-40"
-              title="ส่งออกรายการในหน้านี้"
+              title={tr('ส่งออกรายการในหน้านี้', 'Export the items on this page')}
             >
-              <Download size={14} aria-hidden="true" /> ส่งออก CSV
+              <Download size={14} aria-hidden="true" /> {tr('ส่งออก CSV', 'Export CSV')}
             </button>
             <button
               type="button"
               onClick={() => void load()}
               className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[var(--surface-grouped)] px-4 py-2 text-[13px] font-semibold text-[var(--ink)] transition-colors hover:bg-[var(--surface-chip)]"
             >
-              <RotateCw size={14} aria-hidden="true" /> รีเฟรช
+              <RotateCw size={14} aria-hidden="true" /> {tr('รีเฟรช', 'Refresh')}
             </button>
           </div>
         </div>
@@ -238,9 +268,9 @@ export default function AuditPage() {
               type="search"
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="ค้นหารายละเอียด ชื่อ หรืออีเมล"
-              aria-label="ค้นหาบันทึกกิจกรรม"
-              className="w-full rounded-[14px] border border-[var(--hairline-strong)] bg-[var(--surface)] py-2 pl-9 pr-3 text-[13px] text-[var(--ink)] placeholder:text-[var(--ink-tertiary)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
+              placeholder={tr('ค้นหารายละเอียด ชื่อ หรืออีเมล', 'Search details, name or email')}
+              aria-label={tr('ค้นหาบันทึกกิจกรรม', 'Search the activity log')}
+              className="w-full rounded-apple-widget border border-[var(--hairline-strong)] bg-[var(--surface)] py-2 pl-9 pr-3 text-[13px] text-[var(--ink)] placeholder:text-[var(--ink-tertiary)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
             />
           </div>
           <Select
@@ -250,7 +280,10 @@ export default function AuditPage() {
             size="md"
             options={[
               { value: '', label: 'ทุกประเภทกิจกรรม' },
-              ...ACTION_OPTIONS.map((key) => ({ value: key, label: ACTION_LABELS[key] })),
+              ...ACTION_OPTIONS.map((key) => ({
+                value: key,
+                label: tr(ACTION_LABELS[key].th, ACTION_LABELS[key].en),
+              })),
             ]}
             className="w-full sm:w-60"
           />
@@ -261,7 +294,7 @@ export default function AuditPage() {
               value={dateFrom}
               onChange={(event) => setDateFrom(event.target.value)}
               aria-label="ตั้งแต่วันที่"
-              className="w-full rounded-[14px] border border-[var(--hairline-strong)] bg-[var(--surface)] px-3 py-2 text-[13px] text-[var(--ink)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)] sm:w-40"
+              className="w-full rounded-apple-widget border border-[var(--hairline-strong)] bg-[var(--surface)] px-3 py-2 text-[13px] text-[var(--ink)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)] sm:w-40"
             />
             <span className="text-[12px] text-[var(--ink-tertiary)]">ถึง</span>
             <input
@@ -269,7 +302,7 @@ export default function AuditPage() {
               value={dateTo}
               onChange={(event) => setDateTo(event.target.value)}
               aria-label="ถึงวันที่"
-              className="w-full rounded-[14px] border border-[var(--hairline-strong)] bg-[var(--surface)] px-3 py-2 text-[13px] text-[var(--ink)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)] sm:w-40"
+              className="w-full rounded-apple-widget border border-[var(--hairline-strong)] bg-[var(--surface)] px-3 py-2 text-[13px] text-[var(--ink)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)] sm:w-40"
             />
             {(dateFrom || dateTo) && (
               <button
@@ -287,7 +320,7 @@ export default function AuditPage() {
         </div>
       </section>
 
-      <section className="rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] p-4 sm:p-5">
+      <section className="rounded-apple-lg border border-[var(--hairline)] bg-[var(--surface)] p-4 sm:p-5">
         {loading ? (
           <div
             role="status"
@@ -298,16 +331,16 @@ export default function AuditPage() {
               {[1, 2, 3, 4, 5].map((i) => (
                 <div
                   key={i}
-                  className="flex flex-col gap-2 rounded-[14px] bg-[var(--surface-subtle)] p-3.5 sm:flex-row sm:items-center sm:justify-between"
+                  className="flex flex-col gap-2 rounded-apple-widget bg-[var(--surface-subtle)] p-3.5 sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
                       <div className="h-5 w-20 rounded-full bg-[var(--surface-chip)]" />
-                      <div className="h-4 w-28 rounded-[11px] bg-[var(--surface-chip)]" />
+                      <div className="h-4 w-28 rounded-apple-md bg-[var(--surface-chip)]" />
                     </div>
-                    <div className="h-3.5 w-56 rounded-[11px] bg-[var(--surface-chip)]" />
+                    <div className="h-3.5 w-56 rounded-apple-md bg-[var(--surface-chip)]" />
                   </div>
-                  <div className="h-4 w-24 rounded-[11px] bg-[var(--surface-chip)]" />
+                  <div className="h-4 w-24 rounded-apple-md bg-[var(--surface-chip)]" />
                 </div>
               ))}
             </div>
@@ -315,13 +348,13 @@ export default function AuditPage() {
         ) : error ? (
           <div
             role="alert"
-            className="flex items-start gap-2 rounded-[14px] border border-[var(--danger-soft)] bg-[var(--danger-soft)] p-4 text-[13px] text-[var(--danger-ink)]"
+            className="flex items-start gap-2 rounded-apple-widget border border-[var(--danger-soft)] bg-[var(--danger-soft)] p-4 text-[13px] text-[var(--danger-ink)]"
           >
             <AlertCircle size={16} className="mt-0.5 shrink-0" aria-hidden="true" />
             <span>{error}</span>
           </div>
         ) : items.length === 0 ? (
-          <div className="flex min-h-[200px] flex-col items-center justify-center rounded-[14px] border border-dashed border-[var(--hairline)] bg-[var(--surface-subtle)] px-4 text-center text-[13px] text-[var(--ink-tertiary)]">
+          <div className="flex min-h-[200px] flex-col items-center justify-center rounded-apple-widget border border-dashed border-[var(--hairline)] bg-[var(--surface-subtle)] px-4 text-center text-[13px] text-[var(--ink-tertiary)]">
             <FileText size={22} className="mb-2 text-[var(--ink-faint)]" aria-hidden="true" />
             <span>ไม่พบบันทึกกิจกรรมที่ตรงกับเงื่อนไข</span>
             {(search || action || dateFrom || dateTo) && (
@@ -344,14 +377,14 @@ export default function AuditPage() {
             {items.map((entry) => (
               <li
                 key={entry.id}
-                className="flex flex-col gap-2 rounded-[14px] bg-[var(--surface-subtle)] p-3.5 sm:flex-row sm:items-center sm:justify-between"
+                className="flex flex-col gap-2 rounded-apple-widget bg-[var(--surface-subtle)] p-3.5 sm:flex-row sm:items-center sm:justify-between"
               >
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
                     <span
                       className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${actionTone(entry.action)}`}
                     >
-                      {ACTION_LABELS[entry.action] ?? entry.action}
+                      {actionLabel(entry.action)}
                     </span>
                     <span className="text-[12px] font-semibold text-[var(--ink)]">
                       {entry.user?.name || entry.user?.email || 'ระบบ'}

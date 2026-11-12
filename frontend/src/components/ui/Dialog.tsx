@@ -60,7 +60,7 @@ const DialogContent = React.forwardRef<
         'w-[calc(100vw-2rem)] max-w-lg',
         'max-h-[calc(100dvh-2rem)]',
         // Apple HIG: 24px squircle radius, white surface, ring depth
-        'bg-[var(--surface)] rounded-[18px] ring-1 ring-[var(--hairline)]',
+        'bg-[var(--surface)] rounded-apple-lg ring-1 ring-[var(--hairline)]',
         // Shadow: Apple modal elevation
         'shadow-[0_32px_80px_rgba(0,0,0,0.14),0_8px_24px_rgba(0,0,0,0.06)]',
         // Overflow handling

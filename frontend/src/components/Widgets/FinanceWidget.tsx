@@ -25,6 +25,7 @@ import {
   writePending,
 } from '@/lib/offline/localStore';
 import { useOnlineStatus } from '@/lib/offline/useOnlineStatus';
+import { useI18n } from '@/lib/i18n/I18nProvider';
 import {
   FINANCE_CATEGORIES,
   MAX_FINANCE_ENTRIES,
@@ -81,6 +82,7 @@ export default function FinanceWidget({
   width?: number;
   onResize?: (size: number) => void;
 }) {
+  const { tr } = useI18n();
   // Paint the last known list before the network answers — and when it cannot:
   // the server copy is one source, the offline mirror in localStorage the other.
   const [initial] = useState(() => ({
@@ -157,12 +159,12 @@ export default function FinanceWidget({
       // A cached list stays on screen; only a first load with nothing stored is
       // worth the error banner.
       if (!readCached<FinanceSnapshot>(FINANCE_OFFLINE_KEY)) {
-        setError('โหลดรายการไม่สำเร็จ');
+        setError(tr('โหลดรายการไม่สำเร็จ', 'Could not load entries'));
       }
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [tr]);
 
   /**
    * Add entries another tab/device saved since this one loaded.
@@ -258,7 +260,12 @@ export default function FinanceWidget({
         } catch {
           retryPendingRef.current = true;
           if (sequence === saveSequenceRef.current && mountedRef.current) {
-            setError('บันทึกในเครื่องแล้ว ระบบจะซิงก์ให้เมื่อกลับมาออนไลน์');
+            setError(
+              tr(
+                'บันทึกในเครื่องแล้ว ระบบจะซิงก์ให้เมื่อกลับมาออนไลน์',
+                'Saved on this device · it will sync when you are back online',
+              ),
+            );
             setSaving(false);
           }
         }
@@ -271,7 +278,7 @@ export default function FinanceWidget({
       );
       return queued;
     },
-    [mergeWithServer],
+    [mergeWithServer, tr],
   );
 
   useEffect(() => {
@@ -352,11 +359,15 @@ export default function FinanceWidget({
   const addEntry = () => {
     const value = parseAmountInput(amount);
     if (value === null) {
-      setError('กรอกจำนวนเงินให้ถูกต้อง');
+      setError(tr('กรอกจำนวนเงินให้ถูกต้อง', 'Enter a valid amount'));
       return;
     }
     if (latestRef.current.length >= MAX_FINANCE_ENTRIES) {
-      setError(`เก็บได้สูงสุด ${money.format(MAX_FINANCE_ENTRIES)} รายการ`);
+      setError(
+        tr('เก็บได้สูงสุด {count} รายการ', 'You can keep up to {count} entries', {
+          count: money.format(MAX_FINANCE_ENTRIES),
+        }),
+      );
       return;
     }
     setError(null);
@@ -458,10 +469,10 @@ export default function FinanceWidget({
   if (loading) {
     return (
       <div
-        className="flex h-full min-h-[300px] items-center justify-center rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] p-5"
+        className="flex h-full min-h-[300px] items-center justify-center rounded-apple-lg border border-[var(--hairline)] bg-[var(--surface)] p-5"
         role="status"
         aria-live="polite"
-        aria-label="กำลังโหลดรายรับรายจ่าย"
+        aria-label={tr('กำลังโหลดรายรับรายจ่าย', 'Loading income and expenses')}
       >
         <Loader2 className="h-5 w-5 animate-spin text-[var(--accent-text)]" aria-hidden="true" />
       </div>
@@ -470,12 +481,12 @@ export default function FinanceWidget({
 
   return (
     <section
-      className="flex h-full flex-col rounded-[18px] border border-[var(--hairline)] bg-[var(--surface)] p-5"
+      className="flex h-full flex-col rounded-apple-lg border border-[var(--hairline)] bg-[var(--surface)] p-5"
       aria-labelledby="finance-title"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] bg-[var(--success-soft)] text-[var(--success-ink)]">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-apple-widget bg-[var(--success-soft)] text-[var(--success-ink)]">
             <Wallet size={20} aria-hidden="true" />
           </div>
           <div className="min-w-0">
@@ -483,12 +494,14 @@ export default function FinanceWidget({
               id="finance-title"
               className="truncate text-[16px] font-bold tracking-tight text-[var(--ink)]"
             >
-              รายรับ – รายจ่ายวันนี้
+              {tr('รายรับ – รายจ่ายวันนี้', 'Income and expenses today')}
             </h3>
             <p className="mt-0.5 truncate text-[12px] text-[var(--ink-tertiary)]">
               {todayEntries.length > 0
-                ? `${todayEntries.length} รายการวันนี้`
-                : 'บันทึกรายการแรกของวัน'}
+                ? tr('{count} รายการวันนี้', 'Entries today: {count}', {
+                    count: todayEntries.length,
+                  })
+                : tr('บันทึกรายการแรกของวัน', 'Add your first entry of the day')}
             </p>
           </div>
         </div>
@@ -498,8 +511,8 @@ export default function FinanceWidget({
             type="button"
             onClick={handleExportCsv}
             disabled={entries.length === 0}
-            aria-label="ส่งออกข้อมูล CSV"
-            title="ดาวน์โหลดไฟล์ CSV"
+            aria-label={tr('ส่งออกข้อมูล CSV', 'Export CSV data')}
+            title={tr('ดาวน์โหลดไฟล์ CSV', 'Download CSV file')}
             className="inline-flex items-center gap-1 rounded-full bg-[var(--surface-grouped)] px-2 py-1.5 text-[11px] font-semibold text-[var(--ink-muted)] transition-colors hover:bg-[var(--surface-chip)] hover:text-[var(--ink)] active:scale-[0.95] disabled:opacity-40 disabled:pointer-events-none focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
           >
             <Download size={13} aria-hidden="true" />
@@ -508,32 +521,38 @@ export default function FinanceWidget({
           <button
             type="button"
             onClick={() => setSummaryOpen(true)}
-            aria-label="ดูภาพรวมรายรับรายจ่าย"
-            title="ดูภาพรวมทุกเดือน"
+            aria-label={tr('ดูภาพรวมรายรับรายจ่าย', 'View income and expense summary')}
+            title={tr('ดูภาพรวมทุกเดือน', 'View the all-month summary')}
             className="inline-flex items-center gap-1 rounded-full bg-[var(--surface-grouped)] px-2.5 py-1.5 text-[11px] font-semibold text-[var(--ink-muted)] transition-colors hover:bg-[var(--surface-chip)] hover:text-[var(--ink)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
           >
             <BarChart3 size={13} aria-hidden="true" />
-            <span className="hidden sm:inline">ภาพรวม</span>
+            <span className="hidden sm:inline">{tr('ภาพรวม', 'Summary')}</span>
           </button>
           {onResize && <WidgetSizeToggle value={width} onChange={onResize} sizes={[1, 2, 3]} />}
         </div>
       </div>
 
       <div className="mt-4 grid grid-cols-3 gap-2.5">
-        <div className="rounded-[14px] bg-[var(--success-soft)] px-3 py-2.5">
-          <span className="block text-[11px] font-semibold text-[var(--success-ink)]">รายรับ</span>
+        <div className="rounded-apple-widget bg-[var(--success-soft)] px-3 py-2.5">
+          <span className="block text-[11px] font-semibold text-[var(--success-ink)]">
+            {tr('รายรับ', 'Income')}
+          </span>
           <span className="mt-0.5 block tabular-nums text-[15px] font-extrabold text-[var(--ink)]">
             {money.format(income)}
           </span>
         </div>
-        <div className="rounded-[14px] bg-[var(--danger-soft)] px-3 py-2.5">
-          <span className="block text-[11px] font-semibold text-[var(--danger-ink)]">รายจ่าย</span>
+        <div className="rounded-apple-widget bg-[var(--danger-soft)] px-3 py-2.5">
+          <span className="block text-[11px] font-semibold text-[var(--danger-ink)]">
+            {tr('รายจ่าย', 'Expenses')}
+          </span>
           <span className="mt-0.5 block tabular-nums text-[15px] font-extrabold text-[var(--ink)]">
             {money.format(expense)}
           </span>
         </div>
-        <div className="rounded-[14px] bg-[var(--surface-grouped)] px-3 py-2.5">
-          <span className="block text-[11px] font-semibold text-[var(--ink-muted)]">คงเหลือ</span>
+        <div className="rounded-apple-widget bg-[var(--surface-grouped)] px-3 py-2.5">
+          <span className="block text-[11px] font-semibold text-[var(--ink-muted)]">
+            {tr('คงเหลือ', 'Balance')}
+          </span>
           <span
             className={`mt-0.5 block tabular-nums text-[15px] font-extrabold ${
               balance < 0 ? 'text-[var(--danger-ink)]' : 'text-[var(--ink)]'
@@ -545,9 +564,11 @@ export default function FinanceWidget({
       </div>
 
       {budget !== null && (
-        <div className="mt-2.5 rounded-[14px] bg-[var(--surface-subtle)] px-3 py-2">
+        <div className="mt-2.5 rounded-apple-widget bg-[var(--surface-subtle)] px-3 py-2">
           <div className="flex items-baseline justify-between gap-2 text-[11px]">
-            <span className="font-semibold text-[var(--ink-muted)]">งบเดือนนี้</span>
+            <span className="font-semibold text-[var(--ink-muted)]">
+              {tr('งบเดือนนี้', 'Monthly budget')}
+            </span>
             <span
               className={`tabular-nums font-bold ${overBudget ? 'text-[var(--danger-ink)]' : 'text-[var(--ink)]'}`}
             >
@@ -564,7 +585,9 @@ export default function FinanceWidget({
           </div>
           {overBudget && (
             <p className="mt-1 text-[11px] font-semibold text-[var(--danger-ink)]">
-              เกินงบไป {money.format(monthExpense - budget)} แล้ว
+              {tr('เกินงบไป {amount} แล้ว', 'Over budget by {amount}', {
+                amount: money.format(monthExpense - budget),
+              })}
             </p>
           )}
         </div>
@@ -573,7 +596,7 @@ export default function FinanceWidget({
       {error && (
         <p
           role="alert"
-          className="mt-2.5 rounded-[11px] bg-[var(--danger-soft)] px-3 py-1.5 text-[12px] text-[var(--danger-ink)]"
+          className="mt-2.5 rounded-apple-md bg-[var(--danger-soft)] px-3 py-1.5 text-[12px] text-[var(--danger-ink)]"
         >
           {error}
         </p>
@@ -582,17 +605,24 @@ export default function FinanceWidget({
       {undo && (
         <div
           role="status"
-          className="mt-2.5 flex items-center justify-between gap-2 rounded-[11px] bg-[var(--surface-inverse)] px-3 py-1.5 text-[12px] text-[var(--ink-inverse)]"
+          className="mt-2.5 flex items-center justify-between gap-2 rounded-apple-md bg-[var(--surface-inverse)] px-3 py-1.5 text-[12px] text-[var(--ink-inverse)]"
         >
           <span className="min-w-0 truncate">
-            ลบ “{undo.label || (undo.type === 'income' ? 'รายรับ' : 'รายจ่าย')}” แล้ว
+            {tr('ลบ “{label}” แล้ว', 'Deleted “{label}”', {
+              label:
+                undo.label ||
+                tr(
+                  undo.type === 'income' ? 'รายรับ' : 'รายจ่าย',
+                  undo.type === 'income' ? 'Income' : 'Expense',
+                ),
+            })}
           </span>
           <button
             type="button"
             onClick={undoDelete}
             className="shrink-0 rounded-full bg-[var(--glass-20)] px-2.5 py-0.5 text-[11px] font-bold text-[var(--ink-inverse)] transition-colors hover:bg-[var(--glass-40)]"
           >
-            เลิกทำ
+            {tr('เลิกทำ', 'Undo')}
           </button>
         </div>
       )}
@@ -608,7 +638,7 @@ export default function FinanceWidget({
           <div
             className="inline-flex rounded-full bg-[var(--surface-chip)] p-0.5"
             role="group"
-            aria-label="ประเภทรายการ"
+            aria-label={tr('ประเภทรายการ', 'Entry type')}
           >
             {(['expense', 'income'] as EntryType[]).map((option) => (
               <button
@@ -620,7 +650,7 @@ export default function FinanceWidget({
                   type === option ? 'bg-[var(--surface)] text-[var(--ink)] shadow-xs' : 'text-[var(--ink-muted)]'
                 }`}
               >
-                {option === 'expense' ? 'รายจ่าย' : 'รายรับ'}
+                {option === 'expense' ? tr('รายจ่าย', 'Expense') : tr('รายรับ', 'Income')}
               </button>
             ))}
           </div>
@@ -628,10 +658,10 @@ export default function FinanceWidget({
             type="text"
             value={label}
             onChange={(event) => setLabel(event.target.value)}
-            placeholder="รายการ เช่น ค่ากาแฟ"
-            aria-label="ชื่อรายการ"
+            placeholder={tr('รายการ เช่น ค่ากาแฟ', 'Entry, e.g. coffee')}
+            aria-label={tr('ชื่อรายการ', 'Entry name')}
             maxLength={MAX_FINANCE_LABEL}
-            className="min-w-0 flex-1 rounded-[14px] border border-[var(--hairline-strong)] bg-[var(--surface)] px-3 py-1.5 text-[13px] text-[var(--ink)] placeholder:text-[var(--ink-tertiary)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
+            className="min-w-0 flex-1 rounded-apple-widget border border-[var(--hairline-strong)] bg-[var(--surface)] px-3 py-1.5 text-[13px] text-[var(--ink)] placeholder:text-[var(--ink-tertiary)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
           />
         </div>
 
@@ -641,20 +671,20 @@ export default function FinanceWidget({
             inputMode="decimal"
             value={amount}
             onChange={(event) => setAmount(event.target.value)}
-            placeholder="จำนวนเงิน"
-            aria-label="จำนวนเงิน"
-            className="min-w-0 flex-1 rounded-[14px] border border-[var(--hairline-strong)] bg-[var(--surface)] px-3 py-2 text-[13px] tabular-nums text-[var(--ink)] placeholder:text-[var(--ink-tertiary)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
+            placeholder={tr('จำนวนเงิน', 'Amount')}
+            aria-label={tr('จำนวนเงิน', 'Amount')}
+            className="min-w-0 flex-1 rounded-apple-widget border border-[var(--hairline-strong)] bg-[var(--surface)] px-3 py-2 text-[13px] tabular-nums text-[var(--ink)] placeholder:text-[var(--ink-tertiary)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
           />
           <input
             type="date"
             value={date}
             onChange={(event) => setDate(event.target.value)}
-            aria-label="วันที่"
-            className="w-[136px] shrink-0 rounded-[14px] border border-[var(--hairline-strong)] bg-[var(--surface)] px-2 py-2 text-[12px] text-[var(--ink)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
+            aria-label={tr('วันที่', 'Date')}
+            className="w-[136px] shrink-0 rounded-apple-widget border border-[var(--hairline-strong)] bg-[var(--surface)] px-2 py-2 text-[12px] text-[var(--ink)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
           />
           <button
             type="submit"
-            aria-label="เพิ่มรายการ"
+            aria-label={tr('เพิ่มรายการ', 'Add entry')}
             className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--accent)] text-white transition-all hover:bg-[var(--accent-hover)] active:scale-95 disabled:opacity-40"
             disabled={!amount.trim()}
           >
@@ -667,10 +697,10 @@ export default function FinanceWidget({
           list="finance-categories"
           value={category}
           onChange={(event) => setCategory(event.target.value)}
-          placeholder="หมวดหมู่ (ไม่บังคับ)"
-          aria-label="หมวดหมู่"
+          placeholder={tr('หมวดหมู่ (ไม่บังคับ)', 'Category (optional)')}
+          aria-label={tr('หมวดหมู่', 'Category')}
           maxLength={40}
-          className="w-full rounded-[14px] border border-[var(--hairline-strong)] bg-[var(--surface)] px-3 py-1.5 text-[12px] text-[var(--ink)] placeholder:text-[var(--ink-tertiary)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
+          className="w-full rounded-apple-widget border border-[var(--hairline-strong)] bg-[var(--surface)] px-3 py-1.5 text-[12px] text-[var(--ink)] placeholder:text-[var(--ink-tertiary)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
         />
         <datalist id="finance-categories">
           {FINANCE_CATEGORIES.map((option) => (
@@ -681,10 +711,10 @@ export default function FinanceWidget({
 
       <ul
         className="mt-3 max-h-[248px] min-h-0 flex-1 space-y-1.5 overflow-y-auto pr-0.5"
-        aria-label="รายการวันนี้"
+        aria-label={tr('รายการวันนี้', "Today's entries")}
       >
         {todayEntries.length === 0 ? (
-          <li className="flex min-h-[92px] flex-col items-center justify-center rounded-[14px] border border-dashed border-[var(--hairline)] bg-[var(--surface-subtle)] px-3 py-4 text-center text-[13px] text-[var(--ink-tertiary)]">
+          <li className="flex min-h-[92px] flex-col items-center justify-center rounded-apple-widget border border-dashed border-[var(--hairline)] bg-[var(--surface-subtle)] px-3 py-4 text-center text-[13px] text-[var(--ink-tertiary)]">
             <Wallet size={18} className="mb-1.5 text-[var(--ink-faint)]" aria-hidden="true" />
             ยังไม่มีรายการวันนี้
           </li>
@@ -692,7 +722,7 @@ export default function FinanceWidget({
           todayEntries.map((entry) => (
             <li
               key={entry.id}
-              className="group flex items-center gap-2.5 rounded-[14px] bg-[var(--surface-grouped)] px-3 py-2"
+              className="group flex items-center gap-2.5 rounded-apple-widget bg-[var(--surface-grouped)] px-3 py-2"
             >
               {entry.type === 'income' ? (
                 <ArrowUpCircle size={16} className="shrink-0 text-[var(--success-ink)]" aria-hidden="true" />
