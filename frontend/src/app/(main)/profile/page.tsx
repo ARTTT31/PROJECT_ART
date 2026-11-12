@@ -6,8 +6,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   User,
   Lock,
-  Sliders,
-  LayoutGrid,
   Palette,
   Building2,
   BellRing,
@@ -41,59 +39,10 @@ import {
 import type { AuthUser } from '@/types';
 
 // ─────────────────────────────────────────────────────────────
-// Helpers
-// ─────────────────────────────────────────────────────────────
-
-/**
- * Sub-section switcher: each tab shows one group of cards at a time, so the
- * preferences tab does not turn into a long wall of every setting at once.
- */
-function SubNav<T extends string>({
-  label,
-  value,
-  options,
-  onChange,
-}: {
-  label: string;
-  value: T;
-  options: Array<{ value: T; label: string; icon: React.ReactNode }>;
-  onChange: (next: T) => void;
-}) {
-  return (
-    <div
-      className="flex items-center gap-1 overflow-x-auto no-scrollbar rounded-apple-lg border border-[var(--hairline-soft)] bg-[var(--surface)] p-1.5 shadow-2xs"
-      role="tablist"
-      aria-label={label}
-    >
-      {options.map((option) => {
-        const selected = value === option.value;
-        return (
-          <button
-            key={option.value}
-            type="button"
-            role="tab"
-            aria-selected={selected}
-            onClick={() => onChange(option.value)}
-            className={`inline-flex shrink-0 items-center gap-1.5 rounded-apple-md px-3 py-2 text-[12px] font-bold whitespace-nowrap transition-all duration-150 active:scale-[0.98] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)] ${
-              selected
-                ? 'bg-[var(--accent)] text-white shadow-[0_4px_10px_-4px_var(--accent)]'
-                : 'text-[var(--ink-muted)] hover:bg-[var(--surface-grouped)] hover:text-[var(--ink)]'
-            }`}
-          >
-            {option.icon}
-            {option.label}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────
 // Main Profile Page Component
 // ─────────────────────────────────────────────────────────────
 
-type TabKey = 'profile' | 'preferences';
+type TabKey = 'profile' | 'appearance' | 'notifications' | 'ai' | 'workspace';
 type AccountSection = 'account' | 'security';
 
 export default function ProfilePage() {
@@ -104,7 +53,6 @@ export default function ProfilePage() {
   const currentUser = user || authUser;
   const [activeTab, setActiveTab] = useState<TabKey>('profile');
   const [accountSection, setAccountSection] = useState<AccountSection>('account');
-  const [preferenceSection, setPreferenceSection] = useState<PreferenceSection>('menu');
 
   // Avatar Upload
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -135,16 +83,26 @@ export default function ProfilePage() {
     return canAccessPage(currentUser, item.id) && enabled;
   });
 
-  // Sync the tab with the URL so a shared `?tab=preferences` link opens the
-  // right section. Older `?tab=admin` links simply fall back to the profile tab.
+  // Sync the tab with the URL so shared links open the right section.
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
     const applyTabFromUrl = () => {
       const params = new URLSearchParams(window.location.search);
-      const requested = params.get('tab') || window.location.hash.replace('#', '');
-      if (requested !== 'profile' && requested !== 'preferences') return;
-      setActiveTab(requested);
+      const requested = (params.get('tab') || window.location.hash.replace('#', '')).toLowerCase();
+      if (!requested) return;
+
+      if (requested === 'profile') {
+        setActiveTab('profile');
+      } else if (requested === 'appearance' || requested === 'preferences' || requested === 'menu') {
+        setActiveTab('appearance');
+      } else if (requested === 'notifications' || requested === 'alerts') {
+        setActiveTab('notifications');
+      } else if (requested === 'ai') {
+        setActiveTab('ai');
+      } else if (requested === 'workspace' || requested === 'admin') {
+        setActiveTab('workspace');
+      }
     };
 
     applyTabFromUrl();
@@ -409,16 +367,16 @@ export default function ProfilePage() {
       />
 
       {/* ══════════════════════════════════════════════════
-          RESPONSIVE NAVIGATION TABS (Segmented Control)
+          SINGLE-TIER NAVIGATION TABS (Segmented Control)
           ══════════════════════════════════════════════════ */}
       <nav
         aria-label="แท็บตั้งค่าโปรไฟล์"
-        className="inline-flex max-w-full items-center gap-1 overflow-x-auto no-scrollbar rounded-apple-lg border border-[var(--hairline-soft)] bg-[var(--surface-chip)] p-1 backdrop-blur-md"
+        className="flex max-w-full items-center gap-1 overflow-x-auto no-scrollbar rounded-apple-lg border border-[var(--hairline-soft)] bg-[var(--surface-chip)] p-1 backdrop-blur-md"
       >
         <button
           type="button"
           onClick={() => handleTabChange('profile')}
-          className={`inline-flex shrink-0 items-center justify-center gap-2 px-4 py-2 rounded-apple-widget text-[13px] font-bold whitespace-nowrap transition-all duration-200 active:scale-[0.98] ${
+          className={`inline-flex shrink-0 items-center justify-center gap-2 px-3.5 py-2 rounded-apple-widget text-[13px] font-bold whitespace-nowrap transition-all duration-200 active:scale-[0.98] ${
             activeTab === 'profile'
               ? 'bg-[var(--surface)] text-[var(--accent-text)] shadow-[0_2px_8px_rgba(0,0,0,0.06)]'
               : 'text-[var(--ink-muted)] hover:text-[var(--ink)] hover:bg-[var(--glass-60)]'
@@ -430,74 +388,61 @@ export default function ProfilePage() {
 
         <button
           type="button"
-          onClick={() => handleTabChange('preferences')}
-          className={`inline-flex shrink-0 items-center justify-center gap-2 px-4 py-2 rounded-apple-widget text-[13px] font-bold whitespace-nowrap transition-all duration-200 active:scale-[0.98] ${
-            activeTab === 'preferences'
+          onClick={() => handleTabChange('appearance')}
+          className={`inline-flex shrink-0 items-center justify-center gap-2 px-3.5 py-2 rounded-apple-widget text-[13px] font-bold whitespace-nowrap transition-all duration-200 active:scale-[0.98] ${
+            activeTab === 'appearance'
               ? 'bg-[var(--surface)] text-[var(--accent-text)] shadow-[0_2px_8px_rgba(0,0,0,0.06)]'
               : 'text-[var(--ink-muted)] hover:text-[var(--ink)] hover:bg-[var(--glass-60)]'
           }`}
         >
-          <Sliders size={15} />
-          <span>{t('profile.tab.preferences')}</span>
+          <Palette size={15} />
+          <span>{t('profile.tab.appearance')}</span>
         </button>
+
+        <button
+          type="button"
+          onClick={() => handleTabChange('notifications')}
+          className={`inline-flex shrink-0 items-center justify-center gap-2 px-3.5 py-2 rounded-apple-widget text-[13px] font-bold whitespace-nowrap transition-all duration-200 active:scale-[0.98] ${
+            activeTab === 'notifications'
+              ? 'bg-[var(--surface)] text-[var(--accent-text)] shadow-[0_2px_8px_rgba(0,0,0,0.06)]'
+              : 'text-[var(--ink-muted)] hover:text-[var(--ink)] hover:bg-[var(--glass-60)]'
+          }`}
+        >
+          <BellRing size={15} />
+          <span>{t('profile.tab.notifications')}</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => handleTabChange('ai')}
+          className={`inline-flex shrink-0 items-center justify-center gap-2 px-3.5 py-2 rounded-apple-widget text-[13px] font-bold whitespace-nowrap transition-all duration-200 active:scale-[0.98] ${
+            activeTab === 'ai'
+              ? 'bg-[var(--surface)] text-[var(--accent-text)] shadow-[0_2px_8px_rgba(0,0,0,0.06)]'
+              : 'text-[var(--ink-muted)] hover:text-[var(--ink)] hover:bg-[var(--glass-60)]'
+          }`}
+        >
+          <Sparkles size={15} />
+          <span>{t('profile.tab.ai')}</span>
+        </button>
+
+        {isAdmin && (
+          <button
+            type="button"
+            onClick={() => handleTabChange('workspace')}
+            className={`inline-flex shrink-0 items-center justify-center gap-2 px-3.5 py-2 rounded-apple-widget text-[13px] font-bold whitespace-nowrap transition-all duration-200 active:scale-[0.98] ${
+              activeTab === 'workspace'
+                ? 'bg-[var(--surface)] text-[var(--accent-text)] shadow-[0_2px_8px_rgba(0,0,0,0.06)]'
+                : 'text-[var(--ink-muted)] hover:text-[var(--ink)] hover:bg-[var(--glass-60)]'
+            }`}
+          >
+            <Building2 size={15} />
+            <span>{t('profile.tab.workspace')}</span>
+          </button>
+        )}
       </nav>
 
-      {/* Sub-sections: the cards of one group at a time. */}
-      {activeTab === 'profile' ? (
-        <SubNav
-          label={t('profile.sub.label.account')}
-          value={accountSection}
-          onChange={setAccountSection}
-          options={[
-            {
-              value: 'account',
-              label: t('profile.sub.account'),
-              icon: <User size={13} aria-hidden="true" />,
-            },
-            {
-              value: 'security',
-              label: t('profile.sub.security'),
-              icon: <Lock size={13} aria-hidden="true" />,
-            },
-          ]}
-        />
-      ) : (
-        <SubNav
-          label={t('profile.sub.label.preferences')}
-          value={preferenceSection}
-          onChange={setPreferenceSection}
-          options={[
-            {
-              value: 'menu',
-              label: t('profile.sub.menu'),
-              icon: <LayoutGrid size={13} aria-hidden="true" />,
-            },
-            {
-              value: 'appearance',
-              label: t('profile.sub.appearance'),
-              icon: <Palette size={13} aria-hidden="true" />,
-            },
-            {
-              value: 'alerts',
-              label: t('profile.sub.alerts'),
-              icon: <BellRing size={13} aria-hidden="true" />,
-            },
-            {
-              value: 'ai',
-              label: t('profile.sub.ai'),
-              icon: <Sparkles size={13} aria-hidden="true" />,
-            },
-            {
-              value: 'workspace',
-              label: t('profile.sub.workspace'),
-              icon: <Building2 size={13} aria-hidden="true" />,
-            },
-          ]}
-        />
-      )}
-
       {/* ══════════════════════════════════════════════════
-          TAB 1: ข้อมูลส่วนตัว & ความปลอดภัย
+          TAB PANELS
           ══════════════════════════════════════════════════ */}
       <AnimatePresence mode="wait" initial={false}>
         {activeTab === 'profile' && (
@@ -507,8 +452,45 @@ export default function ProfilePage() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -6 }}
             transition={{ duration: 0.16, ease: 'easeOut' }}
-            className="min-h-[480px]"
+            className="space-y-4 min-h-[480px]"
           >
+            <div className="flex items-center">
+              <div
+                className="inline-flex items-center gap-1 rounded-apple-lg border border-[var(--hairline-soft)] bg-[var(--surface-chip)] p-1 backdrop-blur-md"
+                role="tablist"
+                aria-label={t('profile.sub.label.account')}
+              >
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={accountSection === 'account'}
+                  onClick={() => setAccountSection('account')}
+                  className={`inline-flex items-center gap-1.5 rounded-apple-md px-3 py-1.5 text-[12px] font-bold whitespace-nowrap transition-all duration-150 active:scale-[0.98] ${
+                    accountSection === 'account'
+                      ? 'bg-[var(--surface)] text-[var(--ink)] shadow-2xs'
+                      : 'text-[var(--ink-muted)] hover:text-[var(--ink)]'
+                  }`}
+                >
+                  <User size={13} aria-hidden="true" />
+                  {t('profile.sub.account')}
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={accountSection === 'security'}
+                  onClick={() => setAccountSection('security')}
+                  className={`inline-flex items-center gap-1.5 rounded-apple-md px-3 py-1.5 text-[12px] font-bold whitespace-nowrap transition-all duration-150 active:scale-[0.98] ${
+                    accountSection === 'security'
+                      ? 'bg-[var(--surface)] text-[var(--ink)] shadow-2xs'
+                      : 'text-[var(--ink-muted)] hover:text-[var(--ink)]'
+                  }`}
+                >
+                  <Lock size={13} aria-hidden="true" />
+                  {t('profile.sub.security')}
+                </button>
+              </div>
+            </div>
+
             <div hidden={accountSection !== 'account'}>
               <AccountDetailsCard
                 user={currentUser}
@@ -516,28 +498,17 @@ export default function ProfilePage() {
               />
             </div>
 
-            <div hidden={accountSection !== 'security'}>
+            <div hidden={accountSection !== 'security'} className="space-y-4">
               <PasswordCard user={currentUser} />
-
-              {/* Card 1.3: การยืนยันสองขั้นตอน */}
-              <div className="mt-4">
-                <SecurityCard />
-              </div>
-
-              {/* Card 1.4: อุปกรณ์ที่เข้าสู่ระบบของฉัน */}
-              <div className="mt-4">
-                <MyDevicesCard />
-              </div>
+              <SecurityCard />
+              <MyDevicesCard />
             </div>
           </motion.div>
         )}
 
-        {/* ══════════════════════════════════════════════════
-          TAB 2: ทางลัด & ปรับแต่งเมนู
-          ══════════════════════════════════════════════════ */}
-        {activeTab === 'preferences' && (
+        {activeTab !== 'profile' && (
           <motion.div
-            key="preferences"
+            key={activeTab}
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -6 }}
@@ -545,7 +516,7 @@ export default function ProfilePage() {
             className="grid min-h-[480px] grid-cols-1 gap-5 items-start"
           >
             <PreferencesPanels
-              section={preferenceSection}
+              section={activeTab}
               isAdmin={isAdmin}
               menuItems={filteredMenuItems}
               onMoveMenuItem={moveMainMenuItem}
@@ -557,7 +528,6 @@ export default function ProfilePage() {
             />
           </motion.div>
         )}
-
       </AnimatePresence>
 
       <QuickLinkDialog
