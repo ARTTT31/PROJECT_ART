@@ -36,6 +36,11 @@ DEFAULT_BRIEFING_CONFIG: Dict[str, Any] = {
     "topics": DEFAULT_TOPICS,
 }
 
+# How late a due briefing may still be delivered. The schedule used to be matched
+# against the exact current minute, so one missed tick (a cold start, a deploy, a
+# dispatch that overran) lost the morning push for the whole day.
+CATCH_UP_MINUTES = 180
+
 
 def get_user_briefing_config(user: User) -> Dict[str, Any]:
     """Retrieve briefing configuration from user JSON settings."""
@@ -220,7 +225,10 @@ async def dispatch_user_briefing(db: AsyncSession, user: User, is_test: bool = F
     # History Log (idempotent & safe against duplicate key conflicts)
     now_utc = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
     prefix = "briefing-test" if is_test else "briefing"
-    client_id = f"{prefix}-{int(now_utc.timestamp())}-{user.id}"
+    # A scheduled briefing gets a day-stable id so the send is idempotent per
+    # (user, day); a test send stays unique so two tests never collide.
+    stamp = str(int(now_utc.timestamp())) if is_test else now_utc.strftime("%Y-%m-%d")
+    client_id = f"{prefix}-{stamp}-{user.id}"
     try:
         stmt = select(NotificationLog).where(
             NotificationLog.user_id == user.id,
@@ -259,8 +267,32 @@ async def dispatch_user_briefing(db: AsyncSession, user: User, is_test: bool = F
     }
 
 
-async def dispatch_scheduled_briefings(db: AsyncSession, current_time_hhmm: str) -> int:
-    """Find all users scheduled for current_time_hhmm and dispatch."""
+def _minutes_since_midnight(hhmm: str) -> Optional[int]:
+    """``"07:30"`` → 450, or None when the stored value is unusable."""
+    try:
+        hour_text, minute_text = hhmm.strip().split(":")
+        hour, minute = int(hour_text), int(minute_text)
+    except (AttributeError, ValueError):
+        return None
+    if not (0 <= hour <= 23 and 0 <= minute <= 59):
+        return None
+    return hour * 60 + minute
+
+
+async def dispatch_scheduled_briefings(
+    db: AsyncSession, now_bkk: datetime.datetime
+) -> int:
+    """Send every briefing that is due today and has not gone out yet.
+
+    A briefing is delivered at any point between its configured time and
+    ``CATCH_UP_MINUTES`` later, so a tick the loop never got to run — a cold
+    start, a deploy at 07:30, a slow dispatch — no longer loses the morning push
+    silently. The send is idempotent per (user, day) through the notification log,
+    so a restart or a second instance cannot deliver it twice.
+    """
+    now_minutes = now_bkk.hour * 60 + now_bkk.minute
+    day = now_bkk.date().isoformat()
+
     stmt = select(User).where(User.is_active.is_(True), User.external_notifications.is_not(None))
     result = await db.execute(stmt)
     users = result.scalars().all()
@@ -268,12 +300,27 @@ async def dispatch_scheduled_briefings(db: AsyncSession, current_time_hhmm: str)
     sent_count = 0
     for user in users:
         cfg = get_user_briefing_config(user)
-        if cfg.get("enabled") and cfg.get("time") == current_time_hhmm:
-            try:
-                res = await dispatch_user_briefing(db, user)
-                if res.get("success"):
-                    sent_count += 1
-            except Exception as exc:
-                logger.warning("Failed to dispatch briefing to user %s: %s", user.id, exc)
+        if not cfg.get("enabled"):
+            continue
+
+        due = _minutes_since_midnight(str(cfg.get("time", "")))
+        if due is None or not (due <= now_minutes <= due + CATCH_UP_MINUTES):
+            continue
+
+        already_sent = await db.execute(
+            select(NotificationLog.id).where(
+                NotificationLog.user_id == user.id,
+                NotificationLog.client_id == f"briefing-{day}-{user.id}",
+            )
+        )
+        if already_sent.first() is not None:
+            continue
+
+        try:
+            res = await dispatch_user_briefing(db, user)
+            if res.get("success"):
+                sent_count += 1
+        except Exception as exc:
+            logger.warning("Failed to dispatch briefing to user %s: %s", user.id, exc)
 
     return sent_count

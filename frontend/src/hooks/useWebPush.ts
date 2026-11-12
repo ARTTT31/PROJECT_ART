@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
 import { showToast } from '@/utils/sweetalert';
 
@@ -26,12 +26,46 @@ function urlBase64ToUint8Array(base64String: string): BufferSource {
   return outputArray as unknown as BufferSource;
 }
 
+/** Register the browser's current push subscription with the server. */
+async function registerWithServer(reg: ServiceWorkerRegistration): Promise<boolean> {
+  const vapidRes = await fetchWithAuth('/api/v1/profile/web-push/vapid-key');
+  if (!vapidRes.ok) return false;
+  const vapidData = (await vapidRes.json()) as { public_key?: string };
+  if (!vapidData.public_key) return false;
+
+  let sub = await reg.pushManager.getSubscription();
+  if (!sub) {
+    sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(vapidData.public_key),
+    });
+  }
+
+  const p256dh = sub.getKey('p256dh');
+  const auth = sub.getKey('auth');
+  const toBase64 = (key: ArrayBuffer | null) =>
+    key ? btoa(String.fromCharCode.apply(null, Array.from(new Uint8Array(key)))) : '';
+
+  const res = await fetchWithAuth('/api/v1/profile/web-push', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      endpoint: sub.endpoint,
+      keys: { p256dh: toBase64(p256dh), auth: toBase64(auth) },
+    }),
+  });
+  return res.ok;
+}
+
 export function useWebPush(): UseWebPushReturn {
   const [isSupported, setIsSupported] = useState<boolean>(false);
   const [permission, setPermission] = useState<NotificationPermission | 'unsupported'>('default');
   const [isSubscribed, setIsSubscribed] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isTesting, setIsTesting] = useState<boolean>(false);
+  // The repair runs at most once per mount: a failed attempt must not turn into
+  // a loop of subscribe/unsubscribe against the push service.
+  const repairAttemptedRef = useRef(false);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -52,12 +86,51 @@ export function useWebPush(): UseWebPushReturn {
     setPermission(Notification.permission);
 
     let isMounted = true;
+
+    /**
+     * Re-register a device the server no longer knows about.
+     *
+     * A subscription is pruned when the push service rejects it (403 after a
+     * VAPID key rotation, 404/410 when the browser dropped it). The browser copy
+     * still exists, so nothing in the UI looked wrong — the switch read "พร้อมส่ง"
+     * while every morning briefing failed silently. Recreating the subscription
+     * with the key the server uses now is the only way an old-key subscription
+     * can start delivering again, and it needs no user gesture once permission is
+     * already granted.
+     */
+    async function repairMissingSubscription() {
+      if (repairAttemptedRef.current) return;
+      if (Notification.permission !== 'granted') return;
+      repairAttemptedRef.current = true;
+
+      try {
+        const reg = await navigator.serviceWorker.ready;
+        const local = await reg.pushManager.getSubscription();
+        // No local subscription means the user turned it off here on purpose.
+        if (!local) return;
+
+        try {
+          await local.unsubscribe();
+        } catch {
+          // A subscription that cannot be dropped is still worth re-registering.
+        }
+
+        if (await registerWithServer(reg)) {
+          if (isMounted) setIsSubscribed(true);
+        }
+      } catch {
+        // Offline or blocked: the next visit tries again.
+      }
+    }
+
     async function checkSubscription() {
       try {
         const res = await fetchWithAuth('/api/v1/profile/web-push');
         if (res.ok && isMounted) {
           const data = await res.json();
-          setIsSubscribed(Boolean(data.has_subscription));
+          const serverKnowsThisDevice = Boolean(data.has_subscription);
+          setIsSubscribed(serverKnowsThisDevice);
+          if (!serverKnowsThisDevice) await repairMissingSubscription();
         }
       } catch (err) {
         console.error('Failed to check web push subscription status:', err);
@@ -88,58 +161,23 @@ export function useWebPush(): UseWebPushReturn {
         return false;
       }
 
-      // A subscription needs the server's VAPID public key. Without it there is
-      // nothing to register with the push service, and reporting success anyway
-      // left users with a "subscribed" switch that could never deliver.
-      const vapidRes = await fetchWithAuth('/api/v1/profile/web-push/vapid-key');
-      if (!vapidRes.ok) {
-        throw new Error('ไม่สามารถรับกุญแจสำหรับการแจ้งเตือนได้ กรุณาลองใหม่');
-      }
-      const vapidData = (await vapidRes.json()) as { public_key?: string };
-      if (!vapidData.public_key) {
-        throw new Error('เซิร์ฟเวอร์ยังไม่พร้อมสำหรับการแจ้งเตือน');
-      }
-      const applicationServerKey = urlBase64ToUint8Array(vapidData.public_key);
-
       const reg = await navigator.serviceWorker.ready;
       if (!reg.pushManager) {
         throw new Error('เบราว์เซอร์นี้ไม่รองรับ Web Push Notification');
       }
 
-      let sub = await reg.pushManager.getSubscription();
-      if (sub) {
+      // Start from a clean subscription: an existing one may be bound to an older
+      // VAPID key, which the push service rejects.
+      const existing = await reg.pushManager.getSubscription();
+      if (existing) {
         try {
-          await sub.unsubscribe();
-          sub = null;
+          await existing.unsubscribe();
         } catch (unsubErr) {
           console.warn('Could not reset stale push subscription:', unsubErr);
         }
       }
-      if (!sub) {
-        sub = await reg.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey,
-        });
-      }
 
-      const endpoint = sub.endpoint;
-      const p256dh = sub.getKey('p256dh')
-        ? btoa(String.fromCharCode.apply(null, Array.from(new Uint8Array(sub.getKey('p256dh')!))))
-        : '';
-      const auth = sub.getKey('auth')
-        ? btoa(String.fromCharCode.apply(null, Array.from(new Uint8Array(sub.getKey('auth')!))))
-        : '';
-
-      const res = await fetchWithAuth('/api/v1/profile/web-push', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          endpoint,
-          keys: { p256dh, auth },
-        }),
-      });
-
-      if (!res.ok) {
+      if (!(await registerWithServer(reg))) {
         throw new Error('ไม่สามารถบันทึกการสมัครรับแจ้งเตือนได้');
       }
 

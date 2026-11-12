@@ -187,11 +187,13 @@ async def _notification_scheduler_loop(check_interval_seconds: int = 60) -> None
             day = bangkok_now.date().isoformat()
             current_time_hhmm = f"{current_hour:02d}:{bangkok_now.minute:02d}"
 
-            # 1. User-scheduled customizable daily briefings (once per minute)
+            # 1. User-scheduled customizable daily briefings (once per minute).
+            #    The service delivers anything due within its catch-up window, so a
+            #    minute this loop never reached still delivers the morning push.
             async with SessionLocal() as db:
                 if await claim_slot(db, "briefing", f"{day}T{current_time_hhmm}"):
                     from app.services.daily_briefing_service import dispatch_scheduled_briefings
-                    await dispatch_scheduled_briefings(db, current_time_hhmm)
+                    await dispatch_scheduled_briefings(db, bangkok_now)
 
             # 2. Morning broadcast daily digest at 08:00
             if current_hour == 8:

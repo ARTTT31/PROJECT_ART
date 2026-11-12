@@ -99,3 +99,32 @@ async def test_send_web_push_to_user_without_subscription():
     mock_db.commit = AsyncMock()
     res = await send_web_push_to_user(mock_db, user, "Test", "Body")
     assert res is False
+
+
+@pytest.mark.asyncio
+async def test_send_web_push_to_user_prunes_403_vapid_mismatch():
+    """A subscription built on another VAPID key is dead weight.
+
+    The push service answers 403 (VapidPkHashMismatch) for it, and keeping the row
+    made the UI report "พร้อมส่ง" while every morning briefing failed silently.
+    """
+    user = User(
+        id=997,
+        username="pushtest",
+        email="push403@example.com",
+        web_push_subscription=json.dumps({
+            "endpoint": "https://fcm.googleapis.com/fcm/send/old-key",
+            "keys": {"p256dh": "d", "auth": "a"},
+        }),
+    )
+
+    mock_db = MagicMock()
+    mock_db.commit = AsyncMock()
+    fake_response = MagicMock(status_code=403)
+    exc = WebPushException("VapidPkHashMismatch", response=fake_response)
+
+    with patch("app.services.web_push_service.webpush_async", side_effect=exc):
+        assert await send_web_push_to_user(mock_db, user, "Test", "Body") is False
+
+    assert user.web_push_subscription is None
+    mock_db.commit.assert_awaited_once()

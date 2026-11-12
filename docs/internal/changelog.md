@@ -948,3 +948,43 @@ head` + `alembic check` on a throwaway SQLite file with no drift, `npx tsc --noE
 src` 0 errors, `npx vitest run` **395 passed / 61 files**, `npm run build` succeeds. Not run: the axe
 signed-in spec (needs a test account), Playwright smoke, and any deployed-only check. Not viewed in a
 browser.
+
+## Daily morning push: why it never arrived (November 12, 2026)
+
+Symptom: the "สรุปข้อมูลประจำวันอัตโนมัติ (Daily Push)" card was on, the profile
+said Web Push was ready, and no briefing ever reached the phone in the morning.
+
+**Cause 1 — the schedule matched one exact minute.** `_notification_scheduler_loop`
+ticks every 60 seconds and the briefing was dispatched only when
+`cfg.time == "HH:MM"` matched the *current* minute. One missed tick — a Render cold
+start, a deploy at 07:30, a dispatch that overran 60 seconds — and that minute never
+came back, so the morning briefing was lost for the whole day with nothing recorded
+anywhere. Now `dispatch_scheduled_briefings` takes the Bangkok time and delivers any
+briefing that is due inside a 180-minute catch-up window, so a late tick still
+sends. The notification log uses a day-stable `client_id`
+(`briefing-<date>-<user id>`), which makes the send idempotent per account per day:
+restarts and a second instance cannot double it, and a retry updates the same row.
+
+**Cause 2 — a dead subscription looked healthy.** `send_web_push_to_user` pruned
+only 404/410. A subscription built on an older VAPID key gets **403**
+(`VapidPkHashMismatch`) from the push service, so the row survived forever, the
+profile read "พร้อมส่ง", and every morning push failed silently in the log. 403 is
+now pruned along with 404/410, and `useWebPush` repairs the device: when the server
+reports no subscription but the browser still holds one and permission is already
+granted (and only once per mount), it drops the old subscription and re-registers
+with the key the server currently uses. No user gesture, no toast, no switch to
+flick.
+
+**What this does not fix (and cannot from here):** iOS delivers Web Push only to a
+PWA added to the Home Screen (16.4+), so a Safari tab can never receive a briefing;
+and the catch-up window still needs the backend process to be awake at some point
+between the configured time and three hours later. Both are configuration, not
+code.
+
+### Verified
+
+`pytest -q` **643 passed / 84.08%** (4 new: catch-up window, outside-window,
+once-per-day idempotency, 403 pruning), `flake8 app` clean, `mypy app` clean (71
+files), `npx tsc --noEmit` clean, `npx eslint src` 0 errors, `npx vitest run` **396
+passed / 61 files** (1 new: silent re-registration). Not verified: an actual push
+delivered to a physical phone — that needs the deployed backend.

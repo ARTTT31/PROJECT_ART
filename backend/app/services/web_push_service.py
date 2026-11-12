@@ -292,10 +292,14 @@ async def send_web_push_to_user(
             valid_subs.append(sub)
         except WebPushException as exc:
             status_code = getattr(exc.response, "status_code", None)
-            if status_code in (404, 410):
-                # Subscription expired or unsubscribed on browser side
+            if status_code in (403, 404, 410):
+                # 404/410: gone or unsubscribed in the browser. 403: the push
+                # service refuses this key pair, which is what a subscription
+                # created under an older VAPID key looks like. Keeping it made the
+                # UI show "พร้อมส่ง" while every morning push failed silently, so
+                # drop it and let the device subscribe again with the current key.
                 logger.info(
-                    "Pruning expired web push subscription (%s) for user %s",
+                    "Pruning unusable web push subscription (%s) for user %s",
                     status_code,
                     user.id,
                 )

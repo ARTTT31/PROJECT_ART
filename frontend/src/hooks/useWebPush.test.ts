@@ -228,4 +228,76 @@ describe('useWebPush', () => {
       fetchSpy.mock.calls.some(([url, init]) => url.toString().endsWith('/web-push') && init?.method === 'POST')
     ).toBe(false);
   });
+
+  it('re-registers a device the server no longer knows about', async () => {
+    // A pruned subscription (403 after a VAPID rotation, or a restored database)
+    // left the browser subscribed and the server empty, so every morning briefing
+    // failed silently. Opening the app has to rebuild it with the current key.
+    window.Notification = {
+      permission: 'granted',
+      requestPermission: vi.fn().mockResolvedValue('granted'),
+    } as unknown as typeof Notification;
+    (window as unknown as { PushManager: unknown }).PushManager = {};
+
+    const keyBytes = new Uint8Array([1, 2, 3]).buffer;
+    const localSub = {
+      endpoint: 'https://fcm.googleapis.com/fcm/send/old-key',
+      unsubscribe: vi.fn().mockResolvedValue(true),
+      getKey: vi.fn().mockReturnValue(keyBytes),
+    };
+    const freshSub = {
+      endpoint: 'https://fcm.googleapis.com/fcm/send/new-key',
+      unsubscribe: vi.fn().mockResolvedValue(true),
+      getKey: vi.fn().mockReturnValue(keyBytes),
+    };
+    const subscribeMock = vi.fn().mockResolvedValue(freshSub);
+
+    Object.defineProperty(navigator, 'serviceWorker', {
+      value: {
+        ready: Promise.resolve({
+          pushManager: {
+            // The old subscription is reported once, then gone after unsubscribe.
+            getSubscription: vi.fn().mockResolvedValueOnce(localSub).mockResolvedValue(null),
+            subscribe: subscribeMock,
+          },
+        }),
+      },
+      configurable: true,
+    });
+
+    const fetchSpy = vi
+      .spyOn(fetchWithAuthModule, 'fetchWithAuth')
+      .mockImplementation(async (input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.includes('vapid-key')) {
+          const publicKey = 'B' + 'A'.repeat(86);
+          return {
+            ok: true,
+            json: vi.fn().mockResolvedValue({ public_key: publicKey }),
+          } as unknown as Response;
+        }
+        if (url.endsWith('/web-push')) {
+          return { ok: true, json: vi.fn().mockResolvedValue({ has_subscription: false }) } as unknown as Response;
+        }
+        return { ok: true } as Response;
+      });
+
+    const { result } = renderHook(() => useWebPush());
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(localSub.unsubscribe).toHaveBeenCalled();
+    expect(subscribeMock).toHaveBeenCalled();
+    expect(
+      fetchSpy.mock.calls.some(
+        ([url, init]) => url.toString().endsWith('/web-push') && init?.method === 'POST'
+      )
+    ).toBe(true);
+    expect(result.current.isSubscribed).toBe(true);
+  });
 });
