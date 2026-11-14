@@ -183,7 +183,13 @@ async function loadMarket(): Promise<DigestData['market'] | null> {
     return {
       setIndex: json.set_index?.value ? Number(json.set_index.value.toFixed(2)) : 1425.5,
       setChange: json.set_index?.change ? Number(json.set_index.change.toFixed(2)) : 4.2,
-      usdRate: json.currency?.value ? Number(json.currency.value.toFixed(2)) : 35.8,
+      usdRate: (() => {
+        // currency is a CurrencyBlock with a rates[] array, not a .value field
+        const rates: Array<{ code: string; thb: number; unit: number }> =
+          json.currency?.rates ?? json.currency_sources?.[0]?.rates ?? [];
+        const usd = rates.find((r: { code: string }) => r.code === 'USD');
+        return usd ? Number((usd.thb / (usd.unit || 1)).toFixed(2)) : 35.8;
+      })(),
     };
   } catch {
     return null;
@@ -436,7 +442,7 @@ export default function DailyDigestWidget({
             aria-label={tr('คัดลอกสรุปประจำวัน', 'Copy the daily summary')}
             className="flex h-7 w-7 items-center justify-center rounded-full text-[var(--ink-tertiary)] transition-colors hover:bg-[var(--surface-grouped)] hover:text-[var(--ink)] active:scale-[0.95]"
           >
-            {copied ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
+            {copied ? <Check size={14} className="text-[var(--success)]" /> : <Copy size={14} />}
           </button>
           <button
             type="button"
@@ -455,7 +461,7 @@ export default function DailyDigestWidget({
       {/* ── Dynamic AI Narrative Briefing Banner ──────────────────────── */}
       <div className="mt-3 rounded-apple-widget border border-[var(--hairline)] bg-[var(--surface-subtle)] p-3.5">
         <div className="flex items-center gap-2">
-          <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="flex h-2 w-2 rounded-full bg-[var(--success)] animate-pulse" />
           <p className="text-[12px] font-bold text-[var(--ink)]">
             {greeting} — ภาพรวมพร้อมสำหรับคุณ
           </p>
@@ -503,7 +509,7 @@ export default function DailyDigestWidget({
               ariaLabel="เลือกชนิดน้ำมันที่แสดงบนสรุปประจำวัน"
               className="max-w-[96px]"
             />
-            <Fuel size={14} className="shrink-0 text-blue-500" aria-hidden="true" />
+            <Fuel size={14} className="shrink-0 text-[var(--accent-text)]" aria-hidden="true" />
           </div>
           <div className="mt-2">
             <p className="text-[16px] font-black text-[var(--ink)]">
@@ -517,7 +523,7 @@ export default function DailyDigestWidget({
         <div className="flex flex-col justify-between rounded-apple-widget bg-[var(--surface-grouped)] p-2.5 ring-1 ring-[var(--hairline-soft)]">
           <div className="flex items-center justify-between text-[var(--ink-tertiary)]">
             <span className="text-[11px] font-bold">ตลาด SET</span>
-            <TrendingUp size={14} className="text-emerald-500" />
+            <TrendingUp size={14} className="text-[var(--success)]" />
           </div>
           <div className="mt-2">
             <p className="text-[16px] font-black text-[var(--ink)]">
@@ -525,7 +531,7 @@ export default function DailyDigestWidget({
             </p>
             <p
               className={`text-[10px] font-semibold truncate ${
-                (data.market.setChange ?? 0) >= 0 ? 'text-emerald-600' : 'text-red-600'
+                (data.market.setChange ?? 0) >= 0 ? 'text-[var(--success-ink)]' : 'text-[var(--danger-ink)]'
               }`}
             >
               {(data.market.setChange ?? 0) >= 0 ? '+' : ''}

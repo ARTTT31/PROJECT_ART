@@ -74,7 +74,7 @@ describe('FocusTimerWidget', () => {
     const soundBtn = screen.getByRole('button', { name: 'ปิดเสียงเตือน' });
     fireEvent.click(soundBtn);
     expect(screen.getByRole('button', { name: 'เปิดเสียงเตือน' })).toBeDefined();
-    expect(screen.getByText('🔕 เสียงปิด')).toBeDefined();
+    expect(screen.getByText(/เสียงปิด/)).toBeDefined();
   });
 
   it('renders correctly in size M (width=2) and size L (width=3)', () => {

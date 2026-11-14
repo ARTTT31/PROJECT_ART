@@ -30,6 +30,7 @@ const DEFAULT_IDS = [
   'holidays',
   'weather',
   'oilprice',
+  'epl',
   'qrcode',
 ];
 

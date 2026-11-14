@@ -425,6 +425,7 @@ export default function FocusTimerWidget({
                 <button
                   type="button"
                   onClick={handleTogglePlay}
+                  aria-label={isRunning ? 'หยุดชั่วคราว' : 'เริ่มจับเวลา'}
                   className="flex h-8 items-center gap-1.5 rounded-full bg-[var(--accent)] px-4 text-xs font-semibold text-white transition-transform active:scale-[0.95]"
                 >
                   {isRunning ? <Pause className="h-3 w-3 fill-current" /> : <Play className="h-3 w-3 fill-current" />}
@@ -433,6 +434,7 @@ export default function FocusTimerWidget({
                 <button
                   type="button"
                   onClick={handleReset}
+                  aria-label="รีเซ็ตเวลา"
                   className="flex h-8 w-8 items-center justify-center rounded-full border border-[var(--hairline)] bg-[var(--surface-chip)] text-[var(--ink-secondary)] active:scale-[0.95]"
                 >
                   <RotateCcw className="h-3 w-3" />
@@ -486,7 +488,11 @@ export default function FocusTimerWidget({
       {/* Bottom Subtle Status */}
       <div className="flex items-center justify-between border-t border-[var(--hairline)] pt-2 text-[11px] text-[var(--ink-muted)]">
         <span>รอบที่สำเร็จ: {completedSessions}</span>
-        <span>{soundEnabled ? '🔔 เสียงเปิด' : '🔕 เสียงปิด'}</span>
+        <span className="inline-flex items-center gap-1">
+          {soundEnabled
+            ? <><Volume2 className="h-3 w-3" aria-hidden="true" /> เสียงเปิด</>
+            : <><VolumeX className="h-3 w-3" aria-hidden="true" /> เสียงปิด</>}
+        </span>
       </div>
     </div>
   );

@@ -382,10 +382,18 @@ export default function WeatherWidget({
   // ── Computed Meta ──────────────────────────────────────────────────────────
   const weatherMeta = useMemo(
     () => getWeatherMeta(weather?.weatherCode ?? 0),
-    // `locale` re-resolves the localized label when the language changes.
+    // `locale` is intentional: getWeatherMeta calls translateText() which reads
+    // the active locale, so a language switch must bust this memo even though
+    // the dep checker cannot see it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [weather?.weatherCode, locale],
   );
-  const pm25Meta = useMemo(() => getPM25Meta(airQuality?.pm25 ?? 0), [airQuality?.pm25, locale]);
+  const pm25Meta = useMemo(
+    () => getPM25Meta(airQuality?.pm25 ?? 0),
+    // Same reason as weatherMeta above.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [airQuality?.pm25, locale],
+  );
 
   const WeatherIcon = weatherMeta.icon;
   const ShieldIcon = pm25Meta.icon;

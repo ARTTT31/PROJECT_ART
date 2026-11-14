@@ -59,7 +59,7 @@ export default function VerifyEmailPage() {
         setState('error');
         setMessage(error.message);
       });
-  }, []);
+  }, [tr]);
 
   return (
     <AuthPageShell tagline={tr('ยืนยันอีเมลของคุณ', 'Verify your email')}>

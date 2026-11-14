@@ -6,6 +6,7 @@ import WidgetSizeToggle from './WidgetSizeToggle';
 import { QRCodeCanvas } from 'qrcode.react';
 import JsBarcode from 'jsbarcode';
 import { showToast } from '@/utils/sweetalert';
+import { useTheme } from '@/context/ThemeContext';
 
 // ── Types & constants ─────────────────────────────────────────────────────────
 
@@ -55,6 +56,13 @@ export default function QRCodeWidget({
   width?: number;
   onResize?: (size: number) => void;
 }) {
+  const { resolvedMode } = useTheme();
+  // Canvas-based libraries (JsBarcode, QRCodeCanvas) accept only hex/named
+  // colors — CSS custom properties do not work. Read the resolved values from
+  // the document root at render time so they flip with the theme.
+  const inkColor = resolvedMode === 'dark' ? '#f5f5f7' : '#1d1d1f';
+  const surfaceColor = resolvedMode === 'dark' ? '#1c1c1e' : '#ffffff';
+
   // ── Persisted state ─────────────────────────────────────────────────────────
   const [format, setFormat] = useState<BarcodeFormat>(() =>
     readStorage('format', 'code128', (v) => v === 'qrcode' || v === 'code128'),
@@ -123,8 +131,8 @@ export default function QRCodeWidget({
           displayValue: true,
           fontSize: 14,
           margin: 12,
-          lineColor: '#0f172a',
-          background: '#ffffff',
+          lineColor: inkColor,
+          background: surfaceColor,
           valid: (valid) => {
             if (!valid) {
               setError('รูปแบบข้อความไม่ถูกต้องสำหรับบาร์โค้ด Code 128');
@@ -138,7 +146,7 @@ export default function QRCodeWidget({
         setError(e.message || 'ไม่สามารถสร้าง Barcode ได้');
       }
     }
-  }, [generatedText, format, width]);
+  }, [generatedText, format, width, inkColor, surfaceColor]);
 
   // ── Actions: Download PNG (Synchronous & Zero Failure) ───────────────────────
   const downloadImage = () => {
@@ -420,8 +428,8 @@ export default function QRCodeWidget({
                     <QRCodeCanvas
                       value={generatedText}
                       size={width >= 3 ? 200 : width >= 2 ? 170 : 145}
-                      fgColor="#1d1d1f"
-                      bgColor="#ffffff"
+                      fgColor={inkColor}
+                      bgColor={surfaceColor}
                       level="M"
                       includeMargin={false}
                     />
