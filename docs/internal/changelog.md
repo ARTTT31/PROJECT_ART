@@ -988,3 +988,30 @@ once-per-day idempotency, 403 pruning), `flake8 app` clean, `mypy app` clean (71
 files), `npx tsc --noEmit` clean, `npx eslint src` 0 errors, `npx vitest run` **396
 passed / 61 files** (1 new: silent re-registration). Not verified: an actual push
 delivered to a physical phone — that needs the deployed backend.
+
+## Test suite stabilization and HIG token polish (November 14, 2026)
+
+Pass addressing frontend test failures following the addition of the Premier League (`epl`)
+widget, icon standards alignment, and lint cleanup.
+
+1. **Dashboard layout tests restored to green.** Adding the Premier League widget (`epl`) to
+   `defaultWidgets` had shifted the expected default widget set. Updated `DEFAULT_IDS` in
+   `useDashboardLayout.test.ts` to include `'epl'` (14 default widgets), resolving 9 test
+   failures.
+2. **Focus timer sound toggle icon alignment.** Replaced emoji indicators (`🔔`/`🔕`) with
+   Lucide `Volume2` and `VolumeX` icons with `aria-hidden="true"` conforming to Apple HIG and
+   project icon standards; updated `FocusTimerWidget.test.tsx` text matching.
+3. **DailyDigestWidget and QRCodeWidget token polish.** Switched raw tailwind color classes in
+   `DailyDigestWidget` to CSS variables (`var(--success)`, `var(--accent-text)`) and fixed USD rate
+   parsing for `CurrencyBlock` rates arrays. Added dark/light mode surface awareness to QR/barcode
+   canvases in `QRCodeWidget`.
+4. **Lint and Vitest stability.** Cleaned redundant ESLint disable directives in `WeatherWidget.tsx`
+   bringing `eslint .` to 0 errors and 0 warnings. Raised `testTimeout` to 10s in `vitest.config.mts`
+   preventing jsdom worker timeouts under parallel load on Windows.
+
+### Verified
+
+`pytest -q` **654 passed / 84.02%**, `flake8 app` clean, `mypy app` clean (72 files), `alembic upgrade
+head` + `alembic check` on a throwaway SQLite file with no drift, `npx tsc --noEmit` clean, `npx eslint .`
+0 errors / 0 warnings, `npx vitest run` **400 passed / 62 files**, `npm run build` succeeds (16 routes).
+Commit `0f4b3d9`.

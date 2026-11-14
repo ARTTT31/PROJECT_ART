@@ -1,6 +1,6 @@
 # ART Workspace — Current Status
 
-**Verified:** November 12, 2026 · `main` at `8ad5636` plus the security/UX pass below · Windows dev
+**Verified:** November 14, 2026 · `main` at `0f4b3d9` · Windows dev
 machine, Python 3.14.6 local, Node 26
 
 > **What this file is.** The single place that states what is true *right now*: verified numbers, what
@@ -14,14 +14,14 @@ machine, Python 3.14.6 local, Node 26
 
 | Check | Command | Result |
 |---|---|---|
-| Backend tests | `cd backend && ./venv/Scripts/python.exe -m pytest -q` | **639 passed**; coverage **84.08%** (gate 75%) |
+| Backend tests | `cd backend && ./venv/Scripts/python.exe -m pytest -q` | **654 passed**; coverage **84.02%** (gate 75%) |
 | Backend lint | `./venv/Scripts/python.exe -m flake8 app` | clean |
-| Backend types | `./venv/Scripts/python.exe -m mypy app` | clean, 70 source files |
+| Backend types | `./venv/Scripts/python.exe -m mypy app` | clean, 72 source files |
 | Migrations | `alembic upgrade head` + `alembic check` on a throwaway SQLite file | full chain applies, **no drift** |
-| Frontend tests | `cd frontend && npx vitest run` | **395 passed**, 61 files |
+| Frontend tests | `cd frontend && npx vitest run` | **400 passed**, 62 files |
 | Frontend types | `npx tsc --noEmit` | clean |
-| Frontend lint | `npx eslint src` | clean (3 pre-existing warnings: `verify-email`, `WeatherWidget`) |
-| Frontend build | `npm run build` | succeeds, 20 routes |
+| Frontend lint | `npx eslint .` | clean (0 errors, 0 warnings) |
+| Frontend build | `npm run build` | succeeds, 16 routes |
 
 The CI job runs the suite on 3.11 **and with no `.env`**, so the numbers above were measured that
 way. Both differences matter: 3.11 measures ~8 points lower than 3.14, and a local `.env` silently
@@ -31,10 +31,10 @@ CI only reaches after the earlier https-scheme rejection). The skipped test is
 `test_security_headers.py`'s docs check, which skips itself when `DEBUG=False`. Re-measure with
 `mv .env .env.bak` before running whenever a test asserts on configuration-driven behaviour.
 
-**Not re-run in this pass** (last green in CI or in the pass noted in `changelog.md`): `next build`,
-Playwright smoke (3), axe on the auth pages, the live register→login E2E, `pip-audit`, and every
-deployed-only check in §5. Two interpreter differences matter when reading coverage: Python 3.11
-(what CI runs) measures lower than 3.14 on this suite, and the gate is deliberately 75 rather than 80.
+**Not re-run in this pass** (last green in CI or in the pass noted in `changelog.md`): Playwright smoke (3),
+axe on the auth pages, the live register→login E2E, `pip-audit`, and every deployed-only check in §5. Two
+interpreter differences matter when reading coverage: Python 3.11 (what CI runs) measures lower than
+3.14 on this suite, and the gate is deliberately 75 rather than 80.
 
 ## 2. Open findings from the November 10, 2026 audit
 
@@ -46,7 +46,7 @@ below state exactly what is still open. `backend/scripts/admin/check_password.py
 
 | ID | Finding | Severity | Status |
 |---|---|---|---|
-| P1 | Auth/admin paths read `request.client.host` (the Render proxy), so the `(email, IP)` login backoff collapses to per-email — anyone can lock a known account out — and audit rows, session rows and "new device" mails record the proxy IP | High | Open |
+| P1 | Auth/admin paths read `request.client.host` (the Render proxy), so the `(email, IP)` login backoff collapses to per-email — anyone can lock a known account out — and audit rows, session rows and "new device" mails record the proxy IP | High | **Closed** — all auth, user, profile, system and planner paths read `get_real_client_ip(request)` behind trusted proxies |
 | P2 | Notes, finance, reminders, watchlist, menu and layout are whole-document JSON columns replaced on every write; concurrent devices silently lose rows. Finance is the only one with tombstones | High | **Server half shipped** — `users.profile_version` bumps on every blob write and an optional `base_version` is refused with 409 + `X-Profile-Version` (notes, finance, watchlist, layout, menu, camera, notification-state). Widgets do not send `base_version` yet |
 | P3 | `/ai/chat` is limited per IP only (30/min); a deployment key has no per-account daily budget | Medium | **Closed** — `ai_usage` table + `AI_DAILY_MESSAGE_LIMIT` (default 50/day/account, 0 = off); only paid calls are counted, the built-in intent engine is free |
 | P4 | Frontend CSP keeps `script-src 'unsafe-inline'` (inline theme bootstrap) and a blanket `img-src http:` | Medium | **Partial** — `NEXT_PUBLIC_CAMERA_IMG_ORIGINS` narrows `img-src` to an allow-list (the blanket `http:` remains only when unset). `script-src 'unsafe-inline'` stays: a nonce needs middleware plus dynamic rendering, and this site is statically prerendered |
