@@ -45,6 +45,7 @@ from app.schemas.user import (
     WatchlistResponse,
 )
 from app.core.quick_notes import parse_quick_notes, serialize_quick_notes
+from app.core.quick_links import parse_quick_links
 from app.core.personal_lists import (
     parse_finance_budget,
     parse_finance_entries,
@@ -430,6 +431,18 @@ async def upload_avatar_file(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="ไม่สามารถอัปโหลดไฟล์ได้ กรุณาลองอีกครั้งภายหลัง",
         )
+
+
+@router.get("/quick-links", response_model=list[dict[str, Any]])
+@limiter.limit(_GENERAL_LIMIT)
+async def get_quick_links(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> list[dict[str, Any]]:
+    """The signed-in account's quick links (list of dicts)."""
+    user = await load_profile_columns(db, current_user, "quick_links")
+    return parse_quick_links(user.quick_links)
 
 
 @router.post("/quick-links", response_model=ResponseModel)

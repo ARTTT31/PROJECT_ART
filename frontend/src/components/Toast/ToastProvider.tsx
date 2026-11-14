@@ -133,7 +133,7 @@ function ToastContainer({ toasts, onRemove }: { toasts: Toast[]; onRemove: (id: 
     // Bottom on a phone, where a top anchor sits under the notch and the sticky
     // header; top-right on a desktop, where that is the quiet corner.
     <div
-      className="pointer-events-none fixed inset-x-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-[var(--z-toast,1100)] flex flex-col items-center gap-3 sm:inset-x-auto sm:bottom-auto sm:right-6 sm:top-6 sm:items-end"
+      className="pointer-events-none fixed inset-x-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-[var(--z-toast,1100)] flex flex-col items-center gap-3 sm:inset-x-auto sm:bottom-auto sm:right-6 sm:top-16 sm:items-end"
       aria-label="การแจ้งเตือน"
       role="region"
     >

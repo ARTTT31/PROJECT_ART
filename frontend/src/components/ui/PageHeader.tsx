@@ -67,7 +67,7 @@ export function PageHeader({ title, subtitle, icon, actions, children, className
           <div className="min-w-0">
             <h1
               ref={headingRef}
-              className="truncate text-apple-title2 font-semibold text-[var(--ink)] sm:text-apple-title1"
+              className="text-apple-title2 font-semibold text-[var(--ink)] sm:text-apple-title1"
             >
               {title}
             </h1>

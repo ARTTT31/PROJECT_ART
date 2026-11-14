@@ -94,6 +94,10 @@ async def test_profile_endpoints_still_serve_the_deferred_columns(client, logged
     links = await client.post("/api/v1/profile/quick-links", json={"quick_links": stored})
     assert links.status_code == 200, links.text
 
+    get_links = await client.get("/api/v1/profile/quick-links")
+    assert get_links.status_code == 200, get_links.text
+    assert get_links.json() == [{"id": "dash", "label": "Dashboard", "url": "/dashboard", "icon": "home"}]
+
     me = await client.get("/api/v1/profile/me")
     assert me.status_code == 200, me.text
     body = me.json()

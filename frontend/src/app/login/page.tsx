@@ -440,12 +440,14 @@ function LoginContent() {
           localStorage.removeItem('remembered_email');
         }
 
-        toast.success(
-          tr('เข้าสู่ระบบสำเร็จ', 'Signed in'),
-          tr('ยินดีต้อนรับกลับมา {name}!', 'Welcome back, {name}!', {
+        toast.addToast({
+          type: 'success',
+          title: tr('เข้าสู่ระบบสำเร็จ', 'Signed in'),
+          message: tr('ยินดีต้อนรับกลับมา {name}!', 'Welcome back, {name}!', {
             name: result.data.user.name || '',
           }),
-        );
+          duration: 2500,
+        });
       } else {
         setError(
           result.detail ||
