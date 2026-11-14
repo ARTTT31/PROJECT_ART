@@ -1036,3 +1036,38 @@ End-to-end admin UI test pass via browser automation exploring all modules, widg
 `pytest -q` **654 passed / 84.03%**, `flake8 app` clean, `mypy app` clean (72 files), `alembic upgrade
 head` + `alembic check` clean, `npx tsc --noEmit` clean, `npx eslint .` 0 errors / 0 warnings,
 `npx vitest run` **400 passed / 62 files**, `npm run build` succeeds (16 routes). Commit `d23889f`.
+
+## Notification Subsystem Bug Fixes & Timezone Hardening (November 14, 2026)
+
+Comprehensive audit and resolution of scheduling, timezone serialization, and delivery issues in
+the notification subsystem and daily briefing engine.
+
+1. **Explicit UTC Offset Serialization in Notifications Archive.** `backend/app/api/v1/endpoints/notifications.py`
+   serialized timestamps with `row.occurred_at.isoformat()`, omitting timezone indicators (`+00:00` or `Z`).
+   Browsers parsed untagged ISO strings as local time, rendering UTC morning briefings as midnight (00:30 น.
+   instead of 07:30 น., a 7-hour discrepancy). Replaced with `utc_iso(...)` from `app.core.utils`.
+2. **UTC Normalization in Notification Ingestion.** `_occurred_at` converted client timestamps with
+   `astimezone(tz=None)`, converting to the host machine's local timezone (UTC+7 on local dev Windows) before
+   stripping tzinfo, storing local naive timestamps alongside UTC naive rows. Fixed with explicit
+   `astimezone(timezone.utc).replace(tzinfo=None)`.
+3. **Bangkok Timezone Alignment for Daily Briefings.** Scheduled briefings and titles derived date stamps
+   from `datetime.date.today()` / `now_utc`, causing morning briefings configured prior to 07:00 AM Bangkok
+   (23:30 UTC of previous day) to save a previous-day `client_id` (e.g. `briefing-2026-11-13-1` instead of
+   `briefing-2026-11-14-1`). This failed scheduler idempotency checks, resulting in repetitive dispatches
+   every minute and yesterday's date formatted in notification titles. Fixed by pinning calendar day logic to
+   `ZoneInfo("Asia/Bangkok")`.
+4. **Catch-Up Window Tightened.** Reduced `CATCH_UP_MINUTES` in `daily_briefing_service.py` from 180 (3 hours)
+   to 30 minutes, preventing server boots or wakeups hours later from triggering unexpected morning digests.
+5. **Briefing Delivery Time Format Validation.** Added regex pattern validation (`^(?:[01]\d|2[0-3]):[0-5]\d$`)
+   to `DailyBriefingUpdate.time` in `backend/app/api/v1/endpoints/profile.py`.
+6. **Frontend Resilient Timezone Parsing.** Added `parseIsoDate` helper in `frontend/src/app/(main)/notifications/page.tsx`
+   to safely tag untagged legacy cache timestamps with UTC `Z`. Added test suite in `frontend/src/lib/notifications/history.test.ts`.
+7. **Notification Archive Endpoint Test Suite.** Added `backend/tests/test_notifications_endpoint.py` covering
+   sync deduplication, timezone parsing, read-all, clear, and health probe. Added pre-7am UTC date boundary
+   test in `backend/tests/test_daily_briefing_dispatch.py`.
+
+### Verified
+
+`pytest -q` **659 passed / 84.62%** (gate 75%), `flake8 app` clean, `mypy app` clean (72 files),
+`alembic upgrade head` + `alembic check` clean, `npx tsc --noEmit` clean, `npx eslint .` 0 errors / 0 warnings,
+`npx vitest run` **406 passed / 63 files**, `npm run build` succeeds (16 routes).

@@ -72,14 +72,24 @@ const dateFormatter = new Intl.DateTimeFormat('th-TH', {
   year: 'numeric',
 });
 
+function parseIsoDate(value: string): Date {
+  if (!value) return new Date(NaN);
+  // Naive ISO strings without timezone (e.g. 2026-11-14T00:30:00) from legacy cache
+  // are tagged with Z so they are consistently parsed as UTC rather than host-local time.
+  if (value.includes('T') && !value.endsWith('Z') && !/[+-]\d{2}:?\d{2}$/.test(value)) {
+    return new Date(`${value}Z`);
+  }
+  return new Date(value);
+}
+
 function timeOnly(value: string): string {
-  const date = new Date(value);
+  const date = parseIsoDate(value);
   if (Number.isNaN(date.getTime())) return value;
   return `${date.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })} น.`;
 }
 
 function fullTime(value: string): string {
-  const date = new Date(value);
+  const date = parseIsoDate(value);
   if (Number.isNaN(date.getTime())) return value;
   return `${dateFormatter.format(date)} · ${timeOnly(value)}`;
 }
@@ -96,7 +106,7 @@ function startOfDay(date: Date): number {
  * away" answerable at a glance.
  */
 function dayGroupOf(value: string, todayStart: number): { key: string; label: string } {
-  const date = new Date(value);
+  const date = parseIsoDate(value);
   if (Number.isNaN(date.getTime())) return { key: 'unknown', label: 'ไม่ทราบวันที่' };
 
   const start = startOfDay(date);
@@ -179,7 +189,7 @@ export default function NotificationsPage() {
     const filtered = filter === 'unread' ? entries.filter((entry) => !readIds.has(entry.id)) : entries;
     // Newest first, always: the archive arrives in server order, and the local
     // copy can be appended in any order across sessions.
-    return [...filtered].sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
+    return [...filtered].sort((a, b) => parseIsoDate(b.at).getTime() - parseIsoDate(a.at).getTime());
   }, [entries, filter, readIds]);
 
   const groups = useMemo(() => {

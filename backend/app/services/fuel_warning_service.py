@@ -9,6 +9,7 @@ import datetime
 import json
 import logging
 from typing import Any, Dict, List, Optional
+from zoneinfo import ZoneInfo
 import httpx
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -94,7 +95,7 @@ async def dispatch_fuel_warning_if_changed(
     Returns:
         Summary dict of the operation.
     """
-    today_str = datetime.date.today().strftime("%Y-%m-%d")
+    today_str = datetime.datetime.now(ZoneInfo("Asia/Bangkok")).date().strftime("%Y-%m-%d")
 
     # 1. De-duplication check
     if not force:

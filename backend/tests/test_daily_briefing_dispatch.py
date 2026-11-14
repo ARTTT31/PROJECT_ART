@@ -128,7 +128,7 @@ async def test_scheduled_briefings_only_send_to_users_that_are_due(
 ):
     sent_to: list[str] = []
 
-    async def _dispatch(db, user, is_test=False):
+    async def _dispatch(db, user, is_test=False, *args, **kwargs):
         sent_to.append(user.email)
         return {"success": True}
 
@@ -156,7 +156,7 @@ async def test_scheduled_briefings_only_send_to_users_that_are_due(
 
 
 async def test_one_broken_account_does_not_stop_the_scheduled_run(monkeypatch, make_user, db_session):
-    async def _dispatch(db, user, is_test=False):
+    async def _dispatch(db, user, is_test=False, *args, **kwargs):
         raise RuntimeError("channel exploded")
 
     monkeypatch.setattr(briefing, "dispatch_user_briefing", _dispatch)
@@ -184,7 +184,7 @@ async def test_a_late_tick_still_delivers_within_the_catch_up_window(
     """
     sent_to: list[str] = []
 
-    async def _dispatch(db, user, is_test=False):
+    async def _dispatch(db, user, is_test=False, now_bkk=None):
         sent_to.append(user.email)
         return {"success": True}
 
@@ -196,7 +196,7 @@ async def test_a_late_tick_still_delivers_within_the_catch_up_window(
     )
 
     count = await briefing.dispatch_scheduled_briefings(
-        db_session, datetime.datetime(2026, 11, 12, 8, 12)
+        db_session, datetime.datetime(2026, 11, 12, 7, 45)
     )
 
     assert count == 1
@@ -206,7 +206,7 @@ async def test_a_late_tick_still_delivers_within_the_catch_up_window(
 async def test_nothing_is_sent_before_the_scheduled_time_or_after_the_window(
     monkeypatch, make_user, db_session
 ):
-    async def _dispatch(db, user, is_test=False):
+    async def _dispatch(db, user, is_test=False, now_bkk=None):
         raise AssertionError("must not dispatch outside the window")
 
     monkeypatch.setattr(briefing, "dispatch_user_briefing", _dispatch)
@@ -222,10 +222,10 @@ async def test_nothing_is_sent_before_the_scheduled_time_or_after_the_window(
         )
         == 0
     )
-    # 10:31 — beyond the 180-minute catch-up window.
+    # 08:01 — beyond the 30-minute catch-up window.
     assert (
         await briefing.dispatch_scheduled_briefings(
-            db_session, datetime.datetime(2026, 11, 12, 10, 31)
+            db_session, datetime.datetime(2026, 11, 12, 8, 1)
         )
         == 0
     )
@@ -237,7 +237,7 @@ async def test_one_briefing_per_day_even_if_the_sweep_runs_again(
     """The loop ticks every minute; only the first tick may send."""
     sent_to: list[str] = []
 
-    async def _dispatch(db, user, is_test=False):
+    async def _dispatch(db, user, is_test=False, *args, **kwargs):
         sent_to.append(user.email)
         return {"success": True}
 
@@ -269,3 +269,33 @@ async def test_one_briefing_per_day_even_if_the_sweep_runs_again(
         == 0
     )
     assert sent_to == []
+
+
+async def test_briefing_before_7am_utc_boundary_is_idempotent(monkeypatch, make_user, db_session):
+    """Briefings at 06:30 Bangkok time (23:30 UTC of previous day) must use Bangkok date for client_id."""
+    _patch_transports(monkeypatch)
+    user = await make_user(
+        email="early@example.com",
+        external_notifications=json.dumps({"daily_briefing": {"enabled": True, "time": "06:30"}}),
+    )
+
+    now_bkk = datetime.datetime(2026, 11, 14, 6, 30)
+    count = await briefing.dispatch_scheduled_briefings(db_session, now_bkk)
+    assert count == 1
+
+    rows = (
+        await db_session.execute(select(NotificationLog).where(NotificationLog.user_id == user.id))
+    ).scalars().all()
+    assert len(rows) == 1
+    assert rows[0].client_id == f"briefing-2026-11-14-{user.id}"
+    assert "14/11/2026" in rows[0].title
+
+    # Second sweep at 06:31 must recognize today's briefing was already sent
+    count_next = await briefing.dispatch_scheduled_briefings(
+        db_session, datetime.datetime(2026, 11, 14, 6, 31)
+    )
+    assert count_next == 0
+    rows_next = (
+        await db_session.execute(select(NotificationLog).where(NotificationLog.user_id == user.id))
+    ).scalars().all()
+    assert len(rows_next) == 1

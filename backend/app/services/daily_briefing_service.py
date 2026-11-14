@@ -8,6 +8,7 @@ import datetime
 import json
 import logging
 from typing import Any, Dict, List, Optional
+from zoneinfo import ZoneInfo
 import httpx
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -21,6 +22,8 @@ from app.services.notification_dispatcher import send_to_channel
 from app.services.web_push_service import send_web_push_to_user
 
 logger = logging.getLogger(__name__)
+
+BANGKOK = ZoneInfo("Asia/Bangkok")
 
 DEFAULT_TOPICS: Dict[str, bool] = {
     "oil_prices": True,
@@ -36,10 +39,9 @@ DEFAULT_BRIEFING_CONFIG: Dict[str, Any] = {
     "topics": DEFAULT_TOPICS,
 }
 
-# How late a due briefing may still be delivered. The schedule used to be matched
-# against the exact current minute, so one missed tick (a cold start, a deploy, a
-# dispatch that overran) lost the morning push for the whole day.
-CATCH_UP_MINUTES = 180
+# How late a due briefing may still be delivered. A 30-minute window absorbs
+# server cold starts and worker jitter without pushing a morning digest hours late.
+CATCH_UP_MINUTES = 30
 
 
 def get_user_briefing_config(user: User) -> Dict[str, Any]:
@@ -117,11 +119,12 @@ def _oil_price_line(payload: Optional[Dict[str, Any]]) -> str:
     return line
 
 
-async def _holiday_line(db: AsyncSession) -> str:
+async def _holiday_line(db: AsyncSession, today: Optional[datetime.date] = None) -> str:
     """Today's status from the workspace holiday calendar (if imported)."""
     setting = await db.get(SystemSetting, HOLIDAY_SETTING_KEY)
     calendar = parse_company_calendar(setting.value if setting else None)
-    today = datetime.date.today()
+    if today is None:
+        today = datetime.datetime.now(BANGKOK).date()
     entries = calendar.get(today.year, [])
     if not entries:
         return "📅 ยังไม่มีปฏิทินวันหยุดบริษัทในระบบ"
@@ -132,8 +135,15 @@ async def _holiday_line(db: AsyncSession) -> str:
     return "📅 วันนี้เป็นวันทำการปกติ (ตามปฏิทินบริษัท)"
 
 
-async def build_briefing_content(db: AsyncSession, user: User, topics: Dict[str, bool]) -> Dict[str, str]:
+async def build_briefing_content(
+    db: AsyncSession,
+    user: User,
+    topics: Dict[str, bool],
+    today: Optional[datetime.date] = None,
+) -> Dict[str, str]:
     """Compile morning briefing text based on enabled topics."""
+    if today is None:
+        today = datetime.datetime.now(BANGKOK).date()
     lines: List[str] = []
 
     # 1. Fuel Prices — observed data from the shared cache, never constants.
@@ -172,18 +182,27 @@ async def build_briefing_content(db: AsyncSession, user: User, topics: Dict[str,
 
     # 5. Holidays — read the calendar an admin imported for this workspace.
     if topics.get("holidays"):
-        lines.append(await _holiday_line(db))
+        lines.append(await _holiday_line(db, today=today))
 
-    title = f"☀️ สรุปข้อมูลเช้านี้ ({datetime.date.today().strftime('%d/%m/%Y')})"
+    title = f"☀️ สรุปข้อมูลเช้านี้ ({today.strftime('%d/%m/%Y')})"
     body = "\n".join(lines) if lines else "ขอให้เป็นวันที่ราบรื่นและประสบความสำเร็จครับ!"
     return {"title": title, "body": body}
 
 
-async def dispatch_user_briefing(db: AsyncSession, user: User, is_test: bool = False) -> Dict[str, Any]:
+async def dispatch_user_briefing(
+    db: AsyncSession,
+    user: User,
+    is_test: bool = False,
+    now_bkk: Optional[datetime.datetime] = None,
+) -> Dict[str, Any]:
     """Compile and send briefing to user via Web Push and external channels."""
+    if now_bkk is None:
+        now_bkk = datetime.datetime.now(BANGKOK)
+    today_bkk = now_bkk.date()
+
     config = get_user_briefing_config(user)
     topics = config.get("topics", {})
-    content = await build_briefing_content(db, user, topics)
+    content = await build_briefing_content(db, user, topics, today=today_bkk)
 
     title = content["title"]
     if is_test:
@@ -225,9 +244,10 @@ async def dispatch_user_briefing(db: AsyncSession, user: User, is_test: bool = F
     # History Log (idempotent & safe against duplicate key conflicts)
     now_utc = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
     prefix = "briefing-test" if is_test else "briefing"
-    # A scheduled briefing gets a day-stable id so the send is idempotent per
-    # (user, day); a test send stays unique so two tests never collide.
-    stamp = str(int(now_utc.timestamp())) if is_test else now_utc.strftime("%Y-%m-%d")
+    # A scheduled briefing gets a day-stable id based on Bangkok date so the send
+    # is idempotent per (user, day) regardless of UTC hour; a test send stays
+    # unique so two tests never collide.
+    stamp = str(int(now_utc.timestamp())) if is_test else today_bkk.isoformat()
     client_id = f"{prefix}-{stamp}-{user.id}"
     try:
         stmt = select(NotificationLog).where(
@@ -317,7 +337,7 @@ async def dispatch_scheduled_briefings(
             continue
 
         try:
-            res = await dispatch_user_briefing(db, user)
+            res = await dispatch_user_briefing(db, user, now_bkk=now_bkk)
             if res.get("success"):
                 sent_count += 1
         except Exception as exc:

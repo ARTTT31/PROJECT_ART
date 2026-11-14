@@ -1259,7 +1259,7 @@ async def update_external_notifications(
 
 class DailyBriefingUpdate(BaseModel):
     enabled: bool = False
-    time: str = "07:30"
+    time: str = Field(default="07:30", pattern=r"^(?:[01]\d|2[0-3]):[0-5]\d$")
     topics: dict[str, bool] = Field(default_factory=dict)
 
 

@@ -7,7 +7,7 @@ history after signing in on another device. Sending is idempotent on
 """
 
 import logging
-from datetime import date, datetime, time
+from datetime import datetime, timezone
 from typing import Literal, Optional
 
 from fastapi import APIRouter, Depends, Query, Request
@@ -19,7 +19,7 @@ from app.api.dependencies import get_current_user
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.rate_limit import limiter
-from app.core.utils import utcnow
+from app.core.utils import utc_iso, utcnow
 from app.models.notification_log import NotificationLog
 from app.models.user import User
 
@@ -67,7 +67,11 @@ def _occurred_at(raw: Optional[str]) -> datetime:
         try:
             parsed = datetime.fromisoformat(raw.replace("Z", "+00:00"))
             # Stored naive (UTC) like every other timestamp in this project.
-            return parsed.astimezone(tz=None).replace(tzinfo=None) if parsed.tzinfo else parsed
+            return (
+                parsed.astimezone(timezone.utc).replace(tzinfo=None)
+                if parsed.tzinfo
+                else parsed
+            )
         except ValueError:
             pass
     return utcnow()
@@ -81,7 +85,7 @@ def _to_response(row: NotificationLog) -> NotificationResponse:
         level=row.level,
         title=row.title,
         body=row.body,
-        at=(row.occurred_at or row.created_at).isoformat(),
+        at=utc_iso(row.occurred_at or row.created_at) or "",
         read=row.read_at is not None,
     )
 
@@ -248,7 +252,8 @@ async def notifications_health(
     current_user: User = Depends(get_current_user),
 ):
     """Cheap probe used by the history page to tell "empty" from "unreachable"."""
-    return {"status": "ok", "today": date.today().isoformat(), "now": time().isoformat()}
+    now = utcnow()
+    return {"status": "ok", "today": now.date().isoformat(), "now": now.time().isoformat()}
 
 
 __all__ = ["router"]

@@ -1,6 +1,6 @@
 # ART Workspace — Current Status
 
-**Verified:** November 14, 2026 · `main` at `d23889f` · Windows dev
+**Verified:** November 14, 2026 · `main` · Windows dev
 machine, Python 3.14.6 local, Node 26
 
 > **What this file is.** The single place that states what is true *right now*: verified numbers, what
@@ -14,11 +14,11 @@ machine, Python 3.14.6 local, Node 26
 
 | Check | Command | Result |
 |---|---|---|
-| Backend tests | `cd backend && ./venv/Scripts/python.exe -m pytest -q` | **654 passed**; coverage **84.03%** (gate 75%) |
+| Backend tests | `cd backend && ./venv/Scripts/python.exe -m pytest -q` | **659 passed**; coverage **84.62%** (gate 75%) |
 | Backend lint | `./venv/Scripts/python.exe -m flake8 app` | clean |
 | Backend types | `./venv/Scripts/python.exe -m mypy app` | clean, 72 source files |
 | Migrations | `alembic upgrade head` + `alembic check` on a throwaway SQLite file | full chain applies, **no drift** |
-| Frontend tests | `cd frontend && npx vitest run` | **400 passed**, 62 files |
+| Frontend tests | `cd frontend && npx vitest run` | **406 passed**, 63 files |
 | Frontend types | `npx tsc --noEmit` | clean |
 | Frontend lint | `npx eslint .` | clean (0 errors, 0 warnings) |
 | Frontend build | `npm run build` | succeeds, 16 routes |
