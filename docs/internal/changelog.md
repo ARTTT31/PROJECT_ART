@@ -1015,3 +1015,24 @@ widget, icon standards alignment, and lint cleanup.
 head` + `alembic check` on a throwaway SQLite file with no drift, `npx tsc --noEmit` clean, `npx eslint .`
 0 errors / 0 warnings, `npx vitest run` **400 passed / 62 files**, `npm run build` succeeds (16 routes).
 Commit `0f4b3d9`.
+
+## QA Pass & Bug Fixes (November 14, 2026)
+
+End-to-end admin UI test pass via browser automation exploring all modules, widgets, and settings.
+
+1. **Quick Links GET endpoint added.** `WorkspaceBackupCard` exported `quickLinks: []` and logged
+   HTTP 405 because `backend/app/api/v1/endpoints/profile.py` only declared `POST /quick-links`. Added
+   `GET /api/v1/profile/quick-links` with `parse_quick_links` return, covered by regression assertions in
+   `test_security_profile_columns.py`.
+2. **Notification Page title truncation eliminated.** `PageHeader.tsx` had an unconditional `truncate`
+   on its `h1`, causing the title "ประวัติการแจ้งเตือน" to truncate to "ประวัติการแจ้งเ..." on desktop
+   when action buttons occupied horizontal space. Removed `truncate` to ensure page titles never truncate.
+3. **Toast notification position & timing polish.** `ToastProvider.tsx` positioned desktop toasts at
+   `sm:top-6`, partially obscuring top-right header actions (bell, profile avatar, search button) for 4s.
+   Lowered container to `sm:top-16` (beneath the 52px app header) and set login success duration to 2.5s.
+
+### Verified
+
+`pytest -q` **654 passed / 84.03%**, `flake8 app` clean, `mypy app` clean (72 files), `alembic upgrade
+head` + `alembic check` clean, `npx tsc --noEmit` clean, `npx eslint .` 0 errors / 0 warnings,
+`npx vitest run` **400 passed / 62 files**, `npm run build` succeeds (16 routes). Commit `d23889f`.
