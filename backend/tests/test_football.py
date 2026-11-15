@@ -215,3 +215,78 @@ async def test_provider_failure_reports_unavailable(client, logged_in_user, monk
 
     response = await client.get("/api/v1/football/premier-league")
     assert response.status_code == 503
+
+
+@pytest.mark.asyncio
+async def test_fetch_events_falls_back_to_latest_completed_matchday(monkeypatch):
+    class MockResponse:
+        def __init__(self, data, status_code=200):
+            self._data = data
+            self.status_code = status_code
+            self.is_success = status_code == 200
+
+        def json(self):
+            return self._data
+
+        def raise_for_status(self):
+            if not self.is_success:
+                raise RuntimeError("HTTP error")
+
+    scheduled_payload = {
+        "leagues": [{"calendar": ["2026-11-01T07:00Z", "2026-11-08T07:00Z", "2026-11-21T07:00Z"]}],
+        "events": [
+            {
+                "id": "future1",
+                "date": "2026-11-21T15:00Z",
+                "status": {"type": {"state": "pre", "completed": False, "description": "Scheduled"}},
+                "competitions": [
+                    {
+                        "competitors": [
+                            {"homeAway": "home", "team": {"displayName": "Team A"}},
+                            {"homeAway": "away", "team": {"displayName": "Team B"}},
+                        ]
+                    }
+                ],
+            }
+        ],
+    }
+
+    completed_payload = {
+        "events": [
+            {
+                "id": "past1",
+                "date": "2026-11-08T15:00Z",
+                "status": {"type": {"state": "post", "completed": True, "description": "Full Time"}},
+                "competitions": [
+                    {
+                        "competitors": [
+                            {"homeAway": "home", "team": {"displayName": "Past Home"}, "score": "2"},
+                            {"homeAway": "away", "team": {"displayName": "Past Away"}, "score": "1"},
+                        ]
+                    }
+                ],
+            }
+        ]
+    }
+
+    class MockAsyncClient:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *args):
+            pass
+
+        async def get(self, url, params=None, headers=None):
+            if params and params.get("dates") == "20261108":
+                return MockResponse(completed_payload)
+            return MockResponse(scheduled_payload)
+
+    monkeypatch.setattr(football.httpx, "AsyncClient", MockAsyncClient)
+    res = await football._fetch_events(None)
+    assert res["success"] is True
+    ids = [e["id"] for e in res["events"]]
+    assert "past1" in ids
+    assert "future1" in ids

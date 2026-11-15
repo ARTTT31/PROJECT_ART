@@ -117,4 +117,20 @@ describe('PremierLeagueWidget', () => {
     expect(screen.getByText('ผลการแข่งขัน')).toBeTruthy();
     expect(screen.getByText('โปรแกรมถัดไป')).toBeTruthy();
   });
+
+  it('anchors to the latest finished matchday and displays past match results', async () => {
+    mockedFetch.mockResolvedValue({
+      ok: true,
+      json: async () => payload([MATCH, UPCOMING_MATCH]),
+    } as unknown as Response);
+
+    render(<PremierLeagueWidget />);
+
+    expect(await screen.findByText('ผลการแข่งขัน')).toBeTruthy();
+    expect(screen.getByText('โปรแกรมถัดไป')).toBeTruthy();
+    // Finished match from 8 Nov should display its full score and date tag
+    expect(screen.getByText(/8 พ\.ย\. · FT/)).toBeTruthy();
+    expect(screen.getByText('Brighton')).toBeTruthy();
+    expect(screen.getByText('Man City')).toBeTruthy();
+  });
 });

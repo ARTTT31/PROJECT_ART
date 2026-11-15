@@ -1100,3 +1100,26 @@ Pass addressing the remaining UX backlog items and client-side optimistic concur
 `pytest -q` **659 passed / 84.62%** (gate 75%), `flake8 app` clean, `mypy app` clean (72 files),
 `alembic upgrade head` + `alembic check` clean, `npx tsc --noEmit` clean, `npx eslint .` 0 errors / 0 warnings,
 `npx vitest run` **416 passed / 65 files**, `npm run build` succeeds (16 routes).
+
+## Premier League Widget Latest Results Fallback (November 15, 2026)
+
+Pass addressing the Premier League widget showing an empty scoreboard when the provider's default feed
+answers with a future matchday (e.g. international break or mid-week when no matches are scheduled for today).
+
+1. **Backend Latest Completed Matchday Fallback.** In `backend/app/api/v1/endpoints/football.py`, when
+   no explicit `date` is requested ("latest" default view) and the ESPN default scoreboard has 0 live and
+   0 completed matches, inspect `leagues[0].calendar` to locate the most recent completed matchday on or
+   before today's date, fetch its events, and merge them with the upcoming fixtures.
+2. **Frontend Intelligent Anchor Date and Match Date Formatting.** In `PremierLeagueWidget.tsx`, updated
+   `newestEventDate` to anchor to the most recently completed match (or live match) rather than the furthest
+   future kickoff date. For finished matches, formatted the badge to include both date and completion status
+   (e.g. `8 พ.ย. · FT`) providing clear context when viewing past matchday results alongside upcoming fixtures.
+3. **Comprehensive Test Coverage.** Added `test_fetch_events_falls_back_to_latest_completed_matchday` in
+   `backend/tests/test_football.py` (12 tests total). Added past results rendering test in
+   `frontend/src/components/Widgets/PremierLeagueWidget.test.tsx` (4 tests total).
+
+### Verified
+
+`pytest -q` **660 passed / 84.74%** (gate 75%), `flake8 app` clean, `mypy app` clean (72 files),
+`alembic upgrade head` + `alembic check` clean, `npx tsc --noEmit` clean, `npx eslint .` 0 errors / 0 warnings,
+`npx vitest run` **417 passed / 65 files**, `npm run build` succeeds (16 routes).

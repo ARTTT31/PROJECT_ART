@@ -115,11 +115,23 @@ function saveCache(key: string, data: FootballData) {
 
 function newestEventDate(data: FootballData | null): string | null {
   if (!data?.events?.length) return null;
-  const times = data.events
-    .map((event) => (event.kickoff ? new Date(event.kickoff) : null))
-    .filter((value): value is Date => value !== null && !Number.isNaN(value.getTime()));
-  if (times.length === 0) return null;
-  return isoDate(new Date(Math.max(...times.map((value) => value.getTime()))));
+  // If there are live matches, anchor to the live match day
+  const liveMatch = data.events.find((event) => event.state === 'in' && event.kickoff);
+  if (liveMatch?.kickoff) return isoDate(new Date(liveMatch.kickoff));
+
+  // If there are completed matches, anchor to the most recently completed matchday
+  const finished = data.events
+    .filter((event) => event.state === 'post' && event.kickoff)
+    .sort((a, b) => new Date(b.kickoff!).getTime() - new Date(a.kickoff!).getTime());
+  if (finished[0]?.kickoff) return isoDate(new Date(finished[0].kickoff));
+
+  // Otherwise anchor to the nearest upcoming match
+  const upcoming = data.events
+    .filter((event) => event.kickoff)
+    .sort((a, b) => new Date(a.kickoff!).getTime() - new Date(b.kickoff!).getTime());
+  if (upcoming[0]?.kickoff) return isoDate(new Date(upcoming[0].kickoff));
+
+  return null;
 }
 
 // ── Component ────────────────────────────────────────────────────────────────
@@ -422,7 +434,11 @@ function MatchRow({ match, live = false }: { match: FootballMatch; live?: boolea
           </span>
         ) : (
           <span className="shrink-0 rounded-full bg-[var(--surface-chip)] px-1.5 py-0.5 font-bold text-[var(--ink-secondary)]">
-            {match.state === 'pre' ? formatDay(match.kickoff) : match.detail || 'FT'}
+            {match.state === 'pre'
+              ? formatDay(match.kickoff)
+              : match.kickoff
+                ? `${formatDay(match.kickoff)} · ${match.detail || 'FT'}`
+                : match.detail || 'FT'}
           </span>
         )}
         {match.venue && <span className="truncate">{match.venue}</span>}

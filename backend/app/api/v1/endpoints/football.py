@@ -144,9 +144,51 @@ async def _fetch_events(date: Optional[str]) -> dict:
             params=params,
             headers={"User-Agent": "Mozilla/5.0 (compatible; ARTWorkspace/1.0)"},
         )
-    response.raise_for_status()
+        response.raise_for_status()
+        raw_json = response.json()
+        events = _parse_events(raw_json)
 
-    events = _parse_events(response.json())
+        # When viewing the default matchday (no explicit date) and the feed answers with
+        # a future day where no matches have kicked off yet, include the latest completed
+        # matchday so users immediately see recent results instead of an empty scoreboard.
+        if not date:
+            has_live = any(e.get("state") == "in" for e in events)
+            has_completed = any(e.get("completed") for e in events)
+            if not has_live and not has_completed:
+                calendar = (
+                    raw_json.get("leagues", [{}])[0].get("calendar", [])
+                    if raw_json.get("leagues")
+                    else []
+                )
+                now_iso = utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+                past_dates = [
+                    c[:10].replace("-", "")
+                    for c in calendar
+                    if isinstance(c, str) and c[:10] <= now_iso[:10]
+                ]
+                if past_dates:
+                    latest_past = past_dates[-1]
+                    try:
+                        past_resp = await client.get(
+                            ESPN_SCOREBOARD_URL,
+                            params={"dates": latest_past},
+                            headers={"User-Agent": "Mozilla/5.0 (compatible; ARTWorkspace/1.0)"},
+                        )
+                        if past_resp.is_success:
+                            past_events = _parse_events(past_resp.json())
+                            seen_ids = {e["id"] for e in past_events}
+                            merged = list(past_events)
+                            for ev in events:
+                                if ev["id"] not in seen_ids:
+                                    seen_ids.add(ev["id"])
+                                    merged.append(ev)
+                            events = merged
+                    except Exception as err:
+                        logger.warning(
+                            "Failed to fetch latest past matchday (%s): %s",
+                            latest_past,
+                            err,
+                        )
 
     return {
         "success": True,

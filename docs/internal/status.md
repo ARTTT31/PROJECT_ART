@@ -14,11 +14,11 @@ machine, Python 3.14.6 local, Node 26
 
 | Check | Command | Result |
 |---|---|---|
-| Backend tests | `cd backend && ./venv/Scripts/python.exe -m pytest -q` | **659 passed**; coverage **84.62%** (gate 75%) |
+| Backend tests | `cd backend && ./venv/Scripts/python.exe -m pytest -q` | **660 passed**; coverage **84.74%** (gate 75%) |
 | Backend lint | `./venv/Scripts/python.exe -m flake8 app` | clean |
 | Backend types | `./venv/Scripts/python.exe -m mypy app` | clean, 72 source files |
 | Migrations | `alembic upgrade head` + `alembic check` on a throwaway SQLite file | full chain applies, **no drift** |
-| Frontend tests | `cd frontend && npx vitest run` | **416 passed**, 65 files |
+| Frontend tests | `cd frontend && npx vitest run` | **417 passed**, 65 files |
 | Frontend types | `npx tsc --noEmit` | clean |
 | Frontend lint | `npx eslint .` | clean (0 errors, 0 warnings) |
 | Frontend build | `npm run build` | succeeds, 16 routes |
