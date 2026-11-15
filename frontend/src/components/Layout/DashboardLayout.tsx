@@ -113,7 +113,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               type="button"
               tabIndex={-1}
               aria-label="ปิดเมนู"
-              className="fixed inset-0 z-30 bg-[var(--scrim)] backdrop-blur-xs transition-opacity duration-300 lg:hidden"
+              className="fixed inset-0 z-30 rounded-none border-none bg-[var(--scrim)] backdrop-blur-xs transition-opacity duration-300 active:scale-100 lg:hidden"
+              style={{ borderRadius: 0 }}
               onClick={() => setSidebarOpen(false)}
             />
           )}

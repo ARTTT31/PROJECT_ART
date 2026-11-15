@@ -1170,3 +1170,22 @@ Pass addressing inaccurate online status in the Admin User Table ("ออนไ�
 `pytest -q` **664 passed / 84.50%** (gate 75%), `flake8 app` clean, `mypy app` clean (72 files),
 `alembic upgrade head` + `alembic check` clean, `npx tsc --noEmit` clean, `npx eslint .` 0 errors / 0 warnings,
 `npx vitest run` **420 passed / 65 files**, `npm run build` succeeds (16 routes).
+
+## Mobile Sidebar Backdrop Pill Shape Artifact Fix (November 15, 2026)
+
+Pass addressing the mobile layout issue where opening the sidebar navigation via the hamburger menu button revealed a black shadow resembling the letter "D" ("เวลากดปุ่มนี้ สีแดง บนมือถือ เหมือนจะมีเงาสีดำคล้ายๆตัว D เปิดมาด้วย").
+
+1. **Root Cause Analysis.**
+   - In `frontend/src/app/globals.css`, base styling enforces `button { border-radius: 9999px; }` for all button elements, and `button:not(:disabled):active { scale: 0.97; }`.
+   - In `frontend/src/components/Layout/DashboardLayout.tsx`, the mobile backdrop overlay behind the sidebar drawer was implemented as an accessible `<button>` element with `fixed inset-0 z-30` but lacked an explicit `rounded-none`.
+   - On mobile viewports (e.g. 390px x 844px), this full-screen `<button>` inherited `border-radius: 9999px`, rendering as a giant vertical pill/capsule.
+   - When the sidebar drawer (`w-[80vw] max-w-64`) slid out from the left at `z-40`, it covered the left side of the pill. The remaining visible right side formed a curved black arc, producing an exact capital "D"-shaped shadow (`| )`). Tapping the overlay also caused it to bounce via `scale: 0.97`.
+2. **Backdrop Normalization.**
+   - In `DashboardLayout.tsx`, added `rounded-none border-none active:scale-100` and `style={{ borderRadius: 0 }}` to the backdrop button.
+   - The overlay now reliably renders as a flat full-screen rectangular scrim with no border radius and no active scale bounce, matching Apple HIG backdrop specifications.
+
+### Verified
+
+`npx tsc --noEmit` clean, `npx eslint src/components/Layout/DashboardLayout.tsx` clean,
+`npx vitest run` **420 passed / 65 files**, `npm run build` succeeds (16 routes).
+
