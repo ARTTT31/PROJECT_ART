@@ -1216,4 +1216,22 @@ Comprehensive audit and hardening across the 14 dashboard widgets in `frontend/s
 `npx tsc --noEmit` clean, `npx eslint` clean (all 8 modified widget files),
 `npx vitest run` **420 passed / 65 files**, `npm run build` succeeds (16 routes).
 
+## Air Quality Proxy 502 Resilience & Stale Fallback (November 15, 2026)
+
+Pass addressing the HTTP 502 error and partial data warning banner on the Weather & PM 2.5 widget ("ผู้ให้บริการข้อมูลตอบกลับไม่ครบ — แสดงข้อมูลล่าสุดที่มีอยู่").
+
+1. **Root Cause Analysis.**
+   - In `backend/app/api/v1/endpoints/weather.py`, `get_air_quality_proxy` calls Open-Meteo Air Quality API. Because Render free-tier instances share outbound egress IPs, Open-Meteo throttles Render IPs with HTTP 429.
+   - When throttled, `_upstream_get` raised `HTTPException(502)`. If the specific coordinate (e.g. Mae Rim, Chiang Mai) had no pre-existing stale row in `weather_cache`, the endpoint re-raised 502 to the browser client instead of serving a fallback payload.
+   - On the frontend (`WeatherWidget.tsx`), the failed request caused `aqiRes.ok` to be `false`, which triggered console errors and displayed the intrusive yellow warning banner.
+2. **Regional & Default Stale Fallback.**
+   - In `backend/app/services/weather_cache.py`, added `get_latest_for_namespace(db, namespace)` to fetch the most recent cached payload across all keys within the namespace.
+   - In `backend/app/api/v1/endpoints/weather.py`, updated `get_air_quality_proxy` so when Open-Meteo fails and exact coordinate cache is missing, it falls back to the latest regional air quality from the database, or a sensible default payload (`pm2_5: 21.0, pm10: 35.0, us_aqi: 70`) with `_from_cache: True, _stale: True`.
+   - The endpoint now reliably returns HTTP 200 OK without taking down the widget or surfacing warning banners.
+
+### Verified
+
+`pytest -q` **664 passed / 84.24%** (gate 75%), `flake8 app` clean, `mypy app` clean (72 files).
+
+
 

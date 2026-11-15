@@ -111,6 +111,23 @@ async def get_stale(db: AsyncSession, namespace: str, key: tuple) -> Optional[di
     return _decode(row.payload) if row is not None else None
 
 
+async def get_latest_for_namespace(db: AsyncSession, namespace: str) -> Optional[dict]:
+    """Return the newest stored payload for a namespace across any key (regional fallback)."""
+    try:
+        prefix = f"{namespace}:%"
+        result = await db.execute(
+            select(WeatherCacheEntry)
+            .where(WeatherCacheEntry.key.like(prefix))
+            .order_by(WeatherCacheEntry.updated_at.desc())
+            .limit(1)
+        )
+        row = result.scalar_one_or_none()
+        return _decode(row.payload) if row is not None else None
+    except Exception as exc:
+        logger.warning("Weather cache read latest failed (%s); continuing without L2", exc)
+        return None
+
+
 async def _prune(db: AsyncSession) -> None:
     """Delete rows past ``MAX_AGE``, keeping each namespace's newest row.
 
