@@ -16,6 +16,7 @@ import WidgetSizeToggle from './WidgetSizeToggle';
 import FinanceSummaryDialog from './FinanceSummaryDialog';
 import FinanceEntryDialog, { type FinanceEntryValues } from './FinanceEntryDialog';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
+import { readUserCookie } from '@/lib/api/userCookie';
 import {
   clearPending,
   isOffline,
@@ -115,6 +116,9 @@ export default function FinanceWidget({
   const mountedRef = useRef(true);
   const deletedRef = useRef<Set<string>>(new Set(initial.pending?.data.deletedIds ?? []));
   const retryPendingRef = useRef(false);
+  const profileVersionRef = useRef<number | undefined>(
+    (readUserCookie() as { profile_version?: number } | null)?.profile_version,
+  );
 
   const load = useCallback(async () => {
     setError(null);
@@ -232,16 +236,33 @@ export default function FinanceWidget({
             return;
           }
           const merged = await mergeWithServer(next);
+          const payload: {
+            entries: FinanceEntry[];
+            budget: number | null;
+            deleted_ids: string[];
+            base_version?: number;
+          } = {
+            entries: merged,
+            budget: nextBudget,
+            deleted_ids: Array.from(deletedRef.current),
+          };
+          if (typeof profileVersionRef.current === 'number') {
+            payload.base_version = profileVersionRef.current;
+          }
           const res = await fetchWithAuth('/api/v1/profile/finance', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              entries: merged,
-              budget: nextBudget,
-              deleted_ids: Array.from(deletedRef.current),
-            }),
+            body: JSON.stringify(payload),
           });
+          if (res.status === 409) {
+            const nextVer = res.headers.get('X-Profile-Version');
+            if (nextVer) profileVersionRef.current = Number(nextVer);
+            throw new Error(tr('มีข้อมูลใหม่จากอุปกรณ์อื่น กรุณาโหลดหน้าใหม่', 'Updated from another device, please reload'));
+          }
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          if (typeof profileVersionRef.current === 'number') {
+            profileVersionRef.current += 1;
+          }
           retryPendingRef.current = false;
           // A newer edit may already be queued; it owns the pending snapshot, so
           // only the last save reconciles the mirror and tombstones.

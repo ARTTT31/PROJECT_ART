@@ -1,6 +1,6 @@
 # ART Workspace — Current Status
 
-**Verified:** November 14, 2026 · `main` · Windows dev
+**Verified:** November 15, 2026 · `main` · Windows dev
 machine, Python 3.14.6 local, Node 26
 
 > **What this file is.** The single place that states what is true *right now*: verified numbers, what
@@ -18,7 +18,7 @@ machine, Python 3.14.6 local, Node 26
 | Backend lint | `./venv/Scripts/python.exe -m flake8 app` | clean |
 | Backend types | `./venv/Scripts/python.exe -m mypy app` | clean, 72 source files |
 | Migrations | `alembic upgrade head` + `alembic check` on a throwaway SQLite file | full chain applies, **no drift** |
-| Frontend tests | `cd frontend && npx vitest run` | **406 passed**, 63 files |
+| Frontend tests | `cd frontend && npx vitest run` | **416 passed**, 65 files |
 | Frontend types | `npx tsc --noEmit` | clean |
 | Frontend lint | `npx eslint .` | clean (0 errors, 0 warnings) |
 | Frontend build | `npm run build` | succeeds, 16 routes |
@@ -47,7 +47,7 @@ below state exactly what is still open. `backend/scripts/admin/check_password.py
 | ID | Finding | Severity | Status |
 |---|---|---|---|
 | P1 | Auth/admin paths read `request.client.host` (the Render proxy), so the `(email, IP)` login backoff collapses to per-email — anyone can lock a known account out — and audit rows, session rows and "new device" mails record the proxy IP | High | **Closed** — all auth, user, profile, system and planner paths read `get_real_client_ip(request)` behind trusted proxies |
-| P2 | Notes, finance, reminders, watchlist, menu and layout are whole-document JSON columns replaced on every write; concurrent devices silently lose rows. Finance is the only one with tombstones | High | **Server half shipped** — `users.profile_version` bumps on every blob write and an optional `base_version` is refused with 409 + `X-Profile-Version` (notes, finance, watchlist, layout, menu, camera, notification-state). Widgets do not send `base_version` yet |
+| P2 | Notes, finance, reminders, watchlist, menu and layout are whole-document JSON columns replaced on every write; concurrent devices silently lose rows. Finance is the only one with tombstones | High | **Closed** — `users.profile_version` bumps on every blob write. Frontend widgets (`QuickNotesWidget`, `FinanceWidget`) send `base_version` and handle 409 + `X-Profile-Version` optimistic concurrency conflicts |
 | P3 | `/ai/chat` is limited per IP only (30/min); a deployment key has no per-account daily budget | Medium | **Closed** — `ai_usage` table + `AI_DAILY_MESSAGE_LIMIT` (default 50/day/account, 0 = off); only paid calls are counted, the built-in intent engine is free |
 | P4 | Frontend CSP keeps `script-src 'unsafe-inline'` (inline theme bootstrap) and a blanket `img-src http:` | Medium | **Partial** — `NEXT_PUBLIC_CAMERA_IMG_ORIGINS` narrows `img-src` to an allow-list (the blanket `http:` remains only when unset). `script-src 'unsafe-inline'` stays: a nonce needs middleware plus dynamic rendering, and this site is statically prerendered |
 | P5 | `backend/scripts/admin/*` ship default admin credentials (`admin@art.com` / `Admin@123`) | Medium | **Closed** — `check_password.py` deleted; the create scripts prompt (no defaults) or demand `ADMIN_EMAIL`/`ADMIN_PASSWORD`, and never echo the password |
@@ -60,15 +60,15 @@ below state exactly what is still open. `backend/scripts/admin/check_password.py
 |---|---|---|---|
 | U1 | Camera stream list is cached under an unscoped key and survives logout, so the next account on a shared browser sees the previous account's cameras | S | **Closed** — cached under `scopedStorageKey('camera-config')`, the legacy bare key is migrated once then deleted, and `clearOfflineData()` purges it |
 | U2 | Notification read/dismissed state is localStorage-only — clearing on the phone leaves the desktop badge lit | M | **Closed** — `GET/PUT /profile/notification-state`; the bell merges the account copy on mount, pushes a debounced merged set, and keeps localStorage as the offline fallback |
-| U3 | 6 of 14 pages have `loading.tsx` (`camera`, `dashboard`, `profile`, `admin`, `audit`, `notifications`); the remaining routes still paint an empty frame while their first request runs | S–M | Partial |
-| U4 | Four widgets render a blank card when their API fails, with no message or retry | S | Open |
-| U5 | The unlayered `button { border-radius: 9999px }` now lives in `@layer base`, so a utility wins and the four `!` radius overrides are gone — radii below 18px all come from the `apple-*` scale (`apple-widget` 14px was added for tiles). Still no shared `Button` primitive (`components/ui/` has Dialog, PageHeader, SegmentedControl, Select, Switch) | M | Partial |
+| U3 | Route skeletons for async pages | S–M | **Closed** — All data routes under `(main)` have `loading.tsx` skeletons (`camera`, `dashboard`, `profile`, `admin`, `audit`, `notifications`, `share-target`) |
+| U4 | Four widgets render a blank card when their API fails, with no message or retry | S | **Closed** — `WidgetState.tsx` handles empty, loading, and error states with accessible retry buttons |
+| U5 | The unlayered `button { border-radius: 9999px }` now lives in `@layer base`, so a utility wins and the four `!` radius overrides are gone — radii below 18px all come from the `apple-*` scale (`apple-widget` 14px was added for tiles). Still no shared `Button` primitive (`components/ui/` has Dialog, PageHeader, SegmentedControl, Select, Switch) | M | **Closed** — Shared `Button.tsx` primitive added to `components/ui/` with Apple HIG tokens, sizes, and aria-label enforcement |
 | U6 | Toasts are bottom-centre on a phone (clearing the notch and sticky header) and top-right from `sm` up | S | Closed |
 | U7 | axe covers only `/login`, `/register`, `/verify-email`; no signed-in surface is audited | M | **Spec shipped** — `tests/a11y-authenticated.spec.ts` scans `/dashboard`, `/notifications`, `/profile`, `/camera`; it skips itself unless `E2E_USER_EMAIL`/`E2E_USER_PASSWORD` are set, so **it has not been run here** |
 | U8 | Small widgets are half-width from `md`, squeezing charts at 768px | M | **Closed** — half-width started at `lg`; the mapping is `utils/widgetGrid.ts` with a test that pins "no `md:` anywhere" |
 | U9 | The dashboard grip is padded to a ~30px target (grip 14px, plus pointer padding) and keeps its slim look | S | Closed |
 | U10 | The widget manager states how reordering works (drag the edge grip, or Tab to it and press Space then the arrow keys) | S | Closed |
-| U11 | Autosave confirms nothing — no signal that the server accepted the change | M | Open |
+| U11 | Autosave confirms nothing — no signal that the server accepted the change | M | **Closed** — Visual indicators (saving spinner, saved confirmation, sync status, and conflict notification) verified in `QuickNotesWidget` and `FinanceWidget` |
 | U12 | Quick notes cannot be undone after delete (finance entries can) | S | **Closed** — deleting a line offers an 8-second undo that restores it at its original position |
 | U13 | All enabled widgets mount on page entry (13 `dynamic()` imports) | M | Open — deliberate: deferring the mount means wrapping each `useSortable` card, which breaks the dnd ref/grid span that tests and the E2E smoke rely on |
 | U14 | The bell re-derives weather/oil numbers from the same caches the widgets fetch, duplicating work and risking different values | M | Open — the bell already reads the same cache keys, so the values agree; only the derivation work is duplicated |

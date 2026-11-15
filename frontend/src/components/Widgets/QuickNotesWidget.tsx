@@ -193,6 +193,9 @@ export default function QuickNotesWidget({
   const undoClearRef = useRef<{ notes: QuickNote[]; timer: ReturnType<typeof setTimeout> } | null>(
     null,
   );
+  const profileVersionRef = useRef<number | undefined>(
+    (readUserCookie() as { profile_version?: number } | null)?.profile_version,
+  );
   const latestRef = useRef<QuickNote[]>(notes);
   const saveQueueRef = useRef<Promise<void>>(Promise.resolve());
   const saveSequenceRef = useRef(0);
@@ -261,14 +264,26 @@ export default function QuickNotesWidget({
       try {
         // No request while offline: the snapshot waits for the `online` event.
         if (isOffline()) return;
+        const payload: { notes: QuickNote[]; base_version?: number } = { notes: next };
+        if (typeof profileVersionRef.current === 'number') {
+          payload.base_version = profileVersionRef.current;
+        }
         const res = await fetchWithAuth('/api/v1/profile/quick-notes', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ notes: next }),
+          body: JSON.stringify(payload),
         });
+        if (res.status === 409) {
+          const nextVer = res.headers.get('X-Profile-Version');
+          if (nextVer) profileVersionRef.current = Number(nextVer);
+          throw new Error(tr('มีข้อมูลใหม่จากอุปกรณ์อื่น กรุณาโหลดหน้าใหม่', 'Updated from another device, please reload'));
+        }
         if (!res.ok) {
           const body = await res.json().catch(() => null);
           throw new Error(apiErrorMessage(res.status, body, res.headers.get('X-Request-ID')));
+        }
+        if (typeof profileVersionRef.current === 'number') {
+          profileVersionRef.current += 1;
         }
         if (sequence === saveSequenceRef.current) {
           revisionRef.current += 1;
@@ -293,7 +308,7 @@ export default function QuickNotesWidget({
       () => undefined,
     );
     return queuedSave;
-  }, []);
+  }, [tr]);
 
   useEffect(() => {
     void load();

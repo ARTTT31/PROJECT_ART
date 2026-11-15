@@ -22,6 +22,7 @@ export interface AuthUser {
   dashboard_layout?: string | null;
   camera_config?: string | null;
   accessible_pages?: string | null;
+  profile_version?: number;
 }
 
 /** @deprecated Use AuthUser instead */

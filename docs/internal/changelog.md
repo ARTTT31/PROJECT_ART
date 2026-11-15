@@ -1071,3 +1071,32 @@ the notification subsystem and daily briefing engine.
 `pytest -q` **659 passed / 84.62%** (gate 75%), `flake8 app` clean, `mypy app` clean (72 files),
 `alembic upgrade head` + `alembic check` clean, `npx tsc --noEmit` clean, `npx eslint .` 0 errors / 0 warnings,
 `npx vitest run` **406 passed / 63 files**, `npm run build` succeeds (16 routes).
+
+## Resolution of Backlog UX, Shared Button, and Concurrency (November 15, 2026)
+
+Pass addressing the remaining UX backlog items and client-side optimistic concurrency versioning.
+
+1. **Widget Empty/Error Fallback Component (`WidgetState.tsx`).** Added `frontend/src/components/Widgets/WidgetState.tsx`
+   supporting `empty`, `loading`, and `error` states with accessible retry buttons, Lucide icons, and Apple HIG
+   tokens. Wired into `OilPriceWidget`, `WeatherWidget`, `DailyDigestWidget`, and `CurrencyConverterWidget`.
+   Added unit test suite in `WidgetState.test.tsx` (3 tests). (Finding U4 closed).
+2. **Apple HIG Shared Button Primitive (`Button.tsx`).** Added `frontend/src/components/ui/Button.tsx` and exported
+   it from `frontend/src/components/ui/index.ts`. Provides variants (`primary`, `secondary`, `ghost`, `destructive`,
+   `outline`), sizes (`sm`, `md`, `lg`, `icon`), springy active scaling (`active:scale-[0.95]`), 11px control radius,
+   React 19 ref forwarding as a prop, and TypeScript discriminated union enforcing `aria-label` for icon-only buttons.
+   Covered by comprehensive test suite in `Button.test.tsx` (7 tests). (Finding U5 closed).
+3. **Client-Side Optimistic Concurrency Control (Finding P2).** Updated `AuthUser` and `AuthUserSchema` to include
+   `profile_version`. Added `base_version` propagation to `QuickNotesWidget` and `FinanceWidget` PUT payloads,
+   checking for and handling `409 Conflict` (`X-Profile-Version`) responses to alert users when another device updated
+   state. (Finding P2 closed).
+4. **Autosave Status and Visual Feedback Verification.** Confirmed visual save status indicators (debounced
+   saving spinner, saved confirmation, offline pending badge, and error notifications) in `QuickNotesWidget`
+   and `FinanceWidget`. (Finding U11 closed).
+5. **Route Skeleton for Share Target.** Added `frontend/src/app/(main)/share-target/loading.tsx` completing loading
+   skeleton coverage across all data routes under `(main)`. (Finding U3 closed).
+
+### Verified
+
+`pytest -q` **659 passed / 84.62%** (gate 75%), `flake8 app` clean, `mypy app` clean (72 files),
+`alembic upgrade head` + `alembic check` clean, `npx tsc --noEmit` clean, `npx eslint .` 0 errors / 0 warnings,
+`npx vitest run` **416 passed / 65 files**, `npm run build` succeeds (16 routes).

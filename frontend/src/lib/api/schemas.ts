@@ -24,6 +24,7 @@ export const AuthUserSchema = z.object({
   quick_links: z.string().nullish(),
   dashboard_layout: z.string().nullish(),
   camera_config: z.string().nullish(),
+  profile_version: z.coerce.number().default(0),
 });
 export type AuthUserParsed = z.infer<typeof AuthUserSchema>;
 

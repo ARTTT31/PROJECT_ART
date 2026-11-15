@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { AlertCircle, Fuel, TrendingUp, TrendingDown } from 'lucide-react';
+import { WidgetState } from './WidgetState';
 import WidgetSizeToggle from './WidgetSizeToggle';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
 import { pushNotifications, type Notification } from '@/components/Layout/NotificationBell';
@@ -364,8 +365,8 @@ export default function OilPriceWidget({
           {onResize && <WidgetSizeToggle value={width} onChange={onResize} sizes={[1, 2, 3]} />}
         </div>
 
-        {/* ── Error banner ──────────────────────────────────────────────── */}
-        {error && (
+        {/* ── Error banner (only when showing cached prices) ───────────── */}
+        {error && prices.length > 0 && (
           <div className="flex items-center justify-between gap-2 rounded-apple-widget bg-[var(--danger-soft)] px-3.5 py-2.5 text-[12px] font-medium text-[var(--danger)]">
             <div className="flex items-center gap-2 min-w-0">
               <AlertCircle size={14} className="shrink-0" aria-hidden="true" />
@@ -433,12 +434,19 @@ export default function OilPriceWidget({
               );
             })}
           </div>
+        ) : error ? (
+          <WidgetState
+            kind="error"
+            title="ไม่สามารถโหลดข้อมูลราคาน้ำมันได้"
+            description={error}
+            onRetry={() => fetchPrices({ refresh: true })}
+          />
         ) : (
-          !error && (
-            <div className="flex flex-1 items-center justify-center text-sm text-[var(--ink-secondary)]">
-              ไม่มีข้อมูลราคาน้ำมัน
-            </div>
-          )
+          <WidgetState
+            kind="empty"
+            title="ไม่มีข้อมูลราคาน้ำมัน"
+            description="ไม่พบรายการราคาน้ำมันจากผู้ให้บริการในขณะนี้"
+          />
         )}
 
         {/* ── Footer ────────────────────────────────────────────────────── */}
