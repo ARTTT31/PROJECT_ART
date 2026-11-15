@@ -1123,3 +1123,26 @@ answers with a future matchday (e.g. international break or mid-week when no mat
 `pytest -q` **660 passed / 84.74%** (gate 75%), `flake8 app` clean, `mypy app` clean (72 files),
 `alembic upgrade head` + `alembic check` clean, `npx tsc --noEmit` clean, `npx eslint .` 0 errors / 0 warnings,
 `npx vitest run` **417 passed / 65 files**, `npm run build` succeeds (16 routes).
+
+## Premier League Widget Match Details & Live Standings Table (November 15, 2026)
+
+Pass addressing the user request to make the Premier League widget display richer and more detailed information ("ทำให้มันดูได้ละเอียดกว่านี้").
+
+1. **In-Match Event Details Parsing.** In `backend/app/api/v1/endpoints/football.py`, updated `_parse_events` to extract:
+   - Goal events: scorer player name, clock, penalty / own goal badges.
+   - Discipline events: yellow / red card bookings and recipient player names.
+   - Match recap headline summaries and stadium attendance figures.
+2. **Premier League Standings Table Endpoint.** Added `GET /api/v1/football/standings` fetching live table standings from ESPN Soccer Standings API (`/sports/soccer/eng.1/standings`) with in-process L1 caching and SQLite L2 caching (30 min TTL), returning rank, team crests, matches played, W/D/L records, goal difference, and points.
+3. **Frontend Tab Navigation and Rich UI Views.** In `PremierLeagueWidget.tsx`:
+   - Added segmented tab navigation between "ผล & โปรแกรม" (Matches) and "ตารางคะแนน" (Standings).
+   - Match rows are expandable upon click, revealing goalscorers (⚽), cards (🟨/🟥), recap quotes, venue, and attendance.
+   - Complete 20-team live standings table with Apple HIG badges (1–4 UCL accent, 5 UEL amber, 18–20 relegation rose), responsive typography, and sticky footer legend.
+4. **Comprehensive Test Suite.**
+   - Added unit tests in `backend/tests/test_football.py` (`test_parse_standings_extracts_table`, `test_get_standings_endpoint`) bringing suite to 14 passed.
+   - Added unit tests in `frontend/src/components/Widgets/PremierLeagueWidget.test.tsx` verifying match expansion and standings tab data rendering (6 passed).
+
+### Verified
+
+`pytest -q` **662 passed / 84.34%** (gate 75%), `flake8 app` clean, `mypy app` clean (72 files),
+`alembic upgrade head` + `alembic check` clean, `npx tsc --noEmit` clean, `npx eslint .` 0 errors / 0 warnings,
+`npx vitest run` **419 passed / 65 files**, `npm run build` succeeds (16 routes).

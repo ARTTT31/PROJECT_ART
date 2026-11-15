@@ -29,6 +29,15 @@ const MATCH = {
   away: { ...TEAM, id: '2', name: 'Brentford', winner: false, score: 0 },
   venue: 'American Express Stadium',
   broadcast: 'Peacock',
+  goals: [
+    { clock: "45'", team_id: '1', player: 'Danny Welbeck', type: 'goal' },
+    { clock: "80'", team_id: '1', player: 'Evan Ferguson', type: 'penalty' },
+  ],
+  cards: [
+    { clock: "72'", team_id: '1', player: 'Lewis Dunk', type: 'yellow' },
+  ],
+  headline: 'Brighton dominate in home win against Brentford',
+  attendance: 31500,
 };
 
 const LIVE_MATCH = {
@@ -132,5 +141,82 @@ describe('PremierLeagueWidget', () => {
     expect(screen.getByText(/8 พ\.ย\. · FT/)).toBeTruthy();
     expect(screen.getByText('Brighton')).toBeTruthy();
     expect(screen.getByText('Man City')).toBeTruthy();
+  });
+
+  it('expands match row on click to reveal goalscorers, cards and attendance', async () => {
+    mockedFetch.mockResolvedValue({
+      ok: true,
+      json: async () => payload([MATCH]),
+    } as unknown as Response);
+
+    render(<PremierLeagueWidget />);
+    await screen.findByText('Brighton');
+
+    // Goals and cards should initially be hidden
+    expect(screen.queryByText('ผู้ทำประตู')).toBeNull();
+
+    // Click on the match row
+    fireEvent.click(screen.getByText('Brighton'));
+
+    // Details should now appear
+    expect(await screen.findByText('ผู้ทำประตู')).toBeTruthy();
+    expect(screen.getByText('Danny Welbeck')).toBeTruthy();
+    expect(screen.getByText('Evan Ferguson')).toBeTruthy();
+    expect(screen.getByText(/จุดโทษ/)).toBeTruthy();
+    expect(screen.getByText('Lewis Dunk')).toBeTruthy();
+    expect(screen.getByText(/31,500/)).toBeTruthy();
+  });
+
+  it('switches to standings tab and renders table data', async () => {
+    mockedFetch.mockImplementation(async (url) => {
+      if (typeof url === 'string' && url.includes('/api/v1/football/standings')) {
+        return {
+          ok: true,
+          json: async () => ({
+            success: true,
+            league: 'English Premier League',
+            season: 2026,
+            standings: [
+              {
+                rank: 1,
+                team: { id: '1', name: 'Arsenal', full_name: 'Arsenal', abbreviation: 'ARS', logo: 'https://example.com/ars.png' },
+                played: 11,
+                won: 8,
+                drawn: 2,
+                lost: 1,
+                goal_diff: '+15',
+                points: 26,
+              },
+              {
+                rank: 2,
+                team: { id: '2', name: 'Man City', full_name: 'Manchester City', abbreviation: 'MCI', logo: 'https://example.com/mci.png' },
+                played: 11,
+                won: 7,
+                drawn: 2,
+                lost: 2,
+                goal_diff: '+12',
+                points: 23,
+              },
+            ],
+            fetched_at: '2026-11-08T15:00:00Z',
+          }),
+        } as unknown as Response;
+      }
+      return {
+        ok: true,
+        json: async () => payload([MATCH]),
+      } as unknown as Response;
+    });
+
+    render(<PremierLeagueWidget />);
+    await screen.findByText('Brighton');
+
+    // Switch tab
+    fireEvent.click(screen.getByRole('button', { name: 'ตารางคะแนน' }));
+
+    // Verify standings table is fetched and displayed
+    expect(await screen.findByText('Arsenal')).toBeTruthy();
+    expect(screen.getByText('26')).toBeTruthy();
+    expect(screen.getByText('+15')).toBeTruthy();
   });
 });

@@ -35,11 +35,15 @@ _GENERAL_LIMIT = f"{settings.RATE_LIMIT_GENERAL_PER_MINUTE}/minute"
 ESPN_SCOREBOARD_URL = (
     "https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/scoreboard"
 )
+ESPN_STANDINGS_URL = (
+    "https://site.api.espn.com/apis/v2/sports/soccer/eng.1/standings"
+)
 
 # A finished matchday barely moves, but a live score does. The TTL is picked per
 # payload so an in-progress match is refreshed about once a minute.
 CACHE_TTL = 5 * 60
 LIVE_CACHE_TTL = 60
+STANDINGS_CACHE_TTL = 30 * 60
 
 NS_FOOTBALL = "football"
 
@@ -114,6 +118,53 @@ def _parse_events(payload: dict) -> list[dict]:
         for entry in broadcasts:
             broadcast_names.extend(entry.get("names") or [])
 
+        details = competition.get("details") or []
+        goals = []
+        cards = []
+        for det in details:
+            clock = det.get("clock", {}).get("displayValue") or ""
+            team_id = str(det.get("team", {}).get("id") or "")
+            athletes = det.get("athletesInvolved") or []
+            player_name = athletes[0].get("displayName") if athletes else ""
+
+            if det.get("scoringPlay"):
+                goal_type = (
+                    "penalty"
+                    if det.get("penaltyKick")
+                    else "own_goal"
+                    if det.get("ownGoal")
+                    else "goal"
+                )
+                goals.append(
+                    {
+                        "clock": clock,
+                        "team_id": team_id,
+                        "player": player_name,
+                        "type": goal_type,
+                    }
+                )
+            elif det.get("redCard"):
+                cards.append(
+                    {
+                        "clock": clock,
+                        "team_id": team_id,
+                        "player": player_name,
+                        "type": "red",
+                    }
+                )
+            elif det.get("yellowCard"):
+                cards.append(
+                    {
+                        "clock": clock,
+                        "team_id": team_id,
+                        "player": player_name,
+                        "type": "yellow",
+                    }
+                )
+
+        headlines = competition.get("headlines") or []
+        headline_desc = headlines[0].get("description") if headlines else None
+
         parsed.append(
             {
                 "id": str(raw.get("id") or ""),
@@ -127,6 +178,10 @@ def _parse_events(payload: dict) -> list[dict]:
                 "away": _team(away),
                 "venue": venue.get("fullName") or "",
                 "broadcast": ", ".join(dict.fromkeys(broadcast_names)),
+                "goals": goals,
+                "cards": cards,
+                "headline": headline_desc,
+                "attendance": competition.get("attendance"),
             }
         )
     return parsed
@@ -261,4 +316,133 @@ async def get_premier_league(
 
     _CACHE[cache_key] = (now, data)
     await weather_cache.store(db, NS_FOOTBALL, _l2_key(day), data)
+    return data
+
+
+def _parse_standings(payload: dict) -> list[dict]:
+    entries: list[dict] = []
+    children = payload.get("children") or []
+    if not children:
+        return entries
+    raw_entries = children[0].get("standings", {}).get("entries", [])
+    for entry in raw_entries:
+        team = entry.get("team") or {}
+        logos = team.get("logos") or []
+        logo_url = logos[0].get("href") if logos else None
+        stats_map = {
+            s.get("name"): s.get("displayValue", s.get("value"))
+            for s in entry.get("stats") or []
+        }
+
+        try:
+            rank = int(stats_map.get("rank") or 0)
+        except (ValueError, TypeError):
+            rank = 0
+
+        try:
+            played = int(stats_map.get("gamesPlayed") or 0)
+        except (ValueError, TypeError):
+            played = 0
+
+        try:
+            won = int(stats_map.get("wins") or 0)
+        except (ValueError, TypeError):
+            won = 0
+
+        try:
+            drawn = int(stats_map.get("ties") or 0)
+        except (ValueError, TypeError):
+            drawn = 0
+
+        try:
+            lost = int(stats_map.get("losses") or 0)
+        except (ValueError, TypeError):
+            lost = 0
+
+        try:
+            points = int(stats_map.get("points") or 0)
+        except (ValueError, TypeError):
+            points = 0
+
+        goal_diff = str(stats_map.get("pointDifferential") or "0")
+
+        entries.append(
+            {
+                "rank": rank,
+                "team": {
+                    "id": str(team.get("id") or ""),
+                    "name": team.get("shortDisplayName") or team.get("displayName") or "",
+                    "full_name": team.get("displayName") or "",
+                    "abbreviation": team.get("abbreviation") or "",
+                    "logo": logo_url,
+                },
+                "played": played,
+                "won": won,
+                "drawn": drawn,
+                "lost": lost,
+                "goal_diff": goal_diff,
+                "points": points,
+            }
+        )
+    entries.sort(key=lambda x: x["rank"])
+    return entries
+
+
+async def _fetch_standings() -> dict:
+    async with httpx.AsyncClient(
+        timeout=httpx.Timeout(10.0, connect=5.0),
+        follow_redirects=True,
+    ) as client:
+        response = await client.get(
+            ESPN_STANDINGS_URL,
+            headers={"User-Agent": "Mozilla/5.0 (compatible; ARTWorkspace/1.0)"},
+        )
+    response.raise_for_status()
+    standings = _parse_standings(response.json())
+    return {
+        "success": True,
+        "league": "English Premier League",
+        "season": 2026,
+        "standings": standings,
+        "fetched_at": _iso_now(),
+        "is_stale": False,
+        "source": "ESPN",
+    }
+
+
+@router.get("/standings", response_model=dict)
+@limiter.limit(_GENERAL_LIMIT)
+async def get_premier_league_standings(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Premier League 20-team live standings table."""
+    cache_key = "standings"
+    now = utcnow()
+
+    cached = _CACHE.get(cache_key)
+    if cached and (now - cached[0]).total_seconds() < STANDINGS_CACHE_TTL:
+        return cached[1]
+
+    persisted = await weather_cache.get_fresh_with_age(db, NS_FOOTBALL, (cache_key,))
+    if persisted:
+        payload, age = persisted
+        if age <= STANDINGS_CACHE_TTL:
+            _CACHE[cache_key] = (now, payload)
+            return payload
+
+    try:
+        data = await _fetch_standings()
+    except Exception as exc:
+        logger.warning("Premier League standings fetch failed: %s", exc)
+        if cached:
+            return _mark_stale(cached[1])
+        stale = await _stale_from_l2(db, cache_key)
+        if stale is not None:
+            return stale
+        raise HTTPException(status_code=503, detail="ไม่สามารถโหลดตารางคะแนนพรีเมียร์ลีกได้")
+
+    _CACHE[cache_key] = (now, data)
+    await weather_cache.store(db, NS_FOOTBALL, (cache_key,), data)
     return data

@@ -290,3 +290,65 @@ async def test_fetch_events_falls_back_to_latest_completed_matchday(monkeypatch)
     ids = [e["id"] for e in res["events"]]
     assert "past1" in ids
     assert "future1" in ids
+
+
+def test_parse_standings_extracts_table():
+    sample = {
+        "children": [
+            {
+                "standings": {
+                    "entries": [
+                        {
+                            "team": {
+                                "id": "359",
+                                "displayName": "Arsenal",
+                                "shortDisplayName": "Arsenal",
+                                "logos": [{"href": "https://espn.com/ars.png"}],
+                            },
+                            "stats": [
+                                {"name": "rank", "value": 1},
+                                {"name": "gamesPlayed", "value": 10},
+                                {"name": "wins", "value": 9},
+                                {"name": "ties", "value": 0},
+                                {"name": "losses", "value": 1},
+                                {"name": "pointDifferential", "displayValue": "+10"},
+                                {"name": "points", "value": 27},
+                            ],
+                        }
+                    ]
+                }
+            }
+        ]
+    }
+    standings = football._parse_standings(sample)
+    assert len(standings) == 1
+    team = standings[0]
+    assert team["rank"] == 1
+    assert team["team"]["name"] == "Arsenal"
+    assert team["played"] == 10
+    assert team["won"] == 9
+    assert team["drawn"] == 0
+    assert team["lost"] == 1
+    assert team["goal_diff"] == "+10"
+    assert team["points"] == 27
+
+
+@pytest.mark.asyncio
+async def test_get_standings_endpoint(client, logged_in_user, monkeypatch):
+    async def _mock_standings():
+        return {
+            "success": True,
+            "league": "English Premier League",
+            "season": 2026,
+            "standings": [{"rank": 1, "team": {"name": "Arsenal"}, "points": 27}],
+            "fetched_at": "2026-11-15T00:00:00Z",
+            "is_stale": False,
+            "source": "ESPN",
+        }
+
+    monkeypatch.setattr(football, "_fetch_standings", _mock_standings)
+    res = await client.get("/api/v1/football/standings")
+    assert res.status_code == 200
+    data = res.json()
+    assert data["success"] is True
+    assert data["standings"][0]["team"]["name"] == "Arsenal"
