@@ -144,6 +144,12 @@ export default function UserManagement() {
 
   useEffect(() => {
     loadUsers();
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        void loadUsers();
+      }
+    }, 30_000);
+    return () => window.clearInterval(timer);
   }, [loadUsers]);
 
   const hasNextPage = useMemo(

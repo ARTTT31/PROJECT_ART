@@ -65,6 +65,44 @@ async def test_user_list_reports_active_sessions(client, logged_in_admin_user):
     row = next(item for item in resp.json() if item["id"] == user_id)
     assert row["active_sessions"] >= 1
     assert "last_login" in row
+    assert "last_activity" in row
+
+
+async def test_user_list_reports_zero_for_stale_sessions(client, logged_in_admin_user, db_session):
+    from datetime import timedelta
+    from app.core.utils import utcnow
+    from app.models.session import UserSession
+    from app.api.v1.endpoints.websockets import manager
+    from sqlalchemy import update
+
+    user_id = logged_in_admin_user["data"]["user"]["id"]
+
+    # Ensure manager has no lingering WS for this user
+    for ws in list(manager.active_connections):
+        if manager._owner.get(ws) == user_id:
+            manager.disconnect(ws)
+
+    # Set last_activity to 2 hours ago
+    stale_time = utcnow() - timedelta(hours=2)
+    await db_session.execute(
+        update(UserSession)
+        .where(UserSession.user_id == user_id)
+        .values(last_activity=stale_time)
+    )
+    await db_session.commit()
+
+    resp = await client.get("/api/v1/users")
+    assert resp.status_code == 200
+    row = next(item for item in resp.json() if item["id"] == user_id)
+    assert row["active_sessions"] == 0
+    assert row["last_activity"] is not None
+
+
+async def test_session_list_reports_is_online(client, logged_in_admin_user):
+    resp = await client.get("/api/v1/users/sessions")
+    assert resp.status_code == 200
+    rows = resp.json()
+    assert any(row["is_online"] is True for row in rows)
 
 
 async def test_revoke_unknown_session_returns_404(client, logged_in_admin_user):

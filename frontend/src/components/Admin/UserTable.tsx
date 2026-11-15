@@ -250,7 +250,11 @@ export default function UserTable({
                             </span>
                           ) : (
                             <span className="text-[12px] text-[var(--ink-muted)]">
-                              {u.last_login ? formatDateTime(u.last_login) : 'ยังไม่เคย'}
+                              {u.last_activity
+                                ? formatDateTime(u.last_activity)
+                                : u.last_login
+                                  ? formatDateTime(u.last_login)
+                                  : 'ยังไม่เคย'}
                             </span>
                           )}
                         </td>

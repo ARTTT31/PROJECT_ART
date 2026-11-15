@@ -17,6 +17,8 @@ export interface AdminUser {
   status?: string | null;
   /** Last successful sign-in, ISO string. */
   last_login?: string | null;
+  /** Most recent session activity, ISO string. */
+  last_activity?: string | null;
   /** Live devices for this account, counted by the admin list endpoint. */
   active_sessions?: number;
 }

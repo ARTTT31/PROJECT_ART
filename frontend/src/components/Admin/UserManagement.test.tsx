@@ -539,4 +539,33 @@ describe('UserManagement — approval queue', () => {
     expect(calls.some((call) => call.includes('/reject'))).toBe(false);
     expect(screen.getByText(PENDING.email)).toBeTruthy();
   });
+
+  describe('Online and last activity status column', () => {
+    it('displays online badge when active_sessions > 0 and formatted date when 0', async () => {
+      api = async () => ({
+        ok: true,
+        headers: new Headers({ 'X-Total-Count': '2' }),
+        json: async () => [
+          {
+            ...ADMIN,
+            active_sessions: 2,
+          },
+          {
+            ...TARGET,
+            active_sessions: 0,
+            last_activity: '2026-11-05T08:35:13Z',
+          },
+        ],
+      });
+
+      renderPanel();
+      await screen.findByText(ADMIN.email);
+
+      // Admin has 2 active sessions -> shows online
+      expect(screen.getByText(/2 อุปกรณ์/)).toBeTruthy();
+
+      // Target has 0 active sessions -> shows formatted last_activity
+      expect(screen.getByText(/5 พ\.ย\. 2569/)).toBeTruthy();
+    });
+  });
 });

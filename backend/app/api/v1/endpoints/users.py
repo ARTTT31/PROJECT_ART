@@ -3,6 +3,7 @@ User Management Endpoints (Admin Only)
 """
 
 import math
+from datetime import datetime, timedelta
 from typing import Any, List, Literal, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status, Request, Response
 from sqlalchemy import func, or_, select
@@ -25,6 +26,7 @@ from app.schemas.user import (
 from app.schemas.response import ResponseModel
 from app.services.user_service import UserService, purge_at, retention_days
 from app.api.dependencies import get_current_admin_user
+from app.api.v1.endpoints.websockets import manager
 from app.models.user import User
 
 from app.services import email_service
@@ -40,26 +42,57 @@ _GENERAL_LIMIT = f"{settings.RATE_LIMIT_GENERAL_PER_MINUTE}/minute"
 
 async def _active_session_counts(
     db: AsyncSession, user_ids: List[int]
-) -> dict[int, int]:
-    """How many live devices each account has, in one grouped query."""
+) -> tuple[dict[int, int], dict[int, datetime]]:
+    """How many live devices each account has and their most recent activity.
+
+    A device is considered online if:
+    1. It currently holds an active WebSocket connection, OR
+    2. Its session had recent activity (within 5 minutes) and is active/unexpired.
+    """
     if not user_ids:
-        return {}
+        return {}, {}
     now = utcnow()
+    recent_cutoff = now - timedelta(minutes=5)
+
     rows = (
         await db.execute(
-            select(UserSession.user_id, func.count())
-            .where(
-                UserSession.user_id.in_(user_ids),
-                UserSession.is_active.is_(True),
-                or_(
-                    UserSession.expires_at.is_(None),
-                    UserSession.expires_at > now,
-                ),
+            select(
+                UserSession.user_id,
+                UserSession.session_id,
+                UserSession.last_activity,
+                UserSession.is_active,
+                UserSession.expires_at,
             )
-            .group_by(UserSession.user_id)
+            .where(UserSession.user_id.in_(user_ids))
+            .order_by(UserSession.last_activity.desc())
         )
     ).all()
-    return {int(user_id): int(count) for user_id, count in rows}
+
+    active_by_user: dict[int, set[str]] = {uid: set() for uid in user_ids}
+    latest_activity_by_user: dict[int, datetime] = {}
+
+    for uid, sid, last_act, is_act, exp_at in rows:
+        if uid not in latest_activity_by_user and last_act:
+            latest_activity_by_user[uid] = last_act
+        if (
+            is_act
+            and last_act
+            and last_act >= recent_cutoff
+            and (exp_at is None or exp_at > now)
+            and sid
+        ):
+            active_by_user[uid].add(sid)
+
+    counts: dict[int, int] = {}
+    for uid in user_ids:
+        ws_sessions = manager.get_user_session_ids(uid)
+        combined = active_by_user.get(uid, set()) | ws_sessions
+        count = len(combined)
+        if count == 0 and manager.get_online_device_count(uid) > 0:
+            count = manager.get_online_device_count(uid)
+        counts[uid] = count
+
+    return counts, latest_activity_by_user
 
 
 @router.get("", response_model=List[AdminUserResponse])
@@ -95,11 +128,14 @@ async def list_users(
     total = await user_service.count_users(q=q, role=role, is_active=is_active)
     response.headers["X-Total-Count"] = str(total)
 
-    counts = await _active_session_counts(db, [user.id for user in users])
+    counts, latest_activities = await _active_session_counts(
+        db, [user.id for user in users]
+    )
     return [
         AdminUserResponse(
             **UserResponse.model_validate(user).model_dump(),
             active_sessions=counts.get(user.id, 0),
+            last_activity=as_utc(latest_activities.get(user.id)),
         )
         for user in users
     ]
@@ -324,6 +360,7 @@ async def list_active_sessions(
     ).all()
 
     response.headers["X-Total-Count"] = str(total)
+    recent_cutoff = now - timedelta(minutes=5)
     return [
         ActiveSessionResponse(
             id=session.id,
@@ -337,6 +374,15 @@ async def list_active_sessions(
             user_agent=session.user_agent,
             ip_address=session.ip_address,
             is_active=session.is_active,
+            is_online=bool(
+                session.session_id in manager.get_user_session_ids(session.user_id)
+                or (
+                    session.is_active
+                    and session.last_activity
+                    and session.last_activity >= recent_cutoff
+                    and (session.expires_at is None or session.expires_at > now)
+                )
+            ),
             last_activity=as_utc(session.last_activity),
             created_at=as_utc(session.created_at),
             expires_at=as_utc(session.expires_at),

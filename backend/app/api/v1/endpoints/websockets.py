@@ -59,6 +59,8 @@ class ConnectionManager:
         self.active_connections: list[WebSocket] = []
         self._owner: dict[WebSocket, int] = {}
         self._per_user: dict[int, int] = {}
+        self._ws_sessions: dict[WebSocket, str] = {}
+        self._user_sessions: dict[int, dict[str, int]] = {}
         self.max_total = settings.WS_MAX_CONNECTIONS if max_total is None else max_total
         self.max_per_user = (
             settings.WS_MAX_CONNECTIONS_PER_USER if max_per_user is None else max_per_user
@@ -71,11 +73,20 @@ class ConnectionManager:
             and self._per_user.get(user_id, 0) < self.max_per_user
         )
 
-    async def connect(self, websocket: WebSocket, user_id: int) -> None:
+    async def connect(
+        self, websocket: WebSocket, user_id: int, session_id: str | None = None
+    ) -> None:
         await websocket.accept()
         self.active_connections.append(websocket)
         self._owner[websocket] = user_id
         self._per_user[user_id] = self._per_user.get(user_id, 0) + 1
+        if session_id:
+            self._ws_sessions[websocket] = session_id
+            if user_id not in self._user_sessions:
+                self._user_sessions[user_id] = {}
+            self._user_sessions[user_id][session_id] = (
+                self._user_sessions[user_id].get(session_id, 0) + 1
+            )
         logger.info(
             "WebSocket connected (user=%s). Total: %d", user_id, len(self.active_connections)
         )
@@ -89,6 +100,16 @@ class ConnectionManager:
         if websocket in self.active_connections:
             self.active_connections.remove(websocket)
 
+        session_id = self._ws_sessions.pop(websocket, None)
+        if session_id and user_id in self._user_sessions:
+            current_count = self._user_sessions[user_id].get(session_id, 1) - 1
+            if current_count <= 0:
+                self._user_sessions[user_id].pop(session_id, None)
+            else:
+                self._user_sessions[user_id][session_id] = current_count
+            if not self._user_sessions[user_id]:
+                self._user_sessions.pop(user_id, None)
+
         remaining = self._per_user.get(user_id, 0) - 1
         if remaining > 0:
             self._per_user[user_id] = remaining
@@ -98,6 +119,20 @@ class ConnectionManager:
         logger.info(
             "WebSocket disconnected (user=%s). Total: %d", user_id, len(self.active_connections)
         )
+
+    def get_online_device_count(self, user_id: int) -> int:
+        """Count of distinct devices (sessions) currently holding active WebSockets for this user."""
+        sessions = self._user_sessions.get(user_id)
+        if sessions:
+            return len(sessions)
+        return 1 if self._per_user.get(user_id, 0) > 0 else 0
+
+    def get_user_session_ids(self, user_id: int) -> set[str]:
+        """Set of session IDs holding live WebSockets for this user."""
+        sessions = self._user_sessions.get(user_id)
+        if sessions:
+            return set(sessions.keys())
+        return set()
 
     async def broadcast(self, message: dict) -> None:
         payload = json.dumps(message)
@@ -215,7 +250,8 @@ async def websocket_notifications(
         await websocket.close(code=WS_CLOSE_CAPACITY)
         return
 
-    await manager.connect(websocket, user.id)
+    session_id = getattr(getattr(websocket, "state", None), "session_id", None)
+    await manager.connect(websocket, user.id, session_id=session_id)
     try:
         while True:
             # wait for messages from client (e.g. ping to keep connection alive)

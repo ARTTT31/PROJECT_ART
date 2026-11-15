@@ -237,7 +237,14 @@ async def authenticate_websocket(websocket: WebSocket, db: AsyncSession) -> Opti
         return None
 
     try:
-        return await resolve_user_from_token(token, db)
+        user = await resolve_user_from_token(token, db)
+        payload = decode_token(token)
+        if payload and isinstance(payload.get("sid"), str):
+            try:
+                websocket.state.session_id = payload["sid"]
+            except Exception:
+                pass
+        return user
     except HTTPException:
         return None
     except Exception as exc:

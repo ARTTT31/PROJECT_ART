@@ -20,6 +20,7 @@ export interface AdminSession {
   user_agent: string | null;
   ip_address: string | null;
   is_active: boolean;
+  is_online?: boolean;
   last_activity: string | null;
   created_at: string | null;
   expires_at: string | null;
@@ -254,8 +255,14 @@ export default function ActiveSessionsCard() {
                         แอดมิน
                       </span>
                     )}
+                    {session.is_online && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-[var(--success-soft)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--success-ink)]">
+                        <span aria-hidden="true" className="h-1 w-1 rounded-full bg-[var(--success)]" />
+                        ออนไลน์
+                      </span>
+                    )}
                     {isCurrent && (
-                      <span className="rounded-full bg-[var(--success-soft)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--success-ink)]">
+                      <span className="rounded-full bg-[var(--accent-soft)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--accent-text)]">
                         อุปกรณ์นี้
                       </span>
                     )}

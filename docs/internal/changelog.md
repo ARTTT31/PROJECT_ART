@@ -1146,3 +1146,27 @@ Pass addressing the user request to make the Premier League widget display riche
 `pytest -q` **662 passed / 84.34%** (gate 75%), `flake8 app` clean, `mypy app` clean (72 files),
 `alembic upgrade head` + `alembic check` clean, `npx tsc --noEmit` clean, `npx eslint .` 0 errors / 0 warnings,
 `npx vitest run` **419 passed / 65 files**, `npm run build` succeeds (16 routes).
+
+## Real-Time Online Device and Activity Accuracy Fix (November 15, 2026)
+
+Pass addressing inaccurate online status in the Admin User Table ("ออนไลน์ / ล่าสุด" showing offline accounts as online).
+
+1. **Root Cause Analysis.** `_active_session_counts` previously queried `UserSession.is_active.is_(True)` and `expires_at > now`. Because refresh tokens expire in 7 days, any account that logged in within the past 7 days was reported as having active sessions, causing `UserTable.tsx` to display `🟢 ออนไลน์ · X อุปกรณ์` even when the user closed their browser days ago.
+2. **Real-Time WebSocket Presence in `ConnectionManager`.** In `backend/app/api/v1/endpoints/websockets.py`, upgraded `ConnectionManager` to track `_ws_sessions` and `_user_sessions` by `session_id`. When a browser tab connects to `/api/v1/ws/notifications`, the session is registered in memory; on tab close or disconnect, it is instantly dereferenced. Added `get_online_device_count(user_id)` and `get_user_session_ids(user_id)`.
+3. **Session Activity Window & Endpoint Integration.**
+   - In `backend/app/api/v1/endpoints/users.py`, updated `_active_session_counts` to classify a device as online only if it holds an active WebSocket OR had database activity within the last 5 minutes (`last_activity >= now - 5m`). Accounts with no live sockets and no recent activity return `0`.
+   - Populated `last_activity` in `AdminUserResponse` so offline rows display their most recent activity timestamp.
+   - Added `is_online` flag to `ActiveSessionResponse` (`GET /api/v1/users/sessions`) indicating which specific devices in `ActiveSessionsCard` are live.
+4. **Frontend UI & Auto-Refresh.**
+   - In `frontend/src/components/Admin/UserTable.tsx`, offline accounts display their formatted latest activity or last login time (e.g. `5 พ.ย. 2569 15:35:13`) rather than a false online badge.
+   - In `frontend/src/components/Admin/ActiveSessionsCard.tsx`, added a live `🟢 ออนไลน์` badge to active devices alongside `อุปกรณ์นี้`.
+   - In `frontend/src/components/Admin/UserManagement.tsx`, added 30-second polling when the tab is visible to keep the user table synchronized with live status.
+5. **Testing & Coverage.**
+   - Added unit tests in `backend/tests/test_active_sessions.py` verifying stale sessions report 0 active devices and session list carries `is_online`.
+   - Added unit test in `frontend/src/components/Admin/UserManagement.test.tsx` verifying online badge when `active_sessions > 0` and formatted timestamp when `0`.
+
+### Verified
+
+`pytest -q` **664 passed / 84.50%** (gate 75%), `flake8 app` clean, `mypy app` clean (72 files),
+`alembic upgrade head` + `alembic check` clean, `npx tsc --noEmit` clean, `npx eslint .` 0 errors / 0 warnings,
+`npx vitest run` **420 passed / 65 files**, `npm run build` succeeds (16 routes).

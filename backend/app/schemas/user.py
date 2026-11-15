@@ -413,6 +413,7 @@ class AdminUserResponse(UserResponse):
     """
 
     active_sessions: int = 0
+    last_activity: Optional[datetime] = None
 
 
 class UserTrashResponse(UserResponse):
@@ -436,6 +437,7 @@ class ActiveSessionResponse(BaseModel):
     user_agent: Optional[str] = None
     ip_address: Optional[str] = None
     is_active: bool
+    is_online: bool = False
     last_activity: Optional[datetime] = None
     created_at: Optional[datetime] = None
     expires_at: Optional[datetime] = None
