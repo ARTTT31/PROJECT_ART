@@ -141,13 +141,29 @@ export default function WeatherWidget({
 
         const now = new Date();
         const currentHour = now.getHours();
-        const todayIsoDate = now.toISOString().slice(0, 10);
+        const localYear = now.getFullYear();
+        const localMonth = String(now.getMonth() + 1).padStart(2, '0');
+        const localDay = String(now.getDate()).padStart(2, '0');
+        const todayIsoDate = `${localYear}-${localMonth}-${localDay}`;
 
         // Find matching current hour index
         let startIndex = hourlyTimes.findIndex((tStr) => {
           const d = new Date(tStr);
           return d.getHours() === currentHour && tStr.startsWith(todayIsoDate);
         });
+
+        // Fallback: find closest slot in hourlyTimes to current timestamp
+        if (startIndex === -1 && hourlyTimes.length > 0) {
+          const nowMs = now.getTime();
+          let closestDiff = Infinity;
+          hourlyTimes.forEach((tStr, idx) => {
+            const diff = Math.abs(new Date(tStr).getTime() - nowMs);
+            if (diff < closestDiff) {
+              closestDiff = diff;
+              startIndex = idx;
+            }
+          });
+        }
 
         if (startIndex === -1) {
           startIndex = 0;

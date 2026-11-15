@@ -70,10 +70,12 @@ export default function CandleChart({
     const PAD_RIGHT = 58;
     const PAD_LEFT = 4;
 
-    const highs = points.map((point) => point.h);
-    const lows = points.map((point) => point.l);
+    const highs = points.map((point) => point.h).filter((v) => Number.isFinite(v));
+    const lows = points.map((point) => point.l).filter((v) => Number.isFinite(v));
+    if (highs.length === 0 || lows.length === 0) return null;
     const rawMax = Math.max(...highs);
     const rawMin = Math.min(...lows);
+    if (!Number.isFinite(rawMax) || !Number.isFinite(rawMin)) return null;
     // A flat series would collapse to a single line; give it a visible band.
     const span = rawMax - rawMin || Math.max(rawMax * 0.01, 0.01);
     const max = rawMax + span * 0.08;

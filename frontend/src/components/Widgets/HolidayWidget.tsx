@@ -62,10 +62,27 @@ export default function HolidayWidget({
     };
   }, []);
 
-  const today = useMemo(() => {
+  const [today, setToday] = useState(() => {
     const d = new Date();
     d.setHours(0, 0, 0, 0);
     return d;
+  });
+
+  useEffect(() => {
+    const checkDay = () => {
+      const now = new Date();
+      now.setHours(0, 0, 0, 0);
+      setToday((prev) => (prev.getTime() !== now.getTime() ? now : prev));
+    };
+    const interval = setInterval(checkDay, 60_000);
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') checkDay();
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
   }, []);
 
   const holidaysWithDiff = useMemo(() => {

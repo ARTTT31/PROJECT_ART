@@ -27,17 +27,31 @@ const MODES: Record<TimerMode, ModeConfig> = {
   longBreak: { label: 'พักยาว', duration: 15 * 60, tag: '15 นาที' },
 };
 
+let sharedAudioCtx: AudioContext | null = null;
+
+function ensureAudioContext(): AudioContext | null {
+  try {
+    if (!sharedAudioCtx && typeof window !== 'undefined') {
+      const AudioContextClass =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      if (AudioContextClass) {
+        sharedAudioCtx = new AudioContextClass();
+      }
+    }
+    if (sharedAudioCtx && sharedAudioCtx.state === 'suspended') {
+      void sharedAudioCtx.resume();
+    }
+    return sharedAudioCtx;
+  } catch {
+    return null;
+  }
+}
+
 function playGentleChime() {
   try {
-    const AudioContextClass =
-      window.AudioContext ||
-      (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-    if (!AudioContextClass) return;
-
-    const ctx = new AudioContextClass();
-    if (ctx.state === 'suspended') {
-      ctx.resume();
-    }
+    const ctx = ensureAudioContext();
+    if (!ctx) return;
     const now = ctx.currentTime;
 
     // Dual-tone harmonic chime (D5 -> A5 -> D6)
@@ -84,58 +98,84 @@ export default function FocusTimerWidget({
 
   const activeDuration = MODES[mode].duration;
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const targetEndTimeRef = useRef<number | null>(null);
 
   // Switch mode handler
   const handleModeChange = useCallback(
     (newMode: TimerMode) => {
       setIsRunning(false);
+      targetEndTimeRef.current = null;
       setMode(newMode);
       setTimeLeft(MODES[newMode].duration);
     },
     [],
   );
 
-  // Timer interval effect
+  // Timer interval effect with wall-clock drift compensation
   useEffect(() => {
     if (isRunning) {
-      timerRef.current = setInterval(() => {
-        setTimeLeft((prev) => {
-          if (prev <= 1) {
-            clearInterval(timerRef.current!);
-            setIsRunning(false);
-            if (soundEnabled) {
-              playGentleChime();
-            }
-            if (mode === 'focus') {
-              setCompletedSessions((s) => s + 1);
-            }
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    } else if (timerRef.current) {
-      clearInterval(timerRef.current);
-    }
+      if (!targetEndTimeRef.current) {
+        targetEndTimeRef.current = Date.now() + timeLeft * 1000;
+      }
 
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, [isRunning, mode, soundEnabled]);
+      const tick = () => {
+        if (!targetEndTimeRef.current) return;
+        const remaining = Math.max(0, Math.ceil((targetEndTimeRef.current - Date.now()) / 1000));
+        setTimeLeft(remaining);
+        if (remaining <= 0) {
+          if (timerRef.current) clearInterval(timerRef.current);
+          setIsRunning(false);
+          targetEndTimeRef.current = null;
+          if (soundEnabled) {
+            playGentleChime();
+          }
+          if (mode === 'focus') {
+            setCompletedSessions((s) => s + 1);
+          }
+        }
+      };
+
+      timerRef.current = setInterval(tick, 500);
+
+      const handleVisibility = () => {
+        if (document.visibilityState === 'visible') {
+          tick();
+        }
+      };
+      document.addEventListener('visibilitychange', handleVisibility);
+
+      return () => {
+        if (timerRef.current) clearInterval(timerRef.current);
+        document.removeEventListener('visibilitychange', handleVisibility);
+      };
+    } else {
+      targetEndTimeRef.current = null;
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    }
+  }, [isRunning, mode, soundEnabled, timeLeft]);
 
   // Reset timer handler
   const handleReset = useCallback(() => {
     setIsRunning(false);
+    targetEndTimeRef.current = null;
     setTimeLeft(MODES[mode].duration);
   }, [mode]);
 
   // Toggle running handler
   const handleTogglePlay = useCallback(() => {
+    ensureAudioContext();
     if (timeLeft === 0) {
       setTimeLeft(MODES[mode].duration);
+      targetEndTimeRef.current = Date.now() + MODES[mode].duration * 1000;
+    } else if (!isRunning) {
+      targetEndTimeRef.current = Date.now() + timeLeft * 1000;
+    } else {
+      targetEndTimeRef.current = null;
     }
     setIsRunning((r) => !r);
-  }, [mode, timeLeft]);
+  }, [mode, timeLeft, isRunning]);
 
   // Format time MM:SS
   const minutes = Math.floor(timeLeft / 60);

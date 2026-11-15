@@ -1189,3 +1189,31 @@ Pass addressing the mobile layout issue where opening the sidebar navigation via
 `npx tsc --noEmit` clean, `npx eslint src/components/Layout/DashboardLayout.tsx` clean,
 `npx vitest run` **420 passed / 65 files**, `npm run build` succeeds (16 routes).
 
+## Dashboard Widgets Bug Hardening & Edge-Case Audit (November 15, 2026)
+
+Comprehensive audit and hardening across the 14 dashboard widgets in `frontend/src/components/Widgets/`.
+
+1. **WeatherWidget Timezone Alignment.**
+   - In `WeatherWidget.tsx`, replaced `now.toISOString().slice(0, 10)` (which answers in UTC and caused dates to lag by 1 day between 00:00 - 06:59 AM Bangkok time) with local ISO date extraction (`getFullYear()`, `getMonth() + 1`, `getDate()`).
+   - Added timestamp proximity fallback for `startIndex` against Open-Meteo's `hourlyTimes` array, preventing fallback to midnight of yesterday.
+2. **FocusTimer Clock Drift & Audio Autoplay.**
+   - In `FocusTimerWidget.tsx`, replaced raw interval decrementing with wall-clock timestamp synchronization (`targetEndTimeRef`). Added `visibilitychange` listener so returning to a backgrounded or suspended mobile tab immediately calculates exact remaining seconds.
+   - Added `ensureAudioContext` warm-up on user play interaction so mobile Safari / WebKit does not block completion chime under autoplay restrictions.
+3. **DailyDigest Weather Interpretation.**
+   - In `DailyDigestWidget.tsx`, replaced hardcoded condition text with dynamic weather code interpretation via `getWeatherMeta(weather_code)` imported from `weatherModel.ts`.
+4. **HolidayWidget Midnight Rollover.**
+   - In `HolidayWidget.tsx`, converted memoized `today` to state with 60s periodic and `visibilitychange` verification so countdown badges (`daysLeft`) update automatically when passing midnight without requiring manual reload.
+5. **CalendarWidget Overhang Year Holidays.**
+   - In `CalendarWidget.tsx`, included `currentYear - 1` and `currentYear + 1` static holidays in `eventsByDate` mapping so leading days in January and trailing days in December display holiday badges.
+6. **PriceCalcWidget Internationalization.**
+   - In `PriceCalcWidget.tsx`, wrapped all labels and prompts with `useI18n()` / `tr()` so the calculator honors the user's active language preference.
+7. **QRCodeWidget Barcode Sizing & CandleChart Bounds.**
+   - In `QRCodeWidget.tsx`, added responsive bar width scaling for Code 128 when text exceeds 25 characters, preventing canvas overflow.
+   - In `CandleChart.tsx`, filtered `highs` and `lows` through `Number.isFinite` and guarded against empty / non-finite inputs before calculating SVG chart dimensions.
+
+### Verified
+
+`npx tsc --noEmit` clean, `npx eslint` clean (all 8 modified widget files),
+`npx vitest run` **420 passed / 65 files**, `npm run build` succeeds (16 routes).
+
+

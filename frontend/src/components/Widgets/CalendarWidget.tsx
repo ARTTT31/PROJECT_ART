@@ -174,8 +174,12 @@ export default function CalendarWidget({
   const eventsByDate = useMemo(() => {
     const map: Record<string, CalendarEvent[]> = {};
 
-    // 1. Static fallback holidays
-    const staticHolidays = getHolidaysWithDiff(new Date(currentYear, 0, 1));
+    // 1. Static fallback holidays (including overhang years for leading/trailing days)
+    const staticHolidays = [
+      ...getHolidaysWithDiff(new Date(currentYear - 1, 0, 1)),
+      ...getHolidaysWithDiff(new Date(currentYear, 0, 1)),
+      ...getHolidaysWithDiff(new Date(currentYear + 1, 0, 1)),
+    ];
     staticHolidays.forEach((h) => {
       const dStr = `${h.year}-${String(h.month).padStart(2, '0')}-${String(h.day).padStart(2, '0')}`;
       if (!map[dStr]) map[dStr] = [];

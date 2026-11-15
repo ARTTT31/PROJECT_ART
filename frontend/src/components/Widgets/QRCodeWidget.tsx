@@ -126,7 +126,14 @@ export default function QRCodeWidget({
 
         JsBarcode(barcodeCanvasRef.current, generatedText, {
           format: 'CODE128',
-          width: width >= 2 ? 2.5 : 2,
+          width:
+            width >= 2
+              ? generatedText.length > 25
+                ? 1.5
+                : 2.5
+              : generatedText.length > 25
+                ? 1.2
+                : 2,
           height: width >= 3 ? 90 : 75,
           displayValue: true,
           fontSize: 14,

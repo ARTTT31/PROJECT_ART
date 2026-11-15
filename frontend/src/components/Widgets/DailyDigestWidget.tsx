@@ -27,6 +27,7 @@ import { readCached, writeCached } from '@/lib/offline/localStore';
 import { pendingQuickNotes, QUICK_NOTES_UPDATED_EVENT } from '@/lib/quickNotes';
 import { useI18n } from '@/lib/i18n/I18nProvider';
 import { translateText } from '@/lib/i18n/translate';
+import { getWeatherMeta } from './weatherModel';
 
 interface DigestData {
   weather: {
@@ -130,9 +131,14 @@ async function loadWeather(): Promise<DigestData['weather'] | null> {
     const json = await res.json();
     const cur = json.current || json;
     if (cur.temperature == null && cur.temperature_2m == null) return null;
+    const weatherCode = cur.weather_code ?? cur.weathercode;
+    const condition =
+      typeof weatherCode === 'number'
+        ? getWeatherMeta(weatherCode).label
+        : translateText('อากาศทั่วไปแจ่มใส', 'Generally clear skies');
     return {
       temp: Math.round(cur.temperature ?? cur.temperature_2m ?? 31),
-      condition: translateText('อากาศทั่วไปแจ่มใส', 'Generally clear skies'),
+      condition,
       pm25: json.air_quality?.pm2_5 ? Math.round(json.air_quality.pm2_5) : 18,
     };
   } catch {

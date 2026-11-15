@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import { Calculator } from 'lucide-react';
 import WidgetSizeToggle from './WidgetSizeToggle';
+import { useI18n } from '@/lib/i18n/I18nProvider';
 
 const money = new Intl.NumberFormat('th-TH', {
   minimumFractionDigits: 2,
@@ -24,6 +25,7 @@ export default function PriceCalcWidget({
   width?: number;
   onResize?: (size: number) => void;
 }) {
+  const { tr } = useI18n();
   const [cost, setCost] = useState('');
   const [price, setPrice] = useState('');
   const [discount, setDiscount] = useState('');
@@ -60,10 +62,10 @@ export default function PriceCalcWidget({
               id="price-calc-title"
               className="truncate text-[16px] font-bold tracking-tight text-[var(--ink)]"
             >
-              คิดราคา / กำไร
+              {tr('คิดราคา / กำไร', 'Price & Profit Calculator')}
             </h3>
             <p className="mt-0.5 truncate text-[12px] text-[var(--ink-tertiary)]">
-              ราคาหลังหักส่วนลดและกำไรต่อชิ้น
+              {tr('ราคาหลังหักส่วนลดและกำไรต่อชิ้น', 'Discounted price and unit profit')}
             </p>
           </div>
         </div>
@@ -73,10 +75,13 @@ export default function PriceCalcWidget({
 
       <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
         <label className="block">
-          <span className="mb-1 block text-[12px] font-semibold text-[var(--ink-muted)]">ต้นทุน (บาท)</span>
+          <span className="mb-1 block text-[12px] font-semibold text-[var(--ink-muted)]">
+            {tr('ต้นทุน (บาท)', 'Cost (THB)')}
+          </span>
           <input
             type="text"
             inputMode="decimal"
+            aria-label={tr('ต้นทุน (บาท)', 'Cost (THB)')}
             value={cost}
             onChange={(event) => setCost(event.target.value)}
             placeholder="0.00"
@@ -85,10 +90,13 @@ export default function PriceCalcWidget({
         </label>
 
         <label className="block">
-          <span className="mb-1 block text-[12px] font-semibold text-[var(--ink-muted)]">ราคาตั้งขาย</span>
+          <span className="mb-1 block text-[12px] font-semibold text-[var(--ink-muted)]">
+            {tr('ราคาตั้งขาย', 'Selling Price')}
+          </span>
           <input
             type="text"
             inputMode="decimal"
+            aria-label={tr('ราคาตั้งขาย', 'Selling Price')}
             value={price}
             onChange={(event) => setPrice(event.target.value)}
             placeholder="0.00"
@@ -97,10 +105,13 @@ export default function PriceCalcWidget({
         </label>
 
         <label className="block">
-          <span className="mb-1 block text-[12px] font-semibold text-[var(--ink-muted)]">ส่วนลด (%)</span>
+          <span className="mb-1 block text-[12px] font-semibold text-[var(--ink-muted)]">
+            {tr('ส่วนลด (%)', 'Discount (%)')}
+          </span>
           <input
             type="text"
             inputMode="decimal"
+            aria-label={tr('ส่วนลด (%)', 'Discount (%)')}
             value={discount}
             onChange={(event) => setDiscount(event.target.value)}
             placeholder="0"
@@ -111,15 +122,19 @@ export default function PriceCalcWidget({
 
       <div className="mt-4 grid flex-1 grid-cols-3 gap-2.5">
         <div className="flex flex-col items-center justify-center rounded-apple-lg bg-[var(--surface-grouped)] px-2 py-3 text-center">
-          <span className="text-[11px] font-medium text-[var(--ink-muted)]">ราคาหลังหักส่วนลด</span>
+          <span className="text-[11px] font-medium text-[var(--ink-muted)]">
+            {tr('ราคาหลังหักส่วนลด', 'Net Price')}
+          </span>
           <span className="mt-1 tabular-nums text-[17px] font-extrabold leading-none text-[var(--ink)]">
             {money.format(result.net)}
           </span>
-          <span className="mt-1 text-[11px] text-[var(--ink-tertiary)]">บาท</span>
+          <span className="mt-1 text-[11px] text-[var(--ink-tertiary)]">{tr('บาท', 'THB')}</span>
         </div>
 
         <div className="flex flex-col items-center justify-center rounded-apple-lg bg-[var(--surface-grouped)] px-2 py-3 text-center">
-          <span className="text-[11px] font-medium text-[var(--ink-muted)]">กำไรต่อชิ้น</span>
+          <span className="text-[11px] font-medium text-[var(--ink-muted)]">
+            {tr('กำไรต่อชิ้น', 'Profit / Unit')}
+          </span>
           <span
             className={`mt-1 tabular-nums text-[17px] font-extrabold leading-none ${
               result.hasInput
@@ -131,11 +146,13 @@ export default function PriceCalcWidget({
           >
             {money.format(result.profit)}
           </span>
-          <span className="mt-1 text-[11px] text-[var(--ink-tertiary)]">บาท</span>
+          <span className="mt-1 text-[11px] text-[var(--ink-tertiary)]">{tr('บาท', 'THB')}</span>
         </div>
 
         <div className="flex flex-col items-center justify-center rounded-apple-lg bg-[var(--surface-grouped)] px-2 py-3 text-center">
-          <span className="text-[11px] font-medium text-[var(--ink-muted)]">กำไร (%)</span>
+          <span className="text-[11px] font-medium text-[var(--ink-muted)]">
+            {tr('กำไร (%)', 'Margin (%)')}
+          </span>
           <span
             className={`mt-1 tabular-nums text-[17px] font-extrabold leading-none ${
               result.hasInput
@@ -147,14 +164,19 @@ export default function PriceCalcWidget({
           >
             {result.hasInput ? `${result.margin.toFixed(1)}%` : '—'}
           </span>
-          <span className="mt-1 text-[11px] text-[var(--ink-tertiary)]">คิดจากราคาขาย</span>
+          <span className="mt-1 text-[11px] text-[var(--ink-tertiary)]">
+            {tr('คิดจากราคาขาย', 'From net price')}
+          </span>
         </div>
       </div>
 
       <div className="mt-3 border-t border-[var(--hairline-soft)] pt-2 text-[11px] text-[var(--ink-secondary)]">
         {result.hasInput
-          ? `ต้นทุน ${money.format(result.costValue)} · ราคาตั้ง ${money.format(result.priceValue)} บาท`
-          : 'กรอกตัวเลขเพื่อเริ่มคำนวณ'}
+          ? tr(
+              `ต้นทุน ${money.format(result.costValue)} · ราคาตั้ง ${money.format(result.priceValue)} บาท`,
+              `Cost ${money.format(result.costValue)} · List Price ${money.format(result.priceValue)} THB`,
+            )
+          : tr('กรอกตัวเลขเพื่อเริ่มคำนวณ', 'Enter amounts to calculate')}
       </div>
     </section>
   );
