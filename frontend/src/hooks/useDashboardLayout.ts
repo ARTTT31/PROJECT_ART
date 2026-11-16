@@ -131,8 +131,14 @@ function dropLegacyLayoutCache(): void {
 
 export function useDashboardLayout() {
   const { user, updateUser } = useAuth();
-  const [widgets, setWidgets] = useState<WidgetConfig[]>([]);
-  const [visibleWidgetIds, setVisibleWidgetIds] = useState<string[]>([]);
+  // Start from the default layout, not an empty grid. `defaultWidgets` is a
+  // module constant, so the server and the first client render agree — the page
+  // can paint the real dashboard immediately instead of a loading shell, and
+  // the saved order replaces it in the init effect below.
+  const [widgets, setWidgets] = useState<WidgetConfig[]>(defaultWidgets);
+  const [visibleWidgetIds, setVisibleWidgetIds] = useState<string[]>(() =>
+    defaultWidgets.map((w) => w.id),
+  );
   const [currentView, setCurrentView] = useState<DashboardView>('all');
   const [isClient, setIsClient] = useState(false);
   const hasInitializedRef = useRef(false);
@@ -147,8 +153,8 @@ export function useDashboardLayout() {
   // layout even when React has not re-rendered between rapid interactions.
   // Handlers now read from the ref (source of truth at call time) and write
   // back to both — eliminating the stale-state race during rapid drags/resizes.
-  const widgetsRef = useRef<WidgetConfig[]>([]);
-  const visibleIdsRef = useRef<string[]>([]);
+  const widgetsRef = useRef<WidgetConfig[]>(defaultWidgets);
+  const visibleIdsRef = useRef<string[]>(defaultWidgets.map((w) => w.id));
 
   const applyLayout = useCallback((nextWidgets: WidgetConfig[], nextVisible: string[]) => {
     widgetsRef.current = nextWidgets;

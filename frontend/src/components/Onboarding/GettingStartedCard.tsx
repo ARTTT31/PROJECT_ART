@@ -27,7 +27,7 @@ function quickLinkCount(raw: string | null | undefined): number {
  * in the app ticks it here. Dismissal is per browser and reversible only by
  * clearing site data — the card never nags a returning user.
  */
-export default function GettingStartedCard({ user }: { user: AuthUser }) {
+export default function GettingStartedCard({ user }: { user: AuthUser | null }) {
   const [ready, setReady] = useState(false);
   const [dismissed, setDismissed] = useState(true);
   const [paletteTried, setPaletteTried] = useState(false);
@@ -44,7 +44,7 @@ export default function GettingStartedCard({ user }: { user: AuthUser }) {
 
   if (!ready || dismissed) return null;
 
-  const linksDone = quickLinkCount(user.quick_links) > 0;
+  const linksDone = user ? quickLinkCount(user.quick_links) > 0 : false;
   const steps = [
     {
       id: 'links',

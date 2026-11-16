@@ -11,19 +11,14 @@
  * The signature is stripped, not checked: verifying it needs `SECRET_KEY`,
  * which must never reach the browser. Dropping it here keeps the parsing in
  * one place; the server is what rejects a tampered value.
- *
- * Returns the decoded JSON value, or `null` when the cookie is absent or
- * unparsable (callers treat that as "no fast-path data" and fall back).
  */
-export function readUserCookie(): unknown | null {
-  if (typeof document === 'undefined') return null;
 
-  const row = document.cookie.split('; ').find((c) => c.startsWith('user='));
-  if (!row) return null;
-
-  // Slice after the FIRST '=' only: percent-encoded values never contain a raw
-  // '=', but a stale legacy value might.
-  const raw = row.slice('user='.length);
+/**
+ * Decode a raw `user` cookie value (as stored by the browser, or as read from
+ * `cookies()` on the server) into its JSON payload, without verifying the
+ * signature. Callers must treat the result as untrusted display data.
+ */
+export function parseUserCookieValue(raw: string | null | undefined): unknown | null {
   if (!raw) return null;
 
   // Only a trailing 64-hex signature is removed. Stripping at the last dot
@@ -37,4 +32,19 @@ export function readUserCookie(): unknown | null {
   } catch {
     return null;
   }
+}
+
+/**
+ * Returns the decoded JSON value, or `null` when the cookie is absent or
+ * unparsable (callers treat that as "no fast-path data" and fall back).
+ */
+export function readUserCookie(): unknown | null {
+  if (typeof document === 'undefined') return null;
+
+  const row = document.cookie.split('; ').find((c) => c.startsWith('user='));
+  if (!row) return null;
+
+  // Slice after the FIRST '=' only: percent-encoded values never contain a raw
+  // '=', but a stale legacy value might.
+  return parseUserCookieValue(row.slice('user='.length));
 }

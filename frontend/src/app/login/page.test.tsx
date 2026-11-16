@@ -10,6 +10,7 @@ vi.mock('next/navigation', () => ({
   useRouter: () => ({
     push: mockPush,
     replace: mockReplace,
+    prefetch: vi.fn(),
   }),
   useSearchParams: () => ({
     get: vi.fn().mockReturnValue(null),

@@ -1,6 +1,7 @@
 'use client';
 
 import { AuthProvider } from '@/components/Auth/AuthProvider';
+import type { AuthUser } from '@/types';
 import { ToastProvider } from '@/components/Toast/ToastProvider';
 import { BrandingProvider } from '@/context/BrandingContext';
 import { ThemeProvider } from '@/context/ThemeContext';
@@ -9,7 +10,14 @@ import { I18nProvider } from '@/lib/i18n/I18nProvider';
 import OfflineBanner from '@/components/Layout/OfflineBanner';
 import ErrorBoundary from '@/components/ErrorBoundary';
 
-export function Providers({ children }: { children: React.ReactNode }) {
+export function Providers({
+  children,
+  initialUser,
+}: {
+  children: React.ReactNode;
+  /** Session seeded from the readable `user` cookie by the server layout. */
+  initialUser?: AuthUser | null;
+}) {
   return (
     <ErrorBoundary>
       <ThemeProvider>
@@ -17,7 +25,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
           <I18nProvider>
             <BrandingFavicon />
             <OfflineBanner />
-            <AuthProvider>
+            <AuthProvider initialUser={initialUser}>
               <ToastProvider>{children}</ToastProvider>
             </AuthProvider>
           </I18nProvider>

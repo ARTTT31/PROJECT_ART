@@ -46,10 +46,21 @@ function safeParseUser(raw: string | null): AuthUser | null {
   }
 }
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export function AuthProvider({
+  children,
+  initialUser = null,
+}: {
+  children: React.ReactNode;
+  /**
+   * Session the server read from the readable `user` cookie. Starting from it
+   * means a reload renders the signed-in shell in the first HTML instead of a
+   * spinner that disappears a moment later.
+   */
+  initialUser?: AuthUser | null;
+}) {
   const router = useRouter();
-  const [status, setStatus] = useState<AuthStatus>('loading');
-  const [user, setUser] = useState<AuthUser | null>(null);
+  const [status, setStatus] = useState<AuthStatus>(initialUser ? 'authenticated' : 'loading');
+  const [user, setUser] = useState<AuthUser | null>(initialUser);
 
   // ── Validate session helper ──
   // Refresh the token first so an expired access token doesn't 401 (and thus

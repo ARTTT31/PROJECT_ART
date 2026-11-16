@@ -33,7 +33,6 @@ import { CSS } from '@dnd-kit/utilities';
 
 import dynamic from 'next/dynamic';
 import {
-  DashboardPageSkeleton,
   WeatherSkeleton,
   HolidaySkeleton,
   OilPriceSkeleton,
@@ -353,7 +352,6 @@ export default function DashboardPage() {
   const {
     widgets,
     visibleWidgetIds,
-    isClient,
     user,
     defaultWidgets,
     persistLayout,
@@ -432,13 +430,12 @@ export default function DashboardPage() {
     (w) => visibleWidgetIds.includes(w.id) && (!viewPreset || viewPreset.includes(w.id)),
   );
 
-  // ── Loading state ────────────────────────────────────────────────────────
-
-  if (!user || !isClient) {
-    return <DashboardPageSkeleton />;
-  }
-
   // ── Render ───────────────────────────────────────────────────────────────
+  // This renders on the first paint instead of waiting for the session and the
+  // saved layout: `useDashboardLayout` starts from the default layout (the same
+  // array on the server and the client), so the shell and the cards are already
+  // in the HTML and a reload never shows a page of loading placeholders. The
+  // saved order and the user's name fill in once the profile resolves.
 
   return (
     <PullToRefresh>
@@ -451,12 +448,21 @@ export default function DashboardPage() {
           <div className="min-w-0 space-y-1.5">
             <h1
               ref={headingRef}
+              // The greeting is derived from the viewer's clock, which the server
+              // cannot know; the name arrives with the profile right after
+              // hydration, so the server markup is the final shape minus the name.
+              suppressHydrationWarning
               className="text-apple-title2 font-semibold text-[var(--ink)] sm:text-apple-title1"
             >
-              {greeting},{' '}
-              <span className="text-[var(--accent-text)]">
-                {user.display_name || user.name || user.username || user.email}
-              </span>{' '}
+              {greeting}
+              {user && (
+                <>
+                  ,{' '}
+                  <span className="text-[var(--accent-text)]">
+                    {user.display_name || user.name || user.username || user.email}
+                  </span>
+                </>
+              )}{' '}
               👋
             </h1>
             <p className="text-[13px] font-medium text-[var(--ink-muted)]">

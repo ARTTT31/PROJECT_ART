@@ -1,7 +1,10 @@
 import type { Metadata, Viewport } from 'next';
+import { cookies } from 'next/headers';
 import { Anuphan } from 'next/font/google';
 import './globals.css';
 import { Providers } from './providers';
+import { AuthUserSchema } from '@/lib/api/schemas';
+import { parseUserCookieValue } from '@/lib/api/userCookie';
 
 const anuphan = Anuphan({
   weight: 'variable',
@@ -64,12 +67,30 @@ export const metadata: Metadata = {
  */
 const themeInitScript = `(function(){try{var s=JSON.parse(localStorage.getItem('art_theme_settings')||'{}');var m=s.mode==='light'||s.mode==='dark'?s.mode:'system';var a=typeof s.accent==='string'?s.accent:'blue';var d=m==='dark'||(m==='system'&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);var r=document.documentElement;r.dataset.theme=d?'dark':'light';r.dataset.accent=a;r.style.colorScheme=d?'dark':'light';}catch(e){}})();`;
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+/**
+ * The session the browser already holds, read on the server from the readable
+ * `user` cookie the API writes on login/refresh. It is display data, not an
+ * authorization decision (every API call is still validated server-side), and
+ * it lets the first HTML paint the signed-in shell instead of a loading state.
+ */
+async function readInitialUser() {
+  try {
+    const raw = (await cookies()).get('user')?.value ?? null;
+    const parsed = AuthUserSchema.safeParse(parseUserCookieValue(raw));
+    return parsed.success ? parsed.data : null;
+  } catch {
+    return null;
+  }
+}
+
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const initialUser = await readInitialUser();
+
   return (
     <html lang="th" suppressHydrationWarning>
       <body className={anuphan.variable}>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
-        <Providers>{children}</Providers>
+        <Providers initialUser={initialUser}>{children}</Providers>
       </body>
     </html>
   );

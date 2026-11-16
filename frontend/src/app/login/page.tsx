@@ -177,21 +177,24 @@ function LoginContent() {
   const [turnstileToken, setTurnstileToken] = useState('');
   const signupNameRef = useRef<HTMLInputElement>(null);
 
+  const redirectTarget = nextPath || '/dashboard';
+
   // Already signed in? The login page has nothing to offer — go to the
   // requested page, or the dashboard. (Logout clears auth state before
   // replacing to /login, so this never loops.)
+  //
+  // The hand-off starts as soon as the session exists: the old 750ms success
+  // beat was pure waiting, and the overlay below already covers the swap.
   useEffect(() => {
     if (status !== 'authenticated') return;
-    // A fresh sign-in keeps a short success beat on screen before the
-    // dashboard loads; a restored session (already authenticated on mount)
-    // must redirect straight away.
-    if (!signInDone) {
-      router.replace(nextPath || '/dashboard');
-      return;
-    }
-    const timer = window.setTimeout(() => router.replace(nextPath || '/dashboard'), 750);
-    return () => window.clearTimeout(timer);
-  }, [status, router, nextPath, signInDone]);
+    router.replace(redirectTarget);
+  }, [status, router, redirectTarget]);
+
+  // Warm the destination while the form is on screen, so signing in ends in a
+  // page swap instead of a chunk download.
+  useEffect(() => {
+    router.prefetch(redirectTarget);
+  }, [router, redirectTarget]);
 
   useEffect(() => {
     setIsClient(true);
