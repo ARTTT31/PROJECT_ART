@@ -6,6 +6,7 @@ import Select from '@/components/ui/Select';
 import WidgetSizeToggle from './WidgetSizeToggle';
 import CandleChart, { type Candle } from './CandleChart';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
+import { fetchShared } from './sharedFetch';
 
 interface CurrencyRate {
   code: string;
@@ -52,6 +53,7 @@ interface MarketSummary {
   is_stale: boolean;
 }
 
+const MARKET_URL = '/api/v1/market/summary';
 const CACHE_KEY = 'artMarketCacheV2';
 const CACHE_TTL_MS = 10 * 60_000;
 const REFRESH_MS = 10 * 60_000;
@@ -154,9 +156,11 @@ export default function MarketWidget({
     opts?.refresh ? setRefreshing(true) : setLoading(true);
     setError(null);
     try {
-      const res = await fetchWithAuth('/api/v1/market/summary', { signal: controller.signal });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const payload = (await res.json()) as MarketSummary;
+      // Shared with the daily digest: one backend call per TTL window for the
+      // whole dashboard instead of one per widget.
+      const { data: payload } = await fetchShared<MarketSummary>(MARKET_URL, CACHE_TTL_MS);
+      if (controller.signal.aborted) return;
+      if (!payload) throw new Error('market summary unavailable');
       setData(payload);
       saveCache(payload);
     } catch (err) {

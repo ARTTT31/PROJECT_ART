@@ -1,6 +1,7 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import MarketWidget from './MarketWidget';
+import { clearSharedFetchCache } from './sharedFetch';
 
 const api = vi.hoisted(() => ({ fetchWithAuth: vi.fn() }));
 vi.mock('@/lib/api/fetchWithAuth', () => ({ fetchWithAuth: api.fetchWithAuth }));
@@ -72,6 +73,11 @@ async function choose(combobox: string, option: string | RegExp) {
 }
 
 describe('MarketWidget', () => {
+  beforeEach(() => {
+    // The widgets share one request cache; each test needs its own upstream.
+    clearSharedFetchCache();
+  });
+
   it('allows choosing a daily rate source and gold market', async () => {
     api.fetchWithAuth.mockResolvedValue({ ok: true, json: async () => marketSummary });
     render(<MarketWidget />);

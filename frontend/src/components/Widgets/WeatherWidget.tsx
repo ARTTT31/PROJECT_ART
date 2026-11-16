@@ -348,6 +348,27 @@ export default function WeatherWidget({
 
     let initialCity = CITY_PRESETS[0];
 
+    // Only ask the browser for a fix when access was already granted. Calling
+    // getCurrentPosition() on every mount without a saved city meant a
+    // permission prompt per visit, and a console error each time it was denied.
+    const detectIfAlreadyAllowed = async () => {
+      try {
+        const permissions = navigator.permissions;
+        if (!permissions?.query) {
+          fetchWeatherData(initialCity);
+          return;
+        }
+        const permission = await permissions.query({ name: 'geolocation' });
+        if (permission.state === 'granted') {
+          handleDetectLocation();
+        } else {
+          fetchWeatherData(initialCity);
+        }
+      } catch {
+        fetchWeatherData(initialCity);
+      }
+    };
+
     if (cachedLoc) {
       initialCity = cachedLoc;
       setSelectedCity(cachedLoc);
@@ -364,12 +385,10 @@ export default function WeatherWidget({
       if (!isFresh) {
         fetchWeatherData(initialCity, true);
       }
+    } else if (!cachedLoc) {
+      void detectIfAlreadyAllowed();
     } else {
-      if (!cachedLoc) {
-        handleDetectLocation();
-      } else {
-        fetchWeatherData(initialCity);
-      }
+      fetchWeatherData(initialCity);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

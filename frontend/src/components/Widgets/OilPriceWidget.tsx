@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { AlertCircle, Fuel, TrendingUp, TrendingDown } from 'lucide-react';
 import { WidgetState } from './WidgetState';
 import WidgetSizeToggle from './WidgetSizeToggle';
-import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
+import { fetchShared } from './sharedFetch';
 import { pushNotifications, type Notification } from '@/components/Layout/NotificationBell';
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -209,27 +209,29 @@ export default function OilPriceWidget({
     setError(null);
 
     try {
-      const res = await fetchWithAuth('/api/v1/oil-prices/oil-prices', {
-        signal: controller.signal,
-      });
+      // Canonical path (the router also answers `/oil-prices/oil-prices`, which
+      // is what kept this card from sharing a cache entry with the digest) and
+      // the shared cache, so both oil cards cost one upstream call per TTL.
+      const { ok, status, data: result } = await fetchShared<OilPriceData>(
+        '/api/v1/oil-prices',
+        OIL_CACHE_TTL_MS,
+      );
+      if (controller.signal.aborted) return;
 
-      if (!res.ok) {
-        const detail = await res.json().catch(() => ({}));
-        const msg = detail?.detail || res.statusText;
+      if (!ok || !result) {
         let userMessage = 'ไม่สามารถโหลดข้อมูลราคาน้ำมันได้';
-        if (res.status === 502 || res.status === 504) {
+        if (status === 502 || status === 504) {
           userMessage = 'เชื่อมต่อแหล่งข้อมูลน้ำมันไม่สำเร็จ — กำลังแสดงข้อมูลสำรอง';
-          console.warn('🌐 Oil price source connection error:', msg);
-        } else if (res.status === 503) {
+          console.warn('🌐 Oil price source connection error: HTTP', status);
+        } else if (status === 503) {
           userMessage = 'บริการราคาน้ำมันไม่พร้อมใช้งานชั่วคราว';
-          console.error('⚠️ Oil price service unavailable:', msg);
+          console.error('⚠️ Oil price service unavailable: HTTP', status);
         } else {
-          console.error('❌ Oil price API error:', msg);
+          console.error('❌ Oil price API error: HTTP', status);
         }
-        throw new Error(`HTTP ${res.status}: ${msg}`, { cause: userMessage });
+        throw new Error(`HTTP ${status}`, { cause: userMessage });
       }
 
-      const result = await res.json();
       if (result.success && (result.prices || result.oil_prices)) {
         const newPrices: OilPrice[] = result.prices || result.oil_prices || [];
         setData(result);

@@ -49,6 +49,12 @@ CURRENCY_TTL = 6 * 3600
 GOLD_TTL = 10 * 60
 SET_TTL = 5 * 60
 
+# Each source is fetched independently, but the card waits for the slowest one.
+# A provider that hangs (the Thai gold API does, from some networks) used to
+# hold /market/summary for its full 10s timeout on every refresh; past this
+# limit the block falls back to its cached value instead.
+SOURCE_TIMEOUT = 6.0
+
 # Codes shown on the widget, with the unit each is quoted in. The yen is quoted
 # per 100 so the number stays in a readable range, like a bank board.
 CURRENCIES: tuple[tuple[str, str, int], ...] = (
@@ -72,6 +78,7 @@ async def _cached(
     key: str,
     ttl: int,
     loader: Callable[[], Awaitable[dict[str, Any]]],
+    timeout: float = SOURCE_TIMEOUT,
 ) -> tuple[Optional[dict[str, Any]], bool]:
     """Return ``(payload, is_stale)`` for one source.
 
@@ -84,7 +91,7 @@ async def _cached(
         return entry[1], False
 
     try:
-        payload = await loader()
+        payload = await asyncio.wait_for(loader(), timeout)
     except Exception as exc:  # noqa: BLE001 - a dead provider is data, not a crash
         # One line, not a traceback: these public upstreams time out routinely
         # from some networks, and a full stack dump per source per refresh

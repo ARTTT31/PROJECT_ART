@@ -56,7 +56,9 @@ const OIL_PRICES = [
 
 const REFRESH_PATH = '/api/v1/auth/refresh';
 const FINANCE_PATH = '/api/v1/profile/finance';
-const OIL_PATH = '/api/v1/oil-prices/oil-prices';
+// Canonical oil path: the widget used the duplicated `/oil-prices/oil-prices`
+// alias, which the digest never called, so the two never shared a cache entry.
+const OIL_PATH = '/api/v1/oil-prices';
 
 function jsonResponse(body: unknown, status = 200) {
   const response = {

@@ -11,6 +11,7 @@ vi.mock('@/components/Layout/NotificationBell', () => ({
 }));
 
 import OilPriceWidget from './OilPriceWidget';
+import { clearSharedFetchCache } from './sharedFetch';
 
 const PRICES = {
   success: true,
@@ -26,6 +27,8 @@ describe('OilPriceWidget', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
+    // The widgets share one request cache; each test needs its own upstream.
+    clearSharedFetchCache();
     // The widget logs upstream failures on purpose; the assertions below are
     // about the banner, so keep the suite's output clean.
     vi.spyOn(console, 'warn').mockImplementation(() => {});

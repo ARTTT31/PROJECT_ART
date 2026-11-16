@@ -18,7 +18,9 @@ export const AuthRoleSchema = z.union([z.literal('admin'), z.literal('user'), z.
 export const AuthUserSchema = z.object({
   id: z.coerce.number(),
   email: z.string().email().or(z.string().trim().min(1)), // allow non-email logins too
-  name: z.string(),
+  // Optional on the wire: a profile without `name` used to fail the whole
+  // parse, which dropped an otherwise valid session to "anonymous".
+  name: z.string().default(''),
   // Kept in the parsed object: the API sends them and the UI reads them
   // (dashboard greeting, profile cards). Zod drops unknown keys, so leaving
   // them out of the schema silently blanked those fields at render time.
