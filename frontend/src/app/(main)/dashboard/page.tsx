@@ -92,10 +92,6 @@ const CalendarWidget = dynamic(() => import('@/components/Widgets/CalendarWidget
   ssr: false,
   loading: () => <HolidaySkeleton />,
 });
-const DailyDigestWidget = dynamic(() => import('@/components/Widgets/DailyDigestWidget'), {
-  ssr: false,
-  loading: () => <WeatherSkeleton />,
-});
 const PremierLeagueWidget = dynamic(() => import('@/components/Widgets/PremierLeagueWidget'), {
   ssr: false,
   loading: () => <ListWidgetSkeleton />,
@@ -211,18 +207,6 @@ function SortableWidget({
         </div>
 
         {/* Widget content */}
-        {widget.id === 'digest' && (
-          <ErrorBoundary
-            fallback={(err, reset) => (
-              <WidgetErrorFallback name="สรุปประจำวันอัจฉริยะ" error={err} reset={reset} />
-            )}
-          >
-            <DailyDigestWidget
-              width={widget.w}
-              onResize={(newSize) => onResize(widget.id, newSize)}
-            />
-          </ErrorBoundary>
-        )}
         {widget.id === 'notes' && (
           <ErrorBoundary
             fallback={(err, reset) => (
@@ -463,8 +447,8 @@ export default function DashboardPage() {
         aria-label="การทักทายและสถานะประจำวัน"
         className="relative mb-6 overflow-hidden rounded-apple-lg border border-[var(--hairline)] bg-[var(--surface)] p-6 sm:p-7"
       >
-        <div className="relative z-10">
-          <div className="space-y-1.5">
+        <div className="relative z-10 flex items-start justify-between gap-3">
+          <div className="min-w-0 space-y-1.5">
             <h1
               ref={headingRef}
               className="text-apple-title2 font-semibold text-[var(--ink)] sm:text-apple-title1"
@@ -479,6 +463,22 @@ export default function DashboardPage() {
               ภาพรวมข้อมูลสำคัญของคุณสำหรับวันนี้
             </p>
           </div>
+
+          {/* The widget action sits in the greeting card, above the grid it
+              manages. */}
+          <button
+            type="button"
+            onClick={() => setShowConfigModal(true)}
+            data-testid="manage-widgets-button"
+            className="inline-flex shrink-0 items-center gap-2 rounded-full bg-[var(--surface-grouped)] px-3.5 py-1.5 text-[12px] font-semibold text-[var(--ink)] ring-1 ring-[var(--hairline)] transition-colors duration-150 hover:bg-[var(--surface-chip)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 active:scale-[0.95]"
+            aria-label="จัดการวิดเจ็ต"
+          >
+            <SlidersHorizontal
+              className="h-3.5 w-3.5 text-[var(--ink-secondary)]"
+              aria-hidden="true"
+            />
+            จัดการวิดเจ็ต
+          </button>
         </div>
 
         {/* Dashboard View Segmented Pills. No divider under the greeting: the
@@ -512,22 +512,10 @@ export default function DashboardPage() {
 
       <GettingStartedCard user={user} />
 
-      {/* The widget action lives with the widgets it manages, not in the
-          greeting card above them. */}
       <div className="mb-3 flex items-center justify-between gap-3">
         <h2 className="text-[11px] font-bold uppercase tracking-wider text-[var(--ink-tertiary)]">
           วิดเจ็ต
         </h2>
-        <button
-          type="button"
-          onClick={() => setShowConfigModal(true)}
-          data-testid="manage-widgets-button"
-          className="inline-flex items-center gap-2 rounded-full bg-[var(--surface)] px-3.5 py-1.5 text-[12px] font-semibold text-[var(--ink)] ring-1 ring-[var(--hairline)] transition-colors duration-150 hover:bg-[var(--surface-grouped)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 active:scale-[0.95]"
-          aria-label="จัดการวิดเจ็ต"
-        >
-          <SlidersHorizontal className="h-3.5 w-3.5 text-[var(--ink-secondary)]" aria-hidden="true" />
-          จัดการวิดเจ็ต
-        </button>
       </div>
 
       {/* ── Widget grid ─────────────────────────────────────────────────── */}

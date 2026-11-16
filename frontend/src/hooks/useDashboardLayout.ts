@@ -5,7 +5,6 @@ import { useAuth } from '@/hooks/useAuth';
 import { offlineScope } from '@/lib/offline/localStore';
 
 const defaultWidgets: WidgetConfig[] = [
-  { id: 'digest', w: 2 },
   { id: 'notes', w: 1 },
   { id: 'calc', w: 1 },
   { id: 'focustimer', w: 1 },
@@ -32,7 +31,7 @@ export const DASHBOARD_VIEWS: Array<{ id: DashboardView; label: string }> = [
 
 export const VIEW_WIDGET_PRESETS: Record<DashboardView, string[] | null> = {
   all: null,
-  daily: ['digest', 'weather', 'holidays', 'oilprice', 'calendar', 'notes'],
+  daily: ['weather', 'holidays', 'oilprice', 'calendar', 'notes'],
   work: ['notes', 'focustimer', 'calc', 'qrcode', 'calendar'],
   finance: ['finance', 'market', 'watchlist', 'converter', 'oilprice', 'calc'],
 };
@@ -48,31 +47,30 @@ export const ROLE_PRESETS: RolePreset[] = [
   {
     id: 'executive',
     label: 'ผู้บริหาร & การเงิน',
-    description: 'สรุปรายงานประจำวัน, รายรับรายจ่าย, ตลาดหุ้น SET, อัตราแลกเปลี่ยน และรายการติดตาม',
-    widgetIds: ['digest', 'finance', 'market', 'watchlist', 'converter', 'calc'],
+    description: 'รายรับรายจ่าย, ตลาดหุ้น SET, อัตราแลกเปลี่ยน และรายการติดตาม',
+    widgetIds: ['finance', 'market', 'watchlist', 'converter', 'calc'],
   },
   {
     id: 'productivity',
     label: 'การทำงาน & โฟกัส',
     description: 'โน้ตงานด่วน, โฟกัส Pomodoro, ปฏิทินนัดหมาย และวันหยุดนักขัตฤกษ์',
-    widgetIds: ['digest', 'notes', 'focustimer', 'calendar', 'holidays', 'qrcode'],
+    widgetIds: ['notes', 'focustimer', 'calendar', 'holidays', 'qrcode'],
   },
   {
     id: 'fieldwork',
     label: 'เดินทาง & ภาคสนาม',
     description: 'สภาพอากาศ PM 2.5, ราคาน้ำมัน, โน้ตงานด่วน และสร้าง QR Code',
-    widgetIds: ['digest', 'weather', 'oilprice', 'notes', 'holidays', 'qrcode'],
+    widgetIds: ['weather', 'oilprice', 'notes', 'holidays', 'qrcode'],
   },
   {
     id: 'minimal',
     label: 'มินิมอล (คลีน & รวดเร็ว)',
-    description: 'สรุปข้อมูลประจำวัน, โน้ตด่วน, อุณหภูมิ และราคาน้ำมันล่าสุด',
-    widgetIds: ['digest', 'notes', 'weather', 'oilprice'],
+    description: 'โน้ตด่วน, อุณหภูมิ และราคาน้ำมันล่าสุด',
+    widgetIds: ['notes', 'weather', 'oilprice'],
   },
 ];
 
 export const widgetNames: Record<string, string> = {
-  digest: 'สรุปประจำวันอัจฉริยะ',
   notes: 'โน้ตด่วน / To-do วันนี้',
   calc: 'คิดราคา / กำไร',
   focustimer: 'โฟกัส & จับเวลา',
@@ -89,7 +87,6 @@ export const widgetNames: Record<string, string> = {
 };
 
 export const widgetDescriptions: Record<string, string> = {
-  digest: 'สรุปสภาพอากาศ ราคาน้ำมัน ตลาดหุ้น และภารกิจสำคัญประจำวัน',
   notes: 'จดรายการที่ต้องทำวันนี้ ติ๊กเสร็จแล้วบันทึกอัตโนมัติ',
   calc: 'คิดราคาขายหลังหักส่วนลด พร้อมกำไรต่อชิ้นและเปอร์เซ็นต์',
   focustimer: 'จับเวลาทำงานสไตล์ Pomodoro พร้อมรอบโฟกัสและช่วงพัก',

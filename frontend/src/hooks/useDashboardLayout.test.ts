@@ -18,7 +18,6 @@ let mockUser: { dashboard_layout?: string | null } | null = null;
 const mockUpdateUser = vi.fn();
 
 const DEFAULT_IDS = [
-  'digest',
   'notes',
   'calc',
   'focustimer',
@@ -347,7 +346,7 @@ describe('useDashboardLayout — persistence', () => {
       result.current.applyRolePreset('minimal');
     });
 
-    expect(result.current.visibleWidgetIds).toEqual(['digest', 'notes', 'weather', 'oilprice']);
+    expect(result.current.visibleWidgetIds).toEqual(['notes', 'weather', 'oilprice']);
   });
 
 });
