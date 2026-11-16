@@ -85,8 +85,13 @@ async def _cached(
 
     try:
         payload = await loader()
-    except Exception:
-        logger.warning("market source %s failed", key, exc_info=True)
+    except Exception as exc:  # noqa: BLE001 - a dead provider is data, not a crash
+        # One line, not a traceback: these public upstreams time out routinely
+        # from some networks, and a full stack dump per source per refresh
+        # buried every real error in the log.
+        logger.warning(
+            "market source %s unavailable: %s", key, str(exc) or type(exc).__name__
+        )
         if entry:
             return entry[1], True
         return None, False

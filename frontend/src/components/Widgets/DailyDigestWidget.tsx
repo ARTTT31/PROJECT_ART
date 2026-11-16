@@ -316,6 +316,7 @@ export default function DailyDigestWidget({
   const fuelPrice =
     data.oil.prices?.[fuel] ??
     (fuel === 'diesel' ? data.oil.diesel : fuel === 'gasohol_95' ? data.oil.gasohol95 : null);
+  const fuelLabel = fuelOptions.find((option) => option.value === fuel)?.label ?? '';
   // `getGreeting()` answers in Thai; map its values for the English interface.
   const greetingLabel = tr(greeting, GREETING_EN[greeting] ?? greeting);
 
@@ -477,7 +478,7 @@ export default function DailyDigestWidget({
             'กำลังประมวลผลข้อมูลสรุปประจำวัน…'
           ) : (
             <>
-              อุณหภูมิวันนี้ประมาณ <span className="font-semibold text-[var(--ink)]">{data.weather.temp ?? 31}°C</span> ({data.weather.condition}) · ราคาน้ำมัน: <span className="font-semibold text-[var(--ink)]">{data.oil.status}</span> · ดัชนี SET:  <span className="font-semibold text-[var(--ink)]">{data.market.setIndex ?? '-'}</span> · งานค้างในระบบ: <span className="font-semibold text-[var(--ink)]">{pendingTasks} รายการ</span>
+              อุณหภูมิวันนี้ประมาณ <span className="font-semibold text-[var(--ink)]">{data.weather.temp ?? 31}°C</span> ({data.weather.condition}) · ราคาน้ำมัน: <span className="font-semibold text-[var(--ink)]">{fuelPrice != null ? `฿${fuelPrice} ${fuelLabel}` : data.oil.status}</span> · ดัชนี SET:  <span className="font-semibold text-[var(--ink)]">{data.market.setIndex ?? '-'}</span> · งานค้างในระบบ: <span className="font-semibold text-[var(--ink)]">{pendingTasks} รายการ</span>
             </>
           )}
         </p>
@@ -500,7 +501,7 @@ export default function DailyDigestWidget({
               {data.weather.temp != null ? `${data.weather.temp}°C` : '–'}
             </p>
             <p className="text-[10px] text-[var(--ink-muted)] truncate">
-              PM2.5: {data.weather.pm25 != null ? `${data.weather.pm25} µg` : 'ปกติ'}
+              PM2.5: {data.weather.pm25 != null ? `${data.weather.pm25} µg` : '–'}
             </p>
           </div>
         </div>

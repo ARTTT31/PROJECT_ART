@@ -470,7 +470,10 @@ export default function DashboardPage() {
               className="text-apple-title2 font-semibold text-[var(--ink)] sm:text-apple-title1"
             >
               {greeting},{' '}
-              <span className="text-[var(--accent-text)]">{user.display_name || user.username}</span> 👋
+              <span className="text-[var(--accent-text)]">
+                {user.display_name || user.name || user.username || user.email}
+              </span>{' '}
+              👋
             </h1>
             <p className="text-[13px] font-medium text-[var(--ink-muted)]">
               ภาพรวมข้อมูลสำคัญของคุณสำหรับวันนี้

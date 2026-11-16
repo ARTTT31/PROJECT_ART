@@ -19,6 +19,11 @@ export const AuthUserSchema = z.object({
   id: z.coerce.number(),
   email: z.string().email().or(z.string().trim().min(1)), // allow non-email logins too
   name: z.string(),
+  // Kept in the parsed object: the API sends them and the UI reads them
+  // (dashboard greeting, profile cards). Zod drops unknown keys, so leaving
+  // them out of the schema silently blanked those fields at render time.
+  username: z.string().nullish(),
+  display_name: z.string().nullish(),
   role: AuthRoleSchema,
   avatar: z.string().nullish(),
   quick_links: z.string().nullish(),
