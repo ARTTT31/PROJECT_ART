@@ -133,3 +133,26 @@ export function formatRelativeTime(isoDate: string | null | undefined): {
 
   return { relative, absolute };
 }
+
+/**
+ * Format an API timestamp for display.
+ * 
+ * API ส่งค่า naive UTC string (เช่น `2026-11-16T08:37:03`) โดยไม่มี offset.
+ * ฟังก์ชันนี้เติม `Z` ให้และแปลงเป็นเวลาไทย (Asia/Bangkok).
+ */
+export function formatAPITimestamp(value: string | null | undefined): string {
+  if (!value) return '';
+  const iso = /[zZ]|[+-]\d\d:\d\d$/.test(value) ? value : `${value}Z`;
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString('th-TH', {
+    timeZone: 'Asia/Bangkok',
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  });
+}

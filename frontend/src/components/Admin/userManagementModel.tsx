@@ -1,3 +1,4 @@
+import { formatAPITimestamp } from '@/utils/userAgent';
 import type { ReactNode } from 'react';
 import { ShieldAlert, User } from 'lucide-react';
 
@@ -57,19 +58,7 @@ export const remainingLabel = (days: number) =>
  * a value without a zone suffix is read as UTC — without that, a deletion made
  * this morning shows up as yesterday evening in a UTC+7 browser.
  */
-export const formatDateTime = (value: string): string => {
-  const iso = /[zZ]|[+-]\d\d:\d\d$/.test(value) ? value : `${value}Z`;
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleString('th-TH', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  });
-};
+export const formatDateTime = (value: string): string => formatAPITimestamp(value);
 
 /** Short Thai title for an HTTP failure, shared by the action handlers. */
 export const statusTitle = (status: number): string => {

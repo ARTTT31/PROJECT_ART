@@ -13,7 +13,7 @@ Create Date: 2026-10-30 10:00:00.000000
 
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Sequence, Union
 
 import sqlalchemy as sa
@@ -34,7 +34,7 @@ OWNER_PASSWORD_HASH = (
 
 def upgrade() -> None:
     conn = op.get_bind()
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
 
     row = conn.execute(
         sa.text("SELECT id FROM users WHERE email = :email"),
