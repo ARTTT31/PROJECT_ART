@@ -13,6 +13,36 @@ describe('AICopilotDrawer', () => {
     localStorage.clear();
     // Mock scrollIntoView
     window.HTMLElement.prototype.scrollIntoView = vi.fn();
+    // The drawer reads /ai/settings on mount to label itself; answer it here so
+    // per-test `mockResolvedValueOnce` queues keep their own ordering.
+    (fetchWithAuth as any).mockImplementation(async (url: string) => {
+      if (String(url).includes('/api/v1/ai/settings')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              provider: 'gemini',
+              source: 'user',
+              provider_label: 'Google Gemini',
+              effective_model: 'gemini-2.5-flash',
+            },
+          }),
+        };
+      }
+      return { ok: true, json: async () => ({}) };
+    });
+  });
+
+  it('names the connected model in the header and welcome message', async () => {
+    render(<AICopilotDrawer />);
+    fireEvent.click(screen.getByLabelText('เปิด AI Copilot'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Google Gemini · gemini-2.5-flash')).toBeDefined();
+    });
+    await waitFor(() => {
+      expect(screen.getByText(/ขับเคลื่อนด้วย Google Gemini · gemini-2\.5-flash/)).toBeDefined();
+    });
   });
 
   it('renders floating trigger button initially', () => {
@@ -34,12 +64,19 @@ describe('AICopilotDrawer', () => {
   });
 
   it('sends a chat message and displays AI reply', async () => {
-    (fetchWithAuth as any).mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({
-        result: 'success',
-        reply: 'สภาพอากาศวันนี้ท้องฟ้าแจ่มใสครับ',
-      }),
+    (fetchWithAuth as any).mockImplementation(async (url: string) => {
+      if (String(url).includes('/api/v1/ai/chat')) {
+        return {
+          ok: true,
+          json: async () => ({
+            result: 'success',
+            reply: 'สภาพอากาศวันนี้ท้องฟ้าแจ่มใสครับ',
+            provider: 'Google Gemini',
+            model: 'gemini-2.5-flash',
+          }),
+        };
+      }
+      return { ok: true, json: async () => ({ data: { provider: 'gemini', source: 'none' } }) };
     });
 
     render(<AICopilotDrawer />);
@@ -63,26 +100,29 @@ describe('AICopilotDrawer', () => {
   });
 
   it('executes add_note action when returned from backend', async () => {
-    (fetchWithAuth as any)
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          result: 'success',
-          reply: 'จดบันทึกให้เรียบร้อยแล้วครับ: "ซื้อกาแฟ" ✨',
-          action: {
-            type: 'add_note',
-            data: { text: 'ซื้อกาแฟ' },
-          },
-        }),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ notes: [] }),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ ok: true }),
-      });
+    (fetchWithAuth as any).mockImplementation(async (url: string, init?: RequestInit) => {
+      const target = String(url);
+      if (target.includes('/api/v1/ai/chat')) {
+        return {
+          ok: true,
+          json: async () => ({
+            result: 'success',
+            reply: 'จดบันทึกให้เรียบร้อยแล้วครับ: "ซื้อกาแฟ" ✨',
+            action: {
+              type: 'add_note',
+              data: { text: 'ซื้อกาแฟ' },
+            },
+          }),
+        };
+      }
+      if (target.includes('/api/v1/profile/quick-notes')) {
+        return {
+          ok: true,
+          json: async () => (init?.method === 'PUT' ? { ok: true } : { notes: [] }),
+        };
+      }
+      return { ok: true, json: async () => ({ data: {} }) };
+    });
 
     render(<AICopilotDrawer />);
     fireEvent.click(screen.getByLabelText('เปิด AI Copilot'));

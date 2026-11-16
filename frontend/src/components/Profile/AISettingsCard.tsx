@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { SiGooglegemini } from '@icons-pack/react-simple-icons';
 import {
   Check,
@@ -28,6 +28,19 @@ interface AISettings {
   base_url: string;
   model: string;
   source: AISettingsSource;
+  /** Human name of the service behind the saved settings, e.g. "OpenRouter". */
+  provider_label?: string;
+  /** The model the next reply will use, even when `model` is empty. */
+  effective_model?: string;
+}
+
+/** What the backend recognised when the key was pasted. */
+interface KeyDetection {
+  label: string;
+  provider: AIProviderName;
+  baseUrl: string;
+  models: string[];
+  model: string;
 }
 
 const DEFAULT_LABELS: Record<AISettingsSource, { title: string; body: string }> = {
@@ -66,6 +79,10 @@ export default function AISettingsCard() {
     source: 'none',
   });
   const [apiKey, setApiKey] = useState('');
+  const [detection, setDetection] = useState<KeyDetection | null>(null);
+  const [detectNote, setDetectNote] = useState<string | null>(null);
+  const [isDetecting, setIsDetecting] = useState(false);
+  const detectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [baseUrl, setBaseUrl] = useState('');
   const [model, setModel] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -79,10 +96,86 @@ export default function AISettingsCard() {
       base_url: data.base_url || '',
       model: data.model || '',
       source: data.source || 'none',
+      provider_label: data.provider_label,
+      effective_model: data.effective_model,
     });
     setBaseUrl(data.base_url || '');
     setModel(data.model || '');
   }, []);
+
+  // The chat reads its subtitle from the same event, so a saved key changes what
+  // the drawer says about itself without a reload.
+  const announceSettingsChange = () => {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('ai-settings-changed'));
+    }
+  };
+
+  /**
+   * Read the provider off a pasted key instead of making the user pick one.
+   * A key like `sk-or-v1-…` already says OpenRouter; the backend also asks that
+   * service which models the key can use, so the model list is real.
+   */
+  const detectKey = useCallback(async (value: string) => {
+    const trimmed = value.trim();
+    if (trimmed.length < 8) {
+      setDetection(null);
+      setDetectNote(null);
+      return;
+    }
+
+    setIsDetecting(true);
+    try {
+      const res = await fetchWithAuth('/api/v1/ai/settings/detect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ api_key: trimmed }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setDetection(null);
+        setDetectNote(apiMessage(body, 'ตรวจไม่พบผู้ให้บริการจากคีย์นี้ — เลือกเองได้เลย'));
+        return;
+      }
+
+      const data = body.data || {};
+      const provider: AIProviderName = data.provider === 'openai' ? 'openai' : 'gemini';
+      setDetection({
+        label: data.label || 'ตรวจพบผู้ให้บริการ',
+        provider,
+        baseUrl: data.base_url || '',
+        models: Array.isArray(data.models) ? data.models : [],
+        model: data.model || '',
+      });
+      setDetectNote(null);
+
+      // Fill the whole form: provider, base URL and the suggested model.
+      setSettings((prev) => ({ ...prev, provider }));
+      setBaseUrl(data.base_url || '');
+      if (data.model) setModel(data.model);
+    } catch (err) {
+      console.error('Detect AI key error:', err);
+      setDetection(null);
+      setDetectNote('ตรวจคีย์ไม่สำเร็จ — ตรวจอินเทอร์เน็ตแล้วลองอีกครั้ง');
+    } finally {
+      setIsDetecting(false);
+    }
+  }, []);
+
+  const handleKeyChange = (value: string) => {
+    setApiKey(value);
+    if (detectTimer.current) clearTimeout(detectTimer.current);
+    detectTimer.current = setTimeout(() => {
+      void detectKey(value);
+    }, 600);
+  };
+
+  useEffect(
+    () => () => {
+      if (detectTimer.current) clearTimeout(detectTimer.current);
+    },
+    [],
+  );
 
   useEffect(() => {
     let isMounted = true;
@@ -124,6 +217,9 @@ export default function AISettingsCard() {
       if (res.ok) {
         applySettings(body.data || body);
         setApiKey('');
+        setDetection(null);
+        setDetectNote(null);
+        announceSettingsChange();
         showSuccess('บันทึกสำเร็จ', body.message || 'บันทึกการเชื่อมต่อ AI เรียบร้อยแล้ว');
       } else {
         showError('บันทึกไม่สำเร็จ', apiMessage(body, 'ตรวจสอบ API Key และ Base URL อีกครั้ง'));
@@ -167,6 +263,7 @@ export default function AISettingsCard() {
       if (res.ok) {
         applySettings(body.data || body);
         setApiKey('');
+        announceSettingsChange();
         showSuccess('ลบแล้ว', body.message || 'ลบการเชื่อมต่อ AI ของบัญชีนี้แล้ว');
       } else {
         showError('ลบไม่สำเร็จ', apiMessage(body, 'ไม่สามารถลบการตั้งค่าได้'));
@@ -196,7 +293,16 @@ export default function AISettingsCard() {
 
   const status = DEFAULT_LABELS[settings.source];
   const configured = settings.has_key;
-  const presets = settings.provider === 'gemini' ? GEMINI_PRESETS : OPENAI_PRESETS;
+  const defaultPresets = settings.provider === 'gemini' ? GEMINI_PRESETS : OPENAI_PRESETS;
+  // A detected key brings the provider's real model list; the curated chips are
+  // only the fallback before anything has been pasted.
+  const presets =
+    detection && detection.provider === settings.provider && detection.models.length > 0
+      ? detection.models.map((id) => ({ id, label: id, tag: '' }))
+      : defaultPresets;
+  const connectionLabel =
+    settings.provider_label || (settings.provider === 'gemini' ? 'Gemini' : 'OpenAI-compatible');
+  const connectionModel = settings.effective_model || settings.model;
 
   return (
     <SectionCard
@@ -231,8 +337,8 @@ export default function AISettingsCard() {
             <div className="flex shrink-0 items-center gap-1.5 self-start rounded-full bg-[var(--surface)] px-3 py-1 text-[11px] font-bold text-[var(--ink)] ring-1 ring-[var(--hairline)] sm:self-auto shadow-2xs">
               <KeyRound size={12} className="text-[var(--accent)]" aria-hidden="true" />
               <span>
-                {settings.provider === 'gemini' ? 'Gemini' : 'OpenAI-compatible'}
-                {settings.model ? ` · ${settings.model}` : ''}
+                {connectionLabel}
+                {connectionModel ? ` · ${connectionModel}` : ''}
               </span>
             </div>
           )}
@@ -331,17 +437,54 @@ export default function AISettingsCard() {
           </div>
         )}
 
-        {/* API Key Input */}
+        {/* API Key Input — pasting is enough, the provider is read from it */}
         <InsetField
           label="API Key"
           type="password"
           value={apiKey}
-          onChange={setApiKey}
+          onChange={handleKeyChange}
           placeholder={configured ? 'บันทึกไว้แล้ว — เว้นว่างเพื่อใช้คีย์เดิม' : 'วาง API Key ของคุณที่นี่'}
           icon={<KeyRound className="h-4 w-4" aria-hidden="true" />}
-          hint={configured ? 'ใส่เฉพาะเมื่อต้องการเปลี่ยน' : 'จำเป็นต้องระบุ'}
+          hint={
+            isDetecting
+              ? 'กำลังตรวจคีย์…'
+              : configured
+                ? 'ใส่เฉพาะเมื่อต้องการเปลี่ยน'
+                : 'วางคีย์ได้เลย — ระบบจะเลือกผู้ให้บริการและโมเดลให้'
+          }
           autoComplete="off"
         />
+
+        {(detection || detectNote) && (
+          <div
+            role="status"
+            aria-live="polite"
+            className={`flex flex-wrap items-center gap-x-2 gap-y-1 rounded-apple-md px-3 py-2 text-[11px] ${
+              detection
+                ? 'bg-emerald-50/70 text-emerald-800 dark:bg-emerald-950/25 dark:text-emerald-200'
+                : 'bg-amber-50/70 text-amber-800 dark:bg-amber-950/25 dark:text-amber-200'
+            }`}
+          >
+            {detection ? (
+              <>
+                <span className="inline-flex items-center gap-1 font-bold">
+                  <Check size={12} aria-hidden="true" />
+                  ตรวจพบ: {detection.label}
+                </span>
+                {detection.models.length > 0 && (
+                  <span className="opacity-80">
+                    · พบ {detection.models.length} โมเดล (เลือกได้ด้านล่าง)
+                  </span>
+                )}
+                {detection.model && (
+                  <span className="opacity-80">· แนะนำ {detection.model}</span>
+                )}
+              </>
+            ) : (
+              <span>{detectNote}</span>
+            )}
+          </div>
+        )}
 
         {/* Base URL (OpenAI only) */}
         {settings.provider === 'openai' && (

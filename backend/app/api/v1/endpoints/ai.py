@@ -43,6 +43,68 @@ DEFAULT_OPENAI_MODEL = "gpt-4.1-mini"
 DEFAULT_OPENAI_BASE_URL = "https://api.openai.com/v1"
 
 GEMINI_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+GEMINI_MODELS_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models"
+
+# A pasted key already names its issuer, so the form does not need to be filled
+# in by hand. Longest/most specific prefix first: every OpenAI-style key starts
+# with "sk-", and "sk-or-"/"sk-ant-" are different companies.
+KEY_SIGNATURES: tuple[tuple[str, str, str, str], ...] = (
+    ("AIza", "gemini", "", "Google Gemini"),
+    ("sk-or-", "openai", "https://openrouter.ai/api/v1", "OpenRouter"),
+    ("sk-ant-", "unsupported", "", "Anthropic"),
+    ("sk-proj-", "openai", DEFAULT_OPENAI_BASE_URL, "OpenAI"),
+    ("gsk_", "openai", "https://api.groq.com/openai/v1", "Groq"),
+    ("xai-", "openai", "https://api.x.ai/v1", "xAI"),
+    ("csk-", "openai", "https://api.cerebras.ai/v1", "Cerebras"),
+    ("fw_", "openai", "https://api.fireworks.ai/inference/v1", "Fireworks"),
+    ("sk-", "openai", DEFAULT_OPENAI_BASE_URL, "OpenAI"),
+)
+
+# Host → company name, so the chat can say which service answered instead of a
+# generic "OpenAI-compatible".
+BASE_URL_LABELS = {
+    "openrouter.ai": "OpenRouter",
+    "api.groq.com": "Groq",
+    "api.x.ai": "xAI",
+    "api.cerebras.ai": "Cerebras",
+    "api.fireworks.ai": "Fireworks",
+    "api.openai.com": "OpenAI",
+    "api.anthropic.com": "Anthropic",
+}
+
+AI_MODEL_LIST_LIMIT = 40
+
+
+def detect_ai_key(api_key: str) -> Optional[Dict[str, str]]:
+    """Identify the provider that issued ``api_key`` from the key's own shape.
+
+    Returns ``provider``/``base_url``/``label`` — never the key itself — or
+    ``None`` when the format matches nothing we know.
+    """
+    value = (api_key or "").strip()
+    if len(value) < 8:
+        return None
+
+    for prefix, provider, base_url, label in KEY_SIGNATURES:
+        if value.startswith(prefix):
+            return {"provider": provider, "base_url": base_url, "label": label}
+    return None
+
+
+def provider_label(provider: str, base_url: Optional[str]) -> str:
+    """Human name of the service behind a saved provider + base URL."""
+    if provider == "gemini":
+        return "Google Gemini"
+    host = ""
+    if base_url:
+        try:
+            host = httpx.URL(base_url).host or ""
+        except Exception:
+            host = ""
+    if host in BASE_URL_LABELS:
+        return BASE_URL_LABELS[host]
+    return "OpenAI-compatible" if provider == "openai" else provider
+
 
 DEFAULT_OIL_PRICES = [
     {"name": "ดีเซล", "price": 32.94, "unit": "บาท/ลิตร"},
@@ -75,6 +137,10 @@ class AIChatResponse(BaseModel):
     result: str = "success"
     reply: str
     action: Optional[AIAction] = None
+    # Which model produced the reply. The drawer prints it, so a connected key
+    # is visible in the chat instead of looking identical to the local engine.
+    provider: Optional[str] = None
+    model: Optional[str] = None
 
 
 def resolve_oil_data(context: Optional[Dict[str, Any]]) -> Dict[str, Any]:
@@ -526,12 +592,134 @@ def _ai_settings_data(user: User) -> Dict[str, Any]:
     else:
         source = "none"
 
+    provider_name = saved_provider or (server.name if server.name != "none" else "gemini")
+    base_url = getattr(user, "ai_base_url", None) or ""
+    saved_model = getattr(user, "ai_model", None) or ""
+
+    # What the next chat reply will actually use, even when the account left the
+    # model empty and the deployment default applies.
+    if saved_model:
+        effective_model = saved_model
+    elif source == "server" and server.model:
+        effective_model = server.model
+        base_url = base_url or server.base_url
+    elif provider_name == "gemini":
+        effective_model = (settings.GEMINI_MODEL or DEFAULT_GEMINI_MODEL).strip()
+    else:
+        effective_model = (settings.AI_MODEL or DEFAULT_OPENAI_MODEL).strip()
+
     return {
-        "provider": saved_provider or (server.name if server.name != "none" else "gemini"),
+        "provider": provider_name,
+        "provider_label": provider_label(provider_name, base_url),
         "has_key": bool(personal_key),
-        "base_url": getattr(user, "ai_base_url", None) or "",
-        "model": getattr(user, "ai_model", None) or "",
+        "base_url": base_url,
+        "model": saved_model,
+        "effective_model": effective_model,
         "source": source,
+    }
+
+
+class AIDetectRequest(BaseModel):
+    """A key the user is pasting, before it is saved anywhere."""
+
+    api_key: str = Field(min_length=8, max_length=500)
+
+
+async def _list_provider_models(provider: str, api_key: str, base_url: str) -> List[str]:
+    """Ask the provider which chat models this key can use.
+
+    Best effort by design: an unreachable or unhelpful listing endpoint must not
+    block saving the connection, so the caller falls back to its own presets.
+    """
+    try:
+        async with httpx.AsyncClient(timeout=8.0) as client:
+            if provider == "gemini":
+                response = await client.get(GEMINI_MODELS_ENDPOINT, params={"key": api_key})
+            else:
+                response = await client.get(
+                    f"{base_url.rstrip('/')}/models",
+                    headers={"Authorization": f"Bearer {api_key}"},
+                )
+    except Exception as exc:  # network error, DNS, timeout
+        logger.warning("AI model listing failed: %s", exc)
+        return []
+
+    if response.status_code != 200:
+        logger.warning("AI model listing returned HTTP %s", response.status_code)
+        return []
+
+    try:
+        payload = response.json()
+    except Exception:
+        return []
+
+    if provider == "gemini":
+        names: List[str] = []
+        for item in payload.get("models") or []:
+            name = str(item.get("name") or "").replace("models/", "", 1)
+            methods = item.get("supportedGenerationMethods") or []
+            if name and "generateContent" in methods:
+                names.append(name)
+        return names[:AI_MODEL_LIST_LIMIT]
+
+    return [
+        str(item["id"])
+        for item in (payload.get("data") or [])
+        if isinstance(item, dict) and item.get("id")
+    ][:AI_MODEL_LIST_LIMIT]
+
+
+def suggested_model(provider: str, models: List[str]) -> str:
+    """Cheapest sensible default: a flash model for Gemini, a mini otherwise."""
+    if not models:
+        return DEFAULT_GEMINI_MODEL if provider == "gemini" else ""
+    for needle in ("flash", "mini", "instant", "turbo", "chat"):
+        for model in models:
+            if needle in model.lower():
+                return model
+    return models[0]
+
+
+@router.post("/settings/detect")
+@limiter.limit(_AI_LIMIT)
+async def detect_ai_settings(
+    request: Request,
+    payload: AIDetectRequest,
+    current_user: User = Depends(get_current_user),
+):
+    """Name the provider behind a pasted key and list its chat models.
+
+    Lets the profile form fill provider, base URL and model by itself instead of
+    asking the user to translate a key prefix into a dropdown choice.
+    """
+    detected = detect_ai_key(payload.api_key)
+    if detected is None:
+        raise HTTPException(
+            status_code=422,
+            detail="ไม่รู้จักรูปแบบคีย์นี้ — เลือกผู้ให้บริการเองแล้วกดบันทึกได้เลย",
+        )
+
+    if detected["provider"] == "unsupported":
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                f"คีย์ {detected['label']} ยังใช้กับแชทนี้ไม่ได้โดยตรง "
+                "— ใช้ OpenRouter เป็นตัวกลางแทน"
+            ),
+        )
+
+    models = await _list_provider_models(
+        detected["provider"], payload.api_key.strip(), detected["base_url"]
+    )
+    return {
+        "result": "success",
+        "data": {
+            "provider": detected["provider"],
+            "base_url": detected["base_url"],
+            "label": detected["label"],
+            "models": models,
+            "model": suggested_model(detected["provider"], models),
+        },
     }
 
 
@@ -687,7 +875,11 @@ async def ai_chat(
             )
         reply = await call_ai_model(provider, message, payload.context, payload.history)
         if reply:
-            return AIChatResponse(reply=reply)
+            return AIChatResponse(
+                reply=reply,
+                provider=provider_label(provider.name, provider.base_url),
+                model=provider.model,
+            )
 
     # 3. Otherwise (no key, or the provider failed) return the local reply so
     #    the drawer keeps answering instead of showing an error bubble.

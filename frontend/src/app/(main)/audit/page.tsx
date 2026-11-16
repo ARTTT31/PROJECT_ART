@@ -6,17 +6,22 @@ import {
   AlertCircle,
   ChevronLeft,
   ChevronRight,
+  Clock,
   Download,
   FileText,
-  Loader2,
+  Globe,
+  Monitor,
   RotateCw,
   Search,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import Select from '@/components/ui/Select';
+import DateRangePicker from '@/components/ui/DateRangePicker';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
 import { datedFilename, downloadCsv, toCsv } from '@/lib/csv';
 import { useI18n } from '@/lib/i18n/I18nProvider';
+import { parseUserAgent } from '@/utils/userAgent';
+import { showConfirm } from '@/utils/sweetalert';
 
 interface AuditLogEntry {
   id: number;
@@ -91,17 +96,43 @@ function actionTone(action: string) {
   return 'bg-[var(--success-soft)] text-[var(--success-ink)]';
 }
 
-function formatDate(value: string) {
-  const date = new Date(value);
+/**
+ * Parse an audit timestamp as the UTC instant it is.
+ *
+ * `audit_logs.created_at` is a naive `DateTime` filled from `utcnow()`, so the
+ * API sends `2026-11-16T08:37:03` with no offset. `new Date()` reads that as
+ * local time, which made every row display the UTC clock — seven hours behind
+ * the Thai time in the header. Anything without an explicit offset is UTC.
+ */
+function asInstant(value: string): Date {
+  const hasOffset = /(?:Z|[+-]\d{2}:?\d{2})$/.test(value);
+  return new Date(hasOffset ? value : `${value}Z`);
+}
+
+/** Full date and time in Bangkok time, e.g. "16 พ.ย. 2569 15:37:03". */
+function formatDateTime(value: string) {
+  const date = asInstant(value);
   if (Number.isNaN(date.getTime())) return value;
   return date.toLocaleString('th-TH', {
+    timeZone: 'Asia/Bangkok',
     day: 'numeric',
     month: 'short',
-    year: '2-digit',
+    year: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',
+    hour12: false,
   });
+}
+
+/** "Opera 140 · Windows 10/11" from the stored user agent, or a labelled fallback. */
+function deviceLabel(userAgent: string | null) {
+  if (!userAgent) return 'ไม่ระบุอุปกรณ์';
+  const { browser, os } = parseUserAgent(userAgent);
+  // A client that sends no recognisable token (curl, a health check) gets one
+  // label instead of "ไม่ระบุ · ไม่ระบุ".
+  const parts = [browser, os].filter((part) => part && part !== 'ไม่ระบุ');
+  return parts.length > 0 ? parts.join(' · ') : 'ไม่ระบุอุปกรณ์';
 }
 
 export default function AuditPage() {
@@ -219,23 +250,39 @@ export default function AuditPage() {
           <div className="flex shrink-0 items-center gap-2 self-start sm:self-auto">
             <button
               type="button"
-              onClick={() => {
+              onClick={async () => {
+                // The file leaves the app with account identifiers in it, so
+                // the download waits for an explicit confirmation.
+                const confirmed = await showConfirm(
+                  tr('ยืนยันการส่งออกไฟล์ CSV?', 'Export this CSV file?'),
+                  tr(
+                    'ไฟล์จะมี {count} รายการจากหน้านี้ พร้อมชื่อผู้ใช้ อุปกรณ์ และไอพี เฉพาะผู้ดูแลระบบควรเปิดดู',
+                    'The file will contain {count} items from this page, including names, devices and IP addresses.',
+                    { count: items.length },
+                  ),
+                );
+                if (!confirmed.isConfirmed) return;
+
                 const rows = items.map((entry) => [
-                  formatDate(entry.created_at),
+                  formatDateTime(entry.created_at),
                   actionLabel(entry.action),
                   entry.user?.name ?? entry.user?.email ?? tr('ระบบ', 'System'),
-                  entry.details ?? '',
+                  entry.user?.email ?? '',
+                  deviceLabel(entry.user_agent),
                   entry.ip_address ?? '',
+                  entry.details ?? '',
                 ]);
                 downloadCsv(
                   datedFilename('audit-log'),
                   toCsv(
                     [
-                      tr('เวลา', 'Time'),
+                      tr('วันเวลา (ไทย)', 'Date and time (Asia/Bangkok)'),
                       tr('กิจกรรม', 'Activity'),
                       tr('ผู้ใช้', 'User'),
-                      tr('รายละเอียด', 'Details'),
+                      tr('อีเมล', 'Email'),
+                      tr('อุปกรณ์', 'Device'),
                       'IP',
+                      tr('รายละเอียด', 'Details'),
                     ],
                     rows,
                   ),
@@ -288,35 +335,16 @@ export default function AuditPage() {
             className="w-full sm:w-60"
           />
 
-          <div className="flex items-center gap-2">
-            <input
-              type="date"
-              value={dateFrom}
-              onChange={(event) => setDateFrom(event.target.value)}
-              aria-label="ตั้งแต่วันที่"
-              className="w-full rounded-apple-widget border border-[var(--hairline-strong)] bg-[var(--surface)] px-3 py-2 text-[13px] text-[var(--ink)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)] sm:w-40"
-            />
-            <span className="text-[12px] text-[var(--ink-tertiary)]">ถึง</span>
-            <input
-              type="date"
-              value={dateTo}
-              onChange={(event) => setDateTo(event.target.value)}
-              aria-label="ถึงวันที่"
-              className="w-full rounded-apple-widget border border-[var(--hairline-strong)] bg-[var(--surface)] px-3 py-2 text-[13px] text-[var(--ink)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)] sm:w-40"
-            />
-            {(dateFrom || dateTo) && (
-              <button
-                type="button"
-                onClick={() => {
-                  setDateFrom('');
-                  setDateTo('');
-                }}
-                className="shrink-0 rounded-full px-3 py-2 text-[13px] font-semibold text-[var(--ink-muted)] transition-colors hover:bg-[var(--surface-grouped)] hover:text-[var(--ink)]"
-              >
-                ล้างวันที่
-              </button>
-            )}
-          </div>
+          <DateRangePicker
+            from={dateFrom}
+            to={dateTo}
+            onChange={(range) => {
+              setDateFrom(range.from);
+              setDateTo(range.to);
+            }}
+            ariaLabel="กรองตามช่วงวันที่"
+            className="w-full sm:w-64"
+          />
         </div>
       </section>
 
@@ -377,7 +405,7 @@ export default function AuditPage() {
             {items.map((entry) => (
               <li
                 key={entry.id}
-                className="flex flex-col gap-2 rounded-apple-widget bg-[var(--surface-subtle)] p-3.5 sm:flex-row sm:items-center sm:justify-between"
+                className="rounded-apple-widget bg-[var(--surface-subtle)] p-3.5"
               >
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
@@ -389,17 +417,35 @@ export default function AuditPage() {
                     <span className="text-[12px] font-semibold text-[var(--ink)]">
                       {entry.user?.name || entry.user?.email || 'ระบบ'}
                     </span>
+                    {entry.user?.email && entry.user.email !== entry.user.name && (
+                      <span className="truncate text-[12px] text-[var(--ink-tertiary)]">
+                        {entry.user.email}
+                      </span>
+                    )}
                   </div>
                   {entry.details && (
                     <p className="mt-1 break-words text-[13px] leading-relaxed text-[var(--ink-muted)]">
                       {entry.details}
                     </p>
                   )}
-                </div>
-
-                <div className="shrink-0 text-left text-[12px] text-[var(--ink-tertiary)] sm:text-right">
-                  <div className="tabular-nums">{formatDate(entry.created_at)}</div>
-                  {entry.ip_address && <div className="tabular-nums">{entry.ip_address}</div>}
+                  {/* Time, device and address are part of the record itself, so
+                      they are shown on the page instead of only in the export. */}
+                  <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-[var(--ink-tertiary)]">
+                    <span className="inline-flex items-center gap-1 tabular-nums">
+                      <Clock size={12} aria-hidden="true" /> {formatDateTime(entry.created_at)}
+                    </span>
+                    <span
+                      className="inline-flex items-center gap-1"
+                      title={entry.user_agent ?? undefined}
+                    >
+                      <Monitor size={12} aria-hidden="true" /> {deviceLabel(entry.user_agent)}
+                    </span>
+                    {entry.ip_address && (
+                      <span className="inline-flex items-center gap-1 tabular-nums">
+                        <Globe size={12} aria-hidden="true" /> {entry.ip_address}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </li>
             ))}

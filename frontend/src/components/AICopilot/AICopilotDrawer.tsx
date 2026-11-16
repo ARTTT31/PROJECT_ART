@@ -27,6 +27,15 @@ interface ChatMessage {
     data: Record<string, unknown>;
   };
   timestamp: string;
+  /** "Google Gemini · gemini-2.5-flash" when an external model wrote this reply. */
+  modelLabel?: string;
+}
+
+/** Who answers: the account's own key, the server's, or the built-in engine. */
+interface CopilotIdentity {
+  label: string;
+  model: string;
+  source: 'user' | 'server' | 'none';
 }
 
 /** What the daily digest last cached; sent along so replies quote real values. */
@@ -78,6 +87,7 @@ export default function AICopilotDrawer() {
   const [messages, setMessages] = useState<ChatMessage[]>(INITIAL_MESSAGES);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [identity, setIdentity] = useState<CopilotIdentity | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -91,6 +101,52 @@ export default function AICopilotDrawer() {
       setTimeout(() => inputRef.current?.focus(), 150);
     }
   }, [isOpen, messages]);
+
+  // Read which model answers, so connecting a key changes the chat instead of
+  // leaving it labelled like the zero-config engine.
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadIdentity = async () => {
+      try {
+        const res = await fetchWithAuth('/api/v1/ai/settings');
+        if (!res.ok) return;
+        const body = await res.json();
+        const data = body.data || {};
+        if (cancelled) return;
+        setIdentity({
+          label: data.provider_label || (data.provider === 'openai' ? 'OpenAI-compatible' : 'Gemini'),
+          model: data.effective_model || data.model || '',
+          source: data.source === 'user' || data.source === 'server' ? data.source : 'none',
+        });
+      } catch {
+        // Offline: keep the neutral label.
+      }
+    };
+
+    void loadIdentity();
+    window.addEventListener('ai-settings-changed', loadIdentity);
+    return () => {
+      cancelled = true;
+      window.removeEventListener('ai-settings-changed', loadIdentity);
+    };
+  }, []);
+
+  // Keep the welcome bubble honest about who is answering.
+  useEffect(() => {
+    if (!identity) return;
+    const who =
+      identity.source === 'none'
+        ? 'โหมดพื้นฐานของ Workspace (ยังไม่เชื่อมคีย์ภายนอก)'
+        : `${identity.label}${identity.model ? ` · ${identity.model}` : ''}`;
+    setMessages((prev) =>
+      prev.map((message) =>
+        message.id === 'welcome'
+          ? { ...message, text: `สวัสดีครับ! ผมคือ AI Copilot ประจำ ART Workspace ขับเคลื่อนด้วย ${who} — ถามข้อมูลสรุปวันนี้ จดโน้ตด่วน หรือตั้งเตือนความจำได้ทันทีครับ ✨` }
+          : message,
+      ),
+    );
+  }, [identity]);
 
   useEffect(() => {
     const handleOpen = () => setIsOpen(true);
@@ -229,6 +285,9 @@ export default function AICopilotDrawer() {
         text: data.reply || 'ขออภัยครับ ไม่สามารถประมวลผลคำตอบได้ในขณะนี้',
         action: data.action || undefined,
         timestamp: getFormattedTime(),
+        modelLabel: data.model
+          ? [data.provider, data.model].filter(Boolean).join(' · ')
+          : undefined,
       };
 
       setMessages((prev) => [...prev, assistantMsg]);
@@ -303,7 +362,13 @@ export default function AICopilotDrawer() {
                     ออนไลน์
                   </span>
                 </div>
-                <p className="text-[11px] text-[var(--ink-tertiary)]">ผู้ช่วยอัจฉริยะประจำ Workspace</p>
+                <p className="text-[11px] text-[var(--ink-tertiary)]">
+                  {identity
+                    ? identity.source === 'none'
+                      ? 'โหมดพื้นฐาน · ยังไม่เชื่อมคีย์ภายนอก'
+                      : `${identity.label}${identity.model ? ` · ${identity.model}` : ''}`
+                    : 'ผู้ช่วยอัจฉริยะประจำ Workspace'}
+                </p>
               </div>
             </div>
             <button
@@ -375,6 +440,11 @@ export default function AICopilotDrawer() {
                       }`}
                     >
                       {msg.timestamp}
+                      {/* Which model wrote this reply — the visible difference a
+                          connected key makes. */}
+                      {msg.modelLabel && (
+                        <span className="text-[var(--ink-faint)]"> · {msg.modelLabel}</span>
+                      )}
                     </span>
                   </div>
 
