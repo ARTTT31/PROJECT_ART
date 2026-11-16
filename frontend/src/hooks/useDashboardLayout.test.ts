@@ -103,6 +103,34 @@ describe('useDashboardLayout — initialization', () => {
     expect(result.current.visibleWidgetIds).toContain('oilprice');
   });
 
+  it('drops the retired digest widget from a previously saved layout', async () => {
+    // A profile saved while the daily digest still existed: the id is gone from
+    // the registry, but the stored layout and visible list still name it.
+    mockUser = {
+      dashboard_layout: JSON.stringify({
+        widgets: [
+          { id: 'digest', w: 2 },
+          { id: 'notes', w: 1 },
+          { id: 'weather', w: 1 },
+        ],
+        visibleWidgetIds: ['digest', 'notes', 'weather'],
+      }),
+    };
+
+    const { result } = await renderLayout();
+
+    // Not rendered at all, so the grid never reserves an empty card for it.
+    expect(result.current.widgets.map((w) => w.id)).not.toContain('digest');
+    expect(result.current.visibleWidgetIds).not.toContain('digest');
+
+    // The widgets that are still supported keep their saved place and size, and
+    // nothing unsupported is left in the list the renderer maps over.
+    expect(result.current.widgets).toEqual(
+      expect.arrayContaining([{ id: 'notes', w: 1 }, { id: 'weather', w: 1 }]),
+    );
+    expect(new Set(result.current.widgets.map((w) => w.id))).toEqual(new Set(DEFAULT_IDS));
+  });
+
   it('survives malformed JSON in the profile without throwing', async () => {
     mockUser = { dashboard_layout: '{not valid json' };
 
