@@ -1233,5 +1233,26 @@ Pass addressing the HTTP 502 error and partial data warning banner on the Weathe
 
 `pytest -q` **664 passed / 84.24%** (gate 75%), `flake8 app` clean, `mypy app` clean (72 files).
 
+## 2FA Mobile Recovery UX & Trusted Device Token (November 17, 2026)
+
+Pass implementing dedicated recovery code mode in the 2FA Dialog and a secure stateless "Trust Device (30 days)" mechanism.
+
+1. **Recovery Code Mobile Input UX.**
+   - In `frontend/src/app/login/page.tsx`, resolved the mobile keyboard lockout bug where `inputMode="numeric"` prevented typing hexadecimal letters (`A-F`) or dash (`-`) of recovery codes on smartphones.
+   - Added `isRecoveryMode` toggle: Authenticator mode keeps `inputMode="numeric"`, `placeholder="123456"` and spacing; Recovery mode switches to `inputMode="text"`, `autoCapitalize="characters"`, `placeholder="ABCDE-12345"`, and uppercase monospaced styling.
+2. **Stateless 30-Day Trusted Device Tokens.**
+   - In `backend/app/core/security.py`, added `create_trusted_device_token`, `verify_trusted_device_token`, and `get_user_2fa_salt`.
+   - The token is a signed JWT bound to `user_id` and a dynamic salt computed from `sha256(hashed_password + totp_secret)`. Any password change or 2FA reset/disable automatically invalidates all issued trusted device tokens without requiring database migrations.
+   - In `backend/app/services/auth_service.py` and `api/v1/endpoints/auth.py`, login checks the HTTP-only `trusted_device` cookie to bypass `totp_required` on recognized browsers. When user checks "จดจำอุปกรณ์นี้ 30 วัน", the `trusted_device` cookie (HTTP-only, 30-day max-age) is issued.
+3. **Tests & Verification.**
+   - Added `backend/tests/test_trusted_device_2fa.py` covering token lifecycle, login flow with trusted cookies, and salt invalidation.
+   - Added recovery mode switching and trust device payload tests in `frontend/src/app/login/page.test.tsx`.
+
+### Verified
+
+`cd backend && pytest -q`: **682 passed / 84.11%** (gate 75%), `flake8 app` clean, `mypy app` clean (72 files).
+`cd frontend && npx vitest run`: **421 passed / 64 files**, `tsc --noEmit` clean, `eslint .` clean.
+
+
 
 

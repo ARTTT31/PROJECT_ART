@@ -68,6 +68,8 @@ class UserLogin(BaseModel):
     # answers ``totp_required``), then sent together with the same credentials.
     totp_code: Optional[str] = Field(None, max_length=10)
     recovery_code: Optional[str] = Field(None, max_length=32)
+    # Trust device for 30 days so subsequent logins skip 2FA on this device
+    trust_device: bool = False
 
 
 class TwoFactorCodeRequest(BaseModel):

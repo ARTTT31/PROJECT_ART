@@ -26,6 +26,7 @@ vi.mock('@/hooks/useAuth', () => ({
   useAuth: () => ({
     status: authState.status,
     user: authState.user,
+    login: vi.fn(),
   }),
 }));
 
@@ -34,6 +35,7 @@ vi.mock('@/components/Toast/ToastProvider', () => ({
     success: vi.fn(),
     error: vi.fn(),
     info: vi.fn(),
+    addToast: vi.fn(),
   }),
 }));
 
@@ -133,6 +135,80 @@ describe('LoginPage', () => {
 
     expect(await screen.findByText('ยืนยันตัวตน 2 ขั้นตอน')).toBeDefined();
     expect(screen.getByLabelText('รหัสยืนยัน 6 หลัก')).toBeDefined();
+  });
+
+  it('allows switching to recovery code mode and toggling trust device', async () => {
+    let capturedPayload: any = null;
+    global.fetch = vi.fn().mockImplementation((url: string, options?: any) => {
+      if (String(url).includes('registration-mode')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ result: 'success', data: { registration_mode: 'approval' } }),
+        });
+      }
+      if (String(url).includes('/auth/login')) {
+        if (options?.body) {
+          capturedPayload = JSON.parse(options.body);
+          if (!capturedPayload.totp_code && !capturedPayload.recovery_code) {
+            return Promise.resolve({ ok: true, json: async () => ({ result: 'totp_required' }) });
+          }
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({ result: 'success', data: { session_id: 's1', user: { role: 'user' } } }),
+          });
+        }
+      }
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({ company_name: 'ART Workspace', company_tagline: 'x' }),
+      });
+    }) as unknown as typeof fetch;
+
+    render(
+      <BrandingProvider>
+        <LoginPage />
+      </BrandingProvider>,
+    );
+
+    // Initial login submission
+    fireEvent.change(screen.getByLabelText('อีเมล หรือ ชื่อผู้ใช้'), {
+      target: { value: 'user@example.com' },
+    });
+    fireEvent.change(screen.getByLabelText('รหัสผ่าน'), { target: { value: 'secret123' } });
+    fireEvent.click(screen.getByRole('button', { name: 'เข้าสู่ระบบ' }));
+
+    // 2FA Dialog appears
+    expect(await screen.findByText('ยืนยันตัวตน 2 ขั้นตอน')).toBeDefined();
+    const totpInput = screen.getByLabelText('รหัสยืนยัน 6 หลัก') as HTMLInputElement;
+    expect(totpInput.getAttribute('inputmode')).toBe('numeric');
+
+    // Trust device checkbox is present
+    const trustCheckbox = screen.getByLabelText(/จดจำอุปกรณ์นี้ 30 วัน/i) as HTMLInputElement;
+    expect(trustCheckbox).toBeDefined();
+    expect(trustCheckbox.checked).toBe(true);
+
+    // Switch to recovery code mode
+    const recoveryBtn = screen.getByRole('button', { name: /ทำโทรศัพท์หาย\? ใช้รหัสกู้คืน/i });
+    fireEvent.click(recoveryBtn);
+
+    // Now in recovery mode
+    expect(await screen.findByText('เข้าสู่ระบบด้วยรหัสสำรอง')).toBeDefined();
+    const recoveryInput = screen.getByLabelText('รหัสกู้คืน') as HTMLInputElement;
+    expect(recoveryInput.getAttribute('inputmode')).toBe('text');
+    expect(recoveryInput.getAttribute('placeholder')).toBe('ABCDE-12345');
+
+    // Type recovery code
+    fireEvent.change(recoveryInput, { target: { value: 'a1b2c-3d4e5' } });
+    expect(recoveryInput.value).toBe('A1B2C-3D4E5');
+
+    // Submit
+    fireEvent.click(screen.getByRole('button', { name: /ยืนยันและเข้าสู่ระบบ/i }));
+
+    await waitFor(() => {
+      expect(capturedPayload).not.toBeNull();
+      expect(capturedPayload.recovery_code).toBe('A1B2C-3D4E5');
+      expect(capturedPayload.trust_device).toBe(true);
+    });
   });
 
   it('returns to the ?next page once a session is restored', async () => {

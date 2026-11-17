@@ -24,6 +24,9 @@ from app.core.security import (
     create_refresh_token,
     decode_token,
     new_refresh_jti,
+    create_trusted_device_token,
+    verify_trusted_device_token,
+    get_user_2fa_salt,
 )
 from app.core.config import settings
 from app.core.totp import (
@@ -221,6 +224,8 @@ class AuthService:
         ip_address: Optional[str] = None,
         totp_code: Optional[str] = None,
         recovery_code: Optional[str] = None,
+        trust_device: bool = False,
+        trusted_device_token: Optional[str] = None,
     ) -> Dict:
         """
         Authenticate user and create session
@@ -323,17 +328,29 @@ class AuthService:
         # ── Second factor ─────────────────────────────────────────────────
         # Checked after every account-state gate and before any token exists, so
         # a password-only attempt on a 2FA account never mints a session.
+        issue_trusted_device_token: Optional[str] = None
         if user.totp_enabled:
-            if not totp_code and not recovery_code:
-                # Password proven: this is a prompt, not a failure, so it must
-                # not be counted against the brute-force backoff.
-                return {"totp_required": True}
-            if not await self._verify_second_factor(user, totp_code, recovery_code):
-                await _backoff_record_failure(backoff_key)
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="รหัสยืนยันสองขั้นตอนไม่ถูกต้อง",
+            salt = get_user_2fa_salt(user.hashed_password, user.totp_secret)
+            is_trusted = False
+            if trusted_device_token:
+                is_trusted = verify_trusted_device_token(
+                    trusted_device_token, user.id, salt
                 )
+
+            if not is_trusted:
+                if not totp_code and not recovery_code:
+                    # Password proven: this is a prompt, not a failure, so it must
+                    # not be counted against the brute-force backoff.
+                    return {"totp_required": True}
+                if not await self._verify_second_factor(user, totp_code, recovery_code):
+                    await _backoff_record_failure(backoff_key)
+                    raise HTTPException(
+                        status_code=status.HTTP_401_UNAUTHORIZED,
+                        detail="รหัสยืนยันสองขั้นตอนไม่ถูกต้อง",
+                    )
+                # Successful 2FA verification: issue token if trust requested
+                if trust_device:
+                    issue_trusted_device_token = create_trusted_device_token(user.id, salt)
 
         # Reset failure bookkeeping on a successful verification
         await _backoff_clear(backoff_key)
@@ -445,6 +462,7 @@ class AuthService:
             "new_device": new_device,
             "device_label": device_label,
             "ip_address": ip_address,
+            "issue_trusted_device_token": issue_trusted_device_token,
             "user": {
                 "id": user.id,
                 "email": user.email,

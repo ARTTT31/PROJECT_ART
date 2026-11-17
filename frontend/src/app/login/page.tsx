@@ -8,10 +8,12 @@ import {
   Clock,
   Eye,
   EyeOff,
+  KeyRound,
   Loader2,
   Lock,
   Mail,
   ShieldCheck,
+  Smartphone,
   User,
 } from 'lucide-react';
 import Link from 'next/link';
@@ -154,6 +156,8 @@ function LoginContent() {
   const [totpRequired, setTotpRequired] = useState(false);
   const [totpCode, setTotpCode] = useState('');
   const [totpError, setTotpError] = useState('');
+  const [isRecoveryMode, setIsRecoveryMode] = useState(false);
+  const [trustDevice, setTrustDevice] = useState(true);
   const totpRef = useRef<HTMLInputElement>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isClient, setIsClient] = useState(false);
@@ -368,7 +372,7 @@ function LoginContent() {
    * The password step and the code step post the same payload; only the extra
    * field differs, which is why this lives outside the form handlers.
    */
-  const submitLogin = async (secondFactorInput: string) => {
+  const submitLogin = async (secondFactorInput: string, shouldTrustDevice: boolean = false) => {
     setError('');
     setTotpError('');
     setIsSubmitting(true);
@@ -408,6 +412,7 @@ function LoginContent() {
         session_id: sessionId,
         user_agent: userAgent,
         device_label: deviceLabel,
+        trust_device: shouldTrustDevice,
         // A 6-digit value is an authenticator code; anything else is treated
         // as a recovery code, so a lost phone is not a dead end.
         ...(secondFactor
@@ -531,7 +536,7 @@ function LoginContent() {
     event.preventDefault();
     const code = totpCode.trim();
     if (code.length < 6) return;
-    await submitLogin(code);
+    await submitLogin(code, trustDevice);
   };
 
   if (!isClient) return null;
@@ -848,6 +853,7 @@ function LoginContent() {
           setTotpRequired(false);
           setTotpCode('');
           setTotpError('');
+          setIsRecoveryMode(false);
         }}
       >
         <DialogContent
@@ -862,17 +868,28 @@ function LoginContent() {
           <DialogHeader>
             <div className="flex items-start gap-3">
               <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-apple-widget bg-[var(--accent-soft)] text-[var(--accent-text)]">
-                <ShieldCheck size={22} aria-hidden="true" />
+                {isRecoveryMode ? (
+                  <KeyRound size={22} aria-hidden="true" />
+                ) : (
+                  <ShieldCheck size={22} aria-hidden="true" />
+                )}
               </span>
               <div className="min-w-0">
                 <DialogTitle className="text-[18px]">
-                  {tr('ยืนยันตัวตน 2 ขั้นตอน', 'Two-step verification')}
+                  {isRecoveryMode
+                    ? tr('เข้าสู่ระบบด้วยรหัสสำรอง', 'Sign in with recovery code')
+                    : tr('ยืนยันตัวตน 2 ขั้นตอน', 'Two-step verification')}
                 </DialogTitle>
                 <DialogDescription className="mt-1 text-[12.5px] leading-relaxed">
-                  {tr(
-                    'กรอกรหัส 6 หลักจากแอป Authenticator หรือรหัสสำรอง (xxxxx-xxxxx)',
-                    'Enter the 6-digit code from your authenticator app, or a recovery code (xxxxx-xxxxx)',
-                  )}
+                  {isRecoveryMode
+                    ? tr(
+                        'กรอกรหัสกู้คืน 10 ตัวอักษรของคุณ (เช่น ABCDE-12345)',
+                        'Enter your 10-character recovery code (e.g. ABCDE-12345)',
+                      )
+                    : tr(
+                        'กรอกรหัส 6 หลักจากแอป Authenticator',
+                        'Enter the 6-digit code from your authenticator app',
+                      )}
                 </DialogDescription>
               </div>
             </div>
@@ -881,22 +898,32 @@ function LoginContent() {
           <form onSubmit={handleTotpSubmit}>
             <DialogBody className="space-y-3">
               <label htmlFor="login-totp" className="sr-only">
-                {tr('รหัสยืนยัน 6 หลัก', '6-digit verification code')}
+                {isRecoveryMode
+                  ? tr('รหัสกู้คืน', 'Recovery code')
+                  : tr('รหัสยืนยัน 6 หลัก', '6-digit verification code')}
               </label>
               <input
                 id="login-totp"
                 ref={totpRef}
                 name="one-time-code"
                 type="text"
-                inputMode="numeric"
+                inputMode={isRecoveryMode ? 'text' : 'numeric'}
+                autoCapitalize={isRecoveryMode ? 'characters' : 'off'}
                 autoComplete="one-time-code"
-                maxLength={11}
+                maxLength={isRecoveryMode ? 11 : 6}
                 value={totpCode}
-                onChange={(event) => setTotpCode(event.target.value)}
-                placeholder="123456"
+                onChange={(event) => {
+                  const val = event.target.value;
+                  setTotpCode(isRecoveryMode ? val.toUpperCase() : val);
+                }}
+                placeholder={isRecoveryMode ? 'ABCDE-12345' : '123456'}
                 disabled={isSubmitting}
                 aria-invalid={Boolean(totpError)}
-                className="w-full rounded-apple-widget bg-[var(--surface-grouped)] px-4 py-3 text-center text-[22px] font-bold tracking-[0.35em] text-[var(--ink)] placeholder:text-[var(--ink-tertiary)] placeholder:tracking-[0.35em] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)] disabled:opacity-60"
+                className={`w-full rounded-apple-widget bg-[var(--surface-grouped)] px-4 py-3 text-center text-[20px] font-bold text-[var(--ink)] placeholder:text-[var(--ink-tertiary)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)] disabled:opacity-60 ${
+                  isRecoveryMode
+                    ? 'tracking-[0.15em] uppercase font-mono'
+                    : 'tracking-[0.35em] placeholder:tracking-[0.35em]'
+                }`}
               />
 
               {totpError && (
@@ -909,8 +936,57 @@ function LoginContent() {
                 </p>
               )}
 
+              {/* Mode switch button */}
+              <div className="flex justify-center">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsRecoveryMode((prev) => !prev);
+                    setTotpCode('');
+                    setTotpError('');
+                    setTimeout(() => totpRef.current?.focus(), 50);
+                  }}
+                  disabled={isSubmitting}
+                  className="inline-flex items-center gap-1.5 text-[12px] font-medium text-[var(--accent)] hover:underline active:scale-[0.98]"
+                >
+                  {isRecoveryMode ? (
+                    <>
+                      <Smartphone size={13} aria-hidden="true" />
+                      <span>{tr('ใช้รหัสจากแอป Authenticator', 'Use Authenticator code')}</span>
+                    </>
+                  ) : (
+                    <>
+                      <KeyRound size={13} aria-hidden="true" />
+                      <span>{tr('ทำโทรศัพท์หาย? ใช้รหัสกู้คืน', 'Lost your phone? Use a recovery code')}</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* Trust Device Checkbox */}
+              <div className="pt-2 border-t border-[var(--hairline)]">
+                <label
+                  htmlFor="login-trust-device"
+                  className="flex items-center gap-2.5 cursor-pointer select-none text-[12.5px] text-[var(--ink-secondary)] hover:text-[var(--ink)]"
+                >
+                  <input
+                    id="login-trust-device"
+                    type="checkbox"
+                    checked={trustDevice}
+                    onChange={(event) => setTrustDevice(event.target.checked)}
+                    disabled={isSubmitting}
+                    className="h-4 w-4 rounded-apple-sm border-[var(--hairline)] text-[var(--accent)] focus:ring-[var(--accent)]"
+                  />
+                  <span>
+                    {tr('จดจำอุปกรณ์นี้ 30 วัน', 'Trust this device for 30 days')}
+                  </span>
+                </label>
+              </div>
+
               <p className="text-center text-[11px] text-[var(--ink-tertiary)]">
-                {tr('รหัสจะเปลี่ยนทุก 30 วินาที', 'The code changes every 30 seconds')}
+                {isRecoveryMode
+                  ? tr('รหัสสำรองแต่ละชุดสามารถใช้งานได้เพียงครั้งเดียว', 'Each recovery code can be used only once')
+                  : tr('รหัสจะเปลี่ยนทุก 30 วินาที', 'The code changes every 30 seconds')}
               </p>
             </DialogBody>
 

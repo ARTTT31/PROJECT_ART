@@ -4,6 +4,7 @@ Security utilities for authentication and authorization
 
 from datetime import timedelta
 from typing import Optional
+import hashlib
 import logging
 import secrets
 import jwt
@@ -119,3 +120,54 @@ def decode_token(token: str) -> Optional[dict]:
     except InvalidTokenError:
         # Expired, tampered, wrong algorithm or malformed — all map to "no user".
         return None
+
+
+TRUSTED_DEVICE_EXPIRE_DAYS: int = 30
+
+
+def get_user_2fa_salt(hashed_password: str, totp_secret: Optional[str]) -> str:
+    """Generate a 16-hex fingerprint derived from the user's password hash and TOTP secret.
+
+    If the password changes or 2FA secret changes/resets, this salt changes automatically,
+    immediately invalidating all issued trusted device tokens without database mutations.
+    """
+    raw = f"{hashed_password}:{totp_secret or ''}"
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:16]
+
+
+def create_trusted_device_token(
+    user_id: int,
+    version_salt: str,
+    expires_delta: Optional[timedelta] = None,
+) -> str:
+    """Issue a signed JWT for a trusted device with 30-day default lifetime."""
+    expire = utcnow() + (expires_delta or timedelta(days=TRUSTED_DEVICE_EXPIRE_DAYS))
+    payload = {
+        "sub": str(user_id),
+        "type": "trusted_device",
+        "v": version_salt,
+        "exp": expire,
+        "iat": utcnow(),
+    }
+    return jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+
+
+def verify_trusted_device_token(
+    token: str,
+    user_id: int,
+    expected_salt: str,
+) -> bool:
+    """Verify that a trusted device token is valid, matches the user, and has not been invalidated."""
+    try:
+        payload = jwt.decode(
+            token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
+        )
+        if payload.get("type") != "trusted_device":
+            return False
+        if payload.get("sub") != str(user_id):
+            return False
+        if payload.get("v") != expected_salt:
+            return False
+        return True
+    except InvalidTokenError:
+        return False

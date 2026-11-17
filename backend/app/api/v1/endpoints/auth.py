@@ -355,6 +355,7 @@ async def login(
     # Get client IP & User Agent
     client_ip = get_real_client_ip(request)
     user_agent = request.headers.get("user-agent")
+    trusted_device_cookie = request.cookies.get("trusted_device")
 
     try:
         result = await auth_service.login(
@@ -366,6 +367,8 @@ async def login(
             ip_address=client_ip,
             totp_code=user_login.totp_code,
             recovery_code=user_login.recovery_code,
+            trust_device=user_login.trust_device,
+            trusted_device_token=trusted_device_cookie,
         )
 
         # Password proven, second factor missing: ask for the code. Deliberately
@@ -442,6 +445,14 @@ async def login(
             httponly=False,
             **COOKIE_OPTIONS,
         )
+        if result.get("issue_trusted_device_token"):
+            response.set_cookie(
+                key="trusted_device",
+                value=result["issue_trusted_device_token"],
+                max_age=30 * 24 * 60 * 60,
+                httponly=True,
+                **COOKIE_OPTIONS,
+            )
         return response
 
     except HTTPException as e:
