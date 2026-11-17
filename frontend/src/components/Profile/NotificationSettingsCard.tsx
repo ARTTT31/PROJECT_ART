@@ -14,6 +14,15 @@ export function NotificationSettingsCard() {
   const preferences = usePreferences();
   const webPush = useWebPush();
 
+  // Say what the switch will do next, so the row never reads as a dead toggle.
+  const pushHint = !webPush.isSupported
+    ? 'เบราว์เซอร์นี้ไม่รองรับการแจ้งเตือนแบบ Push'
+    : webPush.permission === 'denied'
+      ? 'เบราว์เซอร์ปิดกั้นอยู่ — เปิดสิทธิ์จากไอคอนกุญแจในแถบที่อยู่ แล้วโหลดหน้าใหม่'
+      : webPush.isSubscribed
+        ? 'รับการแจ้งเตือนราคาน้ำมัน สรุปข่าวสาร และการเตือนต่าง ๆ แม้ไม่ได้เปิดหน้านี้ค้างไว้'
+        : 'กดสวิตช์ขวาเพื่ออนุญาตให้เบราว์เซอร์แสดงการแจ้งเตือน';
+
   return (
     <SectionCard
       icon={<BellRing size={19} aria-hidden="true" />}
@@ -56,15 +65,16 @@ export function NotificationSettingsCard() {
                   )}
                 </div>
                 <p className="mt-0.5 text-[11px] leading-relaxed text-[var(--ink-muted)]">
-                  รับการแจ้งเตือนราคาน้ำมัน สรุปข่าวสาร และการเตือนต่างๆ แม้ไม่ได้เปิดหน้าต่างเว็บค้างไว้
+                  {pushHint}
                 </p>
               </div>
             </div>
             <div className="flex shrink-0 items-center justify-end gap-2 border-t border-[var(--hairline-soft)] pt-2 sm:border-t-0 sm:pt-0">
-              {webPush.isSupported && (
+              {webPush.isSubscribed && (
                 <button
                   type="button"
                   onClick={() => webPush.sendTestNotification()}
+                  aria-label="ส่งการแจ้งเตือนทดสอบ"
                   disabled={webPush.isTesting || webPush.isLoading}
                   className="rounded-full bg-[var(--surface-grouped)] px-3 py-1 text-[11px] font-semibold text-[var(--ink-secondary)] transition-colors hover:bg-[var(--surface-chip)] hover:text-[var(--ink)] active:scale-[0.95] disabled:opacity-50 ring-1 ring-[var(--hairline)]"
                 >
@@ -74,7 +84,7 @@ export function NotificationSettingsCard() {
                       กำลังส่ง...
                     </span>
                   ) : (
-                    'ทดสอบ'
+                    'ส่งทดสอบ'
                   )}
                 </button>
               )}

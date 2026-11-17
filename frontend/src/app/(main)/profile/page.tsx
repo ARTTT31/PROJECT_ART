@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   User,
   Lock,
@@ -10,6 +10,7 @@ import {
   Building2,
   BellRing,
   Sparkles,
+  type LucideIcon,
 } from 'lucide-react';
 import { showDeleteConfirm, showToast, showSuccess, showError } from '@/utils/sweetalert';
 import { canAccessPage } from '@/utils/accessiblePages';
@@ -17,6 +18,7 @@ import { usePageHeading } from '@/components/ui/PageHeader';
 import { useEnabledPages, isPageEnabled } from '@/hooks/useEnabledPages';
 import { useAuth } from '@/hooks/useAuth';
 import { useI18n } from '@/lib/i18n/I18nProvider';
+import type { MessageKey } from '@/lib/i18n/messages';
 
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
 import { apiMessage } from '@/lib/api/apiMessage';
@@ -44,6 +46,37 @@ import type { AuthUser } from '@/types';
 
 type TabKey = 'profile' | 'appearance' | 'notifications' | 'ai' | 'workspace';
 type AccountSection = 'account' | 'security';
+
+/** One tab per settings area; the description tells the user what lives inside. */
+const PROFILE_TABS: {
+  key: TabKey;
+  icon: LucideIcon;
+  label: MessageKey;
+  desc: MessageKey;
+  adminOnly?: boolean;
+}[] = [
+  { key: 'profile', icon: User, label: 'profile.tab.profile', desc: 'profile.tab.profile.desc' },
+  {
+    key: 'appearance',
+    icon: Palette,
+    label: 'profile.tab.appearance',
+    desc: 'profile.tab.appearance.desc',
+  },
+  {
+    key: 'notifications',
+    icon: BellRing,
+    label: 'profile.tab.notifications',
+    desc: 'profile.tab.notifications.desc',
+  },
+  { key: 'ai', icon: Sparkles, label: 'profile.tab.ai', desc: 'profile.tab.ai.desc' },
+  {
+    key: 'workspace',
+    icon: Building2,
+    label: 'profile.tab.workspace',
+    desc: 'profile.tab.workspace.desc',
+    adminOnly: true,
+  },
+];
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -369,94 +402,58 @@ export default function ProfilePage() {
       {/* ══════════════════════════════════════════════════
           SINGLE-TIER NAVIGATION TABS (Segmented Control)
           ══════════════════════════════════════════════════ */}
-      <nav
-        aria-label="แท็บตั้งค่าโปรไฟล์"
-        className="flex max-w-full items-center gap-1 overflow-x-auto no-scrollbar rounded-apple-lg border border-[var(--hairline-soft)] bg-[var(--surface-chip)] p-1 backdrop-blur-md"
-      >
-        <button
-          type="button"
-          onClick={() => handleTabChange('profile')}
-          className={`inline-flex shrink-0 items-center justify-center gap-2 px-3.5 py-2 rounded-apple-widget text-[13px] font-bold whitespace-nowrap transition-all duration-200 active:scale-[0.98] ${
-            activeTab === 'profile'
-              ? 'bg-[var(--surface)] text-[var(--accent-text)] shadow-[0_2px_8px_rgba(0,0,0,0.06)]'
-              : 'text-[var(--ink-muted)] hover:text-[var(--ink)] hover:bg-[var(--glass-60)]'
-          }`}
+      <div className="space-y-2">
+        <nav
+          aria-label="แท็บตั้งค่าโปรไฟล์"
+          role="tablist"
+          className="grid grid-cols-2 gap-1 rounded-apple-lg border border-[var(--hairline-soft)] bg-[var(--surface-chip)] p-1 backdrop-blur-md sm:grid-cols-3 lg:grid-cols-5"
         >
-          <User size={15} />
-          <span>{t('profile.tab.profile')}</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => handleTabChange('appearance')}
-          className={`inline-flex shrink-0 items-center justify-center gap-2 px-3.5 py-2 rounded-apple-widget text-[13px] font-bold whitespace-nowrap transition-all duration-200 active:scale-[0.98] ${
-            activeTab === 'appearance'
-              ? 'bg-[var(--surface)] text-[var(--accent-text)] shadow-[0_2px_8px_rgba(0,0,0,0.06)]'
-              : 'text-[var(--ink-muted)] hover:text-[var(--ink)] hover:bg-[var(--glass-60)]'
-          }`}
-        >
-          <Palette size={15} />
-          <span>{t('profile.tab.appearance')}</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => handleTabChange('notifications')}
-          className={`inline-flex shrink-0 items-center justify-center gap-2 px-3.5 py-2 rounded-apple-widget text-[13px] font-bold whitespace-nowrap transition-all duration-200 active:scale-[0.98] ${
-            activeTab === 'notifications'
-              ? 'bg-[var(--surface)] text-[var(--accent-text)] shadow-[0_2px_8px_rgba(0,0,0,0.06)]'
-              : 'text-[var(--ink-muted)] hover:text-[var(--ink)] hover:bg-[var(--glass-60)]'
-          }`}
-        >
-          <BellRing size={15} />
-          <span>{t('profile.tab.notifications')}</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => handleTabChange('ai')}
-          className={`inline-flex shrink-0 items-center justify-center gap-2 px-3.5 py-2 rounded-apple-widget text-[13px] font-bold whitespace-nowrap transition-all duration-200 active:scale-[0.98] ${
-            activeTab === 'ai'
-              ? 'bg-[var(--surface)] text-[var(--accent-text)] shadow-[0_2px_8px_rgba(0,0,0,0.06)]'
-              : 'text-[var(--ink-muted)] hover:text-[var(--ink)] hover:bg-[var(--glass-60)]'
-          }`}
-        >
-          <Sparkles size={15} />
-          <span>{t('profile.tab.ai')}</span>
-        </button>
-
-        {isAdmin && (
-          <button
-            type="button"
-            onClick={() => handleTabChange('workspace')}
-            className={`inline-flex shrink-0 items-center justify-center gap-2 px-3.5 py-2 rounded-apple-widget text-[13px] font-bold whitespace-nowrap transition-all duration-200 active:scale-[0.98] ${
-              activeTab === 'workspace'
-                ? 'bg-[var(--surface)] text-[var(--accent-text)] shadow-[0_2px_8px_rgba(0,0,0,0.06)]'
-                : 'text-[var(--ink-muted)] hover:text-[var(--ink)] hover:bg-[var(--glass-60)]'
-            }`}
-          >
-            <Building2 size={15} />
-            <span>{t('profile.tab.workspace')}</span>
-          </button>
-        )}
-      </nav>
+          {PROFILE_TABS.filter((tab) => !tab.adminOnly || isAdmin).map(
+            ({ key, icon: Icon, label }) => {
+              const active = activeTab === key;
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  onClick={() => handleTabChange(key)}
+                  className={`inline-flex min-h-[40px] items-center justify-center gap-2 rounded-apple-widget px-3 py-2 text-[12.5px] font-bold whitespace-nowrap transition-all duration-200 active:scale-[0.98] ${
+                    active
+                      ? 'bg-[var(--surface)] text-[var(--accent-text)] shadow-[0_2px_8px_rgba(0,0,0,0.06)]'
+                      : 'text-[var(--ink-muted)] hover:bg-[var(--glass-60)] hover:text-[var(--ink)]'
+                  }`}
+                >
+                  <Icon size={15} aria-hidden="true" />
+                  <span className="truncate">{t(label)}</span>
+                </button>
+              );
+            }
+          )}
+        </nav>
+        <p className="px-1 text-[12px] leading-relaxed text-[var(--ink-muted)]">
+          {t(PROFILE_TABS.find((tab) => tab.key === activeTab)?.desc ?? 'profile.tab.profile.desc')}
+        </p>
+      </div>
 
       {/* ══════════════════════════════════════════════════
           TAB PANELS
           ══════════════════════════════════════════════════ */}
-      <AnimatePresence mode="wait" initial={false}>
+      {/* No AnimatePresence here: a deep link (?tab=…) switches tabs on mount and
+          mode="wait" could hold the previous panel on screen while the next one
+          waited for an exit animation to finish. Tabs now swap immediately. */}
+      <>
         {activeTab === 'profile' && (
           <motion.div
             key="profile"
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -6 }}
             transition={{ duration: 0.16, ease: 'easeOut' }}
             className="space-y-4 min-h-[480px]"
           >
-            <div className="flex items-center">
+            <div className="flex flex-col gap-1.5">
               <div
-                className="inline-flex items-center gap-1 rounded-apple-lg border border-[var(--hairline-soft)] bg-[var(--surface-chip)] p-1 backdrop-blur-md"
+                className="inline-flex w-fit items-center gap-1 rounded-apple-lg border border-[var(--hairline-soft)] bg-[var(--surface-chip)] p-1 backdrop-blur-md"
                 role="tablist"
                 aria-label={t('profile.sub.label.account')}
               >
@@ -511,7 +508,6 @@ export default function ProfilePage() {
             key={activeTab}
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -6 }}
             transition={{ duration: 0.16, ease: 'easeOut' }}
             className="grid min-h-[480px] grid-cols-1 gap-5 items-start"
           >
@@ -528,7 +524,7 @@ export default function ProfilePage() {
             />
           </motion.div>
         )}
-      </AnimatePresence>
+      </>
 
       <QuickLinkDialog
         open={quickLinkDialogOpen}
