@@ -21,6 +21,15 @@ import Image from 'next/image';
 import { useAuth } from '@/hooks/useAuth';
 import { useBranding } from '@/context/BrandingContext';
 import TurnstileWidget from '@/components/Auth/TurnstileWidget';
+import {
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/Dialog';
 import ApprovalPending from '@/components/Auth/ApprovalPending';
 import AuthTransitionOverlay from '@/components/Auth/AuthTransitionOverlay';
 import { useToast } from '@/components/Toast/ToastProvider';
@@ -140,8 +149,11 @@ function LoginContent() {
   const [error, setError] = useState('');
   // Second factor: the API answers `totp_required` once the password checks
   // out, and the same credentials are resent with the code alongside them.
+  // The code is asked for in a dialog, not in the form: the password step is
+  // already answered by the time the API asks for a second factor.
   const [totpRequired, setTotpRequired] = useState(false);
   const [totpCode, setTotpCode] = useState('');
+  const [totpError, setTotpError] = useState('');
   const totpRef = useRef<HTMLInputElement>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isClient, setIsClient] = useState(false);
@@ -350,17 +362,27 @@ function LoginContent() {
     }
   }, []);
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  /**
+   * Send the credentials, with the second factor when there is one.
+   *
+   * The password step and the code step post the same payload; only the extra
+   * field differs, which is why this lives outside the form handlers.
+   */
+  const submitLogin = async (secondFactorInput: string) => {
     setError('');
-
-    if (password.length < 6) {
-      setErrorKey((k) => k + 1);
-      setError(tr('รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร', 'Password must be at least 6 characters'));
-      return;
-    }
-
+    setTotpError('');
     setIsSubmitting(true);
+
+    // While the dialog is open, failures belong in it: the form behind the
+    // overlay is not what the user is looking at.
+    const reportError = (message: string) => {
+      if (totpRequired) {
+        setTotpError(message);
+      } else {
+        setErrorKey((k) => k + 1);
+        setError(message);
+      }
+    };
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 45000);
@@ -379,7 +401,7 @@ function LoginContent() {
         [parsedUa.browser, parsedUa.os]
           .filter((part) => part && part !== 'ไม่ระบุ')
           .join(' · ') || (parsedUa.isMobile ? 'Mobile' : 'Desktop');
-      const secondFactor = totpCode.trim();
+      const secondFactor = secondFactorInput.trim();
       const payload = {
         email,
         password,
@@ -407,8 +429,7 @@ function LoginContent() {
       if (response.status === 429) {
         const retryAfter = parseInt(response.headers.get('Retry-After') || '30', 10);
         setRateLimitSeconds(retryAfter);
-        setErrorKey((k) => k + 1);
-        setError(
+        reportError(
           tr(
             'ลองเข้าสู่ระบบบ่อยเกินไป กรุณารอ {seconds} วินาที',
             'Too many sign-in attempts. Please wait {seconds} seconds',
@@ -422,18 +443,30 @@ function LoginContent() {
       const result = await response.json().catch(() => ({}));
 
       if (result.result === 'totp_required') {
+        // Ask for the code in the dialog. A wrong code comes back the same way,
+        // so the dialog stays open and keeps the reason inside it.
         setTotpRequired(true);
-        setError('');
-        setIsSubmitting(false);
         setTotpCode('');
-        // The code field only exists after this render.
-        setTimeout(() => totpRef.current?.focus(), 0);
+        setError('');
+        if (secondFactor) {
+          setTotpError(
+            tr(
+              'รหัสไม่ถูกต้องหรือหมดอายุ กรุณาลองรหัสใหม่',
+              'That code is wrong or expired. Please try a new one',
+            ),
+          );
+        }
+        setIsSubmitting(false);
+        // The field is briefly disabled while the request runs, so focus it once
+        // it is interactive again instead of on the next tick.
+        setTimeout(() => totpRef.current?.focus(), 80);
         return;
       }
 
       if (response.ok && result.result === 'success') {
         // login() persists the user + session_id and flips status to
         // 'authenticated', which triggers the redirect effect above.
+        setTotpRequired(false);
         setSignInDone(true);
         login(result.data.user, result.data.session_id);
 
@@ -452,7 +485,7 @@ function LoginContent() {
           duration: 2500,
         });
       } else {
-        setError(
+        reportError(
           result.detail ||
             result.message ||
             tr(
@@ -460,25 +493,45 @@ function LoginContent() {
               'Sign-in failed. Please check your email and password',
             ),
         );
-        setErrorKey((k) => k + 1);
         setIsSubmitting(false);
       }
     } catch (err: any) {
       clearTimeout(timeoutId);
       console.error('Login submit error:', err);
       if (err.name === 'AbortError') {
-        setError(
+        reportError(
           tr(
             'การเชื่อมต่อเซิร์ฟเวอร์ใช้เวลานานเกินไป กรุณากดลองใหม่อีกครั้ง',
             'The server took too long to respond. Please try again',
           ),
         );
       } else {
-        setError(tr('เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง', 'Connection error. Please try again'));
+        reportError(
+          tr('เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง', 'Connection error. Please try again'),
+        );
       }
-      setErrorKey((k) => k + 1);
       setIsSubmitting(false);
     }
+  };
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setError('');
+
+    if (password.length < 6) {
+      setErrorKey((k) => k + 1);
+      setError(tr('รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร', 'Password must be at least 6 characters'));
+      return;
+    }
+
+    await submitLogin('');
+  };
+
+  const handleTotpSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const code = totpCode.trim();
+    if (code.length < 6) return;
+    await submitLogin(code);
   };
 
   if (!isClient) return null;
@@ -720,37 +773,6 @@ function LoginContent() {
               </Link>
             </div>
 
-            {totpRequired && (
-              <label htmlFor="login-totp" className="login-field">
-                <span>{tr('รหัสยืนยัน 6 หลัก', '6-digit verification code')}</span>
-                <div className="login-input-wrap">
-                  <ShieldCheck size={18} aria-hidden="true" />
-                  <input
-                    id="login-totp"
-                    ref={totpRef}
-                    type="text"
-                    inputMode="numeric"
-                    autoComplete="one-time-code"
-                    maxLength={11}
-                    value={totpCode}
-                    onChange={(event) => setTotpCode(event.target.value)}
-                    placeholder="123456"
-                    aria-describedby="login-totp-hint"
-                    disabled={isSubmitting}
-                  />
-                </div>
-              </label>
-            )}
-
-            {totpRequired && (
-              <p id="login-totp-hint" className="login-hint">
-                {tr(
-                  'เปิดรหัสจากแอป Authenticator หรือกรอกรหัสสำรอง (แบบ xxxxx-xxxxx) ในช่องนี้',
-                  'Open the code in your authenticator app, or enter a recovery code (xxxxx-xxxxx) here',
-                )}
-              </p>
-            )}
-
             {error && (
               <div
                 key={errorKey}
@@ -816,6 +838,116 @@ function LoginContent() {
           </form>
         </div>
       </section>
+
+      {/* The second factor arrives only after the password checks out, so it is
+          asked for in a modal over the form instead of a field further down. */}
+      <Dialog
+        open={totpRequired}
+        onOpenChange={(open) => {
+          if (open || isSubmitting) return;
+          setTotpRequired(false);
+          setTotpCode('');
+          setTotpError('');
+        }}
+      >
+        <DialogContent
+          // The panel itself is not the focused control; only the code field
+          // needs a focus ring, so the dialog's default one is turned off.
+          className="max-w-md focus:ring-0!"
+          onOpenAutoFocus={(event) => {
+            event.preventDefault();
+            totpRef.current?.focus();
+          }}
+        >
+          <DialogHeader>
+            <div className="flex items-start gap-3">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-apple-widget bg-[var(--accent-soft)] text-[var(--accent-text)]">
+                <ShieldCheck size={22} aria-hidden="true" />
+              </span>
+              <div className="min-w-0">
+                <DialogTitle className="text-[18px]">
+                  {tr('ยืนยันตัวตน 2 ขั้นตอน', 'Two-step verification')}
+                </DialogTitle>
+                <DialogDescription className="mt-1 text-[12.5px] leading-relaxed">
+                  {tr(
+                    'กรอกรหัส 6 หลักจากแอป Authenticator หรือรหัสสำรอง (xxxxx-xxxxx)',
+                    'Enter the 6-digit code from your authenticator app, or a recovery code (xxxxx-xxxxx)',
+                  )}
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+
+          <form onSubmit={handleTotpSubmit}>
+            <DialogBody className="space-y-3">
+              <label htmlFor="login-totp" className="sr-only">
+                {tr('รหัสยืนยัน 6 หลัก', '6-digit verification code')}
+              </label>
+              <input
+                id="login-totp"
+                ref={totpRef}
+                name="one-time-code"
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                maxLength={11}
+                value={totpCode}
+                onChange={(event) => setTotpCode(event.target.value)}
+                placeholder="123456"
+                disabled={isSubmitting}
+                aria-invalid={Boolean(totpError)}
+                className="w-full rounded-apple-widget bg-[var(--surface-grouped)] px-4 py-3 text-center text-[22px] font-bold tracking-[0.35em] text-[var(--ink)] placeholder:text-[var(--ink-tertiary)] placeholder:tracking-[0.35em] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)] disabled:opacity-60"
+              />
+
+              {totpError && (
+                <p
+                  role="alert"
+                  className="flex items-start gap-1.5 rounded-apple-md bg-[var(--danger-soft)] px-3 py-2 text-[12px] font-medium leading-relaxed text-[var(--danger)]"
+                >
+                  <AlertCircle size={14} className="mt-px shrink-0" aria-hidden="true" />
+                  <span>{totpError}</span>
+                </p>
+              )}
+
+              <p className="text-center text-[11px] text-[var(--ink-tertiary)]">
+                {tr('รหัสจะเปลี่ยนทุก 30 วินาที', 'The code changes every 30 seconds')}
+              </p>
+            </DialogBody>
+
+            <DialogFooter>
+              <button
+                type="button"
+                onClick={() => {
+                  setTotpRequired(false);
+                  setTotpCode('');
+                  setTotpError('');
+                }}
+                disabled={isSubmitting}
+                className="rounded-full px-4 py-2 text-[13px] font-semibold text-[var(--ink-secondary)] transition-colors hover:bg-[var(--surface-chip)] hover:text-[var(--ink)] active:scale-[0.97] disabled:opacity-50"
+              >
+                {tr('ยกเลิก', 'Cancel')}
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmitting || totpCode.trim().length < 6}
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-[var(--accent)] px-5 py-2.5 text-[13px] font-bold text-white transition-all hover:bg-[var(--accent-hover)] active:scale-[0.97] disabled:opacity-50"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" aria-hidden="true" />
+                    <span>{tr('กำลังตรวจสอบ…', 'Verifying…')}</span>
+                  </>
+                ) : (
+                  <>
+                    <span>{tr('ยืนยันและเข้าสู่ระบบ', 'Verify and sign in')}</span>
+                    <ArrowRight size={16} aria-hidden="true" />
+                  </>
+                )}
+              </button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {signInDone && (
         <AuthTransitionOverlay

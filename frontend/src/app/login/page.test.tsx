@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import LoginPage from './page';
 import { BrandingProvider } from '@/context/BrandingContext';
 
@@ -90,6 +90,49 @@ describe('LoginPage', () => {
     await waitFor(() => {
       expect(global.fetch).toHaveBeenCalled();
     });
+  });
+
+  it('asks for the second factor in a dialog, not in the sign-in form', async () => {
+    global.fetch = vi.fn().mockImplementation((url: string) => {
+      if (String(url).includes('registration-mode')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ result: 'success', data: { registration_mode: 'approval' } }),
+        });
+      }
+      if (String(url).includes('/auth/login')) {
+        return Promise.resolve({ ok: true, json: async () => ({ result: 'totp_required' }) });
+      }
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({ company_name: 'ART Workspace', company_tagline: 'x' }),
+      });
+    }) as unknown as typeof fetch;
+
+    render(
+      <BrandingProvider>
+        <LoginPage />
+      </BrandingProvider>,
+    );
+
+    // The code field is not part of the form before the API asks for it.
+    expect(screen.queryByLabelText('รหัสยืนยัน 6 หลัก')).toBeNull();
+
+    fireEvent.change(screen.getByLabelText('อีเมล หรือ ชื่อผู้ใช้'), {
+      target: { value: 'admin@art.com' },
+    });
+    fireEvent.change(screen.getByLabelText('รหัสผ่าน'), { target: { value: 'secret123' } });
+    fireEvent.click(screen.getByRole('button', { name: 'เข้าสู่ระบบ' }));
+
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining('/auth/login'),
+        expect.anything(),
+      );
+    });
+
+    expect(await screen.findByText('ยืนยันตัวตน 2 ขั้นตอน')).toBeDefined();
+    expect(screen.getByLabelText('รหัสยืนยัน 6 หลัก')).toBeDefined();
   });
 
   it('returns to the ?next page once a session is restored', async () => {
