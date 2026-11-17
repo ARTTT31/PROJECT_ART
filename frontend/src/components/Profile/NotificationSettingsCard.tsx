@@ -14,14 +14,14 @@ export function NotificationSettingsCard() {
   const preferences = usePreferences();
   const webPush = useWebPush();
 
-  // Say what the switch will do next, so the row never reads as a dead toggle.
+  // One short sentence, saying what the switch does or what is blocking it.
   const pushHint = !webPush.isSupported
     ? 'เบราว์เซอร์นี้ไม่รองรับการแจ้งเตือนแบบ Push'
     : webPush.permission === 'denied'
-      ? 'เบราว์เซอร์ปิดกั้นอยู่ — เปิดสิทธิ์จากไอคอนกุญแจในแถบที่อยู่ แล้วโหลดหน้าใหม่'
+            ? 'เบราว์เซอร์ปิดกั้นอยู่ — กดไอคอนกุญแจข้างช่องที่อยู่ แล้วอนุญาตการแจ้งเตือน'
       : webPush.isSubscribed
-        ? 'รับการแจ้งเตือนราคาน้ำมัน สรุปข่าวสาร และการเตือนต่าง ๆ แม้ไม่ได้เปิดหน้านี้ค้างไว้'
-        : 'กดสวิตช์ขวาเพื่ออนุญาตให้เบราว์เซอร์แสดงการแจ้งเตือน';
+        ? 'อุปกรณ์นี้จะได้รับแจ้งเตือนทันที แม้ปิดหน้าเว็บอยู่'
+        : 'เปิดสวิตช์เพื่อให้อุปกรณ์นี้รับแจ้งเตือน แม้ปิดหน้าเว็บอยู่';
 
   return (
     <SectionCard
@@ -44,7 +44,7 @@ export function NotificationSettingsCard() {
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="text-[13px] font-bold tracking-tight text-[var(--ink)]">
-                    การแจ้งเตือนบนเบราว์เซอร์ (Web Push)
+                    แจ้งเตือนเข้าเครื่องนี้ (Web Push)
                   </p>
                   {!webPush.isSupported ? (
                     <span className="rounded-full bg-stone-100 px-2 py-0.5 text-[10px] font-semibold text-stone-500">

@@ -57,6 +57,23 @@ async function registerWithServer(reg: ServiceWorkerRegistration): Promise<boole
   return res.ok;
 }
 
+// Two cards on the notifications tab ask for this status at the same time, so
+// the request is shared instead of fired twice. Only requests in flight are
+// folded together; the next mount asks again.
+let statusRequest: Promise<boolean | null> | null = null;
+
+function fetchSubscriptionStatus(): Promise<boolean | null> {
+  if (!statusRequest) {
+    statusRequest = fetchWithAuth('/api/v1/profile/web-push')
+      .then(async (res) => (res.ok ? Boolean((await res.json()).has_subscription) : null))
+      .catch(() => null)
+      .finally(() => {
+        statusRequest = null;
+      });
+  }
+  return statusRequest;
+}
+
 export function useWebPush(): UseWebPushReturn {
   const [isSupported, setIsSupported] = useState<boolean>(false);
   const [permission, setPermission] = useState<NotificationPermission | 'unsupported'>('default');
@@ -125,15 +142,10 @@ export function useWebPush(): UseWebPushReturn {
 
     async function checkSubscription() {
       try {
-        const res = await fetchWithAuth('/api/v1/profile/web-push');
-        if (res.ok && isMounted) {
-          const data = await res.json();
-          const serverKnowsThisDevice = Boolean(data.has_subscription);
-          setIsSubscribed(serverKnowsThisDevice);
-          if (!serverKnowsThisDevice) await repairMissingSubscription();
-        }
-      } catch (err) {
-        console.error('Failed to check web push subscription status:', err);
+        const serverKnowsThisDevice = await fetchSubscriptionStatus();
+        if (serverKnowsThisDevice === null || !isMounted) return;
+        setIsSubscribed(serverKnowsThisDevice);
+        if (!serverKnowsThisDevice) await repairMissingSubscription();
       } finally {
         if (isMounted) setIsLoading(false);
       }

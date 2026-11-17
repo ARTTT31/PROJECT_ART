@@ -333,7 +333,10 @@ export default function WeatherWidget({
         setIsLocating(false);
         fetchWeatherData(selectedCity);
       },
-      { timeout: 10000, enableHighAccuracy: false },
+      // High accuracy asks the device for a real fix instead of a coarse
+      // network one: the coarse fix was what put the card in a district the
+      // user was not in. `maximumAge` still allows a recent cached fix.
+      { timeout: 12000, enableHighAccuracy: true, maximumAge: 60_000 },
     );
   }, [fetchWeatherData, selectedCity]);
 
@@ -351,6 +354,10 @@ export default function WeatherWidget({
     // Only ask the browser for a fix when access was already granted. Calling
     // getCurrentPosition() on every mount without a saved city meant a
     // permission prompt per visit, and a console error each time it was denied.
+    //
+    // A saved GPS fix is re-detected: a phone moves, and the first fix can be a
+    // coarse network one, so freezing it in localStorage is what made the card
+    // keep showing a place the user had already left.
     const detectIfAlreadyAllowed = async () => {
       try {
         const permissions = navigator.permissions;
@@ -382,10 +389,13 @@ export default function WeatherWidget({
       setLastUpdated(new Date(cachedData.savedAt));
       setLoading(false);
 
-      if (!isFresh) {
+      if (initialCity.isGps) {
+        // Paint the cache, then correct the fix in the background.
+        void detectIfAlreadyAllowed();
+      } else if (!isFresh) {
         fetchWeatherData(initialCity, true);
       }
-    } else if (!cachedLoc) {
+    } else if (!cachedLoc || initialCity.isGps) {
       void detectIfAlreadyAllowed();
     } else {
       fetchWeatherData(initialCity);

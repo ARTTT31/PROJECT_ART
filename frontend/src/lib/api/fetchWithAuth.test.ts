@@ -307,6 +307,31 @@ describe('fetchWithAuth abort handling', () => {
   });
 });
 
+/**
+ * The API allows ten auth attempts per minute per IP, and `/auth/refresh`
+ * counts. Every request whose prime had failed used to prime again, so one
+ * rate-limited refresh turned into the burst of 429s seen on a page load.
+ */
+describe('fetchWithAuth refresh back-off', () => {
+  it('stops asking the auth endpoint after a 429', async () => {
+    localStorage.setItem('user', JSON.stringify({ id: 1, name: 'tester' }));
+    let refreshCalls = 0;
+    installFetch((url) => {
+      if (!url.endsWith('/api/v1/auth/refresh')) return jsonResponse({ result: 'success', data: {} });
+      refreshCalls += 1;
+      return new Response('{}', { status: 429, headers: { 'Retry-After': '60' } });
+    });
+
+    const { fetchWithAuth } = await import('./fetchWithAuth');
+    // Sequential requests: each one used to prime (and 429) all over again.
+    await fetchWithAuth('/api/v1/profile/finance');
+    await fetchWithAuth('/api/v1/weather/air-quality');
+    await fetchWithAuth('/api/v1/users/pending');
+
+    expect(refreshCalls).toBe(1);
+  });
+});
+
 describe('fetchWithAuth synthetic session expiry', () => {
   it('answers a JSON body so callers can parse it like a real 401', async () => {
     localStorage.setItem('user', JSON.stringify({ id: 1, name: 'tester' }));

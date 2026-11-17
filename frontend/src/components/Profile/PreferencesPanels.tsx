@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import BrandingCard from './BrandingCard';
 import AISettingsCard from './AISettingsCard';
 import CompanyHolidayCard from './CompanyHolidayCard';
@@ -37,43 +38,68 @@ export default function PreferencesPanels({
   onDeleteQuickLink: (id: string) => void;
   onMoveQuickLink: (id: string, direction: 'up' | 'down') => void;
 }) {
+  // Mount a section the first time its tab is opened, and keep it mounted after
+  // that so switching back is instant. Rendering all of them up front made the
+  // page fire the AI, branding, holiday and notification requests before the
+  // user had asked for any of those tabs.
+  const [visited, setVisited] = useState<PreferenceSection[]>([section]);
+
+  useEffect(() => {
+    setVisited((prev) => (prev.includes(section) ? prev : [...prev, section]));
+  }, [section]);
+
+  const mounted = (...sections: PreferenceSection[]) =>
+    sections.includes(section) || sections.some((id) => visited.includes(id));
+
   return (
     <>
       {/* ── Appearance & Navigation ── */}
       <div hidden={section !== 'appearance' && section !== 'menu'} className="space-y-5">
-        <ThemeCard />
-        <DateFormatCard />
-        <div className={isAdmin ? 'grid gap-5 lg:grid-cols-2' : ''}>
-          {isAdmin && <MainMenuCard items={menuItems} onMove={onMoveMenuItem} />}
-          <QuickLinksCard
-            links={quickLinks}
-            onAdd={onAddQuickLink}
-            onEdit={onEditQuickLink}
-            onDelete={onDeleteQuickLink}
-            onMove={onMoveQuickLink}
-          />
-        </div>
+        {mounted('appearance', 'menu') && (
+          <>
+            <ThemeCard />
+            <DateFormatCard />
+            <div className={isAdmin ? 'grid gap-5 lg:grid-cols-2' : ''}>
+              {isAdmin && <MainMenuCard items={menuItems} onMove={onMoveMenuItem} />}
+              <QuickLinksCard
+                links={quickLinks}
+                onAdd={onAddQuickLink}
+                onEdit={onEditQuickLink}
+                onDelete={onDeleteQuickLink}
+                onMove={onMoveQuickLink}
+              />
+            </div>
+          </>
+        )}
       </div>
 
       {/* ── Notifications ── */}
       <div hidden={section !== 'notifications' && section !== 'alerts'} className="space-y-5">
-        <NotificationSettingsCard />
-        <DailyBriefingCard />
-        <ExternalNotificationCard />
+        {mounted('notifications', 'alerts') && (
+          <>
+            <NotificationSettingsCard />
+            <DailyBriefingCard />
+            <ExternalNotificationCard />
+          </>
+        )}
       </div>
 
       {/* ── AI Services ── */}
       <div hidden={section !== 'ai'} className="space-y-5">
-        <AISettingsCard />
+        {mounted('ai') && <AISettingsCard />}
       </div>
 
       {/* ── Workspace (Admin) ── */}
       <div hidden={section !== 'workspace'} className="space-y-5">
-        <BrandingCard isAdmin={isAdmin} />
-        {/* Company holidays live in general settings, not the admin console:
-            every member can read the calendar, only an admin can change it. */}
-        <CompanyHolidayCard canEdit={isAdmin} />
-        <WorkspaceBackupCard />
+        {mounted('workspace') && (
+          <>
+            <BrandingCard isAdmin={isAdmin} />
+            {/* Company holidays live in general settings, not the admin console:
+                every member can read the calendar, only an admin can change it. */}
+            <CompanyHolidayCard canEdit={isAdmin} />
+            <WorkspaceBackupCard />
+          </>
+        )}
       </div>
     </>
   );

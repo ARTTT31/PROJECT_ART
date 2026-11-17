@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { SiLine, SiTelegram } from '@icons-pack/react-simple-icons';
+import { SiTelegram } from '@icons-pack/react-simple-icons';
 import { BellRing, Check, Globe, Loader2, Save, Send } from 'lucide-react';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
 import { apiMessage } from '@/lib/api/apiMessage';
@@ -9,9 +9,8 @@ import { showError, showSuccess } from '@/utils/sweetalert';
 import Switch from '@/components/ui/Switch';
 import { InsetField, SectionCard } from './SectionCard';
 
-// Fixed provider colours: the one place a literal hex is correct, because they
-// are the brands' own values rather than theme tokens.
-const LINE_BRAND = '#06C755';
+// Fixed provider colour: the one place a literal hex is correct, because it is
+// the brand's own value rather than a theme token.
 const TELEGRAM_BRAND = '#24A1DE';
 
 interface NotificationEvents {
@@ -21,8 +20,6 @@ interface NotificationEvents {
 }
 
 interface ExternalNotificationsState {
-  line_token: string;
-  line_webhook_url: string;
   telegram_bot_token: string;
   telegram_chat_id: string;
   webhook_url: string;
@@ -30,8 +27,6 @@ interface ExternalNotificationsState {
 }
 
 const DEFAULT_STATE: ExternalNotificationsState = {
-  line_token: '',
-  line_webhook_url: '',
   telegram_bot_token: '',
   telegram_chat_id: '',
   webhook_url: '',
@@ -42,11 +37,11 @@ const DEFAULT_STATE: ExternalNotificationsState = {
   },
 };
 
-type ExternalChannel = 'line' | 'telegram' | 'webhook';
+type ExternalChannel = 'telegram' | 'webhook';
 
 export default function ExternalNotificationCard() {
   const [config, setConfig] = useState<ExternalNotificationsState>(DEFAULT_STATE);
-  const [activeChannel, setActiveChannel] = useState<ExternalChannel>('line');
+  const [activeChannel, setActiveChannel] = useState<ExternalChannel>('telegram');
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [testingChannel, setTestingChannel] = useState<string | null>(null);
@@ -62,8 +57,6 @@ export default function ExternalNotificationCard() {
           const resJson = await res.json();
           const data = resJson.data || resJson;
           setConfig({
-            line_token: data.line_token || '',
-            line_webhook_url: data.line_webhook_url || '',
             telegram_bot_token: data.telegram_bot_token || '',
             telegram_chat_id: data.telegram_chat_id || '',
             webhook_url: data.webhook_url || '',
@@ -95,8 +88,10 @@ export default function ExternalNotificationCard() {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          line_token: config.line_token.trim() || null,
-          line_webhook_url: config.line_webhook_url.trim() || null,
+          // LINE is no longer offered here; sending null clears anything an
+          // earlier version stored so the account does not keep stale tokens.
+          line_token: null,
+          line_webhook_url: null,
           telegram_bot_token: config.telegram_bot_token.trim() || null,
           telegram_chat_id: config.telegram_chat_id.trim() || null,
           webhook_url: config.webhook_url.trim() || null,
@@ -118,7 +113,7 @@ export default function ExternalNotificationCard() {
     }
   };
 
-  const handleTestNotification = async (channel: 'line' | 'telegram' | 'webhook') => {
+  const handleTestNotification = async (channel: ExternalChannel) => {
     setTestingChannel(channel);
     try {
       const res = await fetchWithAuth('/api/v1/profile/external-notifications/test', {
@@ -149,7 +144,7 @@ export default function ExternalNotificationCard() {
         iconColor="text-emerald-600 dark:text-emerald-400"
         iconRing="ring-emerald-200/60 dark:ring-emerald-800/40"
         title="การแจ้งเตือนภายนอก (External Notifications)"
-        subtitle="เชื่อมต่อการแจ้งเตือนไปยัง LINE, Telegram หรือ Webhook"
+        subtitle="ส่งการแจ้งเตือนออกไปทาง Telegram หรือ Webhook"
       >
         <div className="flex items-center justify-center py-10">
           <Loader2 className="h-6 w-6 animate-spin text-[var(--accent)]" />
@@ -158,7 +153,6 @@ export default function ExternalNotificationCard() {
     );
   }
 
-  const isLineConnected = Boolean(config.line_token || config.line_webhook_url);
   const isTelegramConnected = Boolean(config.telegram_bot_token && config.telegram_chat_id);
   const isWebhookConnected = Boolean(config.webhook_url);
 
@@ -169,7 +163,7 @@ export default function ExternalNotificationCard() {
       iconColor="text-emerald-600 dark:text-emerald-400"
       iconRing="ring-emerald-200/60 dark:ring-emerald-800/40"
       title="การแจ้งเตือนภายนอก (External Notifications)"
-      subtitle="เชื่อมต่อการแจ้งเตือนแบบเฉพาะบุคคลไปยัง LINE, Telegram หรือ Webhook ส่วนตัว"
+      subtitle="ส่งการแจ้งเตือนของบัญชีนี้ไปทาง Telegram หรือ Webhook ที่คุณตั้งไว้"
       badge="Self-Service"
       action={
         <button
@@ -195,34 +189,15 @@ export default function ExternalNotificationCard() {
               เลือกช่องทางส่งการแจ้งเตือน
             </span>
             <span className="text-[11px] text-[var(--ink-muted)]">
-              {isLineConnected || isTelegramConnected || isWebhookConnected ? '🟢 มีการเชื่อมต่อแล้ว' : '⚪ ยังไม่ได้ตั้งค่า'}
+              {isTelegramConnected || isWebhookConnected ? '🟢 มีการเชื่อมต่อแล้ว' : '⚪ ยังไม่ได้ตั้งค่า'}
             </span>
           </div>
 
           <div
-            className="grid grid-cols-3 gap-1 rounded-apple-lg border border-[var(--hairline)] bg-[var(--surface-grouped)] p-1"
+            className="grid grid-cols-2 gap-1 rounded-apple-lg border border-[var(--hairline)] bg-[var(--surface-grouped)] p-1"
             role="tablist"
             aria-label="ช่องทางการแจ้งเตือน"
           >
-            {/* LINE Tab */}
-            <button
-              type="button"
-              role="tab"
-              aria-selected={activeChannel === 'line'}
-              onClick={() => setActiveChannel('line')}
-              className={`inline-flex items-center justify-center gap-2 rounded-apple-md py-2.5 px-3 text-[12px] font-bold transition-all duration-150 active:scale-[0.98] ${
-                activeChannel === 'line'
-                  ? 'bg-[var(--surface)] text-[var(--ink)] shadow-2xs ring-1 ring-[var(--hairline)]'
-                  : 'text-[var(--ink-muted)] hover:text-[var(--ink)] hover:bg-[var(--surface-chip)]'
-              }`}
-            >
-              <SiLine className="h-4 w-4 shrink-0" style={{ color: LINE_BRAND }} aria-hidden="true" />
-              <span>LINE</span>
-              {isLineConnected && (
-                <span className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.7)]" title="เชื่อมต่อแล้ว" />
-              )}
-            </button>
-
             {/* Telegram Tab */}
             <button
               type="button"
@@ -265,60 +240,6 @@ export default function ExternalNotificationCard() {
         </div>
 
         {/* ── Active Channel Panel ── */}
-
-        {/* LINE Panel */}
-        {activeChannel === 'line' && (
-          <div className="rounded-apple-lg border border-[var(--hairline)] bg-[var(--surface-subtle)] p-4 sm:p-5 space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div className="flex items-center gap-2.5 min-w-0">
-                <div
-                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-apple-md"
-                  style={{ backgroundColor: `${LINE_BRAND}1a`, color: LINE_BRAND }}
-                >
-                  <SiLine className="h-5 w-5" aria-hidden="true" />
-                </div>
-                <div className="min-w-0">
-                  <h3 className="text-[14px] font-bold text-[var(--ink)]">LINE Messaging / Webhook</h3>
-                  <p className="text-[11px] text-[var(--ink-muted)]">รับแจ้งเตือนผ่าน LINE Channel Access Token หรือ Relay Webhook</p>
-                </div>
-              </div>
-              <button
-                type="button"
-                disabled={testingChannel === 'line' || (!config.line_token && !config.line_webhook_url)}
-                onClick={() => handleTestNotification('line')}
-                className="self-end sm:self-auto inline-flex items-center gap-1.5 rounded-full border border-[var(--hairline)] bg-[var(--surface)] px-3 py-1.5 text-[11px] font-bold text-[var(--ink)] transition-all hover:bg-[var(--surface-grouped)] active:scale-[0.95] disabled:opacity-40 shadow-2xs"
-              >
-                {testingChannel === 'line' ? (
-                  <Loader2 size={12} className="animate-spin" />
-                ) : (
-                  <Send size={12} aria-hidden="true" />
-                )}
-                <span>ทดสอบ LINE</span>
-              </button>
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-2">
-              <InsetField
-                label="LINE Access Token"
-                type="password"
-                placeholder="Channel Access Token หรือ Notify Token"
-                value={config.line_token}
-                onChange={(v) => setConfig((prev) => ({ ...prev, line_token: v }))}
-                icon={<SiLine className="h-4 w-4" aria-hidden="true" />}
-                hint="สำหรับ Messaging API หรือ Line Notify"
-              />
-              <InsetField
-                label="LINE Webhook URL"
-                type="url"
-                placeholder="https://api.line.me/v2/bot/message/push หรือ Relay URL"
-                value={config.line_webhook_url}
-                onChange={(v) => setConfig((prev) => ({ ...prev, line_webhook_url: v }))}
-                icon={<Globe className="h-4 w-4" aria-hidden="true" />}
-                hint="ตัวเลือกเสริม"
-              />
-            </div>
-          </div>
-        )}
 
         {/* Telegram Panel */}
         {activeChannel === 'telegram' && (

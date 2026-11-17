@@ -174,7 +174,7 @@ export function DailyBriefingCard() {
         if (data?.web_push_sent || data?.external_sent) {
           const channels = [];
           if (data.web_push_sent) channels.push('Web Push');
-          if (data.external_sent) channels.push('LINE/Telegram');
+          if (data.external_sent) channels.push('Telegram/Webhook');
           showToast(`ส่งสรุปทดสอบเรียบร้อย (${channels.join(', ')})`, 'success');
         } else if (
           typeof window !== 'undefined' &&
@@ -193,13 +193,13 @@ export function DailyBriefingCard() {
             showToast('ส่งสรุปทดสอบเข้าอุปกรณ์เรียบร้อย', 'success');
           } catch {
             showToast(
-              'ส่งข้อมูลสำเร็จ แต่ยังไม่มีอุปกรณ์เปิดรับการแจ้งเตือน (กรุณาเปิดสวิตช์ Web Push บนมือถือ หรือตั้งค่า LINE/Telegram)',
+              'ส่งข้อมูลสำเร็จ แต่ยังไม่มีอุปกรณ์เปิดรับการแจ้งเตือน (กรุณาเปิดสวิตช์ Web Push บนมือถือ หรือตั้งค่า Telegram/Webhook)',
               'warning'
             );
           }
         } else {
           showToast(
-            'ส่งข้อมูลสำเร็จ แต่ยังไม่มีอุปกรณ์เปิดรับการแจ้งเตือน (กรุณาเปิดสวิตช์ Web Push บนมือถือ หรือตั้งค่า LINE/Telegram)',
+            'ส่งข้อมูลสำเร็จ แต่ยังไม่มีอุปกรณ์เปิดรับการแจ้งเตือน (กรุณาเปิดสวิตช์ Web Push บนมือถือ หรือตั้งค่า Telegram/Webhook)',
             'warning'
           );
         }
@@ -306,7 +306,7 @@ export function DailyBriefingCard() {
             </span>
             <span className="inline-flex items-center gap-1 rounded-full bg-[var(--surface)] px-2.5 py-1 text-[11px] font-semibold text-[var(--ink-secondary)] ring-1 ring-[var(--hairline)]">
               <MessageSquare size={12} aria-hidden="true" className="text-[var(--ink-tertiary)]" />
-              <span className="truncate">LINE / Telegram</span>
+              <span className="truncate">Telegram / Webhook</span>
             </span>
           </div>
         </div>

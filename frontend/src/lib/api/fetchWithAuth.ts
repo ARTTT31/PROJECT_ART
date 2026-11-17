@@ -76,6 +76,31 @@ export async function getCsrfToken(): Promise<string | null> {
 let isRefreshing = false;
 let refreshPromise: Promise<{ success: boolean; isUnauthenticated: boolean }> | null = null;
 
+/**
+ * Refresh back-off.
+ *
+ * The backend allows ten auth attempts per minute per IP, and `/auth/refresh`
+ * counts. A page load fires a dozen requests; each one whose prime had failed
+ * primed again, so a single rate-limited refresh snowballed into the burst of
+ * 429s that filled the console. After a transient failure the module now waits
+ * before trying again, honouring `Retry-After` when the API sends it.
+ */
+let refreshPausedUntil = 0;
+const MAX_REFRESH_PAUSE_MS = 120_000;
+
+function pauseRefresh(retryAfterHeader: string | null, fallbackMs: number): void {
+  const seconds = Number(retryAfterHeader);
+  const ms =
+    retryAfterHeader && Number.isFinite(seconds) && seconds > 0
+      ? seconds * 1000
+      : fallbackMs;
+  refreshPausedUntil = Date.now() + Math.min(ms, MAX_REFRESH_PAUSE_MS);
+}
+
+function refreshIsPaused(): boolean {
+  return Date.now() < refreshPausedUntil;
+}
+
 async function refreshAccessToken(): Promise<{ success: boolean; isUnauthenticated: boolean }> {
   // Use 45-second timeout for Render serverless cold-start tolerance
   const controller = new AbortController();
@@ -96,7 +121,9 @@ async function refreshAccessToken(): Promise<{ success: boolean; isUnauthenticat
     }
 
     if (!res.ok) {
-      // Temporary server error (500/502/503/504) - keep local session alive
+      // Temporary server error (429/500/502/503/504) - keep the local session
+      // alive, but stop asking the auth endpoint until the pause expires.
+      pauseRefresh(res.headers.get('Retry-After'), res.status === 429 ? 60_000 : 30_000);
       return { success: false, isUnauthenticated: false };
     }
 
@@ -109,7 +136,9 @@ async function refreshAccessToken(): Promise<{ success: boolean; isUnauthenticat
     return { success: false, isUnauthenticated: false };
   } catch {
     clearTimeout(timeoutId);
-    // Timeout or network offline - DO NOT log out user
+    // Timeout or network offline - DO NOT log out user, and give the network a
+    // moment before the next attempt.
+    pauseRefresh(null, 15_000);
     return { success: false, isUnauthenticated: false };
   }
 }
@@ -190,6 +219,12 @@ export async function refreshSessionToken(): Promise<{
   success: boolean;
   isUnauthenticated: boolean;
 }> {
+  if (refreshIsPaused()) {
+    // Report a transient failure: callers keep the session and their data. The
+    // access token may still be valid; if it is not, the request answers 401 and
+    // that path also respects the pause.
+    return { success: false, isUnauthenticated: false };
+  }
   if (!isRefreshing || !refreshPromise) {
     isRefreshing = true;
     refreshPromise = refreshAccessToken().finally(() => {
@@ -292,7 +327,7 @@ export async function fetchWithAuth(path: string, options: RequestInit = {}): Pr
     if (response.status === 401) {
       // Skip refresh entirely when there is no local session — avoids the
       // /api/v1/auth/refresh call firing on public pages like /login.
-      if (!hasLocalSession()) {
+      if (!hasLocalSession() || refreshIsPaused()) {
         return response;
       }
 
