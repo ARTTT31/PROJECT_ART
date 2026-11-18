@@ -423,7 +423,9 @@ async def login(
         # Three events that explain *how* a sign-in passed the second factor,
         # or that it skipped it. Without them an audit row says "logged in" and
         # nothing accounts for the missing code.
-        if result.get("trusted_device_used"):
+        # Only the first skip per device per day: every sign-in is already a
+        # LOGIN_SUCCESS row, and repeating this beside it drowns the trail.
+        if result.get("trusted_device_audit_due"):
             await audit_service.log_action(
                 action="TRUSTED_DEVICE_USED",
                 user_id=result["user"]["id"],

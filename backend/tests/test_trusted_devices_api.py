@@ -325,3 +325,56 @@ class TestTrustedDevicesApi:
         assert response.status_code == 200
         assert response.json()["result"] == "success"
         assert "2FA_RECOVERY_CODE_USED" in await _actions_for(db_session, user.id)
+
+    async def test_trusted_device_use_is_audited_at_most_once_a_day(
+        self, client, db_session
+    ):
+        from app.core.utils import utcnow
+        from conftest import seed_account
+
+        user = await seed_account(db_session, "trustnoise@example.com", "Password123!")
+        secret = await _enable_2fa(db_session, user)
+        await _trust_current_browser(
+            client, "trustnoise@example.com", "Password123!", secret
+        )
+
+        async def skip_count() -> int:
+            rows = (
+                await db_session.execute(
+                    select(AuditLog).where(
+                        AuditLog.user_id == user.id,
+                        AuditLog.action == "TRUSTED_DEVICE_USED",
+                    )
+                )
+            ).scalars().all()
+            return len(rows)
+
+        async def sign_in_again() -> None:
+            response = await client.post(
+                "/api/v1/auth/login",
+                json={"email": "trustnoise@example.com", "password": "Password123!"},
+            )
+            assert response.status_code == 200
+            assert response.json()["result"] == "success"
+
+        await sign_in_again()
+        assert await skip_count() == 1
+
+        # Same browser minutes later: LOGIN_SUCCESS already records that this
+        # happened, so a second identical row would be noise in the trail.
+        await sign_in_again()
+        assert await skip_count() == 1
+
+        # A day later the skip is news again — a new IP on a shared machine is
+        # exactly what this row is supposed to surface.
+        device = (
+            await db_session.execute(
+                select(TrustedDevice).where(TrustedDevice.user_id == user.id)
+            )
+        ).scalars().first()
+        assert device is not None
+        device.last_used_at = utcnow() - timedelta(hours=25)
+        await db_session.commit()
+
+        await sign_in_again()
+        assert await skip_count() == 2

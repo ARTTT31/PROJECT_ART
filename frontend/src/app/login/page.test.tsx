@@ -269,6 +269,59 @@ describe('LoginPage', () => {
     expect(screen.getByText(/ลองใหม่ได้ในอีก/)).toBeDefined();
   });
 
+  it('submits a complete six-digit code and keeps the device tick after a wrong one', async () => {
+    const payloads: any[] = [];
+    global.fetch = vi.fn().mockImplementation((url: string, options?: any) => {
+      if (String(url).includes('registration-mode')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ result: 'success', data: { registration_mode: 'approval' } }),
+        });
+      }
+      if (String(url).includes('/auth/login')) {
+        payloads.push(options?.body ? JSON.parse(options.body) : {});
+        // Every code attempt is answered with "still required", which is how the
+        // API reports a wrong second factor.
+        return Promise.resolve({ ok: true, json: async () => ({ result: 'totp_required' }) });
+      }
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({ company_name: 'ART Workspace', company_tagline: 'x' }),
+      });
+    }) as unknown as typeof fetch;
+
+    render(
+      <BrandingProvider>
+        <LoginPage />
+      </BrandingProvider>,
+    );
+
+    fireEvent.change(screen.getByLabelText('อีเมล หรือ ชื่อผู้ใช้'), {
+      target: { value: 'user@example.com' },
+    });
+    fireEvent.change(screen.getByLabelText('รหัสผ่าน'), { target: { value: 'secret123' } });
+    fireEvent.click(screen.getByRole('button', { name: 'เข้าสู่ระบบ' }));
+    const totpInput = (await screen.findByLabelText('รหัสยืนยัน 6 หลัก')) as HTMLInputElement;
+
+    const trustCheckbox = screen.getByLabelText(/จดจำอุปกรณ์นี้ 30 วัน/i) as HTMLInputElement;
+    fireEvent.click(trustCheckbox);
+    expect(trustCheckbox.checked).toBe(true);
+
+    // Six digits is the whole code — no click on the submit button.
+    fireEvent.change(totpInput, { target: { value: '123456' } });
+    await waitFor(() => {
+      expect(payloads.some((payload) => payload.totp_code === '123456')).toBe(true);
+    });
+
+    // The rejected code keeps the dialog (and the choice to trust this browser)
+    // exactly as the user left it.
+    expect(await screen.findByText('ยืนยันตัวตน 2 ขั้นตอน')).toBeDefined();
+    expect(
+      (screen.getByLabelText(/จดจำอุปกรณ์นี้ 30 วัน/i) as HTMLInputElement).checked,
+    ).toBe(true);
+    expect(screen.getByText(/ลองใหม่ได้ในอีก/)).toBeDefined();
+  });
+
   it('returns to the ?next page once a session is restored', async () => {
     // The approval alert email is a deep link. If the admin was signed out,
     // AuthGuard sends them to /login?next=… and login must honour it.

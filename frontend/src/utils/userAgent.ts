@@ -92,8 +92,15 @@ export function describeDevice(
 /**
  * Format an ISO date string into a relative + absolute Thai display.
  * e.g. "2 ชั่วโมงที่แล้ว · 14:30 9 มิ.ย."
+ *
+ * `{ seconds: false }` drops the seconds from the absolute half. Use it where
+ * the exact second is noise — an expiry hours away reads worse as "18 ธ.ค.
+ * 10:59:44" than as "18 ธ.ค. 10:59".
  */
-export function formatRelativeTime(isoDate: string | null | undefined): {
+export function formatRelativeTime(
+  isoDate: string | null | undefined,
+  options: { seconds?: boolean } = {},
+): {
   relative: string;
   absolute: string;
 } {
@@ -127,7 +134,11 @@ export function formatRelativeTime(isoDate: string | null | undefined): {
   }
 
   const absolute =
-    date.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) +
+    date.toLocaleTimeString('th-TH', {
+      hour: '2-digit',
+      minute: '2-digit',
+      ...(options.seconds === false ? {} : { second: '2-digit' }),
+    }) +
     ' ' +
     date.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
 

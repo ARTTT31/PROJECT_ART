@@ -158,7 +158,9 @@ function LoginContent() {
   const [totpError, setTotpError] = useState('');
   const [isRecoveryMode, setIsRecoveryMode] = useState(false);
   // Unticked on purpose: the checkbox buys 30 days of 2FA-free sign-ins, so it
-  // is an opt-in, never a default someone clicks past without reading it.
+  // is an opt-in, never a default someone clicks past without reading it. A
+  // rejected code only clears the code field, so the tick survives the retry —a
+  // typo should cost a retype, not a re-decision about trusting the browser.
   const [trustDevice, setTrustDevice] = useState(false);
   // Seconds left before another code attempt is accepted. The API has its own
   // backoff; this only stops a wrong code from being hammered from the dialog.
@@ -928,7 +930,18 @@ function LoginContent() {
                 value={totpCode}
                 onChange={(event) => {
                   const val = event.target.value;
-                  setTotpCode(isRecoveryMode ? normalizeRecoveryCode(val) : val);
+                  if (isRecoveryMode) {
+                    setTotpCode(normalizeRecoveryCode(val));
+                    return;
+                  }
+                  // Six digits is the whole code, so there is nothing left to
+                  // type: submit it instead of making the user hit a button
+                  // that is already the only sensible next step.
+                  const digits = val.replace(/\D/g, '').slice(0, 6);
+                  setTotpCode(digits);
+                  if (digits.length === 6 && !isSubmitting && totpCooldown === 0) {
+                    void submitLogin(digits, trustDevice);
+                  }
                 }}
                 placeholder={isRecoveryMode ? 'ABCDE-12345' : '123456'}
                 disabled={isSubmitting}

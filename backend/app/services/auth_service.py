@@ -41,6 +41,11 @@ from app.services.user_service import UserService
 
 logger = logging.getLogger(__name__)
 
+# How often a skip-the-code sign-in is worth its own audit row. Every sign-in
+# already writes LOGIN_SUCCESS, so ``TRUSTED_DEVICE_USED`` only has to explain
+# the missing code; once a day per device is enough for that.
+_TRUSTED_DEVICE_AUDIT_INTERVAL = timedelta(hours=24)
+
 
 # ── Refresh-token rotation (T19) ─────────────────────────────────────────
 # How long the just-rotated refresh token keeps working. Two tabs of the same
@@ -331,6 +336,7 @@ class AuthService:
         # a password-only attempt on a 2FA account never mints a session.
         issue_trusted_device_token: Optional[str] = None
         trusted_device_used = False
+        trusted_device_audit_due = False
         if user.totp_enabled:
             salt = get_user_2fa_salt(user.hashed_password, user.totp_secret)
             is_trusted = False
@@ -356,7 +362,18 @@ class AuthService:
                     if device is not None:
                         is_trusted = True
                         trusted_device_used = True
-                        device.last_used_at = utcnow()
+                        # A browser that signs in twice a day used to write 60
+                        # identical audit rows a month. LOGIN_SUCCESS already
+                        # records every sign-in, so this row is only due once a
+                        # day per device — a new IP or a shared machine still
+                        # leaves a trace.
+                        now = utcnow()
+                        previous_used = device.last_used_at
+                        trusted_device_audit_due = (
+                            previous_used is None
+                            or now - previous_used >= _TRUSTED_DEVICE_AUDIT_INTERVAL
+                        )
+                        device.last_used_at = now
                         if ip_address:
                             device.ip_address = ip_address
 
@@ -385,7 +402,10 @@ class AuthService:
                             device_label=device_label,
                             user_agent=user_agent,
                             ip_address=ip_address,
-                            last_used_at=utcnow(),
+                            # Left empty on purpose: this sign-in typed a code, so
+                            # the browser has not skipped one yet. The first skip
+                            # is therefore the first `last_used_at`, which is what
+                            # the daily audit row counts from.
                             expires_at=utcnow()
                             + timedelta(days=settings.TRUSTED_DEVICE_EXPIRE_DAYS),
                         )
@@ -503,6 +523,7 @@ class AuthService:
             "ip_address": ip_address,
             "issue_trusted_device_token": issue_trusted_device_token,
             "trusted_device_used": trusted_device_used,
+            "trusted_device_audit_due": trusted_device_audit_due,
             "user": {
                 "id": user.id,
                 "email": user.email,

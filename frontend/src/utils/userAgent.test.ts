@@ -107,4 +107,13 @@ describe('formatRelativeTime', () => {
 
     expect(formatRelativeTime(recent).absolute.length).toBeGreaterThan(0);
   });
+
+  it('can drop the seconds from the absolute label', () => {
+    const date = new Date('2026-12-18T10:59:44').toISOString();
+
+    expect(formatRelativeTime(date).absolute).toMatch(/\d:\d{2}:\d{2}/);
+    const short = formatRelativeTime(date, { seconds: false }).absolute;
+    expect(short).not.toMatch(/\d:\d{2}:\d{2}/);
+    expect(short).toMatch(/\d:\d{2}/);
+  });
 });

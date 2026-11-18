@@ -1341,6 +1341,38 @@ clean (73 files). `npx vitest run` **424 passed / 65 files**, `npx tsc --noEmit`
 clean. Not run: `next build`, Playwright smoke/axe, and neither the admin banner nor the cooldown was
 opened in a browser — both are covered by unit tests only.
 
+## Trusted-Device Polish: Quieter Audit, Clearer Expiry, Faster Code Entry (November 18, 2026)
+
+Cleanup pass over the trusted-device work and the 2FA dialog: five small things that each cost a real
+annoyance.
+
+1. **The expiry line stopped showing seconds.** "ข้ามการยืนยันถึง 18 ธ.ค. 10:59:44" is not more
+   actionable than "18 ธ.ค. 10:59". `formatRelativeTime` takes `{ seconds: false }` and only the
+   trusted-device card asks for it, so the session lists keep their exact timestamps.
+2. **`TRUSTED_DEVICE_USED` is written at most once a day per device.** A browser that signs in twice a
+   day used to write 60 identical rows a month; `LOGIN_SUCCESS` already records every sign-in, so this
+   row now only has to explain the missing code, once a day, which still surfaces a new IP on a shared
+   machine. A newly minted row starts with no `last_used_at` — that sign-in typed a code, so the first
+   *skip* is the first use, and the day is counted from there.
+3. **`SESSION_CLEANUP_INTERVAL_HOURS=0` warns at boot.** It is legitimate for a cron-based deploy, but
+   it was logged at INFO, so a deployment that set it by accident silently kept expired sessions and
+   dead trusted-device rows forever while the security card listed them. The message now names the
+   standalone command to schedule.
+4. **Six digits submit themselves.** The dialog no longer needs a click on a button that is already
+   the only sensible next step; a complete authenticator code is sent on the keystroke, and
+   non-digits are dropped from that field. Recovery codes still require the button (they are variable
+   length and easy to paste half-finished).
+5. **A rejected code keeps the "trust this browser" tick.** The dialog only cleared the code field,
+   so the choice already survived a typo; that intent is now documented at the state and pinned by a
+   test, so a future "reset the dialog" change cannot quietly untick it.
+
+### Verified
+
+`pytest -q` **700 passed / 84.24%** (gate 75%, Python 3.14.6 local), `flake8 app` clean, `mypy app`
+clean (73 files). `npx vitest run` **426 passed / 65 files**, `npx tsc --noEmit` clean, `npx eslint .`
+clean. Not run: `next build`, Playwright smoke/axe, and neither the card nor the dialog was opened in a
+browser this pass — both are covered by unit tests only.
+
 
 
 

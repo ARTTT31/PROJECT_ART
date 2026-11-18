@@ -129,7 +129,8 @@ export function TrustedDevicesCard() {
         <ul className="space-y-2">
           {devices.map((device) => {
             const created = formatRelativeTime(device.last_used_at ?? device.created_at);
-            const expires = formatRelativeTime(device.expires_at);
+            // Days away, not seconds: the exact instant is not actionable.
+            const expires = formatRelativeTime(device.expires_at, { seconds: false });
             const DeviceIcon = parseUserAgent(device.user_agent).isMobile ? Smartphone : Monitor;
 
             return (
@@ -148,7 +149,7 @@ export function TrustedDevicesCard() {
                   <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">
                     {device.ip_address || 'ไม่ทราบ IP'} · ใช้ล่าสุด {created.relative}
                   </p>
-                  <p className="text-[11px] text-[var(--ink-tertiary)]" title={expires.absolute}>
+                  <p className="text-[11px] text-[var(--ink-tertiary)]">
                     ข้ามการยืนยันถึง {expires.absolute}
                   </p>
                 </div>

@@ -272,8 +272,12 @@ async def lifespan(app: FastAPI):
             "Session cleanup scheduled every %d h", settings.SESSION_CLEANUP_INTERVAL_HOURS
         )
     else:
-        logger.info(
-            "Session cleanup scheduler disabled (SESSION_CLEANUP_INTERVAL_HOURS=0)"
+        # Legitimate for a cron-based deployment, silent poison for one that
+        # just set the variable to 0: expired sessions and dead trusted-device
+        # rows then never go away and the security page keeps listing them.
+        logger.warning(
+            "Session cleanup scheduler disabled (SESSION_CLEANUP_INTERVAL_HOURS=0) — "
+            "run `python -m app.services.session_cleanup` on a schedule"
         )
 
     try:
