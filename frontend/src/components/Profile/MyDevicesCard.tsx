@@ -5,6 +5,8 @@ import { Loader2, LogOut, Monitor, MonitorSmartphone, RefreshCw, Smartphone } fr
 import { SectionCard } from './SectionCard';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
 import { apiMessage } from '@/lib/api/apiMessage';
+import { isStepUpRequired } from '@/lib/api/stepUp';
+import { useStepUp } from '@/components/Auth/useStepUp';
 import { useToast } from '@/components/Toast/ToastProvider';
 import { showConfirm } from '@/utils/sweetalert';
 import { describeDevice, formatRelativeTime, parseUserAgent } from '@/utils/userAgent';
@@ -38,6 +40,7 @@ export function MyDevicesCard() {
   const [revokingOthers, setRevokingOthers] = useState(false);
   const [error, setError] = useState('');
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+  const { promptStepUp, stepUpDialog } = useStepUp();
 
   useEffect(() => {
     setCurrentSessionId(localStorage.getItem('session_id'));
@@ -98,25 +101,27 @@ export function MyDevicesCard() {
     if (!confirmed.isConfirmed) return;
 
     setRevokingOthers(true);
-    let failed = 0;
     try {
-      for (const session of others) {
-        const response = await fetchWithAuth(
-          `${SESSIONS_ENDPOINT}/${encodeURIComponent(session.session_id)}`,
-          { method: 'DELETE' },
-        );
-        if (!response.ok) failed += 1;
+      // One request, not one per row: the gate asks for the 2FA code once and
+      // a loop would ask per device.
+      const send = () => fetchWithAuth(SESSIONS_ENDPOINT, { method: 'DELETE' });
+      let response = await send();
+      let body = await response.json().catch(() => null);
+      if (response.status === 403 && isStepUpRequired(body)) {
+        if (!(await promptStepUp())) return;
+        response = await send();
+        body = await response.json().catch(() => null);
       }
-      if (failed > 0) {
-        toast.error(`ออกจากระบบไม่สำเร็จ ${failed} อุปกรณ์ กรุณาลองอีกครั้ง`);
-      } else {
-        toast.success('ออกจากอุปกรณ์อื่นทั้งหมดแล้ว');
+      if (!response.ok) {
+        toast.error(apiMessage(body, 'ออกจากอุปกรณ์อื่นไม่สำเร็จ'));
+        return;
       }
+      toast.success('ออกจากอุปกรณ์อื่นทั้งหมดแล้ว');
       await load(false);
     } finally {
       setRevokingOthers(false);
     }
-  }, [currentSessionId, load, sessions, toast]);
+  }, [currentSessionId, load, promptStepUp, sessions, toast]);
 
   const others = sessions.filter((s) => s.session_id !== currentSessionId);
 
@@ -159,6 +164,7 @@ export function MyDevicesCard() {
         </div>
       }
     >
+      {stepUpDialog}
       {error && (
         <p role="alert" className="mb-3 text-[12px] text-[var(--danger-ink)]">
           {error}

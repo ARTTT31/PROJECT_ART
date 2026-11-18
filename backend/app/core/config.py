@@ -123,6 +123,13 @@ class Settings(BaseSettings):
     # it off (then run `python -m app.services.session_cleanup` from cron).
     SESSION_CLEANUP_INTERVAL_HOURS: int = 6
 
+    # ── Step-up re-verification ─────────────────────────────────────────────
+    # How long a freshly typed 2FA code keeps the dangerous account actions
+    # (password change, sign-out-everywhere, data export) open. Short on purpose:
+    # the point is that a session alone cannot do them, only a person with the
+    # second factor can.
+    STEP_UP_TTL_SECONDS: int = 300
+
     # Audit rows contain actor ids, IP addresses, and sometimes masked emails.
     # Keep a bounded forensic window instead of growing the table forever; set
     # 0 to retain indefinitely (check the PDPA policy before doing that).

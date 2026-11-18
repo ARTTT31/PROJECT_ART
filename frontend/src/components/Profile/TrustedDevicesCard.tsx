@@ -5,6 +5,8 @@ import { KeyRound, Loader2, Monitor, RefreshCw, ShieldOff, Smartphone } from 'lu
 import { SectionCard } from './SectionCard';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
 import { apiMessage } from '@/lib/api/apiMessage';
+import { isStepUpRequired } from '@/lib/api/stepUp';
+import { useStepUp } from '@/components/Auth/useStepUp';
 import { useToast } from '@/components/Toast/ToastProvider';
 import { showConfirm } from '@/utils/sweetalert';
 import { describeDevice, formatRelativeTime, parseUserAgent } from '@/utils/userAgent';
@@ -34,7 +36,9 @@ export function TrustedDevicesCard() {
   const [devices, setDevices] = useState<TrustedDevice[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<number | null>(null);
+  const [revokingAll, setRevokingAll] = useState(false);
   const [error, setError] = useState('');
+  const { promptStepUp, stepUpDialog } = useStepUp();
 
   const load = useCallback(async (showSpinner = true) => {
     if (showSpinner) setLoading(true);
@@ -85,6 +89,35 @@ export function TrustedDevicesCard() {
     [load, toast],
   );
 
+  const revokeAll = useCallback(async () => {
+    const confirmed = await showConfirm(
+      'เพิกถอนอุปกรณ์ที่จดจำไว้ทั้งหมด?',
+      'ทุกเบราว์เซอร์จะต้องกรอกรหัส 2FA อีกครั้งในการเข้าสู่ระบบครั้งถัดไป',
+    );
+    if (!confirmed.isConfirmed) return;
+
+    setRevokingAll(true);
+    try {
+      const send = () => fetchWithAuth(ENDPOINT, { method: 'DELETE' });
+      let response = await send();
+      let body = await response.json().catch(() => null);
+      if (response.status === 403 && isStepUpRequired(body)) {
+        if (!(await promptStepUp())) return;
+        response = await send();
+        body = await response.json().catch(() => null);
+      }
+      if (!response.ok) {
+        throw new Error(apiMessage(body, 'ไม่สามารถเพิกถอนอุปกรณ์ทั้งหมดได้'));
+      }
+      toast.success('เพิกถอนอุปกรณ์ที่จดจำไว้ทั้งหมดแล้ว');
+      await load(false);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'ไม่สามารถเพิกถอนอุปกรณ์ทั้งหมดได้');
+    } finally {
+      setRevokingAll(false);
+    }
+  }, [load, promptStepUp, toast]);
+
   return (
     <SectionCard
       icon={<KeyRound size={18} aria-hidden="true" />}
@@ -95,18 +128,36 @@ export function TrustedDevicesCard() {
       subtitle="เบราว์เซอร์เหล่านี้ข้ามการกรอกรหัส 2FA จนกว่าจะหมดอายุ — เพิกถอนได้ทุกเมื่อ"
       badge={devices.length > 0 ? `${devices.length}` : undefined}
       action={
-        <button
-          type="button"
-          onClick={() => void load()}
-          disabled={loading}
-          aria-label="รีเฟรชรายการอุปกรณ์ที่จดจำไว้"
-          className="inline-flex h-9 items-center gap-1.5 rounded-full border border-[var(--hairline)] bg-[var(--surface)] px-3.5 text-[12px] font-semibold text-[var(--ink)] transition-all hover:bg-[var(--surface-grouped)] active:scale-[0.95] disabled:opacity-50"
-        >
-          <RefreshCw size={14} aria-hidden="true" className={loading ? 'animate-spin' : ''} />
-          รีเฟรช
-        </button>
+        <div className="flex items-center gap-2">
+          {devices.length > 0 && (
+            <button
+              type="button"
+              onClick={() => void revokeAll()}
+              disabled={revokingAll}
+              className="inline-flex h-9 items-center gap-1.5 rounded-full border border-[var(--hairline)] px-3.5 text-[12px] font-semibold text-[var(--danger-ink)] transition-all hover:bg-[var(--danger-soft)] active:scale-[0.95] disabled:opacity-50"
+            >
+              {revokingAll ? (
+                <Loader2 size={14} className="animate-spin" aria-hidden="true" />
+              ) : (
+                <ShieldOff size={14} aria-hidden="true" />
+              )}
+              เพิกถอนทั้งหมด
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => void load()}
+            disabled={loading}
+            aria-label="รีเฟรชรายการอุปกรณ์ที่จดจำไว้"
+            className="inline-flex h-9 items-center gap-1.5 rounded-full border border-[var(--hairline)] bg-[var(--surface)] px-3.5 text-[12px] font-semibold text-[var(--ink)] transition-all hover:bg-[var(--surface-grouped)] active:scale-[0.95] disabled:opacity-50"
+          >
+            <RefreshCw size={14} aria-hidden="true" className={loading ? 'animate-spin' : ''} />
+            รีเฟรช
+          </button>
+        </div>
       }
     >
+      {stepUpDialog}
       {error && (
         <p role="alert" className="mb-3 text-[12px] text-[var(--danger-ink)]">
           {error}

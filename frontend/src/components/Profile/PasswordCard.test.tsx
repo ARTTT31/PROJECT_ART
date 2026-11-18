@@ -86,6 +86,43 @@ describe('PasswordCard', () => {
     expect(screen.getByLabelText('รหัสผ่านใหม่')).toHaveValue('');
   });
 
+  it('asks for the 2FA code when the API demands step-up, then retries once', async () => {
+    let changeAttempts = 0;
+    api.fetchWithAuth.mockImplementation((url: string) => {
+      if (url === '/api/v1/auth/step-up') {
+        return Promise.resolve({ ok: true, json: async () => ({ result: 'success' }) });
+      }
+      changeAttempts += 1;
+      if (changeAttempts === 1) {
+        return Promise.resolve({
+          ok: false,
+          status: 403,
+          json: async () => ({
+            detail: { code: 'step_up_required', message: 'กรุณากรอกรหัส 2FA อีกครั้ง' },
+          }),
+        });
+      }
+      return Promise.resolve({ ok: true, json: async () => ({ message: 'ok' }) });
+    });
+
+    render(<PasswordCard user={user} />);
+    fill('old-password', 'Str0ng!Password', 'Str0ng!Password');
+    submit();
+
+    // The action is refused only until the second factor is typed again.
+    expect(await screen.findByText('ยืนยันตัวตนอีกครั้ง')).toBeDefined();
+    fireEvent.change(screen.getByLabelText('รหัสยืนยัน 6 หลัก หรือรหัสกู้คืน'), {
+      target: { value: '123456' },
+    });
+
+    await waitFor(() => expect(alerts.showSuccess).toHaveBeenCalled());
+    expect(api.fetchWithAuth).toHaveBeenCalledWith('/api/v1/auth/step-up', {
+      method: 'POST',
+      body: JSON.stringify({ code: '123456' }),
+    });
+    expect(changeAttempts).toBe(2);
+  });
+
   it('shows the served message when the current password is wrong', async () => {
     api.fetchWithAuth.mockResolvedValue({
       ok: false,

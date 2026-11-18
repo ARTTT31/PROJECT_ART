@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { Check, Eye, EyeOff, Info, KeyRound, Lock, Save } from 'lucide-react';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
 import { apiMessage } from '@/lib/api/apiMessage';
+import { isStepUpRequired } from '@/lib/api/stepUp';
+import { useStepUp } from '@/components/Auth/useStepUp';
 import { showError, showSuccess, showToast } from '@/utils/sweetalert';
 import type { AuthUser } from '@/types';
 import { InsetField, SectionCard } from './SectionCard';
@@ -25,6 +27,7 @@ export default function PasswordCard({ user }: { user: AuthUser | null }) {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const { promptStepUp, stepUpDialog } = useStepUp();
 
   useEffect(() => {
     if (!newPassword) {
@@ -76,11 +79,21 @@ export default function PasswordCard({ user }: { user: AuthUser | null }) {
 
     setIsChangingPassword(true);
     try {
-      const response = await fetchWithAuth('/api/v1/profile/change-password', {
-        method: 'POST',
-        body: JSON.stringify({ old_password: oldPassword, new_password: newPassword }),
-      });
-      const data = await response.json();
+      const send = () =>
+        fetchWithAuth('/api/v1/profile/change-password', {
+          method: 'POST',
+          body: JSON.stringify({ old_password: oldPassword, new_password: newPassword }),
+        });
+
+      let response = await send();
+      let data = await response.json().catch(() => null);
+      // A 2FA account has to type its code again: a borrowed session must not be
+      // able to rotate the password and lock the real owner out.
+      if (response.status === 403 && isStepUpRequired(data)) {
+        if (!(await promptStepUp())) return;
+        response = await send();
+        data = await response.json().catch(() => null);
+      }
       if (response.ok) {
         showSuccess('สำเร็จ', data.message || 'เปลี่ยนรหัสผ่านใหม่สำเร็จแล้ว!');
         setOldPassword('');
@@ -106,6 +119,7 @@ export default function PasswordCard({ user }: { user: AuthUser | null }) {
       title="รหัสผ่าน &amp; ความปลอดภัย"
       subtitle="เปลี่ยนรหัสผ่านเพื่อความปลอดภัยของบัญชีคุณ"
     >
+      {stepUpDialog}
       <form onSubmit={handleChangePassword} className="space-y-4">
         <InsetField
           id="current-password"

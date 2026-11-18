@@ -122,6 +122,39 @@ def decode_token(token: str) -> Optional[dict]:
         return None
 
 
+def create_step_up_token(user_id: int, session_id: str) -> str:
+    """Issue the short-lived proof that the second factor was just typed.
+
+    Bound to ``session_id`` so the proof covers the session that asked for it;
+    the same 2FA code typed in another browser must not unlock this one.
+    """
+    payload = {
+        "sub": str(user_id),
+        "sid": session_id,
+        "type": "step_up",
+        "exp": utcnow() + timedelta(seconds=settings.STEP_UP_TTL_SECONDS),
+        "iat": utcnow(),
+    }
+    return jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+
+
+def read_step_up_token(
+    token: Optional[str], user_id: int, session_id: Optional[str]
+) -> Optional[dict]:
+    """Return the payload when this cookie proves ``user_id`` in ``session_id``."""
+    if not token or not session_id:
+        return None
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+    except InvalidTokenError:
+        return None
+    if payload.get("type") != "step_up" or payload.get("sub") != str(user_id):
+        return None
+    if payload.get("sid") != session_id:
+        return None
+    return payload
+
+
 def get_user_2fa_salt(hashed_password: str, totp_secret: Optional[str]) -> str:
     """Generate a 16-hex fingerprint derived from the user's password hash and TOTP secret.
 

@@ -42,6 +42,7 @@ from app.core.utils import (
 from app.core.security import (
     create_access_token,
     create_refresh_token,
+    create_step_up_token,
     decode_token,
     decode_trusted_device_token,
     get_password_hash,
@@ -52,12 +53,14 @@ from app.core.security import (
 from app.api.dependencies import (
     get_current_user,
     load_profile_columns,
+    require_step_up,
     resolve_user_from_token,
 )
 from app.core.totp import (
     generate_recovery_codes,
     generate_secret,
     load_recovery_hashes,
+    match_recovery_code,
     provisioning_uri,
     verify as verify_totp,
 )
@@ -1642,6 +1645,9 @@ async def logout(
     # from a cookie its owner believed they had left behind. The row goes too,
     # so Profile → Security never lists a browser that can no longer be used.
     response.delete_cookie("trusted_device", **COOKIE_OPTIONS)
+    # The step-up proof is scoped to this session and minutes-long; a sign-out
+    # must not leave it behind for whatever runs next in this browser.
+    response.delete_cookie("step_up", **COOKIE_OPTIONS)
     trusted_payload = decode_trusted_device_token(
         request.cookies.get("trusted_device")
     )
@@ -1850,6 +1856,101 @@ async def two_factor_disable(
     )
 
 
+class StepUpVerifyRequest(BaseModel):
+    """A live authenticator code or a single-use recovery code."""
+
+    code: str = ""
+
+
+@router.post("/step-up", response_model=ResponseModel)
+@limiter.limit(_AUTH_LIMIT)
+async def verify_step_up(
+    payload: StepUpVerifyRequest,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Prove the second factor again for the next few minutes.
+
+    The session cookie authenticates a *browser*, not a person. Actions that
+    hand out the account — changing the password, signing out every device,
+    exporting the data, revoking every trusted browser — are gated behind this
+    fresh proof, so a copied cookie alone cannot perform them.
+
+    The result is a ``step_up`` cookie bound to this session id and to
+    ``STEP_UP_TTL_SECONDS``; it is not a new login and grants nothing else.
+    """
+    if not current_user.totp_enabled:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="การยืนยันสองขั้นตอนยังไม่เปิดใช้งาน",
+        )
+
+    access_payload = decode_token(request.cookies.get("access_token") or "")
+    session_id = (
+        access_payload.get("sid")
+        if access_payload and access_payload.get("type") == "access"
+        else None
+    )
+    if not isinstance(session_id, str) or not session_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="ไม่พบเซสชันที่ใช้งานอยู่ กรุณาเข้าสู่ระบบใหม่",
+        )
+
+    code = (payload.code or "").strip()
+    verified = False
+    used_recovery = False
+    if code.isdigit() and len(code) == 6:
+        verified = bool(current_user.totp_secret) and verify_totp(
+            current_user.totp_secret or "", code
+        )
+    elif code:
+        stored = load_recovery_hashes(current_user.totp_recovery_codes)
+        index = match_recovery_code(code, stored)
+        if index is not None:
+            # Burned here, committed below: the same code cannot be replayed.
+            stored.pop(index)
+            current_user.totp_recovery_codes = json.dumps(stored)
+            verified = True
+            used_recovery = True
+
+    if not verified:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="รหัสยืนยันไม่ถูกต้อง",
+        )
+
+    await AuditService(db).log_action(
+        action="STEP_UP_VERIFIED",
+        user_id=current_user.id,
+        details=(
+            "Second factor re-entered"
+            + (" with a recovery code" if used_recovery else "")
+            + f"; valid for {settings.STEP_UP_TTL_SECONDS}s"
+        ),
+        ip_address=get_real_client_ip(request),
+        user_agent=request.headers.get("user-agent"),
+    )
+    await db.commit()
+
+    response = JSONResponse(
+        content=ResponseModel(
+            result="success",
+            message="ยืนยันรหัสแล้ว",
+            data={"valid_for": settings.STEP_UP_TTL_SECONDS},
+        ).model_dump()
+    )
+    response.set_cookie(
+        key="step_up",
+        value=create_step_up_token(current_user.id, session_id),
+        max_age=settings.STEP_UP_TTL_SECONDS,
+        httponly=True,
+        **COOKIE_OPTIONS,
+    )
+    return response
+
+
 @router.get("/2fa/trusted-devices", response_model=ResponseModel)
 @limiter.limit(_AUTH_LIMIT)
 async def list_trusted_devices(
@@ -1904,6 +2005,50 @@ async def list_trusted_devices(
             for device in devices
         ],
     )
+
+
+@router.delete("/2fa/trusted-devices", response_model=ResponseModel)
+@limiter.limit(_AUTH_LIMIT)
+async def revoke_all_trusted_devices(
+    request: Request,
+    _step_up: User = Depends(require_step_up),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Forget every remembered browser at once.
+
+    One call rather than a loop over the per-device route: with a step-up gate
+    a loop would ask for the code once per row.
+    """
+    result = await db.execute(
+        select(TrustedDevice).where(
+            TrustedDevice.user_id == current_user.id,
+            TrustedDevice.revoked_at.is_(None),
+        )
+    )
+    devices = result.scalars().all()
+    now = utils_utcnow()
+    for device in devices:
+        device.revoked_at = now
+
+    await AuditService(db).log_action(
+        action="TRUST_DEVICE_REVOKED",
+        user_id=current_user.id,
+        details=f"All trusted browsers removed ({len(devices)})",
+        ip_address=get_real_client_ip(request),
+        user_agent=request.headers.get("user-agent"),
+    )
+    await db.commit()
+
+    response = JSONResponse(
+        content=ResponseModel(
+            result="success",
+            message=f"เพิกถอนอุปกรณ์ที่จดจำไว้ทั้งหมดแล้ว ({len(devices)})",
+            data={"revoked": len(devices)},
+        ).model_dump()
+    )
+    response.delete_cookie("trusted_device", **COOKIE_OPTIONS)
+    return response
 
 
 @router.delete("/2fa/trusted-devices/{device_id}", response_model=ResponseModel)

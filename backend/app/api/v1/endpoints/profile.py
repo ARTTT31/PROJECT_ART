@@ -73,6 +73,7 @@ from app.api.dependencies import (
     get_current_user,
     load_profile_columns,
     require_page_access,
+    require_step_up,
 )
 from app.models.user import User
 
@@ -299,11 +300,16 @@ async def update_my_profile(
 async def change_password(
     password_change: UserPasswordChange,
     request: Request,
+    _step_up: User = Depends(require_step_up),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """
     Change current user password
+
+    A new password is the account, so a 2FA account must re-enter its code
+    first (``require_step_up``): a copied session cookie cannot rotate the
+    password and keep the real owner out.
     """
     user_service = UserService(db)
 
@@ -651,6 +657,45 @@ async def get_my_sessions(
         )
 
 
+@router.delete("/sessions", response_model=ResponseModel)
+@limiter.limit(_GENERAL_LIMIT)
+async def revoke_other_sessions(
+    request: Request,
+    _step_up: User = Depends(require_step_up),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Sign out every other device in one call.
+
+    The security card used to fire one DELETE per row, which a step-up gate
+    would turn into one code prompt per row. One call means one prompt.
+    """
+    access_payload = decode_token(request.cookies.get("access_token") or "")
+    current_session_id = (
+        access_payload.get("sid")
+        if access_payload and access_payload.get("type") == "access"
+        else None
+    )
+
+    revoked = await UserService(db).revoke_sessions(
+        current_user.id, except_session_id=current_session_id
+    )
+    await AuditService(db).log_action(
+        action="SESSIONS_REVOKED",
+        user_id=current_user.id,
+        details=f"Signed out every other device ({revoked})",
+        ip_address=get_real_client_ip(request),
+        user_agent=request.headers.get("user-agent"),
+    )
+    await db.commit()
+
+    return ResponseModel(
+        result="success",
+        message=f"ออกจากอุปกรณ์อื่นทั้งหมดแล้ว ({revoked})",
+        data={"revoked": revoked},
+    )
+
+
 @router.delete("/sessions/{session_id}", response_model=ResponseModel)
 @limiter.limit(_GENERAL_LIMIT)
 async def revoke_session(
@@ -783,6 +828,7 @@ async def update_notification_state(
 @limiter.limit(_GENERAL_LIMIT)
 async def export_my_data(
     request: Request,
+    _step_up: User = Depends(require_step_up),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):

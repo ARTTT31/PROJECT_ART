@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.database import get_db
-from app.core.security import decode_token
+from app.core.security import decode_token, read_step_up_token
 from app.models.user import User
 from app.services.user_service import UserService
 from app.services.ws_tickets import ws_tickets
@@ -251,6 +251,52 @@ async def authenticate_websocket(websocket: WebSocket, db: AsyncSession) -> Opti
     except Exception as exc:
         logger.warning("authenticate_websocket: unexpected error: %s", exc)
         return None
+
+
+STEP_UP_REQUIRED_CODE = "step_up_required"
+
+
+def _access_session_id(request: Request) -> Optional[str]:
+    """The ``sid`` of the access token this request presented, if any."""
+    payload = decode_token(request.cookies.get("access_token") or "")
+    if payload is None or payload.get("type") != "access":
+        return None
+    session_id = payload.get("sid")
+    return session_id if isinstance(session_id, str) else None
+
+
+async def require_step_up(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+) -> User:
+    """Refuse a dangerous account action unless the second factor was just typed.
+
+    A session cookie is a bearer credential: copied, it is the whole account.
+    Password rotation, signing out every device and exporting the account all
+    hand that copy either a new password or the data, so they also demand the
+    code — proven within ``STEP_UP_TTL_SECONDS`` and for *this* session only.
+
+    Accounts without 2FA pass through: there is no second factor to re-ask for,
+    and locking them out of their own password form would be worse than the
+    risk it removes.
+    """
+    if not current_user.totp_enabled:
+        return current_user
+
+    if read_step_up_token(
+        request.cookies.get("step_up"),
+        current_user.id,
+        _access_session_id(request),
+    ):
+        return current_user
+
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail={
+            "code": STEP_UP_REQUIRED_CODE,
+            "message": "กรุณากรอกรหัส 2FA อีกครั้งเพื่อยืนยันการทำรายการนี้",
+        },
+    )
 
 
 async def get_current_admin_user(

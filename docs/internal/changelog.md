@@ -1373,6 +1373,42 @@ clean (73 files). `npx vitest run` **426 passed / 65 files**, `npx tsc --noEmit`
 clean. Not run: `next build`, Playwright smoke/axe, and neither the card nor the dialog was opened in a
 browser this pass — both are covered by unit tests only.
 
+## Step-Up Re-verification for Dangerous Actions (November 18, 2026)
+
+A session cookie authenticates a browser, not a person: copied, it *was* the whole account. Password
+rotation, signing out every device, exporting the data and forgetting every trusted browser now also
+require the second factor, typed minutes ago in this session.
+
+1. **`POST /auth/step-up` proves the code again.** It accepts a 6-digit authenticator code or a
+   single-use recovery code (burned on use) and sets a signed `step_up` cookie valid for
+   `STEP_UP_TTL_SECONDS` (default 300, a setting rather than a literal). The JWT carries the account
+   and the access token's `sid`, so a proof minted for one browser cannot unlock another; logout
+   deletes the cookie.
+2. **`require_step_up` gates four actions.** `POST /profile/change-password`, `GET /profile/export`,
+   `DELETE /profile/sessions` and `DELETE /auth/2fa/trusted-devices` answer
+   `403 {"detail": {"code": "step_up_required"}}` when a 2FA account has no fresh proof. Accounts
+   without 2FA pass through — re-asking for a factor that does not exist would only lock them out of
+   their own password form.
+3. **Two bulk revoke endpoints.** Signing out every other device was a client-side loop over the
+   per-session route and forgetting every trusted browser did not exist; under a step-up gate a loop
+   asks for the code once per row. `DELETE /profile/sessions` revokes every session except this one
+   (audit `SESSIONS_REVOKED`) and `DELETE /auth/2fa/trusted-devices` revokes every live trusted row
+   and drops the local cookie (audit `TRUST_DEVICE_REVOKED`).
+4. **The UI asks once.** `lib/api/stepUp.ts` recognises the refusal, `StepUpDialog` collects the code
+   (six digits submit themselves, recovery codes use the button) and `useStepUp()` resolves a
+   promise the caller can retry on. The password card and both revoke buttons retry the same request
+   exactly once.
+5. **Disabling 2FA was deliberately left out.** `POST /auth/2fa/disable` already demands the password
+   *and* a live code on every call, which is stronger than a five-minute cookie; adding both would
+   ask for two codes to do one thing.
+
+### Verified
+
+`pytest -q` **709 passed / 84.34%** (gate 75%, Python 3.14.6 local), `flake8 app` clean, `mypy app`
+clean (73 files). `npx vitest run` **427 passed / 65 files**, `npx tsc --noEmit` clean, `npx eslint .`
+clean. Not run: `next build`, Playwright smoke/axe, and the dialog and both bulk buttons were not
+clicked in a browser this pass — the gate, the cookie scope and the retry are covered by tests only.
+
 
 
 

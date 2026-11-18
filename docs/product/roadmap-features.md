@@ -145,14 +145,23 @@ scope is not re-litigated as "still planned".
    - `REQUIRE_ADMIN_2FA` (default on): the admin API answers `403` until the account has a second
      factor, while the session keeps working so Profile → Security can enable it. The admin console
      shows the backend's own message with a link to that screen.
-3. **Redis for Rate Limiting & Multi-Instance Scaling — Shipped**
+3. **Step-up Re-verification for Dangerous Actions — Shipped (2026-11-18)**
+   - `POST /auth/step-up` verifies a live code (or a recovery code) and sets a signed `step_up`
+     cookie bound to the access token's `sid`, valid for `STEP_UP_TTL_SECONDS` (default 300).
+   - Gated: change password, data export, sign out every other device, forget every trusted browser.
+     Accounts without 2FA pass through — there is no second factor to re-ask for.
+   - `DELETE /profile/sessions` and `DELETE /auth/2fa/trusted-devices` exist so the UI asks for the
+     code once instead of once per row.
+   - Turning 2FA *off* was not added to the list: `POST /auth/2fa/disable` already requires the
+     password plus a live code on every call, which is stronger than a five-minute cookie.
+4. **Redis for Rate Limiting & Multi-Instance Scaling — Shipped**
    - `SLOWAPI_STORAGE_URI` is read by `app/core/rate_limit.py` with an in-memory fallback;
      login backoff shares the same backend. Remaining work is operational: point the env var at
      Redis on the deployment and confirm the buckets are shared across instances.
-3. **Signed / Opaque User Cookie — Shipped (2026-11-06)**
+5. **Signed / Opaque User Cookie — Shipped (2026-11-06)**
    - HMAC-SHA256 over the percent-encoded payload, appended after the last dot. Unsigned legacy
      values are rejected rather than accepted without a signature.
-4. **Offline-first PWA Enhancements — Shipped (2026-11-06, client outbox)**
+6. **Offline-first PWA Enhancements — Shipped (2026-11-06, client outbox)**
    - Quick notes, finance entries, watchlist symbols and personal reminders write to localStorage
      first and keep a per-resource pending snapshot (`lib/offline/localStore.ts`). The widget
      replays it on the `online` event and again on mount, so an edit made offline survives a
