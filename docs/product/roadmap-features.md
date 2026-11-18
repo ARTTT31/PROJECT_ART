@@ -58,8 +58,11 @@
 - **Auth:** PyJWT access/refresh in HTTP-only cookies, CSRF double-submit token, account lockout
   (5 attempts -> 30 min), session tracking (IP / user agent / device), and optional TOTP
   two-factor authentication (authenticator app, 10 single-use recovery codes, password + code to
-  disable). The readable `user` cookie is HMAC-signed with `SECRET_KEY`; a value the server did not
-  write is rejected instead of being trusted as display data.
+  disable). The code is requested in a dialog after the API answers `totp_required`, with a separate
+  recovery-code mode for phone keyboards, and an opt-in "trust this device for 30 days" cookie that
+  Profile → Security lists and can revoke per browser (and that logout withdraws). The readable
+  `user` cookie is HMAC-signed with `SECRET_KEY`; a value the server did not write is rejected
+  instead of being trusted as display data.
 - **Authorisation:** `role` plus per-user `accessible_pages`; the sidebar and profile page hide
   what a user cannot reach, and the backend enforces page access for page-scoped APIs.
 - **Admin:** a dedicated `/admin` console for user management, page-permission editing,

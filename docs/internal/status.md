@@ -1,6 +1,6 @@
 # ART Workspace — Current Status
 
-**Verified:** November 17, 2026 · `main` · Windows dev
+**Verified:** November 18, 2026 · `main` · Windows dev
 machine, Python 3.14.6 local, Node 26
 
 > **What this file is.** The single place that states what is true *right now*: verified numbers, what
@@ -14,17 +14,17 @@ machine, Python 3.14.6 local, Node 26
 
 | Check | Command | Result |
 |---|---|---|
-| Backend tests | `cd backend && ./venv/Scripts/python.exe -m pytest -q` | **682 passed**; coverage **84.11%** (gate 75%) |
+| Backend tests | `cd backend && ./venv/Scripts/python.exe -m pytest -q` | **690 passed**; coverage **84.20%** (gate 75%, local Python 3.14.6) |
 | Backend lint | `./venv/Scripts/python.exe -m flake8 app` | clean |
-| Backend types | `./venv/Scripts/python.exe -m mypy app` | clean, 72 source files |
+| Backend types | `./venv/Scripts/python.exe -m mypy app` | clean, 73 source files |
 | Migrations | `alembic upgrade head` + `alembic check` on a throwaway SQLite file | full chain applies, **no drift** |
-| Frontend tests | `cd frontend && npx vitest run` | **421 passed**, 64 files |
+| Frontend tests | `cd frontend && npx vitest run` | **423 passed**, 65 files |
 | Frontend types | `npx tsc --noEmit` | clean |
 | Frontend lint | `npx eslint .` | clean (0 errors, 0 warnings) |
 | Frontend build | `npm run build` | succeeds, 16 routes |
 
-The CI job runs the suite on 3.11 **and with no `.env`**, so the numbers above were measured that
-way. Both differences matter: 3.11 measures ~8 points lower than 3.14, and a local `.env` silently
+The CI job runs the suite on 3.11 **and with no `.env`**; the numbers above are this machine's
+(3.14.6 with the local `.env`). Both differences matter: 3.11 measures ~8 points lower than 3.14, and a local `.env` silently
 changes behaviour the suite can assert on — that is exactly how `test_ai_settings.py` passed here and
 failed in CI (the test sent `http://` and expected the private-address error, which a `DEBUG=False`
 CI only reaches after the earlier https-scheme rejection). The skipped test is

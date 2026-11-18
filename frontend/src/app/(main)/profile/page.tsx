@@ -26,6 +26,7 @@ import AccountDetailsCard from '@/components/Profile/AccountDetailsCard';
 import PasswordCard from '@/components/Profile/PasswordCard';
 import { QuickLinkDialog, type QuickLinkFormValues } from '@/components/Profile/QuickLinkDialog';
 import SecurityCard from '@/components/Profile/SecurityCard';
+import TrustedDevicesCard from '@/components/Profile/TrustedDevicesCard';
 import { MyDevicesCard } from '@/components/Profile/MyDevicesCard';
 import ProfileHero from '@/components/Profile/ProfileHero';
 import PreferencesPanels, {
@@ -498,6 +499,7 @@ export default function ProfilePage() {
             <div hidden={accountSection !== 'security'} className="space-y-4">
               <PasswordCard user={currentUser} />
               <SecurityCard />
+              <TrustedDevicesCard />
               <MyDevicesCard />
             </div>
           </motion.div>

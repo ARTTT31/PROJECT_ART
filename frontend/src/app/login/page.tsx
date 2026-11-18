@@ -157,7 +157,9 @@ function LoginContent() {
   const [totpCode, setTotpCode] = useState('');
   const [totpError, setTotpError] = useState('');
   const [isRecoveryMode, setIsRecoveryMode] = useState(false);
-  const [trustDevice, setTrustDevice] = useState(true);
+  // Unticked on purpose: the checkbox buys 30 days of 2FA-free sign-ins, so it
+  // is an opt-in, never a default someone clicks past without reading it.
+  const [trustDevice, setTrustDevice] = useState(false);
   const totpRef = useRef<HTMLInputElement>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isClient, setIsClient] = useState(false);

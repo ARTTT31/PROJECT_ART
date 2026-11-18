@@ -1253,6 +1253,41 @@ Pass implementing dedicated recovery code mode in the 2FA Dialog and a secure st
 `cd backend && pytest -q`: **682 passed / 84.11%** (gate 75%), `flake8 app` clean, `mypy app` clean (72 files).
 `cd frontend && npx vitest run`: **421 passed / 64 files**, `tsc --noEmit` clean, `eslint .` clean.
 
+## Trusted Device Revocation, Cookie Lifetime and 2FA Audit (November 18, 2026)
+
+Pass closing the three gaps the 2026-11-17 trusted-device commit left behind: an opt-in that was
+ticked by default, a cookie lifetime outside `settings`, and a 30-day 2FA bypass nobody could see or
+withdraw.
+
+1. **Trust device is opt-in.** `login/page.tsx` started the checkbox at `true`, so every 2FA account
+   silently bought a 30-day bypass on whatever browser it signed in from. It now starts unticked,
+   and the page test asserts the unticked default and the opt-in click.
+2. **Cookie lifetime comes from settings.** `trusted_device` used a literal `30 * 24 * 60 * 60`
+   while the JWT used its own 30-day constant. Both now read
+   `settings.TRUSTED_DEVICE_EXPIRE_DAYS` / `TRUSTED_DEVICE_COOKIE_MAX_AGE`, so changing one cannot
+   desynchronise the other (the P7 rule).
+3. **Logout forgets the browser.** `/auth/logout` cleared four cookies and left a valid 30-day 2FA
+   bypass behind on the machine. It now clears `trusted_device` and revokes the row it names, so the
+   security list never shows a browser that can no longer be used.
+4. **The bypass is visible and revocable.** New `trusted_devices` table (revision `b8e2f5c10a97`)
+   records the cookie's `jti`, UA/IP, `last_used_at`, expiry and a `salt_version`. Login only honours
+   a cookie whose row exists, is unrevoked and unexpired; `GET/DELETE
+   /api/v1/auth/2fa/trusted-devices` lists them and revokes one, and Profile → Security gained the
+   matching card. The salt (`sha256(hashed_password + totp_secret)`) means a password change or 2FA
+   reset invalidates every older row without a write, and the list purges what no longer matches.
+5. **Audit trail for the second factor.** `TRUSTED_DEVICE_ISSUED`, `TRUSTED_DEVICE_USED` (a sign-in
+   where the code was skipped), `TRUST_DEVICE_REVOKED` and `2FA_RECOVERY_CODE_USED` join the existing
+   `2FA_ENABLED`/`2FA_DISABLED`, and the audit page labels them. Before this, a row read "logged in"
+   with nothing accounting for the missing code.
+
+### Verified
+
+`pytest -q` **690 passed / 84.20%** (gate 75%, Python 3.14.6 local), `flake8 app` clean, `mypy app`
+clean (73 files), `alembic upgrade head` + `alembic check` clean on a throwaway SQLite file.
+`npx vitest run` **423 passed / 65 files**, `npx tsc --noEmit` clean, `npx eslint .` clean.
+Not run: `next build`, Playwright smoke/axe, and the new card was never opened in a browser — its
+list and revoke paths are covered by component tests only.
+
 
 
 

@@ -182,9 +182,11 @@ describe('LoginPage', () => {
     const totpInput = screen.getByLabelText('รหัสยืนยัน 6 หลัก') as HTMLInputElement;
     expect(totpInput.getAttribute('inputmode')).toBe('numeric');
 
-    // Trust device checkbox is present
+    // Trust device is opt-in: unticked until the user asks for it.
     const trustCheckbox = screen.getByLabelText(/จดจำอุปกรณ์นี้ 30 วัน/i) as HTMLInputElement;
     expect(trustCheckbox).toBeDefined();
+    expect(trustCheckbox.checked).toBe(false);
+    fireEvent.click(trustCheckbox);
     expect(trustCheckbox.checked).toBe(true);
 
     // Switch to recovery code mode

@@ -122,9 +122,6 @@ def decode_token(token: str) -> Optional[dict]:
         return None
 
 
-TRUSTED_DEVICE_EXPIRE_DAYS: int = 30
-
-
 def get_user_2fa_salt(hashed_password: str, totp_secret: Optional[str]) -> str:
     """Generate a 16-hex fingerprint derived from the user's password hash and TOTP secret.
 
@@ -138,18 +135,61 @@ def get_user_2fa_salt(hashed_password: str, totp_secret: Optional[str]) -> str:
 def create_trusted_device_token(
     user_id: int,
     version_salt: str,
+    token_id: str,
     expires_delta: Optional[timedelta] = None,
 ) -> str:
-    """Issue a signed JWT for a trusted device with 30-day default lifetime."""
-    expire = utcnow() + (expires_delta or timedelta(days=TRUSTED_DEVICE_EXPIRE_DAYS))
+    """Issue a signed JWT for a trusted device.
+
+    ``token_id`` is the ``jti`` that names the ``trusted_devices`` row; without
+    it the cookie could not be revoked individually.
+    """
+    expire = utcnow() + (
+        expires_delta or timedelta(days=settings.TRUSTED_DEVICE_EXPIRE_DAYS)
+    )
     payload = {
         "sub": str(user_id),
         "type": "trusted_device",
         "v": version_salt,
+        "jti": token_id,
         "exp": expire,
         "iat": utcnow(),
     }
     return jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+
+
+def decode_trusted_device_token(token: Optional[str]) -> Optional[dict]:
+    """Signature + expiry check only, without an account or salt.
+
+    Used by logout, which must be able to revoke the row named by a cookie it
+    is already discarding without loading the account to recompute the salt.
+    """
+    if not token:
+        return None
+    try:
+        payload = jwt.decode(
+            token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
+        )
+    except InvalidTokenError:
+        return None
+    if payload.get("type") != "trusted_device":
+        return None
+    return payload
+
+
+def read_trusted_device_token(
+    token: Optional[str],
+    user_id: int,
+    expected_salt: str,
+) -> Optional[dict]:
+    """Return the payload when the token belongs to ``user_id`` and is current."""
+    payload = decode_trusted_device_token(token)
+    if payload is None:
+        return None
+    if payload.get("sub") != str(user_id):
+        return None
+    if payload.get("v") != expected_salt:
+        return None
+    return payload
 
 
 def verify_trusted_device_token(
@@ -158,16 +198,4 @@ def verify_trusted_device_token(
     expected_salt: str,
 ) -> bool:
     """Verify that a trusted device token is valid, matches the user, and has not been invalidated."""
-    try:
-        payload = jwt.decode(
-            token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
-        )
-        if payload.get("type") != "trusted_device":
-            return False
-        if payload.get("sub") != str(user_id):
-            return False
-        if payload.get("v") != expected_salt:
-            return False
-        return True
-    except InvalidTokenError:
-        return False
+    return read_trusted_device_token(token, user_id, expected_salt) is not None

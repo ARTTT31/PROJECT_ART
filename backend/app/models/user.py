@@ -147,6 +147,9 @@ class User(Base, TimestampMixin):
     sessions = relationship(
         "UserSession", back_populates="user", cascade="all, delete-orphan"
     )
+    trusted_devices = relationship(
+        "TrustedDevice", back_populates="user", cascade="all, delete-orphan"
+    )
 
     def __repr__(self):
         return f"<User(id={self.id}, email='{self.email}', name='{self.name}')>"

@@ -7,6 +7,7 @@ from app.models.email_token import EmailToken
 from app.models.system_setting import SystemSetting
 from app.models.notification_log import NotificationLog
 from app.models.ai_usage import AiUsage
+from app.models.trusted_device import TrustedDevice
 
 __all__ = [
     "User",
@@ -17,4 +18,5 @@ __all__ = [
     "SystemSetting",
     "NotificationLog",
     "AiUsage",
+    "TrustedDevice",
 ]

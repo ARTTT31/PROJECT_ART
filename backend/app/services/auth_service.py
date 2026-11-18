@@ -15,6 +15,7 @@ import uuid
 
 from app.models.user import User
 from app.models.session import UserSession
+from app.models.trusted_device import TrustedDevice
 from app.schemas.user import UserCreate, UserRegister
 from app.schemas.token import Token
 from app.core.security import (
@@ -25,7 +26,7 @@ from app.core.security import (
     decode_token,
     new_refresh_jti,
     create_trusted_device_token,
-    verify_trusted_device_token,
+    read_trusted_device_token,
     get_user_2fa_salt,
 )
 from app.core.config import settings
@@ -329,13 +330,35 @@ class AuthService:
         # Checked after every account-state gate and before any token exists, so
         # a password-only attempt on a 2FA account never mints a session.
         issue_trusted_device_token: Optional[str] = None
+        trusted_device_used = False
         if user.totp_enabled:
             salt = get_user_2fa_salt(user.hashed_password, user.totp_secret)
             is_trusted = False
             if trusted_device_token:
-                is_trusted = verify_trusted_device_token(
+                payload = read_trusted_device_token(
                     trusted_device_token, user.id, salt
                 )
+                token_id = payload.get("jti") if payload else None
+                # A signed cookie is not enough on its own: the row is the
+                # revocation list, so a device removed from Profile → Security
+                # (or signed out) stops skipping the code immediately.
+                if isinstance(token_id, str) and token_id:
+                    device = (
+                        await self.db.execute(
+                            select(TrustedDevice).where(
+                                TrustedDevice.token_id == token_id,
+                                TrustedDevice.user_id == user.id,
+                                TrustedDevice.revoked_at.is_(None),
+                                TrustedDevice.expires_at > utcnow(),
+                            )
+                        )
+                    ).scalar_one_or_none()
+                    if device is not None:
+                        is_trusted = True
+                        trusted_device_used = True
+                        device.last_used_at = utcnow()
+                        if ip_address:
+                            device.ip_address = ip_address
 
             if not is_trusted:
                 if not totp_code and not recovery_code:
@@ -350,7 +373,23 @@ class AuthService:
                     )
                 # Successful 2FA verification: issue token if trust requested
                 if trust_device:
-                    issue_trusted_device_token = create_trusted_device_token(user.id, salt)
+                    token_id = uuid.uuid4().hex
+                    issue_trusted_device_token = create_trusted_device_token(
+                        user.id, salt, token_id
+                    )
+                    self.db.add(
+                        TrustedDevice(
+                            user_id=user.id,
+                            token_id=token_id,
+                            salt_version=salt,
+                            device_label=device_label,
+                            user_agent=user_agent,
+                            ip_address=ip_address,
+                            last_used_at=utcnow(),
+                            expires_at=utcnow()
+                            + timedelta(days=settings.TRUSTED_DEVICE_EXPIRE_DAYS),
+                        )
+                    )
 
         # Reset failure bookkeeping on a successful verification
         await _backoff_clear(backoff_key)
@@ -463,6 +502,7 @@ class AuthService:
             "device_label": device_label,
             "ip_address": ip_address,
             "issue_trusted_device_token": issue_trusted_device_token,
+            "trusted_device_used": trusted_device_used,
             "user": {
                 "id": user.id,
                 "email": user.email,

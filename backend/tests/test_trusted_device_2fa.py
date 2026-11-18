@@ -17,7 +17,8 @@ def test_trusted_device_token_lifecycle():
     totp_sec = "JBSWY3DPEHPK3PXP"
     salt = get_user_2fa_salt(pwd_hash, totp_sec)
 
-    token = create_trusted_device_token(user_id, salt)
+    token_id = "test-token-id"
+    token = create_trusted_device_token(user_id, salt, token_id)
     assert token is not None
 
     # Valid token verification
@@ -36,7 +37,7 @@ def test_trusted_device_token_lifecycle():
 
     # Expired token
     expired_token = create_trusted_device_token(
-        user_id, salt, expires_delta=-timedelta(seconds=1)
+        user_id, salt, token_id, expires_delta=-timedelta(seconds=1)
     )
     assert verify_trusted_device_token(expired_token, user_id, salt) is False
 

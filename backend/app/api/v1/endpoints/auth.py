@@ -14,7 +14,7 @@ from urllib.parse import urlencode
 import httpx
 from fastapi import APIRouter, BackgroundTasks, Body, Depends, HTTPException, Request, status
 from fastapi.responses import RedirectResponse, JSONResponse
-from sqlalchemy import func, update
+from sqlalchemy import delete, func, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
@@ -33,12 +33,19 @@ from app.core.database import get_db
 from app.core.disposable_email import is_disposable_email
 from app.core.rate_limit import get_real_client_ip, limiter
 from app.core.turnstile import verify_turnstile
-from app.core.utils import encode_user_cookie, user_cookie_payload, utcnow as utils_utcnow
+from app.core.utils import (
+    encode_user_cookie,
+    user_cookie_payload,
+    utc_iso,
+    utcnow as utils_utcnow,
+)
 from app.core.security import (
     create_access_token,
     create_refresh_token,
     decode_token,
+    decode_trusted_device_token,
     get_password_hash,
+    get_user_2fa_salt,
     new_refresh_jti,
     verify_password,
 )
@@ -57,6 +64,7 @@ from app.core.totp import (
 from pydantic import BaseModel
 
 from app.models.session import UserSession
+from app.models.trusted_device import TrustedDevice
 from app.models.user import User
 from app.schemas.response import ResponseModel
 from app.schemas.user import (
@@ -389,6 +397,25 @@ async def login(
             ip_address=client_ip,
             user_agent=user_agent,
         )
+        # Three events that explain *how* a sign-in passed the second factor,
+        # or that it skipped it. Without them an audit row says "logged in" and
+        # nothing accounts for the missing code.
+        if result.get("trusted_device_used"):
+            await audit_service.log_action(
+                action="TRUSTED_DEVICE_USED",
+                user_id=result["user"]["id"],
+                details="Second factor skipped: this browser is trusted",
+                ip_address=client_ip,
+                user_agent=user_agent,
+            )
+        if user_login.recovery_code:
+            await audit_service.log_action(
+                action="2FA_RECOVERY_CODE_USED",
+                user_id=result["user"]["id"],
+                details="Signed in with a single-use recovery code",
+                ip_address=client_ip,
+                user_agent=user_agent,
+            )
         await db.commit()
 
         # 🛡️ SECURITY: Set tokens as HTTP-only cookies (mitigating XSS token theft)
@@ -449,10 +476,22 @@ async def login(
             response.set_cookie(
                 key="trusted_device",
                 value=result["issue_trusted_device_token"],
-                max_age=30 * 24 * 60 * 60,
+                max_age=settings.TRUSTED_DEVICE_COOKIE_MAX_AGE,
                 httponly=True,
                 **COOKIE_OPTIONS,
             )
+            await audit_service.log_action(
+                action="TRUSTED_DEVICE_ISSUED",
+                user_id=result["user"]["id"],
+                details=(
+                    "Browser trusted for "
+                    f"{settings.TRUSTED_DEVICE_EXPIRE_DAYS} days: "
+                    f"{result.get('device_label') or 'unknown device'}"
+                ),
+                ip_address=client_ip,
+                user_agent=user_agent,
+            )
+            await db.commit()
         return response
 
     except HTTPException as e:
@@ -1563,6 +1602,32 @@ async def logout(
     # Drop the CSRF token too so the next login starts from a clean state.
     response.delete_cookie("csrf_token", **COOKIE_OPTIONS)
 
+    # Forget this browser. A trusted device that survived the login session was
+    # the point of the feature, but it must not survive an explicit sign-out: on
+    # a shared machine the next person would otherwise get a 2FA-free session
+    # from a cookie its owner believed they had left behind. The row goes too,
+    # so Profile → Security never lists a browser that can no longer be used.
+    response.delete_cookie("trusted_device", **COOKIE_OPTIONS)
+    trusted_payload = decode_trusted_device_token(
+        request.cookies.get("trusted_device")
+    )
+    if trusted_payload and caller_id is not None:
+        if trusted_payload.get("sub") == str(caller_id):
+            token_id = trusted_payload.get("jti")
+            if isinstance(token_id, str) and token_id:
+                try:
+                    await db.execute(
+                        update(TrustedDevice)
+                        .where(
+                            TrustedDevice.token_id == token_id,
+                            TrustedDevice.user_id == caller_id,
+                        )
+                        .values(revoked_at=utils_utcnow())
+                    )
+                    await db.commit()
+                except Exception:
+                    logger.exception("Failed to revoke trusted device on logout")
+
     # Invalidate session in DB if session_id is provided
     try:
         if target_session:
@@ -1749,3 +1814,111 @@ async def two_factor_disable(
         message="ปิดการยืนยันสองขั้นตอนแล้ว",
         data={"enabled": False},
     )
+
+
+@router.get("/2fa/trusted-devices", response_model=ResponseModel)
+@limiter.limit(_AUTH_LIMIT)
+async def list_trusted_devices(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Browsers that may skip the second factor for this account.
+
+    A cookie that skips 2FA for 30 days is a credential, so the owner has to be
+    able to see it. Rows are filtered by the account's current salt: anything
+    issued before the last password change or 2FA reset can never verify again
+    and is purged here instead of being listed as a live device.
+    """
+    if not current_user.totp_enabled:
+        return ResponseModel(
+            result="success",
+            message="การยืนยันสองขั้นตอนยังไม่เปิดใช้งาน",
+            data=[],
+        )
+
+    salt = get_user_2fa_salt(current_user.hashed_password, current_user.totp_secret)
+    now = utils_utcnow()
+
+    await db.execute(
+        delete(TrustedDevice).where(
+            TrustedDevice.user_id == current_user.id,
+            TrustedDevice.salt_version != salt,
+        )
+    )
+    result = await db.execute(
+        select(TrustedDevice)
+        .where(
+            TrustedDevice.user_id == current_user.id,
+            TrustedDevice.revoked_at.is_(None),
+            TrustedDevice.expires_at > now,
+            TrustedDevice.salt_version == salt,
+        )
+        .order_by(TrustedDevice.last_used_at.desc())
+    )
+    devices = result.scalars().all()
+    await db.commit()
+
+    return ResponseModel(
+        result="success",
+        message="รายการอุปกรณ์ที่จดจำไว้",
+        data=[
+            {
+                "id": device.id,
+                "device_label": device.device_label,
+                "user_agent": device.user_agent,
+                "ip_address": device.ip_address,
+                "created_at": utc_iso(device.created_at),
+                "last_used_at": utc_iso(device.last_used_at),
+                "expires_at": utc_iso(device.expires_at),
+            }
+            for device in devices
+        ],
+    )
+
+
+@router.delete("/2fa/trusted-devices/{device_id}", response_model=ResponseModel)
+@limiter.limit(_AUTH_LIMIT)
+async def revoke_trusted_device(
+    request: Request,
+    device_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Forget one browser: its next sign-in asks for a code again."""
+    result = await db.execute(
+        select(TrustedDevice).where(
+            TrustedDevice.id == device_id,
+            TrustedDevice.user_id == current_user.id,
+        )
+    )
+    device = result.scalar_one_or_none()
+    if device is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="ไม่พบอุปกรณ์ที่ระบุ"
+        )
+
+    device.revoked_at = utils_utcnow()
+    await AuditService(db).log_action(
+        action="TRUST_DEVICE_REVOKED",
+        user_id=current_user.id,
+        details=(
+            "Trusted browser removed: "
+            f"{device.device_label or 'unknown device'}"
+        ),
+        ip_address=get_real_client_ip(request),
+        user_agent=request.headers.get("user-agent"),
+    )
+    await db.commit()
+
+    response = JSONResponse(
+        content=ResponseModel(
+            result="success", message="เพิกถอนอุปกรณ์นี้แล้ว"
+        ).model_dump()
+    )
+    # Revoking the browser you are currently using: drop the local cookie too,
+    # so the next sign-in asks for a code rather than presenting a dead token.
+    payload = decode_trusted_device_token(request.cookies.get("trusted_device"))
+    if payload and payload.get("jti") == device.token_id:
+        response.delete_cookie("trusted_device", **COOKIE_OPTIONS)
+    return response

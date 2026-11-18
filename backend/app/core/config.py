@@ -213,6 +213,15 @@ class Settings(BaseSettings):
     def REFRESH_COOKIE_MAX_AGE(self) -> int:
         return self.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60
 
+    # "Trust this device for N days": the signed cookie that lets one browser
+    # skip the 2FA prompt. The JWT and the cookie must share this number, or the
+    # browser keeps a token the server already treats as expired.
+    TRUSTED_DEVICE_EXPIRE_DAYS: int = 30
+
+    @property
+    def TRUSTED_DEVICE_COOKIE_MAX_AGE(self) -> int:
+        return self.TRUSTED_DEVICE_EXPIRE_DAYS * 24 * 60 * 60
+
     # CORS — explicit origins required (no wildcards) because allow_credentials=True
     CORS_ORIGINS: str = "http://localhost:3000,http://localhost:3001"
 
