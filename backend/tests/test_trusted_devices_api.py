@@ -7,6 +7,7 @@ that explain a sign-in where no code was typed.
 """
 
 import json
+from datetime import timedelta
 
 from sqlalchemy import select
 
@@ -90,7 +91,9 @@ class TestTrustedDevicesApi:
         assert data[0]["id"] > 0
         assert data[0]["expires_at"]
 
-    async def test_stale_salt_rows_are_not_listed(self, client, db_session):
+    async def test_stale_salt_rows_are_hidden_and_the_read_deletes_nothing(
+        self, client, db_session
+    ):
         from conftest import seed_account
 
         user = await seed_account(db_session, "trustsalt@example.com", "Password123!")
@@ -107,6 +110,57 @@ class TestTrustedDevicesApi:
         response = await client.get("/api/v1/auth/2fa/trusted-devices")
         assert response.status_code == 200
         assert response.json()["data"] == []
+
+        # The endpoint is a read: cleanup belongs to the scheduled job, not to
+        # every profile page load.
+        still_there = (
+            await db_session.execute(
+                select(TrustedDevice).where(TrustedDevice.user_id == user.id)
+            )
+        ).scalars().all()
+        assert len(still_there) == 1
+
+    async def test_scheduled_cleanup_removes_expired_and_revoked_rows(
+        self, client, db_session
+    ):
+        from app.core.utils import utcnow
+        from app.services.session_cleanup import cleanup_expired_sessions_async
+        from conftest import seed_account
+
+        user = await seed_account(db_session, "trustgc@example.com", "Password123!")
+        db_session.add_all(
+            [
+                TrustedDevice(
+                    user_id=user.id,
+                    token_id="gc-expired",
+                    salt_version="salt",
+                    expires_at=utcnow() - timedelta(minutes=5),
+                ),
+                TrustedDevice(
+                    user_id=user.id,
+                    token_id="gc-revoked",
+                    salt_version="salt",
+                    expires_at=utcnow() + timedelta(days=30),
+                    revoked_at=utcnow(),
+                ),
+                TrustedDevice(
+                    user_id=user.id,
+                    token_id="gc-live",
+                    salt_version="salt",
+                    expires_at=utcnow() + timedelta(days=30),
+                ),
+            ]
+        )
+        await db_session.commit()
+
+        await cleanup_expired_sessions_async(db_session)
+
+        remaining = (
+            await db_session.execute(
+                select(TrustedDevice).where(TrustedDevice.user_id == user.id)
+            )
+        ).scalars().all()
+        assert [row.token_id for row in remaining] == ["gc-live"]
 
     async def test_revoke_makes_the_next_login_ask_for_a_code(
         self, client, db_session

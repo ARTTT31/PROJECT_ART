@@ -14,7 +14,7 @@ from urllib.parse import urlencode
 import httpx
 from fastapi import APIRouter, BackgroundTasks, Body, Depends, HTTPException, Request, status
 from fastapi.responses import RedirectResponse, JSONResponse
-from sqlalchemy import delete, func, update
+from sqlalchemy import func, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
@@ -1827,8 +1827,10 @@ async def list_trusted_devices(
 
     A cookie that skips 2FA for 30 days is a credential, so the owner has to be
     able to see it. Rows are filtered by the account's current salt: anything
-    issued before the last password change or 2FA reset can never verify again
-    and is purged here instead of being listed as a live device.
+    issued before the last password change or 2FA reset can never verify again,
+    so it is hidden rather than listed as a live device. This endpoint is
+    read-only — expired, revoked and stale rows are removed by the scheduled
+    cleanup in ``app.services.session_cleanup``.
     """
     if not current_user.totp_enabled:
         return ResponseModel(
@@ -1840,12 +1842,6 @@ async def list_trusted_devices(
     salt = get_user_2fa_salt(current_user.hashed_password, current_user.totp_secret)
     now = utils_utcnow()
 
-    await db.execute(
-        delete(TrustedDevice).where(
-            TrustedDevice.user_id == current_user.id,
-            TrustedDevice.salt_version != salt,
-        )
-    )
     result = await db.execute(
         select(TrustedDevice)
         .where(
@@ -1857,7 +1853,6 @@ async def list_trusted_devices(
         .order_by(TrustedDevice.last_used_at.desc())
     )
     devices = result.scalars().all()
-    await db.commit()
 
     return ResponseModel(
         result="success",

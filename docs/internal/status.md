@@ -14,7 +14,7 @@ machine, Python 3.14.6 local, Node 26
 
 | Check | Command | Result |
 |---|---|---|
-| Backend tests | `cd backend && ./venv/Scripts/python.exe -m pytest -q` | **690 passed**; coverage **84.20%** (gate 75%, local Python 3.14.6) |
+| Backend tests | `cd backend && ./venv/Scripts/python.exe -m pytest -q` | **693 passed**; coverage **84.22%** (gate 75%, local Python 3.14.6) |
 | Backend lint | `./venv/Scripts/python.exe -m flake8 app` | clean |
 | Backend types | `./venv/Scripts/python.exe -m mypy app` | clean, 73 source files |
 | Migrations | `alembic upgrade head` + `alembic check` on a throwaway SQLite file | full chain applies, **no drift** |

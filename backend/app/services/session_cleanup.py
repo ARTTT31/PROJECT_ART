@@ -1,8 +1,9 @@
 """
 Session Cleanup Service
 
-Deletes expired and long-inactive rows from ``sessions`` so the table does not
-grow forever. There are two entry points:
+Deletes expired and long-inactive rows from ``sessions``, and dead rows from
+``trusted_devices`` (expired, or withdrawn by the user), so neither table grows
+forever. There are two entry points:
 
 * an async function used by the in-app scheduler
   (``SESSION_CLEANUP_INTERVAL_HOURS``, see ``app.main.lifespan``), and
@@ -30,6 +31,7 @@ from app.models.session import UserSession
 from app.core.utils import utcnow
 from app.models.audit_log import AuditLog
 from app.models.email_token import EmailToken
+from app.models.trusted_device import TrustedDevice
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +43,17 @@ def _expired_filter(now, cutoff_date):
     return (UserSession.expires_at < now) | (
         (UserSession.is_active.is_(False)) & (UserSession.updated_at < cutoff_date)
     )
+
+
+def _dead_trusted_device_filter(now):
+    """Trusted browsers that can no longer skip the second factor.
+
+    Expired rows are inert; a revoked row is a device the user signed out of or
+    withdrew by hand. Neither may be listed, so keeping them only grows the
+    table — the list endpoint filters instead of deleting, which keeps a GET
+    read-only.
+    """
+    return (TrustedDevice.expires_at < now) | (TrustedDevice.revoked_at.is_not(None))
 
 
 def cleanup_expired_sessions(db: Session, max_age_days: int = DEFAULT_MAX_AGE_DAYS) -> int:
@@ -64,6 +77,12 @@ def cleanup_expired_sessions(db: Session, max_age_days: int = DEFAULT_MAX_AGE_DA
         .delete(synchronize_session="fetch")
     )
 
+    device_total = (
+        db.query(TrustedDevice)
+        .filter(_dead_trusted_device_filter(now))
+        .delete(synchronize_session="fetch")
+    )
+
     if settings.AUDIT_LOG_RETENTION_DAYS > 0:
         audit_cutoff = now - timedelta(days=settings.AUDIT_LOG_RETENTION_DAYS)
         audit_total = (
@@ -80,6 +99,8 @@ def cleanup_expired_sessions(db: Session, max_age_days: int = DEFAULT_MAX_AGE_DA
         logger.info("Removed %d expired/inactive sessions", total)
     else:
         logger.debug("No expired sessions found")
+    if device_total:
+        logger.info("Removed %d dead trusted devices", device_total)
 
     return int(total)
 
@@ -115,6 +136,16 @@ async def cleanup_expired_sessions_async(
     token_total = int(cast(CursorResult[Any], token_result).rowcount or 0)
     if token_total > 0:
         logger.info("Removed %d expired email tokens", token_total)
+
+    # Trusted-device rows are a 30-day 2FA bypass each; once expired or
+    # withdrawn they can never match again, so the scheduler removes them
+    # instead of leaving the list endpoint to clean up after a read.
+    device_result = await db.execute(
+        delete(TrustedDevice).where(_dead_trusted_device_filter(now))
+    )
+    device_total = int(cast(CursorResult[Any], device_result).rowcount or 0)
+    if device_total > 0:
+        logger.info("Removed %d dead trusted devices", device_total)
 
     if settings.AUDIT_LOG_RETENTION_DAYS > 0:
         audit_cutoff = now - timedelta(days=settings.AUDIT_LOG_RETENTION_DAYS)

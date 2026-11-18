@@ -1288,6 +1288,28 @@ clean (73 files), `alembic upgrade head` + `alembic check` clean on a throwaway 
 Not run: `next build`, Playwright smoke/axe, and the new card was never opened in a browser — its
 list and revoke paths are covered by component tests only.
 
+## Trusted Device Cleanup Moves to the Scheduler (November 18, 2026)
+
+Review follow-up on the pass above: `GET /api/v1/auth/2fa/trusted-devices` deleted stale-salt rows
+before answering, so a profile page load mutated the table and a routine read carried a write's
+transaction.
+
+1. **The list endpoint is read-only.** It still filters by the account's current salt, revoked state
+   and expiry — dead rows are hidden exactly as before — but it no longer deletes or commits.
+   A row issued before the last password change stays in the table (invisible) until it expires.
+2. **Cleanup belongs to `app.services.session_cleanup`.** Both entry points now delete trusted-device
+   rows that are expired or revoked, through one shared `_dead_trusted_device_filter`, so the
+   scheduler (`SESSION_CLEANUP_INTERVAL_HOURS`, default 6h) and
+   `python -m app.services.session_cleanup` clean the same rows. The table therefore stays bounded
+   without a GET doing the work.
+3. **Tests pin the split.** One test asserts the read deletes nothing, another asserts the scheduler
+   removes expired and revoked rows while keeping a live one — for the sync and async paths alike.
+
+### Verified
+
+`pytest -q` **693 passed / 84.22%** (gate 75%, Python 3.14.6 local), `flake8 app` clean, `mypy app`
+clean (73 files). No frontend files changed, so the frontend suite was not re-run.
+
 
 
 

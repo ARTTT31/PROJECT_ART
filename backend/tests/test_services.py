@@ -382,6 +382,42 @@ class TestSessionCleanup:
         remaining = sync_session.query(UserSession).all()
         assert [r.session_id for r in remaining] == ["sid-1-live"]
 
+    def test_removes_dead_trusted_devices(self, sync_session):
+        from app.services.session_cleanup import cleanup_expired_sessions
+        from app.core.utils import utcnow
+        from app.models.trusted_device import TrustedDevice
+
+        user = _make_user(sync_session)
+        sync_session.add_all(
+            [
+                TrustedDevice(
+                    user_id=user.id,
+                    token_id="td-expired",
+                    salt_version="salt",
+                    expires_at=utcnow() - timedelta(hours=1),
+                ),
+                TrustedDevice(
+                    user_id=user.id,
+                    token_id="td-revoked",
+                    salt_version="salt",
+                    expires_at=utcnow() + timedelta(days=30),
+                    revoked_at=utcnow(),
+                ),
+                TrustedDevice(
+                    user_id=user.id,
+                    token_id="td-live",
+                    salt_version="salt",
+                    expires_at=utcnow() + timedelta(days=30),
+                ),
+            ]
+        )
+        sync_session.commit()
+
+        cleanup_expired_sessions(sync_session)
+
+        remaining = sync_session.query(TrustedDevice).all()
+        assert [row.token_id for row in remaining] == ["td-live"]
+
     def test_removes_stale_inactive_sessions(self, sync_session):
         from app.services.session_cleanup import cleanup_expired_sessions
         from app.core.utils import utcnow
@@ -499,6 +535,44 @@ class TestSessionCleanupScheduler:
         assert removed == 1
         remaining = (await db_session.execute(select(UserSession))).scalars().all()
         assert [row.session_id for row in remaining] == ["sid-live"]
+
+    async def test_removes_dead_trusted_devices(self, db_session):
+        from app.core.utils import utcnow
+        from app.models.trusted_device import TrustedDevice
+        from app.services.session_cleanup import cleanup_expired_sessions_async
+
+        user = await self._user(db_session)
+        db_session.add_all(
+            [
+                TrustedDevice(
+                    user_id=user.id,
+                    token_id="td-expired",
+                    salt_version="salt",
+                    expires_at=utcnow() - timedelta(hours=1),
+                ),
+                TrustedDevice(
+                    user_id=user.id,
+                    token_id="td-revoked",
+                    salt_version="salt",
+                    expires_at=utcnow() + timedelta(days=30),
+                    revoked_at=utcnow(),
+                ),
+                TrustedDevice(
+                    user_id=user.id,
+                    token_id="td-live",
+                    salt_version="salt",
+                    expires_at=utcnow() + timedelta(days=30),
+                ),
+            ]
+        )
+        await db_session.commit()
+
+        await cleanup_expired_sessions_async(db_session)
+
+        remaining = (
+            await db_session.execute(select(TrustedDevice))
+        ).scalars().all()
+        assert [row.token_id for row in remaining] == ["td-live"]
 
     async def test_keeps_a_recent_inactive_row(self, db_session):
         from app.core.utils import utcnow
