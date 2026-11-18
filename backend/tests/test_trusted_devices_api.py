@@ -244,6 +244,28 @@ class TestTrustedDevicesApi:
         ).scalar_one()
         assert row.revoked_at is not None
 
+    async def test_trusting_a_browser_sends_a_notice(
+        self, client, db_session, monkeypatch
+    ):
+        from app.services.email_service import outbox_clear, outbox_messages
+        from conftest import seed_account
+
+        monkeypatch.setattr(settings, "EMAIL_BACKEND", "console")
+        outbox_clear()
+
+        user = await seed_account(db_session, "trustmail@example.com", "Password123!")
+        secret = await _enable_2fa(db_session, user)
+        await _trust_current_browser(
+            client, "trustmail@example.com", "Password123!", secret
+        )
+
+        # The cookie announced here bypasses the second factor for weeks, so the
+        # owner has to learn about it at the moment it is minted.
+        messages = outbox_messages("trustmail@example.com")
+        assert messages
+        assert str(settings.TRUSTED_DEVICE_EXPIRE_DAYS) in messages[-1]["text"]
+        outbox_clear()
+
     async def test_audit_records_issued_used_and_revoked(self, client, db_session):
         from conftest import seed_account
 

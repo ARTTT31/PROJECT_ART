@@ -322,6 +322,41 @@ def new_device_login_email(
     )
 
 
+def trusted_device_added_email(
+    to: str, name: str, device: str, ip_address: str, days: int, when: str
+) -> EmailMessage:
+    """Tell the owner that a browser may now skip the 2FA prompt.
+
+    This is a security notice, not a courtesy: the cookie it announces is a
+    credential that bypasses the second factor for weeks.
+    """
+    greeting = f"สวัสดี {name}" if name else "สวัสดี"
+    text = (
+        f"{greeting}\n\n"
+        f"อุปกรณ์นี้ถูกจดจำให้ข้ามการยืนยันสองขั้นตอน (2FA) เป็นเวลา {days} วัน\n"
+        f"อุปกรณ์: {device}\nIP: {ip_address}\nเวลา: {when}\n\n"
+        "หากไม่ใช่คุณ ให้เพิกถอนที่ โปรไฟล์ → รหัสผ่าน & ความปลอดภัย → "
+        "อุปกรณ์ที่จดจำไว้ แล้วเปลี่ยนรหัสผ่านทันที\n"
+        f"{settings.FRONTEND_BASE_URL}/profile\n"
+    )
+    html = _wrap_html(
+        "มีอุปกรณ์ที่ถูกจดจำไว้",
+        f"<p>{greeting}</p>"
+        f"<p>อุปกรณ์นี้ถูกจดจำให้ข้ามการยืนยันสองขั้นตอน (2FA) เป็นเวลา "
+        f"<strong>{days} วัน</strong></p>"
+        f"<p>อุปกรณ์: <strong>{device}</strong><br>IP: {ip_address}<br>เวลา: {when}</p>"
+        "<p>หากไม่ใช่คุณ ให้เพิกถอนอุปกรณ์นั้นในหน้าโปรไฟล์ แล้วเปลี่ยนรหัสผ่านทันที</p>",
+        f"{settings.FRONTEND_BASE_URL}/profile",
+        "เปิดหน้าโปรไฟล์",
+    )
+    return EmailMessage(
+        to=to,
+        subject=f"มีอุปกรณ์ที่ถูกจดจำ {days} วัน — ART Workspace",
+        text=text,
+        html=html,
+    )
+
+
 def admin_new_request_email(
     to: str, name: str, applicant_email: str, review_url: str
 ) -> EmailMessage:

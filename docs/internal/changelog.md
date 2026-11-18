@@ -1310,6 +1310,37 @@ transaction.
 `pytest -q` **693 passed / 84.22%** (gate 75%, Python 3.14.6 local), `flake8 app` clean, `mypy app`
 clean (73 files). No frontend files changed, so the frontend suite was not re-run.
 
+## Admin 2FA Enforcement, Dialog Polish and Trust Notice (November 18, 2026)
+
+Pass over the ranked follow-ups: the admin role was the one account that could still run on a
+password alone, three friction points in the 2FA dialog remained, and a trusted-device cookie could
+be minted without the owner ever hearing about it.
+
+1. **Admin API requires a second factor.** `REQUIRE_ADMIN_2FA` (default on) makes
+   `get_current_admin_user` answer `403` with an actionable Thai message while the account has no
+   TOTP. Enforcement stops at the admin API on purpose: the session still reaches `/profile/me`,
+   `/auth/2fa/status` and `/auth/2fa/setup`, so an admin is prompted to comply instead of losing the
+   only screen that lets them. `/admin` shows that message with a link when its own requests are
+   refused. The suite disables the gate session-wide (dozens of admin tests are not about 2FA) and
+   `tests/test_admin_2fa_requirement.py` switches it on to cover the gate, the escape hatch and the
+   member refusal.
+2. **Recovery-code paste is normalised.** The field only upper-cased, so a pasted `abcde 12345` or
+   a dashless code reached the API wrong and came back as "wrong code". Input is now stripped to
+   alphanumerics, upper-cased and re-dashed after five characters.
+3. **A wrong code starts a 5-second cooldown.** The submit button and the hint explain the wait
+   ("ลองใหม่ได้ในอีก N วินาที") instead of inviting a machine-gun retry; the API's own backoff and
+   rate limit are unchanged underneath.
+4. **Trusting a browser sends a notice.** `trusted_device_added_email` marks the moment a credential
+   that bypasses 2FA for 30 days is created, with the device, IP, time, the expiry in days, and where
+   to revoke it — best-effort like the new-device notice, so a mail failure cannot fail the login.
+
+### Verified
+
+`pytest -q` **699 passed / 84.23%** (gate 75%, Python 3.14.6 local), `flake8 app` clean, `mypy app`
+clean (73 files). `npx vitest run` **424 passed / 65 files**, `npx tsc --noEmit` clean, `npx eslint .`
+clean. Not run: `next build`, Playwright smoke/axe, and neither the admin banner nor the cooldown was
+opened in a browser — both are covered by unit tests only.
+
 
 
 

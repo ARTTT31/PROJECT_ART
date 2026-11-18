@@ -8,6 +8,7 @@ import {
   Clock3,
   FileText,
   Loader2,
+  ShieldAlert,
   ShieldCheck,
   UserPlus,
 } from 'lucide-react';
@@ -44,6 +45,9 @@ export default function AdminPage() {
 
   const [pending, setPending] = useState<Stat>(EMPTY_STAT);
   const [events, setEvents] = useState<Stat>(EMPTY_STAT);
+  // Admin endpoints answer 403 while the account has no second factor; the
+  // message is the backend's, so the page never invents its own rule.
+  const [adminBlocked, setAdminBlocked] = useState('');
 
   // A member who types the URL is sent back; the API would refuse anyway, but
   // an empty console would look like a broken page.
@@ -64,6 +68,14 @@ export default function AdminPage() {
             : 0;
         setPending({ value: count, loading: false });
       } else {
+        if (pendingRes.status === 403) {
+          const body = (await pendingRes.json().catch(() => null)) as {
+            detail?: unknown;
+          } | null;
+          if (typeof body?.detail === 'string' && body.detail) {
+            setAdminBlocked(body.detail);
+          }
+        }
         setPending({ value: null, loading: false });
       }
     } catch {
@@ -98,6 +110,32 @@ export default function AdminPage() {
 
   return (
     <div className="space-y-4">
+      {adminBlocked && (
+        <section
+          role="alert"
+          className="flex items-start gap-3 rounded-apple-lg border border-[var(--hairline)] bg-[var(--warning-soft)] px-5 py-4"
+        >
+          <ShieldAlert
+            size={18}
+            aria-hidden="true"
+            className="mt-0.5 shrink-0 text-[var(--warning-ink)]"
+          />
+          <div className="min-w-0">
+            <p className="text-[13px] font-bold text-[var(--ink)]">ต้องเปิด 2FA ก่อนใช้ส่วนผู้ดูแล</p>
+            <p className="mt-0.5 text-[12px] leading-relaxed text-[var(--ink-secondary)]">
+              {adminBlocked}
+            </p>
+            <Link
+              href="/profile"
+              className="mt-2 inline-flex items-center gap-1 text-[12px] font-semibold text-[var(--accent-text)] hover:underline active:scale-[0.98]"
+            >
+              ไปที่โปรไฟล์เพื่อเปิด 2FA
+              <ArrowRight size={13} aria-hidden="true" />
+            </Link>
+          </div>
+        </section>
+      )}
+
       {/* ── Overview ─────────────────────────────────────────────── */}
       <section className="overflow-hidden rounded-apple-lg border border-[var(--hairline)] bg-[var(--surface)]">
         <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[var(--hairline-soft)] bg-[var(--surface-subtle)] px-5 py-4 sm:px-6">

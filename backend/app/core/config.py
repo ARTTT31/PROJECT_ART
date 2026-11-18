@@ -213,6 +213,13 @@ class Settings(BaseSettings):
     def REFRESH_COOKIE_MAX_AGE(self) -> int:
         return self.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60
 
+    # Admins reach the user list, page permissions, the audit log and the camera
+    # console, so a password alone is not enough for that role. An admin without
+    # a second factor keeps a normal session and can open Profile → Security to
+    # set 2FA up; only the admin API answers 403 until then, so enforcement can
+    # never lock the account out of the way to comply.
+    REQUIRE_ADMIN_2FA: bool = True
+
     # "Trust this device for N days": the signed cookie that lets one browser
     # skip the 2FA prompt. The JWT and the cookie must share this number, or the
     # browser keeps a token the server already treats as expired.

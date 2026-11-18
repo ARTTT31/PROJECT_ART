@@ -22,6 +22,7 @@ limiter.enabled = False
 
 # ── Shared fixtures (app import must happen after env overrides) ──
 
+from app.core.config import settings  # noqa: E402
 from app.core.database import Base, get_db  # noqa: E402
 from app.core.security import get_password_hash  # noqa: E402
 from app.core.utils import utcnow  # noqa: E402
@@ -153,8 +154,36 @@ async def logged_in_user(client, registered_user):
     return await _login(client, TEST_USER_EMAIL, TEST_USER_PASSWORD)
 
 
+@pytest.fixture(scope="session", autouse=True)
+def _admin_2fa_gate_off():
+    """Turn the admin 2FA gate off for the suite by default.
+
+    Dozens of tests exercise admin behaviour (user management, audit, rate
+    limits) that has nothing to do with the second factor; making each of them
+    mint a TOTP would only add noise. The gate itself is covered by
+    ``tests/test_admin_2fa_requirement.py``, which switches the setting back on
+    for its own tests.
+
+    Session scope matters: a function-scoped override here would race with the
+    per-test monkeypatch that the gate tests use.
+    """
+    original = settings.REQUIRE_ADMIN_2FA
+    settings.REQUIRE_ADMIN_2FA = False
+    yield
+    settings.REQUIRE_ADMIN_2FA = original
+
+
 @pytest.fixture
-async def logged_in_admin_user(client, make_user):
-    """Log in an admin, for every endpoint that requires the admin role."""
-    await make_user(email=TEST_ADMIN_EMAIL, name="Test Admin", role="admin")
-    return await _login(client, TEST_ADMIN_EMAIL, TEST_USER_PASSWORD)
+async def logged_in_admin_user(client, make_user, db_session):
+    """Log in an admin, for every endpoint that requires the admin role.
+
+    Admin endpoints also require a second factor (``REQUIRE_ADMIN_2FA``), so
+    the fixture flips ``totp_enabled`` after signing in: that is the state of an
+    admin who has already set 2FA up, without driving a TOTP challenge through
+    every admin test. Tests for the gate itself log in without the flip.
+    """
+    admin = await make_user(email=TEST_ADMIN_EMAIL, name="Test Admin", role="admin")
+    body = await _login(client, TEST_ADMIN_EMAIL, TEST_USER_PASSWORD)
+    admin.totp_enabled = True
+    await db_session.commit()
+    return body

@@ -160,6 +160,9 @@ function LoginContent() {
   // Unticked on purpose: the checkbox buys 30 days of 2FA-free sign-ins, so it
   // is an opt-in, never a default someone clicks past without reading it.
   const [trustDevice, setTrustDevice] = useState(false);
+  // Seconds left before another code attempt is accepted. The API has its own
+  // backoff; this only stops a wrong code from being hammered from the dialog.
+  const [totpCooldown, setTotpCooldown] = useState(0);
   const totpRef = useRef<HTMLInputElement>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isClient, setIsClient] = useState(false);
@@ -362,6 +365,14 @@ function LoginContent() {
     return () => clearInterval(rateLimitTimer.current!);
   }, [rateLimitSeconds]);
 
+  useEffect(() => {
+    if (totpCooldown <= 0) return;
+    const timer = setInterval(() => {
+      setTotpCooldown((seconds) => (seconds <= 1 ? 0 : seconds - 1));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [totpCooldown]);
+
   const handleCapsLock = useCallback((event: KeyboardEvent<HTMLInputElement>) => {
     if (event.getModifierState) {
       setCapsLock(event.getModifierState('CapsLock'));
@@ -462,6 +473,7 @@ function LoginContent() {
               'That code is wrong or expired. Please try a new one',
             ),
           );
+          setTotpCooldown(TOTP_RETRY_COOLDOWN_SECONDS);
         }
         setIsSubmitting(false);
         // The field is briefly disabled while the request runs, so focus it once
@@ -537,7 +549,7 @@ function LoginContent() {
   const handleTotpSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const code = totpCode.trim();
-    if (code.length < 6) return;
+    if (code.length < 6 || totpCooldown > 0) return;
     await submitLogin(code, trustDevice);
   };
 
@@ -916,7 +928,7 @@ function LoginContent() {
                 value={totpCode}
                 onChange={(event) => {
                   const val = event.target.value;
-                  setTotpCode(isRecoveryMode ? val.toUpperCase() : val);
+                  setTotpCode(isRecoveryMode ? normalizeRecoveryCode(val) : val);
                 }}
                 placeholder={isRecoveryMode ? 'ABCDE-12345' : '123456'}
                 disabled={isSubmitting}
@@ -986,9 +998,15 @@ function LoginContent() {
               </div>
 
               <p className="text-center text-[11px] text-[var(--ink-tertiary)]">
-                {isRecoveryMode
-                  ? tr('รหัสสำรองแต่ละชุดสามารถใช้งานได้เพียงครั้งเดียว', 'Each recovery code can be used only once')
-                  : tr('รหัสจะเปลี่ยนทุก 30 วินาที', 'The code changes every 30 seconds')}
+                {totpCooldown > 0
+                  ? tr(
+                      'ลองใหม่ได้ในอีก {seconds} วินาที',
+                      'You can try again in {seconds}s',
+                      { seconds: totpCooldown },
+                    )
+                  : isRecoveryMode
+                    ? tr('รหัสสำรองแต่ละชุดสามารถใช้งานได้เพียงครั้งเดียว', 'Each recovery code can be used only once')
+                    : tr('รหัสจะเปลี่ยนทุก 30 วินาที', 'The code changes every 30 seconds')}
               </p>
             </DialogBody>
 
@@ -1007,7 +1025,7 @@ function LoginContent() {
               </button>
               <button
                 type="submit"
-                disabled={isSubmitting || totpCode.trim().length < 6}
+                disabled={isSubmitting || totpCooldown > 0 || totpCode.trim().length < 6}
                 className="inline-flex items-center justify-center gap-2 rounded-full bg-[var(--accent)] px-5 py-2.5 text-[13px] font-bold text-white transition-all hover:bg-[var(--accent-hover)] active:scale-[0.97] disabled:opacity-50"
               >
                 {isSubmitting ? (
@@ -1036,6 +1054,20 @@ function LoginContent() {
       )}
     </main>
   );
+}
+
+const TOTP_RETRY_COOLDOWN_SECONDS = 5;
+
+/**
+ * Normalise a recovery code while it is typed or pasted.
+ *
+ * Codes are shown as `ABCDE-12345`, but a paste usually arrives without the
+ * dash, in lowercase, or with a space — the field only upper-cased, so a pasted
+ * `abcde 12345` went to the API as-is and came back looking like a wrong code.
+ */
+function normalizeRecoveryCode(value: string): string {
+  const raw = value.replace(/[^0-9a-z]/gi, '').toUpperCase().slice(0, 10);
+  return raw.length > 5 ? `${raw.slice(0, 5)}-${raw.slice(5)}` : raw;
 }
 
 export default function LoginPage() {

@@ -213,6 +213,62 @@ describe('LoginPage', () => {
     });
   });
 
+  it('normalises a pasted recovery code and cools down after a wrong code', async () => {
+    const payloads: any[] = [];
+    global.fetch = vi.fn().mockImplementation((url: string, options?: any) => {
+      if (String(url).includes('registration-mode')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ result: 'success', data: { registration_mode: 'approval' } }),
+        });
+      }
+      if (String(url).includes('/auth/login')) {
+        const body = options?.body ? JSON.parse(options.body) : {};
+        payloads.push(body);
+        // Every code attempt is answered with "still required", which is how
+        // the API reports a wrong second factor.
+        return Promise.resolve({ ok: true, json: async () => ({ result: 'totp_required' }) });
+      }
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({ company_name: 'ART Workspace', company_tagline: 'x' }),
+      });
+    }) as unknown as typeof fetch;
+
+    render(
+      <BrandingProvider>
+        <LoginPage />
+      </BrandingProvider>,
+    );
+
+    fireEvent.change(screen.getByLabelText('อีเมล หรือ ชื่อผู้ใช้'), {
+      target: { value: 'user@example.com' },
+    });
+    fireEvent.change(screen.getByLabelText('รหัสผ่าน'), { target: { value: 'secret123' } });
+    fireEvent.click(screen.getByRole('button', { name: 'เข้าสู่ระบบ' }));
+    await screen.findByText('ยืนยันตัวตน 2 ขั้นตอน');
+
+    fireEvent.click(screen.getByRole('button', { name: /ทำโทรศัพท์หาย\? ใช้รหัสกู้คืน/i }));
+    const recoveryInput = (await screen.findByLabelText('รหัสกู้คืน')) as HTMLInputElement;
+
+    // A paste usually arrives with no dash, lowercase, or with a space.
+    fireEvent.change(recoveryInput, { target: { value: 'abcde 12345' } });
+    expect(recoveryInput.value).toBe('ABCDE-12345');
+
+    fireEvent.click(screen.getByRole('button', { name: /ยืนยันและเข้าสู่ระบบ/i }));
+    await waitFor(() => {
+      expect(payloads[payloads.length - 1].recovery_code).toBe('ABCDE-12345');
+    });
+
+    // A rejected code locks the button briefly instead of inviting a machine-gun
+    // retry; the API backoff still applies underneath.
+    await waitFor(() => {
+      const submit = screen.getByRole('button', { name: /ยืนยันและเข้าสู่ระบบ/i });
+      expect((submit as HTMLButtonElement).disabled).toBe(true);
+    });
+    expect(screen.getByText(/ลองใหม่ได้ในอีก/)).toBeDefined();
+  });
+
   it('returns to the ?next page once a session is restored', async () => {
     // The approval alert email is a deep link. If the admin was signed out,
     // AuthGuard sends them to /login?next=… and login must honour it.

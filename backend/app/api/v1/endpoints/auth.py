@@ -243,6 +243,29 @@ async def _send_new_device_notice(
         logger.warning("new-device notice could not be sent", exc_info=True)
 
 
+async def _send_trusted_device_notice(
+    email: str, name: str, device: str, ip_address: Optional[str], days: int
+) -> None:
+    """Best-effort notice that a browser may now skip the 2FA prompt.
+
+    A trusted-device cookie is a credential, so the owner gets told when one is
+    minted — otherwise a borrowed laptop could hold a bypass nobody noticed.
+    """
+    try:
+        await email_service.get_email_service().send(
+            email_service.trusted_device_added_email(
+                email,
+                name,
+                device,
+                ip_address or "ไม่ทราบ",
+                days,
+                utils_utcnow().strftime("%d/%m/%Y %H:%M UTC"),
+            )
+        )
+    except Exception:
+        logger.warning("trusted-device notice could not be sent", exc_info=True)
+
+
 @router.post("/forgot-password", response_model=ResponseModel)
 @limiter.limit(_AUTH_LIMIT)
 async def forgot_password(
@@ -492,6 +515,15 @@ async def login(
                 user_agent=user_agent,
             )
             await db.commit()
+            if result["user"].get("email"):
+                background_tasks.add_task(
+                    _send_trusted_device_notice,
+                    result["user"]["email"],
+                    result["user"].get("name") or "",
+                    result.get("device_label") or "ไม่ทราบอุปกรณ์",
+                    result.get("ip_address"),
+                    settings.TRUSTED_DEVICE_EXPIRE_DAYS,
+                )
         return response
 
     except HTTPException as e:

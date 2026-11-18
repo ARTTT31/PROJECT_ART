@@ -141,7 +141,11 @@ scope is not re-litigated as "still planned".
      the secret and recovery codes for someone who lost both the device and the codes. It refuses
      the caller's own account — a stolen admin session must not be able to strip its own second
      factor, which is why the self-service path still demands password + live code.
-2. **Redis for Rate Limiting & Multi-Instance Scaling — Shipped**
+2. **Admin 2FA Enforcement — Shipped (2026-11-18)**
+   - `REQUIRE_ADMIN_2FA` (default on): the admin API answers `403` until the account has a second
+     factor, while the session keeps working so Profile → Security can enable it. The admin console
+     shows the backend's own message with a link to that screen.
+3. **Redis for Rate Limiting & Multi-Instance Scaling — Shipped**
    - `SLOWAPI_STORAGE_URI` is read by `app/core/rate_limit.py` with an in-memory fallback;
      login backoff shares the same backend. Remaining work is operational: point the env var at
      Redis on the deployment and confirm the buckets are shared across instances.
