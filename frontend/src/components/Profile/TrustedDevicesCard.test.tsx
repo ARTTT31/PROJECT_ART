@@ -25,8 +25,19 @@ const devices = [
   },
 ];
 
-function jsonResponse(body: unknown, ok = true) {
-  return { ok, json: async () => body } as Response;
+const ok = (data: unknown) => ({ ok: true, json: async () => data }) as Response;
+const stepUpRequired = {
+  ok: false,
+  status: 403,
+  json: async () => ({ detail: { code: 'step_up_required' } }),
+} as Response;
+
+function renderCard() {
+  render(
+    <ToastProvider>
+      <TrustedDevicesCard />
+    </ToastProvider>,
+  );
 }
 
 afterEach(() => {
@@ -35,15 +46,9 @@ afterEach(() => {
 
 describe('TrustedDevicesCard', () => {
   it('lists a trusted browser with the date its 2FA bypass ends', async () => {
-    vi.mocked(fetchWithAuth).mockResolvedValue(
-      jsonResponse({ result: 'success', data: devices }),
-    );
+    vi.mocked(fetchWithAuth).mockResolvedValue(ok({ result: 'success', data: devices }));
 
-    render(
-      <ToastProvider>
-        <TrustedDevicesCard />
-      </ToastProvider>,
-    );
+    renderCard();
 
     await waitFor(() => {
       expect(screen.getByText('Chrome 120 · Windows 10/11')).toBeDefined();
@@ -54,29 +59,68 @@ describe('TrustedDevicesCard', () => {
 
   it('revokes one device and reloads the list', async () => {
     vi.mocked(fetchWithAuth)
-      .mockResolvedValueOnce(jsonResponse({ result: 'success', data: devices }))
-      .mockResolvedValueOnce(jsonResponse({ result: 'success' }))
-      .mockResolvedValueOnce(jsonResponse({ result: 'success', data: [] }));
+      .mockResolvedValueOnce(ok({ result: 'success', data: devices }))
+      .mockResolvedValueOnce(ok({ result: 'success' }))
+      .mockResolvedValueOnce(ok({ result: 'success', data: [] }));
 
-    render(
-      <ToastProvider>
-        <TrustedDevicesCard />
-      </ToastProvider>,
-    );
+    renderCard();
 
-    const revokeButton = await screen.findByRole('button', {
-      name: /เพิกถอน Chrome 120/,
-    });
-    fireEvent.click(revokeButton);
+    fireEvent.click(await screen.findByRole('button', { name: /เพิกถอน Chrome 120/ }));
 
     await waitFor(() => {
       expect(screen.getByText(/ยังไม่มีอุปกรณ์ที่ถูกจดจำ/)).toBeDefined();
     });
+    expect(fetchWithAuth).toHaveBeenCalledWith('/api/v1/auth/2fa/trusted-devices/7', {
+      method: 'DELETE',
+    });
+  });
 
-    const [call] = vi
-      .mocked(fetchWithAuth)
-      .mock.calls.filter(([, init]) => init?.method === 'DELETE');
-    expect(call).toBeDefined();
-    expect(String(call[0])).toBe('/api/v1/auth/2fa/trusted-devices/7');
+  it('asks for a 2FA code before revoking every device, then retries', async () => {
+    let deletes = 0;
+
+    vi.mocked(fetchWithAuth).mockImplementation(async (url, init) => {
+      if (url === '/api/v1/auth/step-up') return ok({ result: 'success' });
+      if (init?.method === 'DELETE') {
+        return ++deletes === 1 ? stepUpRequired : ok({ result: 'success' });
+      }
+      return ok({ result: 'success', data: deletes ? [] : devices });
+    });
+
+    renderCard();
+    fireEvent.click(await screen.findByRole('button', { name: /เพิกถอนทั้งหมด/ }));
+
+    fireEvent.change(await screen.findByLabelText('รหัสยืนยัน 6 หลัก หรือรหัสกู้คืน'), {
+      target: { value: '123456' },
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText(/ยังไม่มีอุปกรณ์ที่ถูกจดจำ/)).toBeDefined();
+    });
+    expect(deletes).toBe(2);
+    expect(fetchWithAuth).toHaveBeenCalledWith('/api/v1/auth/step-up', {
+      method: 'POST',
+      body: JSON.stringify({ code: '123456' }),
+    });
+  });
+
+  it('keeps the list when the code prompt is cancelled', async () => {
+    let deletes = 0;
+    vi.mocked(fetchWithAuth).mockImplementation(async (_url, init) => {
+      if (init?.method === 'DELETE') {
+        deletes += 1;
+        return stepUpRequired;
+      }
+      return ok({ result: 'success', data: devices });
+    });
+
+    renderCard();
+    fireEvent.click(await screen.findByRole('button', { name: /เพิกถอนทั้งหมด/ }));
+    fireEvent.click(await screen.findByRole('button', { name: 'ยกเลิก' }));
+
+    await waitFor(() => {
+      expect(screen.queryByText('ยืนยันตัวตนอีกครั้ง')).toBeNull();
+    });
+    expect(deletes).toBe(1);
+    expect(screen.getByText('Chrome 120 · Windows 10/11')).toBeDefined();
   });
 });

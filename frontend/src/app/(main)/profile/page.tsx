@@ -14,6 +14,11 @@ import {
 } from 'lucide-react';
 import { showDeleteConfirm, showToast, showSuccess, showError } from '@/utils/sweetalert';
 import { canAccessPage } from '@/utils/accessiblePages';
+import {
+  resolveProfileLocation,
+  type ProfileAccountSection,
+  type ProfileTabKey,
+} from '@/utils/profileTab';
 import { usePageHeading } from '@/components/ui/PageHeader';
 import { useEnabledPages, isPageEnabled } from '@/hooks/useEnabledPages';
 import { useAuth } from '@/hooks/useAuth';
@@ -45,8 +50,8 @@ import type { AuthUser } from '@/types';
 // Main Profile Page Component
 // ─────────────────────────────────────────────────────────────
 
-type TabKey = 'profile' | 'appearance' | 'notifications' | 'ai' | 'workspace';
-type AccountSection = 'account' | 'security';
+type TabKey = ProfileTabKey;
+type AccountSection = ProfileAccountSection;
 
 /** One tab per settings area; the description tells the user what lives inside. */
 const PROFILE_TABS: {
@@ -122,21 +127,13 @@ export default function ProfilePage() {
     if (typeof window === 'undefined') return;
 
     const applyTabFromUrl = () => {
-      const params = new URLSearchParams(window.location.search);
-      const requested = (params.get('tab') || window.location.hash.replace('#', '')).toLowerCase();
+      // One parser for both levels: `?tab=security` is a section of the account
+      // tab, and a link to it must land there instead of on "ข้อมูลส่วนตัว".
+      const requested = resolveProfileLocation(window.location.search, window.location.hash);
       if (!requested) return;
 
-      if (requested === 'profile') {
-        setActiveTab('profile');
-      } else if (requested === 'appearance' || requested === 'preferences' || requested === 'menu') {
-        setActiveTab('appearance');
-      } else if (requested === 'notifications' || requested === 'alerts') {
-        setActiveTab('notifications');
-      } else if (requested === 'ai') {
-        setActiveTab('ai');
-      } else if (requested === 'workspace' || requested === 'admin') {
-        setActiveTab('workspace');
-      }
+      setActiveTab(requested.tab);
+      setAccountSection(requested.section);
     };
 
     applyTabFromUrl();
@@ -176,18 +173,28 @@ export default function ProfilePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authUser?.main_menu, authUser?.id]);
 
+  /** Mirror the visible screen into the URL so the address can be shared. */
+  const writeTabToUrl = (tab: TabKey, section: AccountSection) => {
+    if (typeof window === 'undefined') return;
+    const url = new URL(window.location.href);
+    const target = section === 'security' ? 'security' : tab === 'profile' ? null : tab;
+    if (target) {
+      url.searchParams.set('tab', target);
+    } else {
+      url.searchParams.delete('tab');
+    }
+    url.hash = '';
+    window.history.replaceState(null, '', url.toString());
+  };
+
   const handleTabChange = (tab: TabKey) => {
     setActiveTab(tab);
-    if (typeof window !== 'undefined') {
-      const url = new URL(window.location.href);
-      if (tab === 'profile') {
-        url.searchParams.delete('tab');
-      } else {
-        url.searchParams.set('tab', tab);
-      }
-      url.hash = '';
-      window.history.replaceState(null, '', url.toString());
-    }
+    writeTabToUrl(tab, accountSection);
+  };
+
+  const handleSectionChange = (section: AccountSection) => {
+    setAccountSection(section);
+    writeTabToUrl(activeTab, section);
   };
 
   // ── Main Menu Handlers ────────────────────────────────────────
@@ -462,7 +469,7 @@ export default function ProfilePage() {
                   type="button"
                   role="tab"
                   aria-selected={accountSection === 'account'}
-                  onClick={() => setAccountSection('account')}
+                  onClick={() => handleSectionChange('account')}
                   className={`inline-flex items-center gap-1.5 rounded-apple-md px-3 py-1.5 text-[12px] font-bold whitespace-nowrap transition-all duration-150 active:scale-[0.98] ${
                     accountSection === 'account'
                       ? 'bg-[var(--surface)] text-[var(--ink)] shadow-2xs'
@@ -476,7 +483,7 @@ export default function ProfilePage() {
                   type="button"
                   role="tab"
                   aria-selected={accountSection === 'security'}
-                  onClick={() => setAccountSection('security')}
+                  onClick={() => handleSectionChange('security')}
                   className={`inline-flex items-center gap-1.5 rounded-apple-md px-3 py-1.5 text-[12px] font-bold whitespace-nowrap transition-all duration-150 active:scale-[0.98] ${
                     accountSection === 'security'
                       ? 'bg-[var(--surface)] text-[var(--ink)] shadow-2xs'
