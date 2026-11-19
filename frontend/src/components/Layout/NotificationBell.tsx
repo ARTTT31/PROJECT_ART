@@ -48,6 +48,7 @@ import { appendHistory, syncHistoryToServer } from '@/lib/notifications/history'
 import { useAuth } from '@/hooks/useAuth';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
 import { setAppBadge, clearAppBadge } from '@/utils/appBadge';
+import { readWorkspaceSnapshot } from '@/lib/widgetSnapshot';
 
 /*
  * Late-subscriber guarantee: when a second <NotificationBell/> (e.g. soft
@@ -233,17 +234,15 @@ export default function NotificationBell() {
       }
     }
 
-    // 2. Check Weather & Air Quality Alert
+    // 2. Check Weather & Air Quality Alert. Both halves come from the same
+    // snapshot resolver the widgets write to, so the cache keys and their
+    // parsing live in one place (finding U14).
     try {
-      const weatherCacheRaw =
-        localStorage.getItem('artWeatherCacheV7') ||
-        localStorage.getItem('artWeatherCacheV6') ||
-        localStorage.getItem('artWeatherCacheV5');
-      if (weatherCacheRaw) {
-        const parsed = JSON.parse(weatherCacheRaw);
-        const pm25 = parsed?.airQuality?.pm25;
-        const rainProb = parsed?.weather?.rainProb;
-        const cityName = parsed?.cityName || 'พื้นที่ของคุณ';
+      const weatherSnapshot = readWorkspaceSnapshot().weather;
+      if (weatherSnapshot) {
+        const pm25 = weatherSnapshot.pm25;
+        const rainProb = weatherSnapshot.rainProb;
+        const cityName = weatherSnapshot.cityName;
 
         if (typeof pm25 === 'number') {
           if (pm25 >= 75) {
@@ -301,30 +300,14 @@ export default function NotificationBell() {
       }
     } catch {}
 
-    // 3. Check Oil Price Adjustments Alert
+    // 3. Check Oil Price Adjustments Alert — same snapshot resolver as above.
     try {
-      const oilCacheRaw = localStorage.getItem('artOilPriceCacheV1');
-      const oilPrevRaw = localStorage.getItem('artOilPricePrevV1');
-      if (oilCacheRaw) {
-        const parsed = JSON.parse(oilCacheRaw);
-        const prices: Array<{ key: string; name: string; price: number }> =
-          parsed?.data?.prices || parsed?.data?.oil_prices || [];
-        const prevPrices: Record<string, number> = oilPrevRaw ? JSON.parse(oilPrevRaw) : {};
+      const oilSnapshot = readWorkspaceSnapshot().oil;
+      if (oilSnapshot) {
+        const changed = oilSnapshot.changes;
 
-        if (prices.length > 0) {
-          const changed: Array<{ name: string; diff: number }> = [];
-          for (const item of prices) {
-            const oldPrice = prevPrices[item.key];
-            if (oldPrice != null) {
-              const diff = +(item.price - oldPrice).toFixed(2);
-              if (diff !== 0) {
-                changed.push({ name: item.name, diff });
-              }
-            }
-          }
-
-          if (changed.length > 0) {
-            const id = `oil-change-${parsed.data?.update_date || now.toISOString().slice(0, 10)}`;
+        if (changed.length > 0) {
+          const id = `oil-change-${oilSnapshot.updateDate || now.toISOString().slice(0, 10)}`;
             if (!dismissedSet.has(id)) {
               const hasUp = changed.some((c) => c.diff > 0);
               const summary = changed
@@ -343,7 +326,6 @@ export default function NotificationBell() {
             }
           }
         }
-      }
     } catch {}
 
     // 4. System Welcome Notification — show only once (respect dismissed)

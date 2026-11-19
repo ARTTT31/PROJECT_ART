@@ -1,14 +1,15 @@
 # 🚀 Production Readiness — เปิดใช้งานหลายคน / สาธารณะ
 
-**Last updated:** 8 November 2026
+**Last updated:** 19 November 2026
 
 เอกสารนี้คือ checklist สำหรับ deploy ระบบให้คนทั่วไปใช้งาน ครอบคลุมสิ่งที่ต้องตั้งค่า
 ขั้นตอนทดสอบ และสิ่งที่ยังต้องทำด้วยมือ (บัญชีผู้ให้บริการ, โดเมน, การแจ้งเตือน)
 
 > ส่วนที่ implement แล้วในโค้ด (อีเมล, ยืนยันอีเมล, Turnstile,
 > approval workflow) ทำงานได้ทันทีเมื่อตั้งค่า environment variable ด้านล่าง
-> ระบบ **ไม่มี** การรีเซ็ตรหัสผ่านทางอีเมลแล้ว — ผู้ใช้ที่ลืมรหัสต้องให้แอดมิน
-> ตั้งรหัสใหม่ให้ผ่าน `PUT /api/v1/users/{id}` (หรือ `py scripts/admin/reset_user.py`)
+> ระบบ **มี** การรีเซ็ตรหัสผ่านด้วยตัวเองที่ `/forgot-password` (ลิงก์ใช้ครั้งเดียว อายุ 30 นาที)
+> แต่จะส่งอีเมลจริงได้ต้องตั้ง `EMAIL_BACKEND` ให้เรียบร้อยก่อน; ทางสำรองคือแอดมินตั้งรหัสใหม่
+> ผ่าน `PUT /api/v1/users/{id}` (หรือ `py scripts/admin/reset_user.py`)
 > ส่วนหน้า `/terms` / `/privacy` ถูกถอดออกแล้ว — ดูสถานะล่าสุดในข้อ 7
 
 ---
@@ -23,6 +24,7 @@
 | CAPTCHA | `TURNSTILE_SECRET_KEY` + `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | Cloudflare Turnstile ฟรี; ว่าง = ปิดการตรวจ (ระบบยังทำงานปกติ) |
 | ข้อตกลง/PDPA | ยังไม่มีหน้า `/terms` หรือ `/privacy` | consent ปลอมถูกถอดออกทั้งระบบแล้ว (5 พ.ย. 2026): ไม่มีฟิลด์ `accepted_terms`, ไม่บันทึก `terms_version` และลบคอลัมน์ออกจาก DB — ถ้าจะเปิดสาธารณะต้องสร้างหน้าโยบายจริงแล้วเพิ่ม consent กลับมาทั้งชุด |
 | Redis (ถ้ามีหลาย instance) | `SLOWAPI_STORAGE_URI`, `WS_BROADCAST_REDIS_URL` | ดูข้อ 4 |
+| รูปจากกล้อง LAN (http) | `NEXT_PUBLIC_CAMERA_IMG_ORIGINS` | ต้องระบุ origin ตรง ๆ เช่น `http://192.168.1.50`; CSP ไม่มี `http:` แบบเหมารวมแล้ว |
 | Secret | `SECRET_KEY` (≥32 ตัวอักษร) | ระบบจะปฏิเสธการ start ถ้าใช้ค่า placeholder ตอน `DEBUG=False` |
 | Database (Aiven) | `DATABASE_URL`, `SSL_CA_CERT_PATH` | Aiven บังคับ TLS และ CA ของ Aiven ไม่อยู่ใน certifi — ดาวน์โหลด CA จาก Console (Service → Overview → CA certificate) วางบน host แล้วชี้ path ไปที่ไฟล์นั้น |
 
@@ -135,13 +137,13 @@ Production ใช้ **Aiven for PostgreSQL** (project `thanyapong-8a15`, servic
 - consent ปลอมถูกถอดออกแล้วเมื่อ 5 พ.ย. 2026: ฟอร์มไม่ส่ง `accepted_terms`, schema ไม่รับฟิลด์นี้, endpoint ไม่ปฏิเสธผู้สมัครเพราะ consent และคอลัมน์ `users.terms_accepted_at` / `terms_version` ถูกลบด้วย migration `20261105_drop_terms_consent` (ข้อมูล consent เดิมหายถาวร)
 - ถ้าจะเปิดสาธารณะ ต้องสร้างหน้าโยบายจริง + ลิงก์จากฟอร์ม แล้วเพิ่ม consent กลับมาใหม่ทั้ง client, schema, endpoint และคอลัมน์ (พร้อม migration)
 - ถ้าจะเปิดสาธารณะ ควรมี: หน้านโยบาย + ลิงก์จากฟอร์มสมัคร, เจ้าของข้อมูล/ช่องทางติดต่อ, นโยบาย retention ของ audit log, และขั้นตอนแจ้งเหตุละเมิดภายใน 72 ชม.
-- API ยังมี `GET /api/v1/profile/export` และ `DELETE /api/v1/profile/me` แต่ยังไม่มีปุ่มใน UI หลังการถอดส่วนนั้น; ถ้าจะให้ผู้ใช้ใช้เองต้องเพิ่มปุ่มกลับเข้าไป
+- โปรไฟล์มีปุ่มส่งออกข้อมูล (`GET /api/v1/profile/export`, ต้องยืนยันรหัส 2FA ก่อน) แล้ว; ส่วน `DELETE /api/v1/profile/me` ยังมีเฉพาะ API ไม่มีปุ่มใน UI
 
 ---
 
 ## 8. Checklist ก่อนเปิดสาธารณะ
 
-- [ ] `alembic upgrade head` บน production แล้ว (head ปัจจุบัน `20261108_finance_deleted`)
+- [ ] `alembic upgrade head` บน production แล้ว (head ปัจจุบัน `b8e2f5c10a97` — trusted_devices)
 - [ ] ตั้ง env ครบตามข้อ 1 บน Render (backend) และ Vercel (frontend)
 - [ ] `CORS_ORIGINS` = โดเมน frontend จริงเท่านั้น (ห้าม `*`)
 - [ ] `FRONTEND_URL` = โดเมน frontend จริง (ใช้สร้างลิงก์ในอีเมล)

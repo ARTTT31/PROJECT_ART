@@ -1409,6 +1409,74 @@ clean (73 files). `npx vitest run` **427 passed / 65 files**, `npx tsc --noEmit`
 clean. Not run: `next build`, Playwright smoke/axe, and the dialog and both bulk buttons were not
 clicked in a browser this pass — the gate, the cookie scope and the retry are covered by tests only.
 
+## Lazy Widget Mounting, One Snapshot Resolver and a Closed Image CSP (November 19, 2026)
+
+The three findings `status.md` still listed as open, plus the one half of P4 that was doable without a
+nonce.
+
+1. **Widgets mount as their card approaches the viewport (U13).** `useNearViewport` observes the
+   card's content node and mounts its children once it is within 400px of the viewport; before that the
+   card shows the same skeleton its `dynamic()` import would. The sortable node, drag handle and grid
+   span stay mounted, so dnd-kit's ref, keyboard sorting and the "no `md:` anywhere" grid test are
+   untouched. Environments without `IntersectionObserver` (jsdom, older browsers) mount immediately,
+   so a card can never stay a skeleton forever.
+2. **One snapshot resolver for the bell and the widgets (U14).** `frontend/src/lib/widgetSnapshot.ts`
+   now owns the weather cache-version order (`artWeatherCacheV7` → `V6` → `V5`), the defensive parsing
+   of both weather halves, and the oil price/previous-price comparison. The bell calls
+   `readWorkspaceSnapshot()` once instead of carrying its own key chain, `JSON.parse` and change loop;
+   a future cache bump is one line in one file. Alert ids, thresholds and copy are unchanged, so the
+   existing bell test still pins the behaviour.
+3. **`img-src` has no blanket fallback (P4).** An unset `NEXT_PUBLIC_CAMERA_IMG_ORIGINS` used to leave
+   `http:` allowed for every image host. It is now `https:` plus exactly the configured origins; a LAN
+   camera over plain HTTP needs that variable. `script-src 'unsafe-inline'` is unchanged and recorded
+   as an accepted constraint: Next emits its RSC payload as inline scripts on every server-rendered
+   page (the build output is dynamic, not static), so a real fix is a middleware nonce — a separate
+   change that must be verified against Google GSI and the Serwist service worker on the deployment.
+4. **Docs realigned.** `status.md` closes U13/U14 and P4's image half, the roadmap's Phase 2b/2c now
+   point at the closed findings instead of describing them as planned, and
+   `docs/setup/production-readiness.md` lost three stale claims (self-service password reset does
+   exist, the Alembic head is `b8e2f5c10a97`, and Profile does expose data export).
+
+### Verified
+
+`pytest -q` **709 passed / 84.34%** (gate 75%, Python 3.14.6 local), `flake8 app` clean, `mypy app`
+clean (73 files), `alembic upgrade head` + `alembic check` clean on a throwaway SQLite file.
+`npx vitest run` **443 passed / 68 files**, `npx tsc --noEmit` clean, `npx eslint .` clean (0 errors,
+0 warnings), `npm run build` succeeds (16 routes). Not run: Playwright smoke/axe, and the lazy mount and
+new CSP header were not inspected in a browser — the hook, the snapshot resolver and the header change
+are covered by unit tests and the build only.
+
+## Dependency Refresh to Current Releases (November 19, 2026)
+
+Both dependency sets moved to the newest release inside their existing major, then the full gate was
+re-run. Nothing in `app/` or `src/` changed for this.
+
+1. **Frontend.** `npm update` took Next 16.4.3 → **16.4.6** (with `eslint-config-next`), Vitest 5.0.5 →
+   **5.1.1**, `@vitest/coverage-v8` 5.1.1, ESLint 10.13 → **10.15**, `lucide-react` 1.61 → **1.75**,
+   `framer-motion` 14.6 → **14.14**, `@sentry/nextjs` 11.9 → **11.14**, `@serwist/next` 9.5.15,
+   `@playwright/test` **1.65.1**, Tailwind 4.3.5, `@types/node` 26.6.6 and Vite 8.3.8. `jsdom` moved to
+   **31.0.1**, `@testing-library/jest-dom` 7.0.1 → **8.0.0** and Prettier to **3.10.1** with their
+   suites green. `npm audit` now reports **0
+   vulnerabilities** (the tree used to carry seven high advisories).
+2. **Backend.** Pins moved to FastAPI **0.165.0**, SQLAlchemy **2.1.9**, Pydantic **2.14.3** /
+   `pydantic-settings` **2.16.3**, `pytest` **9.2.0**, `pytest-asyncio` **1.5.0**, flake8 **7.5.0**,
+   mypy **2.4.1**, `sentry-sdk` **2.75.0**, `google-auth` **2.62.2**, `python-multipart` **0.0.34**,
+   `anyio` **4.16.0** and `pypdf` **6.21.4 → 7.1.1** (the one major jump; the holiday-PDF tests cover
+   it). `pip-audit -r requirements.txt` reports **no known vulnerabilities**.
+3. **TypeScript stays on 6.x on purpose.** TypeScript 7.0.2 installed and `tsc --noEmit` still passed,
+   but `eslint-config-next` could not load it (`eslint` exited 2 from its CJS entry), so the upgrade is
+   held until the Next ESLint config supports the native compiler. The lockfile is back on 6.0.3.
+4. **CI gained a docs gate.** `scripts/check_docs_links.py` checks every relative link and code fence in
+   the owning documents; the backend job runs it before installing dependencies. This is the check that
+   would have caught the stale `production-readiness.md` claims earlier.
+
+### Verified
+
+`pytest -q` **709 passed / 84.39%** (gate 75%, Python 3.14.6), `flake8 app` clean, `mypy app` clean
+(73 files), `pip-audit -r requirements.txt` clean. `npx vitest run` **443 passed / 68 files**,
+`npx tsc --noEmit` clean, `npx eslint .` clean, `npm run build` succeeds (16 routes), `npm audit` 0
+vulnerabilities. Not run: Playwright smoke/axe and the live browser pass.
+
 
 
 

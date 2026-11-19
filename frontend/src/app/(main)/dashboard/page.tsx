@@ -100,6 +100,7 @@ import { useDashboardLayout, widgetNames, widgetDescriptions, DASHBOARD_VIEWS, V
 import { useI18n } from '@/lib/i18n/I18nProvider';
 import { WIDGET_DESCRIPTION_KEYS, WIDGET_NAME_KEYS } from '@/lib/i18n/messages';
 import { widgetColSpan } from '@/utils/widgetGrid';
+import { useNearViewport } from '@/hooks/useNearViewport';
 
 // ── Col-span helper ──────────────────────────────────────────────────────────
 // Lives in utils/widgetGrid so the breakpoints are pinned by a test.
@@ -146,6 +147,33 @@ function WidgetErrorFallback({
   );
 }
 
+// ── Deferred content placeholder ─────────────────────────────────────────────
+// Off-screen cards render the same skeleton their dynamic() import would show,
+// so the card's height and the grid span stay stable while nothing mounts.
+
+function WidgetSkeleton({ id }: { id: string }) {
+  switch (id) {
+    case 'weather':
+      return <WeatherSkeleton />;
+    case 'holidays':
+    case 'calendar':
+      return <HolidaySkeleton />;
+    case 'oilprice':
+      return <OilPriceSkeleton />;
+    case 'qrcode':
+      return <QRCodeSkeleton />;
+    case 'notes':
+      return <QuickNotesSkeleton />;
+    case 'calc':
+    case 'focustimer':
+      return <PriceCalcSkeleton />;
+    case 'market':
+      return <MarketSkeleton />;
+    default:
+      return <ListWidgetSkeleton />;
+  }
+}
+
 // ── Sortable widget wrapper ──────────────────────────────────────────────────
 
 function SortableWidget({
@@ -160,6 +188,9 @@ function SortableWidget({
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: widget.id,
   });
+  // Only the children are deferred: the sortable node, the drag handle and the
+  // grid span stay mounted, so reordering and keyboard sorting keep working.
+  const { ref: contentRef, isNear } = useNearViewport<HTMLDivElement>();
   const { t } = useI18n();
   const widgetLabel = (id: string) =>
     WIDGET_NAME_KEYS[id] ? t(WIDGET_NAME_KEYS[id]) : (widgetNames[id] ?? id);
@@ -182,7 +213,11 @@ function SortableWidget({
       style={style}
       className={`group relative min-w-0 self-stretch ${widgetColSpan(widget.w)}`}
     >
-      <div className="widget-enter h-full" style={{ animationDelay: `${index * 70}ms` }}>
+      <div
+        ref={contentRef}
+        className="widget-enter h-full"
+        style={{ animationDelay: `${index * 70}ms` }}
+      >
         {/* Drag handle — a slim grip pill centred on the card's top edge. It sits
             in the 4–17px band, above the card's 20px content padding, so it can
             never cover a header control or spill past the widget's border. The
@@ -205,7 +240,10 @@ function SortableWidget({
           </button>
         </div>
 
-        {/* Widget content */}
+        {/* Widget content — mounted when the card nears the viewport */}
+        {!isNear && <WidgetSkeleton id={widget.id} />}
+        {isNear && (
+          <>
         {widget.id === 'notes' && (
           <ErrorBoundary
             fallback={(err, reset) => (
@@ -340,6 +378,8 @@ function SortableWidget({
           >
             <QRCodeWidget width={widget.w} onResize={(newSize) => onResize(widget.id, newSize)} />
           </ErrorBoundary>
+        )}
+          </>
         )}
       </div>
     </div>

@@ -22,6 +22,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # The docs split (architecture / status / changelog / roadmap) only holds
+      # while the links between them resolve; a stale link is how the last drift
+      # started, so it fails the build instead of waiting for a reviewer.
+      - name: Check internal documentation links
+        run: python scripts/check_docs_links.py
+
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:

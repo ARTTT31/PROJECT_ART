@@ -29,13 +29,14 @@ const nextConfig = {
     const isDev = process.env.NODE_ENV !== 'production';
     const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || process.env.API_INTERNAL_URL || '';
     const apiOrigin = apiBaseUrl ? new URL(apiBaseUrl).origin : '';
-    // Camera feeds are LAN snapshots over http, which `https:` alone blocks. An
-    // allow-list keeps that hole narrow: set NEXT_PUBLIC_CAMERA_IMG_ORIGINS to the
+    // Camera feeds are LAN snapshots over http, which `https:` alone blocks. The
+    // allow-list is the only way in: set NEXT_PUBLIC_CAMERA_IMG_ORIGINS to the
     // exact origins (comma separated, e.g. "http://192.168.1.50") a deployment
-    // uses. Without it the previous blanket `http:` stays, so no camera that
-    // works today silently stops loading. (Scripts still need 'unsafe-inline':
-    // a nonce needs middleware plus dynamic rendering, and this site is
-    // statically prerendered.)
+    // uses. An unset variable used to fall back to a blanket `http:`, which let
+    // any plaintext origin serve images; that fallback is gone (finding P4).
+    // (Scripts still need 'unsafe-inline': Next writes its RSC payload as inline
+    // scripts on every prerendered page, and a nonce needs middleware plus
+    // dynamic rendering — an accepted constraint, not an oversight.)
     const cameraImgOrigins = (process.env.NEXT_PUBLIC_CAMERA_IMG_ORIGINS || '')
       .split(',')
       .map((origin) => origin.trim())
@@ -45,7 +46,7 @@ const nextConfig = {
       'data:',
       'blob:',
       'https:',
-      ...(cameraImgOrigins.length ? cameraImgOrigins : ['http:']),
+      ...cameraImgOrigins,
     ].join(' ');
     const connectSources = [
       "'self'",

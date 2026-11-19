@@ -1,6 +1,6 @@
 # Roadmap & Feature Inventory
 
-**Last updated:** November 11, 2026
+**Last updated:** November 19, 2026
 
 > **Sources of truth.** This file inventories what exists and what is planned. It must not
 > restate or contradict the documents that own those decisions:
@@ -107,7 +107,8 @@
 | Single instance by default | The WebSocket registry can fan out through Redis (`WS_BROADCAST_REDIS_URL`) and the rate limiter can use Redis (`SLOWAPI_STORAGE_URI`), but both default to process-local and startup logs a `[SCALING]` notice. See README -> *Horizontal scaling*. |
 | Third-party market data | Yahoo Finance / Frankfurter / Thai Gold API have no SLA; the widget shows the last known value (or an empty block) rather than failing the whole page. |
 | Partial i18n | A `th`/`en` message catalogue (`lib/i18n`) exists and drives 12 of the 97 components; the rest still hardcode Thai copy. Adding a language means migrating a screen at a time, not flipping a switch. |
-| Partial frontend coverage | 387 Vitest tests across 60 files; 590 backend tests at 82.83% coverage (Python 3.14, verified 2026-11-11). Route-level tests exist only for `login`, `register`, `forgot-password` and `share-target`, so `npm run test:coverage` remains the honest number. Playwright runs axe checks on the auth pages and a live register → login E2E against the backend in CI. |
+| Partial frontend coverage | 443 Vitest tests across 68 files; 709 backend tests at 84.39% coverage (Python 3.14, verified 2026-11-19). Route-level tests exist only for `login`, `register`, `forgot-password` and `share-target`, so `npm run test:coverage` remains the honest number. Playwright runs axe checks on the auth pages and a live register → login E2E against the backend in CI. |
+| CSP `script-src` | The frontend CSP keeps `'unsafe-inline'` for scripts because Next emits its RSC payload as inline scripts and the theme bootstrap is inline; a nonce needs middleware plus a deploy-verified pass over Google GSI and the service worker. Image sources are already an explicit allow-list (`NEXT_PUBLIC_CAMERA_IMG_ORIGINS`). |
 
 ---
 
@@ -176,8 +177,9 @@ scope is not re-litigated as "still planned".
 
 A static audit of the auth, persistence, AI and CSP paths produced the fix plan in
 [`docs/superpowers/plans/2026-11-10-security-hardening.md`](../superpowers/plans/2026-11-10-security-hardening.md).
-Nothing in this list has shipped yet (re-checked 2026-11-11; see
-[`status.md`](../internal/status.md) for the live status of each finding).
+All seven findings in that plan are closed; the only piece deliberately left is the CSP `script-src`
+nonce, recorded as an accepted constraint above. Per-finding status lives in
+[`status.md`](../internal/status.md) and the dated evidence in [`changelog.md`](../internal/changelog.md).
 
 1. **Real client IP for account state (High).** `POST /auth/login` and the other auth/admin paths
    read `request.client.host`, which is the platform proxy behind Render, so the `(email, IP)`
@@ -197,27 +199,11 @@ Nothing in this list has shipped yet (re-checked 2026-11-11; see
 7. **Fail loudly when shared state is required (Low).** `REQUIRE_SHARED_STATE=true` makes startup
    refuse an in-memory limiter or a process-local WebSocket bus.
 
-### Phase 2c: UX & Usability (planned 2026-11-10)
+### Phase 2c: UX & Usability (shipped 2026-11-12 → 2026-11-19)
 
-The same audit reviewed the signed-in UI. The full task list is in
+The same audit reviewed the signed-in UI; its full task list is in
 [`docs/superpowers/plans/2026-11-10-ux-usability-pass.md`](../superpowers/plans/2026-11-10-ux-usability-pass.md).
-
-1. **Camera cache leaks across accounts (High).** `artWorkspaceCameraConfig` is unscoped and survives
-   logout, so the next account on a shared browser sees the previous account’s streams. Scope it with
-   `offlineScope()` and purge it with the rest of the offline data.
-2. **Notification read state never leaves one device (Medium).** The bell and history page keep read /
-   dismissed ids in localStorage only; move them to the account with a cache-first local copy.
-3. **Missing route and widget states (Medium).** Only 3 of 29 routes have a `loading.tsx`, and four
-   widgets render nothing when their API fails. Add skeletons and one shared empty/error/retry state.
-4. **No shared Button, global pill override (Medium).** 252 raw `<button>`s and an unlayered
-   `button { border-radius: 9999px }` force `!` overrides; add `ui/Button` and move the rule into
-   `@layer base`.
-5. **Authenticated pages are never audited (Medium).** axe covers only the three public auth pages;
-   add a signed-in storage state and run it on dashboard/admin/profile/planner.
-6. **Tablet sizing and touch targets (Medium).** Small widgets are half-width from `md` (charts squeeze
-   at 768px) and the drag handle is 13px tall; give the grid a tested breakpoint helper and a 44px hit
-   area, plus a keyboard-sorting hint.
-7. **Save status and undo (Low-Medium).** Autosave gives no confirmation, and deleting a note cannot be
-   undone; add a save indicator wired to the real request result and a 5-second undo.
-8. **Widgets all mount at once (Low-Medium).** Thirteen dynamic widgets mount on entry; mount them as
-   they approach the viewport, and share one market/weather snapshot with the notification bell.
+All of it has shipped: the camera cache is account-scoped, notification read state syncs through the
+account, data routes have skeletons and widgets have one shared empty/error/retry state, `ui/Button`
+exists with the pill rule in `@layer base`, widgets mount as their card nears the viewport, and the
+save-status/undo pass closed the last two gaps. Per-finding status is in [`status.md`](../internal/status.md).
