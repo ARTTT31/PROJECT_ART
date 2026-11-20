@@ -86,6 +86,7 @@ const th = {
   'profile.sub.label.account': 'หัวข้อข้อมูลส่วนตัว',
   'profile.sub.label.preferences': 'หัวข้อการปรับแต่ง',
 
+  'card.jumpNav.label': 'ในหน้านี้',
   'card.mainMenu.title': 'เมนูหลักของระบบ',
   'card.mainMenu.subtitle': 'จัดลำดับรายการในแถบเมนูด้านข้าง',
   'card.quickLinks.title': 'ควิกลิ้งค์ (Quick Links)',
@@ -226,6 +227,7 @@ const en: Record<keyof typeof th, string> = {
   'profile.sub.label.account': 'Personal settings sections',
   'profile.sub.label.preferences': 'Preference sections',
 
+  'card.jumpNav.label': 'On this page',
   'card.mainMenu.title': 'Main menu',
   'card.mainMenu.subtitle': 'Reorder the items in the sidebar',
   'card.quickLinks.title': 'Quick links',
