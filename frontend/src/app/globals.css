@@ -1327,7 +1327,7 @@ textarea:focus-visible,
 .art-swal-cancel,
 .art-swal-deny {
   border: 1px solid var(--hairline-strong) !important;
-  background: white !important;
+  background: var(--surface) !important;
   color: var(--ink-secondary) !important;
   box-shadow: var(--shadow-glass-sm) !important;
 }
@@ -1351,12 +1351,14 @@ textarea:focus-visible,
 .art-swal-input {
   border-radius: var(--art-radius-lg) !important;
   border: 1.5px solid var(--hairline-strong) !important;
+  background: var(--surface) !important;
   box-shadow: var(--shadow-glass-sm) !important;
   color: var(--art-ink) !important;
 }
 
 .swal2-toast {
-  background: rgba(255, 255, 255, 0.96) !important;
+  /* Was pinned to white, which left dark-mode ink on a white card. */
+  background: color-mix(in srgb, var(--surface) 96%, transparent) !important;
   border: 1px solid var(--hairline-strong) !important;
   box-shadow: var(--shadow-glass) !important;
   border-radius: var(--art-radius-lg) !important;
