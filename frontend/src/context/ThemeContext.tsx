@@ -7,11 +7,15 @@ export type ResolvedTheme = 'light' | 'dark';
 export type AccentId =
   | 'blue'
   | 'teal'
-  | 'indigo'
-  | 'purple'
-  | 'pink'
-  | 'orange'
+  | 'cyan'
   | 'green'
+  | 'amber'
+  | 'orange'
+  | 'red'
+  | 'pink'
+  | 'purple'
+  | 'indigo'
+  | 'slate'
   | 'graphite';
 
 export interface ThemeAccent {
@@ -22,14 +26,20 @@ export interface ThemeAccent {
 }
 
 /** Accent presets. The hex values mirror the `data-accent` blocks in globals.css. */
+// Labels stay short on purpose: the picker puts a name under each swatch, and a
+// colour is chosen by sight long before the name is read.
 export const THEME_ACCENTS: ThemeAccent[] = [
   { id: 'blue', label: 'ฟ้า', color: '#0066cc' },
-  { id: 'teal', label: 'เขียวน้ำทะเล', color: '#0f766e' },
-  { id: 'indigo', label: 'คราม', color: '#4f46e5' },
-  { id: 'purple', label: 'ม่วง', color: '#7c3aed' },
-  { id: 'pink', label: 'ชมพู', color: '#db2777' },
-  { id: 'orange', label: 'ส้ม', color: '#c2410c' },
+  { id: 'teal', label: 'ทะเล', color: '#0f766e' },
+  { id: 'cyan', label: 'ฟ้าคราม', color: '#0e7490' },
   { id: 'green', label: 'เขียว', color: '#15803d' },
+  { id: 'amber', label: 'อำพัน', color: '#b45309' },
+  { id: 'orange', label: 'ส้ม', color: '#c2410c' },
+  { id: 'red', label: 'แดง', color: '#dc2626' },
+  { id: 'pink', label: 'ชมพู', color: '#db2777' },
+  { id: 'purple', label: 'ม่วง', color: '#7c3aed' },
+  { id: 'indigo', label: 'คราม', color: '#4f46e5' },
+  { id: 'slate', label: 'เทาเงิน', color: '#475569' },
   { id: 'graphite', label: 'ดำเทา', color: '#1d1d1f' },
 ];
 

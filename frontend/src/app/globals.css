@@ -236,6 +236,22 @@
   --accent: #1d1d1f;
   --accent-hover: #3a3a3c;
 }
+:root[data-accent='cyan'] {
+  --accent: #0e7490;
+  --accent-hover: #0891b2;
+}
+:root[data-accent='amber'] {
+  --accent: #b45309;
+  --accent-hover: #d97706;
+}
+:root[data-accent='red'] {
+  --accent: #dc2626;
+  --accent-hover: #ef4444;
+}
+:root[data-accent='slate'] {
+  --accent: #475569;
+  --accent-hover: #64748b;
+}
 
 /* ── Dark theme ──────────────────────────────────────────────────────────────
    Surfaces get darker, ink flips, hairlines become light, and the accent is
