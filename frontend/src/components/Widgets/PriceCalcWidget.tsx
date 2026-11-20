@@ -85,7 +85,7 @@ export default function PriceCalcWidget({
             value={cost}
             onChange={(event) => setCost(event.target.value)}
             placeholder="0.00"
-            className="w-full rounded-apple-widget border border-[var(--hairline-strong)] bg-[var(--surface)] px-3 py-2 text-[14px] tabular-nums text-[var(--ink)] placeholder:text-[var(--ink-divider)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
+            className="w-full rounded-apple-widget border border-[var(--hairline-strong)] bg-[var(--surface)] px-3 py-2 text-[14px] tabular-nums text-[var(--ink)] placeholder:text-[var(--ink-faint)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
           />
         </label>
 
@@ -100,7 +100,7 @@ export default function PriceCalcWidget({
             value={price}
             onChange={(event) => setPrice(event.target.value)}
             placeholder="0.00"
-            className="w-full rounded-apple-widget border border-[var(--hairline-strong)] bg-[var(--surface)] px-3 py-2 text-[14px] tabular-nums text-[var(--ink)] placeholder:text-[var(--ink-divider)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
+            className="w-full rounded-apple-widget border border-[var(--hairline-strong)] bg-[var(--surface)] px-3 py-2 text-[14px] tabular-nums text-[var(--ink)] placeholder:text-[var(--ink-faint)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
           />
         </label>
 
@@ -115,7 +115,7 @@ export default function PriceCalcWidget({
             value={discount}
             onChange={(event) => setDiscount(event.target.value)}
             placeholder="0"
-            className="w-full rounded-apple-widget border border-[var(--hairline-strong)] bg-[var(--surface)] px-3 py-2 text-[14px] tabular-nums text-[var(--ink)] placeholder:text-[var(--ink-divider)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
+            className="w-full rounded-apple-widget border border-[var(--hairline-strong)] bg-[var(--surface)] px-3 py-2 text-[14px] tabular-nums text-[var(--ink)] placeholder:text-[var(--ink-faint)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
           />
         </label>
       </div>
@@ -141,7 +141,7 @@ export default function PriceCalcWidget({
                 ? profitPositive
                   ? 'text-[var(--success-ink)]'
                   : 'text-[var(--danger)]'
-                : 'text-[var(--ink-divider)]'
+                : 'text-[var(--ink-tertiary)]'
             }`}
           >
             {money.format(result.profit)}
@@ -159,7 +159,7 @@ export default function PriceCalcWidget({
                 ? profitPositive
                   ? 'text-[var(--success-ink)]'
                   : 'text-[var(--danger)]'
-                : 'text-[var(--ink-divider)]'
+                : 'text-[var(--ink-tertiary)]'
             }`}
           >
             {result.hasInput ? `${result.margin.toFixed(1)}%` : '—'}

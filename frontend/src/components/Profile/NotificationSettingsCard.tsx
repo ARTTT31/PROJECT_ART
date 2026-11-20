@@ -47,7 +47,7 @@ export function NotificationSettingsCard() {
                     แจ้งเตือนเข้าเครื่องนี้ (Web Push)
                   </p>
                   {!webPush.isSupported ? (
-                    <span className="rounded-full bg-stone-100 px-2 py-0.5 text-[10px] font-semibold text-stone-500">
+                    <span className="rounded-full bg-[var(--surface-chip)] px-2 py-0.5 text-[10px] font-semibold text-[var(--ink-secondary)]">
                       ไม่รองรับ
                     </span>
                   ) : webPush.permission === 'denied' ? (
@@ -59,7 +59,7 @@ export function NotificationSettingsCard() {
                       เปิดใช้งานแล้ว
                     </span>
                   ) : (
-                    <span className="rounded-full bg-stone-100 dark:bg-stone-800 px-2 py-0.5 text-[10px] font-semibold text-stone-500">
+                    <span className="rounded-full bg-[var(--surface-chip)] px-2 py-0.5 text-[10px] font-semibold text-[var(--ink-secondary)]">
                       ยังไม่เปิด
                     </span>
                   )}

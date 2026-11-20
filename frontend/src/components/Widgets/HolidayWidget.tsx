@@ -188,7 +188,7 @@ export default function HolidayWidget({
           <span
             className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold ${
               nextHoliday.isToday
-                ? 'bg-[var(--success)] text-white'
+                ? 'bg-[var(--success)] text-[var(--ink-inverse)]'
                 : 'bg-[var(--glass-95)] text-[var(--accent-text)] ring-1 ring-[var(--hairline)]'
             }`}
           >

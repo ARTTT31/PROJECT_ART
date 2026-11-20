@@ -43,7 +43,7 @@ export default function AuthTransitionOverlay({
             aria-hidden="true"
             className={`absolute -right-1 -bottom-1 flex h-7 w-7 items-center justify-center rounded-full border-2 border-[var(--surface)] ${
               tone === 'success'
-                ? 'bg-[var(--success)] text-white'
+                ? 'bg-[var(--success)] text-[var(--ink-inverse)]'
                 : 'bg-[var(--accent-soft)] text-[var(--accent-text)]'
             }`}
           >

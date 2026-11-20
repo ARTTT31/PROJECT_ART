@@ -438,7 +438,7 @@ export default function CalendarWidget({
                     onClick={() => setSelectedDate(d.dateStr)}
                     className={`relative mx-auto flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-medium transition-all active:scale-[0.92] ${
                       isSelected
-                        ? 'bg-[var(--ink)] text-white shadow-xs font-bold'
+                        ? 'bg-[var(--ink)] text-[var(--ink-inverse)] shadow-xs font-bold'
                         : d.isToday
                         ? 'bg-[var(--accent)] text-white font-bold'
                         : d.isCurrentMonth
@@ -512,7 +512,7 @@ export default function CalendarWidget({
                       onClick={() => setSelectedDate(d.dateStr)}
                       className={`relative mx-auto flex h-7 w-7 items-center justify-center rounded-full text-xs font-medium transition-all active:scale-[0.92] ${
                         isSelected
-                          ? 'bg-[var(--ink)] text-white shadow-xs font-bold ring-2 ring-[var(--accent)]'
+                          ? 'bg-[var(--ink)] text-[var(--ink-inverse)] shadow-xs font-bold ring-2 ring-[var(--accent)]'
                           : d.isToday
                           ? 'bg-[var(--accent)] text-white font-bold'
                           : d.isCurrentMonth
