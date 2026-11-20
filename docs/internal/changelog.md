@@ -1,4 +1,4 @@
-# ART Workspace — Change Log
+# Workspace — Change Log
 
 **Newest entry at the bottom.** The dated record of every pass: what was found, what changed, and
 how it was verified. This is history, not status — for the current truth read
@@ -1446,6 +1446,38 @@ clean (73 files), `alembic upgrade head` + `alembic check` clean on a throwaway 
 new CSP header were not inspected in a browser — the hook, the snapshot resolver and the header change
 are covered by unit tests and the build only.
 
+## Bug Hunt: Date, Cache and Sync Defects (November 19, 2026)
+
+A whole-project audit of the failure modes the tests did not cover. Five real defects were found and
+fixed, each with a regression test.
+
+1. **Notification sync could 500 on a duplicate id inside one payload.** `POST /notifications/sync`
+   compared incoming ids only against rows already stored, so the same `client_id` twice in one request
+   queued two inserts and the flush hit `uq_notification_user_client`. The request now tracks what it
+   has already queued (`seen`), so a retried batch is idempotent even within itself.
+2. **Oil prices were dated with the server's clock.** `update_date` came from `date.today()` — UTC on
+   most hosts — so every price shown before 07:00 ICT carried yesterday's date. Both the fetched and the
+   fallback payloads now use `_today_bkk()` (`Asia/Bangkok`).
+3. **The AI Copilot was told the wrong day.** `build_system_prompt()` also used `date.today()`. It now
+   stamps the Bangkok date, matching the workspace calendar the model is asked to reason about.
+4. **A `null` theme value crashed the app at render.** `JSON.parse("null")` succeeds, so
+   `ThemeContext.readStoredSettings()` reached `parsed.mode` on `null`. Non-object values now fall back to
+   the default theme.
+5. **A corrupt dashboard layout cache crashed the grid or hid widgets.** The hook trusted `JSON.parse`
+   output: a non-array widget list reached `.filter/.map` (TypeError), entries without `w` produced a
+   widget with no grid span, and a non-array visible list was read as "nothing visible", hiding widgets
+   that were still in the layout. `normaliseWidgets()` / `normaliseVisibleIds()` now validate both
+   sources, widths are clamped to 1–3, and an empty/corrupt visibility list falls back to the layout it
+   was loaded with.
+
+`flake8 app tests` was also run for the first time and cleaned two unused imports in the test suite.
+
+### Verified
+
+`pytest -q` **711 passed / 84.41%** (gate 75%), `flake8 app tests` clean, `mypy app` clean (73 files).
+`npx vitest run` **445 passed / 68 files**, `tsc --noEmit` clean, `eslint .` clean, `npm run build`
+succeeds (16 routes). Not run: Playwright smoke/axe, live E2E and a browser pass.
+
 ## Dependency Refresh to Current Releases (November 19, 2026)
 
 Both dependency sets moved to the newest release inside their existing major, then the full gate was
@@ -1480,3 +1512,114 @@ vulnerabilities. Not run: Playwright smoke/axe and the live browser pass.
 
 
 
+## AI Copilot Actually Answers, and Settings You Can Navigate (November 19, 2026)
+
+A connected API key changed nothing in the chat. Three separate causes, all fixed:
+
+1. **The built-in parser ran before the model.** `POST /api/v1/ai/chat` called
+   `parse_builtin_intent` first and returned its canned Thai text for every common question
+   ("สรุปงานวันนี้", "ราคาน้ำมัน", "สภาพอากาศ"). Only messages the parser did not recognise ever
+   reached the provider, so a saved key looked identical to the zero-config engine. The model now
+   answers first; only the two workspace actions (`add_note`, `add_reminder`) and the no-key case
+   stay local, and the parser is the fallback when a provider call fails.
+2. **The model picker offered retired model ids.** The presets were `gemini-2.5-flash` /
+   `gemini-2.5-pro` / `gemini-2.0-flash` and the placeholder was `gemini-3.5-flash`. The 2.0 family
+   is shut down, the 2.5 family is legacy-only for keys created now, and 3.5 now routes to 3.6 — so
+   a fresh key saved cleanly and every call failed. The chips were then removed on request: the
+   card now has one optional "โมเดล (ไม่บังคับ)" field, and detection fills in a working model. The
+   defaults are `gemini-3.8-flash` (`DEFAULT_GEMINI_MODEL`, `GEMINI_MODEL`).
+3. **A failed call was invisible.** The endpoint swallowed provider errors and returned the canned
+   reply, which reads like a slow model rather than a broken key. `AIChatResponse` gained
+   `degraded`, and the drawer shows an amber note pointing at โปรไฟล์ › เชื่อมต่อ AI.
+
+Also fixed:
+
+- **The current message was sent twice.** The drawer built `history` from `[...messages, userMsg]`
+  while the backend appends the prompt itself, so the model saw the same question twice in a row.
+- **Model listing returned non-chat models.** `_list_provider_models` now drops TTS, image, live,
+  embedding and LearnLM ids, and `suggested_model` prefers stable ids over `-preview`, so
+  "suggested model" cannot land on a model that cannot chat.
+- **`AI_MAX_OUTPUT_TOKENS` 700 → 1600**: long Thai answers were truncated mid-sentence.
+
+Settings pages:
+
+- The 🔒 encryption paragraph on the AI card is replaced by a three-step how-to plus one plain
+  sentence about the key (encrypted, this account only, removable).
+- Appearance & menu, Notifications and Workspace tabs gained a "ในหน้านี้" jump bar that scrolls to
+  each card, so the switch a user came for is one click away instead of below three long cards.
+
+### Verified
+
+`pytest -q` **715 passed / 84.43%** (gate 75%), `flake8 app tests` clean, `mypy app` clean (73 files).
+`npx vitest run` **446 passed / 68 files**, `npx tsc --noEmit` clean, `npx eslint .` clean,
+`npm run build` succeeds. New tests cover model-first routing, the `degraded` flag, non-chat model
+filtering, preview-avoiding suggestions, the no-duplicate history payload and the amber notice.
+Not run: a live call to Gemini with a real key (no key on this machine) and the Playwright/browser pass.
+
+## The Workspace Is Named by Whoever Uses It (November 19, 2026)
+
+The product name was a hardcoded string in 20 frontend files and a dozen backend
+defaults. It is now a setting:
+
+- **One default, no brand prefix.** `DEFAULT_BRANDING.company_name` (frontend) and the
+  `system` endpoint / `SystemBranding` schema (backend) fall back to **Workspace**. An admin
+  renames it for everyone in โปรไฟล์ › พื้นที่ทำงาน; any account renames its own in the same card.
+- **Every surface reads that name.** The sign-in and account-email screens (`AuthPageShell`) now
+  render `useBranding().companyName` instead of a fixed title. Places that cannot reach the context
+  — page metadata, the notification fallbacks, the PWA prompt, the QR print sheet — use the neutral
+  default instead of a brand.
+- **Brand asset renamed** to `public/workspace-mark.svg` (6 references updated; `public/sw.js`
+  is a build artifact and regenerates).
+- **Backend copy** (AI prompts, email subjects/bodies, scheduled notification titles, TOTP issuer,
+  `APP_NAME`, `EMAIL_FROM`, backup `source`) no longer carries the old name.
+- Existing 2FA entries in a user's authenticator keep their old label; codes are unaffected, and a
+  re-setup uses the new issuer.
+
+### Verified
+
+`pytest -q` **715 passed / 84.43%**, `flake8 app tests` clean, `mypy app` clean (73 files).
+`npx vitest run` **446 passed / 68 files**, `npx tsc --noEmit` clean, `npx eslint .` clean,
+`npm run build` succeeds. Not updated in that pass: the documentation set, which the next entry
+sweeps.
+
+## Old Name Out of the Database, the Cache and the Home Screen (November 19, 2026)
+
+Renaming the product left the retired name behind in three places a user can still see: the seeded
+branding row, a five-minute client cache, and the installed app.
+
+- **Stored value normalised.** `system_settings.company_name` still held the seeded old name, which
+  is why existing installs kept showing it. `app/core/branding.py` now owns the default and the
+  retired-name predicate: `GET /branding` reads through it, an account whose personal override *is*
+  that name is treated as having no override, and the `20261119_normalise_branding` migration
+  rewrites the stored row once. Only that value is touched — a name an admin chose is never
+  overwritten, and the migration is idempotent.
+- **Client cache purged, not migrated.** `BrandingContext` now writes `workspace_branding` and
+  deletes the old key on start-up, so a stale cache cannot keep painting the retired name. It still
+  paints the cached value on the first frame, but revalidates once per load instead of after a
+  five-minute TTL, so a rename reaches other accounts on their next visit.
+- **The install follows the name.** `public/manifest.json` is replaced by `src/app/manifest.ts`,
+  which reads branding server-side and emits `name`/`short_name` from it; the layout metadata
+  (browser title and iOS `apple-mobile-web-app-title`) follows the same value. Icon URLs carry a
+  version hash of the name and logo — Android only refreshes an installed icon and label when the
+  icon URL changes, so this is what makes a rename land on an app that is already on the home
+  screen. iOS keeps the label it was installed with (platform behaviour); a re-add is required.
+- **Icons redrawn and pre-rendered.** The bundled mark was a blue "A" — the retired brand initial —
+  and the only bitmaps were 192px/512px copies of it, the 192 one upscaled to fill a 512px slot.
+  The mark is now a neutral dashboard glyph, and `scripts/generate-app-icons.mjs` renders
+  `icon-192`, `icon-512`, `icon-maskable-*` and a 180px `apple-touch-icon` at their exact sizes. The
+  icon route serves the maskable files for `safe=1`, and the service worker's push fallback no
+  longer points at a `/icons/` path that never existed.
+- **Docs swept.** Every Markdown file, the design-system directory (now `design-system/workspace/`),
+  source comments and test fixtures dropped the retired name. Only `app/core/branding.py`, its
+  migration and its tests still spell it, because that is the value they exist to normalise.
+
+### Verified
+
+`pytest -q` **722 passed / 84.47%** (+7: the predicate, both read paths, the migration and its
+idempotence); `flake8 app tests` clean; `mypy app` clean (74 files); `alembic heads` →
+`20261119_normalise_branding`. `npx vitest run` **448 passed / 68 files** (+2: legacy key dropped,
+cached value refreshed), `tsc --noEmit`, `eslint .` and `npm run build` (16 routes, now including
+`/manifest.webmanifest`) all clean. On the dev server `/manifest.webmanifest` returns the generated
+manifest with versioned icons, and `/branding-icon?size=512` → `/icon-512.png`,
+`?size=192&safe=1` → `/icon-maskable-192.png`. Not verified: installing the PWA on a real phone, and
+one account seeing another account's rename (no signed-in backend session in this pass).

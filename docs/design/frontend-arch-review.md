@@ -1,4 +1,4 @@
-## ART Workspace (Frontend) — UX/UI Review + Code Quality / Architecture
+## Workspace (Frontend) — UX/UI Review + Code Quality / Architecture
 
 Scope reviewed: `frontend/src/app/*`, `frontend/src/components/*`, `frontend/src/styles/*`, `frontend/src/lib/*`
 

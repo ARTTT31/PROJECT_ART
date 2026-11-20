@@ -1,6 +1,6 @@
 ---
 name: deployed-verification
-description: The repeatable procedure for the ART Workspace checks that only the live deployment can answer — CSP header, WebSocket origin, health/readiness, email delivery, migration head and shared rate-limit buckets. Use only for live-origin verification; local test, lint and build runs belong to verification-before-completion.
+description: The repeatable procedure for the Workspace checks that only the live deployment can answer — CSP header, WebSocket origin, health/readiness, email delivery, migration head and shared rate-limit buckets. Use only for live-origin verification; local test, lint and build runs belong to verification-before-completion.
 when-to-use: After a backend or frontend deploy, before claiming an environment is healthy, or when closing one of the deployed-only items listed in docs/internal/status.md §4.
 paths: ["render.yaml", "frontend/next.config.js", ".github/workflows/**", "docs/setup/migration-deployment.md", "docs/setup/production-readiness.md"]
 user-invocable: false

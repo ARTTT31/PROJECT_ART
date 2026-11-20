@@ -1,4 +1,4 @@
-# ART Workspace — Current Status
+# Workspace — Current Status
 
 **Verified:** November 19, 2026 · `main` · Windows dev
 machine, Python 3.14.6 local, Node 26 · dependency refresh (Next 16.4.6, FastAPI 0.165.0)
@@ -14,11 +14,11 @@ machine, Python 3.14.6 local, Node 26 · dependency refresh (Next 16.4.6, FastAP
 
 | Check | Command | Result |
 |---|---|---|
-| Backend tests | `cd backend && ./venv/Scripts/python.exe -m pytest -q` | **709 passed**; coverage **84.39%** (gate 75%, local Python 3.14.6) |
+| Backend tests | `cd backend && ./venv/Scripts/python.exe -m pytest -q` | **722 passed**; coverage **84.47%** (gate 75%, local Python 3.14.6) |
 | Backend lint | `./venv/Scripts/python.exe -m flake8 app` | clean |
-| Backend types | `./venv/Scripts/python.exe -m mypy app` | clean, 73 source files |
+| Backend types | `./venv/Scripts/python.exe -m mypy app` | clean, 74 source files |
 | Migrations | `alembic upgrade head` + `alembic check` on a throwaway SQLite file | full chain applies, **no drift** |
-| Frontend tests | `cd frontend && npx vitest run` | **443 passed**, 68 files |
+| Frontend tests | `cd frontend && npx vitest run` | **448 passed**, 68 files |
 | Frontend types | `npx tsc --noEmit` | clean |
 | Frontend lint | `npx eslint .` | clean (0 errors, 0 warnings) |
 | Frontend build | `npm run build` | succeeds, 16 routes |
@@ -117,7 +117,7 @@ These need the real environment and cannot be closed locally:
 | When did a behaviour change, and why? | `docs/internal/changelog.md` |
 | What exists in the product, what is planned? | `docs/product/roadmap-features.md` |
 | Users, personality, anti-references | `PRODUCT.md` |
-| Colour, type, radii, motion | `DESIGN.md` + `design-system/art-workspace/MASTER.md` |
+| Colour, type, radii, motion | `DESIGN.md` + `design-system/workspace/MASTER.md` |
 | How do I run it / deploy it? | `README.md`, `docs/setup/*` |
 
 Rule that keeps this set honest: **a dated narrative belongs in `changelog.md` only.** When a change

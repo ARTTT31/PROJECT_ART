@@ -1,6 +1,6 @@
-# ART Workspace
+# Workspace
 
-ART Workspace is a Thai-language personal productivity dashboard built with a serverless-friendly full-stack architecture.
+Workspace is a Thai-language personal productivity dashboard built with a serverless-friendly full-stack architecture.
 
 Production URL: configure this in your deployment environment; do not commit a personal deployment URL.
 
@@ -28,7 +28,7 @@ The migration step matters: the test suite builds its schema from the models, so
 ### Architecture and Design
 
 - [Design System Summary](DESIGN.md) — the short version
-- [Design System Master](design-system/art-workspace/MASTER.md) — single source of truth (Apple HIG)
+- [Design System Master](design-system/workspace/MASTER.md) — single source of truth (Apple HIG)
 - [Frontend Architecture Review](docs/design/frontend-arch-review.md)
 - [Accessibility Guide](docs/design/accessibility.md)
 
@@ -221,7 +221,7 @@ PROJECT_ART/
 │       ├── api/v1/endpoints/    # auth, profile, users, audit, system, market, weather,
 │       │                        # oil_prices, notifications, planner, websockets, ai
 │       └── core/                # config, database, security, rate_limit, totp, secret_box
-├── design-system/art-workspace/ # MASTER.md + page overrides
+├── design-system/workspace/ # MASTER.md + page overrides
 └── .github/workflows/ci.yml     # CI: flake8 + pytest + ESLint + build
 ```
 

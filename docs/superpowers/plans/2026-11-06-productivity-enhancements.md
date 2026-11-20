@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Implement the top productivity widgets and system improvements planned for ART Workspace, starting with Dependabot optimization (preventing branch explosion) followed by the Focus Timer (Pomodoro) widget and Workspace Backup & Restore.
+**Goal:** Implement the top productivity widgets and system improvements planned for Workspace, starting with Dependabot optimization (preventing branch explosion) followed by the Focus Timer (Pomodoro) widget and Workspace Backup & Restore.
 
 **Architecture / Design Source of Truth:**
 - Apple HIG: `rounded-[18px]` cards, `rounded-[11px]` controls, hairline borders (`border-[var(--hairline)]`), spring active states (`active:scale-[0.95]`).

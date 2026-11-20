@@ -1,4 +1,4 @@
-# Quick Reference - ART Workspace
+# Quick Reference - Workspace
 
 ## Local URLs
 

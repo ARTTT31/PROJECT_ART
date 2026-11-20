@@ -2,7 +2,7 @@
 
 ## Users
 
-ART Workspace is used by internal operators and admins who need a compact dashboard for weather monitoring, Thai holidays, oil prices, QR creation, and related workspace tools.
+Workspace is used by internal operators and admins who need a compact dashboard for weather monitoring, Thai holidays, oil prices, QR creation, and related workspace tools.
 
 ## Product Purpose
 

@@ -5,7 +5,7 @@
 ---
 
 ## 🎯 1. Scope & Objectives
-แผนงานยกระดับประสบการณ์การใช้งานบนมือถือ (Mobile Native PWA) และระบบออโตเมชันอัจฉริยะใน ART Workspace ให้เทียบเท่าแอปพลิเคชันเนทีฟบน iOS/Android สูงสุด ตามมาตรฐาน Apple Human Interface Guidelines (HIG) และ Ponytail Principle (ใช้ Web APIs มาตรฐาน หลีกเลี่ยงไลบรารีขนาดใหญ่)
+แผนงานยกระดับประสบการณ์การใช้งานบนมือถือ (Mobile Native PWA) และระบบออโตเมชันอัจฉริยะใน Workspace ให้เทียบเท่าแอปพลิเคชันเนทีฟบน iOS/Android สูงสุด ตามมาตรฐาน Apple Human Interface Guidelines (HIG) และ Ponytail Principle (ใช้ Web APIs มาตรฐาน หลีกเลี่ยงไลบรารีขนาดใหญ่)
 
 ---
 
@@ -67,7 +67,7 @@
   - 📹 "ดูกล้องวงจรปิด CCTV"
 
 ### 2.8 Web Share Target (รับข้อมูลที่แชร์จากแอปอื่นเข้า Workspace) 📥 [เพิ่มเข้าแผนแล้ว]
-- **วัตถุประสงค์**: เมื่อกดปุ่ม "แชร์" จาก Safari, LINE, หรือ Facebook สามารถเลือกส่งข้อความ/ลิงก์เข้ามาบันทึกลงใน ART Workspace ได้ทันที
+- **วัตถุประสงค์**: เมื่อกดปุ่ม "แชร์" จาก Safari, LINE, หรือ Facebook สามารถเลือกส่งข้อความ/ลิงก์เข้ามาบันทึกลงใน Workspace ได้ทันที
 
 ---
 

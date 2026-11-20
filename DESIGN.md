@@ -2,7 +2,7 @@
 
 ## Visual Direction
 
-ART Workspace uses a refined Web/Desktop UI based on Apple Human Interface Guidelines: light surfaces, flat color fields, clear focus states, and the signature Apple blue accent for primary actions and selected states. All design decisions are governed by the single source of truth at `design-system/art-workspace/MASTER.md`.
+Workspace uses a refined Web/Desktop UI based on Apple Human Interface Guidelines: light surfaces, flat color fields, clear focus states, and the signature Apple blue accent for primary actions and selected states. All design decisions are governed by the single source of truth at `design-system/workspace/MASTER.md`.
 
 ## Color
 
@@ -53,7 +53,7 @@ All product buttons follow the HIG specifications:
 
 ## Iconography & Brand Logos
 
-ART Workspace maintains strict iconography standards split between general UI controls and third-party brand logos:
+Workspace maintains strict iconography standards split between general UI controls and third-party brand logos:
 
 1. **System & UI Icons (`lucide-react`)**:
    - Primary icon set for all interface actions, status markers, navigation, and controls.
@@ -114,6 +114,6 @@ py .agent/skills/ui-ux-pro-max/scripts/search.py "react" --domain stack
 ```
 
 Key rules enforced alongside UI/UX Pro Max:
-1. Always maintain token consistency with `design-system/art-workspace/MASTER.md` and `frontend/src/app/globals.css`.
+1. Always maintain token consistency with `design-system/workspace/MASTER.md` and `frontend/src/app/globals.css`.
 2. Do not introduce decorative gradients or heavy drop shadows outside the defined Apple HIG tokens.
 3. Keep layout responsive, accessible (WCAG AA), and tested in both Light and Dark modes.

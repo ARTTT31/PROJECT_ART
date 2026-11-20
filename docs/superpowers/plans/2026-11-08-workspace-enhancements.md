@@ -1,7 +1,7 @@
-# Plan: ART Workspace Enhancements (Multi-Dashboard Tabs, Self-Service Notifications, AI Daily Digest, Finance Export)
+# Plan: Workspace Enhancements (Multi-Dashboard Tabs, Self-Service Notifications, AI Daily Digest, Finance Export)
 
 ## 1. Overview & Scope
-Implement the 4 agreed-upon productivity and personalization features for ART Workspace:
+Implement the 4 agreed-upon productivity and personalization features for Workspace:
 1. **Finance CSV Export**: Export personal income/expense data to `.csv` with UTF-8 BOM for Microsoft Excel Thai language compatibility.
 2. **Multi-Dashboard Tabs / Views**: Switchable segmented dashboard views (Overview, Work, Finance) with view-specific layouts and smooth Apple HIG transitions.
 3. **Self-Service External Notifications**: Per-user configuration card in `/profile` to connect LINE Notify / Telegram / Webhook with test notification dispatching.

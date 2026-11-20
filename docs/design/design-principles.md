@@ -1,10 +1,10 @@
-# Design System: ART Workspace — DEPRECATED
+# Design System: Workspace — DEPRECATED
 
 > [!WARNING]
 > **DEPRECATED (2026-10-05).** This document described an older sky-blue / slate
 > design system (accent `#0ea5e9`, primary-button gradient, `translateY` hover lift,
-> `12px` radii, "no radius > 16px"). ART Workspace now follows **Apple Human Interface
-> Guidelines**. The single source of truth is `design-system/art-workspace/MASTER.md`
+> `12px` radii, "no radius > 16px"). Workspace now follows **Apple Human Interface
+> Guidelines**. The single source of truth is `design-system/workspace/MASTER.md`
 > (v4.2), summarized in `DESIGN.md`. Treat the rules below as historical only.
 
 ## Current tokens (canonical)

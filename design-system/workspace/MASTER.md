@@ -1,4 +1,4 @@
-# ART Workspace — Design System Master Document
+# Workspace — Design System Master Document
 
 **Version:** 4.2 (Apple HIG & SF Symbols Standard - Web/Desktop Focus)
 **Last Updated:** 2026-10-05
@@ -8,7 +8,7 @@
 
 ## 🎯 Global Source of Truth
 
-This document defines the strict rules for **ART Workspace**. All components, pages, and features MUST adhere to Apple HIG principles for Web.
+This document defines the strict rules for **Workspace**. All components, pages, and features MUST adhere to Apple HIG principles for Web.
 
 ---
 

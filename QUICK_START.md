@@ -392,7 +392,7 @@ curl http://localhost:8080/api/v1/oil-prices/health
 - ลบปุ่มกล้องโปรไฟล์ที่ไม่มีฟังก์ชัน
 - ลบ badge "ผู้ดูแลระบบ" ออกจาก header และ profile
 - ลบจุดเขียวกระพริบ (animate-ping) จากนาฬิกาและหน้า login
-- ลบ brand header "ART Workspace" ออกจาก sidebar
+- ลบ brand header "Workspace" ออกจาก sidebar
 - ลบ avatar วงกลมออกจาก header
 
 ### สิ่งที่เพิ่ม/แก้ไข

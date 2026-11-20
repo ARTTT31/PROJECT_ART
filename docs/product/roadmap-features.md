@@ -7,7 +7,7 @@
 >
 > - Product brief, users, brand personality: [`PRODUCT.md`](../../PRODUCT.md)
 > - Design language, colour, typography, motion: [`DESIGN.md`](../../DESIGN.md) and
->   [`design-system/art-workspace/MASTER.md`](../../design-system/art-workspace/MASTER.md)
+>   [`design-system/workspace/MASTER.md`](../../design-system/workspace/MASTER.md)
 > - How the system is built today: [`docs/internal/architecture.md`](../internal/architecture.md)
 > - Verified test state, open findings, accepted constraints:
 >   [`docs/internal/status.md`](../internal/status.md)
@@ -107,7 +107,7 @@
 | Single instance by default | The WebSocket registry can fan out through Redis (`WS_BROADCAST_REDIS_URL`) and the rate limiter can use Redis (`SLOWAPI_STORAGE_URI`), but both default to process-local and startup logs a `[SCALING]` notice. See README -> *Horizontal scaling*. |
 | Third-party market data | Yahoo Finance / Frankfurter / Thai Gold API have no SLA; the widget shows the last known value (or an empty block) rather than failing the whole page. |
 | Partial i18n | A `th`/`en` message catalogue (`lib/i18n`) exists and drives 12 of the 97 components; the rest still hardcode Thai copy. Adding a language means migrating a screen at a time, not flipping a switch. |
-| Partial frontend coverage | 443 Vitest tests across 68 files; 709 backend tests at 84.39% coverage (Python 3.14, verified 2026-11-19). Route-level tests exist only for `login`, `register`, `forgot-password` and `share-target`, so `npm run test:coverage` remains the honest number. Playwright runs axe checks on the auth pages and a live register → login E2E against the backend in CI. |
+| Partial frontend coverage | 445 Vitest tests across 68 files; 711 backend tests at 84.41% coverage (Python 3.14, verified 2026-11-19). Route-level tests exist only for `login`, `register`, `forgot-password` and `share-target`, so `npm run test:coverage` remains the honest number. Playwright runs axe checks on the auth pages and a live register → login E2E against the backend in CI. |
 | CSP `script-src` | The frontend CSP keeps `'unsafe-inline'` for scripts because Next emits its RSC payload as inline scripts and the theme bootstrap is inline; a nonce needs middleware plus a deploy-verified pass over Google GSI and the service worker. Image sources are already an explicit allow-list (`NEXT_PUBLIC_CAMERA_IMG_ORIGINS`). |
 
 ---

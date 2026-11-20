@@ -1,6 +1,6 @@
 # AGENTS.md — AI Agent Instructions & Guidelines
 
-Welcome to **ART Workspace**. Whenever you interact with or modify this codebase, you MUST adhere to the following guidelines before taking any action.
+Welcome to **Workspace**. Whenever you interact with or modify this codebase, you MUST adhere to the following guidelines before taking any action.
 
 ---
 
@@ -13,7 +13,7 @@ Before modifying or creating any code, AI agents MUST identify the relevant area
 | Domain / Task | Target Files / Scope | Mandatory Skills to Check & Follow |
 | :--- | :--- | :--- |
 | **Workflow & Discipline** | Any new feature, debugging, planning, reviews | `.agent/skills/using-superpowers/` (`brainstorming`, `writing-plans`, `executing-plans`, `systematic-debugging`, `test-driven-development`, `verification-before-completion`) |
-| **UI/UX & Design Intelligence** | `frontend/src/**/*`, styles, pages | `.agent/skills/ui-ux-pro-max/` (via `py scripts/search.py`) + [`DESIGN.md`](DESIGN.md) + [`MASTER.md`](design-system/art-workspace/MASTER.md) |
+| **UI/UX & Design Intelligence** | `frontend/src/**/*`, styles, pages | `.agent/skills/ui-ux-pro-max/` (via `py scripts/search.py`) + [`DESIGN.md`](DESIGN.md) + [`MASTER.md`](design-system/workspace/MASTER.md) |
 | **UI Components & Radix/Tailwind** | `frontend/src/components/**/*` | `.agent/skills/shadcn/` (shadcn/ui composition, CLI, Radix primitives) |
 | **PWA, Service Workers & Caching** | `frontend/public/manifest*`, `sw.*`, offline logic | `.agent/skills/pwa-development/` (Workbox, caching strategies, offline-first) |
 | **Backend API & Endpoints** | `backend/app/api/**/*`, `backend/app/main.py` | `.agent/skills/fastapi/` (Routing, dependencies with `Annotated`, streaming/SSE) |
@@ -33,7 +33,7 @@ Before modifying or creating any code, AI agents MUST identify the relevant area
 Before writing, modifying, or refactoring ANY frontend page, component, or style:
 
 1. **Review Design Source of Truth**:
-   - Master document: [`design-system/art-workspace/MASTER.md`](design-system/art-workspace/MASTER.md)
+   - Master document: [`design-system/workspace/MASTER.md`](design-system/workspace/MASTER.md)
    - Summary & principles: [`DESIGN.md`](DESIGN.md)
    - Adhere strictly to **Apple Human Interface Guidelines (HIG)**:
      - **Radii**: 18px (`apple-lg` / `rounded-[18px]`) for cards/dialogs, 11px (`apple-md`) for controls/inputs, `rounded-full` for chips/pills.

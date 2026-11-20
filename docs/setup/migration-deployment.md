@@ -1,5 +1,5 @@
 # 🚀 Technical Migration & Deployment Document
-**Project:** ART Workspace  
+**Project:** Workspace  
 **Document Purpose:** Record the history of migrating the system from Localhost to Cloud Production Environment, including troubleshooting and solutions.
 
 ---

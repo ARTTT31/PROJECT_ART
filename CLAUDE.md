@@ -4,7 +4,7 @@ See [AGENTS.md](AGENTS.md) and [GEMINI.md](GEMINI.md) for full project rules and
 
 ## Quick Summary & Skill Routing Matrix
 Before taking action, identify your task and consult the matching skill:
-- **UI/UX & Design Intelligence**: `.agent/skills/ui-ux-pro-max/` (`py scripts/search.py ...`) + [DESIGN.md](DESIGN.md) + [design-system/art-workspace/MASTER.md](design-system/art-workspace/MASTER.md)
+- **UI/UX & Design Intelligence**: `.agent/skills/ui-ux-pro-max/` (`py scripts/search.py ...`) + [DESIGN.md](DESIGN.md) + [design-system/workspace/MASTER.md](design-system/workspace/MASTER.md)
 - **UI Components & Composition**: `.agent/skills/shadcn/` (shadcn/ui + Radix primitives)
 - **PWA & Offline Optimization**: `.agent/skills/pwa-development/` (Workbox, caching, offline-first)
 - **Backend API & Endpoints**: `.agent/skills/fastapi/` (Routing, `Annotated` dependencies, streaming)

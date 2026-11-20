@@ -1,6 +1,6 @@
 ---
 name: project-docs-discipline
-description: Keeps ART Workspace's three internal documents (architecture, status, changelog) and the roadmap from drifting apart. Use only when a change alters behaviour, routes, endpoints, test numbers or an open finding, or when editing those documents directly — never for generic documentation writing.
+description: Keeps Workspace's three internal documents (architecture, status, changelog) and the roadmap from drifting apart. Use only when a change alters behaviour, routes, endpoints, test numbers or an open finding, or when editing those documents directly — never for generic documentation writing.
 when-to-use: After a commit that changes behaviour, adds/removes a route or endpoint, changes test counts or coverage, or closes/reopens a finding in docs/internal/status.md; also when editing docs/internal/**, docs/product/roadmap-features.md or README.md.
 paths: ["docs/internal/**", "docs/product/roadmap-features.md", "README.md", "QUICK_START.md"]
 user-invocable: false

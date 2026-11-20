@@ -1,4 +1,4 @@
-# ART Workspace — Architecture
+# Workspace — Architecture
 
 **Last updated:** November 11, 2026 · describes `main` at `623fd3a`
 
@@ -83,7 +83,7 @@ prompt via `usePwaInstall`, badges via `utils/appBadge`, push subscription via `
 
 **Presentation.** Tailwind 4 with three-layer tokens in `app/globals.css` (`--surface`, `--ink`,
 `--accent`, `--hairline`), radii 18/11/full, Apple HIG states, `lucide-react` icons only. The master
-document is [`design-system/art-workspace/MASTER.md`](../../design-system/art-workspace/MASTER.md).
+document is [`design-system/workspace/MASTER.md`](../../design-system/workspace/MASTER.md).
 
 **i18n.** `lib/i18n/messages.ts` holds a `th`/`en` catalogue used by part of the component tree; the
 rest hardcodes Thai copy. See `status.md` for the current split.
@@ -263,5 +263,5 @@ login screen renders them) and therefore rate-limited per client address.
 | New API route | `backend/app/api/v1/endpoints/` + mount in `api/v1/router.py`; schema in `schemas/`, logic in `services/` |
 | Schema change | model in `models/` → `alembic revision --autogenerate` → `alembic check` |
 | New stored blob | column on `users` + `UserService.update_*` writer + the widget's cache-first read |
-| Design token / radius | `frontend/src/app/globals.css` + `design-system/art-workspace/MASTER.md` |
+| Design token / radius | `frontend/src/app/globals.css` + `design-system/workspace/MASTER.md` |
 | Auth / session behaviour | `backend/app/api/v1/endpoints/auth.py` + `services/auth_service.py`, then `AuthProvider`/`fetchWithAuth` |

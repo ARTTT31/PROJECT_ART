@@ -10,7 +10,7 @@ Before modifying or creating any code, AI agents MUST invoke and follow the rele
 | Domain / Task | Target Files / Scope | Mandatory Skills to Check & Follow |
 | :--- | :--- | :--- |
 | **Workflow & Discipline** | Any new feature, debugging, planning, reviews | `.agent/skills/using-superpowers/` (`brainstorming`, `writing-plans`, `executing-plans`, `systematic-debugging`, `test-driven-development`, `verification-before-completion`) |
-| **UI/UX & Design Intelligence** | `frontend/src/**/*`, styles, pages | `.agent/skills/ui-ux-pro-max/` (via `py scripts/search.py`) + [DESIGN.md](DESIGN.md) + [design-system/art-workspace/MASTER.md](design-system/art-workspace/MASTER.md) |
+| **UI/UX & Design Intelligence** | `frontend/src/**/*`, styles, pages | `.agent/skills/ui-ux-pro-max/` (via `py scripts/search.py`) + [DESIGN.md](DESIGN.md) + [design-system/workspace/MASTER.md](design-system/workspace/MASTER.md) |
 | **UI Components & Radix/Tailwind** | `frontend/src/components/**/*` | `.agent/skills/shadcn/` (shadcn/ui composition, CLI, Radix primitives) |
 | **PWA, Service Workers & Caching** | `frontend/public/manifest*`, `sw.*`, offline logic | `.agent/skills/pwa-development/` (Workbox, caching strategies, offline-first) |
 | **Backend API & Endpoints** | `backend/app/api/**/*`, `backend/app/main.py` | `.agent/skills/fastapi/` (Routing, dependencies with `Annotated`, streaming/SSE) |
@@ -25,7 +25,7 @@ Before modifying or creating any code, AI agents MUST invoke and follow the rele
 ## 1. UI/UX & Frontend Development Pre-Flight Checklist
 Before modifying or creating any frontend code, components, or styles:
 1. **Review Design Standards**:
-   - Check [DESIGN.md](DESIGN.md) and the single source of truth [design-system/art-workspace/MASTER.md](design-system/art-workspace/MASTER.md).
+   - Check [DESIGN.md](DESIGN.md) and the single source of truth [design-system/workspace/MASTER.md](design-system/workspace/MASTER.md).
    - Strictly follow Apple Human Interface Guidelines (HIG): clean typography, flat surfaces, 1px hairline borders (`border-black/[0.06]`), continuous squircle corner radii (`apple-lg` 18px cards/dialogs, `apple-md` 11px controls, `rounded-full` pills), and springy active states (`active:scale-[0.95]`).
 2. **Consult UI/UX Pro Max**:
    - Use the installed `ui-ux-pro-max` skill (`.agent/skills/ui-ux-pro-max/`) for design intelligence, UX guidelines, accessibility requirements, and styling reference.

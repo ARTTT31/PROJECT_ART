@@ -1,9 +1,9 @@
 # 🎨 Enterprise Admin Design System — DEPRECATED
 
 > [!WARNING]
-> **DEPRECATED (2026-10-05).** ART Workspace no longer uses the Ant Design Pro /
+> **DEPRECATED (2026-10-05).** Workspace no longer uses the Ant Design Pro /
 > "Enterprise Admin" style. The project follows **Apple Human Interface Guidelines**,
-> defined in the single source of truth: `design-system/art-workspace/MASTER.md` (v4.2),
+> defined in the single source of truth: `design-system/workspace/MASTER.md` (v4.2),
 > summarized in `DESIGN.md`.
 
 ## Current tokens (canonical)
