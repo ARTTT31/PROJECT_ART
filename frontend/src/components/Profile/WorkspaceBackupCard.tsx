@@ -25,7 +25,8 @@ import {
 export interface WorkspaceBackupPayload {
   version: number;
   exportedAt: string;
-  source: 'ART Workspace';
+  /** Name of the app that wrote the file; informational only. */
+  source: string;
   data: {
     quickNotes?: unknown[];
     finance?: {
@@ -67,7 +68,7 @@ export default function WorkspaceBackupCard() {
       const backup: WorkspaceBackupPayload = {
         version: 1,
         exportedAt: new Date().toISOString(),
-        source: 'ART Workspace',
+        source: 'Workspace',
         data: {
           quickNotes: notesData.notes || [],
           finance: {
@@ -84,7 +85,7 @@ export default function WorkspaceBackupCard() {
       const nowStr = new Date().toISOString().split('T')[0];
       const link = document.createElement('a');
       link.href = url;
-      link.download = `art-workspace-backup-${nowStr}.json`;
+      link.download = `workspace-backup-${nowStr}.json`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);

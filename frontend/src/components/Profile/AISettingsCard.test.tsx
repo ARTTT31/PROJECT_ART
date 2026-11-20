@@ -15,7 +15,7 @@ const connected = {
     provider: 'gemini',
     has_key: true,
     base_url: '',
-    model: 'gemini-3.5-flash',
+    model: 'gemini-3.8-flash',
     source: 'user',
   },
 };
@@ -40,7 +40,7 @@ describe('AISettingsCard', () => {
 
     await waitFor(() => {
       expect(screen.getByText('เชื่อมต่อด้วยคีย์ของคุณ')).toBeInTheDocument();
-      expect(screen.getByText(/Gemini · gemini-3.5-flash/)).toBeInTheDocument();
+      expect(screen.getByText(/Gemini · gemini-3.8-flash/)).toBeInTheDocument();
     });
   });
 

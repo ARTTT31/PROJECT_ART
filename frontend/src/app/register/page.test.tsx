@@ -48,7 +48,7 @@ describe('RegisterPage', () => {
       return Promise.resolve({
         ok: true,
         json: async () => ({
-          company_name: 'ART Workspace',
+          company_name: 'Workspace',
           company_tagline: 'จัดการวันทำงานของคุณให้ง่ายขึ้น',
         }),
       });
@@ -81,7 +81,7 @@ describe('RegisterPage', () => {
       return Promise.resolve({
         ok: true,
         json: async () => ({
-          company_name: 'ART Workspace',
+          company_name: 'Workspace',
           company_tagline: 'จัดการวันทำงานของคุณให้ง่ายขึ้น',
         }),
       });
@@ -122,7 +122,7 @@ describe('RegisterPage', () => {
       return Promise.resolve({
         ok: true,
         json: async () => ({
-          company_name: 'ART Workspace',
+          company_name: 'Workspace',
           company_tagline: 'จัดการวันทำงานของคุณให้ง่ายขึ้น',
         }),
       });

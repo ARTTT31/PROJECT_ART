@@ -270,7 +270,7 @@ export default function QRCodeWidget({
         <!DOCTYPE html>
         <html>
           <head>
-            <title>พิมพ์ ${format === 'qrcode' ? 'QR Code' : 'Barcode'} - ART Workspace</title>
+            <title>พิมพ์ ${format === 'qrcode' ? 'QR Code' : 'Barcode'}</title>
             <meta charset="utf-8" />
             <style>
               @page { size: auto; margin: 15mm; }

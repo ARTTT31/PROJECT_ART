@@ -62,7 +62,7 @@ export default function Header({ user, onMenuClick, sidebarCollapsed = false }: 
     };
   })();
 
-  const currentTitle = headerMeta.title || pageTitle.title || 'ART Workspace';
+  const currentTitle = headerMeta.title || pageTitle.title || 'Workspace';
 
   return (
     <header className="sticky top-0 z-20 border-b border-[var(--hairline)] bg-[var(--apple-nav-bg)] backdrop-blur-2xl transition-all">

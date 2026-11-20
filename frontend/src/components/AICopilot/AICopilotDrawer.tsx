@@ -8,6 +8,7 @@ import {
   Bot,
   User,
   CheckCircle2,
+  AlertTriangle,
   Calendar,
   Fuel,
   CloudSun,
@@ -27,8 +28,10 @@ interface ChatMessage {
     data: Record<string, unknown>;
   };
   timestamp: string;
-  /** "Google Gemini · gemini-2.5-flash" when an external model wrote this reply. */
+  /** "Google Gemini · gemini-3.8-flash" when an external model wrote this reply. */
   modelLabel?: string;
+  /** The saved key failed, so this reply came from the built-in engine. */
+  degraded?: boolean;
 }
 
 /** Who answers: the account's own key, the server's, or the built-in engine. */
@@ -70,7 +73,7 @@ const INITIAL_MESSAGES: ChatMessage[] = [
   {
     id: 'welcome',
     sender: 'assistant',
-    text: 'สวัสดีครับ! ผมคือ AI Copilot ประจำ ART Workspace สามารถถามข้อมูลสรุปวันนี้, จดโน้ตด่วน หรือตั้งเตือนความจำได้ทันทีครับ ✨',
+    text: 'สวัสดีครับ! ผมคือ AI Copilot ประจำพื้นที่ทำงานของคุณ สามารถถามข้อมูลสรุปวันนี้, จดโน้ตด่วน หรือตั้งเตือนความจำได้ทันทีครับ ✨',
     timestamp: '08:00',
   },
 ];
@@ -142,7 +145,7 @@ export default function AICopilotDrawer() {
     setMessages((prev) =>
       prev.map((message) =>
         message.id === 'welcome'
-          ? { ...message, text: `สวัสดีครับ! ผมคือ AI Copilot ประจำ ART Workspace ขับเคลื่อนด้วย ${who} — ถามข้อมูลสรุปวันนี้ จดโน้ตด่วน หรือตั้งเตือนความจำได้ทันทีครับ ✨` }
+          ? { ...message, text: `สวัสดีครับ! ผมคือ AI Copilot ประจำพื้นที่ทำงานของคุณ ขับเคลื่อนด้วย ${who} — ถามข้อมูลสรุปวันนี้ จดโน้ตด่วน หรือตั้งเตือนความจำได้ทันทีครับ ✨` }
           : message,
       ),
     );
@@ -250,7 +253,9 @@ export default function AICopilotDrawer() {
       // talks about the tasks and prices the user is looking at.
       const pending = pendingQuickNotes();
       const digest = readCached<DigestContext>(DIGEST_CACHE_KEY)?.data;
-      const history = [...messages, userMsg]
+      // The new message is sent as `message` below; putting it in `history` too
+      // made the model see the same question twice in a row.
+      const history = messages
         .filter((message) => message.id !== 'welcome')
         .slice(-HISTORY_LIMIT)
         .map((message) => ({ role: message.sender, text: message.text }));
@@ -288,6 +293,7 @@ export default function AICopilotDrawer() {
         modelLabel: data.model
           ? [data.provider, data.model].filter(Boolean).join(' · ')
           : undefined,
+        degraded: Boolean(data.degraded),
       };
 
       setMessages((prev) => [...prev, assistantMsg]);
@@ -423,6 +429,18 @@ export default function AICopilotDrawer() {
                     }`}
                   >
                     <p className="whitespace-pre-line">{msg.text}</p>
+
+                    {/* The saved key could not answer this turn: point at the
+                        settings instead of passing a canned reply off as AI. */}
+                    {msg.degraded && (
+                      <div className="mt-2 flex items-start gap-2 rounded-apple-md bg-amber-500/10 px-2.5 py-1.5 text-[11px] font-medium text-amber-700 dark:text-amber-300 border border-amber-500/20">
+                        <AlertTriangle size={13} className="mt-0.5 shrink-0 text-amber-500" aria-hidden="true" />
+                        <span>
+                          คีย์ที่เชื่อมไว้ตอบไม่ได้ จึงใช้โหมดพื้นฐานแทน — ตรวจสอบคีย์และโมเดลที่
+                          โปรไฟล์ › เชื่อมต่อ AI
+                        </span>
+                      </div>
+                    )}
 
                     {/* Action Confirmation Badge */}
                     {msg.action && (

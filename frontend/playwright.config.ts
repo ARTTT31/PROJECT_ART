@@ -1,7 +1,7 @@
 import { defineConfig, devices } from '@playwright/test'
 
 /**
- * Playwright config for ART Workspace frontend smoke tests.
+ * Playwright config for Workspace frontend smoke tests.
  *
  * Run locally:
  *   npx playwright install --with-deps   # first time only

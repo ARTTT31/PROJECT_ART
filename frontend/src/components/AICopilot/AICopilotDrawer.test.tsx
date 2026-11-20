@@ -146,6 +146,40 @@ describe('AICopilotDrawer', () => {
     });
   });
 
+  it('sends the current message once and says when the saved key failed', async () => {
+    let sent: { history?: { role: string; text: string }[] } = {};
+
+    (fetchWithAuth as any).mockImplementation(async (url: string, init?: RequestInit) => {
+      if (String(url).includes('/api/v1/ai/chat')) {
+        sent = JSON.parse(String(init?.body));
+        return {
+          ok: true,
+          json: async () => ({ result: 'success', reply: 'คำตอบจากโหมดพื้นฐาน', degraded: true }),
+        };
+      }
+      return { ok: true, json: async () => ({ data: {} }) };
+    });
+
+    render(<AICopilotDrawer />);
+    fireEvent.click(screen.getByLabelText('เปิด AI Copilot'));
+
+    fireEvent.change(screen.getByPlaceholderText(/สั่งงาน เช่น/), {
+      target: { value: 'ช่วยคิดแผนงานสัปดาห์หน้า' },
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('ส่งข้อความ'));
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('คำตอบจากโหมดพื้นฐาน')).toBeDefined();
+    });
+
+    // The backend appends the new message itself, so echoing it in history made
+    // the model receive the same question twice.
+    expect(sent.history?.some((turn) => turn.text === 'ช่วยคิดแผนงานสัปดาห์หน้า')).toBe(false);
+    expect(screen.getByText(/คีย์ที่เชื่อมไว้ตอบไม่ได้/)).toBeDefined();
+  });
+
   it('closes when close button is clicked', () => {
     render(<AICopilotDrawer />);
     fireEvent.click(screen.getByLabelText('เปิด AI Copilot'));

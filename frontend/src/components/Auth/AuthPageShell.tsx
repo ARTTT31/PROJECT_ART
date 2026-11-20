@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import { useBranding } from '@/context/BrandingContext';
 
 /**
  * Shared chrome for the account-email screens (forgot / reset / verify).
@@ -16,13 +17,17 @@ export default function AuthPageShell({
   tagline: string;
   children: React.ReactNode;
 }) {
+  // The account can rename the workspace, so these screens show that name
+  // instead of a fixed product brand.
+  const { companyName } = useBranding();
+
   return (
     <main className="login-page">
       <section aria-label={tagline} className="login-shell">
         <div className="login-panel">
           <header className="login-brand">
             <Image
-              src="/art-workspace-mark.svg"
+              src="/workspace-mark.svg"
               alt=""
               width={72}
               height={72}
@@ -30,7 +35,7 @@ export default function AuthPageShell({
               draggable={false}
               className="login-mark"
             />
-            <h1 className="login-title">ART Workspace</h1>
+            <h1 className="login-title">{companyName}</h1>
             <p className="login-tagline">{tagline}</p>
           </header>
           {children}

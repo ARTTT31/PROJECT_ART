@@ -58,18 +58,6 @@ const DEFAULT_LABELS: Record<AISettingsSource, { title: string; body: string }> 
   },
 };
 
-const GEMINI_PRESETS = [
-  { id: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash', tag: 'แนะนำ' },
-  { id: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro', tag: 'ฉลาดสุด' },
-  { id: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash' },
-];
-
-const OPENAI_PRESETS = [
-  { id: 'gpt-4o-mini', label: 'GPT-4o Mini', tag: 'ประหยัด' },
-  { id: 'gpt-4o', label: 'GPT-4o' },
-  { id: 'claude-3-5-sonnet', label: 'Claude 3.5 Sonnet' },
-];
-
 export default function AISettingsCard() {
   const [settings, setSettings] = useState<AISettings>({
     provider: 'gemini',
@@ -293,13 +281,6 @@ export default function AISettingsCard() {
 
   const status = DEFAULT_LABELS[settings.source];
   const configured = settings.has_key;
-  const defaultPresets = settings.provider === 'gemini' ? GEMINI_PRESETS : OPENAI_PRESETS;
-  // A detected key brings the provider's real model list; the curated chips are
-  // only the fallback before anything has been pasted.
-  const presets =
-    detection && detection.provider === settings.provider && detection.models.length > 0
-      ? detection.models.map((id) => ({ id, label: id, tag: '' }))
-      : defaultPresets;
   const connectionLabel =
     settings.provider_label || (settings.provider === 'gemini' ? 'Gemini' : 'OpenAI-compatible');
   const connectionModel = settings.effective_model || settings.model;
@@ -312,7 +293,6 @@ export default function AISettingsCard() {
       iconRing="ring-violet-200/60 dark:ring-violet-800/40"
       title="เชื่อมต่อ AI Chat (API Key)"
       subtitle="เลือกผู้ให้บริการและใส่คีย์ของคุณเอง — ใช้เฉพาะบัญชีนี้"
-      badge="Bring your own key"
     >
       <div className="space-y-5">
         {/* Current connection banner */}
@@ -472,9 +452,7 @@ export default function AISettingsCard() {
                   ตรวจพบ: {detection.label}
                 </span>
                 {detection.models.length > 0 && (
-                  <span className="opacity-80">
-                    · พบ {detection.models.length} โมเดล (เลือกได้ด้านล่าง)
-                  </span>
+                  <span className="opacity-80">· พบ {detection.models.length} โมเดลที่ใช้ได้</span>
                 )}
                 {detection.model && (
                   <span className="opacity-80">· แนะนำ {detection.model}</span>
@@ -499,65 +477,41 @@ export default function AISettingsCard() {
           />
         )}
 
-        {/* Model Presets & Input */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <label htmlFor="model-input" className="block text-[12px] font-bold text-[var(--ink-secondary)]">
-              Model (โมเดล)
-            </label>
-            <span className="text-[11px] text-[var(--ink-muted)]">คลิกเลือกโมเดลยอดนิยม</span>
-          </div>
+        {/* Model: detection fills the working model in, and this field is the
+            manual override for anything the provider does not list. */}
+        <InsetField
+          id="model-input"
+          label="โมเดล (ไม่บังคับ)"
+          value={model}
+          onChange={setModel}
+          placeholder={
+            settings.provider === 'gemini'
+              ? 'gemini-3.8-flash'
+              : 'เช่น gpt-4o, claude-3-5-sonnet, glm-4-flash'
+          }
+          icon={<Cpu className="h-4 w-4" aria-hidden="true" />}
+          hint="เว้นว่างเพื่อใช้ค่าเริ่มต้นของระบบ"
+        />
 
-          {/* Quick preset chips */}
-          <div className="flex flex-wrap gap-1.5 pb-1">
-            {presets.map((preset) => {
-              const active = model === preset.id;
-              return (
-                <button
-                  key={preset.id}
-                  type="button"
-                  onClick={() => setModel(preset.id)}
-                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold transition-all active:scale-[0.96] ${
-                    active
-                      ? 'bg-[var(--accent)] text-white shadow-2xs'
-                      : 'bg-[var(--surface-grouped)] text-[var(--ink-secondary)] hover:bg-[var(--surface-chip)] hover:text-[var(--ink)] ring-1 ring-[var(--hairline)]'
-                  }`}
-                >
-                  <span>{preset.label}</span>
-                  {preset.tag && (
-                    <span
-                      className={`rounded-full px-1.5 py-0.2 text-[9px] font-bold ${
-                        active
-                          ? 'bg-white/20 text-white'
-                          : 'bg-[var(--accent-tint)] text-[var(--accent-text)]'
-                      }`}
-                    >
-                      {preset.tag}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-
-          <InsetField
-            id="model-input"
-            label="หรือระบุชื่อโมเดลเอง"
-            value={model}
-            onChange={setModel}
-            placeholder={
-              settings.provider === 'gemini'
-                ? 'gemini-2.5-flash'
-                : 'เช่น gpt-4o, claude-3-5-sonnet, glm-4-flash'
-            }
-            icon={<Cpu className="h-4 w-4" aria-hidden="true" />}
-            hint="เว้นว่างเพื่อใช้ค่าเริ่มต้นของระบบ"
-          />
-        </div>
-
-        <div className="rounded-apple-widget border border-[var(--hairline-soft)] bg-[var(--surface-subtle)] px-3.5 py-2.5">
-          <p className="text-[11px] leading-relaxed text-[var(--ink-tertiary)]">
-            🔒 คีย์ของคุณจะถูกเข้ารหัสก่อนบันทึกลงฐานข้อมูล และถูกใช้งานเฉพาะการสนทนาของบัญชีคุณเท่านั้น
+        {/* Plain-language how-to instead of a security paragraph: the steps are
+            what a first-time user needs, and the key's safety is one short line. */}
+        <div className="rounded-apple-widget border border-[var(--hairline-soft)] bg-[var(--surface-subtle)] px-3.5 py-3">
+          <ol className="space-y-1.5 text-[11.5px] leading-relaxed text-[var(--ink-secondary)]">
+            <li className="flex gap-2">
+              <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-[var(--accent-soft)] text-[9px] font-bold text-[var(--accent-text)]">1</span>
+              <span>เลือกผู้ให้บริการ แล้ววาง API Key ด้านบน — ระบบจะเลือกโมเดลที่ใช้ได้ให้เอง</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-[var(--accent-soft)] text-[9px] font-bold text-[var(--accent-text)]">2</span>
+              <span>กด &ldquo;บันทึกการเชื่อมต่อ&rdquo; แล้วกด &ldquo;ทดสอบการเชื่อมต่อ&rdquo; เพื่อเช็กว่าคีย์ใช้งานได้จริง</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-[var(--accent-soft)] text-[9px] font-bold text-[var(--accent-text)]">3</span>
+              <span>เปิดแชท AI Copilot ได้เลย — ชื่อผู้ให้บริการและโมเดลจะขึ้นใต้ข้อความตอบกลับ</span>
+            </li>
+          </ol>
+          <p className="mt-2.5 border-t border-[var(--hairline-soft)] pt-2 text-[11px] text-[var(--ink-tertiary)]">
+            คีย์ถูกเก็บแบบเข้ารหัสและใช้กับแชทของบัญชีนี้เท่านั้น ลบได้ทุกเมื่อด้วยปุ่มด้านล่าง
           </p>
         </div>
 

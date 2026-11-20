@@ -20,7 +20,7 @@ export default function AuthTransitionOverlay({
   tone?: 'loading' | 'success';
 }) {
   const { companyName, brandLogoUrl } = useBranding();
-  const logoSrc = brandLogoUrl || '/art-workspace-mark.svg';
+  const logoSrc = brandLogoUrl || '/workspace-mark.svg';
 
   return (
     <div

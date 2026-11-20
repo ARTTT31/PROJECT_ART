@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils';
  * - Focus trap with ESC key support
  * - Liquid Glass UI: Semi-transparent overlay with backdrop-blur
  * - Restores focus to trigger element on close
- * - Follows ART Workspace design system (16px max radius)
+ * - Follows Workspace design system (16px max radius)
  */
 
 const Dialog = DialogPrimitive.Root;

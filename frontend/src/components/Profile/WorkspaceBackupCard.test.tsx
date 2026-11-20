@@ -63,7 +63,7 @@ describe('WorkspaceBackupCard', () => {
     const mockBackup = {
       version: 1,
       exportedAt: new Date().toISOString(),
-      source: 'ART Workspace',
+      source: 'Workspace',
       data: {
         quickNotes: [{ id: 'n1', text: 'Task 1' }, { id: 'n2', text: 'Task 2' }],
         finance: { entries: [{ id: 'e1', amount: 50 }], budget: 2000 },

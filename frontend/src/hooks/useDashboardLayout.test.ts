@@ -77,6 +77,23 @@ describe('useDashboardLayout — initialization', () => {
     expect(result.current.visibleWidgetIds).toContain('qrcode');
   });
 
+  it('does not crash on a cached layout that is not a widget list', async () => {
+    // A half-written or hand-edited cache used to reach `.filter()` as a plain
+    // object and take the dashboard down; entries without a width produced a
+    // widget with no grid span.
+    localStorage.setItem(
+      dashboardLayoutCacheKeys().layout,
+      JSON.stringify([{ id: 'weather' }, null, 'qrcode', { w: 2 }]),
+    );
+    localStorage.setItem(dashboardLayoutCacheKeys().visible, JSON.stringify({ nope: true }));
+
+    const { result } = await renderLayout();
+
+    expect(result.current.widgets).toContainEqual({ id: 'weather', w: 1 });
+    expect(result.current.widgets.every((widget) => typeof widget.id === 'string')).toBe(true);
+    expect(result.current.visibleWidgetIds).toEqual(DEFAULT_IDS);
+  });
+
   it('prefers the cloud profile layout over localStorage', async () => {
     localStorage.setItem(
       dashboardLayoutCacheKeys().layout,

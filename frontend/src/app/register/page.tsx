@@ -214,7 +214,7 @@ export default function RegisterPage() {
     }
   };
 
-  const effectiveLogo = brandLogoUrl || '/art-workspace-mark.svg';
+  const effectiveLogo = brandLogoUrl || '/workspace-mark.svg';
 
   return (
     <main className="login-page">

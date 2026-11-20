@@ -49,7 +49,7 @@ export default function NotFound() {
 
           {/* Right: Content Panel */}
           <div className="flex flex-col justify-center p-8 sm:p-12">
-            <p className="text-sm font-bold text-sky-700">ART Workspace</p>
+            <p className="text-sm font-bold text-sky-700">Workspace</p>
             <h1 className="mt-4 text-3xl font-bold leading-tight tracking-normal text-slate-950">
               {tr('ลิงก์นี้อาจถูกย้าย หรือลบออกแล้ว', 'This link may have moved or been deleted')}
             </h1>

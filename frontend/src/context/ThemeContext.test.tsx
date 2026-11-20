@@ -85,4 +85,16 @@ describe('ThemeContext', () => {
     expect(screen.getByTestId('mode')).toHaveTextContent('system');
     expect(screen.getByTestId('accent')).toHaveTextContent('blue');
   });
+
+  it('treats a stored JSON null as no saved theme', () => {
+    // JSON.parse('null') succeeds, so this used to reach `parsed.mode` and throw
+    // during render, blanking the page instead of painting the default theme.
+    localStorage.setItem(THEME_STORAGE_KEY, 'null');
+
+    renderProbe();
+
+    expect(screen.getByTestId('mode')).toHaveTextContent('system');
+    expect(screen.getByTestId('accent')).toHaveTextContent('blue');
+    expect(document.documentElement.dataset.theme).toBe('light');
+  });
 });

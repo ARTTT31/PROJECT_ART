@@ -37,7 +37,7 @@ export function PwaInstallPrompt() {
             <div className="relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-apple-md bg-[var(--surface-grouped)] ring-1 ring-[var(--hairline)]">
               <Image
                 src="/branding-icon?size=192"
-                alt="ART Workspace"
+                alt=""
                 width={44}
                 height={44}
                 className="h-full w-full object-cover"
@@ -46,7 +46,7 @@ export function PwaInstallPrompt() {
             </div>
             <div className="min-w-0 flex-1">
               <p className="truncate text-[13px] font-bold text-[var(--ink)] leading-tight">
-                ติดตั้ง ART Workspace
+                ติดตั้งแอปนี้
               </p>
               <p className="mt-0.5 truncate text-[11px] text-[var(--ink-muted)]">
                 เพิ่มลงหน้าจอหลักเพื่อเปิดใช้งานแบบเต็มจอ
@@ -86,7 +86,7 @@ export function PwaInstallPrompt() {
               วิธีติดตั้งบน iPhone / iPad
             </DialogTitle>
             <DialogDescription className="text-center text-[12px] text-[var(--ink-muted)]">
-              ติดตั้งแอป ART Workspace ลงบนหน้าจอโฮมของคุณใน 3 ขั้นตอนง่าย ๆ
+              ติดตั้งแอปลงบนหน้าจอโฮมของคุณใน 3 ขั้นตอนง่าย ๆ
             </DialogDescription>
           </DialogHeader>
 
@@ -167,8 +167,8 @@ export function PwaHeaderButton() {
       <button
         type="button"
         onClick={handleClick}
-        title="ติดตั้งแอป ART Workspace ลงในเครื่อง"
-        aria-label="ติดตั้งแอป ART Workspace"
+        title="ติดตั้งแอปลงในเครื่อง"
+        aria-label="ติดตั้งแอป"
         className="inline-flex min-h-[34px] items-center gap-1.5 rounded-full border border-[var(--hairline)] bg-[var(--surface)] px-3 py-1 text-[12px] font-semibold text-[var(--ink)] shadow-2xs transition-all duration-150 hover:bg-[var(--surface-grouped)] hover:text-[var(--accent-text)] active:scale-[0.95]"
       >
         <Download size={13} className="text-[var(--accent-text)]" aria-hidden="true" />
@@ -186,7 +186,7 @@ export function PwaHeaderButton() {
               วิธีติดตั้งบน iPhone / iPad
             </DialogTitle>
             <DialogDescription className="text-center text-[12px] text-[var(--ink-muted)]">
-              ติดตั้งแอป ART Workspace ลงบนหน้าจอโฮมของคุณใน 3 ขั้นตอนง่าย ๆ
+              ติดตั้งแอปลงบนหน้าจอโฮมของคุณใน 3 ขั้นตอนง่าย ๆ
             </DialogDescription>
           </DialogHeader>
 

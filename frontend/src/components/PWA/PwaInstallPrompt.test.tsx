@@ -28,7 +28,7 @@ describe('PwaInstallPrompt & PwaHeaderButton', () => {
       window.dispatchEvent(mockPromptEvent);
     });
 
-    expect(screen.getByText('ติดตั้ง ART Workspace')).toBeDefined();
+    expect(screen.getByText('ติดตั้งแอปนี้')).toBeDefined();
     expect(screen.getByText('เพิ่มลงหน้าจอหลักเพื่อเปิดใช้งานแบบเต็มจอ')).toBeDefined();
 
     const installBtn = screen.getByRole('button', { name: 'ติดตั้ง' });
@@ -57,7 +57,7 @@ describe('PwaInstallPrompt & PwaHeaderButton', () => {
       window.dispatchEvent(mockPromptEvent);
     });
 
-    expect(screen.getByRole('button', { name: 'ติดตั้งแอป ART Workspace' })).toBeDefined();
+    expect(screen.getByRole('button', { name: 'ติดตั้งแอป' })).toBeDefined();
 
     const closeBtn = screen.getByRole('button', { name: 'ปิดคำแนะนำการติดตั้ง' });
     act(() => {

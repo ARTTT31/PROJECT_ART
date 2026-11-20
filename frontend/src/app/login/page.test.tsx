@@ -63,7 +63,7 @@ describe('LoginPage', () => {
       return Promise.resolve({
         ok: true,
         json: async () => ({
-          company_name: 'ART Workspace',
+          company_name: 'Workspace',
           company_tagline: 'จัดการวันทำงานของคุณให้ง่ายขึ้น',
         }),
       });
@@ -107,7 +107,7 @@ describe('LoginPage', () => {
       }
       return Promise.resolve({
         ok: true,
-        json: async () => ({ company_name: 'ART Workspace', company_tagline: 'x' }),
+        json: async () => ({ company_name: 'Workspace', company_tagline: 'x' }),
       });
     }) as unknown as typeof fetch;
 
@@ -160,7 +160,7 @@ describe('LoginPage', () => {
       }
       return Promise.resolve({
         ok: true,
-        json: async () => ({ company_name: 'ART Workspace', company_tagline: 'x' }),
+        json: async () => ({ company_name: 'Workspace', company_tagline: 'x' }),
       });
     }) as unknown as typeof fetch;
 
@@ -231,7 +231,7 @@ describe('LoginPage', () => {
       }
       return Promise.resolve({
         ok: true,
-        json: async () => ({ company_name: 'ART Workspace', company_tagline: 'x' }),
+        json: async () => ({ company_name: 'Workspace', company_tagline: 'x' }),
       });
     }) as unknown as typeof fetch;
 
@@ -286,7 +286,7 @@ describe('LoginPage', () => {
       }
       return Promise.resolve({
         ok: true,
-        json: async () => ({ company_name: 'ART Workspace', company_tagline: 'x' }),
+        json: async () => ({ company_name: 'Workspace', company_tagline: 'x' }),
       });
     }) as unknown as typeof fetch;
 

@@ -58,7 +58,7 @@ async function mockApi(page: import('@playwright/test').Page, loginStatus: numbe
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify({
-          company_name: 'ART Workspace',
+          company_name: 'Workspace',
           company_tagline: 'จัดการวันทำงานของคุณให้ง่ายขึ้น',
           brand_logo_url: '',
           registration_mode: 'closed',
@@ -126,7 +126,7 @@ test.describe('Auth flow', () => {
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify({
-          company_name: 'ART Workspace',
+          company_name: 'Workspace',
           company_tagline: 'จัดการวันทำงานของคุณให้ง่ายขึ้น',
           brand_logo_url: '',
         }),

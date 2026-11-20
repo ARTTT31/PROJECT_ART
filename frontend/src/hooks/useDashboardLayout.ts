@@ -119,6 +119,30 @@ export function dashboardLayoutCacheKeys(): { layout: string; visible: string } 
   };
 }
 
+/**
+ * Validate a stored/cloud layout before it reaches the grid.
+ *
+ * Both sources are `JSON.parse` output, which is only as good as what was
+ * written: one hand-edited or half-written entry used to crash the dashboard
+ * (`.filter`/`.map` on undefined) or render a widget with no width.
+ */
+function normaliseWidgets(raw: unknown): WidgetConfig[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.flatMap((item) => {
+    if (!item || typeof item !== 'object') return [];
+    const { id, w } = item as { id?: unknown; w?: unknown };
+    if (typeof id !== 'string' || id.length === 0) return [];
+    const width =
+      typeof w === 'number' && Number.isFinite(w) ? Math.min(Math.max(Math.round(w), 1), 3) : 1;
+    return [{ id, w: width }];
+  });
+}
+
+function normaliseVisibleIds(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.filter((id): id is string => typeof id === 'string' && id.length > 0);
+}
+
 /** Drop the pre-scoping keys so they can never reach another account. */
 function dropLegacyLayoutCache(): void {
   try {
@@ -218,19 +242,21 @@ export function useDashboardLayout() {
 
     if (user?.dashboard_layout) {
       try {
-        const parsed = JSON.parse(user.dashboard_layout);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          loadedWidgets = parsed;
-          loadedVisible = parsed.map((w: any) => w.id);
+        const parsed: unknown = JSON.parse(user.dashboard_layout);
+        // Two shapes exist: the current envelope and the older bare array.
+        const cloudWidgets = Array.isArray(parsed)
+          ? normaliseWidgets(parsed)
+          : normaliseWidgets((parsed as { widgets?: unknown } | null)?.widgets);
+        if (cloudWidgets.length > 0) {
+          loadedWidgets = cloudWidgets;
+          loadedVisible = cloudWidgets.map((widget) => widget.id);
           foundCloud = true;
-        } else if (parsed && typeof parsed === 'object') {
-          if (Array.isArray(parsed.widgets) && parsed.widgets.length > 0) {
-            loadedWidgets = parsed.widgets;
-            foundCloud = true;
-          }
-          if (Array.isArray(parsed.visibleWidgetIds) && parsed.visibleWidgetIds.length > 0) {
-            loadedVisible = parsed.visibleWidgetIds;
-          }
+        }
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+          const cloudVisible = normaliseVisibleIds(
+            (parsed as { visibleWidgetIds?: unknown }).visibleWidgetIds,
+          );
+          if (cloudVisible.length > 0) loadedVisible = cloudVisible;
         }
       } catch {}
     }
@@ -241,16 +267,21 @@ export function useDashboardLayout() {
       const savedVisible = localStorage.getItem(cacheKeys.visible);
       if (savedVisible) {
         try {
-          loadedVisible = JSON.parse(savedVisible);
+          // Only a real array may replace the defaults: anything else is a
+          // corrupt cache and treating it as "nothing visible" hid widgets.
+          const parsedVisible: unknown = JSON.parse(savedVisible);
+          if (Array.isArray(parsedVisible)) {
+            loadedVisible = normaliseVisibleIds(parsedVisible);
+          }
         } catch {}
       }
 
       const savedLayout = localStorage.getItem(cacheKeys.layout);
       if (savedLayout) {
         try {
-          const parsed = JSON.parse(savedLayout);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            loadedWidgets = parsed;
+          const cachedWidgets = normaliseWidgets(JSON.parse(savedLayout));
+          if (cachedWidgets.length > 0) {
+            loadedWidgets = cachedWidgets;
           }
         } catch {}
       }
@@ -265,7 +296,7 @@ export function useDashboardLayout() {
     // Ensure newly added default widgets exist in loadedWidgets. They are
     // prepended as one group, in default order, so a release that adds several
     // widgets does not show them in reverse.
-    const existingWidgetIds = new Set(loadedWidgets.map((w: any) => w.id));
+    const existingWidgetIds = new Set(loadedWidgets.map((w) => w.id));
     const missingDefaults = defaultWidgets.filter((dw) => !existingWidgetIds.has(dw.id));
     if (missingDefaults.length > 0) {
       loadedWidgets = [...missingDefaults, ...loadedWidgets];
@@ -273,6 +304,12 @@ export function useDashboardLayout() {
         ...missingDefaults.map((dw) => dw.id).filter((id) => !loadedVisible.includes(id)),
         ...loadedVisible,
       ];
+    }
+
+    // A corrupt/empty visibility cache must not hide widgets that the layout
+    // still contains: "nothing visible" reads as a broken dashboard.
+    if (loadedVisible.length === 0) {
+      loadedVisible = loadedWidgets.map((widget) => widget.id);
     }
 
     applyLayout(loadedWidgets, loadedVisible);

@@ -81,10 +81,14 @@ function readStoredSettings(): ThemeSettings {
   try {
     const raw = localStorage.getItem(THEME_STORAGE_KEY);
     if (!raw) return DEFAULT_SETTINGS;
-    const parsed = JSON.parse(raw) as Partial<ThemeSettings>;
+    const parsed: unknown = JSON.parse(raw);
+    // `JSON.parse("null")` succeeds and returns null; reading `.mode` off it
+    // threw during render and took the whole app down on a corrupted value.
+    if (!parsed || typeof parsed !== 'object') return DEFAULT_SETTINGS;
+    const stored = parsed as Partial<ThemeSettings>;
     return {
-      mode: isMode(parsed.mode) ? parsed.mode : DEFAULT_SETTINGS.mode,
-      accent: isAccent(parsed.accent) ? parsed.accent : DEFAULT_SETTINGS.accent,
+      mode: isMode(stored.mode) ? stored.mode : DEFAULT_SETTINGS.mode,
+      accent: isAccent(stored.accent) ? stored.accent : DEFAULT_SETTINGS.accent,
     };
   } catch {
     return DEFAULT_SETTINGS;

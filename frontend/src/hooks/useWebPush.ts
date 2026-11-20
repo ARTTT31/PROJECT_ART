@@ -267,7 +267,7 @@ export function useWebPush(): UseWebPushReturn {
 
       const resData = await res.json();
       const notif = resData.notification || {
-        title: 'ART Workspace',
+        title: 'Workspace',
         body: 'ทดสอบการแจ้งเตือนสำเร็จ!',
         url: '/dashboard',
       };

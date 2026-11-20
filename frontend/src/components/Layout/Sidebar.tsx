@@ -235,7 +235,7 @@ export default function Sidebar({
         {/* Brand Header */}
         <div className="flex items-center gap-3 px-4 py-3.5 border-b border-[var(--hairline)] bg-[var(--glass-40)]">
           <Image
-            src={brandLogoUrl || '/art-workspace-mark.svg'}
+            src={brandLogoUrl || '/workspace-mark.svg'}
             alt={companyName}
             width={34}
             height={34}
