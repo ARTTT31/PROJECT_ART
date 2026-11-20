@@ -2,7 +2,13 @@
 
 import { Check, Monitor, Moon, Palette, RotateCcw, Sun } from 'lucide-react';
 import { SectionCard } from './SectionCard';
-import { THEME_ACCENTS, THEME_MODES, useTheme, type ThemeMode } from '@/context/ThemeContext';
+import SegmentedControl from '@/components/ui/SegmentedControl';
+import {
+  THEME_ACCENTS,
+  THEME_MODES,
+  useTheme,
+  type ThemeMode,
+} from '@/context/ThemeContext';
 import { showToast } from '@/utils/sweetalert';
 import { useI18n } from '@/lib/i18n/I18nProvider';
 
@@ -59,9 +65,9 @@ export function ThemeCard() {
         </button>
       }
     >
-      <div className="grid gap-3 lg:grid-cols-2">
+      <div className="space-y-3">
         {/* Appearance */}
-        <div className="flex h-full flex-col rounded-apple-lg bg-[var(--surface-grouped)] p-3 ring-1 ring-[var(--hairline)] sm:p-4">
+        <div className="rounded-apple-lg bg-[var(--surface-grouped)] p-3 ring-1 ring-[var(--hairline)] sm:p-4">
           <div className="mb-3 flex items-center justify-between gap-2">
             <span className="text-[12px] font-semibold text-[var(--ink-secondary)]">
               โหมดการแสดงผล
@@ -71,74 +77,19 @@ export function ThemeCard() {
               <span className="tabular-nums">{modeSummary}</span>
             </span>
           </div>
-          {/* Tiles instead of a segmented pill: three words in a pill had to
-              share ~85px each on a phone, while a tile can put the icon above
-              the label and read at a glance. */}
-          <div
-            role="radiogroup"
-            aria-label="โหมดการแสดงผล"
-            onKeyDown={(event) => {
-              const ids = THEME_MODES.map((option) => option.id);
-              const current = ids.indexOf(mode);
-              if (current === -1) return;
-              let next = current;
-              if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
-                next = (current + 1) % ids.length;
-              } else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
-                next = (current - 1 + ids.length) % ids.length;
-              } else if (event.key === 'Home') {
-                next = 0;
-              } else if (event.key === 'End') {
-                next = ids.length - 1;
-              } else {
-                return;
-              }
-              event.preventDefault();
-              setMode(ids[next]);
-              document.getElementById(`theme-mode-${ids[next]}`)?.focus();
-            }}
-            className="my-auto grid grid-cols-3 gap-2"
-          >
-            {THEME_MODES.map((option) => {
-              const selected = option.id === mode;
-              return (
-                <button
-                  key={option.id}
-                  id={`theme-mode-${option.id}`}
-                  type="button"
-                  role="radio"
-                  aria-checked={selected}
-                  aria-label={option.label}
-                  tabIndex={selected ? 0 : -1}
-                  onClick={() => setMode(option.id)}
-                  className={`relative flex flex-col items-center gap-1.5 rounded-apple-md px-1.5 py-2.5 ring-1 transition-all duration-150 active:scale-[0.97] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)] ${
-                    selected
-                      ? 'bg-[var(--surface)] text-[var(--accent-text)] ring-[var(--accent-border)]'
-                      : 'bg-[var(--surface-grouped-2)] text-[var(--ink-muted)] ring-transparent hover:bg-[var(--surface)] hover:text-[var(--ink)]'
-                  }`}
-                >
-                  <span
-                    className={`flex h-8 w-8 items-center justify-center rounded-apple-sm ${
-                      selected
-                        ? 'bg-[var(--accent-soft)]'
-                        : 'bg-[var(--surface)] ring-1 ring-[var(--hairline)]'
-                    }`}
-                  >
-                    {MODE_ICON[option.id]}
-                  </span>
-                  <span className="text-[11.5px] font-bold">{option.label}</span>
-                  {selected && (
-                    <span
-                      className="absolute right-1.5 top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-[var(--accent)] ring-2 ring-[var(--surface)]"
-                      aria-hidden="true"
-                    >
-                      <Check size={10} strokeWidth={3.5} className="text-white" />
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
+          <SegmentedControl
+            label="โหมดการแสดงผล"
+            fullWidth
+            value={mode}
+            onChange={setMode}
+            options={THEME_MODES.map((option) => ({
+              value: option.id,
+              label: option.label,
+              // A phone's segment is ~85px wide; the icon alone takes a fifth of
+              // that, so "ตามระบบ" was truncated to "ตามร…".
+              icon: <span className="hidden sm:inline-flex">{MODE_ICON[option.id]}</span>,
+            }))}
+          />
         </div>
 
         {/* Accent */}
@@ -151,86 +102,59 @@ export function ThemeCard() {
               {activeAccent?.label ?? '—'}
             </span>
           </div>
-          {/* Six even columns: the last row is full at 12 presets, and every
-              swatch carries its name so a colour can be picked by word too. */}
+          {/* One even row of twelve on a desktop panel, two rows of six on a
+              phone; the circle keeps a 40px cap so it never becomes a blob. */}
           <div
             role="radiogroup"
             aria-label="สีหลัก"
-            onKeyDown={(event) => {
-              const ids = THEME_ACCENTS.map((option) => option.id);
-              const current = ids.indexOf(accent);
-              if (current === -1) return;
-              let next = current;
-              if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
-                next = (current + 1) % ids.length;
-              } else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
-                next = (current - 1 + ids.length) % ids.length;
-              } else if (event.key === 'Home') {
-                next = 0;
-              } else if (event.key === 'End') {
-                next = ids.length - 1;
-              } else {
-                return;
-              }
-              event.preventDefault();
-              setAccent(ids[next]);
-              document.getElementById(`theme-accent-${ids[next]}`)?.focus();
-            }}
-            className="grid grid-cols-6 gap-x-1 gap-y-2.5"
+            className="grid grid-cols-6 justify-items-center gap-2 sm:grid-cols-12 sm:gap-1.5"
           >
             {THEME_ACCENTS.map((option) => {
               const selected = accent === option.id;
               return (
                 <button
                   key={option.id}
-                  id={`theme-accent-${option.id}`}
                   type="button"
                   role="radio"
                   aria-checked={selected}
                   aria-label={`ใช้สี ${option.label}`}
+                  title={option.label}
+                  id={`theme-accent-${option.id}`}
                   tabIndex={selected ? 0 : -1}
                   onClick={() => setAccent(option.id)}
-                  className="group flex flex-col items-center gap-1 rounded-apple-sm py-1 transition-transform duration-150 active:scale-[0.95] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-grouped)]"
+                  onKeyDown={(event) => {
+                    const ids = THEME_ACCENTS.map((entry) => entry.id);
+                    const current = ids.indexOf(accent);
+                    if (current === -1) return;
+                    let next = current;
+                    if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+                      next = (current + 1) % ids.length;
+                    } else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+                      next = (current - 1 + ids.length) % ids.length;
+                    } else if (event.key === 'Home') {
+                      next = 0;
+                    } else if (event.key === 'End') {
+                      next = ids.length - 1;
+                    } else {
+                      return;
+                    }
+                    event.preventDefault();
+                    setAccent(ids[next]);
+                    document.getElementById(`theme-accent-${ids[next]}`)?.focus();
+                  }}
+                  style={{ backgroundColor: option.color }}
+                  className={`flex aspect-square w-full max-w-10 items-center justify-center rounded-full shadow-[inset_0_1px_2px_rgba(0,0,0,0.18)] transition-all duration-apple-2 hover:scale-105 active:scale-[0.95] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)] ${
+                    selected
+                      ? 'ring-2 ring-[var(--ink)] ring-offset-2 ring-offset-[var(--surface-grouped)]'
+                      : 'ring-1 ring-[var(--swatch-edge)] hover:ring-[var(--hairline-strong)]'
+                  }`}
                 >
-                  <span
-                    className={`flex h-10 w-10 items-center justify-center rounded-full shadow-[inset_0_1px_2px_rgba(0,0,0,0.18)] transition-transform duration-150 group-hover:scale-105 ${
-                      selected
-                        ? 'ring-2 ring-[var(--ink)] ring-offset-2 ring-offset-[var(--surface-grouped)]'
-                        : 'ring-1 ring-[var(--swatch-edge)]'
-                    }`}
-                    style={{ backgroundColor: option.color }}
-                  >
-                    {selected && (
-                      <Check size={14} className="text-white" aria-hidden="true" strokeWidth={3} />
-                    )}
-                  </span>
-                  <span
-                    className={`w-full truncate text-center text-[10.5px] font-semibold ${
-                      selected ? 'text-[var(--ink)]' : 'text-[var(--ink-muted)]'
-                    }`}
-                  >
-                    {option.label}
-                  </span>
+                  {selected && (
+                    <Check size={14} className="text-white" aria-hidden="true" strokeWidth={3} />
+                  )}
                 </button>
               );
             })}
-          </div>
-
-          {/* The swatch alone does not show what the colour is for; this rows
-              renders the accent the way the rest of the app uses it. */}
-          <div className="mt-3 flex items-center gap-2 rounded-apple-md bg-[var(--surface)] px-2.5 py-2 ring-1 ring-[var(--hairline)]">
-            <span className="rounded-full bg-[var(--accent)] px-3 py-1 text-[11px] font-bold text-white ring-1 ring-[var(--hairline-strong)]">
-              ปุ่มหลัก
-            </span>
-            <span className="text-[11px] font-bold text-[var(--accent-text)] underline underline-offset-2">
-              ลิงก์
-            </span>
-            <span
-              className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-[var(--accent)] ring-1 ring-[var(--hairline-strong)]"
-              aria-hidden="true"
-            >
-              <Check size={11} strokeWidth={3} className="text-white" />
-            </span>
           </div>
         </div>
       </div>
