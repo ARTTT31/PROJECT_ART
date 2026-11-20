@@ -35,7 +35,7 @@ export const AuthUserSchema = z.object({
 });
 export type AuthUserParsed = z.infer<typeof AuthUserSchema>;
 
-// ── Standard ART Workspace envelope — { result, message, data } ─────────────
+// ── Standard Workspace envelope — { result, message, data } ─────────────
 
 export const ResponseModelSchema = z.object({
   result: z.string(),

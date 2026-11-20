@@ -1,5 +1,5 @@
 /**
- * Shared TypeScript interfaces for ART Workspace
+ * Shared TypeScript interfaces for Workspace
  * Centralized type definitions to replace `any` usage across the app
  */
 

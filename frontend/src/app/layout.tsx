@@ -5,6 +5,7 @@ import './globals.css';
 import { Providers } from './providers';
 import { AuthUserSchema } from '@/lib/api/schemas';
 import { parseUserCookieValue } from '@/lib/api/userCookie';
+import { brandingVersion, fetchServerBranding } from '@/lib/branding/serverBranding';
 
 const anuphan = Anuphan({
   weight: 'variable',
@@ -24,40 +25,61 @@ export const viewport: Viewport = {
   ],
 };
 
-export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'),
-  title: {
-    template: '%s | ART Workspace',
-    default: 'ART Workspace - จัดการวันทำงานของคุณให้ง่ายขึ้น',
-  },
-  description:
-    'แพลตฟอร์มจัดการงานส่วนตัวและเชื่อมต่อระบบภายใน (Dashboard) รวบรวมข้อมูลวันหยุด ราคาน้ำมัน และสภาพอากาศไว้ในที่เดียว',
-  keywords: ['workspace', 'dashboard', 'productivity', 'management', 'art workspace'],
-  authors: [{ name: 'ART Workspace Team' }],
-  // The workspace logo an admin uploads lives in the database, so the icon is
-  // resolved by a route that returns a PNG (or the bundled mark as fallback).
-  icons: {
-    icon: [{ url: '/branding-icon?size=192', sizes: '192x192', type: 'image/png' }, { url: '/branding-icon?size=512', sizes: '512x512', type: 'image/png' }],
-    shortcut: '/branding-icon?size=192',
-    apple: [{ url: '/branding-icon?size=180&safe=1', sizes: '180x180', type: 'image/png' }, { url: '/branding-icon?size=192&safe=1', sizes: '192x192', type: 'image/png' }],
-  },
-  manifest: '/manifest.json',
-  openGraph: {
-    title: 'ART Workspace',
-    description: 'แพลตฟอร์มจัดการงานส่วนตัวที่ออกแบบด้วย Apple HIG เรียบง่ายแต่ทรงพลัง',
-    type: 'website',
-    images: ['/og-image.png'],
-    siteName: 'ART Workspace',
-  },
-  alternates: {
-    canonical: '/',
-  },
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: 'black-translucent',
-    title: 'ART Workspace',
-  },
-};
+/**
+ * The workspace is nameable, so the browser title, the iOS home-screen label and
+ * the manifest all follow the stored name instead of a hard-coded product name.
+ * A rename therefore reaches a phone that installs the app later; the manifest
+ * carries the same name for browsers that use it as the install source.
+ */
+export async function generateMetadata(): Promise<Metadata> {
+  const branding = await fetchServerBranding();
+  const name = branding.company_name;
+  const version = brandingVersion(name, branding.brand_logo_url);
+  const icon = (size: number, safe = false) =>
+    `/branding-icon?size=${size}${safe ? '&safe=1' : ''}&v=${version}`;
+
+  return {
+    metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'),
+    title: {
+      template: `%s | ${name}`,
+      default: `${name} - ${branding.company_tagline}`,
+    },
+    description:
+      'แพลตฟอร์มจัดการงานส่วนตัวและเชื่อมต่อระบบภายใน (Dashboard) รวบรวมข้อมูลวันหยุด ราคาน้ำมัน และสภาพอากาศไว้ในที่เดียว',
+    keywords: ['workspace', 'dashboard', 'productivity', 'management'],
+    authors: [{ name: `${name} Team` }],
+    // The workspace logo an admin uploads lives in the database, so the icon is
+    // resolved by a route that returns a PNG (or the bundled mark as fallback).
+    // The version tag is what lets a renamed workspace ship a new icon.
+    icons: {
+      icon: [
+        { url: icon(192), sizes: '192x192', type: 'image/png' },
+        { url: icon(512), sizes: '512x512', type: 'image/png' },
+      ],
+      shortcut: icon(192),
+      apple: [
+        { url: icon(180, true), sizes: '180x180', type: 'image/png' },
+        { url: icon(192, true), sizes: '192x192', type: 'image/png' },
+      ],
+    },
+    manifest: '/manifest.webmanifest',
+    openGraph: {
+      title: name,
+      description: 'แพลตฟอร์มจัดการงานส่วนตัวที่ออกแบบด้วย Apple HIG เรียบง่ายแต่ทรงพลัง',
+      type: 'website',
+      images: ['/og-image.png'],
+      siteName: name,
+    },
+    alternates: {
+      canonical: '/',
+    },
+    appleWebApp: {
+      capable: true,
+      statusBarStyle: 'black-translucent',
+      title: name,
+    },
+  };
+}
 
 /**
  * Applies the saved theme before the first paint. Without this, a dark-mode

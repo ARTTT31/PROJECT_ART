@@ -38,7 +38,7 @@ const COPY = {
     title: 'ชื่อและโลโก้',
     subtitle: 'ใช้ทั้งแถบเมนู หน้าเข้าสู่ระบบ และเป็นค่าเริ่มต้นของทุกบัญชี',
     nameLabel: 'ชื่อที่ใช้แสดง',
-    namePlaceholder: 'เช่น ART Workspace หรือ ครอบครัวใจดี',
+    namePlaceholder: 'เช่น ทีมของฉัน หรือ ครอบครัวใจดี',
     saveLabel: 'บันทึก',
     savedMessage: 'บันทึกชื่อและโลโก้เรียบร้อยแล้ว',
     resetConfirm: 'ยืนยันการใช้โลโก้เริ่มต้นของระบบหรือไม่?',
@@ -340,7 +340,7 @@ export function BrandingCard({ isAdmin = false }: { isAdmin?: boolean }) {
             <div className="inline-flex items-center gap-3 rounded-apple-lg bg-[var(--glass-95)] p-3 border border-[var(--hairline)] max-w-sm">
               <div className="relative shrink-0">
                 <Image
-                  src={brandLogoUrl || '/art-workspace-mark.svg'}
+                  src={brandLogoUrl || '/workspace-mark.svg'}
                   alt={brandLogoUrl ? 'โลโก้ที่ตั้งไว้' : 'โลโก้เริ่มต้นของระบบ'}
                   width={36}
                   height={36}

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
+  <title id="title">Workspace</title>
+  <rect width="512" height="512" rx="112" fill="#0066cc"/>
+  <g fill="#fff">
+    <rect x="112" y="112" width="156" height="288" rx="28"/>
+    <rect x="284" y="112" width="116" height="140" rx="28"/>
+    <rect x="284" y="268" width="116" height="132" rx="28"/>
+  </g>
+</svg>

@@ -19,7 +19,7 @@ export interface BrandPreset {
 export const BRAND_PRESETS: BrandPreset[] = [
   {
     id: 'aurora',
-    name: 'ART Workspace',
+    name: 'Aurora Workspace',
     tagline: 'จัดการวันทำงานของคุณให้ง่ายขึ้น',
     taglineEn: 'Manage your workday with ease',
     color: '#0066cc',

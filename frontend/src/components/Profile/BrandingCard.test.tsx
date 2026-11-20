@@ -20,7 +20,7 @@ const updateBranding = vi.fn();
 
 function mockBranding(overrides: Record<string, unknown> = {}) {
   branding.useBranding.mockReturnValue({
-    companyName: 'ART Workspace',
+    companyName: 'Workspace',
     companyTagline: 'จัดการวันทำงานของคุณให้ง่ายขึ้น',
     brandLogoUrl: '',
     registrationMode: 'approval',
@@ -86,7 +86,7 @@ describe('BrandingCard', () => {
 
     await waitFor(() =>
       expect(updateBranding).toHaveBeenCalledWith({
-        company_name: 'ART Workspace',
+        company_name: 'Workspace',
         company_tagline: 'จัดการวันทำงานของคุณให้ง่ายขึ้น',
       }),
     );

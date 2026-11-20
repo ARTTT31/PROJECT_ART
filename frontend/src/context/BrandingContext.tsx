@@ -44,8 +44,10 @@ interface BrandingContextValue {
   uploadWorkspaceLogo: (file: File) => Promise<{ success: boolean; error?: string }>;
 }
 
+// Neutral until someone names their workspace: every account can rename it in
+// โปรไฟล์ › พื้นที่ทำงาน, and an admin can set it for everyone.
 const DEFAULT_BRANDING: BrandingInfo = {
-  company_name: 'ART Workspace',
+  company_name: 'Workspace',
   company_tagline: 'จัดการวันทำงานของคุณให้ง่ายขึ้น',
   brand_logo_url: '',
   registration_mode: 'approval',
@@ -53,11 +55,11 @@ const DEFAULT_BRANDING: BrandingInfo = {
 
 const EMPTY_PERSONAL: WorkspaceBrandingInfo = { name: '', tagline: '', logo: '' };
 
-const STORAGE_KEY = 'art_workspace_branding';
-const STORAGE_AT_KEY = 'art_workspace_branding_at';
-// Branding changes rarely; a page load does not need another ~2s backend trip
-// to rediscover the same values. Admin saves call applyBranding() and reset it.
-const CACHE_TTL_MS = 5 * 60 * 1000;
+const STORAGE_KEY = 'workspace_branding';
+// Keys used while the product still had a fixed brand name. A cached value
+// under them would keep painting the retired name on every load, so they are
+// dropped instead of migrated: a rename has to win over an old cache.
+const LEGACY_STORAGE_KEYS = ['art_workspace_branding', 'art_workspace_branding_at'];
 
 const BrandingContext = createContext<BrandingContextValue>({
   companyName: DEFAULT_BRANDING.company_name,
@@ -102,6 +104,7 @@ export function BrandingProvider({ children }: { children: React.ReactNode }) {
   const [branding, setBranding] = useState<BrandingInfo>(() => {
     if (typeof window === 'undefined') return DEFAULT_BRANDING;
     try {
+      LEGACY_STORAGE_KEYS.forEach((key) => localStorage.removeItem(key));
       const cached = localStorage.getItem(STORAGE_KEY);
       if (cached) return toBrandingInfo(JSON.parse(cached));
     } catch {
@@ -120,7 +123,6 @@ export function BrandingProvider({ children }: { children: React.ReactNode }) {
     setBranding(next);
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-      localStorage.setItem(STORAGE_AT_KEY, String(Date.now()));
     } catch {
       // ignore storage errors
     }
@@ -137,16 +139,11 @@ export function BrandingProvider({ children }: { children: React.ReactNode }) {
     }
   }, [apiBaseUrl, applyBranding]);
 
+  // The cached value paints the first frame, but it is only ever a cache: a
+  // rename has to reach every account on its next visit, so the backend is
+  // asked on every load instead of after a five-minute TTL.
   useEffect(() => {
-    let cachedAt = 0;
-    try {
-      cachedAt = Number(localStorage.getItem(STORAGE_AT_KEY) || 0);
-    } catch {
-      // private mode / storage disabled: fall through and fetch
-    }
-    if (!cachedAt || Date.now() - cachedAt > CACHE_TTL_MS) {
-      void refreshBranding();
-    }
+    void refreshBranding();
   }, [refreshBranding]);
 
   /**

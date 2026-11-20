@@ -42,11 +42,20 @@ export async function GET(request: Request) {
 
   // Both targets are same-origin: the API path is proxied by the Next rewrite,
   // which keeps the icon usable as a manifest icon as well.
+  //
+  // The bundled fallbacks are pre-rendered at exactly these sizes so Android and
+  // iOS never upscale a 192px bitmap into a 512px launcher slot — which is what
+  // made the installed icon look soft. `safe` picks the full-bleed variants, so
+  // an adaptive launcher crop cannot shave the mark.
   const target = hasLogo
     ? `/api/v1/system/branding/logo.png?size=${size}${isSafe ? '&safe=1' : ''}`
-    : size >= MAX_SIZE
-      ? '/app-icon-512.png'
-      : '/app-icon-192.png';
+    : size > 200
+      ? isSafe
+        ? '/icon-maskable-512.png'
+        : '/icon-512.png'
+      : isSafe
+        ? '/icon-maskable-192.png'
+        : '/icon-192.png';
 
   return NextResponse.redirect(new URL(target, request.url), {
     status: 307,

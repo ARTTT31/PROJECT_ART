@@ -36,7 +36,7 @@ describe('BrandingContext', () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({
-        company_name: 'ART Workspace',
+        company_name: 'Workspace',
         company_tagline: 'จัดการวันทำงานของคุณให้ง่ายขึ้น',
         brand_logo_url: '',
       }),
@@ -50,7 +50,7 @@ describe('BrandingContext', () => {
       </BrandingProvider>,
     );
 
-    expect(screen.getByTestId('company-name').textContent).toBe('ART Workspace');
+    expect(screen.getByTestId('company-name').textContent).toBe('Workspace');
     expect(screen.getByTestId('company-tagline').textContent).toBe(
       'จัดการวันทำงานของคุณให้ง่ายขึ้น',
     );
@@ -58,6 +58,48 @@ describe('BrandingContext', () => {
     // Wait for initial branding fetch to settle
     await waitFor(() => {
       expect(global.fetch).toHaveBeenCalled();
+    });
+  });
+
+  it('drops the cache written under the retired brand key', async () => {
+    localStorage.setItem(
+      'art_workspace_branding',
+      JSON.stringify({ company_name: 'Workspace' }),
+    );
+    localStorage.setItem('art_workspace_branding_at', String(Date.now()));
+
+    render(
+      <BrandingProvider>
+        <TestComponent />
+      </BrandingProvider>,
+    );
+
+    // The retired name never paints, and the stale keys are gone for good.
+    expect(screen.getByTestId('company-name').textContent).toBe('Workspace');
+    expect(localStorage.getItem('art_workspace_branding')).toBeNull();
+    expect(localStorage.getItem('art_workspace_branding_at')).toBeNull();
+  });
+
+  it('refetches on every load so a rename is not stuck behind a cached value', async () => {
+    localStorage.setItem(
+      'workspace_branding',
+      JSON.stringify({ company_name: 'ชื่อเดิม', company_tagline: 'เดิม' }),
+    );
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ company_name: 'ทีมใหม่', company_tagline: 'ใหม่' }),
+    }) as unknown as typeof fetch;
+
+    render(
+      <BrandingProvider>
+        <TestComponent />
+      </BrandingProvider>,
+    );
+
+    // Cached value paints immediately, then the backend answer replaces it.
+    expect(screen.getByTestId('company-name').textContent).toBe('ชื่อเดิม');
+    await waitFor(() => {
+      expect(screen.getByTestId('company-name').textContent).toBe('ทีมใหม่');
     });
   });
 
