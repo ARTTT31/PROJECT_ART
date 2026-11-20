@@ -20,7 +20,7 @@ Colours are declared once as CSS custom properties in `frontend/src/app/globals.
 The user picks a mode and an accent in **โปรไฟล์ → ทางลัด & ปรับแต่งเมนู → ธีมและการแสดงผล**. The card writes `data-theme="light|dark"` and `data-accent="…"` on `<html>`; `globals.css` reacts to both. A pre-paint script in `app/layout.tsx` applies the saved choice before the first paint, so a dark reload never flashes white.
 
 - Modes: `system` (follows `prefers-color-scheme`), `light`, `dark`. Default is `system`.
-- Accents: ฟ้า (default), ทะเล, ฟ้าคราม, เขียว, อำพัน, ส้ม, แดง, ชมพู, ม่วง, คราม, เทาเงิน, ดำเทา. Every accent keeps WCAG AA contrast with white button text; the picker shows all twelve in a 6-column grid with the colour's name under each swatch.
+- Accents: ฟ้า (default), ทะเล, ฟ้าคราม, เขียว, อำพัน, ส้ม, แดง, ชมพู, ม่วง, คราม, เทาเงิน, ดำเทา. Every accent keeps WCAG AA contrast with white button text; the picker shows all twelve as name chips (a square colour bar beside the name, ring on the selected one) in a 3/4/6-column grid.
 - The choice is stored per browser (`localStorage: art_theme_settings`) — it is a display preference, not workspace data.
 - Tailwind's pastel scales used by widgets (`bg-emerald-50`, `text-rose-700`, …) are re-toned inside `:root[data-theme='dark']`, so widget tints follow the theme without per-component classes.
 - New components must use the tokens above; a hard-coded hex is a bug because it breaks both dark mode and accent switching.

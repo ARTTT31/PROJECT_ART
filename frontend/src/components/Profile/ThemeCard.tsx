@@ -102,12 +102,13 @@ export function ThemeCard() {
               {activeAccent?.label ?? '—'}
             </span>
           </div>
-          {/* One even row of twelve on a desktop panel, two rows of six on a
-              phone; the circle keeps a 40px cap so it never becomes a blob. */}
+          {/* Name chips rather than bare dots: the colour reads from the bar, the
+              name removes the guessing, and a chip shows its selected state with
+              a ring instead of growing the whole control. */}
           <div
             role="radiogroup"
             aria-label="สีหลัก"
-            className="grid grid-cols-6 justify-items-center gap-2 sm:grid-cols-12 sm:gap-1.5"
+            className="grid grid-cols-3 gap-1.5 sm:grid-cols-4 lg:grid-cols-6"
           >
             {THEME_ACCENTS.map((option) => {
               const selected = accent === option.id;
@@ -142,16 +143,28 @@ export function ThemeCard() {
                     setAccent(ids[next]);
                     document.getElementById(`theme-accent-${ids[next]}`)?.focus();
                   }}
-                  style={{ backgroundColor: option.color }}
-                  className={`flex aspect-square w-full max-w-10 items-center justify-center rounded-full shadow-[inset_0_1px_2px_rgba(0,0,0,0.18)] transition-all duration-apple-2 hover:scale-105 active:scale-[0.95] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)] ${
+                  className={`flex min-w-0 items-center gap-2 rounded-apple-md px-2 py-2 text-left transition-all duration-apple-1 active:scale-[0.97] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)] ${
                     selected
-                      ? 'ring-2 ring-[var(--ink)] ring-offset-2 ring-offset-[var(--surface-grouped)]'
-                      : 'ring-1 ring-[var(--swatch-edge)] hover:ring-[var(--hairline-strong)]'
+                      ? 'bg-[var(--accent-soft-weak)] ring-[1.5px] ring-[var(--accent)]'
+                      : 'bg-[var(--surface)] ring-1 ring-[var(--hairline)] hover:ring-[var(--hairline-strong)]'
                   }`}
                 >
-                  {selected && (
-                    <Check size={14} className="text-white" aria-hidden="true" strokeWidth={3} />
-                  )}
+                  <span
+                    aria-hidden="true"
+                    style={{ backgroundColor: option.color }}
+                    className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-[4px] ring-1 ring-[var(--swatch-edge)]"
+                  >
+                    {selected && (
+                      <Check size={12} className="text-white" strokeWidth={3} />
+                    )}
+                  </span>
+                  <span
+                    className={`min-w-0 truncate text-[12px] font-semibold ${
+                      selected ? 'text-[var(--ink)]' : 'text-[var(--ink-secondary)]'
+                    }`}
+                  >
+                    {option.label}
+                  </span>
                 </button>
               );
             })}
