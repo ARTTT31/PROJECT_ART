@@ -8,6 +8,8 @@ from alembic import op
 import sqlalchemy as sa
 from datetime import datetime, timezone
 
+from app.core.branding import DEFAULT_COMPANY_NAME, DEFAULT_COMPANY_TAGLINE
+
 
 # revision identifiers, used by Alembic.
 revision = '20261021_system_settings'
@@ -47,14 +49,14 @@ def upgrade() -> None:
             [
                 {
                     'key': 'company_name',
-                    'value': 'ART Workspace',
+                    'value': DEFAULT_COMPANY_NAME,
                     'description': 'ชื่อทีม บริษัท หรือองค์กร',
                     'created_at': now,
                     'updated_at': now,
                 },
                 {
                     'key': 'company_tagline',
-                    'value': 'จัดการวันทำงานของคุณให้ง่ายขึ้น',
+                    'value': DEFAULT_COMPANY_TAGLINE,
                     'description': 'สโลแกนหรือคำโปรยสำหรับทีม',
                     'created_at': now,
                     'updated_at': now,

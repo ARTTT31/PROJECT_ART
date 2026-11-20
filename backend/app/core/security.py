@@ -4,7 +4,6 @@ Security utilities for authentication and authorization
 
 from datetime import timedelta
 from typing import Optional
-import hashlib
 import logging
 import secrets
 import jwt
@@ -13,7 +12,7 @@ from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError, VerificationError, InvalidHashError
 
 from app.core.config import settings
-from app.core.utils import utcnow
+from app.core.utils import sha256_hex, utcnow
 
 # Direct Argon2 password hasher (modern standard, avoids passlib deprecation warnings)
 _password_hasher = PasswordHasher()
@@ -162,7 +161,7 @@ def get_user_2fa_salt(hashed_password: str, totp_secret: Optional[str]) -> str:
     immediately invalidating all issued trusted device tokens without database mutations.
     """
     raw = f"{hashed_password}:{totp_secret or ''}"
-    return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:16]
+    return sha256_hex(raw)[:16]
 
 
 def create_trusted_device_token(

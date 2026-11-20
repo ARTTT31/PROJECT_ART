@@ -65,6 +65,21 @@ def _signing_key() -> bytes:
     return settings.SECRET_KEY.encode("utf-8")
 
 
+def sha256_hex(value: str) -> str:
+    """Hex SHA-256 of ``value`` — the one digest for stored secret hashes.
+
+    Email tokens, 2FA recovery codes, the trusted-device salt and the Redis
+    backoff keys all only need a stable fingerprint of a string; keeping the
+    single implementation here stops those callers from drifting apart.
+    """
+    return hashlib.sha256(value.encode("utf-8")).hexdigest()
+
+
+def secret_key_digest() -> bytes:
+    """SHA-256 of SECRET_KEY: the key material for secrets encrypted at rest."""
+    return hashlib.sha256(_signing_key()).digest()
+
+
 def _sign(encoded_payload: str) -> str:
     """HMAC-SHA256 of the encoded payload, hex encoded."""
     return hmac.new(

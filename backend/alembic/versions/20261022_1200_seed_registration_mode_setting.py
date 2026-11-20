@@ -22,6 +22,8 @@ from datetime import datetime, timezone
 import sqlalchemy as sa
 from alembic import op
 
+from app.core.branding import DEFAULT_COMPANY_NAME, DEFAULT_COMPANY_TAGLINE
+
 # revision identifiers, used by Alembic.
 revision = "20261022_registration_mode_seed"
 down_revision = "20261021_system_settings"
@@ -32,12 +34,12 @@ depends_on = None
 DEFAULTS = (
     (
         "company_name",
-        "ART Workspace",
+        DEFAULT_COMPANY_NAME,
         "ชื่อทีม บริษัท หรือองค์กร",
     ),
     (
         "company_tagline",
-        "จัดการวันทำงานของคุณให้ง่ายขึ้น",
+        DEFAULT_COMPANY_TAGLINE,
         "สโลแกนหรือคำโปรยสำหรับทีม",
     ),
     (

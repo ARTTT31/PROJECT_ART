@@ -8,24 +8,23 @@ caller treats that as "no key configured" and falls back to the server key.
 """
 
 import base64
-import hashlib
 import logging
 
 from cryptography.fernet import Fernet, InvalidToken
 
-from app.core.config import settings
+from app.core.utils import secret_key_digest
 
 logger = logging.getLogger(__name__)
 
 
-def _cipher() -> Fernet:
-    digest = hashlib.sha256(settings.SECRET_KEY.encode("utf-8")).digest()
-    return Fernet(base64.urlsafe_b64encode(digest))
+def secret_cipher() -> Fernet:
+    """The Fernet key every at-rest secret in the app is encrypted with."""
+    return Fernet(base64.urlsafe_b64encode(secret_key_digest()))
 
 
 def encrypt_secret(value: str) -> str:
     """Return an opaque token for ``value``; never empty for a non-empty input."""
-    return _cipher().encrypt(value.encode("utf-8")).decode("ascii")
+    return secret_cipher().encrypt(value.encode("utf-8")).decode("ascii")
 
 
 def decrypt_secret(token: str | None) -> str:
@@ -33,7 +32,7 @@ def decrypt_secret(token: str | None) -> str:
     if not token:
         return ""
     try:
-        return _cipher().decrypt(token.encode("ascii")).decode("utf-8")
+        return secret_cipher().decrypt(token.encode("ascii")).decode("utf-8")
     except (InvalidToken, ValueError):
         # SECRET_KEY rotated (or the column holds a plaintext value from a
         # manual edit): behave like an unconfigured account instead of a 500.

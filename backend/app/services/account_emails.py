@@ -6,7 +6,6 @@ leaked database cannot be turned into working links.
 
 from __future__ import annotations
 
-import hashlib
 import secrets
 from datetime import timedelta
 from typing import cast, Optional
@@ -15,17 +14,13 @@ from sqlalchemy import CursorResult, delete as sa_delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
-from app.core.utils import utcnow
+from app.core.utils import sha256_hex, utcnow
 from app.models.email_token import EmailToken
 from app.services import email_service
 
 
 PURPOSE_EMAIL_VERIFY = "email_verify"
 PURPOSE_PASSWORD_RESET = "password_reset"
-
-
-def _hash_token(raw: str) -> str:
-    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
 
 async def issue_token(
@@ -37,7 +32,7 @@ async def issue_token(
         EmailToken(
             user_id=user_id,
             purpose=purpose,
-            token_hash=_hash_token(raw),
+            token_hash=sha256_hex(raw),
             expires_at=utcnow() + timedelta(minutes=ttl_minutes),
         )
     )
@@ -54,7 +49,7 @@ async def consume_token(
     result = await db.execute(
         select(EmailToken).where(
             EmailToken.purpose == purpose,
-            EmailToken.token_hash == _hash_token(raw),
+            EmailToken.token_hash == sha256_hex(raw),
         )
     )
     token = result.scalar_one_or_none()

@@ -23,6 +23,8 @@ import time
 from typing import List, Optional
 from urllib.parse import quote, urlencode
 
+from app.core.utils import sha256_hex
+
 #: Digits in a generated code. Six is what every authenticator app shows.
 DIGITS = 6
 #: RFC 6238 default time step, in seconds.
@@ -96,7 +98,7 @@ def verify(
 
 
 def provisioning_uri(
-    secret: str, account: str, issuer: str = "ART Workspace"
+    secret: str, account: str, issuer: str = "Workspace"
 ) -> str:
     """The ``otpauth://`` URI an authenticator app scans as a QR code."""
     label = quote(f"{issuer}:{account}", safe="")
@@ -125,7 +127,7 @@ def hash_recovery_code(code: str) -> str:
     path already pays an Argon2 verification for the password — a second slow
     hash per attempt would just be a denial-of-service lever.
     """
-    return hashlib.sha256(normalize_recovery_code(code).encode("utf-8")).hexdigest()
+    return sha256_hex(normalize_recovery_code(code))
 
 
 def generate_recovery_codes(

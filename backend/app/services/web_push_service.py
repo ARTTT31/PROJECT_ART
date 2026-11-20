@@ -5,12 +5,11 @@ notifications to browser endpoints (Google FCM, Apple APNs, Mozilla Autopush).
 """
 
 import base64
-import hashlib
 import json
 import logging
 from typing import Any, Dict, List, Optional, Tuple
 
-from cryptography.fernet import Fernet, InvalidToken
+from cryptography.fernet import InvalidToken
 from cryptography.hazmat.primitives import serialization
 from py_vapid import Vapid
 from pywebpush import WebPushException, webpush_async
@@ -19,6 +18,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
+from app.core.secret_box import secret_cipher
 from app.models.user import User
 
 logger = logging.getLogger(__name__)
@@ -36,13 +36,8 @@ _vapid_ready = False
 _VAPID_ENC_PREFIX = "enc:v1:"
 
 
-def _secret_cipher() -> Fernet:
-    digest = hashlib.sha256(settings.SECRET_KEY.encode("utf-8")).digest()
-    return Fernet(base64.urlsafe_b64encode(digest))
-
-
 def _seal_private_key(pem: str) -> str:
-    token = _secret_cipher().encrypt(pem.encode("ascii")).decode("ascii")
+    token = secret_cipher().encrypt(pem.encode("ascii")).decode("ascii")
     return f"{_VAPID_ENC_PREFIX}{token}"
 
 
@@ -53,7 +48,7 @@ def _unseal_private_key(value: str) -> str:
         return value
     token = value[len(_VAPID_ENC_PREFIX):].encode("ascii")
     try:
-        return _secret_cipher().decrypt(token).decode("ascii")
+        return secret_cipher().decrypt(token).decode("ascii")
     except InvalidToken as exc:
         raise ValueError(
             "stored VAPID key cannot be decrypted with the current SECRET_KEY"

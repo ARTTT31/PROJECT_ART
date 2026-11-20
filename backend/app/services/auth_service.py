@@ -2,7 +2,6 @@
 Authentication Service - Business logic for authentication
 """
 
-import hashlib
 import json
 import logging
 import time
@@ -35,7 +34,7 @@ from app.core.totp import (
     match_recovery_code,
     verify as verify_totp,
 )
-from app.core.utils import utcnow
+from app.core.utils import sha256_hex, utcnow
 from app.services.user_service import UserService
 
 
@@ -123,7 +122,7 @@ def _redis_backoff_client() -> Any:
 def _redis_failure(key: Tuple[str, Optional[str]]) -> str:
     """Redis key for one (identifier, IP) bucket. The identifier is hashed."""
     identifier, ip = key
-    digest = hashlib.sha256((identifier or "").encode("utf-8")).hexdigest()
+    digest = sha256_hex(identifier or "")
     return f"login_fail:{ip or 'unknown'}:{digest}"
 
 
