@@ -12,6 +12,7 @@ Colours are declared once as CSS custom properties in `frontend/src/app/globals.
 - Ink: `--ink` `#1d1d1f` — body text and headings. The lower-emphasis steps are contrast-tested, not decorative: `--ink-secondary` `#475569` (7.5:1), `--ink-muted` `#5f5f64` (6.3:1) and `--ink-tertiary` `#6e6e73` (5.0:1 on white, 4.7:1 on `--surface-grouped`) all clear WCAG AA at any text size. `--ink-faint` `#86868b` (3.6:1) is for icons and dividers only — never for copy.
 - Surfaces: `--surface` `#ffffff` for cards and widgets, `--surface-grouped` `#f5f5f7` for the page background, plus `--surface-subtle`, `--surface-chip` and the `--glass-*` translucent fills.
 - Hairlines: `--hairline`, `--hairline-soft`, `--hairline-strong` (they flip from black-alpha to white-alpha in dark mode).
+- Colour swatches use `--swatch-edge` for their outline: a hairline is enough on white, but a dark preset needs a stronger edge on a dark page.
 - State colors: `--success` `#34c759`, `--danger` `#ff3b30`, `--warning` `#ff9500`, each with a `*-ink` text tone and a `*-soft` fill.
 
 ## Theme (light / dark + accent)

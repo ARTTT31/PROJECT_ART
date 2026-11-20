@@ -165,6 +165,9 @@
   --hairline-soft: rgba(0, 0, 0, 0.04);
   --hairline: rgba(0, 0, 0, 0.06);
   --hairline-strong: rgba(0, 0, 0, 0.1);
+  /* Edge around a colour swatch. A hairline is enough on white, but a dark
+     preset (graphite) needs a stronger outline once the page goes dark. */
+  --swatch-edge: rgba(0, 0, 0, 0.18);
 
   /* Scrim behind dialogs and the mobile drawer. A literal black, not a
      Tailwind palette step: the palette ramps flip in dark mode, so
@@ -280,6 +283,7 @@
   --hairline-soft: rgba(255, 255, 255, 0.07);
   --hairline: rgba(255, 255, 255, 0.1);
   --hairline-strong: rgba(255, 255, 255, 0.16);
+  --swatch-edge: rgba(255, 255, 255, 0.3);
 
   /* Dark pages need a stronger scrim to separate a dialog from the wall. */
   --scrim: rgba(0, 0, 0, 0.6);

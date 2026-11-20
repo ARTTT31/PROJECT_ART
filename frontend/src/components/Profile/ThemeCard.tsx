@@ -196,7 +196,7 @@ export function ThemeCard() {
                     className={`flex h-10 w-10 items-center justify-center rounded-full shadow-[inset_0_1px_2px_rgba(0,0,0,0.18)] transition-transform duration-150 group-hover:scale-105 ${
                       selected
                         ? 'ring-2 ring-[var(--ink)] ring-offset-2 ring-offset-[var(--surface-grouped)]'
-                        : 'ring-1 ring-[var(--hairline)]'
+                        : 'ring-1 ring-[var(--swatch-edge)]'
                     }`}
                     style={{ backgroundColor: option.color }}
                   >
@@ -219,14 +219,14 @@ export function ThemeCard() {
           {/* The swatch alone does not show what the colour is for; this rows
               renders the accent the way the rest of the app uses it. */}
           <div className="mt-3 flex items-center gap-2 rounded-apple-md bg-[var(--surface)] px-2.5 py-2 ring-1 ring-[var(--hairline)]">
-            <span className="rounded-full bg-[var(--accent)] px-3 py-1 text-[11px] font-bold text-white">
+            <span className="rounded-full bg-[var(--accent)] px-3 py-1 text-[11px] font-bold text-white ring-1 ring-[var(--hairline-strong)]">
               ปุ่มหลัก
             </span>
             <span className="text-[11px] font-bold text-[var(--accent-text)] underline underline-offset-2">
               ลิงก์
             </span>
             <span
-              className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-[var(--accent)]"
+              className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-[var(--accent)] ring-1 ring-[var(--hairline-strong)]"
               aria-hidden="true"
             >
               <Check size={11} strokeWidth={3} className="text-white" />
