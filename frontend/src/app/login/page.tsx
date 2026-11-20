@@ -84,7 +84,7 @@ type LoginView = 'signin' | 'signup' | 'pending';
 function LoginHeader({ now, tagline }: { now: Date; tagline: string }) {
   const { companyName, companyTagline, brandLogoUrl } = useBranding();
   const { tr } = useI18n();
-  const effectiveLogo = brandLogoUrl || '/art-workspace-mark.svg';
+  const effectiveLogo = brandLogoUrl || '/workspace-mark.svg';
 
   return (
     <header className="login-brand">
@@ -696,7 +696,7 @@ function LoginContent() {
 
   return (
     <main className="login-page">
-      <section aria-label={tr('เข้าสู่ระบบ ART Workspace', 'Sign in to ART Workspace')} className="login-shell">
+      <section aria-label={tr('เข้าสู่ระบบ', 'Sign in')} className="login-shell">
         <div className="login-panel">
           <LoginHeader now={now} tagline={tr('เข้าสู่ระบบเพื่อใช้งานแดชบอร์ดของคุณ', 'Sign in to your dashboard')} />
 
@@ -991,10 +991,10 @@ function LoginContent() {
               </div>
 
               {/* Trust Device Checkbox */}
-              <div className="pt-2 border-t border-[var(--hairline)]">
+              <div className="space-y-2 border-t border-[var(--hairline)] pt-3">
                 <label
                   htmlFor="login-trust-device"
-                  className="flex items-center gap-2.5 cursor-pointer select-none text-[12.5px] text-[var(--ink-secondary)] hover:text-[var(--ink)]"
+                  className="flex cursor-pointer items-start gap-2.5 select-none"
                 >
                   <input
                     id="login-trust-device"
@@ -1002,25 +1002,30 @@ function LoginContent() {
                     checked={trustDevice}
                     onChange={(event) => setTrustDevice(event.target.checked)}
                     disabled={isSubmitting}
-                    className="h-4 w-4 rounded-apple-sm border-[var(--hairline)] text-[var(--accent)] focus:ring-[var(--accent)]"
+                    className="mt-[2px] h-4 w-4 shrink-0 accent-[var(--accent)] focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
                   />
-                  <span>
-                    {tr('จดจำอุปกรณ์นี้ 30 วัน', 'Trust this device for 30 days')}
+                  <span className="min-w-0">
+                    <span className="block text-[12.5px] font-semibold leading-snug text-[var(--ink)]">
+                      {tr('จดจำอุปกรณ์นี้ 30 วัน', 'Trust this device for 30 days')}
+                    </span>
+                    <span className="mt-0.5 block text-[11px] leading-snug text-[var(--ink-tertiary)]">
+                      {tr('ข้ามการยืนยัน 2FA ในเบราว์เซอร์นี้', 'Skip 2FA in this browser')}
+                    </span>
                   </span>
                 </label>
-              </div>
 
-              <p className="text-center text-[11px] text-[var(--ink-tertiary)]">
-                {totpCooldown > 0
-                  ? tr(
-                      'ลองใหม่ได้ในอีก {seconds} วินาที',
-                      'You can try again in {seconds}s',
-                      { seconds: totpCooldown },
-                    )
-                  : isRecoveryMode
-                    ? tr('รหัสสำรองแต่ละชุดสามารถใช้งานได้เพียงครั้งเดียว', 'Each recovery code can be used only once')
-                    : tr('รหัสจะเปลี่ยนทุก 30 วินาที', 'The code changes every 30 seconds')}
-              </p>
+                <p className="pl-[calc(1rem+0.625rem)] text-[11px] leading-snug text-[var(--ink-tertiary)]">
+                  {totpCooldown > 0
+                    ? tr(
+                        'ลองใหม่ได้ในอีก {seconds} วินาที',
+                        'You can try again in {seconds}s',
+                        { seconds: totpCooldown },
+                      )
+                    : isRecoveryMode
+                      ? tr('รหัสสำรองแต่ละชุดสามารถใช้งานได้เพียงครั้งเดียว', 'Each recovery code can be used only once')
+                      : tr('รหัสจะเปลี่ยนทุก 30 วินาที', 'The code changes every 30 seconds')}
+                </p>
+              </div>
             </DialogBody>
 
             <DialogFooter>

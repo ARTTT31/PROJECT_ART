@@ -30,9 +30,9 @@ export function SectionCard({
   children,
 }: SectionCardProps) {
   return (
-    <section className="overflow-hidden rounded-apple-lg bg-[var(--surface)] border border-[var(--hairline)] transition-all duration-200">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--hairline-soft)] bg-[var(--surface-subtle)] px-5 sm:px-6 py-4">
-        <div className="flex items-center gap-3 min-w-0">
+    <section className="flex h-full flex-col overflow-hidden rounded-apple-lg bg-[var(--surface)] border border-[var(--hairline)] transition-all duration-200">
+      <div className="flex items-center justify-between gap-3 border-b border-[var(--hairline-soft)] bg-[var(--surface-subtle)] px-5 sm:px-6 py-4">
+        <div className="flex min-w-0 flex-1 items-center gap-3">
           <div
             className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-apple-widget ${iconBg} ${iconColor} ring-1 ${iconRing}`}
           >
@@ -54,9 +54,9 @@ export function SectionCard({
             </p>
           </div>
         </div>
-        {action}
+        {action && <div className="shrink-0">{action}</div>}
       </div>
-      <div className="p-5 sm:p-6">{children}</div>
+      <div className="flex-1 p-5 sm:p-6">{children}</div>
     </section>
   );
 }

@@ -197,12 +197,22 @@ export default function ExternalNotificationCard() {
             className="grid grid-cols-2 gap-1 rounded-apple-lg border border-[var(--hairline)] bg-[var(--surface-grouped)] p-1"
             role="tablist"
             aria-label="ช่องทางการแจ้งเตือน"
+            onKeyDown={(event) => {
+              if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+              event.preventDefault();
+              const next = activeChannel === 'telegram' ? 'webhook' : 'telegram';
+              setActiveChannel(next);
+              document.getElementById(`notify-channel-tab-${next}`)?.focus();
+            }}
           >
             {/* Telegram Tab */}
             <button
               type="button"
               role="tab"
+              id="notify-channel-tab-telegram"
               aria-selected={activeChannel === 'telegram'}
+              aria-controls="notify-channel-panel-telegram"
+              tabIndex={activeChannel === 'telegram' ? 0 : -1}
               onClick={() => setActiveChannel('telegram')}
               className={`inline-flex items-center justify-center gap-2 rounded-apple-md py-2.5 px-3 text-[12px] font-bold transition-all duration-150 active:scale-[0.98] ${
                 activeChannel === 'telegram'
@@ -221,7 +231,10 @@ export default function ExternalNotificationCard() {
             <button
               type="button"
               role="tab"
+              id="notify-channel-tab-webhook"
               aria-selected={activeChannel === 'webhook'}
+              aria-controls="notify-channel-panel-webhook"
+              tabIndex={activeChannel === 'webhook' ? 0 : -1}
               onClick={() => setActiveChannel('webhook')}
               className={`inline-flex items-center justify-center gap-2 rounded-apple-md py-2.5 px-3 text-[12px] font-bold transition-all duration-150 active:scale-[0.98] ${
                 activeChannel === 'webhook'
@@ -243,7 +256,13 @@ export default function ExternalNotificationCard() {
 
         {/* Telegram Panel */}
         {activeChannel === 'telegram' && (
-          <div className="rounded-apple-lg border border-[var(--hairline)] bg-[var(--surface-subtle)] p-4 sm:p-5 space-y-4">
+          <div
+            role="tabpanel"
+            id="notify-channel-panel-telegram"
+            aria-labelledby="notify-channel-tab-telegram"
+            tabIndex={0}
+            className="rounded-apple-lg border border-[var(--hairline)] bg-[var(--surface-subtle)] p-4 sm:p-5 space-y-4 focus-visible:outline-hidden"
+          >
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex items-center gap-2.5 min-w-0">
                 <div
@@ -296,7 +315,13 @@ export default function ExternalNotificationCard() {
 
         {/* Webhook Panel */}
         {activeChannel === 'webhook' && (
-          <div className="rounded-apple-lg border border-[var(--hairline)] bg-[var(--surface-subtle)] p-4 sm:p-5 space-y-4">
+          <div
+            role="tabpanel"
+            id="notify-channel-panel-webhook"
+            aria-labelledby="notify-channel-tab-webhook"
+            tabIndex={0}
+            className="rounded-apple-lg border border-[var(--hairline)] bg-[var(--surface-subtle)] p-4 sm:p-5 space-y-4 focus-visible:outline-hidden"
+          >
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex items-center gap-2.5 min-w-0">
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-apple-md bg-purple-500/10 text-purple-600 dark:text-purple-400">

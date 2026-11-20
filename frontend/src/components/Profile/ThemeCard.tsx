@@ -56,16 +56,18 @@ export function ThemeCard() {
         <button
           type="button"
           onClick={handleReset}
-          className="inline-flex items-center gap-1.5 rounded-full bg-[var(--surface)] px-3 py-1.5 text-[12px] font-bold text-[var(--ink-muted)] ring-1 ring-[var(--hairline)] transition-all hover:bg-[var(--surface-grouped)] active:scale-[0.95]"
+          aria-label="กลับไปใช้ค่าเริ่มต้น"
+          title="กลับไปใช้ค่าเริ่มต้น"
+          className="inline-flex h-8 w-8 items-center justify-center gap-1.5 rounded-full bg-[var(--surface)] text-[12px] font-bold text-[var(--ink-muted)] ring-1 ring-[var(--hairline)] transition-all hover:bg-[var(--surface-grouped)] active:scale-[0.95] sm:h-auto sm:w-auto sm:px-3 sm:py-1.5"
         >
           <RotateCcw size={12} aria-hidden="true" />
-          ค่าเริ่มต้น
+          <span className="hidden sm:inline">ค่าเริ่มต้น</span>
         </button>
       }
     >
-      <div className="space-y-3">
+      <div className="flex h-full flex-col gap-3">
         {/* Appearance */}
-        <div className="rounded-apple-lg bg-[var(--surface-grouped)] p-4 ring-1 ring-[var(--hairline)]">
+        <div className="rounded-apple-lg bg-[var(--surface-grouped)] p-3 ring-1 ring-[var(--hairline)] sm:p-4">
           <div className="mb-3 flex items-center justify-between gap-2">
             <span className="text-[12px] font-semibold text-[var(--ink-secondary)]">
               โหมดการแสดงผล
@@ -83,13 +85,15 @@ export function ThemeCard() {
             options={THEME_MODES.map((option) => ({
               value: option.id,
               label: option.label,
-              icon: MODE_ICON[option.id],
+              // A phone's segment is ~85px wide; the icon alone takes a fifth of
+              // that, so "ตามระบบ" was truncated to "ตามร…".
+              icon: <span className="hidden sm:inline-flex">{MODE_ICON[option.id]}</span>,
             }))}
           />
         </div>
 
         {/* Accent */}
-        <div className="rounded-apple-lg bg-[var(--surface-grouped)] p-4 ring-1 ring-[var(--hairline)]">
+        <div className="flex-1 rounded-apple-lg bg-[var(--surface-grouped)] p-3 ring-1 ring-[var(--hairline)] sm:p-4">
           <div className="mb-3 flex items-center justify-between gap-2">
             <span className="text-[12px] font-semibold text-[var(--ink-secondary)]">
               สีหลัก (Accent)

@@ -87,7 +87,7 @@ export function SegmentedControl<T extends string>({
             onClick={() => onChange(option.value)}
             onKeyDown={(event) => handleKeyDown(event, index)}
             className={[
-              'inline-flex items-center justify-center gap-1.5 rounded-full px-3.5 py-1.5 text-apple-footnote font-semibold',
+              'inline-flex items-center justify-center gap-1 rounded-full px-2 py-1.5 text-apple-footnote font-semibold sm:gap-1.5 sm:px-3.5',
               'transition-[color,background-color,box-shadow,transform] duration-apple-1 ease-apple active:scale-[0.97]',
               'focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)]',
               fullWidth ? 'min-w-0 flex-1' : '',

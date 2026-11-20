@@ -42,10 +42,11 @@ export function QuickLinksCard({ links, onAdd, onEdit, onDelete, onMove }: Quick
         <button
           type="button"
           onClick={onAdd}
-          className="inline-flex items-center gap-1.5 rounded-full bg-[var(--accent)] px-3.5 py-1.5 text-[12px] font-bold text-white shadow-xs transition-all hover:bg-[var(--accent-hover)] active:scale-95"
+          aria-label={t('card.quickLinks.add')}
+          className="inline-flex h-8 w-8 items-center justify-center gap-1.5 rounded-full bg-[var(--accent)] text-[12px] font-bold text-white shadow-xs transition-all hover:bg-[var(--accent-hover)] active:scale-95 sm:h-auto sm:w-auto sm:px-3.5 sm:py-1.5"
         >
-          <Plus size={13} aria-hidden="true" />
-          {t('card.quickLinks.add')}
+          <Plus size={14} aria-hidden="true" />
+          <span className="hidden sm:inline">{t('card.quickLinks.add')}</span>
         </button>
       }
     >
@@ -112,13 +113,14 @@ export function QuickLinksCard({ links, onAdd, onEdit, onDelete, onMove }: Quick
                   <p className="mt-0.5 truncate text-[11px] text-[var(--ink-muted)]">{link.url}</p>
                 </div>
 
-                <div className="flex items-center gap-1 shrink-0">
+                <div className="flex shrink-0 items-center gap-0.5">
                   <button
                     type="button"
                     onClick={() => onMove(link.id, 'up')}
                     disabled={index === 0}
-                    aria-label="ย้ายขึ้น"
-                    className="flex h-7 w-7 items-center justify-center rounded-apple-md text-slate-400 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-30 disabled:hover:bg-transparent"
+                    aria-label={`ย้าย ${link.label} ขึ้น`}
+                    title="ย้ายขึ้น"
+                    className="flex h-7 w-7 items-center justify-center rounded-apple-md text-[var(--ink-tertiary)] transition-colors hover:bg-[var(--surface-grouped)] hover:text-[var(--ink)] disabled:opacity-30 disabled:hover:bg-transparent"
                   >
                     <ChevronUp size={14} aria-hidden="true" />
                   </button>
@@ -126,8 +128,9 @@ export function QuickLinksCard({ links, onAdd, onEdit, onDelete, onMove }: Quick
                     type="button"
                     onClick={() => onMove(link.id, 'down')}
                     disabled={index === links.length - 1}
-                    aria-label="ย้ายลง"
-                    className="flex h-7 w-7 items-center justify-center rounded-apple-md text-slate-400 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-30 disabled:hover:bg-transparent"
+                    aria-label={`ย้าย ${link.label} ลง`}
+                    title="ย้ายลง"
+                    className="flex h-7 w-7 items-center justify-center rounded-apple-md text-[var(--ink-tertiary)] transition-colors hover:bg-[var(--surface-grouped)] hover:text-[var(--ink)] disabled:opacity-30 disabled:hover:bg-transparent"
                   >
                     <ChevronDown size={14} aria-hidden="true" />
                   </button>
@@ -135,29 +138,29 @@ export function QuickLinksCard({ links, onAdd, onEdit, onDelete, onMove }: Quick
                     href={link.url}
                     target={external ? '_blank' : undefined}
                     rel={external ? 'noopener noreferrer' : undefined}
-                    className="flex h-7 items-center justify-center sm:gap-1 rounded-apple-md px-2 text-[11px] font-bold text-slate-600 hover:bg-slate-100"
                     aria-label={`เปิดลิงก์ ${link.label}`}
+                    title="เปิดลิงก์"
+                    className="flex h-7 w-7 items-center justify-center rounded-apple-md text-[var(--ink-secondary)] transition-colors hover:bg-[var(--surface-grouped)] hover:text-[var(--ink)]"
                   >
-                    <ExternalLink size={12} aria-hidden="true" />
-                    <span className="hidden sm:inline">เปิด</span>
+                    <ExternalLink size={13} aria-hidden="true" />
                   </a>
                   <button
                     type="button"
                     onClick={() => onEdit(link)}
-                    className="inline-flex h-7 items-center gap-1 rounded-apple-md px-2 text-[11px] font-bold text-slate-600 hover:bg-slate-100"
-                    aria-label="แก้ไขลิงก์"
+                    aria-label={`แก้ไข ${link.label}`}
+                    title="แก้ไข"
+                    className="flex h-7 w-7 items-center justify-center rounded-apple-md text-[var(--ink-secondary)] transition-colors hover:bg-[var(--surface-grouped)] hover:text-[var(--ink)]"
                   >
-                    <PencilLine size={12} aria-hidden="true" />
-                    <span className="hidden sm:inline">แก้ไข</span>
+                    <PencilLine size={13} aria-hidden="true" />
                   </button>
                   <button
                     type="button"
                     onClick={() => onDelete(link.id)}
-                    className="inline-flex h-7 items-center gap-1 rounded-apple-md px-2 text-[11px] font-bold text-rose-600 hover:bg-rose-50"
-                    aria-label="ลบลิงก์"
+                    aria-label={`ลบ ${link.label}`}
+                    title="ลบ"
+                    className="flex h-7 w-7 items-center justify-center rounded-apple-md text-rose-600 transition-colors hover:bg-rose-50"
                   >
-                    <Trash2 size={12} aria-hidden="true" />
-                    <span className="hidden sm:inline">ลบ</span>
+                    <Trash2 size={13} aria-hidden="true" />
                   </button>
                 </div>
               </div>

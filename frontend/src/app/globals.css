@@ -980,8 +980,6 @@ textarea:focus-visible,
   a.art-primary-button,
   a.art-soft-button,
   a[role='button'],
-  input[type='checkbox'],
-  input[type='radio'],
   [role='button']:not(.inline-action):not(.small-control),
   [role='checkbox'],
   [role='radio'] {

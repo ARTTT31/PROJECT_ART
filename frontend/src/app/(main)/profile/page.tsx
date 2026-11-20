@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, type KeyboardEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import {
@@ -195,6 +195,38 @@ export default function ProfilePage() {
   const handleSectionChange = (section: AccountSection) => {
     setAccountSection(section);
     writeTabToUrl(activeTab, section);
+  };
+
+  // Only tabs this user can open belong in the tablist.
+  const visibleTabs = PROFILE_TABS.filter((tab) => !tab.adminOnly || isAdmin);
+
+  /** Roving tabindex: arrow keys move between tabs, as the tablist pattern expects. */
+  const handleTabKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    const keys = visibleTabs.map((tab) => tab.key);
+    const current = keys.indexOf(activeTab);
+    if (current === -1) return;
+    let next: number;
+    switch (event.key) {
+      case 'ArrowRight':
+      case 'ArrowDown':
+        next = (current + 1) % keys.length;
+        break;
+      case 'ArrowLeft':
+      case 'ArrowUp':
+        next = (current - 1 + keys.length) % keys.length;
+        break;
+      case 'Home':
+        next = 0;
+        break;
+      case 'End':
+        next = keys.length - 1;
+        break;
+      default:
+        return;
+    }
+    event.preventDefault();
+    handleTabChange(keys[next]);
+    document.getElementById(`profile-tab-${keys[next]}`)?.focus();
   };
 
   // ── Main Menu Handlers ────────────────────────────────────────
@@ -414,9 +446,10 @@ export default function ProfilePage() {
         <nav
           aria-label="แท็บตั้งค่าโปรไฟล์"
           role="tablist"
+          onKeyDown={handleTabKeyDown}
           className="grid grid-cols-2 gap-1 rounded-apple-lg border border-[var(--hairline-soft)] bg-[var(--surface-chip)] p-1 backdrop-blur-md sm:grid-cols-3 lg:grid-cols-5"
         >
-          {PROFILE_TABS.filter((tab) => !tab.adminOnly || isAdmin).map(
+          {visibleTabs.map(
             ({ key, icon: Icon, label }) => {
               const active = activeTab === key;
               return (
@@ -424,7 +457,10 @@ export default function ProfilePage() {
                   key={key}
                   type="button"
                   role="tab"
+                  id={`profile-tab-${key}`}
                   aria-selected={active}
+                  aria-controls={`profile-panel-${key}`}
+                  tabIndex={active ? 0 : -1}
                   onClick={() => handleTabChange(key)}
                   className={`inline-flex min-h-[40px] items-center justify-center gap-2 rounded-apple-widget px-3 py-2 text-[12.5px] font-bold whitespace-nowrap transition-all duration-200 active:scale-[0.98] ${
                     active
@@ -450,7 +486,13 @@ export default function ProfilePage() {
       {/* No AnimatePresence here: a deep link (?tab=…) switches tabs on mount and
           mode="wait" could hold the previous panel on screen while the next one
           waited for an exit animation to finish. Tabs now swap immediately. */}
-      <>
+      <div
+        role="tabpanel"
+        id={`profile-panel-${activeTab}`}
+        aria-labelledby={`profile-tab-${activeTab}`}
+        tabIndex={0}
+        className="focus-visible:outline-hidden"
+      >
         {activeTab === 'profile' && (
           <motion.div
             key="profile"
@@ -468,7 +510,9 @@ export default function ProfilePage() {
                 <button
                   type="button"
                   role="tab"
+                  id="profile-section-tab-account"
                   aria-selected={accountSection === 'account'}
+                  aria-controls="profile-section-panel-account"
                   onClick={() => handleSectionChange('account')}
                   className={`inline-flex items-center gap-1.5 rounded-apple-md px-3 py-1.5 text-[12px] font-bold whitespace-nowrap transition-all duration-150 active:scale-[0.98] ${
                     accountSection === 'account'
@@ -482,7 +526,9 @@ export default function ProfilePage() {
                 <button
                   type="button"
                   role="tab"
+                  id="profile-section-tab-security"
                   aria-selected={accountSection === 'security'}
+                  aria-controls="profile-section-panel-security"
                   onClick={() => handleSectionChange('security')}
                   className={`inline-flex items-center gap-1.5 rounded-apple-md px-3 py-1.5 text-[12px] font-bold whitespace-nowrap transition-all duration-150 active:scale-[0.98] ${
                     accountSection === 'security'
@@ -496,14 +542,27 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            <div hidden={accountSection !== 'account'}>
+            <div
+              role="tabpanel"
+              id="profile-section-panel-account"
+              aria-labelledby="profile-section-tab-account"
+              tabIndex={0}
+              hidden={accountSection !== 'account'}
+            >
               <AccountDetailsCard
                 user={currentUser}
                 onUpdated={(patch) => setUser((prev) => (prev ? { ...prev, ...patch } : prev))}
               />
             </div>
 
-            <div hidden={accountSection !== 'security'} className="space-y-4">
+            <div
+              role="tabpanel"
+              id="profile-section-panel-security"
+              aria-labelledby="profile-section-tab-security"
+              tabIndex={0}
+              hidden={accountSection !== 'security'}
+              className="space-y-4 focus-visible:outline-hidden"
+            >
               <PasswordCard user={currentUser} />
               <SecurityCard />
               <TrustedDevicesCard />
@@ -533,7 +592,7 @@ export default function ProfilePage() {
             />
           </motion.div>
         )}
-      </>
+      </div>
 
       <QuickLinkDialog
         open={quickLinkDialogOpen}
