@@ -1755,7 +1755,7 @@ async def two_factor_setup(
         data={
             "secret": secret,
             "otpauth_uri": provisioning_uri(secret, account),
-            "issuer": "ART Workspace",
+            "issuer": "Workspace",
         },
     )
 

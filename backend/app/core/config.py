@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     """Application settings"""
 
     # Application
-    APP_NAME: str = "ART Workspace API"
+    APP_NAME: str = "Workspace API"
     APP_VERSION: str = "1.0.0"
     # Production must opt in to development behaviour explicitly.
     DEBUG: bool = False
@@ -332,8 +332,8 @@ class Settings(BaseSettings):
     #   receives a verification link (and the link is written to logs).
     # smtp: any relay (Brevo, Gmail app password, SES, ...). resend: Resend API.
     EMAIL_BACKEND: Literal["console", "smtp", "resend"] = "console"
-    # RFC 5322 From header, e.g. "ART Workspace <no-reply@example.com>".
-    EMAIL_FROM: str = "ART Workspace <no-reply@localhost>"
+    # RFC 5322 From header, e.g. "Workspace <no-reply@example.com>".
+    EMAIL_FROM: str = "Workspace <no-reply@localhost>"
     # SMTP relay, used when EMAIL_BACKEND=smtp.
     SMTP_HOST: str = ""
     SMTP_PORT: int = 587
@@ -400,10 +400,10 @@ class Settings(BaseSettings):
     # free and never counted, so this only caps calls that spend credits.
     AI_DAILY_MESSAGE_LIMIT: int = 50
     # Google Gemini (AI Studio key). Model ids retire on a schedule, so the id
-    # is configurable rather than hard-coded: gemini-2.5-flash is being retired
-    # and gemini-1.5-flash already is.
+    # is configurable rather than hard-coded: the 2.5 family is legacy-only for
+    # new keys and the 3.5 generation now routes to its successor.
     GEMINI_API_KEY: str = ""
-    GEMINI_MODEL: str = "gemini-3.5-flash"
+    GEMINI_MODEL: str = "gemini-3.8-flash"
 
     def require_google_client_id(self) -> str:
         """Return the configured Google client ID or raise a clear 500 error."""

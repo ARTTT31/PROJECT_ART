@@ -1,5 +1,5 @@
 """
-Comprehensive test suite for ART Workspace backend services.
+Comprehensive test suite for Workspace backend services.
 Uses in-memory SQLite (aiosqlite) for fast, isolated async testing.
 """
 import os

@@ -1,6 +1,6 @@
 """
 FastAPI Main Application
-ART Workspace Backend
+Workspace Backend
 """
 
 import asyncio
@@ -200,7 +200,7 @@ async def _notification_scheduler_loop(check_interval_seconds: int = 60) -> None
                 async with SessionLocal() as db:
                     if await claim_slot(db, "daily_summary", f"{day}T{current_hour:02d}"):
                         await dispatch_event_notifications(
-                            db, "daily_summary", "☀️ [ART Workspace] สรุปภารกิจและรายงานประจำวันพร้อมแล้ว"
+                            db, "daily_summary", "☀️ สรุปภารกิจและรายงานประจำวันพร้อมแล้ว"
                         )
 
             # 3. Fuel price change early warning, hourly during 17:00–17:59
@@ -216,7 +216,7 @@ async def _notification_scheduler_loop(check_interval_seconds: int = 60) -> None
                 async with SessionLocal() as db:
                     if await claim_slot(db, "market_alert", f"{day}T{current_hour:02d}"):
                         await dispatch_event_notifications(
-                            db, "market_alert", "📈 [ART Workspace] สรุปภาพรวมตลาด SET และค่าเงินหลังปิดตลาด"
+                            db, "market_alert", "📈 สรุปภาพรวมตลาด SET และค่าเงินหลังปิดตลาด"
                         )
         except asyncio.CancelledError:
             raise
@@ -392,7 +392,7 @@ _docs_enabled = settings.ENABLE_API_DOCS or settings.DEBUG
 app = FastAPI(
     title=settings.APP_NAME,
     version=settings.APP_VERSION,
-    description="ART Workspace API - Modern Stack Migration",
+    description="Workspace API - Modern Stack Migration",
     docs_url="/docs" if _docs_enabled else None,
     redoc_url="/redoc" if _docs_enabled else None,
     openapi_url="/openapi.json" if _docs_enabled else None,
@@ -564,7 +564,7 @@ async def root():
     405 and looks like a failed boot in the logs.
     """
     return {
-        "message": "ART Workspace API",
+        "message": "Workspace API",
         "version": settings.APP_VERSION,
         "status": "running",
         "docs": "/docs",

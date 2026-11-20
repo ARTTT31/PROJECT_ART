@@ -4,7 +4,6 @@ Verifies timezone serialization (explicit UTC offset), sync deduplication,
 occurred_at UTC normalization, read-all, clear, and health probe.
 """
 
-import datetime
 from sqlalchemy import select
 
 from app.models.notification_log import NotificationLog
@@ -92,6 +91,34 @@ async def test_notifications_sync_is_idempotent(client, logged_in_admin_user, db
     matching = (
         await db_session.execute(
             select(NotificationLog).where(NotificationLog.client_id == "test-idempotent-1")
+        )
+    ).scalars().all()
+    assert len(matching) == 1
+
+
+async def test_notifications_sync_deduplicates_within_one_payload(
+    client, logged_in_admin_user, db_session
+):
+    """The same client_id twice in one request must not reach the unique index."""
+    item = {
+        "client_id": "test-duplicate-in-payload",
+        "type": "system",
+        "level": "info",
+        "title": "ซ้ำในชุดเดียว",
+        "body": "รายการเดิมถูกส่งมาสองครั้ง",
+        "at": "2026-11-14T07:00:00Z",
+    }
+
+    res = await client.post(
+        "/api/v1/notifications/sync", json={"items": [item, item]}
+    )
+
+    assert res.status_code == 200
+    matching = (
+        await db_session.execute(
+            select(NotificationLog).where(
+                NotificationLog.client_id == "test-duplicate-in-payload"
+            )
         )
     ).scalars().all()
     assert len(matching) == 1

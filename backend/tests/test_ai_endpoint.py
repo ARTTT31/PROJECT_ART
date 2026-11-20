@@ -99,6 +99,19 @@ def test_build_system_prompt_carries_context_and_no_hallucination_rule():
     assert "do not have it" in prompt
 
 
+def test_build_system_prompt_uses_the_bangkok_date():
+    """A UTC host must not tell the model it is still yesterday until 07:00 ICT."""
+    from zoneinfo import ZoneInfo
+
+    import datetime as _dt
+
+    bangkok_today = _dt.datetime.now(ZoneInfo("Asia/Bangkok")).date().isoformat()
+
+    prompt = ai.build_system_prompt({})
+
+    assert f"Today is {bangkok_today}" in prompt
+
+
 def test_conversation_keeps_only_recent_turns():
     history = [ai.ChatTurn(role="user", text=f"m{i}") for i in range(12)]
     turns = ai._conversation("now", history)
@@ -156,3 +169,71 @@ async def test_ai_chat_falls_back_to_local_engine_without_provider(
 
     assert resp.status_code == 200
     assert "2 รายการ" in resp.json()["reply"]
+
+
+@pytest.mark.asyncio
+async def test_ai_chat_prefers_the_model_over_the_builtin_reply(
+    client: AsyncClient, logged_in_user, monkeypatch
+):
+    """A connected key must answer common questions, not the canned parser.
+
+    "ราคาน้ำมันวันนี้" is matched by the built-in intent engine, so it used to
+    return identical text with or without a key — the reason a saved key looked
+    like it changed nothing.
+    """
+    await client.put(
+        "/api/v1/ai/settings",
+        json={"provider": "gemini", "api_key": "gemini-personal-key", "model": "gemini-3.8-flash"},
+    )
+
+    prompts: list[str] = []
+
+    async def fake_call(provider, prompt, context, history=None):
+        prompts.append(prompt)
+        return "ตอบจากโมเดลจริง"
+
+    monkeypatch.setattr(ai, "call_ai_model", fake_call)
+
+    resp = await client.post("/api/v1/ai/chat", json={"message": "ราคาน้ำมันวันนี้"})
+
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    assert body["reply"] == "ตอบจากโมเดลจริง"
+    assert body["degraded"] is False
+    assert prompts == ["ราคาน้ำมันวันนี้"]
+
+
+@pytest.mark.asyncio
+async def test_ai_chat_flags_a_provider_failure_instead_of_hiding_it(
+    client: AsyncClient, logged_in_user, monkeypatch
+):
+    """When the saved key cannot answer, the reply says so."""
+    await client.put(
+        "/api/v1/ai/settings",
+        json={"provider": "gemini", "api_key": "gemini-personal-key"},
+    )
+
+    async def failing_call(provider, prompt, context, history=None):
+        return None
+
+    monkeypatch.setattr(ai, "call_ai_model", failing_call)
+
+    resp = await client.post("/api/v1/ai/chat", json={"message": "ราคาน้ำมันวันนี้"})
+
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    assert body["degraded"] is True
+    assert "32.94" in body["reply"]
+
+
+def test_model_listing_drops_models_that_cannot_chat():
+    assert ai._is_non_chat_model("gemini-2.5-flash-image")
+    assert ai._is_non_chat_model("text-embedding-3-small")
+    assert ai._is_non_chat_model("gemini-3.8-flash-tts")
+    assert not ai._is_non_chat_model("gemini-3.8-flash")
+
+
+def test_suggested_model_skips_preview_ids():
+    models = ["gemini-3.1-pro-preview", "gemini-3.8-flash", "gemini-3.5-flash-lite"]
+
+    assert ai.suggested_model("gemini", models) == "gemini-3.8-flash"

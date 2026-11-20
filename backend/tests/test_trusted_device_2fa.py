@@ -1,7 +1,6 @@
 """Tests for 2FA Trusted Device Token helpers and Login Integration."""
 
 import json
-import pytest
 from datetime import timedelta
 from app.core.security import (
     create_trusted_device_token,

@@ -113,7 +113,7 @@ async def test_webhook_carries_every_payload_key_the_receivers_expect(monkeypatc
         "content": "msg",
         "text": "msg",
         "message": "msg",
-        "source": "ART Workspace",
+        "source": "Workspace",
     }
 
 

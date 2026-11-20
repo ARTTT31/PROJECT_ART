@@ -1,4 +1,4 @@
-# Render Blueprint for the ART Workspace API.
+# Render Blueprint for the Workspace API.
 #
 # This file documents the production shape; it is NOT applied automatically to
 # an existing service. Create a new Blueprint environment from it, or copy the

@@ -15,6 +15,7 @@ import json
 import logging
 import datetime
 from typing import Any, Optional
+from zoneinfo import ZoneInfo
 from fastapi import APIRouter, Depends, Request
 import httpx
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -35,6 +36,16 @@ router = APIRouter()
 _GENERAL_LIMIT = f"{settings.RATE_LIMIT_GENERAL_PER_MINUTE}/minute"
 
 BANGCHAK_OIL_URL = "https://oil-price.bangchak.co.th/ApiOilPrice2/en"
+
+# The station prices change on the Thai calendar day. Reading "today" from the
+# server clock (UTC on most hosts) labelled every price before 07:00 ICT with
+# yesterday's date, so the widget disagreed with the station sign.
+_BANGKOK = ZoneInfo("Asia/Bangkok")
+
+
+def _today_bkk() -> str:
+    return datetime.datetime.now(_BANGKOK).strftime("%d/%m/%Y")
+
 
 ORDERED_KEYS = [
     "benzene_95",
@@ -268,7 +279,7 @@ async def get_oil_prices(
             payload = response.json()
             prices = _parse_bangchak_data(payload)
             if prices:
-                today = datetime.date.today().strftime("%d/%m/%Y")
+                today = _today_bkk()
                 data = {
                     "success": True,
                     "prices": prices,
@@ -312,7 +323,7 @@ def _fallback_prices():
     """
     Accurate fallback retail fuel prices — Bangkok & perimeter
     """
-    today = datetime.date.today().strftime("%d/%m/%Y")
+    today = _today_bkk()
     return {
         "success": True,
         "prices": [

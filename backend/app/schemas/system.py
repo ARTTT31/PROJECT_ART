@@ -6,7 +6,7 @@ from app.core.brand_logo import clean_logo_value
 
 
 class BrandingResponse(BaseModel):
-    company_name: str = "ART Workspace"
+    company_name: str = "Workspace"
     company_tagline: Optional[str] = "จัดการวันทำงานของคุณให้ง่ายขึ้น"
     brand_logo_url: Optional[str] = ""
     registration_mode: Optional[str] = "approval"

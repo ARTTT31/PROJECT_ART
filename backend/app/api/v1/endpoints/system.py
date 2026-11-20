@@ -28,6 +28,10 @@ from app.core.brand_logo import (
     normalise_logo_image,
     validate_logo_content,
 )
+from app.core.branding import (
+    DEFAULT_COMPANY_TAGLINE,
+    normalise_company_name,
+)
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.page_settings import (
@@ -63,9 +67,11 @@ async def _branding_response(db: AsyncSession) -> BrandingResponse:
     )
     settings_map = {s.key: s.value for s in result.scalars().all()}
     return BrandingResponse(
-        company_name=settings_map.get("company_name") or "ART Workspace",
-        company_tagline=settings_map.get("company_tagline")
-        or "จัดการวันทำงานของคุณให้ง่ายขึ้น",
+        # Rows seeded under the old product name are read as the neutral
+        # default; the migration rewrites them, this keeps them from showing
+        # through before it has run.
+        company_name=normalise_company_name(settings_map.get("company_name")),
+        company_tagline=settings_map.get("company_tagline") or DEFAULT_COMPANY_TAGLINE,
         brand_logo_url=settings_map.get("brand_logo_url") or "",
         registration_mode=await get_effective_registration_mode(db),
     )

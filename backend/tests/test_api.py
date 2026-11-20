@@ -1,4 +1,4 @@
-"""API endpoint tests for ART Workspace backend."""
+"""API endpoint tests for Workspace backend."""
 import json
 import logging
 from contextlib import contextmanager
@@ -72,7 +72,7 @@ class TestHealthCheck:
         resp = await client.get("/")
         assert resp.status_code == 200
         data = resp.json()
-        assert data["message"] == "ART Workspace API"
+        assert data["message"] == "Workspace API"
         assert data["status"] == "running"
 
     async def test_health_endpoint(self, client):
@@ -1687,6 +1687,8 @@ class TestOilPriceCacheLayers:
 
         assert resp.status_code == 200
         assert resp.json()["is_stale"] is False
+        # The station prices follow the Thai calendar day, not the host's UTC day.
+        assert resp.json()["update_date"] == oil._today_bkk()
         persisted = await weather_cache.get_stale(db_session, oil.NS_OIL_PRICES, oil._L2_KEY)
         assert persisted is not None
         assert persisted["prices"], "the parsed price list is what a restart needs"
@@ -1767,6 +1769,9 @@ class TestOilPriceCacheLayers:
         assert body["source"] == "Market Base Rate"
         assert body["fetched_at"] is None
         assert len(body["prices"]) == 6
+        from app.api.v1.endpoints import oil_prices as oil
+
+        assert body["update_date"] == oil._today_bkk()
 
     def test_the_dead_eppo_provider_constant_is_gone(self):
         """It was declared but never read; the docs pointed at it as if it worked."""

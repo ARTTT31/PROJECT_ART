@@ -1,5 +1,5 @@
 """
-Pytest configuration and shared fixtures for ART Workspace backend tests.
+Pytest configuration and shared fixtures for Workspace backend tests.
 """
 import os
 

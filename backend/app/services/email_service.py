@@ -209,7 +209,7 @@ def verify_email_message(to: str, name: str, link: str) -> EmailMessage:
     greeting = f"สวัสดี {name}" if name else "สวัสดี"
     text = (
         f"{greeting}\n\n"
-        "ขอบคุณที่สมัครใช้งาน ART Workspace "
+        "ขอบคุณที่สมัครใช้งาน Workspace "
         "กดลิงก์ด้านล่างเพื่อยืนยันอีเมลของคุณ:\n\n"
         f"{link}\n\n"
         f"ลิงก์นี้จะหมดอายุใน {settings.EMAIL_VERIFY_TOKEN_MINUTES} นาที\n"
@@ -217,12 +217,12 @@ def verify_email_message(to: str, name: str, link: str) -> EmailMessage:
     )
     html = _wrap_html(
         "ยืนยันอีเมล",
-        f"<p>{greeting}</p><p>ขอบคุณที่สมัครใช้งาน ART Workspace "
+        f"<p>{greeting}</p><p>ขอบคุณที่สมัครใช้งาน Workspace "
         f"ลิงก์นี้จะหมดอายุใน {settings.EMAIL_VERIFY_TOKEN_MINUTES} นาที</p>",
         link,
         "ยืนยันอีเมล",
     )
-    return EmailMessage(to=to, subject="ยืนยันอีเมล — ART Workspace", text=text, html=html)
+    return EmailMessage(to=to, subject="ยืนยันอีเมล — Workspace", text=text, html=html)
 
 
 def account_approved_email(to: str, name: str, login_url: str) -> EmailMessage:
@@ -230,18 +230,18 @@ def account_approved_email(to: str, name: str, login_url: str) -> EmailMessage:
     greeting = f"สวัสดี {name}" if name else "สวัสดี"
     text = (
         f"{greeting}\n\n"
-        "คำขอสมัครบัญชี ART Workspace ของคุณได้รับการอนุมัติแล้ว "
+        "คำขอสมัครบัญชี Workspace ของคุณได้รับการอนุมัติแล้ว "
         "เข้าสู่ระบบได้ทันทีที่:\n\n"
         f"{login_url}\n"
     )
     html = _wrap_html(
         "บัญชีของคุณได้รับการอนุมัติ",
-        f"<p>{greeting}</p><p>คำขอสมัครบัญชี ART Workspace ของคุณได้รับการอนุมัติแล้ว</p>",
+        f"<p>{greeting}</p><p>คำขอสมัครบัญชี Workspace ของคุณได้รับการอนุมัติแล้ว</p>",
         login_url,
         "เข้าสู่ระบบ",
     )
     return EmailMessage(
-        to=to, subject="บัญชีของคุณได้รับการอนุมัติ — ART Workspace", text=text, html=html
+        to=to, subject="บัญชีของคุณได้รับการอนุมัติ — Workspace", text=text, html=html
     )
 
 
@@ -250,12 +250,12 @@ def account_rejected_email(to: str, name: str) -> EmailMessage:
     greeting = f"สวัสดี {name}" if name else "สวัสดี"
     text = (
         f"{greeting}\n\n"
-        "คำขอสมัครบัญชี ART Workspace ของคุณไม่ได้รับการอนุมัติในครั้งนี้\n"
+        "คำขอสมัครบัญชี Workspace ของคุณไม่ได้รับการอนุมัติในครั้งนี้\n"
         "หากคิดว่าเป็นการเข้าใจผิด กรุณาติดต่อผู้ดูแลระบบของคุณ"
     )
     html = _wrap_html(
         "ผลการพิจารณาคำขอสมัครบัญชี",
-        f"<p>{greeting}</p><p>คำขอสมัครบัญชี ART Workspace ของคุณ"
+        f"<p>{greeting}</p><p>คำขอสมัครบัญชี Workspace ของคุณ"
         "ไม่ได้รับการอนุมัติในครั้งนี้ หากคิดว่าเป็นการเข้าใจผิด "
         "กรุณาติดต่อผู้ดูแลระบบของคุณ</p>",
         f"{settings.FRONTEND_BASE_URL}/login",
@@ -263,7 +263,7 @@ def account_rejected_email(to: str, name: str) -> EmailMessage:
     )
     return EmailMessage(
         to=to,
-        subject="ผลการพิจารณาคำขอสมัครบัญชี — ART Workspace",
+        subject="ผลการพิจารณาคำขอสมัครบัญชี — Workspace",
         text=text,
         html=html,
     )
@@ -288,7 +288,7 @@ def password_reset_email(to: str, name: str, link: str, minutes: int) -> EmailMe
     )
     return EmailMessage(
         to=to,
-        subject="ตั้งรหัสผ่านใหม่ — ART Workspace",
+        subject="ตั้งรหัสผ่านใหม่ — Workspace",
         text=text,
         html=html,
     )
@@ -316,7 +316,7 @@ def new_device_login_email(
     )
     return EmailMessage(
         to=to,
-        subject="มีอุปกรณ์ใหม่เข้าสู่ระบบ — ART Workspace",
+        subject="มีอุปกรณ์ใหม่เข้าสู่ระบบ — Workspace",
         text=text,
         html=html,
     )
@@ -351,7 +351,7 @@ def trusted_device_added_email(
     )
     return EmailMessage(
         to=to,
-        subject=f"มีอุปกรณ์ที่ถูกจดจำ {days} วัน — ART Workspace",
+        subject=f"มีอุปกรณ์ที่ถูกจดจำ {days} วัน — Workspace",
         text=text,
         html=html,
     )
@@ -375,5 +375,5 @@ def admin_new_request_email(
         "ตรวจสอบคำขอ",
     )
     return EmailMessage(
-        to=to, subject="มีคำขอสมัครบัญชีใหม่รออนุมัติ — ART Workspace", text=text, html=html
+        to=to, subject="มีคำขอสมัครบัญชีใหม่รออนุมัติ — Workspace", text=text, html=html
     )

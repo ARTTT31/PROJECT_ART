@@ -57,6 +57,7 @@ from app.core.personal_lists import (
     parse_watchlist,
     serialize_watchlist,
 )
+from app.core.branding import normalise_personal_workspace_name
 from app.core.brand_logo import (
     LOGO_ALLOWED_EXTENSIONS,
     LOGO_SUPPORTED_HINT,
@@ -888,7 +889,7 @@ async def export_my_data(
 
     response = JSONResponse(content=payload)
     response.headers["Content-Disposition"] = (
-        f'attachment; filename="art-workspace-export-{current_user.id}.json"'
+        f'attachment; filename="workspace-export-{current_user.id}.json"'
     )
     return response
 
@@ -971,7 +972,10 @@ async def delete_my_account(
 
 def _workspace_branding_response(user: User) -> WorkspaceBrandingResponse:
     return WorkspaceBrandingResponse(
-        workspace_name=user.workspace_name or "",
+        # An override copied from the old seeded product name means "no
+        # override": the account has to follow whatever the workspace is called
+        # now instead of pinning the retired name in its own sidebar.
+        workspace_name=normalise_personal_workspace_name(user.workspace_name),
         workspace_tagline=user.workspace_tagline or "",
         workspace_logo=user.workspace_logo or "",
     )
@@ -1380,7 +1384,7 @@ async def test_external_notification(
     import httpx
     channel = payload.channel
     user_name = current_user.display_name or current_user.username or "ผู้ใช้งาน"
-    test_msg = f"🔔 [ART Workspace] ทดสอบการแจ้งเตือนสำหรับคุณ {user_name} สำเร็จเรียบร้อยแล้ว!"
+    test_msg = f"🔔 ทดสอบการแจ้งเตือนสำหรับคุณ {user_name} สำเร็จเรียบร้อยแล้ว!"
 
     try:
         # Redirects stay off: the SSRF check below resolves the host before the
@@ -1533,7 +1537,7 @@ async def test_web_push(
     from app.services.web_push_service import send_web_push_to_user
 
     user_name = current_user.display_name or current_user.username or "ผู้ใช้"
-    title = "ART Workspace"
+    title = "การแจ้งเตือน"
     body = f"ทดสอบการแจ้งเตือนสำหรับคุณ {user_name} สำเร็จ!"
     url = "/dashboard"
 

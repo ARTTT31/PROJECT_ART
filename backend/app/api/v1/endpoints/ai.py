@@ -12,6 +12,7 @@ import json
 import logging
 import re
 from dataclasses import dataclass
+from zoneinfo import ZoneInfo
 from typing import Any, Dict, List, Literal, Optional
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -36,9 +37,17 @@ _AI_LIMIT = "30/minute"
 # amount of conversation it sees so a slow provider cannot hold the drawer.
 AI_REQUEST_TIMEOUT_SECONDS = 15.0
 AI_HISTORY_LIMIT = 8
-AI_MAX_OUTPUT_TOKENS = 700
+# A copilot answer is a short list, not an essay, but 700 tokens truncated real
+# explanations mid-sentence; 1600 fits a full Thai answer with bullets.
+AI_MAX_OUTPUT_TOKENS = 1600
 
-DEFAULT_GEMINI_MODEL = "gemini-3.5-flash"
+# The workspace is Thai: "today" in the prompt must be the Bangkok date, not
+# the server's (UTC) date, or the model is told the wrong day until 07:00 ICT.
+BANGKOK = ZoneInfo("Asia/Bangkok")
+
+# Model ids retire on a schedule (2.5 Flash is legacy-only now), so the default
+# tracks the current stable Flash generation instead of a pinned old id.
+DEFAULT_GEMINI_MODEL = "gemini-3.8-flash"
 DEFAULT_OPENAI_MODEL = "gpt-4.1-mini"
 DEFAULT_OPENAI_BASE_URL = "https://api.openai.com/v1"
 
@@ -73,6 +82,12 @@ BASE_URL_LABELS = {
 }
 
 AI_MODEL_LIST_LIMIT = 40
+
+# Providers list every model they serve — TTS, image, live-audio, embeddings —
+# but only chat models can answer this endpoint. Filtering them out keeps the
+# picker short enough to choose from and stops "suggested model" from landing
+# on an embedding model that cannot chat.
+NON_CHAT_MODEL_HINTS = ("tts", "image", "live", "embedding", "aqa", "learnlm", "whisper")
 
 
 def detect_ai_key(api_key: str) -> Optional[Dict[str, str]]:
@@ -141,6 +156,10 @@ class AIChatResponse(BaseModel):
     # is visible in the chat instead of looking identical to the local engine.
     provider: Optional[str] = None
     model: Optional[str] = None
+    # True when a key is saved but the provider refused this call, so the reply
+    # below came from the built-in engine. The drawer says so instead of showing
+    # a canned answer as if the model had written it.
+    degraded: bool = False
 
 
 def resolve_oil_data(context: Optional[Dict[str, Any]]) -> Dict[str, Any]:
@@ -336,7 +355,7 @@ def parse_builtin_intent(message: str, context: Optional[Dict[str, Any]] = None)
     if any(k in lower for k in ["สวัสดี", "หวัดดี", "hello", "hi", "hey"]):
         return AIChatResponse(
             reply=(
-                "สวัสดีครับ! ผมคือ AI Copilot ผู้ช่วยประจำ ART Workspace "
+                "สวัสดีครับ! ผมคือ AI Copilot ผู้ช่วยประจำพื้นที่ทำงานของคุณ "
                 "สามารถสอบถามราคาน้ำมันวันนี้, รายงานสภาพอากาศ, สรุปงานค้าง "
                 "หรือสั่งให้ผม 'จดโน้ตว่า...' ได้ทันทีครับ 😊"
             ),
@@ -356,7 +375,7 @@ def parse_builtin_intent(message: str, context: Optional[Dict[str, Any]] = None)
     # Default fallback
     return AIChatResponse(
         reply=(
-            f"รับทราบครับ \"{text}\" มีสิ่งใดใน ART Workspace ที่ต้องการให้ผมช่วยจดโน้ต "
+            f"รับทราบครับ \"{text}\" มีสิ่งใดในพื้นที่ทำงานนี้ที่ต้องการให้ผมช่วยจดโน้ต "
             "ตั้งเตือนความจำ ตรวจสอบราคาน้ำมัน หรือสรุปภาพรวม แจ้งได้เสมอครับ!"
         ),
     )
@@ -437,11 +456,11 @@ def _conversation(
 
 def build_system_prompt(context: Optional[Dict[str, Any]]) -> str:
     """Instructions that keep the reply Thai, grounded and free of invented data."""
-    today = datetime.date.today().strftime("%Y-%m-%d")
+    today = datetime.datetime.now(BANGKOK).date().strftime("%Y-%m-%d")
     payload = json.dumps(context or {}, ensure_ascii=False)
     return (
-        "You are the AI Copilot of ART Workspace, a Thai personal and team "
-        "productivity dashboard. Answer in Thai unless the user writes in "
+        "You are the AI Copilot of a Thai personal and team "
+        "productivity workspace. Answer in Thai unless the user writes in "
         "another language. Be concise, practical and friendly, and use short "
         "bullet lines when listing values. Quote numbers only from the workspace "
         "context below; if a value is missing, say you do not have it instead of "
@@ -658,26 +677,41 @@ async def _list_provider_models(provider: str, api_key: str, base_url: str) -> L
         for item in payload.get("models") or []:
             name = str(item.get("name") or "").replace("models/", "", 1)
             methods = item.get("supportedGenerationMethods") or []
-            if name and "generateContent" in methods:
+            if name and "generateContent" in methods and not _is_non_chat_model(name):
                 names.append(name)
         return names[:AI_MODEL_LIST_LIMIT]
 
     return [
         str(item["id"])
         for item in (payload.get("data") or [])
-        if isinstance(item, dict) and item.get("id")
+        if isinstance(item, dict)
+        and item.get("id")
+        and not _is_non_chat_model(str(item["id"]))
     ][:AI_MODEL_LIST_LIMIT]
 
 
+def _is_non_chat_model(model_id: str) -> bool:
+    """True for models that cannot answer a chat message."""
+    lowered = model_id.lower()
+    return any(hint in lowered for hint in NON_CHAT_MODEL_HINTS)
+
+
 def suggested_model(provider: str, models: List[str]) -> str:
-    """Cheapest sensible default: a flash model for Gemini, a mini otherwise."""
+    """Cheapest sensible default: a flash model for Gemini, a mini otherwise.
+
+    Stable ids win over ``-preview`` ones: a preview id is what a user is most
+    likely to lose access to later, and the suggestion is the model that will
+    answer their chats from now on.
+    """
     if not models:
         return DEFAULT_GEMINI_MODEL if provider == "gemini" else ""
+    usable = [model for model in models if not _is_non_chat_model(model)] or models
+    stable = [model for model in usable if "preview" not in model.lower()]
     for needle in ("flash", "mini", "instant", "turbo", "chat"):
-        for model in models:
+        for model in stable or usable:
             if needle in model.lower():
                 return model
-    return models[0]
+    return (stable or usable)[0]
 
 
 @router.post("/settings/detect")
@@ -825,7 +859,7 @@ async def test_ai_settings(
         )
     return {
         "result": "success",
-        "message": f"เชื่อมต่อ {provider.name} สำเร็จ",
+        "message": f"เชื่อมต่อ {provider_label(provider.name, provider.base_url)} สำเร็จ (โมเดล {provider.model})",
         "data": {
             "provider": provider.name,
             "model": provider.model,
@@ -851,12 +885,18 @@ async def ai_chat(
     if not message:
         return AIChatResponse(reply="สวัสดีครับ มีอะไรให้ผมช่วยไหมครับ?")
 
-    # 1. First check if it's an actionable command (add_note / add_reminder)
+    # 1. Workspace actions run locally: "จดโน้ตว่า…" / "เตือนว่า…" must work the
+    #    same with or without a key, and the reply carries the action payload.
     parsed = parse_builtin_intent(message, payload.context)
     if parsed.action is not None:
         return parsed
 
-    # 2. Ask the configured external model (account key first, then env key)
+    # 2. A connected model answers everything else first.
+    #    The built-in parser used to run before the model, so the most common
+    #    questions ("สรุปงานวันนี้", "ราคาน้ำมัน") returned the same canned text
+    #    whether or not a key was saved — which is why a connected key felt like
+    #    it changed nothing. The context below still carries the real numbers,
+    #    and the prompt forbids inventing values the model was not given.
     provider = resolve_ai_provider(current_user)
     if provider.name != "none":
         # A per-IP limiter does nothing for a deployment key: the same account can
@@ -881,6 +921,17 @@ async def ai_chat(
                 model=provider.model,
             )
 
-    # 3. Otherwise (no key, or the provider failed) return the local reply so
-    #    the drawer keeps answering instead of showing an error bubble.
+        # The key is saved but this call failed (wrong model id, expired key,
+        # quota, network). Answer anyway, and flag it so the drawer can point at
+        # the AI settings instead of silently looking "not very smart".
+        logger.warning(
+            "AI provider %s/%s failed; answering with the built-in engine",
+            provider.name,
+            provider.model,
+        )
+        fallback = parse_builtin_intent(message, payload.context)
+        fallback.degraded = True
+        return fallback
+
+    # 3. No key configured: the built-in engine is the answer, by design.
     return parsed

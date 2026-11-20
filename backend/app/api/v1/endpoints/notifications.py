@@ -178,9 +178,15 @@ async def sync_notifications(
         )
         now = utcnow()
         added = 0
+        # `existing` only covers rows already stored. Two items with the same
+        # client_id inside *one* payload both passed that check and the flush
+        # then hit uq_notification_user_client, turning a harmless retry into a
+        # 500. Track what this request has already queued as well.
+        seen = set(existing)
         for item in payload.items:
-            if item.client_id in existing:
+            if item.client_id in seen:
                 continue
+            seen.add(item.client_id)
             db.add(
                 NotificationLog(
                     user_id=current_user.id,

@@ -3,7 +3,7 @@
 Weather & Geocode Backend Proxy
 
 Prevents client IP leakage and keeps CSP tight by routing third-party
-requests (Open-Meteo, BigDataCloud) through the ART Workspace API server.
+requests (Open-Meteo, BigDataCloud) through the Workspace API server.
 
 Frontend widgets must never call weather / geocode providers directly from
 the browser — always go through these proxies.

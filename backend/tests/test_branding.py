@@ -27,7 +27,7 @@ async def test_get_branding_is_public(client):
     assert resp.status_code == 200
     data = resp.json()
     assert "company_name" in data
-    assert data["company_name"] == "ART Workspace"
+    assert data["company_name"] == "Workspace"
     assert "company_tagline" in data
 
 
@@ -126,7 +126,7 @@ async def test_admin_can_switch_registration_mode_and_signups_follow(
 
     saved = await client.put(
         "/api/v1/system/branding",
-        json={"company_name": "ART Workspace", "registration_mode": "approval"},
+        json={"company_name": "Workspace", "registration_mode": "approval"},
     )
     assert saved.status_code == 200, saved.text
     assert saved.json()["registration_mode"] == "approval"
@@ -159,7 +159,7 @@ async def test_branding_rejects_an_unknown_registration_mode(client, logged_in_a
 
     resp = await client.put(
         "/api/v1/system/branding",
-        json={"company_name": "ART Workspace", "registration_mode": "sometimes"},
+        json={"company_name": "Workspace", "registration_mode": "sometimes"},
     )
     assert resp.status_code == 422
     assert "closed, approval" in resp.text
@@ -262,7 +262,7 @@ async def test_branding_rejects_a_javascript_logo_url(client, logged_in_admin_us
     """Only http(s) links and uploaded image data URLs may be stored as a logo."""
     resp = await client.put(
         "/api/v1/system/branding",
-        json={"company_name": "ART Workspace", "brand_logo_url": "javascript:alert(1)"},
+        json={"company_name": "Workspace", "brand_logo_url": "javascript:alert(1)"},
         headers=await _csrf_header(client),
     )
     assert resp.status_code == 422, resp.text

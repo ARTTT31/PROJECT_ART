@@ -64,7 +64,7 @@ async def send_to_channel(
                         "content": message,
                         "text": message,
                         "message": message,
-                        "source": "ART Workspace",
+                        "source": "Workspace",
                     },
                 )
                 return res.status_code in (200, 204)

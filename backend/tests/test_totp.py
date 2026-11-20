@@ -62,7 +62,7 @@ class TestTotpCore:
 
     def test_provisioning_uri_carries_everything_an_app_needs(self):
         uri = provisioning_uri("ABC234", "user@example.com")
-        assert uri.startswith("otpauth://totp/ART%20Workspace%3Auser%40example.com?")
+        assert uri.startswith("otpauth://totp/Workspace%3Auser%40example.com?")
         assert "secret=ABC234" in uri
         assert "algorithm=SHA1" in uri
         assert "digits=6" in uri
