@@ -6,14 +6,30 @@ import { readPreferences } from '@/hooks/usePreferences';
  * A short two-tone chime for new notifications.
  *
  * Synthesised with WebAudio instead of shipping an audio file: no asset request
- * on first notification and no autoplay policy surprises beyond the browser's
- * own user-gesture rule (which the catch below tolerates).
+ * on first notification. Browsers refuse to start an AudioContext before the
+ * first user gesture and log "The AudioContext was not allowed to start" for
+ * every attempt, so the chime stays silent until one has happened and the
+ * context is created only from that point on.
  */
 let context: AudioContext | null = null;
+
+let hasUserGesture = false;
+
+if (typeof window !== 'undefined') {
+  const markGesture = () => {
+    hasUserGesture = true;
+  };
+  window.addEventListener('pointerdown', markGesture, { once: true, capture: true });
+  window.addEventListener('keydown', markGesture, { once: true, capture: true });
+}
 
 export function playBellSound(): void {
   if (typeof window === 'undefined') return;
   if (!readPreferences().bellSound) return;
+  // A notification that arrives while the page loads (poll, WebSocket, smart
+  // alert) cannot play anyway — and asking for a context would only produce the
+  // autoplay warning in the console.
+  if (!hasUserGesture) return;
 
   try {
     const Ctor =

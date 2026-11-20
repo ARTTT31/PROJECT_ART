@@ -339,7 +339,7 @@ export default function NotificationBell() {
           id: sysId,
           type: 'system',
           level: 'info',
-          title: 'ระบบ ART Workspace พร้อมใช้งาน ✨',
+          title: 'ระบบพร้อมใช้งาน ✨',
           body: 'คุณสามารถปรับแต่ง จัดเรียงวิดเจ็ต และตั้งค่าลิงก์ด่วนได้ตามต้องการ',
           at: now,
         });
@@ -399,6 +399,16 @@ export default function NotificationBell() {
     // subscribe() (not `listeners.add`) → replays the store so a bell that
     // mounts after the initial alerts were pushed is not stuck empty.
     const unsubscribe = subscribe(fn);
+
+    // The store is module-level, so without this the next account signing in on
+    // the same tab would be handed the previous session's notifications (and
+    // pushNotifications' replay shows them immediately). localStorage is wiped
+    // on logout; the in-memory copy has to be wiped with it.
+    const handleLogout = () => {
+      store = [];
+      listeners.forEach((listener) => listener([]));
+    };
+    window.addEventListener('auth-logout', handleLogout);
 
     // Setup WebSocket connection
     let ws: WebSocket | null = null;
@@ -484,6 +494,7 @@ export default function NotificationBell() {
     return () => {
       stopped = true;
       unsubscribe();
+      window.removeEventListener('auth-logout', handleLogout);
       if (ws) {
         // Detach the handler first so an intentional close cannot schedule a
         // reconnect after unmount.

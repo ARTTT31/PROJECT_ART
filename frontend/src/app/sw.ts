@@ -1,7 +1,7 @@
 /// <reference lib="webworker" />
 import { defaultCache } from '@serwist/next/worker';
 import type { PrecacheEntry, RuntimeCaching, SerwistGlobalConfig } from 'serwist';
-import { NetworkOnly, Serwist } from 'serwist';
+import { ExpirationPlugin, NetworkFirst, NetworkOnly, Serwist } from 'serwist';
 import { isApiPathname } from '@/utils/swCacheRules';
 
 declare global {
@@ -23,12 +23,57 @@ const apiNeverCached: RuntimeCaching[] = [
   },
 ];
 
+/**
+ * Last-resort answer for a navigation that has neither a network nor a cached
+ * copy. Returning a Response — even a tiny one — is the point: rejecting the
+ * FetchEvent is what makes the browser log
+ * `FetchEvent ... resulted in a network error response` and show its own error
+ * page instead of ours.
+ */
+function offlineResponse(): Response {
+  return new Response(
+    '<!doctype html><html lang="th"><meta charset="utf-8"><title>ออฟไลน์</title>' +
+      '<p style="font-family:-apple-system,BlinkMacSystemFont,sans-serif;padding:24px;line-height:1.6">' +
+      'ตอนนี้ออฟไลน์อยู่ และหน้านี้ยังไม่ได้ถูกบันทึกไว้ในเครื่อง กรุณาลองอีกครั้งเมื่อกลับมาออนไลน์</p>',
+    { status: 503, headers: { 'Content-Type': 'text/html; charset=utf-8' } },
+  );
+}
+
+/**
+ * Page navigations get their own route, registered before every default rule.
+ *
+ * `@serwist/next`'s page route matches `Content-Type: text/html` on the
+ * *request*, which a navigation request never carries, so documents fell
+ * through to the catch-all "others" bucket. Whenever the network failed and
+ * that bucket had no cached copy either, the handler rejected with
+ * `no-response` (uncaught in the console, navigation broken) instead of
+ * rendering the offline shell. Here the chain is explicit — network, then a
+ * cached page, then the precached offline shell — and one of the three always
+ * answers, so a fetch event can no longer reject.
+ */
+const navigationRoute: RuntimeCaching = {
+  matcher: ({ request }: { request: Request }) => request.mode === 'navigate',
+  handler: new NetworkFirst({
+    cacheName: 'pages',
+    // A cold Render backend can hold a navigation far longer than a user waits;
+    // after this the cached page (or the shell) takes over.
+    networkTimeoutSeconds: 4,
+    plugins: [
+      new ExpirationPlugin({ maxEntries: 32, maxAgeSeconds: 24 * 60 * 60 }),
+      {
+        handlerDidError: async () =>
+          (await serwist.matchPrecache('/offline.html')) ?? offlineResponse(),
+      },
+    ],
+  }),
+};
+
 const serwist = new Serwist({
   precacheEntries: self.__SW_MANIFEST,
   skipWaiting: true,
   clientsClaim: true,
   navigationPreload: true,
-  runtimeCaching: [...apiNeverCached, ...defaultCache],
+  runtimeCaching: [...apiNeverCached, navigationRoute, ...defaultCache],
   // A navigation that cannot reach the network (or a cached page) gets the
   // small, self-contained offline shell instead of the browser's error page.
   // `public/offline.html` is included in the precache manifest by the default
@@ -47,11 +92,11 @@ serwist.addEventListeners();
 
 // Push Notifications
 self.addEventListener('push', (event: PushEvent) => {
-  let title = 'ART Workspace';
+  let title = 'Workspace';
   let options: NotificationOptions = {
     body: 'คุณมีการแจ้งเตือนใหม่',
-    icon: '/icons/icon-192x192.png',
-    badge: '/icons/icon-192x192.png',
+    icon: '/icon-192.png',
+    badge: '/icon-192.png',
     data: { url: '/dashboard' },
   };
 
