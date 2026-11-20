@@ -116,20 +116,25 @@ export function ThemeCard() {
                   aria-label={option.label}
                   tabIndex={selected ? 0 : -1}
                   onClick={() => setMode(option.id)}
-                  className={`flex flex-col items-center gap-2 rounded-apple-md px-1.5 py-3 ring-1 transition-all duration-150 active:scale-[0.97] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)] ${
+                  className={`relative flex flex-col items-center gap-1.5 rounded-apple-md px-1.5 py-2.5 ring-1 transition-all duration-150 active:scale-[0.97] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)] ${
                     selected
                       ? 'bg-[var(--surface)] text-[var(--accent-text)] ring-[var(--accent-border)]'
                       : 'bg-[var(--surface-grouped-2)] text-[var(--ink-muted)] ring-transparent hover:bg-[var(--surface)] hover:text-[var(--ink)]'
                   }`}
                 >
                   <span
-                    className={`flex h-9 w-9 items-center justify-center rounded-apple-sm ${
+                    className={`flex h-8 w-8 items-center justify-center rounded-apple-sm ${
                       selected ? 'bg-[var(--accent-soft)]' : 'bg-[var(--surface)] ring-1 ring-[var(--hairline)]'
                     }`}
                   >
                     {MODE_ICON[option.id]}
                   </span>
-                  <span className="text-[12px] font-bold">{option.label}</span>
+                  <span className="text-[11.5px] font-bold">{option.label}</span>
+                  {selected && (
+                    <span className="absolute right-1.5 top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-[var(--accent)] ring-2 ring-[var(--surface)]" aria-hidden="true">
+                      <Check size={10} strokeWidth={3.5} className="text-white" />
+                    </span>
+                  )}
                 </button>
               );
             })}
@@ -149,6 +154,7 @@ export function ThemeCard() {
           {/* Even columns keep the last swatch on the same line as the rest
               instead of leaving one lonely circle on a second row. */}
           <div className="grid grid-cols-8 gap-2">
+
             {THEME_ACCENTS.map((option) => {
               const selected = accent === option.id;
               return (
