@@ -65,7 +65,7 @@ export function ThemeCard() {
         </button>
       }
     >
-      <div className="flex h-full flex-col gap-3">
+      <div className="space-y-3">
         {/* Appearance */}
         <div className="rounded-apple-lg bg-[var(--surface-grouped)] p-3 ring-1 ring-[var(--hairline)] sm:p-4">
           <div className="mb-3 flex items-center justify-between gap-2">
@@ -93,7 +93,7 @@ export function ThemeCard() {
         </div>
 
         {/* Accent */}
-        <div className="flex-1 rounded-apple-lg bg-[var(--surface-grouped)] p-3 ring-1 ring-[var(--hairline)] sm:p-4">
+        <div className="rounded-apple-lg bg-[var(--surface-grouped)] p-3 ring-1 ring-[var(--hairline)] sm:p-4">
           <div className="mb-3 flex items-center justify-between gap-2">
             <span className="text-[12px] font-semibold text-[var(--ink-secondary)]">
               สีหลัก (Accent)
@@ -102,7 +102,9 @@ export function ThemeCard() {
               {activeAccent?.label ?? '—'}
             </span>
           </div>
-          <div className="flex flex-wrap gap-3">
+          {/* Even columns keep the last swatch on the same line as the rest
+              instead of leaving one lonely circle on a second row. */}
+          <div className="grid grid-cols-4 justify-items-center gap-3 sm:grid-cols-8">
             {THEME_ACCENTS.map((option) => {
               const selected = accent === option.id;
               return (
@@ -113,7 +115,7 @@ export function ThemeCard() {
                   title={option.label}
                   aria-label={`ใช้สี ${option.label}`}
                   aria-pressed={selected}
-                  className={`relative flex h-10 w-10 items-center justify-center rounded-full transition-all duration-apple-2 active:scale-[0.95] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-grouped)] ${
+                  className={`relative flex aspect-square w-full max-w-10 items-center justify-center rounded-full shadow-[inset_0_1px_2px_rgba(0,0,0,0.14)] transition-all duration-apple-2 hover:scale-105 active:scale-[0.95] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-grouped)] ${
                     selected
                       ? 'ring-2 ring-[var(--ink)] ring-offset-2 ring-offset-[var(--surface-grouped)]'
                       : 'ring-1 ring-[var(--hairline)] hover:ring-[var(--hairline-strong)]'

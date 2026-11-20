@@ -122,13 +122,11 @@ export default function PreferencesPanels({
         {mounted('appearance', 'menu') && (
           <>
             <QuickJump items={appearanceJump} />
-            <div className="grid gap-5 lg:grid-cols-2">
-              <div id="settings-theme" className="h-full scroll-mt-24">
-                <ThemeCard />
-              </div>
-              <div id="settings-date-format" className="h-full scroll-mt-24">
-                <DateFormatCard />
-              </div>
+            <div id="settings-theme" className="scroll-mt-24">
+              <ThemeCard />
+            </div>
+            <div id="settings-date-format" className="scroll-mt-24">
+              <DateFormatCard />
             </div>
             <div className={isAdmin ? 'grid gap-5 lg:grid-cols-2' : ''}>
               {isAdmin && (

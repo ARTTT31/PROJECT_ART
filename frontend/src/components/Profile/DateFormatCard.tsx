@@ -44,20 +44,22 @@ function Segmented<T extends string>({
               type="button"
               onClick={() => onChange(option.value)}
               aria-pressed={selected}
-              className={`!flex !flex-col items-center justify-center gap-1 rounded-apple-md px-3 py-2.5 text-center transition-all duration-150 active:scale-[0.98] ${
+              className={`!flex min-w-0 items-center justify-between gap-2 rounded-apple-md px-3.5 py-2 text-left transition-all duration-150 active:scale-[0.98] ${
                 selected
                   ? 'bg-[var(--surface)] text-[var(--ink)] shadow-xs ring-1 ring-[var(--hairline)]'
                   : 'text-[var(--ink-muted)] hover:bg-[var(--surface-chip)] hover:text-[var(--ink)]'
               }`}
             >
               <span
-                className={`text-[13px] font-bold ${
+                className={`truncate text-[13px] font-bold ${
                   selected ? 'text-[var(--ink)]' : 'text-[var(--ink-secondary)]'
                 }`}
               >
                 {option.label}
               </span>
-              <span className="text-[11px] font-normal text-[var(--ink-tertiary)]">
+              {/* The example date is the first thing to go when the segment is
+                  half a phone wide; the label must never be the one truncated. */}
+              <span className="hidden shrink-0 text-[11px] font-normal text-[var(--ink-tertiary)] sm:inline">
                 {option.hint}
               </span>
             </button>
