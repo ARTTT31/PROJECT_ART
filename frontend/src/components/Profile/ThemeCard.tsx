@@ -19,6 +19,17 @@ const MODE_ICON: Record<ThemeMode, React.ReactNode> = {
 };
 
 /**
+ * A near-black preset (graphite) melts into a dark card, so its chip is drawn
+ * lifted. Only the swatch is lifted — the theme keeps the exact preset colour.
+ */
+function swatchFill(color: string, dark: boolean) {
+  if (!dark) return color;
+  const [r, g, b] = [1, 3, 5].map((offset) => parseInt(color.slice(offset, offset + 2), 16));
+  const luma = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return luma < 0.32 ? `color-mix(in srgb, ${color} 70%, white)` : color;
+}
+
+/**
  * Theme card: appearance (light / dark / follow the OS) and the accent colour
  * used by buttons, links, focus rings and selected states.
  *
@@ -36,7 +47,6 @@ export function ThemeCard() {
     showToast('กลับไปใช้ธีมเริ่มต้นแล้ว', 'success');
   };
 
-  const activeAccent = THEME_ACCENTS.find((option) => option.id === accent);
   const modeSummary =
     mode === 'system'
       ? `ตามระบบ · ${resolvedMode === 'dark' ? 'มืด' : 'สว่าง'}`
@@ -94,12 +104,9 @@ export function ThemeCard() {
 
         {/* Accent */}
         <div className="rounded-apple-lg bg-[var(--surface-grouped)] p-3 ring-1 ring-[var(--hairline)] sm:p-4">
-          <div className="mb-3 flex items-center justify-between gap-2">
+          <div className="mb-3">
             <span className="text-[12px] font-semibold text-[var(--ink-secondary)]">
               สีหลัก (Accent)
-            </span>
-            <span className="truncate text-[11px] font-semibold text-[var(--ink-muted)]">
-              {activeAccent?.label ?? '—'}
             </span>
           </div>
           {/* Name chips rather than bare dots: the colour reads from the bar, the
@@ -151,7 +158,7 @@ export function ThemeCard() {
                 >
                   <span
                     aria-hidden="true"
-                    style={{ backgroundColor: option.color }}
+                    style={{ backgroundColor: swatchFill(option.color, resolvedMode === 'dark') }}
                     className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-[4px] ring-1 ring-[var(--swatch-edge)]"
                   >
                     {selected && (
