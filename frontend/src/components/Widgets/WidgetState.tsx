@@ -25,7 +25,7 @@ export function WidgetState({
   const Icon = CustomIcon || (isError ? AlertCircle : isLoading ? Loader2 : Inbox);
 
   const iconBgClass = isError
-    ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400'
+    ? 'bg-[var(--danger-soft)] text-[var(--danger-ink)]'
     : isLoading
     ? 'bg-[var(--accent-soft)] text-[var(--accent)]'
     : 'bg-[var(--surface-grouped)] text-[var(--ink-muted)]';

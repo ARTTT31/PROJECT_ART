@@ -47,35 +47,35 @@ const TOPICS: {
     icon: Fuel,
     name: 'ราคาน้ำมันขายปลีก',
     desc: 'แก๊สโซฮอล์ 95 / ดีเซล',
-    tint: 'text-amber-600 dark:text-amber-400',
+    tint: 'text-[var(--warning-ink)]',
   },
   {
     key: 'weather',
     icon: CloudSun,
     name: 'สภาพอากาศ & PM2.5',
     desc: 'อุณหภูมิและคุณภาพอากาศ',
-    tint: 'text-sky-600 dark:text-sky-400',
+    tint: 'text-[var(--info-ink)]',
   },
   {
     key: 'market',
     icon: TrendingUp,
     name: 'ตลาดการเงิน & SET',
     desc: 'ดัชนีหุ้นและราคาทองคำ',
-    tint: 'text-emerald-600 dark:text-emerald-400',
+    tint: 'text-[var(--success-ink)]',
   },
   {
     key: 'tasks',
     icon: CheckSquare,
     name: 'งานค้างใน To-Do',
     desc: 'จำนวนรายการโน้ตด่วน',
-    tint: 'text-indigo-600 dark:text-indigo-400',
+    tint: 'text-[var(--info-ink)]',
   },
   {
     key: 'holidays',
     icon: Calendar,
     name: 'วันหยุดนักขัตฤกษ์',
     desc: 'รวมวันหยุดที่จะถึงในสรุป',
-    tint: 'text-rose-600 dark:text-rose-400',
+    tint: 'text-[var(--danger-ink)]',
   },
 ];
 
@@ -219,9 +219,9 @@ export function DailyBriefingCard() {
   return (
     <SectionCard
       icon={<Clock size={19} aria-hidden="true" />}
-      iconBg="bg-blue-50 dark:bg-blue-950/30"
-      iconColor="text-blue-600 dark:text-blue-400"
-      iconRing="ring-blue-200/60 dark:ring-blue-800/40"
+      iconBg="bg-[var(--accent-soft)]"
+      iconColor="text-[var(--accent-text)]"
+      iconRing="ring-[var(--hairline-strong)]"
       title="สรุปข้อมูลประจำวันอัตโนมัติ (Daily Push)"
       subtitle="ส่งสรุปข่าวสาร ราคาน้ำมัน สภาพอากาศ และงานค้างให้คุณทุกเช้าตามเวลาที่ตั้งไว้"
     >
@@ -247,7 +247,7 @@ export function DailyBriefingCard() {
                   <span
                     className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold ring-1 ${
                       enabled
-                        ? 'bg-emerald-50 text-emerald-700 ring-emerald-200/60 dark:bg-emerald-950/40 dark:text-emerald-400 dark:ring-emerald-800/40'
+                        ? 'bg-[var(--success-soft)] text-[var(--success-ink)] ring-[var(--success-soft)]'
                         : 'bg-[var(--surface-chip)] text-[var(--ink-muted)] ring-[var(--hairline)]'
                     }`}
                   >

@@ -558,9 +558,9 @@ export default function PremierLeagueWidget({
                                 isTop4
                                   ? 'bg-[var(--accent-soft)] text-[var(--accent-text)] font-extrabold'
                                   : isEuropa
-                                    ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 font-bold'
+                                    ? 'bg-[var(--warning-soft)] text-[var(--warning-ink)] font-bold'
                                     : isRelegation
-                                      ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 font-bold'
+                                      ? 'bg-[var(--danger-soft)] text-[var(--danger-ink)] font-bold'
                                       : 'text-[var(--ink-secondary)]'
                               }`}
                             >

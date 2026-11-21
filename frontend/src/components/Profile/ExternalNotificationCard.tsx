@@ -140,9 +140,9 @@ export default function ExternalNotificationCard() {
     return (
       <SectionCard
         icon={<BellRing size={19} aria-hidden="true" />}
-        iconBg="bg-emerald-50 dark:bg-emerald-950/30"
-        iconColor="text-emerald-600 dark:text-emerald-400"
-        iconRing="ring-emerald-200/60 dark:ring-emerald-800/40"
+        iconBg="bg-[var(--success-soft)]"
+        iconColor="text-[var(--success-ink)]"
+        iconRing="ring-[var(--hairline-strong)]"
         title="การแจ้งเตือนภายนอก (External Notifications)"
         subtitle="ส่งการแจ้งเตือนออกไปทาง Telegram หรือ Webhook"
       >
@@ -159,9 +159,9 @@ export default function ExternalNotificationCard() {
   return (
     <SectionCard
       icon={<BellRing size={19} aria-hidden="true" />}
-      iconBg="bg-emerald-50 dark:bg-emerald-950/30"
-      iconColor="text-emerald-600 dark:text-emerald-400"
-      iconRing="ring-emerald-200/60 dark:ring-emerald-800/40"
+      iconBg="bg-[var(--success-soft)]"
+      iconColor="text-[var(--success-ink)]"
+      iconRing="ring-[var(--hairline-strong)]"
       title="การแจ้งเตือนภายนอก (External Notifications)"
       subtitle="ส่งการแจ้งเตือนของบัญชีนี้ไปทาง Telegram หรือ Webhook ที่คุณตั้งไว้"
       badge="Self-Service"
@@ -242,7 +242,7 @@ export default function ExternalNotificationCard() {
                   : 'text-[var(--ink-muted)] hover:text-[var(--ink)] hover:bg-[var(--surface-chip)]'
               }`}
             >
-              <Globe className="h-4 w-4 shrink-0 text-purple-600 dark:text-purple-400" aria-hidden="true" />
+              <Globe className="h-4 w-4 shrink-0 text-[var(--info-ink)]" aria-hidden="true" />
               <span className="hidden sm:inline">Custom</span>
               <span>Webhook</span>
               {isWebhookConnected && (
@@ -324,7 +324,7 @@ export default function ExternalNotificationCard() {
           >
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex items-center gap-2.5 min-w-0">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-apple-md bg-purple-500/10 text-purple-600 dark:text-purple-400">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-apple-md bg-[var(--info-soft)] text-[var(--info-ink)]">
                   <Globe className="h-5 w-5" aria-hidden="true" />
                 </div>
                 <div className="min-w-0">

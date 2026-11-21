@@ -175,10 +175,10 @@ export function QuickLinkDialog({ open, onOpenChange, link, onSubmit }: QuickLin
                 <span
                   className={`rounded-full px-2 py-0.5 text-[11px] font-bold ring-1 ${
                     previewMeta.tone === 'ภายนอก'
-                      ? 'bg-sky-50 text-sky-700 ring-sky-200'
+                      ? 'bg-[var(--info-soft)] text-[var(--info-ink)] ring-[var(--hairline)]'
                       : previewMeta.tone === 'ภายใน'
-                        ? 'bg-violet-50 text-violet-700 ring-violet-200'
-                        : 'bg-slate-100 text-slate-500 ring-slate-200'
+                        ? 'bg-[var(--accent-soft)] text-[var(--accent-text)] ring-[var(--hairline)]'
+                        : 'bg-[var(--surface-chip)] text-[var(--ink-secondary)] ring-[var(--hairline)]'
                   }`}
                 >
                   {previewMeta.tone}
@@ -324,7 +324,7 @@ export function QuickLinkDialog({ open, onOpenChange, link, onSubmit }: QuickLin
                         <OptionIcon
                           size={17}
                           aria-hidden="true"
-                          className={active ? 'text-[var(--accent-text)]' : 'text-slate-500'}
+                          className={active ? 'text-[var(--accent-text)]' : 'text-[var(--ink-secondary)]'}
                         />
                       </button>
                     );
@@ -357,7 +357,7 @@ export function QuickLinkDialog({ open, onOpenChange, link, onSubmit }: QuickLin
                         onClick={() => setColor(preset)}
                         aria-label={`สี ${preset}`}
                         className={[
-                          'h-7 w-7 rounded-apple-md transition-all duration-150 ring-offset-2',
+                          'h-7 w-7 rounded-apple-md transition-all duration-150 ring-offset-2 ring-offset-[var(--surface-subtle)]',
                           active
                             ? 'ring-2 ring-[var(--ink)] scale-110 shadow-xs'
                             : 'ring-1 ring-[var(--hairline-strong)] hover:scale-105',
@@ -366,7 +366,7 @@ export function QuickLinkDialog({ open, onOpenChange, link, onSubmit }: QuickLin
                       />
                     );
                   })}
-                  <label className="group relative flex h-7 cursor-pointer items-center justify-center overflow-hidden rounded-apple-md bg-[var(--surface)] text-slate-400 ring-1 ring-[var(--hairline-strong)] transition-all hover:text-slate-600 hover:scale-105 px-2">
+                  <label className="group relative flex h-7 cursor-pointer items-center justify-center overflow-hidden rounded-apple-md bg-[var(--surface)] text-[var(--ink-muted)] ring-1 ring-[var(--hairline-strong)] transition-all hover:text-[var(--ink)] hover:scale-105 px-2">
                     <Palette size={13} aria-hidden="true" />
                     <span className="ml-1 text-[11px] font-bold">อื่นๆ</span>
                     <input

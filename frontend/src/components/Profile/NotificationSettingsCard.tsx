@@ -26,9 +26,9 @@ export function NotificationSettingsCard() {
   return (
     <SectionCard
       icon={<BellRing size={19} aria-hidden="true" />}
-      iconBg="bg-amber-50 dark:bg-amber-950/30"
-      iconColor="text-amber-600 dark:text-amber-400"
-      iconRing="ring-amber-200/60 dark:ring-amber-800/40"
+      iconBg="bg-[var(--warning-soft)]"
+      iconColor="text-[var(--warning-ink)]"
+      iconRing="ring-[var(--hairline-strong)]"
       title={t('card.notifications.title')}
       subtitle={t('card.notifications.subtitle')}
     >
@@ -51,11 +51,11 @@ export function NotificationSettingsCard() {
                       ไม่รองรับ
                     </span>
                   ) : webPush.permission === 'denied' ? (
-                    <span className="rounded-full bg-red-50 dark:bg-red-950/40 px-2 py-0.5 text-[10px] font-semibold text-red-600 dark:text-red-400">
+                    <span className="rounded-full bg-[var(--danger-soft)] px-2 py-0.5 text-[10px] font-semibold text-[var(--danger-ink)]">
                       ถูกปิดกั้น
                     </span>
                   ) : webPush.isSubscribed ? (
-                    <span className="rounded-full bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                    <span className="rounded-full bg-[var(--success-soft)] px-2 py-0.5 text-[10px] font-semibold text-[var(--success-ink)]">
                       เปิดใช้งานแล้ว
                     </span>
                   ) : (

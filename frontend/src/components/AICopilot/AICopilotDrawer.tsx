@@ -433,7 +433,7 @@ export default function AICopilotDrawer() {
                     {/* The saved key could not answer this turn: point at the
                         settings instead of passing a canned reply off as AI. */}
                     {msg.degraded && (
-                      <div className="mt-2 flex items-start gap-2 rounded-apple-md bg-amber-500/10 px-2.5 py-1.5 text-[11px] font-medium text-amber-700 dark:text-amber-300 border border-amber-500/20">
+                      <div className="mt-2 flex items-start gap-2 rounded-apple-md bg-[var(--warning-soft)] px-2.5 py-1.5 text-[11px] font-medium text-[var(--warning-ink)] border border-[var(--warning-soft)]">
                         <AlertTriangle size={13} className="mt-0.5 shrink-0 text-amber-500" aria-hidden="true" />
                         <span>
                           คีย์ที่เชื่อมไว้ตอบไม่ได้ จึงใช้โหมดพื้นฐานแทน — ตรวจสอบคีย์และโมเดลที่
@@ -444,7 +444,7 @@ export default function AICopilotDrawer() {
 
                     {/* Action Confirmation Badge */}
                     {msg.action && (
-                      <div className="mt-2 flex items-center gap-2 rounded-apple-md bg-emerald-500/10 px-2.5 py-1.5 text-[11px] font-medium text-emerald-700 dark:text-emerald-300 border border-emerald-500/20">
+                      <div className="mt-2 flex items-center gap-2 rounded-apple-md bg-[var(--success-soft)] px-2.5 py-1.5 text-[11px] font-medium text-[var(--success-ink)] border border-[var(--success-soft)]">
                         <CheckCircle2 size={13} className="text-emerald-500 shrink-0" />
                         <span className="truncate">
                           {msg.action.type === 'add_note' ? 'เพิ่มลงใน Quick Notes แล้ว' : 'ตั้งเตือนในระบบแล้ว'}

@@ -606,7 +606,7 @@ export default function CalendarWidget({
                     >
                       <div className="flex items-center gap-2 truncate">
                         {ev.type === 'holiday' ? (
-                          <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-red-100 text-red-600 dark:bg-red-950/40 dark:text-red-400">
+                          <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[var(--danger-soft)] text-[var(--danger-ink)]">
                             <Star className="h-3 w-3 fill-current" />
                           </div>
                         ) : (

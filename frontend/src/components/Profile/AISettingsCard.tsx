@@ -266,9 +266,9 @@ export default function AISettingsCard() {
     return (
       <SectionCard
         icon={<Sparkles size={19} aria-hidden="true" />}
-        iconBg="bg-violet-50 dark:bg-violet-950/30"
-        iconColor="text-violet-600 dark:text-violet-400"
-        iconRing="ring-violet-200/60 dark:ring-violet-800/40"
+        iconBg="bg-[var(--info-soft)]"
+        iconColor="text-[var(--info-ink)]"
+        iconRing="ring-[var(--hairline-strong)]"
         title="เชื่อมต่อ AI Chat (API Key)"
         subtitle="ใช้คีย์ของผู้ให้บริการของคุณเองสำหรับแชท AI"
       >
@@ -288,9 +288,9 @@ export default function AISettingsCard() {
   return (
     <SectionCard
       icon={<Sparkles size={19} aria-hidden="true" />}
-      iconBg="bg-violet-50 dark:bg-violet-950/30"
-      iconColor="text-violet-600 dark:text-violet-400"
-      iconRing="ring-violet-200/60 dark:ring-violet-800/40"
+      iconBg="bg-[var(--info-soft)]"
+      iconColor="text-[var(--info-ink)]"
+      iconRing="ring-[var(--hairline-strong)]"
       title="เชื่อมต่อ AI Chat (API Key)"
       subtitle="เลือกผู้ให้บริการและใส่คีย์ของคุณเอง — ใช้เฉพาะบัญชีนี้"
     >
@@ -346,7 +346,7 @@ export default function AISettingsCard() {
                   : 'border-[var(--hairline)] bg-[var(--surface)] hover:bg-[var(--surface-grouped)]'
               }`}
             >
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-apple-md bg-blue-500/10 text-blue-600 dark:text-blue-400">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-apple-md bg-[var(--accent-soft)] text-[var(--accent-text)]">
                 <SiGooglegemini size={22} aria-hidden="true" />
               </div>
               <div className="min-w-0 flex-1">
@@ -379,7 +379,7 @@ export default function AISettingsCard() {
                   : 'border-[var(--hairline)] bg-[var(--surface)] hover:bg-[var(--surface-grouped)]'
               }`}
             >
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-apple-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-apple-md bg-[var(--success-soft)] text-[var(--success-ink)]">
                 <Cpu size={22} aria-hidden="true" />
               </div>
               <div className="min-w-0 flex-1">
@@ -401,15 +401,15 @@ export default function AISettingsCard() {
 
         {/* Free API Key Banner for Gemini */}
         {settings.provider === 'gemini' && (
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-apple-md bg-blue-50/70 dark:bg-blue-950/20 px-3.5 py-2.5 border border-blue-200/60 dark:border-blue-900/40 text-[11px]">
-            <span className="text-blue-800 dark:text-blue-200 font-medium">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-apple-md bg-[var(--accent-soft-weak)] px-3.5 py-2.5 border border-[var(--accent-border)] text-[11px]">
+            <span className="text-[var(--accent-text)] font-medium">
               💡 ยังไม่มี API Key? สามารถรับฟรีได้จาก Google AI Studio
             </span>
             <a
               href="https://aistudio.google.com/app/apikey"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 font-bold text-blue-600 dark:text-blue-400 hover:underline shrink-0"
+              className="inline-flex items-center gap-1 font-bold text-[var(--accent-text)] hover:underline shrink-0"
             >
               <span>ขอรับ API Key ฟรี</span>
               <ExternalLink size={11} aria-hidden="true" />
@@ -441,8 +441,8 @@ export default function AISettingsCard() {
             aria-live="polite"
             className={`flex flex-wrap items-center gap-x-2 gap-y-1 rounded-apple-md px-3 py-2 text-[11px] ${
               detection
-                ? 'bg-emerald-50/70 text-emerald-800 dark:bg-emerald-950/25 dark:text-emerald-200'
-                : 'bg-amber-50/70 text-amber-800 dark:bg-amber-950/25 dark:text-amber-200'
+                ? 'bg-[var(--success-soft)] text-[var(--success-ink)]'
+                : 'bg-[var(--warning-soft)] text-[var(--warning-ink)]'
             }`}
           >
             {detection ? (
@@ -551,7 +551,7 @@ export default function AISettingsCard() {
             <button
               type="button"
               onClick={handleDelete}
-              className="inline-flex items-center justify-center gap-1.5 self-start rounded-full px-3 py-2 text-[12px] font-semibold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors duration-150 active:scale-[0.95] sm:self-auto"
+              className="inline-flex items-center justify-center gap-1.5 self-start rounded-full px-3 py-2 text-[12px] font-semibold text-[var(--danger-ink)] hover:bg-[var(--danger-soft)] transition-colors duration-150 active:scale-[0.95] sm:self-auto"
             >
               <Trash2 size={13} aria-hidden="true" />
               <span>ลบการเชื่อมต่อ</span>

@@ -98,8 +98,8 @@ export function QuickLinksCard({ links, onAdd, onEdit, onDelete, onMove }: Quick
                     <span
                       className={`rounded-full px-1.5 py-[1px] text-[11px] font-bold ring-1 ${
                         external
-                          ? 'bg-sky-50 text-sky-700 ring-sky-200'
-                          : 'bg-violet-50 text-violet-700 ring-violet-200'
+                          ? 'bg-[var(--info-soft)] text-[var(--info-ink)] ring-[var(--hairline)]'
+                          : 'bg-[var(--accent-soft)] text-[var(--accent-text)] ring-[var(--hairline)]'
                       }`}
                     >
                       {linkMeta.tone}

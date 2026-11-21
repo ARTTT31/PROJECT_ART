@@ -81,21 +81,21 @@ const typeIcon = {
 const levelMeta = {
   info: {
     label: 'ข้อมูล',
-    itemClass: 'bg-sky-50/70 border-sky-100',
-    badgeClass: 'bg-sky-100 text-sky-800',
-    iconWrapClass: 'bg-sky-100 text-sky-700',
+    itemClass: 'bg-[var(--info-soft)] border-[var(--hairline)]',
+    badgeClass: 'bg-[var(--info-soft)] text-[var(--info-ink)]',
+    iconWrapClass: 'bg-[var(--info-soft)] text-[var(--info-ink)]',
   },
   warning: {
     label: 'แจ้งเตือน',
-    itemClass: 'bg-amber-50/80 border-amber-100',
-    badgeClass: 'bg-amber-100 text-amber-900',
-    iconWrapClass: 'bg-amber-100 text-amber-700',
+    itemClass: 'bg-[var(--warning-soft)] border-[var(--hairline)]',
+    badgeClass: 'bg-[var(--warning-soft)] text-[var(--warning-ink)]',
+    iconWrapClass: 'bg-[var(--warning-soft)] text-[var(--warning-ink)]',
   },
   danger: {
     label: 'สำคัญเร่งด่วน',
-    itemClass: 'bg-rose-50/80 border-rose-100',
-    badgeClass: 'bg-rose-100 text-rose-800',
-    iconWrapClass: 'bg-rose-100 text-rose-700',
+    itemClass: 'bg-[var(--danger-soft)] border-[var(--hairline)]',
+    badgeClass: 'bg-[var(--danger-soft)] text-[var(--danger-ink)]',
+    iconWrapClass: 'bg-[var(--danger-soft)] text-[var(--danger-ink)]',
   },
 };
 
