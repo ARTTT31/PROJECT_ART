@@ -1,7 +1,11 @@
 # Workspace — Current Status
 
-**Verified:** November 19, 2026 · `main` · Windows dev
+**Verified:** November 21, 2026 · `main` · Windows dev
 machine, Python 3.14.6 local, Node 26 · dependency refresh (Next 16.4.6, FastAPI 0.165.0)
+
+The 2026-11-21 pass was the theme sweep (`changelog.md`): it re-ran the frontend tests, type-check
+and lint only; the backend numbers, the build, and every Playwright check below are unchanged from
+the 2026-11-19 pass.
 
 > **What this file is.** The single place that states what is true *right now*: verified numbers, what
 > that verification covered, and every known gap with its status. `architecture.md` explains how the
@@ -40,9 +44,10 @@ interpreter differences matter when reading coverage: Python 3.11 (what CI runs)
 
 ## 2. Open findings from the November 10, 2026 audit
 
-Both fix plans exist and are tracked in `docs/product/roadmap-features.md` (Phase 2b / 2c). Most of
-the security set shipped on 2026-11-12 (P1, P3, P5, P6, P7, and the server half of P2); the rows
-below state exactly what is still open. `backend/scripts/admin/check_password.py` no longer exists.
+Both fix plans exist and are tracked in `docs/product/roadmap-features.md` (Phase 2b / 2c). Every row
+below is **closed**; they stay listed as the record of what was found. The security set shipped on
+2026-11-12 (P1, P3, P5, P6, P7, and the server half of P2). `backend/scripts/admin/check_password.py`
+no longer exists.
 
 ### Security and data integrity — [`plans/2026-11-10-security-hardening.md`](../superpowers/plans/2026-11-10-security-hardening.md)
 
@@ -90,9 +95,10 @@ These are decisions, not defects — recorded so they are not re-litigated as bu
 |---|---|
 | Single instance by default | Rate limiting and the WebSocket registry are process-local; Redis paths exist (`SLOWAPI_STORAGE_URI`, `WS_BROADCAST_REDIS_URL`) and startup logs a `[SCALING]` notice. |
 | Third-party market data has no SLA | Yahoo Finance / Frankfurter / Thai Gold / Bangchak / Open-Meteo may throttle; widgets show the last known value or an empty block instead of failing the page. |
-| Partial i18n | A `th`/`en` catalogue exists in `lib/i18n/messages.ts` and drives part of the tree (last counted 12 of 97 components). Finishing it is a per-screen migration, not a switch. |
-| Partial frontend coverage | 387 unit tests, but route-level tests exist only for `login`, `register`, `forgot-password` and `share-target`. `dashboard`, `profile`, `admin`, `audit`, `camera`, `notifications`, `verify-email`, `reset-password` and `login-success` have none. |
+| Partial i18n | A `th`/`en` catalogue exists in `lib/i18n/messages.ts` and drives part of the tree (last counted 34 of 82 components). Finishing it is a per-screen migration, not a switch. |
+| Partial frontend coverage | 448 unit tests, but route-level tests exist only for `login`, `register`, `forgot-password` and `share-target`. `dashboard`, `profile`, `admin`, `audit`, `camera`, `notifications`, `verify-email`, `reset-password` and `login-success` have none. |
 | Whole-document JSON blobs | Cheapest model that worked for single-user-per-account data; conflict detection is finding P2. |
+| One colour token layer | Components must not use Tailwind palette utilities (`bg-emerald-50`, `text-slate-500`, `dark:`) — those bind to the palette and to `prefers-color-scheme`, not to `data-theme`. Every surface, ink, accent and status colour comes from the semantic tokens in `globals.css` (`--surface*`, `--ink*`, `--danger*`, `--warning*`, `--success*`, `--info*`, `--accent*`), which both themes and the twelve accents override in one place. The ramp re-tone that used to mask this was removed on 2026-11-21. |
 | No password-reset email in CI | Password recovery is shipped, but delivery depends on `EMAIL_BACKEND` being configured on Render — unverified from a local checkout. |
 | Inline scripts in the frontend CSP (`script-src 'unsafe-inline'`) | Next writes the RSC payload as inline `<script>` tags on every server-rendered page, and the static theme bootstrap is inline too. Removing `'unsafe-inline'` needs a per-request nonce issued in middleware, which also has to keep Google GSI and the Serwist service worker working; that is a separate, deploy-verified change. Every other CSP directive is pinned. |
 

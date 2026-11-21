@@ -1623,3 +1623,45 @@ cached value refreshed), `tsc --noEmit`, `eslint .` and `npm run build` (16 rout
 manifest with versioned icons, and `/branding-icon?size=512` → `/icon-512.png`,
 `?size=192&safe=1` → `/icon-maskable-192.png`. Not verified: installing the PWA on a real phone, and
 one account seeing another account's rename (no signed-in backend session in this pass).
+
+## One Colour Layer for Light and Dark (November 21, 2026)
+
+The appearance tab could already switch `data-theme` and twelve accents, but the tree underneath it
+did not fully follow: about three hundred utilities still asked Tailwind for `emerald-50`,
+`slate-100` or `rose-700`, and a handful carried `dark:` variants. Those variants bind to
+`prefers-color-scheme`, not to `data-theme`, so they never fired when the user picked dark; the
+pastel utilities only survived because `globals.css` re-toned Tailwind's palette ramps inside
+`:root[data-theme='dark']`. Two colour layers meant a component could not be reasoned about from
+one place, and the re-tone hid the cases where the pair of utilities was genuinely unreadable.
+
+- **`8e99e99` — hardcoded white and black.** The bell panel, calendar, price calculator, holiday
+  widget, auth transition overlay and notification settings painted `text-white` on a light surface
+  or the reverse. They now read `--ink-inverse`, `--ink-faint`/`--ink-tertiary` and `--surface-chip`.
+- **`853b3d6` — the dead `dark:` variants.** Every one was replaced with the semantic pair it stood
+  for (`--danger-soft`/`--danger-ink`, `--warning-*`, `--success-*`, `--info-*`,
+  `--accent-soft`/`--accent-text`), and the forensics were done by opening the real dialogs in dark
+  rather than reading classes: the widget manager, the bell panel, the Quick Link dialog and the
+  date-range picker. The Quick Link dialog was the only one still broken — a `text-slate-500` tone
+  chip, `text-slate-500` icon tiles, a `text-slate-400` custom-colour label whose hover went
+  *darker*, and `ring-offset-2` painting a white halo around every swatch because the offset colour
+  defaults to white.
+- **`31da15d` — every pastel utility.** 314 occurrences across 37 files moved to
+  `--surface*`/`--ink*`/`--danger*`/`--warning*`/`--success*`/`--info*`, the ramp block was deleted
+  (only the v3 border default `--color-gray-200` keeps a dark value), and
+  `input`/`textarea`/`select` plus `.art-soft-button`/`.action-btn` stopped painting
+  `background: white` — that is why the 404 page's secondary button was a light pill with light text
+  in dark. Weather conditions and PM2.5 levels were mapped by meaning instead of collapsing to one
+  hue: clear → `--warning`, rain → `--info`, thunderstorm and unhealthy air → `--danger`. The
+  automated first pass was reviewed rather than trusted: it had turned the pending-requests banner
+  into solid orange, given the "online" chip green-on-green text, and made status chips ring at
+  full opacity; each was corrected by hand.
+
+### Verified
+
+`npx tsc --noEmit` and `eslint .` clean; `vitest run` **448 passed / 68 files** (unchanged — no test
+asserted the old classes). Every screen was opened in dark with a real session and scanned for a
+light surface or dark-on-dark text: `/dashboard`, `/profile?tab=appearance`,
+`/profile?tab=security`, `/admin`, `/camera`, `/notifications`, `/login`, the 404 route and the four
+dialogs — each reported `{light: [], darkText: []}`. Light mode was re-checked on `/profile`,
+`/admin` and the 404 route so the swap did not flatten the palette. `npm run build` was not re-run
+in this pass, and the signed-in Playwright a11y sweep still needs `E2E_USER_*` credentials.
