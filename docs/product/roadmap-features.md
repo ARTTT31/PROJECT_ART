@@ -1,6 +1,6 @@
 # Roadmap & Feature Inventory
 
-**Last updated:** November 19, 2026
+**Last updated:** November 21, 2026
 
 > **Sources of truth.** This file inventories what exists and what is planned. It must not
 > restate or contradict the documents that own those decisions:
@@ -35,6 +35,7 @@
 | `/admin` | Admin console — registration policy, pending approvals, user management |
 | `/audit` | Searchable/filterable activity log (admin only) |
 | `/camera` | CCTV monitor — permission-gated per user |
+| `/share-target` | PWA share target — inbox for links and text shared from other apps |
 
 ### Dashboard widgets
 
@@ -52,6 +53,7 @@
 | QR Code | S/M/L | Client-side |
 | โฟกัส / Pomodoro (focus) | S/M/L | Client-side; 25/5/15-minute sessions, counters and a closing chime |
 | ปฏิทิน & แพลนเนอร์ (calendar) | S/M/L | Thai holidays bundled in the repo + per-account `/planner` reminders |
+| ผลพรีเมียร์ลีก (epl) | S/M/L | Premier League scores and standings via `/football/premier-league` + `/football/standings`, with a 10-minute localStorage cache and a manual refresh |
 
 ### Platform
 
@@ -77,6 +79,11 @@
   Profile → Security lists the account's own signed-in devices and can sign the others out;
   a dismissible 3-step getting-started card appears on the dashboard for new accounts, and the
   header exposes the ⌘K command palette as a visible button.
+- **Appearance:** Profile → รูปลักษณ์ & เมนู picks light/dark and one of 12 accent presets through
+  `data-theme` / `data-accent` on `<html>`, alongside the date-format and language card. Every
+  surface, ink, accent and status colour is a semantic token (`--surface`, `--ink`, `--danger-*`, …)
+  rather than a Tailwind palette utility, so one token layer drives both themes. The palette, radii
+  and motion themselves stay owned by `DESIGN.md`.
 - **Market data:** authenticated proxy for exchange rates, Thai gold, COMEX gold, the SET index,
   watchlist quotes and OHLC candles; every provider degrades independently.
 - **Notifications:** notification bell with derived alerts (holidays, weather, oil prices) plus
@@ -106,8 +113,8 @@
 |---|---|
 | Single instance by default | The WebSocket registry can fan out through Redis (`WS_BROADCAST_REDIS_URL`) and the rate limiter can use Redis (`SLOWAPI_STORAGE_URI`), but both default to process-local and startup logs a `[SCALING]` notice. See README -> *Horizontal scaling*. |
 | Third-party market data | Yahoo Finance / Frankfurter / Thai Gold API have no SLA; the widget shows the last known value (or an empty block) rather than failing the whole page. |
-| Partial i18n | A `th`/`en` message catalogue (`lib/i18n`) exists and drives 12 of the 97 components; the rest still hardcode Thai copy. Adding a language means migrating a screen at a time, not flipping a switch. |
-| Partial frontend coverage | 445 Vitest tests across 68 files; 711 backend tests at 84.41% coverage (Python 3.14, verified 2026-11-19). Route-level tests exist only for `login`, `register`, `forgot-password` and `share-target`, so `npm run test:coverage` remains the honest number. Playwright runs axe checks on the auth pages and a live register → login E2E against the backend in CI. |
+| Partial i18n | A `th`/`en` message catalogue (`lib/i18n`) exists and drives 34 of the 82 components; the rest still hardcode Thai copy. Adding a language means migrating a screen at a time, not flipping a switch. |
+| Partial frontend coverage | 448 Vitest tests across 68 files; 711 backend tests at 84.41% coverage (Python 3.14, verified 2026-11-19). Route-level tests exist only for `login`, `register`, `forgot-password` and `share-target`, so `npm run test:coverage` remains the honest number. Playwright runs axe checks on the auth pages and a live register → login E2E against the backend in CI. |
 | CSP `script-src` | The frontend CSP keeps `'unsafe-inline'` for scripts because Next emits its RSC payload as inline scripts and the theme bootstrap is inline; a nonce needs middleware plus a deploy-verified pass over Google GSI and the service worker. Image sources are already an explicit allow-list (`NEXT_PUBLIC_CAMERA_IMG_ORIGINS`). |
 
 ---
@@ -119,17 +126,17 @@
 All five items below shipped in `d58ae9f`, `2d9aabf` and `73a9571`; they stay listed so the
 scope is not re-litigated as "still planned".
 
-1. **Dependabot Optimization (Maintenance)**
+1. **Dependabot Optimization (Maintenance) — Shipped**
    - Group updates and switch schedule to monthly with lower open PR limit to prevent remote branch clutter while keeping dependencies updated.
-2. **Focus Timer / Pomodoro Widget (Dashboard)**
+2. **Focus Timer / Pomodoro Widget (Dashboard) — Shipped**
    - Apple HIG styled circular progress timer (25m Focus / 5m Short Break / 15m Long Break).
    - Springy controls (`active:scale-[0.95]`), session counters, gentle audio notification chime, full S/M/L responsive sizing.
-3. **Workspace Data Backup & Restore (Profile / Data Portability)**
+3. **Workspace Data Backup & Restore (Profile / Data Portability) — Shipped**
    - One-click full workspace JSON export & import in Profile (Quick Notes, Finance entries, Watchlist symbols, Quick links, Dashboard layout).
    - JSON validation and preview before applying.
-4. **Mini Calendar & Planner Widget (Dashboard)**
+4. **Mini Calendar & Planner Widget (Dashboard) — Shipped**
    - Interactive monthly grid view combining Thai official holidays with personal errands and reminders.
-5. **Command Palette Quick Actions (`Ctrl+K` / `⌘K`)**
+5. **Command Palette Quick Actions (`Ctrl+K` / `⌘K`) — Shipped**
    - Quick jump to Quick Links, page navigation, and quick entry actions directly from keyboard search.
 
 ### Phase 2: Security & Platform Hardening
@@ -173,7 +180,7 @@ scope is not re-litigated as "still planned".
      would carry neither, so the request would be rejected after the fact. The only thing SW-level
      sync would add is flushing while the tab is closed; today that waits for the next visit.
 
-### Phase 2b: Audit Follow-ups (planned 2026-11-10)
+### Phase 2b: Audit Follow-ups (closed 2026-11-10)
 
 A static audit of the auth, persistence, AI and CSP paths produced the fix plan in
 [`docs/superpowers/plans/2026-11-10-security-hardening.md`](../superpowers/plans/2026-11-10-security-hardening.md).
@@ -181,22 +188,22 @@ All seven findings in that plan are closed; the only piece deliberately left is 
 nonce, recorded as an accepted constraint above. Per-finding status lives in
 [`status.md`](../internal/status.md) and the dated evidence in [`changelog.md`](../internal/changelog.md).
 
-1. **Real client IP for account state (High).** `POST /auth/login` and the other auth/admin paths
+1. ✅ **Real client IP for account state (High).** `POST /auth/login` and the other auth/admin paths
    read `request.client.host`, which is the platform proxy behind Render, so the `(email, IP)`
    backoff collapses to per-email and anyone can lock a known account out; audit rows and
    “new device” mails record the proxy address. Fix: `get_real_client_ip()` at every site.
-2. **Stale-write detection for profile JSON (High).** Notes, finance, reminders and watchlist are
+2. ✅ **Stale-write detection for profile JSON (High).** Notes, finance, reminders and watchlist are
    whole-document columns replaced on each save, so two devices overwrite each other. Add a
    `profile_version` compare-and-set and a `409` the UI reports instead of claiming success.
-3. **Per-account AI quota (Medium).** `/ai/chat` is limited only per IP (30/min); a deployment key
+3. ✅ **Per-account AI quota (Medium).** `/ai/chat` is limited only per IP (30/min); a deployment key
    has no daily budget. Claim a per-user/day counter before an external model call.
-4. **CSP without `'unsafe-inline'` scripts (Medium).** Pin the theme bootstrap by SHA-256 and drop
+4. ✅ **CSP without `'unsafe-inline'` scripts (Medium).** Pin the theme bootstrap by SHA-256 and drop
    the blanket `img-src http:`, keeping LAN camera origins behind an explicit env allow-list.
-5. **No shipped default admin credentials (Medium).** Delete `scripts/admin/check_password.py` and
+5. ✅ **No shipped default admin credentials (Medium).** Delete `scripts/admin/check_password.py` and
    make `create_admin.py` require `ADMIN_EMAIL` / `ADMIN_PASSWORD`.
-6. **Cookie lifetimes from settings (Low).** Replace the hardcoded `30*60` / `7*24*60*60`
+6. ✅ **Cookie lifetimes from settings (Low).** Replace the hardcoded `30*60` / `7*24*60*60`
    `max_age` values so changing `ACCESS_TOKEN_EXPIRE_MINUTES` cannot desynchronise them.
-7. **Fail loudly when shared state is required (Low).** `REQUIRE_SHARED_STATE=true` makes startup
+7. ✅ **Fail loudly when shared state is required (Low).** `REQUIRE_SHARED_STATE=true` makes startup
    refuse an in-memory limiter or a process-local WebSocket bus.
 
 ### Phase 2c: UX & Usability (shipped 2026-11-12 → 2026-11-19)
@@ -207,3 +214,18 @@ All of it has shipped: the camera cache is account-scoped, notification read sta
 account, data routes have skeletons and widgets have one shared empty/error/retry state, `ui/Button`
 exists with the pill rule in `@layer base`, widgets mount as their card nears the viewport, and the
 save-status/undo pass closed the last two gaps. Per-finding status is in [`status.md`](../internal/status.md).
+
+### Phase 3: Smart AI Copilot & Auto Model Discovery (Planned)
+
+Full plan documented in [`docs/superpowers/plans/2026-11-20-smart-ai-copilot-roadmap.md`](../superpowers/plans/2026-11-20-smart-ai-copilot-roadmap.md):
+1. **Unrestricted Q&A & General Prompting:** Refine System Prompt in `ai.py` so the model answers broad knowledge and coding questions rather than restricting answers to workspace JSON metrics.
+2. **Auto Model Detection & Smart Prioritization:** When an API key is pasted, query the provider's `/models` endpoint live, auto-suggest the optimal model (`gemini-2.0-flash` / `gpt-4o-mini`), and display interactive clickable model chips in `AISettingsCard.tsx` instead of manual text inputs.
+3. **Agentic Function Calling:** Replace rigid regex parsing with native LLM function calling for notes, reminders, and finance entries.
+4. **Conversation Memory & Multimodal:** Retain chat session history across browser restarts and add receipt/slip image understanding.
+
+### Phase 4: Accurate Session IP Tracking & Proxy Resolution (Planned)
+
+Full plan documented in [`docs/superpowers/plans/2026-11-20-accurate-session-ip-tracking.md`](../superpowers/plans/2026-11-20-accurate-session-ip-tracking.md):
+1. **Multi-Hop Proxy Resolution:** Enhance `get_real_client_ip()` in `app/core/rate_limit.py` to recognise Vercel proxy headers (`x-vercel-forwarded-for` / `x-real-ip`) so client origin IPs are not overwritten by Vercel edge addresses.
+2. **Dynamic Session IP Refresh:** Update `AuthService.refresh_access_token()` to persist the current client IP alongside `last_activity` during token rotations, keeping session logs accurate across Wi-Fi and mobile network changes.
+3. **Device Session Visibility:** Verify and align `MyDevicesCard.tsx` and `ActiveSessionsCard.tsx` displays so users and admins see live, updated IP locations.
