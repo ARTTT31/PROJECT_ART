@@ -253,7 +253,7 @@ export function DailyBriefingCard() {
                   >
                     <span
                       aria-hidden="true"
-                      className={`h-1.5 w-1.5 rounded-full ${enabled ? 'bg-emerald-500' : 'bg-[var(--ink-tertiary)]'}`}
+                      className={`h-1.5 w-1.5 rounded-full ${enabled ? 'bg-[var(--success)]' : 'bg-[var(--ink-tertiary)]'}`}
                     />
                     {enabled ? 'เปิดอยู่' : 'ปิดอยู่'}
                   </span>

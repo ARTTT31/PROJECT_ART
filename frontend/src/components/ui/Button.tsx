@@ -31,7 +31,7 @@ const variantClasses: Record<ButtonVariant, string> = {
   ghost:
     'bg-transparent text-[var(--ink)] hover:bg-[var(--surface-grouped)] border-transparent',
   destructive:
-    'bg-[var(--danger-soft)] text-[var(--danger)] hover:bg-rose-500/20 border-transparent',
+    'bg-[var(--danger-soft)] text-[var(--danger)] hover:bg-[var(--danger)] border-transparent',
   outline:
     'bg-transparent text-[var(--ink)] hover:bg-[var(--surface-grouped)] border-[var(--hairline)]',
 };

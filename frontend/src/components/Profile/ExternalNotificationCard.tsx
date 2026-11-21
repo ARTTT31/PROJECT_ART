@@ -223,7 +223,7 @@ export default function ExternalNotificationCard() {
               <SiTelegram className="h-4 w-4 shrink-0" style={{ color: TELEGRAM_BRAND }} aria-hidden="true" />
               <span>Telegram</span>
               {isTelegramConnected && (
-                <span className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.7)]" title="เชื่อมต่อแล้ว" />
+                <span className="h-2 w-2 rounded-full bg-[var(--success)] shadow-[0_0_6px_rgba(16,185,129,0.7)]" title="เชื่อมต่อแล้ว" />
               )}
             </button>
 
@@ -246,7 +246,7 @@ export default function ExternalNotificationCard() {
               <span className="hidden sm:inline">Custom</span>
               <span>Webhook</span>
               {isWebhookConnected && (
-                <span className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.7)]" title="เชื่อมต่อแล้ว" />
+                <span className="h-2 w-2 rounded-full bg-[var(--success)] shadow-[0_0_6px_rgba(16,185,129,0.7)]" title="เชื่อมต่อแล้ว" />
               )}
             </button>
           </div>

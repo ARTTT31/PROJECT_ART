@@ -120,8 +120,8 @@ function WidgetErrorFallback({
     error?.name === 'ChunkLoadError' || error?.message?.includes('Failed to load chunk');
   return (
     <div className="flex h-full min-h-[300px] w-full flex-col items-center justify-center rounded-apple-lg border border-[var(--hairline)] bg-[var(--surface)] p-6">
-      <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-red-100/50">
-        <AlertTriangle className="h-6 w-6 text-red-500" aria-hidden="true" />
+      <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[var(--danger-soft)]">
+        <AlertTriangle className="h-6 w-6 text-[var(--danger)]" aria-hidden="true" />
       </div>
       <div className="text-center">
         <p className="text-[15px] font-semibold text-[var(--ink)]">วิดเจ็ต {name} ไม่พร้อมใช้งาน</p>

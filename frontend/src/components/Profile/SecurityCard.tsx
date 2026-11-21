@@ -176,9 +176,9 @@ export function SecurityCard() {
   return (
     <SectionCard
       icon={<ShieldCheck size={19} aria-hidden="true" />}
-      iconBg="bg-indigo-50"
-      iconColor="text-indigo-600"
-      iconRing="ring-indigo-200/60"
+      iconBg="bg-[var(--info-soft)]"
+      iconColor="text-[var(--info-ink)]"
+      iconRing="ring-[var(--info-soft)]"
       title="การยืนยันสองขั้นตอน (2FA)"
       subtitle="เพิ่มรหัส 6 หลักจากแอป Authenticator เป็นชั้นป้องกันที่สอง"
       badge={enabled ? 'เปิดใช้งาน' : undefined}

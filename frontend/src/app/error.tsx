@@ -30,15 +30,15 @@ export default function ErrorPage({ error, reset }: ErrorPageProps) {
     >
       <div className="w-full max-w-lg overflow-hidden rounded-[var(--art-radius-xl)] border border-white/30 bg-[var(--glass-80)] backdrop-blur-[24px] shadow-glass-xl">
         {/* Header */}
-        <div className="flex items-center gap-3 border-b border-slate-200/50 bg-red-50/50 px-6 py-5">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-apple-widget bg-red-100 text-red-600">
+        <div className="flex items-center gap-3 border-b border-[var(--hairline)] bg-[var(--danger-soft)] px-6 py-5">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-apple-widget bg-[color-mix(in_srgb,var(--danger)_18%,transparent)] text-[var(--danger-ink)]">
             <AlertTriangle size={24} aria-hidden="true" />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-slate-900">
+            <h1 className="text-lg font-bold text-[var(--ink)]">
               {tr('เกิดข้อผิดพลาด', 'Something went wrong')}
             </h1>
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-[var(--ink-muted)]">
               {tr('ระบบไม่สามารถโหลดหน้านี้ได้', 'This page could not be loaded')}
             </p>
           </div>
@@ -46,14 +46,14 @@ export default function ErrorPage({ error, reset }: ErrorPageProps) {
 
         {/* Body */}
         <div className="px-6 py-5">
-          <p className="text-sm text-slate-600">
+          <p className="text-sm text-[var(--ink-secondary)]">
             {tr(
               'เกิดข้อผิดพลาดที่ไม่คาดคิดระหว่างการโหลดหน้าเพจ คุณสามารถลองโหลดใหม่ หรือกลับไปยังหน้าหลัก',
               'An unexpected error occurred while loading this page. You can reload, or go back to the home page.',
             )}
           </p>
           {process.env.NODE_ENV === 'development' && (
-            <pre className="mt-3 max-h-40 overflow-auto rounded-apple-md bg-slate-100 p-3 text-xs text-red-700">
+            <pre className="mt-3 max-h-40 overflow-auto rounded-apple-md bg-[var(--surface-chip)] p-3 text-xs text-[var(--danger-ink)]">
               {error.message}
               {error.digest && `\nDigest: ${error.digest}`}
             </pre>
@@ -61,7 +61,7 @@ export default function ErrorPage({ error, reset }: ErrorPageProps) {
         </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-3 border-t border-slate-200/50 px-6 py-4">
+        <div className="flex items-center gap-3 border-t border-[var(--hairline)] px-6 py-4">
           <button
             onClick={reset}
             className="art-primary-button inline-flex items-center gap-2 !rounded-apple-widget text-sm"

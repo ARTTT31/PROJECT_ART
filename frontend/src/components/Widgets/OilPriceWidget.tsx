@@ -161,7 +161,7 @@ const fuelDotColor: Record<string, string> = {
   gasohol_e85: 'bg-[var(--success)]',
   diesel: 'bg-[var(--accent)]',
 };
-const defaultDotColor = 'bg-slate-400';
+const defaultDotColor = 'bg-[var(--ink-faint)]';
 
 const shortName: Record<string, string> = {
   benzene_95: 'เบนซิน',
@@ -304,11 +304,11 @@ export default function OilPriceWidget({
           {[1, 2, 3, 4, 5, 6].map((i) => (
             <div key={i} className="flex flex-col items-center gap-2 rounded-apple-lg bg-[var(--surface-grouped)] p-4">
               <div className="flex items-center gap-2">
-                <div className="h-2.5 w-2.5 rounded-full bg-slate-200" />
-                <div className="h-3.5 w-14 rounded-full bg-slate-200" />
+                <div className="h-2.5 w-2.5 rounded-full bg-[var(--surface-chip-2)]" />
+                <div className="h-3.5 w-14 rounded-full bg-[var(--surface-chip-2)]" />
               </div>
-              <div className="h-7 w-16 rounded-apple-md bg-slate-200" />
-              <div className="h-2.5 w-12 rounded-full bg-slate-100" />
+              <div className="h-7 w-16 rounded-apple-md bg-[var(--surface-chip-2)]" />
+              <div className="h-2.5 w-12 rounded-full bg-[var(--surface-chip)]" />
             </div>
           ))}
         </div>
@@ -415,8 +415,8 @@ export default function OilPriceWidget({
                     <span
                       className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[11px] font-bold ${
                         change.direction === 'up'
-                          ? 'bg-red-100 text-red-600'
-                          : 'bg-emerald-100 text-emerald-600'
+                          ? 'bg-[var(--danger-soft)] text-[var(--danger-ink)]'
+                          : 'bg-[var(--success-soft)] text-[var(--success-ink)]'
                       }`}
                       title={`เดิม ${change.oldPrice.toFixed(2)} → ${change.newPrice.toFixed(2)}`}
                     >

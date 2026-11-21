@@ -431,7 +431,7 @@ export default function CameraPage() {
           <div className="lg:col-span-2">
             <div
               ref={videoContainerRef}
-              className="relative aspect-video overflow-hidden rounded-apple-lg bg-slate-950 ring-1 ring-[var(--hairline)] shadow-[0_8px_32px_rgba(15,23,42,0.12)]"
+              className="relative aspect-video overflow-hidden rounded-apple-lg bg-[var(--ink-faint)] ring-1 ring-[var(--hairline)] shadow-[0_8px_32px_rgba(15,23,42,0.12)]"
             >
               {activeCamera?.status === 'online' ? (
                 <div className="relative h-full w-full">
@@ -480,14 +480,14 @@ export default function CameraPage() {
                     </div>
                   ) : (
                     /* Simulated Live Mode */
-                    <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900">
-                      <div className="flex flex-col items-center gap-3 text-slate-500">
+                    <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-[var(--hairline-strong)] via-[var(--hairline-strong)] to-[var(--hairline-strong)]">
+                      <div className="flex flex-col items-center gap-3 text-[var(--ink-muted)]">
                         <Camera
                           size={52}
-                          className="animate-pulse text-sky-400/50"
+                          className="animate-pulse text-[var(--info-ink)]"
                           aria-hidden="true"
                         />
-                        <span className="text-xs font-medium tracking-wide text-slate-400">
+                        <span className="text-xs font-medium tracking-wide text-[var(--ink-faint)]">
                           {tr(
                             'จำลองภาพสตรีมความละเอียด {resolution}',
                             'Simulated stream at {resolution}',
@@ -502,7 +502,7 @@ export default function CameraPage() {
                   <div className="pointer-events-none absolute inset-0 flex flex-col justify-between p-4">
                     {/* Top HUD Bar */}
                     <div className="pointer-events-auto flex items-center justify-between">
-                      <span className="flex items-center gap-2 rounded-full bg-red-600/90 px-3 py-1 text-[11px] font-bold text-white shadow-xs backdrop-blur-md">
+                      <span className="flex items-center gap-2 rounded-full bg-[var(--danger)] px-3 py-1 text-[11px] font-bold text-white shadow-xs backdrop-blur-md">
                         <span
                           className="h-1.5 w-1.5 animate-ping rounded-full bg-[var(--surface)]"
                           aria-hidden="true"
@@ -554,13 +554,13 @@ export default function CameraPage() {
                 </div>
               ) : (
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6 text-center">
-                  <CameraOff size={48} className="text-slate-600" aria-hidden="true" />
+                  <CameraOff size={48} className="text-[var(--ink-secondary)]" aria-hidden="true" />
                   <div>
-                    <p className="font-semibold text-slate-300">
+                    <p className="font-semibold text-[var(--ink-faint)]">
                       {activeCamera?.name || tr('กล้อง', 'Camera')}{' '}
                       {tr('ตัดการเชื่อมต่อ (Offline)', 'is offline')}
                     </p>
-                    <p className="mt-1 text-xs text-slate-500">
+                    <p className="mt-1 text-xs text-[var(--ink-muted)]">
                       {tr(
                         'ไม่สามารถเชื่อมต่อ URL ของกล้องได้ กรุณาตรวจสอบการตั้งค่าเครือข่ายหรือ URL สตรีม',
                         'Cannot reach the camera URL. Check the network settings or the stream URL.',
@@ -629,8 +629,8 @@ export default function CameraPage() {
                             className={[
                               'flex h-9 w-9 shrink-0 items-center justify-center rounded-apple-md',
                               cam.status === 'online'
-                                ? 'bg-emerald-100 text-emerald-700'
-                                : 'bg-rose-100 text-rose-600',
+                                ? 'bg-[var(--success-soft)] text-[var(--success-ink)]'
+                                : 'bg-[var(--danger-soft)] text-[var(--danger-ink)]',
                             ].join(' ')}
                           >
                             {cam.status === 'online' ? (
@@ -657,7 +657,7 @@ export default function CameraPage() {
                               e.stopPropagation();
                               openEditDialog(cam);
                             }}
-                            className="rounded-apple-md p-2 text-slate-400 opacity-0 transition-opacity hover:bg-[var(--surface-chip)] hover:text-slate-700 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-[var(--accent)] [@media(hover:none)]:opacity-100"
+                            className="rounded-apple-md p-2 text-[var(--ink-faint)] opacity-0 transition-opacity hover:bg-[var(--surface-chip)] hover:text-[var(--ink)] group-hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-[var(--accent)] [@media(hover:none)]:opacity-100"
                             aria-label={tr('แก้ไข {name}', 'Edit {name}', { name: cam.name })}
                           >
                             <Pencil size={13} />
@@ -668,7 +668,7 @@ export default function CameraPage() {
                               e.stopPropagation();
                               handleDeleteCamera(cam.id, cam.name);
                             }}
-                            className="rounded-apple-md p-2 text-slate-400 opacity-0 transition-opacity hover:bg-rose-50 hover:text-rose-600 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-[var(--danger)] [@media(hover:none)]:opacity-100"
+                            className="rounded-apple-md p-2 text-[var(--ink-faint)] opacity-0 transition-opacity hover:bg-[var(--danger-soft)] hover:text-[var(--danger-ink)] group-hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-[var(--danger)] [@media(hover:none)]:opacity-100"
                             aria-label={tr('ลบ {name}', 'Delete {name}', { name: cam.name })}
                           >
                             <Trash2 size={13} />
@@ -678,8 +678,8 @@ export default function CameraPage() {
                             className={[
                               'shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold',
                               cam.status === 'online'
-                                ? 'bg-emerald-100 text-emerald-700'
-                                : 'bg-rose-100 text-rose-600',
+                                ? 'bg-[var(--success-soft)] text-[var(--success-ink)]'
+                                : 'bg-[var(--danger-soft)] text-[var(--danger-ink)]',
                             ].join(' ')}
                           >
                             {cam.status === 'online'
@@ -718,9 +718,9 @@ export default function CameraPage() {
                 <div>
                   <label
                     htmlFor="camera-name"
-                    className="block text-xs font-semibold text-slate-700"
+                    className="block text-xs font-semibold text-[var(--ink)]"
                   >
-                    {tr('ชื่อกล้อง', 'Camera name')} <span className="text-red-500">*</span>
+                    {tr('ชื่อกล้อง', 'Camera name')} <span className="text-[var(--danger)]">*</span>
                   </label>
                   <input
                     id="camera-name"
@@ -729,14 +729,14 @@ export default function CameraPage() {
                     value={formName}
                     onChange={(e) => setFormName(e.target.value)}
                     placeholder={tr('เช่น หน้าบ้าน (Front Entrance)', 'e.g. Front entrance')}
-                    className="mt-1 block w-full rounded-apple-widget border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 transition-colors focus:border-[var(--accent)] focus:bg-[var(--surface)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
+                    className="mt-1 block w-full rounded-apple-widget border border-[var(--hairline)] bg-[var(--surface-grouped)] px-3 py-2 text-sm text-[var(--ink)] transition-colors focus:border-[var(--accent)] focus:bg-[var(--surface)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
                   />
                 </div>
 
                 <div>
                   <label
                     htmlFor="camera-location"
-                    className="block text-xs font-semibold text-slate-700"
+                    className="block text-xs font-semibold text-[var(--ink)]"
                   >
                     {tr('ตำแหน่งที่ตั้ง', 'Location')}
                   </label>
@@ -746,7 +746,7 @@ export default function CameraPage() {
                     value={formLocation}
                     onChange={(e) => setFormLocation(e.target.value)}
                     placeholder={tr('เช่น ภายนอก — ประตูหลัก', 'e.g. Outside — main door')}
-                    className="mt-1 block w-full rounded-apple-widget border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 transition-colors focus:border-[var(--accent)] focus:bg-[var(--surface)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
+                    className="mt-1 block w-full rounded-apple-widget border border-[var(--hairline)] bg-[var(--surface-grouped)] px-3 py-2 text-sm text-[var(--ink)] transition-colors focus:border-[var(--accent)] focus:bg-[var(--surface)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
                   />
                 </div>
 
@@ -772,10 +772,10 @@ export default function CameraPage() {
                   <div>
                     <label
                       htmlFor="camera-url"
-                      className="block text-xs font-semibold text-slate-700"
+                      className="block text-xs font-semibold text-[var(--ink)]"
                     >
                       {tr('URL สตรีม / Snapshot URL', 'Stream URL / snapshot URL')}{' '}
-                      <span className="text-red-500">*</span>
+                      <span className="text-[var(--danger)]">*</span>
                     </label>
                     <input
                       id="camera-url"
@@ -790,14 +790,14 @@ export default function CameraPage() {
                             ? 'http://192.168.1.50:8080/video.mjpg'
                             : 'https://homeassistant.local/lovelace/cctv'
                       }
-                      className="mt-1 block w-full rounded-apple-widget border border-slate-200 bg-slate-50 px-3 py-2 font-mono text-xs text-slate-900 transition-colors focus:border-[var(--accent)] focus:bg-[var(--surface)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
+                      className="mt-1 block w-full rounded-apple-widget border border-[var(--hairline)] bg-[var(--surface-grouped)] px-3 py-2 font-mono text-xs text-[var(--ink)] transition-colors focus:border-[var(--accent)] focus:bg-[var(--surface)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
                     />
                   </div>
                 )}
 
                 {formStreamType === 'snapshot' && (
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700">
+                    <label className="block text-xs font-semibold text-[var(--ink)]">
                       {tr('รอบการรีเฟรชภาพนิ่ง (วินาที)', 'Snapshot refresh interval (seconds)')}
                     </label>
                     <Select
@@ -827,7 +827,7 @@ export default function CameraPage() {
                   <div>
                     <label
                       htmlFor="camera-resolution"
-                      className="block text-xs font-semibold text-slate-700"
+                      className="block text-xs font-semibold text-[var(--ink)]"
                     >
                       {tr('ความละเอียด', 'Resolution')}
                     </label>
@@ -837,13 +837,13 @@ export default function CameraPage() {
                       value={formResolution}
                       onChange={(e) => setFormResolution(e.target.value)}
                       placeholder="1920x1080"
-                      className="mt-1 block w-full rounded-apple-widget border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 transition-colors focus:border-[var(--accent)] focus:bg-[var(--surface)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
+                      className="mt-1 block w-full rounded-apple-widget border border-[var(--hairline)] bg-[var(--surface-grouped)] px-3 py-2 text-sm text-[var(--ink)] transition-colors focus:border-[var(--accent)] focus:bg-[var(--surface)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
                     />
                   </div>
                   <div>
                     <label
                       htmlFor="camera-fps"
-                      className="block text-xs font-semibold text-slate-700"
+                      className="block text-xs font-semibold text-[var(--ink)]"
                     >
                       {tr('อัตราเฟรมเรต (FPS)', 'Frame rate (FPS)')}
                     </label>
@@ -854,7 +854,7 @@ export default function CameraPage() {
                       max={60}
                       value={formFps}
                       onChange={(e) => setFormFps(Number(e.target.value))}
-                      className="mt-1 block w-full rounded-apple-widget border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 transition-colors focus:border-[var(--accent)] focus:bg-[var(--surface)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
+                      className="mt-1 block w-full rounded-apple-widget border border-[var(--hairline)] bg-[var(--surface-grouped)] px-3 py-2 text-sm text-[var(--ink)] transition-colors focus:border-[var(--accent)] focus:bg-[var(--surface)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
                     />
                   </div>
                 </div>
@@ -864,7 +864,7 @@ export default function CameraPage() {
                 <button
                   type="button"
                   onClick={() => setIsDialogOpen(false)}
-                  className="rounded-full px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100"
+                  className="rounded-full px-4 py-2 text-xs font-semibold text-[var(--ink-secondary)] hover:bg-[var(--surface-chip)]"
                 >
                   {tr('ยกเลิก', 'Cancel')}
                 </button>

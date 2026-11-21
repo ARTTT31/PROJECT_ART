@@ -33,9 +33,9 @@ export function QuickLinksCard({ links, onAdd, onEdit, onDelete, onMove }: Quick
   return (
     <SectionCard
       icon={<Link2 size={19} aria-hidden="true" />}
-      iconBg="bg-sky-50"
-      iconColor="text-sky-600"
-      iconRing="ring-sky-200/60"
+      iconBg="bg-[var(--info-soft)]"
+      iconColor="text-[var(--info-ink)]"
+      iconRing="ring-[var(--info-soft)]"
       title={t('card.quickLinks.title')}
       subtitle={t('card.quickLinks.subtitle')}
       action={
@@ -51,8 +51,8 @@ export function QuickLinksCard({ links, onAdd, onEdit, onDelete, onMove }: Quick
       }
     >
       {links.length === 0 ? (
-        <div className="rounded-apple-lg border border-dashed border-slate-200 bg-slate-50/60 p-8 text-center">
-          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-apple-lg bg-[var(--surface)] text-sky-600 shadow-xs ring-1 ring-[var(--hairline)]">
+        <div className="rounded-apple-lg border border-dashed border-[var(--hairline)] bg-[var(--surface-grouped)] p-8 text-center">
+          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-apple-lg bg-[var(--surface)] text-[var(--info-ink)] shadow-xs ring-1 ring-[var(--hairline)]">
             <Link2 size={20} aria-hidden="true" />
           </div>
           <h3 className="text-[14px] font-bold text-[var(--ink)]">
@@ -158,7 +158,7 @@ export function QuickLinksCard({ links, onAdd, onEdit, onDelete, onMove }: Quick
                     onClick={() => onDelete(link.id)}
                     aria-label={`ลบ ${link.label}`}
                     title="ลบ"
-                    className="flex h-7 w-7 items-center justify-center rounded-apple-md text-rose-600 transition-colors hover:bg-rose-50"
+                    className="flex h-7 w-7 items-center justify-center rounded-apple-md text-[var(--danger-ink)] transition-colors hover:bg-[var(--danger-soft)]"
                   >
                     <Trash2 size={13} aria-hidden="true" />
                   </button>

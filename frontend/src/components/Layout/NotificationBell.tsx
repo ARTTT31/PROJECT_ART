@@ -66,16 +66,16 @@ function subscribe(listener: Listener): () => void {
 }
 
 const levelIcon = {
-  info: <Info size={14} className="text-sky-500 shrink-0 mt-0.5" />,
-  warning: <AlertTriangle size={14} className="text-amber-500 shrink-0 mt-0.5" />,
-  danger: <ShieldAlert size={14} className="text-rose-500 shrink-0 mt-0.5" />,
+  info: <Info size={14} className="text-[var(--info-ink)] shrink-0 mt-0.5" />,
+  warning: <AlertTriangle size={14} className="text-[var(--warning)] shrink-0 mt-0.5" />,
+  danger: <ShieldAlert size={14} className="text-[var(--danger)] shrink-0 mt-0.5" />,
 };
 
 const typeIcon = {
-  holiday: <Palmtree size={13} className="text-emerald-600" />,
-  weather: <CloudRain size={13} className="text-sky-600" />,
-  oilprice: <Fuel size={13} className="text-amber-600" />,
-  system: <Sparkles size={13} className="text-purple-600" />,
+  holiday: <Palmtree size={13} className="text-[var(--success-ink)]" />,
+  weather: <CloudRain size={13} className="text-[var(--info-ink)]" />,
+  oilprice: <Fuel size={13} className="text-[var(--warning-ink)]" />,
+  system: <Sparkles size={13} className="text-[var(--info-ink)]" />,
 };
 
 const levelMeta = {

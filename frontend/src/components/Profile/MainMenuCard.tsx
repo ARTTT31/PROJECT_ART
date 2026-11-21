@@ -21,9 +21,9 @@ export function MainMenuCard({ items, onMove }: MainMenuCardProps) {
   return (
     <SectionCard
       icon={<LayoutGrid size={19} aria-hidden="true" />}
-      iconBg="bg-violet-50"
-      iconColor="text-violet-600"
-      iconRing="ring-violet-200/60"
+      iconBg="bg-[var(--info-soft)]"
+      iconColor="text-[var(--info-ink)]"
+      iconRing="ring-[var(--info-soft)]"
       title={t('card.mainMenu.title')}
       subtitle={t('card.mainMenu.subtitle')}
     >
@@ -54,7 +54,7 @@ export function MainMenuCard({ items, onMove }: MainMenuCardProps) {
                   onClick={() => onMove(item.id, 'up')}
                   disabled={idx === 0}
                   aria-label="ย้ายขึ้น"
-                  className="flex h-8 w-8 items-center justify-center rounded-apple-md text-slate-400 transition-all hover:bg-slate-100 hover:text-slate-700 disabled:opacity-30 disabled:hover:bg-transparent"
+                  className="flex h-8 w-8 items-center justify-center rounded-apple-md text-[var(--ink-faint)] transition-all hover:bg-[var(--surface-chip)] hover:text-[var(--ink)] disabled:opacity-30 disabled:hover:bg-transparent"
                 >
                   <ChevronUp size={14} aria-hidden="true" />
                 </button>
@@ -63,7 +63,7 @@ export function MainMenuCard({ items, onMove }: MainMenuCardProps) {
                   onClick={() => onMove(item.id, 'down')}
                   disabled={idx === arr.length - 1}
                   aria-label="ย้ายลง"
-                  className="flex h-8 w-8 items-center justify-center rounded-apple-md text-slate-400 transition-all hover:bg-slate-100 hover:text-slate-700 disabled:opacity-30 disabled:hover:bg-transparent"
+                  className="flex h-8 w-8 items-center justify-center rounded-apple-md text-[var(--ink-faint)] transition-all hover:bg-[var(--surface-chip)] hover:text-[var(--ink)] disabled:opacity-30 disabled:hover:bg-transparent"
                 >
                   <ChevronDown size={14} aria-hidden="true" />
                 </button>

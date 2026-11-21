@@ -18,7 +18,7 @@ export default function CameraLoading() {
         </div>
       </div>
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-        <div className="aspect-video animate-pulse rounded-apple-lg bg-slate-800 lg:col-span-2" />
+        <div className="aspect-video animate-pulse rounded-apple-lg bg-[var(--ink-faint)] lg:col-span-2" />
         <div className="animate-pulse rounded-apple-lg border border-[var(--hairline)] bg-[var(--surface)] p-5">
           <div className="mb-5 h-5 w-40 rounded-full bg-[var(--surface-chip)]" />
           <div className="space-y-3">

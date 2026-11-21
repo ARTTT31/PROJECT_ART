@@ -30,7 +30,7 @@ export default function PageAccessGuard({
     return (
       <div className="flex min-h-[60dvh] items-center justify-center">
         <div
-          className="h-10 w-10 animate-spin rounded-full border-b-2 border-sky-500"
+          className="h-10 w-10 animate-spin rounded-full border-b-2 border-[var(--info-soft)]"
           aria-label={tr('กำลังโหลด', 'Loading')}
         />
       </div>

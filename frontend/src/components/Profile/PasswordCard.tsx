@@ -113,9 +113,9 @@ export default function PasswordCard({ user }: { user: AuthUser | null }) {
   return (
     <SectionCard
       icon={<Lock size={19} aria-hidden="true" />}
-      iconBg="bg-rose-50"
-      iconColor="text-rose-600"
-      iconRing="ring-rose-200/60"
+      iconBg="bg-[var(--danger-soft)]"
+      iconColor="text-[var(--danger-ink)]"
+      iconRing="ring-[var(--danger-soft)]"
       title="รหัสผ่าน &amp; ความปลอดภัย"
       subtitle="เปลี่ยนรหัสผ่านเพื่อความปลอดภัยของบัญชีคุณ"
     >
@@ -134,7 +134,7 @@ export default function PasswordCard({ user }: { user: AuthUser | null }) {
             <button
               type="button"
               onClick={() => setShowOldPassword(!showOldPassword)}
-              className="p-1.5 text-slate-400 hover:text-slate-600 transition-colors"
+              className="p-1.5 text-[var(--ink-faint)] hover:text-[var(--ink-secondary)] transition-colors"
               aria-label={showOldPassword ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'}
             >
               {showOldPassword ? (
@@ -158,7 +158,7 @@ export default function PasswordCard({ user }: { user: AuthUser | null }) {
             <button
               type="button"
               onClick={() => setShowNewPassword(!showNewPassword)}
-              className="p-1.5 text-slate-400 hover:text-slate-600 transition-colors"
+              className="p-1.5 text-[var(--ink-faint)] hover:text-[var(--ink-secondary)] transition-colors"
               aria-label={showNewPassword ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'}
             >
               {showNewPassword ? (
@@ -177,35 +177,35 @@ export default function PasswordCard({ user }: { user: AuthUser | null }) {
               <span className="text-[var(--ink-muted)]">ระดับความปลอดภัย</span>
               <span className={`font-bold ${strengthMeta.text}`}>{strengthMeta.label}</span>
             </div>
-            <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-[var(--surface-chip)]">
               <div
                 className={`h-full transition-all duration-300 ${strengthMeta.color}`}
                 style={{ width: `${Math.min(100, (passwordStrength / 5) * 100)}%` }}
               />
             </div>
             <div className="mt-2.5 grid grid-cols-2 gap-x-3 gap-y-1 text-[11px] text-[var(--ink-muted)]">
-              <span className={newPassword.length >= 8 ? 'text-emerald-600 font-semibold' : ''}>
+              <span className={newPassword.length >= 8 ? 'text-[var(--success-ink)] font-semibold' : ''}>
                 {newPassword.length >= 8 ? '✓' : '○'} อย่างน้อย 8 ตัวอักษร
               </span>
               <span
                 className={
                   /[a-z]/.test(newPassword) && /[A-Z]/.test(newPassword)
-                    ? 'text-emerald-600 font-semibold'
+                    ? 'text-[var(--success-ink)] font-semibold'
                     : ''
                 }
               >
                 {/[a-z]/.test(newPassword) && /[A-Z]/.test(newPassword) ? '✓' : '○'} พิมพ์เล็ก+ใหญ่
               </span>
-              <span className={newPassword.length >= 12 ? 'text-emerald-600 font-semibold' : ''}>
+              <span className={newPassword.length >= 12 ? 'text-[var(--success-ink)] font-semibold' : ''}>
                 {newPassword.length >= 12 ? '✓' : '○'} 12 ตัวอักษรขึ้นไป
               </span>
-              <span className={/\d/.test(newPassword) ? 'text-emerald-600 font-semibold' : ''}>
+              <span className={/\d/.test(newPassword) ? 'text-[var(--success-ink)] font-semibold' : ''}>
                 {/\d/.test(newPassword) ? '✓' : '○'} มีตัวเลข
               </span>
               <span
                 className={
                   /[^a-zA-Z0-9]/.test(newPassword)
-                    ? 'text-emerald-600 font-semibold col-span-2'
+                    ? 'text-[var(--success-ink)] font-semibold col-span-2'
                     : 'col-span-2'
                 }
               >
@@ -228,7 +228,7 @@ export default function PasswordCard({ user }: { user: AuthUser | null }) {
             <button
               type="button"
               onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-              className="p-1.5 text-slate-400 hover:text-slate-600 transition-colors"
+              className="p-1.5 text-[var(--ink-faint)] hover:text-[var(--ink-secondary)] transition-colors"
               aria-label={showConfirmPassword ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'}
             >
               {showConfirmPassword ? (
@@ -244,8 +244,8 @@ export default function PasswordCard({ user }: { user: AuthUser | null }) {
           <div
             className={`-mt-1 flex items-center gap-1.5 rounded-apple-lg px-3 py-2 text-[12px] font-semibold ring-1 ${
               newPassword === confirmPassword
-                ? 'bg-emerald-50 text-emerald-700 ring-emerald-200'
-                : 'bg-rose-50 text-rose-700 ring-rose-200'
+                ? 'bg-[var(--success-soft)] text-[var(--success-ink)] ring-[var(--success-soft)]'
+                : 'bg-[var(--danger-soft)] text-[var(--danger-ink)] ring-[var(--danger-soft)]'
             }`}
           >
             {newPassword === confirmPassword ? (
@@ -280,9 +280,9 @@ export default function PasswordCard({ user }: { user: AuthUser | null }) {
 }
 
 function getStrengthLabel(strength: number) {
-  if (strength <= 1) return { label: 'อ่อนแอ', color: 'bg-rose-500', text: 'text-rose-700' };
-  if (strength === 2) return { label: 'ปานกลาง', color: 'bg-amber-500', text: 'text-amber-700' };
-  if (strength === 3) return { label: 'ดี', color: 'bg-lime-500', text: 'text-lime-700' };
-  if (strength === 4) return { label: 'แข็งแรง', color: 'bg-emerald-500', text: 'text-emerald-700' };
-  return { label: 'ปลอดภัยสูง', color: 'bg-teal-500', text: 'text-teal-700' };
+  if (strength <= 1) return { label: 'อ่อนแอ', color: 'bg-[var(--danger)]', text: 'text-[var(--danger-ink)]' };
+  if (strength === 2) return { label: 'ปานกลาง', color: 'bg-[var(--warning)]', text: 'text-[var(--warning-ink)]' };
+  if (strength === 3) return { label: 'ดี', color: 'bg-[var(--success)]', text: 'text-[var(--success-ink)]' };
+  if (strength === 4) return { label: 'แข็งแรง', color: 'bg-[var(--success)]', text: 'text-[var(--success-ink)]' };
+  return { label: 'ปลอดภัยสูง', color: 'bg-[var(--success)]', text: 'text-[var(--success-ink)]' };
 }

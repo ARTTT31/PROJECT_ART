@@ -418,7 +418,7 @@ export default function CalendarWidget({
             {/* Weekdays */}
             <div className="grid grid-cols-7 text-center text-[11px] font-semibold text-[var(--ink-muted)]">
               {WEEKDAY_NAMES.map((w, idx) => (
-                <div key={w} className={idx === 0 || idx === 6 ? 'text-red-500' : ''}>
+                <div key={w} className={idx === 0 || idx === 6 ? 'text-[var(--danger)]' : ''}>
                   {w}
                 </div>
               ))}
@@ -450,7 +450,7 @@ export default function CalendarWidget({
                     {/* Dots indicator */}
                     {(hasHoliday || hasReminder) && !isSelected && !d.isToday && (
                       <span className="absolute bottom-0.5 flex gap-0.5">
-                        {hasHoliday && <span className="h-1 w-1 rounded-full bg-red-500" />}
+                        {hasHoliday && <span className="h-1 w-1 rounded-full bg-[var(--danger)]" />}
                         {hasReminder && <span className="h-1 w-1 rounded-full bg-[var(--accent)]" />}
                       </span>
                     )}
@@ -466,7 +466,7 @@ export default function CalendarWidget({
                   {selectedEvents.slice(0, 2).map((ev) => (
                     <div key={ev.id} className="flex items-center gap-1.5 truncate">
                       {ev.type === 'holiday' ? (
-                        <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-red-500" />
+                        <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--danger)]" />
                       ) : (
                         <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--accent)]" />
                       )}
@@ -492,7 +492,7 @@ export default function CalendarWidget({
               {/* Weekdays */}
               <div className="grid grid-cols-7 text-center text-xs font-semibold text-[var(--ink-muted)] mb-2">
                 {WEEKDAY_NAMES.map((w, idx) => (
-                  <div key={w} className={idx === 0 || idx === 6 ? 'text-red-500' : ''}>
+                  <div key={w} className={idx === 0 || idx === 6 ? 'text-[var(--danger)]' : ''}>
                     {w}
                   </div>
                 ))}
@@ -523,7 +523,7 @@ export default function CalendarWidget({
                       <span>{d.dayNumber}</span>
                       {(hasHoliday || hasReminder) && !isSelected && !d.isToday && (
                         <span className="absolute bottom-0.5 flex gap-0.5">
-                          {hasHoliday && <span className="h-1 w-1 rounded-full bg-red-500" />}
+                          {hasHoliday && <span className="h-1 w-1 rounded-full bg-[var(--danger)]" />}
                           {hasReminder && <span className="h-1 w-1 rounded-full bg-[var(--accent)]" />}
                         </span>
                       )}
@@ -636,7 +636,7 @@ export default function CalendarWidget({
                           type="button"
                           onClick={() => handleDeleteReminder(ev.id)}
                           aria-label="ลบเตือน"
-                          className="text-[var(--ink-muted)] hover:text-red-500 transition-colors ml-2"
+                          className="text-[var(--ink-muted)] hover:text-[var(--danger)] transition-colors ml-2"
                         >
                           <Trash2 className="h-3 w-3" />
                         </button>
@@ -660,7 +660,7 @@ export default function CalendarWidget({
                 <div className="space-y-2 text-xs">
                   <div className="flex items-center justify-between rounded-apple-md bg-[var(--surface)] p-2.5">
                     <div className="flex items-center gap-2">
-                      <Star className="h-4 w-4 text-red-500" />
+                      <Star className="h-4 w-4 text-[var(--danger)]" />
                       <span className="text-[var(--ink-secondary)]">วันหยุดในเดือนนี้</span>
                     </div>
                     <span className="font-semibold text-[var(--ink)]">
@@ -682,7 +682,7 @@ export default function CalendarWidget({
                   </div>
                   <div className="flex items-center justify-between rounded-apple-md bg-[var(--surface)] p-2.5">
                     <div className="flex items-center gap-2">
-                      <Palmtree className="h-4 w-4 text-emerald-500" />
+                      <Palmtree className="h-4 w-4 text-[var(--success)]" />
                       <span className="text-[var(--ink-secondary)]">วันลาพักผ่อน</span>
                     </div>
                     <span className="font-semibold text-[var(--ink)]">

@@ -52,9 +52,9 @@ export function RegistrationPolicyCard() {
   return (
     <SectionCard
       icon={<UserPlus size={19} aria-hidden="true" />}
-      iconBg="bg-indigo-50"
-      iconColor="text-indigo-600"
-      iconRing="ring-indigo-200/60"
+      iconBg="bg-[var(--info-soft)]"
+      iconColor="text-[var(--info-ink)]"
+      iconRing="ring-[var(--info-soft)]"
       title="นโยบายการเปิดรับสมาชิกใหม่"
       subtitle="กำหนดว่าใครสมัครเข้าใช้งาน workspace นี้ได้บ้าง"
     >

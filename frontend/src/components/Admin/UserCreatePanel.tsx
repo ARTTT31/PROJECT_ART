@@ -131,7 +131,7 @@ export default function UserCreatePanel({
                   className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-all duration-200 ${
                     form.role === role
                       ? 'bg-[var(--accent)] text-white'
-                      : 'bg-slate-100 text-slate-400'
+                      : 'bg-[var(--surface-chip)] text-[var(--ink-faint)]'
                   }`}
                 >
                   {role === 'admin' ? (

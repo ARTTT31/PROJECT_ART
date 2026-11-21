@@ -353,8 +353,8 @@ export default function MarketWidget({
                     <div
                       className={`mt-1.5 inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[11px] font-bold tabular-nums ${
                         gold.change >= 0
-                          ? 'bg-emerald-100/80 text-emerald-700'
-                          : 'bg-red-100/80 text-red-600'
+                          ? 'bg-[var(--success-soft)] text-[var(--success-ink)]'
+                          : 'bg-[var(--danger-soft)] text-[var(--danger-ink)]'
                       }`}
                     >
                       {gold.change >= 0 ? '+' : ''}
@@ -388,7 +388,7 @@ export default function MarketWidget({
                 </div>
                 <div
                   className={`mt-1 inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[11px] font-bold tabular-nums ${
-                    setUp ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-600'
+                    setUp ? 'bg-[var(--success-soft)] text-[var(--success-ink)]' : 'bg-[var(--danger-soft)] text-[var(--danger-ink)]'
                   }`}
                 >
                   {setUp ? (

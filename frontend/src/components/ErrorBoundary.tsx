@@ -58,30 +58,30 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
         >
           <div className="w-full max-w-md overflow-hidden rounded-[var(--art-radius-lg)] border border-white/30 bg-[var(--glass-80)] backdrop-blur-[24px] shadow-glass-lg">
             {/* Header */}
-            <div className="flex items-center gap-3 border-b border-slate-200/50 bg-red-50/50 px-6 py-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-apple-widget bg-red-100 text-red-600">
+            <div className="flex items-center gap-3 border-b border-[var(--hairline)] bg-[var(--danger-soft)] px-6 py-4">
+              <div className="flex h-10 w-10 items-center justify-center rounded-apple-widget bg-[color-mix(in_srgb,var(--danger)_18%,transparent)] text-[var(--danger-ink)]">
                 <AlertTriangle size={20} aria-hidden="true" />
               </div>
               <div>
-                <h2 className="text-base font-bold text-slate-900">เกิดข้อผิดพลาด</h2>
-                <p className="text-sm text-slate-500">ระบบไม่สามารถแสดงส่วนนี้ได้</p>
+                <h2 className="text-base font-bold text-[var(--ink)]">เกิดข้อผิดพลาด</h2>
+                <p className="text-sm text-[var(--ink-muted)]">ระบบไม่สามารถแสดงส่วนนี้ได้</p>
               </div>
             </div>
 
             {/* Body */}
             <div className="px-6 py-5">
-              <p className="text-sm text-slate-600">
+              <p className="text-sm text-[var(--ink-secondary)]">
                 เกิดข้อผิดพลาดที่ไม่คาดคิด คุณสามารถลองโหลดใหม่ หรือกลับไปยังหน้าหลัก
               </p>
               {process.env.NODE_ENV === 'development' && this.state.error && (
-                <pre className="mt-3 max-h-32 overflow-auto rounded-apple-md bg-slate-100 p-3 text-xs text-red-700">
+                <pre className="mt-3 max-h-32 overflow-auto rounded-apple-md bg-[var(--surface-chip)] p-3 text-xs text-[var(--danger-ink)]">
                   {this.state.error.message}
                 </pre>
               )}
             </div>
 
             {/* Actions */}
-            <div className="flex items-center gap-3 border-t border-slate-200/50 px-6 py-4">
+            <div className="flex items-center gap-3 border-t border-[var(--hairline)] px-6 py-4">
               <button
                 onClick={this.handleReset}
                 className="art-primary-button inline-flex items-center gap-2 !rounded-apple-widget text-sm"

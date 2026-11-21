@@ -105,31 +105,31 @@ export function getWeatherMeta(code: number) {
       return {
         label: translateText('ท้องฟ้าแจ่มใส', 'Clear sky'),
         icon: Sun,
-        colorClass: 'text-amber-500',
-        bgClass: 'bg-amber-50',
+        colorClass: 'text-[var(--warning)]',
+        bgClass: 'bg-[var(--warning-soft)]',
       };
     case 1:
     case 2:
       return {
         label: translateText('มีเมฆบางส่วน', 'Partly cloudy'),
         icon: CloudSun,
-        colorClass: 'text-sky-500',
-        bgClass: 'bg-sky-50',
+        colorClass: 'text-[var(--info-ink)]',
+        bgClass: 'bg-[var(--info-soft)]',
       };
     case 3:
       return {
         label: translateText('มีเมฆมาก', 'Mostly cloudy'),
         icon: Cloud,
-        colorClass: 'text-slate-500',
-        bgClass: 'bg-slate-100',
+        colorClass: 'text-[var(--ink-secondary)]',
+        bgClass: 'bg-[var(--surface-chip)]',
       };
     case 45:
     case 48:
       return {
         label: translateText('หมอกลง', 'Foggy'),
         icon: CloudFog,
-        colorClass: 'text-slate-500',
-        bgClass: 'bg-slate-100',
+        colorClass: 'text-[var(--ink-secondary)]',
+        bgClass: 'bg-[var(--surface-chip)]',
       };
     case 51:
     case 53:
@@ -137,8 +137,8 @@ export function getWeatherMeta(code: number) {
       return {
         label: translateText('ฝนปรอยๆ', 'Light drizzle'),
         icon: CloudDrizzle,
-        colorClass: 'text-blue-500',
-        bgClass: 'bg-blue-50',
+        colorClass: 'text-[var(--info-ink)]',
+        bgClass: 'bg-[var(--info-soft)]',
       };
     case 61:
     case 63:
@@ -146,8 +146,8 @@ export function getWeatherMeta(code: number) {
       return {
         label: translateText('ฝนตก', 'Rain'),
         icon: CloudRain,
-        colorClass: 'text-blue-600',
-        bgClass: 'bg-blue-50',
+        colorClass: 'text-[var(--info-ink)]',
+        bgClass: 'bg-[var(--info-soft)]',
       };
     case 80:
     case 81:
@@ -155,8 +155,8 @@ export function getWeatherMeta(code: number) {
       return {
         label: translateText('ฝนตกหนัก', 'Heavy rain'),
         icon: CloudRain,
-        colorClass: 'text-indigo-600',
-        bgClass: 'bg-indigo-50',
+        colorClass: 'text-[var(--info-ink)]',
+        bgClass: 'bg-[var(--info-soft)]',
       };
     case 95:
     case 96:
@@ -164,15 +164,15 @@ export function getWeatherMeta(code: number) {
       return {
         label: translateText('ฝนฟ้าคะนอง', 'Thunderstorms'),
         icon: CloudLightning,
-        colorClass: 'text-purple-600',
-        bgClass: 'bg-purple-50',
+        colorClass: 'text-[var(--danger-ink)]',
+        bgClass: 'bg-[var(--danger-soft)]',
       };
     default:
       return {
         label: translateText('สภาพอากาศทั่วไป', 'General conditions'),
         icon: CloudSun,
-        colorClass: 'text-sky-500',
-        bgClass: 'bg-sky-50',
+        colorClass: 'text-[var(--info-ink)]',
+        bgClass: 'bg-[var(--info-soft)]',
       };
   }
 }
@@ -187,8 +187,8 @@ export function getPM25Meta(pm25: number) {
         'อากาศบริสุทธิ์ เหมาะกับกิจกรรมกลางแจ้งทุกชนิด',
         'Clean air — great for any outdoor activity',
       ),
-      badgeClass: 'bg-emerald-50 text-emerald-700 ring-emerald-200/80',
-      dotClass: 'bg-emerald-500',
+      badgeClass: 'bg-[var(--success-soft)] text-[var(--success-ink)] ring-[var(--success-soft)]',
+      dotClass: 'bg-[var(--success)]',
       icon: ShieldCheck,
     };
   }
@@ -199,8 +199,8 @@ export function getPM25Meta(pm25: number) {
         'คุณภาพอากาศดี ทำกิจกรรมกลางแจ้งได้ตามปกติ',
         'Good air quality — outdoor activity as usual',
       ),
-      badgeClass: 'bg-sky-50 text-sky-700 ring-sky-200/80',
-      dotClass: 'bg-sky-500',
+      badgeClass: 'bg-[var(--info-soft)] text-[var(--info-ink)] ring-[var(--info-soft)]',
+      dotClass: 'bg-[var(--info-ink)]',
       icon: ShieldCheck,
     };
   }
@@ -211,8 +211,8 @@ export function getPM25Meta(pm25: number) {
         'กลุ่มเสี่ยงควรสังเกตอาการผิดปกติและเลี่ยงกิจกรรมหนัก',
         'Sensitive groups should watch for symptoms and avoid strenuous activity',
       ),
-      badgeClass: 'bg-amber-50 text-amber-700 ring-amber-200/80',
-      dotClass: 'bg-amber-500',
+      badgeClass: 'bg-[var(--warning-soft)] text-[var(--warning-ink)] ring-[var(--warning-soft)]',
+      dotClass: 'bg-[var(--warning)]',
       icon: ShieldAlert,
     };
   }
@@ -223,8 +223,8 @@ export function getPM25Meta(pm25: number) {
         'ควรสวมหน้ากากป้องกันฝุ่นเมื่อออกกลางแจ้ง',
         'Wear a mask when outdoors',
       ),
-      badgeClass: 'bg-orange-50 text-orange-700 ring-orange-200/80',
-      dotClass: 'bg-orange-500',
+      badgeClass: 'bg-[var(--warning-soft)] text-[var(--warning-ink)] ring-[var(--warning-soft)]',
+      dotClass: 'bg-[var(--warning)]',
       icon: ShieldAlert,
     };
   }
@@ -234,8 +234,8 @@ export function getPM25Meta(pm25: number) {
       'งดกิจกรรมกลางแจ้งทุกชนิด ใช้อุปกรณ์ฟอกอากาศในอาคาร',
       'Avoid all outdoor activity and use an indoor air purifier',
     ),
-    badgeClass: 'bg-rose-50 text-rose-700 ring-rose-200/80',
-    dotClass: 'bg-rose-500',
+    badgeClass: 'bg-[var(--danger-soft)] text-[var(--danger-ink)] ring-[var(--danger-soft)]',
+    dotClass: 'bg-[var(--danger)]',
     icon: ShieldAlert,
   };
 }

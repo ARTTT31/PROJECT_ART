@@ -88,7 +88,7 @@ export default function UserTable({
           >
             {statusFilter === 'trash'
               ? filteredTrash.map((t) => (
-                  <tr key={t.id} className="hover:bg-slate-50/50 transition-colors">
+                  <tr key={t.id} className="hover:bg-[var(--surface-grouped)] transition-colors">
                     <td className="px-5 py-4">
                       <div className="font-semibold text-[var(--ink)] text-[14px]">{t.name}</div>
                       <div className="text-[13px] text-[var(--ink-muted)] mt-0.5">
@@ -97,11 +97,11 @@ export default function UserTable({
                     </td>
                     <td className="px-5 py-4">
                       {t.role === 'admin' ? (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-purple-50 px-2.5 py-1 text-[11px] font-bold text-purple-700 ring-1 ring-inset ring-purple-600/20">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-[var(--info-soft)] px-2.5 py-1 text-[11px] font-bold text-[var(--info-ink)] ring-1 ring-inset ring-[var(--info-soft)]">
                           <ShieldAlert size={11} /> Admin
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-bold text-slate-600 ring-1 ring-inset ring-slate-500/20">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-[var(--surface-chip)] px-2.5 py-1 text-[11px] font-bold text-[var(--ink-secondary)] ring-1 ring-inset ring-[var(--hairline-strong)]">
                           <User size={11} /> User
                         </span>
                       )}
@@ -113,8 +113,8 @@ export default function UserTable({
                       <span
                         className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-bold ring-1 ring-inset ${
                           t.days_remaining <= 3
-                            ? 'bg-rose-50 text-rose-700 ring-rose-600/20'
-                            : 'bg-amber-50 text-amber-700 ring-amber-600/20'
+                            ? 'bg-[var(--danger-soft)] text-[var(--danger-ink)] ring-[var(--danger)]'
+                            : 'bg-[var(--warning-soft)] text-[var(--warning-ink)] ring-[var(--warning)]'
                         }`}
                       >
                         {remainingLabel(t.days_remaining)}
@@ -139,7 +139,7 @@ export default function UserTable({
                           onClick={() => onPurge(t)}
                           disabled={trashBusyId === t.id}
                           aria-label={`ลบถาวร ${displayLabel(t)}`}
-                          className="inline-flex items-center justify-center gap-1.5 rounded-full bg-rose-50 px-3.5 py-1.5 text-[12px] font-bold text-rose-700 ring-1 ring-inset ring-rose-600/20 transition-all hover:bg-rose-100 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+                          className="inline-flex items-center justify-center gap-1.5 rounded-full bg-[var(--danger-soft)] px-3.5 py-1.5 text-[12px] font-bold text-[var(--danger-ink)] ring-1 ring-inset ring-[var(--danger-soft)] transition-all hover:bg-[color-mix(in_srgb,var(--danger)_22%,transparent)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
                         >
                           <Trash2 size={12} /> ลบถาวร
                         </button>
@@ -149,7 +149,7 @@ export default function UserTable({
                 ))
               : statusFilter === 'pending'
                 ? filteredPending.map((p) => (
-                    <tr key={p.id} className="hover:bg-slate-50/50 transition-colors">
+                    <tr key={p.id} className="hover:bg-[var(--surface-grouped)] transition-colors">
                       <td className="px-5 py-4">
                         <div className="font-semibold text-[var(--ink)] text-[14px]">{p.name}</div>
                         <div className="text-[13px] text-[var(--ink-muted)] mt-0.5">
@@ -158,17 +158,17 @@ export default function UserTable({
                       </td>
                       <td className="px-5 py-4">
                         {p.role === 'admin' ? (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-purple-50 px-2.5 py-1 text-[11px] font-bold text-purple-700 ring-1 ring-inset ring-purple-600/20">
+                          <span className="inline-flex items-center gap-1 rounded-full bg-[var(--info-soft)] px-2.5 py-1 text-[11px] font-bold text-[var(--info-ink)] ring-1 ring-inset ring-[var(--info-soft)]">
                             <ShieldAlert size={11} /> Admin
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-bold text-slate-600 ring-1 ring-inset ring-slate-500/20">
+                          <span className="inline-flex items-center gap-1 rounded-full bg-[var(--surface-chip)] px-2.5 py-1 text-[11px] font-bold text-[var(--ink-secondary)] ring-1 ring-inset ring-[var(--hairline-strong)]">
                             <User size={11} /> User
                           </span>
                         )}
                       </td>
                       <td className="px-5 py-4">
-                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-bold text-amber-700 ring-1 ring-inset ring-amber-600/20">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-[var(--warning-soft)] px-2.5 py-1 text-[11px] font-bold text-[var(--warning-ink)] ring-1 ring-inset ring-[var(--warning-soft)]">
                           <Clock size={11} /> รออนุมัติ
                         </span>
                       </td>
@@ -192,7 +192,7 @@ export default function UserTable({
                             onClick={() => onReject(p)}
                             disabled={pendingBusyId === p.id}
                             aria-label={`ปฏิเสธคำขอของ ${displayLabel(p)}`}
-                            className="inline-flex items-center justify-center gap-1.5 rounded-full bg-rose-50 px-3.5 py-1.5 text-[12px] font-bold text-rose-700 ring-1 ring-inset ring-rose-600/20 transition-all hover:bg-rose-100 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+                            className="inline-flex items-center justify-center gap-1.5 rounded-full bg-[var(--danger-soft)] px-3.5 py-1.5 text-[12px] font-bold text-[var(--danger-ink)] ring-1 ring-inset ring-[var(--danger-soft)] transition-all hover:bg-[color-mix(in_srgb,var(--danger)_22%,transparent)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
                           >
                             <UserX size={12} /> ปฏิเสธ
                           </button>
@@ -203,7 +203,7 @@ export default function UserTable({
                 : users.map((u) => {
                     const isSelf = currentUser?.id === u.id;
                     return (
-                      <tr key={u.id} className="hover:bg-slate-50/50 transition-colors">
+                      <tr key={u.id} className="hover:bg-[var(--surface-grouped)] transition-colors">
                         <td className="px-5 py-4">
                           <div className="font-semibold text-[var(--ink)] text-[14px]">{u.name}</div>
                           <div className="text-[13px] text-[var(--ink-muted)] mt-0.5">
@@ -212,26 +212,26 @@ export default function UserTable({
                         </td>
                         <td className="px-5 py-4">
                           {u.role === 'admin' ? (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-purple-50 px-2.5 py-1 text-[11px] font-bold text-purple-700 ring-1 ring-inset ring-purple-600/20">
+                            <span className="inline-flex items-center gap-1 rounded-full bg-[var(--info-soft)] px-2.5 py-1 text-[11px] font-bold text-[var(--info-ink)] ring-1 ring-inset ring-[var(--info-soft)]">
                               <ShieldAlert size={11} /> Admin
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-bold text-slate-600 ring-1 ring-inset ring-slate-500/20">
+                            <span className="inline-flex items-center gap-1 rounded-full bg-[var(--surface-chip)] px-2.5 py-1 text-[11px] font-bold text-[var(--ink-secondary)] ring-1 ring-inset ring-[var(--hairline-strong)]">
                               <User size={11} /> User
                             </span>
                           )}
                         </td>
                         <td className="px-5 py-4">
                           {u.status === 'pending' ? (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-bold text-amber-700 ring-1 ring-inset ring-amber-600/20">
+                            <span className="inline-flex items-center gap-1 rounded-full bg-[var(--warning-soft)] px-2.5 py-1 text-[11px] font-bold text-[var(--warning-ink)] ring-1 ring-inset ring-[var(--warning-soft)]">
                               <Clock size={11} /> รออนุมัติ
                             </span>
                           ) : u.is_active ? (
-                            <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-700 ring-1 ring-inset ring-emerald-600/20">
+                            <span className="inline-flex items-center rounded-full bg-[var(--success-soft)] px-2.5 py-1 text-[11px] font-bold text-[var(--success-ink)] ring-1 ring-inset ring-[var(--success-soft)]">
                               ปกติ
                             </span>
                           ) : (
-                            <span className="inline-flex items-center rounded-full bg-rose-50 px-2.5 py-1 text-[11px] font-bold text-rose-700 ring-1 ring-inset ring-rose-600/20">
+                            <span className="inline-flex items-center rounded-full bg-[var(--danger-soft)] px-2.5 py-1 text-[11px] font-bold text-[var(--danger-ink)] ring-1 ring-inset ring-[var(--danger-soft)]">
                               ระงับบัญชี
                             </span>
                           )}
@@ -279,7 +279,7 @@ export default function UserTable({
                                   onClick={() => onReject(u)}
                                   disabled={pendingBusyId === u.id}
                                   aria-label={`ปฏิเสธคำขอของ ${displayLabel(u)}`}
-                                  className="inline-flex items-center justify-center gap-1.5 rounded-full bg-rose-50 px-3.5 py-1.5 text-[12px] font-bold text-rose-700 ring-1 ring-inset ring-rose-600/20 transition-all hover:bg-rose-100 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+                                  className="inline-flex items-center justify-center gap-1.5 rounded-full bg-[var(--danger-soft)] px-3.5 py-1.5 text-[12px] font-bold text-[var(--danger-ink)] ring-1 ring-inset ring-[var(--danger-soft)] transition-all hover:bg-[color-mix(in_srgb,var(--danger)_22%,transparent)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
                                 >
                                   <UserX size={12} /> ปฏิเสธ
                                 </button>
@@ -301,7 +301,7 @@ export default function UserTable({
                                       : `ลบผู้ใช้ ${displayLabel(u)}`
                                   }
                                   aria-label={`ลบผู้ใช้ ${displayLabel(u)}`}
-                                  className="inline-flex items-center justify-center gap-1.5 rounded-full bg-rose-50 px-3.5 py-1.5 text-[12px] font-bold text-rose-700 ring-1 ring-inset ring-rose-600/20 transition-all hover:bg-rose-100 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-rose-50"
+                                  className="inline-flex items-center justify-center gap-1.5 rounded-full bg-[var(--danger-soft)] px-3.5 py-1.5 text-[12px] font-bold text-[var(--danger-ink)] ring-1 ring-inset ring-[var(--danger-soft)] transition-all hover:bg-[color-mix(in_srgb,var(--danger)_22%,transparent)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-[var(--danger-soft)]"
                                 >
                                   {deletingId === u.id ? (
                                     <>

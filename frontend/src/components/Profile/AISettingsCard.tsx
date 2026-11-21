@@ -302,10 +302,10 @@ export default function AISettingsCard() {
               aria-hidden="true"
               className={`mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full ${
                 configured
-                  ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]'
+                  ? 'bg-[var(--success)] shadow-[0_0_8px_rgba(16,185,129,0.5)]'
                   : settings.source === 'server'
-                    ? 'bg-blue-500'
-                    : 'bg-stone-400'
+                    ? 'bg-[var(--info-ink)]'
+                    : 'bg-[var(--ink-faint)]'
               }`}
             />
             <div className="min-w-0">

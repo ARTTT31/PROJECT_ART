@@ -103,26 +103,26 @@ const typeConfig: Record<
   success: {
     icon: <CheckCircle size={20} aria-hidden="true" />,
     alertClass: 'alert-success',
-    iconBg: 'bg-emerald-100',
-    iconColor: 'text-emerald-600',
+    iconBg: 'bg-[var(--success-soft)]',
+    iconColor: 'text-[var(--success-ink)]',
   },
   error: {
     icon: <AlertCircle size={20} aria-hidden="true" />,
     alertClass: 'alert-error',
-    iconBg: 'bg-red-100',
-    iconColor: 'text-red-600',
+    iconBg: 'bg-[var(--danger-soft)]',
+    iconColor: 'text-[var(--danger-ink)]',
   },
   warning: {
     icon: <AlertTriangle size={20} aria-hidden="true" />,
     alertClass: 'alert-warning',
-    iconBg: 'bg-amber-100',
-    iconColor: 'text-amber-600',
+    iconBg: 'bg-[var(--warning-soft)]',
+    iconColor: 'text-[var(--warning-ink)]',
   },
   info: {
     icon: <Info size={20} aria-hidden="true" />,
     alertClass: 'alert-info',
-    iconBg: 'bg-sky-100',
-    iconColor: 'text-sky-600',
+    iconBg: 'bg-[var(--info-soft)]',
+    iconColor: 'text-[var(--info-ink)]',
   },
 };
 

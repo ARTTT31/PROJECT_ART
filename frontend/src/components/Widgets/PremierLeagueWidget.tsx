@@ -616,10 +616,10 @@ export default function PremierLeagueWidget({
                   <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)]" /> 1-4 UCL
                 </span>
                 <span className="flex items-center gap-1">
-                  <span className="h-1.5 w-1.5 rounded-full bg-amber-500" /> 5 UEL
+                  <span className="h-1.5 w-1.5 rounded-full bg-[var(--warning)]" /> 5 UEL
                 </span>
                 <span className="flex items-center gap-1">
-                  <span className="h-1.5 w-1.5 rounded-full bg-rose-500" /> 18-20 ตกชั้น
+                  <span className="h-1.5 w-1.5 rounded-full bg-[var(--danger)]" /> 18-20 ตกชั้น
                 </span>
               </div>
             </div>

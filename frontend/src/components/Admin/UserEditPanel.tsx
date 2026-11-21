@@ -99,7 +99,7 @@ export default function UserEditPanel({
                     ? 'ปิด 2FA ของตัวเองได้ที่หน้าตั้งค่าความปลอดภัย'
                     : 'ล้างรหัส 2FA ของบัญชีนี้'
                 }
-                className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-full bg-rose-50 px-3.5 py-1.5 text-[12px] font-bold text-rose-700 ring-1 ring-inset ring-rose-600/20 transition-all duration-150 hover:bg-rose-100 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+                className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-full bg-[var(--danger-soft)] px-3.5 py-1.5 text-[12px] font-bold text-[var(--danger-ink)] ring-1 ring-inset ring-[var(--danger-soft)] transition-all duration-150 hover:bg-[color-mix(in_srgb,var(--danger)_22%,transparent)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 {resettingTwoFactorId === user.id ? (
                   <Loader2 size={12} className="animate-spin" aria-hidden="true" />
@@ -131,7 +131,7 @@ export default function UserEditPanel({
                 className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-all duration-200 ${
                   role === 'user'
                     ? 'bg-[var(--accent)] text-white scale-110'
-                    : 'bg-slate-100 text-slate-400 group-hover:text-slate-500'
+                    : 'bg-[var(--surface-chip)] text-[var(--ink-faint)] group-hover:text-[var(--ink-muted)]'
                 }`}
               >
                 <User size={18} strokeWidth={2.5} />
@@ -160,15 +160,15 @@ export default function UserEditPanel({
               onClick={() => onRoleChange('admin')}
               className={`group relative flex cursor-pointer items-start gap-3 rounded-apple-lg p-4 transition-all duration-200 ${
                 role === 'admin'
-                  ? 'bg-[var(--surface)] ring-2 ring-purple-600'
+                  ? 'bg-[var(--surface)] ring-2 ring-[var(--info-soft)]'
                   : 'bg-[var(--surface-subtle)] ring-1 ring-[var(--hairline)] hover:bg-[var(--surface)]'
               }`}
             >
               <div
                 className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-all duration-200 ${
                   role === 'admin'
-                    ? 'bg-purple-600 text-white scale-110'
-                    : 'bg-slate-100 text-slate-400 group-hover:text-slate-500'
+                    ? 'bg-[var(--info-ink)] text-white scale-110'
+                    : 'bg-[var(--surface-chip)] text-[var(--ink-faint)] group-hover:text-[var(--ink-muted)]'
                 }`}
               >
                 <ShieldAlert size={18} strokeWidth={2.5} />
@@ -176,7 +176,7 @@ export default function UserEditPanel({
               <div>
                 <span
                   className={`block text-[14px] font-semibold transition-colors ${
-                    role === 'admin' ? 'text-purple-700' : 'text-[var(--ink)]'
+                    role === 'admin' ? 'text-[var(--info-ink)]' : 'text-[var(--ink)]'
                   }`}
                 >
                   ผู้ดูแลระบบ (Admin)
@@ -186,7 +186,7 @@ export default function UserEditPanel({
                 </span>
               </div>
               {role === 'admin' && (
-                <div className="absolute right-4 top-4 text-purple-600 animate-in zoom-in duration-200">
+                <div className="absolute right-4 top-4 text-[var(--info-ink)] animate-in zoom-in duration-200">
                   <CheckCircle2 size={20} />
                 </div>
               )}

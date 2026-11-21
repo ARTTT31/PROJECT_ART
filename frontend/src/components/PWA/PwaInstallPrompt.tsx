@@ -99,7 +99,7 @@ export function PwaInstallPrompt() {
               <p className="text-[12px] text-[var(--ink-secondary)] leading-relaxed">
                 แตะปุ่มแชร์{' '}
                 <span className="inline-flex items-center gap-1 rounded-apple-sm bg-[var(--surface)] px-1.5 py-0.5 font-semibold text-[var(--ink)] ring-1 ring-[var(--hairline)]">
-                  <Share size={12} className="text-blue-500" aria-hidden="true" /> แชร์ (Share)
+                  <Share size={12} className="text-[var(--info-ink)]" aria-hidden="true" /> แชร์ (Share)
                 </span>{' '}
                 ที่แถบเมนูด้านล่างของ Safari
               </p>
@@ -113,7 +113,7 @@ export function PwaInstallPrompt() {
               <p className="text-[12px] text-[var(--ink-secondary)] leading-relaxed">
                 เลื่อนลงมาแล้วเลือก{' '}
                 <span className="inline-flex items-center gap-1 rounded-apple-sm bg-[var(--surface)] px-1.5 py-0.5 font-semibold text-[var(--ink)] ring-1 ring-[var(--hairline)]">
-                  <PlusSquare size={12} className="text-blue-500" aria-hidden="true" />{' '}
+                  <PlusSquare size={12} className="text-[var(--info-ink)]" aria-hidden="true" />{' '}
                   เพิ่มไปยังหน้าจอโฮม
                 </span>
               </p>
@@ -198,7 +198,7 @@ export function PwaHeaderButton() {
               <p className="text-[12px] text-[var(--ink-secondary)] leading-relaxed">
                 แตะปุ่มแชร์{' '}
                 <span className="inline-flex items-center gap-1 rounded-apple-sm bg-[var(--surface)] px-1.5 py-0.5 font-semibold text-[var(--ink)] ring-1 ring-[var(--hairline)]">
-                  <Share size={12} className="text-blue-500" aria-hidden="true" /> แชร์ (Share)
+                  <Share size={12} className="text-[var(--info-ink)]" aria-hidden="true" /> แชร์ (Share)
                 </span>{' '}
                 ที่แถบเมนูด้านล่างของ Safari
               </p>
@@ -211,7 +211,7 @@ export function PwaHeaderButton() {
               <p className="text-[12px] text-[var(--ink-secondary)] leading-relaxed">
                 เลื่อนลงมาแล้วเลือก{' '}
                 <span className="inline-flex items-center gap-1 rounded-apple-sm bg-[var(--surface)] px-1.5 py-0.5 font-semibold text-[var(--ink)] ring-1 ring-[var(--hairline)]">
-                  <PlusSquare size={12} className="text-blue-500" aria-hidden="true" />{' '}
+                  <PlusSquare size={12} className="text-[var(--info-ink)]" aria-hidden="true" />{' '}
                   เพิ่มไปยังหน้าจอโฮม
                 </span>
               </p>

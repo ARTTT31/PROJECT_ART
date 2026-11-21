@@ -91,10 +91,10 @@ export function HolidaySkeleton() {
           <div className="h-8 w-16 rounded-full skeleton-shimmer" />
         </div>
 
-        <div className="mt-4 rounded-apple-lg bg-slate-50 p-4 border border-slate-100 skeleton-shimmer">
-          <div className="h-3 w-24 rounded-full bg-slate-200 mb-2" />
-          <div className="h-5 w-48 rounded-full bg-slate-200 mb-2" />
-          <div className="h-3 w-full max-w-[200px] rounded-full bg-slate-200" />
+        <div className="mt-4 rounded-apple-lg bg-[var(--surface-grouped)] p-4 border border-[var(--hairline)] skeleton-shimmer">
+          <div className="h-3 w-24 rounded-full bg-[var(--surface-chip-2)] mb-2" />
+          <div className="h-5 w-48 rounded-full bg-[var(--surface-chip-2)] mb-2" />
+          <div className="h-3 w-full max-w-[200px] rounded-full bg-[var(--surface-chip-2)]" />
         </div>
       </div>
 
@@ -102,16 +102,16 @@ export function HolidaySkeleton() {
         {[...Array(3)].map((_, i) => (
           <div
             key={i}
-            className="flex items-center justify-between rounded-apple-widget bg-[var(--surface)] p-3 ring-1 ring-slate-100 skeleton-shimmer"
+            className="flex items-center justify-between rounded-apple-widget bg-[var(--surface)] p-3 ring-1 ring-[var(--hairline)] skeleton-shimmer"
           >
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-apple-widget bg-slate-50" />
+              <div className="h-10 w-10 rounded-apple-widget bg-[var(--surface-grouped)]" />
               <div className="space-y-1.5">
-                <div className="h-4 w-32 rounded-full bg-slate-100" />
-                <div className="h-3 w-20 rounded-full bg-slate-50" />
+                <div className="h-4 w-32 rounded-full bg-[var(--surface-chip)]" />
+                <div className="h-3 w-20 rounded-full bg-[var(--surface-grouped)]" />
               </div>
             </div>
-            <div className="h-5 w-16 rounded-full bg-slate-100" />
+            <div className="h-5 w-16 rounded-full bg-[var(--surface-chip)]" />
           </div>
         ))}
       </div>
@@ -137,10 +137,10 @@ export function OilPriceSkeleton() {
         {[...Array(4)].map((_, i) => (
           <div
             key={i}
-            className="rounded-apple-lg bg-slate-50 p-3 ring-1 ring-slate-100 skeleton-shimmer"
+            className="rounded-apple-lg bg-[var(--surface-grouped)] p-3 ring-1 ring-[var(--hairline)] skeleton-shimmer"
           >
-            <div className="h-3 w-16 rounded-full bg-slate-200 mb-2" />
-            <div className="h-6 w-20 rounded-full bg-slate-200" />
+            <div className="h-3 w-16 rounded-full bg-[var(--surface-chip-2)] mb-2" />
+            <div className="h-6 w-20 rounded-full bg-[var(--surface-chip-2)]" />
           </div>
         ))}
       </div>

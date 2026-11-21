@@ -65,9 +65,9 @@ export default function AccountDetailsCard({
   return (
     <SectionCard
       icon={<User size={19} aria-hidden="true" />}
-      iconBg="bg-emerald-50"
-      iconColor="text-emerald-600"
-      iconRing="ring-emerald-200/60"
+      iconBg="bg-[var(--success-soft)]"
+      iconColor="text-[var(--success-ink)]"
+      iconRing="ring-[var(--success-soft)]"
       title="ข้อมูลส่วนตัว"
       subtitle="อัปเดตชื่อที่แสดงและอีเมลสำหรับใช้งานในระบบ"
     >

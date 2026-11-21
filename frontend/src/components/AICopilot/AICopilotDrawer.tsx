@@ -338,8 +338,8 @@ export default function AICopilotDrawer() {
             <>
               <Sparkles size={22} aria-hidden="true" className="transition-transform group-hover:rotate-12" />
               <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                <span className="relative inline-flex h-3.5 w-3.5 rounded-full bg-emerald-500 border-2 border-white" />
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--success)] opacity-75" />
+                <span className="relative inline-flex h-3.5 w-3.5 rounded-full bg-[var(--success)] border-2 border-white" />
               </span>
             </>
           )}
@@ -363,8 +363,8 @@ export default function AICopilotDrawer() {
                   <h3 className="text-[14px] font-bold tracking-tight text-[var(--ink)]">
                     AI Copilot
                   </h3>
-                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-600">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="inline-flex items-center gap-1 rounded-full bg-[var(--success-soft)] px-2 py-0.5 text-[10px] font-bold text-[var(--success-ink)]">
+                    <span className="h-1.5 w-1.5 rounded-full bg-[var(--success)] animate-pulse" />
                     ออนไลน์
                   </span>
                 </div>
@@ -434,7 +434,7 @@ export default function AICopilotDrawer() {
                         settings instead of passing a canned reply off as AI. */}
                     {msg.degraded && (
                       <div className="mt-2 flex items-start gap-2 rounded-apple-md bg-[var(--warning-soft)] px-2.5 py-1.5 text-[11px] font-medium text-[var(--warning-ink)] border border-[var(--warning-soft)]">
-                        <AlertTriangle size={13} className="mt-0.5 shrink-0 text-amber-500" aria-hidden="true" />
+                        <AlertTriangle size={13} className="mt-0.5 shrink-0 text-[var(--warning)]" aria-hidden="true" />
                         <span>
                           คีย์ที่เชื่อมไว้ตอบไม่ได้ จึงใช้โหมดพื้นฐานแทน — ตรวจสอบคีย์และโมเดลที่
                           โปรไฟล์ › เชื่อมต่อ AI
@@ -445,7 +445,7 @@ export default function AICopilotDrawer() {
                     {/* Action Confirmation Badge */}
                     {msg.action && (
                       <div className="mt-2 flex items-center gap-2 rounded-apple-md bg-[var(--success-soft)] px-2.5 py-1.5 text-[11px] font-medium text-[var(--success-ink)] border border-[var(--success-soft)]">
-                        <CheckCircle2 size={13} className="text-emerald-500 shrink-0" />
+                        <CheckCircle2 size={13} className="text-[var(--success)] shrink-0" />
                         <span className="truncate">
                           {msg.action.type === 'add_note' ? 'เพิ่มลงใน Quick Notes แล้ว' : 'ตั้งเตือนในระบบแล้ว'}
                         </span>

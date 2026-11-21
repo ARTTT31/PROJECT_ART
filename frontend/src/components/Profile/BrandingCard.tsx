@@ -219,9 +219,9 @@ export function BrandingCard({ isAdmin = false }: { isAdmin?: boolean }) {
   return (
     <SectionCard
       icon={<Building2 size={19} aria-hidden="true" />}
-      iconBg="bg-amber-50"
-      iconColor="text-amber-600"
-      iconRing="ring-amber-200/60"
+      iconBg="bg-[var(--warning-soft)]"
+      iconColor="text-[var(--warning-ink)]"
+      iconRing="ring-[var(--warning-soft)]"
       title={copy.title}
       subtitle={copy.subtitle}
     >
@@ -232,7 +232,7 @@ export function BrandingCard({ isAdmin = false }: { isAdmin?: boolean }) {
               htmlFor="branding-company-name"
               className="block text-[13px] font-semibold text-[var(--ink)] mb-1.5"
             >
-              {copy.nameLabel} <span className="text-rose-500">*</span>
+              {copy.nameLabel} <span className="text-[var(--danger)]">*</span>
             </label>
             <input
               id="branding-company-name"
@@ -242,7 +242,7 @@ export function BrandingCard({ isAdmin = false }: { isAdmin?: boolean }) {
               placeholder={copy.namePlaceholder}
               disabled={isSavingBranding}
               required
-              className="w-full rounded-apple-widget border border-[var(--hairline-strong)] bg-[var(--surface)] px-3.5 py-2.5 text-[14px] text-[var(--ink)] shadow-2xs placeholder:text-[var(--ink-tertiary)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)] disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed"
+              className="w-full rounded-apple-widget border border-[var(--hairline-strong)] bg-[var(--surface)] px-3.5 py-2.5 text-[14px] text-[var(--ink)] shadow-2xs placeholder:text-[var(--ink-tertiary)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)] disabled:bg-[var(--surface-chip)] disabled:text-[var(--ink-muted)] disabled:cursor-not-allowed"
             />
           </div>
 
@@ -260,7 +260,7 @@ export function BrandingCard({ isAdmin = false }: { isAdmin?: boolean }) {
               onChange={(e) => setFormCompanyTagline(e.target.value)}
               placeholder="เช่น ทำงานให้ง่ายขึ้นทุกวัน"
               disabled={isSavingBranding}
-              className="w-full rounded-apple-widget border border-[var(--hairline-strong)] bg-[var(--surface)] px-3.5 py-2.5 text-[14px] text-[var(--ink)] shadow-2xs placeholder:text-[var(--ink-tertiary)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)] disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed"
+              className="w-full rounded-apple-widget border border-[var(--hairline-strong)] bg-[var(--surface)] px-3.5 py-2.5 text-[14px] text-[var(--ink)] shadow-2xs placeholder:text-[var(--ink-tertiary)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)] disabled:bg-[var(--surface-chip)] disabled:text-[var(--ink-muted)] disabled:cursor-not-allowed"
             />
           </div>
         </div>
@@ -386,7 +386,7 @@ export function BrandingCard({ isAdmin = false }: { isAdmin?: boolean }) {
                   type="button"
                   onClick={handleResetBrandLogo}
                   disabled={isBusyLogo}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-[var(--surface)] px-3.5 py-1.5 text-[12px] font-bold text-[var(--ink-secondary)] ring-1 ring-[var(--hairline)] transition-all hover:bg-slate-50 active:scale-95 disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-[var(--surface)] px-3.5 py-1.5 text-[12px] font-bold text-[var(--ink-secondary)] ring-1 ring-[var(--hairline)] transition-all hover:bg-[var(--surface-grouped)] active:scale-95 disabled:opacity-50"
                 >
                   ใช้โลโก้เดิม
                 </button>

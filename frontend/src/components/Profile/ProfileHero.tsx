@@ -83,11 +83,11 @@ export default function ProfileHero({
                 {name || 'ผู้ใช้งาน'}
               </h1>
               {isAdmin ? (
-                <span className="inline-flex items-center gap-1 rounded-full bg-purple-50 px-2.5 py-0.5 text-[11px] font-bold text-purple-700 ring-1 ring-purple-600/20">
+                <span className="inline-flex items-center gap-1 rounded-full bg-[var(--info-soft)] px-2.5 py-0.5 text-[11px] font-bold text-[var(--info-ink)] ring-1 ring-[var(--info-soft)]">
                   <ShieldAlert size={11} /> จัดการระบบ (Admin)
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-bold text-slate-600 ring-1 ring-slate-500/20">
+                <span className="inline-flex items-center gap-1 rounded-full bg-[var(--surface-chip)] px-2.5 py-0.5 text-[11px] font-bold text-[var(--ink-secondary)] ring-1 ring-[var(--hairline-strong)]">
                   <User size={11} /> ผู้ใช้ทั่วไป (User)
                 </span>
               )}

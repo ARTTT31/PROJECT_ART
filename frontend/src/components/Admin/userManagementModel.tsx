@@ -100,8 +100,8 @@ export interface FilterOption {
 
 export const ROLE_OPTIONS: FilterOption[] = [
   { value: '', label: 'ทุกสิทธิ์', icon: <User size={13} className="text-[var(--ink-tertiary)]" /> },
-  { value: 'admin', label: 'Admin', icon: <ShieldAlert size={13} className="text-purple-600" /> },
-  { value: 'user', label: 'User', icon: <User size={13} className="text-slate-600" /> },
+  { value: 'admin', label: 'Admin', icon: <ShieldAlert size={13} className="text-[var(--info-ink)]" /> },
+  { value: 'user', label: 'User', icon: <User size={13} className="text-[var(--ink-secondary)]" /> },
 ];
 
 // Status filter is text-only on purpose: the coloured dots and icons added

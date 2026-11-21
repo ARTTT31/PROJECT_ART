@@ -84,9 +84,9 @@ export function DateFormatCard() {
   return (
     <SectionCard
       icon={<CalendarRange size={19} aria-hidden="true" />}
-      iconBg="bg-sky-50"
-      iconColor="text-sky-600"
-      iconRing="ring-sky-200/60"
+      iconBg="bg-[var(--info-soft)]"
+      iconColor="text-[var(--info-ink)]"
+      iconRing="ring-[var(--info-soft)]"
       title={t('card.dateTime.title')}
       subtitle={t('card.dateTime.subtitle')}
     >

@@ -14,19 +14,19 @@ export default function PendingRequestsBanner({
   onFilterPending: () => void;
 }) {
   return (
-    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 rounded-apple-lg bg-amber-500/[0.08] border border-amber-500/25 text-[var(--ink)]">
+    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 rounded-apple-lg bg-[var(--warning-soft)] border border-[var(--warning-soft)] text-[var(--ink)]">
       <div className="flex items-start gap-3">
-        <span className="p-2 rounded-apple-widget bg-amber-500/15 text-amber-700 shrink-0 mt-0.5 sm:mt-0">
+        <span className="p-2 rounded-apple-widget bg-[color-mix(in_srgb,var(--warning)_18%,transparent)] text-[var(--warning-ink)] shrink-0 mt-0.5 sm:mt-0">
           <Clock size={18} />
         </span>
         <div>
-          <div className="font-bold text-[14px] text-amber-950 flex items-center gap-2">
+          <div className="font-bold text-[14px] text-[var(--ink)] flex items-center gap-2">
             <span>มีคำขอสมัครสมาชิกใหม่ {count} รายการในหน้านี้ รอการอนุมัติ</span>
-            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-500 text-white">
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-[var(--warning-soft)] text-[var(--warning-ink)] ring-1 ring-[var(--warning-soft)]">
               รออนุมัติ
             </span>
           </div>
-          <p className="text-[13px] text-amber-800/90 mt-0.5">
+          <p className="text-[13px] text-[var(--ink-secondary)] mt-0.5">
             คุณสามารถกดอนุมัติได้ทันทีที่ตารางด้านล่าง หรือคลิกเพื่อกรองดูเฉพาะคำขอทั้งหมด
           </p>
         </div>
@@ -36,7 +36,7 @@ export default function PendingRequestsBanner({
           type="button"
           disabled={bulkApproving || count === 0}
           onClick={onBulkApprove}
-          className="inline-flex items-center justify-center gap-1.5 rounded-full bg-emerald-600 px-4 py-2 text-[13px] font-bold text-white shadow-xs transition-all hover:bg-emerald-700 active:scale-[0.98] disabled:opacity-50"
+          className="inline-flex items-center justify-center gap-1.5 rounded-full bg-[var(--success-soft)] px-4 py-2 text-[13px] font-bold text-[var(--success-ink)] ring-1 ring-[var(--success-soft)] transition-all hover:bg-[color-mix(in_srgb,var(--success)_22%,transparent)] active:scale-[0.98] disabled:opacity-50"
         >
           {bulkApproving ? (
             <Loader2 size={14} className="animate-spin" aria-hidden="true" />
@@ -48,7 +48,7 @@ export default function PendingRequestsBanner({
         <button
           type="button"
           onClick={onFilterPending}
-          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-amber-600 hover:bg-amber-700 active:scale-[0.98] text-white text-[13px] font-bold shadow-xs transition-all shrink-0 self-stretch sm:self-auto justify-center"
+          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-[var(--warning-soft)] ring-1 ring-[var(--warning-soft)] hover:bg-[color-mix(in_srgb,var(--warning)_22%,transparent)] active:scale-[0.98] text-[var(--warning-ink)] text-[13px] font-bold transition-all shrink-0 self-stretch sm:self-auto justify-center"
         >
           <span>กรองดูเฉพาะคำขอรออนุมัติ</span>
           <ArrowRight size={14} />

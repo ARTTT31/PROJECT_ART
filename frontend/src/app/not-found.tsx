@@ -14,7 +14,7 @@ export default function NotFound() {
   }, []);
 
   return (
-    <main className="min-h-[100dvh] text-slate-950" style={{ background: 'var(--art-page-bg)' }}>
+    <main className="min-h-[100dvh] text-[var(--ink)]" style={{ background: 'var(--art-page-bg)' }}>
       <a href="#main-content" className="skip-link">
         {tr('ข้ามไปยังเนื้อหาหลัก', 'Skip to main content')}
       </a>
@@ -49,11 +49,11 @@ export default function NotFound() {
 
           {/* Right: Content Panel */}
           <div className="flex flex-col justify-center p-8 sm:p-12">
-            <p className="text-sm font-bold text-sky-700">Workspace</p>
-            <h1 className="mt-4 text-3xl font-bold leading-tight tracking-normal text-slate-950">
+            <p className="text-sm font-bold text-[var(--info-ink)]">Workspace</p>
+            <h1 className="mt-4 text-3xl font-bold leading-tight tracking-normal text-[var(--ink)]">
               {tr('ลิงก์นี้อาจถูกย้าย หรือลบออกแล้ว', 'This link may have moved or been deleted')}
             </h1>
-            <p className="mt-4 max-w-xl text-base leading-7 text-slate-600">
+            <p className="mt-4 max-w-xl text-base leading-7 text-[var(--ink-secondary)]">
               {tr(
                 'กลับไปยังหน้าหลักของระบบ หรือเข้าสู่ระบบอีกครั้งเพื่อไปยังแดชบอร์ดของคุณ',
                 'Go back to the home page, or sign in again to reach your dashboard.',
@@ -79,7 +79,7 @@ export default function NotFound() {
 
             <button
               onClick={() => typeof window !== 'undefined' && window.history.back()}
-              className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-slate-500 transition-colors hover:text-slate-700"
+              className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-[var(--ink-muted)] transition-colors hover:text-[var(--ink)]"
             >
               <ArrowLeft size={16} aria-hidden="true" />
               {tr('กลับหน้าที่แล้ว', 'Go back')}
