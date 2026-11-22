@@ -90,6 +90,15 @@ const serwist = new Serwist({
 
 serwist.addEventListeners();
 
+// A document cached by an older build carries that build's script tags and RSC
+// payload, so once a new deployment lands it hydrates against the new chunks and
+// React aborts with #418 ("server HTML didn't match the client"). Dropping the
+// page cache on every activate keeps a cached document from outliving the build
+// that wrote it; the offline shell below still answers when the network is down.
+self.addEventListener('activate', (event) => {
+  event.waitUntil(caches.delete('pages'));
+});
+
 // Push Notifications
 self.addEventListener('push', (event: PushEvent) => {
   let title = 'Workspace';

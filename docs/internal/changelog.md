@@ -1792,3 +1792,29 @@ reload, and a reply that used a list or a table arrived as a wall of asterisks a
 cases and the restore/clear case), `npx tsc --noEmit` and `npx eslint .` clean; `flake8 app tests`
 and `mypy app` clean; `scripts/check_docs_links.py` OK. Not verified: the drawer's rendering in a real
 browser (unit tests cover the blocks, not the visual result).
+
+## Two Console Errors on the Deployed Profile Page (November 22, 2026)
+
+`project-art-sigma.vercel.app/profile?tab=ai` logged a rejected `FetchEvent`
+(`no-response`) from `sw.js` and React `#418` ("server HTML didn't match the client"). Both belong to
+the same class of failure: a page document that outlived the build that wrote it.
+
+- **Cached documents no longer survive a deployment.** `sw.ts` keeps navigations in a `pages` cache
+  for 24 hours; after a new deploy that document carries the old build's script tags and RSC payload,
+  so hydrating it against the new chunks is exactly the mismatch React reports as `#418`. The worker
+  now drops `pages` on every `activate`, so a cached document can only ever belong to the running
+  build. Offline navigations still get `offline.html`.
+- **Two render-time `localStorage` reads removed.** `Sidebar.tsx` and `profile/page.tsx` seeded their
+  menu state from `localStorage` inside the `useState` initializer, which renders one order on the
+  server and another on the client — the other classic source of `#418`. Both now start from the
+  default menu and apply the saved copy in an effect (the account's copy still wins).
+
+### Verified
+
+`npx vitest run` **456 passed / 69 files**; `npx tsc --noEmit` and `npx eslint .` clean;
+`npm run build` OK and the emitted `public/sw.js` contains the `activate` purge. Reproduced the
+profile page in a production build (`next start`) with a saved menu order and a renamed workspace:
+no hydration error, and the saved order still applies after mount — the same page passes in `next dev`.
+Not verified: the deployed site's console itself (needs the owner's signed-in session), so whether
+`#418` came from the cached document, from the render-time reads, or from a deploy that was rolling
+out while the page loaded is not settled here.

@@ -83,11 +83,13 @@ export default function Sidebar({
     return parseMainMenuConfig(localStorage.getItem(MAIN_MENU_STORAGE_KEY));
   };
 
-  const [mainMenuConfig, setMainMenuConfig] = useState<MainMenuItemConfig[]>(() => {
-    if (typeof window === 'undefined') return parseMainMenuConfig(null);
-    const saved = localStorage.getItem(MAIN_MENU_STORAGE_KEY);
-    return parseMainMenuConfig(saved);
-  });
+  // Start from the default menu and let the effect below apply the saved one.
+  // Reading localStorage in this initializer made the server render the default
+  // order and the client render the saved one, which is a hydration mismatch
+  // (React #418) on every signed-in page.
+  const [mainMenuConfig, setMainMenuConfig] = useState<MainMenuItemConfig[]>(() =>
+    parseMainMenuConfig(null),
+  );
 
   useEffect(() => {
     setMainMenuConfig(resolveMenu());

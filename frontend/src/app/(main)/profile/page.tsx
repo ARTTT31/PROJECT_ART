@@ -104,12 +104,13 @@ export default function ProfilePage() {
   const [quickLinkDialogOpen, setQuickLinkDialogOpen] = useState(false);
   const [editingQuickLink, setEditingQuickLink] = useState<QuickLink | null>(null);
 
-  // Main Menu Config
-  const [mainMenuConfig, setMainMenuConfig] = useState<MainMenuItemConfig[]>(() => {
-    if (typeof window === 'undefined') return parseMainMenuConfig(null);
-    const saved = localStorage.getItem(MAIN_MENU_STORAGE_KEY);
-    return parseMainMenuConfig(saved);
-  });
+  // Main Menu Config. The initial value is the default menu: reading the saved
+  // copy during render gave the client a different tree than the server (React
+  // #418). The effect below applies this browser's copy after mount, and the
+  // account's copy still wins when it has one.
+  const [mainMenuConfig, setMainMenuConfig] = useState<MainMenuItemConfig[]>(() =>
+    parseMainMenuConfig(null),
+  );
 
   const enabledPages = useEnabledPages();
   const isAdmin = currentUser?.role === 'admin';
@@ -144,6 +145,14 @@ export default function ProfilePage() {
       window.removeEventListener('hashchange', applyTabFromUrl);
     };
   }, []);
+
+  // This browser's copy, applied after hydration so the first render matches the
+  // server's. Skipped when the account has one, because that wins.
+  useEffect(() => {
+    if (authUser?.main_menu) return;
+    const saved = localStorage.getItem(MAIN_MENU_STORAGE_KEY);
+    if (saved) setMainMenuConfig(parseMainMenuConfig(saved));
+  }, [authUser?.main_menu]);
 
   // The account's saved menu outranks this browser's cache, so a layout arranged
   // on another device shows up here. Accounts that still only have a local
