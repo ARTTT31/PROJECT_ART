@@ -532,28 +532,6 @@ export default function AISettingsCard() {
           hint="เว้นว่างเพื่อใช้ค่าเริ่มต้นของระบบ"
         />
 
-        {/* Plain-language how-to instead of a security paragraph: the steps are
-            what a first-time user needs, and the key's safety is one short line. */}
-        <div className="rounded-apple-widget border border-[var(--hairline-soft)] bg-[var(--surface-subtle)] px-3.5 py-3">
-          <ol className="space-y-1.5 text-[11.5px] leading-relaxed text-[var(--ink-secondary)]">
-            <li className="flex gap-2">
-              <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-[var(--accent-soft)] text-[9px] font-bold text-[var(--accent-text)]">1</span>
-              <span>เลือกผู้ให้บริการ แล้ววาง API Key ด้านบน — ระบบจะเลือกโมเดลที่ใช้ได้ให้เอง</span>
-            </li>
-            <li className="flex gap-2">
-              <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-[var(--accent-soft)] text-[9px] font-bold text-[var(--accent-text)]">2</span>
-              <span>กด &ldquo;บันทึกการเชื่อมต่อ&rdquo; แล้วกด &ldquo;ทดสอบการเชื่อมต่อ&rdquo; เพื่อเช็กว่าคีย์ใช้งานได้จริง</span>
-            </li>
-            <li className="flex gap-2">
-              <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-[var(--accent-soft)] text-[9px] font-bold text-[var(--accent-text)]">3</span>
-              <span>เปิดแชท AI Copilot ได้เลย — ชื่อผู้ให้บริการและโมเดลจะขึ้นใต้ข้อความตอบกลับ</span>
-            </li>
-          </ol>
-          <p className="mt-2.5 border-t border-[var(--hairline-soft)] pt-2 text-[11px] text-[var(--ink-tertiary)]">
-            คีย์ถูกเก็บแบบเข้ารหัสและใช้กับแชทของบัญชีนี้เท่านั้น ลบได้ทุกเมื่อด้วยปุ่มด้านล่าง
-          </p>
-        </div>
-
         {/* Actions */}
         <div className="flex flex-col gap-2.5 pt-1 sm:flex-row sm:items-center sm:justify-between border-t border-[var(--hairline-soft)] pt-4">
           <div className="flex flex-wrap items-center gap-2">
