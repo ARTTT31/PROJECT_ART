@@ -1763,3 +1763,32 @@ system. None of them threw an error, which is what made them worth fixing.
 
 `pytest -q` **733 passed / 84.50%** (+3: the session-expiry test and the two ranking cases);
 `flake8 app tests` clean; `mypy app` clean (74 files); `scripts/check_docs_links.py` OK.
+
+## The Copilot Remembers, and Its Answers Look Like Answers (November 22, 2026)
+
+Phase 3 item 4, minus the image input. Two complaints in one: the conversation vanished on every
+reload, and a reply that used a list or a table arrived as a wall of asterisks and pipes.
+
+- **History survives a reload.** The drawer writes the last 40 messages to
+  `scopedStorageKey('ai-copilot/history')` — per account, so the next person on a shared browser
+  starts clean, and `clearOfflineData()` already sweeps it on logout. A restore is validated field by
+  field before it is trusted, and a header button (`ล้างประวัติแชท`) drops it on demand. The first
+  persist is skipped until the restore has run, so an empty mount cannot overwrite a saved chat.
+- **Markdown without a parser dependency.** `MarkdownText.tsx` renders headings, bullet and numbered
+  lists, pipe tables, fenced code and `**bold**` / `` `code` `` inline as React elements. No
+  `dangerouslySetInnerHTML`, so a model that emits `<script>` prints it as text — a test pins that.
+  The subset is deliberately small: anything it does not know stays literal, which is the safe
+  failure for a chat bubble.
+- **The prompt stopped fighting the renderer.** `build_system_prompt()` used to demand "plain text
+  without Markdown symbols" because the drawer could not render any; it now allows light Markdown and
+  still forbids raw HTML. Without this change every table the model was asked for would have been
+  suppressed at the source.
+- **User messages stay literal.** Only assistant replies go through the renderer, so a question that
+  happens to contain `*` or `|` is shown exactly as typed.
+
+### Verified
+
+`pytest -q` **733 passed / 84.50%**; `npx vitest run` **455 passed / 69 files** (+6: five renderer
+cases and the restore/clear case), `npx tsc --noEmit` and `npx eslint .` clean; `flake8 app tests`
+and `mypy app` clean; `scripts/check_docs_links.py` OK. Not verified: the drawer's rendering in a real
+browser (unit tests cover the blocks, not the visual result).

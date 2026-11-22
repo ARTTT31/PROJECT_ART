@@ -13,10 +13,12 @@ import {
   Fuel,
   CloudSun,
   ListTodo,
+  Trash2,
 } from 'lucide-react';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
 import { showToast } from '@/utils/sweetalert';
-import { readCached, writeCached } from '@/lib/offline/localStore';
+import { readCached, writeCached, scopedStorageKey } from '@/lib/offline/localStore';
+import MarkdownText from './MarkdownText';
 import { notifyQuickNotesUpdated, pendingQuickNotes } from '@/lib/quickNotes';
 
 interface ChatMessage {
@@ -58,6 +60,10 @@ const DIGEST_CACHE_KEY = 'dashboard/digest';
 /** Turns of the conversation sent back so follow-ups keep their subject. */
 const HISTORY_LIMIT = 8;
 
+/** What survives a reload: the last messages, per account. */
+const CHAT_HISTORY_KEY = 'ai-copilot/history';
+const CHAT_HISTORY_LIMIT = 40;
+
 function generateId(prefix: string): string {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
     return `${prefix}-${crypto.randomUUID()}`;
@@ -78,6 +84,27 @@ const INITIAL_MESSAGES: ChatMessage[] = [
   },
 ];
 
+function readSavedHistory(): ChatMessage[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = window.localStorage.getItem(scopedStorageKey(CHAT_HISTORY_KEY));
+    if (!raw) return [];
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(
+      (item): item is ChatMessage =>
+        Boolean(item) &&
+        typeof (item as ChatMessage).id === 'string' &&
+        ((item as ChatMessage).sender === 'user' ||
+          (item as ChatMessage).sender === 'assistant') &&
+        typeof (item as ChatMessage).text === 'string',
+    );
+  } catch {
+    // Corrupt or foreign value: start the conversation fresh.
+    return [];
+  }
+}
+
 const SUGGESTIONS = [
   { label: 'สรุปภาพรวมวันนี้', icon: ListTodo, prompt: 'สรุปภาพรวมวันนี้' },
   { label: 'เช็คราคาน้ำมัน', icon: Fuel, prompt: 'ราคาน้ำมันวันนี้' },
@@ -91,8 +118,45 @@ export default function AICopilotDrawer() {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [identity, setIdentity] = useState<CopilotIdentity | null>(null);
+  const [historyReady, setHistoryReady] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Restore the last conversation so closing the drawer — or reloading the page
+  // — does not throw away the answer the user was reading. Account-scoped, so
+  // the next person on a shared browser starts clean.
+  useEffect(() => {
+    const saved = readSavedHistory();
+    if (saved.length > 0) {
+      setMessages(
+        saved.some((message) => message.id === 'welcome')
+          ? saved
+          : [...INITIAL_MESSAGES, ...saved],
+      );
+    }
+    setHistoryReady(true);
+  }, []);
+
+  useEffect(() => {
+    if (!historyReady || typeof window === 'undefined') return;
+    try {
+      window.localStorage.setItem(
+        scopedStorageKey(CHAT_HISTORY_KEY),
+        JSON.stringify(messages.slice(-CHAT_HISTORY_LIMIT)),
+      );
+    } catch {
+      // Quota or private mode: the conversation simply is not restored next time.
+    }
+  }, [messages, historyReady]);
+
+  const clearChat = () => {
+    setMessages(INITIAL_MESSAGES);
+    try {
+      window.localStorage.removeItem(scopedStorageKey(CHAT_HISTORY_KEY));
+    } catch {
+      // Nothing was stored.
+    }
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -377,14 +441,26 @@ export default function AICopilotDrawer() {
                 </p>
               </div>
             </div>
-            <button
-              type="button"
-              onClick={() => setIsOpen(false)}
-              className="flex h-7 w-7 items-center justify-center rounded-full text-[var(--ink-muted)] hover:bg-[var(--surface-chip)] hover:text-[var(--ink)] active:scale-95 transition-colors"
-              aria-label="ปิดหน้าต่าง AI Copilot"
-            >
-              <X size={16} aria-hidden="true" />
-            </button>
+            <div className="flex items-center gap-0.5">
+              {messages.length > 1 && (
+                <button
+                  type="button"
+                  onClick={clearChat}
+                  className="flex h-7 w-7 items-center justify-center rounded-full text-[var(--ink-muted)] hover:bg-[var(--surface-chip)] hover:text-[var(--danger-ink)] active:scale-95 transition-colors"
+                  aria-label="ล้างประวัติแชท"
+                >
+                  <Trash2 size={15} aria-hidden="true" />
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setIsOpen(false)}
+                className="flex h-7 w-7 items-center justify-center rounded-full text-[var(--ink-muted)] hover:bg-[var(--surface-chip)] hover:text-[var(--ink)] active:scale-95 transition-colors"
+                aria-label="ปิดหน้าต่าง AI Copilot"
+              >
+                <X size={16} aria-hidden="true" />
+              </button>
+            </div>
           </div>
 
           {/* Quick Prompt Chips */}
@@ -428,7 +504,11 @@ export default function AICopilotDrawer() {
                         : 'rounded-br-xs bg-[var(--accent)] text-white shadow-xs'
                     }`}
                   >
-                    <p className="whitespace-pre-line">{msg.text}</p>
+                    {isAssistant ? (
+                      <MarkdownText text={msg.text} />
+                    ) : (
+                      <p className="whitespace-pre-line">{msg.text}</p>
+                    )}
 
                     {/* The saved key could not answer this turn: point at the
                         settings instead of passing a canned reply off as AI. */}

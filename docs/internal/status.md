@@ -23,7 +23,7 @@ Playwright. The 2026-11-21 theme sweep re-ran the frontend checks only.
 | Backend lint | `./venv/Scripts/python.exe -m flake8 app` | clean |
 | Backend types | `./venv/Scripts/python.exe -m mypy app` | clean, 74 source files |
 | Migrations | `alembic upgrade head` + `alembic check` on a throwaway SQLite file | full chain applies, **no drift** |
-| Frontend tests | `cd frontend && npx vitest run` | **449 passed**, 68 files |
+| Frontend tests | `cd frontend && npx vitest run` | **455 passed**, 69 files |
 | Frontend types | `npx tsc --noEmit` | clean |
 | Frontend lint | `npx eslint .` | clean (0 errors, 0 warnings) |
 | Frontend build | `npm run build` | succeeds, 17 routes |
@@ -99,7 +99,7 @@ These are decisions, not defects — recorded so they are not re-litigated as bu
 | Single instance by default | Rate limiting and the WebSocket registry are process-local; Redis paths exist (`SLOWAPI_STORAGE_URI`, `WS_BROADCAST_REDIS_URL`) and startup logs a `[SCALING]` notice. |
 | Third-party market data has no SLA | Yahoo Finance / Frankfurter / Thai Gold / Bangchak / Open-Meteo may throttle; widgets show the last known value or an empty block instead of failing the page. |
 | Partial i18n | A `th`/`en` catalogue exists in `lib/i18n/messages.ts` and drives part of the tree (last counted 34 of 82 components). Finishing it is a per-screen migration, not a switch. |
-| Partial frontend coverage | 449 unit tests, but route-level tests exist only for `login`, `register`, `forgot-password` and `share-target`. `dashboard`, `profile`, `admin`, `audit`, `camera`, `notifications`, `verify-email`, `reset-password` and `login-success` have none. |
+| Partial frontend coverage | 455 unit tests, but route-level tests exist only for `login`, `register`, `forgot-password` and `share-target`. `dashboard`, `profile`, `admin`, `audit`, `camera`, `notifications`, `verify-email`, `reset-password` and `login-success` have none. |
 | Whole-document JSON blobs | Cheapest model that worked for single-user-per-account data; conflict detection is finding P2. |
 | One colour token layer | Components must not use Tailwind palette utilities (`bg-emerald-50`, `text-slate-500`, `dark:`) — those bind to the palette and to `prefers-color-scheme`, not to `data-theme`. Every surface, ink, accent and status colour comes from the semantic tokens in `globals.css` (`--surface*`, `--ink*`, `--danger*`, `--warning*`, `--success*`, `--info*`, `--accent*`), which both themes and the twelve accents override in one place. The ramp re-tone that used to mask this was removed on 2026-11-21. |
 | No password-reset email in CI | Password recovery is shipped, but delivery depends on `EMAIL_BACKEND` being configured on Render — unverified from a local checkout. |

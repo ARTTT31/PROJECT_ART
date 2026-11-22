@@ -113,6 +113,10 @@ def test_build_system_prompt_answers_general_questions_too():
     assert "outside this workspace" in lowered
     # Grounding still applies to workspace figures.
     assert "do not invent a workspace figure" in lowered
+    # The drawer renders Markdown now, so the prompt may ask for it — and still
+    # refuses raw HTML, which the renderer would print as text anyway.
+    assert "plain text without markdown" not in lowered
+    assert "never emit raw html" in lowered
 
 
 def test_gemini_default_model_is_the_same_in_both_places():

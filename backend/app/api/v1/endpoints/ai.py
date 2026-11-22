@@ -484,7 +484,9 @@ def build_system_prompt(context: Optional[Dict[str, Any]]) -> str:
         "context below and quote its numbers exactly; do not invent a workspace "
         "figure, and if a value is missing, say you do not have it and say where "
         "the user can look instead of guessing. "
-        "Reply in plain text without Markdown symbols. "
+        "You may use light Markdown — **bold**, bullet or numbered lists, a "
+        "small pipe table for numbers, and `code` — because the chat renders it; "
+        "keep formatting minimal and never emit raw HTML. "
         f"Today is {today}. Workspace context (JSON): {payload}"
     )
 

@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import AICopilotDrawer from './AICopilotDrawer';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
+import { scopedStorageKey } from '@/lib/offline/localStore';
 
 vi.mock('@/lib/api/fetchWithAuth', () => ({
   fetchWithAuth: vi.fn(),
@@ -178,6 +179,30 @@ describe('AICopilotDrawer', () => {
     // the model receive the same question twice.
     expect(sent.history?.some((turn) => turn.text === 'ช่วยคิดแผนงานสัปดาห์หน้า')).toBe(false);
     expect(screen.getByText(/คีย์ที่เชื่อมไว้ตอบไม่ได้/)).toBeDefined();
+  });
+
+  it('restores the saved conversation, renders it, and clears it on demand', async () => {
+    localStorage.setItem(
+      scopedStorageKey('ai-copilot/history'),
+      JSON.stringify([
+        { id: 'u1', sender: 'user', text: 'คำถามเก่า', timestamp: '09:00' },
+        { id: 'a1', sender: 'assistant', text: '**คำตอบเก่า**', timestamp: '09:01' },
+      ]),
+    );
+
+    render(<AICopilotDrawer />);
+    fireEvent.click(screen.getByLabelText('เปิด AI Copilot'));
+
+    expect(await screen.findByText('คำถามเก่า')).toBeInTheDocument();
+    // The answer came back as Markdown, so it is bold rather than "**…**".
+    expect(screen.getByText('คำตอบเก่า').tagName).toBe('STRONG');
+
+    fireEvent.click(screen.getByLabelText('ล้างประวัติแชท'));
+
+    expect(screen.queryByText('คำถามเก่า')).toBeNull();
+    expect(localStorage.getItem(scopedStorageKey('ai-copilot/history')) ?? '').not.toContain(
+      'คำถามเก่า',
+    );
   });
 
   it('closes when close button is clicked', () => {
