@@ -1707,3 +1707,34 @@ Also fixed: `tests/test_football.py::test_fetch_events_falls_back_to_latest_comp
 a date bomb — its fixture pinned 2026-11-21 as a *future* matchday, so once that day passed the
 fallback path never fired and the test failed on its own calendar, unrelated to any code change. The
 fixture dates are now relative to `utcnow()`.
+
+## Sessions Follow the Device, Not the Proxy (November 22, 2026)
+
+Phase 4 of the roadmap. Two separate bugs made "อุปกรณ์ของฉัน" name the wrong address: the
+resolution chain stopped at the proxy, and the row was written once at sign-in and never again.
+
+- **The Vercel hop is resolved.** `get_real_client_ip()` walked `X-Forwarded-For` from the right and
+  stopped at the first untrusted address — which, behind Vercel → Render, is a Vercel edge, so every
+  session, audit row and lockout key recorded the edge instead of the phone. It now reads the address
+  Vercel itself wrote (`x-vercel-forwarded-for`, then `x-real-ip`), gated by the new
+  `TRUST_VERCEL_PROXY` setting (default **off**): a caller that reaches the origin directly can forge
+  those headers exactly like any other, so they are believed only when the deployment says the origin
+  is reachable solely through the Vercel rewrite — and only when the direct peer is already a trusted
+  proxy. Without the opt-in the operator can list Vercel's ranges in `TRUSTED_PROXY_IPS` instead,
+  which walks the chain to the client the same way.
+- **A refresh now moves the address.** `AuthService.refresh_access_token(refresh_token, client_ip=…)`
+  writes `session.ip_address` next to `last_activity`, and `POST /auth/refresh` passes
+  `get_real_client_ip(request)` in. A device that signed in on office Wi-Fi and spent the afternoon on
+  4G no longer shows the morning's address for the rest of the week.
+- **The UI needed nothing.** `MyDevicesCard` already badges the current row `อุปกรณ์นี้` and prints IP +
+  relative activity; `ActiveSessionsCard` prints device and IP per row and refreshes every 30s. Both
+  were correct once the address underneath them was.
+
+### Verified
+
+`pytest -q` **730 passed / 84.49%** (+6: five address-resolution cases and the refresh write);
+`flake8 app tests` clean; `mypy app` clean (74 files). `npm run build` succeeds (17 routes).
+`npx playwright test` against the dev server already serving this checkout: **9 passed, 8 skipped**
+(signed-in axe needs `E2E_USER_*`; the live-backend specs need a running API), `tsc`/`eslint` clean,
+`scripts/check_docs_links.py` OK. Not verified: the deployed Vercel hop — that needs
+`TRUST_VERCEL_PROXY=true` on Render and a real sign-in from a phone (recorded in `status.md` §5).

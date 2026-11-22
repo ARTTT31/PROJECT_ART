@@ -223,9 +223,9 @@ Full plan documented in [`docs/superpowers/plans/2026-11-20-smart-ai-copilot-roa
 3. **Agentic Function Calling — Planned.** Replace rigid regex parsing with native LLM function calling for notes, reminders, and finance entries.
 4. **Conversation Memory & Multimodal — Planned.** Retain chat session history across browser restarts and add receipt/slip image understanding.
 
-### Phase 4: Accurate Session IP Tracking & Proxy Resolution (Planned)
+### Phase 4: Accurate Session IP Tracking & Proxy Resolution (Shipped 2026-11-22)
 
 Full plan documented in [`docs/superpowers/plans/2026-11-20-accurate-session-ip-tracking.md`](../superpowers/plans/2026-11-20-accurate-session-ip-tracking.md):
-1. **Multi-Hop Proxy Resolution:** Enhance `get_real_client_ip()` in `app/core/rate_limit.py` to recognise Vercel proxy headers (`x-vercel-forwarded-for` / `x-real-ip`) so client origin IPs are not overwritten by Vercel edge addresses.
-2. **Dynamic Session IP Refresh:** Update `AuthService.refresh_access_token()` to persist the current client IP alongside `last_activity` during token rotations, keeping session logs accurate across Wi-Fi and mobile network changes.
-3. **Device Session Visibility:** Verify and align `MyDevicesCard.tsx` and `ActiveSessionsCard.tsx` displays so users and admins see live, updated IP locations.
+1. **Multi-Hop Proxy Resolution — Shipped.** `get_real_client_ip()` reads `x-vercel-forwarded-for` / `x-real-ip` behind the Vercel rewrite, gated by `TRUST_VERCEL_PROXY` (default off, because a caller that reaches the origin directly can forge those headers) and still only when the direct peer is a trusted proxy. Without the opt-in, listing the platform peer and Vercel's ranges in `TRUSTED_PROXY_IPS` walks the chain to the client instead.
+2. **Dynamic Session IP Refresh — Shipped.** `AuthService.refresh_access_token(refresh_token, client_ip=…)` writes `session.ip_address` alongside `last_activity`, and `POST /auth/refresh` passes `get_real_client_ip(request)` in, so a device that moves from Wi-Fi to mobile data stops showing its login-time address.
+3. **Device Session Visibility — Verified.** `MyDevicesCard.tsx` already labels the current row `อุปกรณ์นี้` and prints its IP + relative activity; `ActiveSessionsCard.tsx` prints the device and IP per row and refreshes every 30s. No change was needed once the address itself became correct.

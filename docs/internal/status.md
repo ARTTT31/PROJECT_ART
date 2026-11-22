@@ -3,9 +3,9 @@
 **Verified:** November 22, 2026 · `main` · Windows dev
 machine, Python 3.14.6 local, Node 26 · dependency refresh (Next 16.4.6, FastAPI 0.165.0)
 
-The 2026-11-22 pass was the AI Copilot prompt/model/chip change (`changelog.md`): it re-ran both
-suites, `flake8`, `mypy`, `tsc` and `eslint`. The 2026-11-21 theme sweep re-ran the frontend checks
-only, and the build plus every Playwright check below are unchanged from the 2026-11-19 pass.
+The 2026-11-22 passes were the AI Copilot prompt/chip change and the Phase 4 session-IP work
+(`changelog.md`): they re-ran both suites, `flake8`, `mypy`, `tsc`, `eslint`, `npm run build` and
+Playwright. The 2026-11-21 theme sweep re-ran the frontend checks only.
 
 > **What this file is.** The single place that states what is true *right now*: verified numbers, what
 > that verification covered, and every known gap with its status. `architecture.md` explains how the
@@ -18,14 +18,14 @@ only, and the build plus every Playwright check below are unchanged from the 202
 
 | Check | Command | Result |
 |---|---|---|
-| Backend tests | `cd backend && ./venv/Scripts/python.exe -m pytest -q` | **724 passed**; coverage **84.46%** (gate 75%, local Python 3.14.6) |
+| Backend tests | `cd backend && ./venv/Scripts/python.exe -m pytest -q` | **730 passed**; coverage **84.49%** (gate 75%, local Python 3.14.6) |
 | Backend lint | `./venv/Scripts/python.exe -m flake8 app` | clean |
 | Backend types | `./venv/Scripts/python.exe -m mypy app` | clean, 74 source files |
 | Migrations | `alembic upgrade head` + `alembic check` on a throwaway SQLite file | full chain applies, **no drift** |
 | Frontend tests | `cd frontend && npx vitest run` | **449 passed**, 68 files |
 | Frontend types | `npx tsc --noEmit` | clean |
 | Frontend lint | `npx eslint .` | clean (0 errors, 0 warnings) |
-| Frontend build | `npm run build` | succeeds, 16 routes |
+| Frontend build | `npm run build` | succeeds, 17 routes |
 | Dependency audit | `pip-audit -r backend/requirements.txt` + `npm audit --omit=dev` | no known vulnerabilities on either side |
 | Docs links | `python scripts/check_docs_links.py` | 7 files, links and fences OK (also a CI step) |
 
@@ -37,8 +37,10 @@ CI only reaches after the earlier https-scheme rejection). The skipped test is
 `test_security_headers.py`'s docs check, which skips itself when `DEBUG=False`. Re-measure with
 `mv .env .env.bak` before running whenever a test asserts on configuration-driven behaviour.
 
-**Not re-run in this pass** (last green in CI or in the pass noted in `changelog.md`): Playwright smoke (3),
-axe on the auth pages, the live register→login E2E, `pip-audit`, and every deployed-only check in §5. Two
+Playwright was re-run against the dev server already serving this checkout: **9 passed, 8 skipped**
+(the 4 signed-in axe scans skip without `E2E_USER_*`, the 4 live-backend specs skip without a running
+API). **Still not run**: the live register→login E2E, the signed-in axe sweep, `pip-audit`, and every
+deployed-only check in §5. Two
 interpreter differences matter when reading coverage: Python 3.11 (what CI runs) measures lower than
 3.14 on this suite, and the gate is deliberately 75 rather than 80.
 
@@ -113,6 +115,10 @@ These need the real environment and cannot be closed locally:
    deployment ever runs more than one instance.
 5. `alembic upgrade head` against the production database before the backend deploy (Render's
    `preDeployCommand` runs it; confirm it did).
+6. Session IPs behind Vercel: set `TRUST_VERCEL_PROXY=true` on Render **only if** the origin is
+   reachable solely through the Vercel rewrite, then sign in from a phone and confirm the row in
+   Profile → Security (and the admin session list) shows the carrier address instead of a Vercel edge
+   address.
 
 ## 6. Document ownership
 

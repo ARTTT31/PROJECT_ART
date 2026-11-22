@@ -110,6 +110,15 @@ class Settings(BaseSettings):
     # arrives from the public internet is never trusted, so a caller cannot pick
     # its own rate-limit bucket by inventing a header.
     TRUSTED_PROXY_IPS: str = ""
+    # Vercel overwrites X-Vercel-Forwarded-For / X-Real-IP at its edge, so those
+    # headers name the real client when the request came through the Vercel
+    # rewrite. A caller that reaches this origin directly can forge them, so
+    # they are believed only when this is on AND the direct peer is a trusted
+    # proxy. Enable it only when the backend is reachable exclusively through
+    # Vercel; otherwise leave it off and list *both* the platform peer and
+    # Vercel's ranges in TRUSTED_PROXY_IPS (an explicit list replaces the
+    # private-range default, so listing only Vercel stops trusting the peer).
+    TRUST_VERCEL_PROXY: bool = False
 
     # ── Soft-deleted accounts ───────────────────────────────────────────────
     # How long a deleted account sits in the trash before it is purged for good.

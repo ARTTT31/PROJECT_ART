@@ -1615,6 +1615,77 @@ class TestClientIpResolution:
             _request_from("10.0.0.5", {"X-Forwarded-For": "8.8.8.8"})
         ) == "10.0.0.5"
 
+    def test_the_vercel_header_is_ignored_by_default(self):
+        """Anyone can send X-Vercel-Forwarded-For; only the opt-in makes it real."""
+        from app.core.rate_limit import get_real_client_ip
+
+        request = _request_from(
+            "10.0.0.5",
+            {
+                "X-Forwarded-For": "49.228.1.1, 76.76.21.21",
+                "X-Vercel-Forwarded-For": "1.2.3.4",
+            },
+        )
+
+        assert get_real_client_ip(request) == "76.76.21.21"
+
+    def test_the_vercel_header_names_the_client_when_trusted(self, monkeypatch):
+        """Behind the Vercel rewrite the chain ends at the edge, not the client."""
+        from app.core import rate_limit
+
+        monkeypatch.setattr(rate_limit.settings, "TRUST_VERCEL_PROXY", True)
+
+        request = _request_from(
+            "10.0.0.5",
+            {
+                "X-Forwarded-For": "49.228.1.1, 76.76.21.21",
+                "X-Vercel-Forwarded-For": "49.228.1.1",
+            },
+        )
+
+        assert rate_limit.get_real_client_ip(request) == "49.228.1.1"
+
+    def test_the_vercel_header_is_still_ignored_from_a_public_peer(self, monkeypatch):
+        from app.core import rate_limit
+
+        monkeypatch.setattr(rate_limit.settings, "TRUST_VERCEL_PROXY", True)
+
+        request = _request_from("203.0.113.7", {"X-Vercel-Forwarded-For": "1.2.3.4"})
+
+        assert rate_limit.get_real_client_ip(request) == "203.0.113.7"
+
+    def test_a_malformed_vercel_header_falls_back_to_the_chain(self, monkeypatch):
+        from app.core import rate_limit
+
+        monkeypatch.setattr(rate_limit.settings, "TRUST_VERCEL_PROXY", True)
+
+        request = _request_from(
+            "10.0.0.5",
+            {
+                "X-Forwarded-For": "49.228.1.1",
+                "X-Vercel-Forwarded-For": "not-an-address",
+            },
+        )
+
+        assert rate_limit.get_real_client_ip(request) == "49.228.1.1"
+
+    def test_a_listed_vercel_edge_is_skipped_in_the_chain(self, monkeypatch):
+        """Without the opt-in, listing the edges walks the chain to the client.
+
+        An explicit list replaces the private-range default, so the platform
+        peer has to be listed too — which is why the opt-in is the better
+        answer when the origin is reachable only through Vercel.
+        """
+        from app.core import rate_limit
+
+        monkeypatch.setattr(
+            rate_limit.settings, "TRUSTED_PROXY_IPS", "10.0.0.0/8, 76.76.21.0/24"
+        )
+
+        request = _request_from("10.0.0.5", {"X-Forwarded-For": "49.228.1.1, 76.76.21.21"})
+
+        assert rate_limit.get_real_client_ip(request) == "49.228.1.1"
+
     def test_malformed_entries_are_ignored(self, monkeypatch):
         from app.core import rate_limit
 

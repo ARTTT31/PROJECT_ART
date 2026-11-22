@@ -809,7 +809,9 @@ async def refresh_token(
         )
 
     try:
-        new_tokens = await auth_service.refresh_access_token(refresh_token_val)
+        new_tokens = await auth_service.refresh_access_token(
+            refresh_token_val, client_ip=get_real_client_ip(request)
+        )
 
         resp = ResponseModel(
             result="success",

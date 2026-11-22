@@ -92,6 +92,25 @@ def is_trusted_proxy(host: str) -> bool:
     return any(address in network for network in networks)
 
 
+# Vercel's edge overwrites these headers, so a request that really travelled
+# through the Vercel rewrite carries the client address in them. A caller that
+# reaches this origin directly can forge them just as easily, which is why they
+# are believed only when the deployment opts in (``TRUST_VERCEL_PROXY``) and the
+# direct peer is a trusted proxy.
+VERCEL_IP_HEADERS = ("X-Vercel-Forwarded-For", "X-Real-IP")
+
+
+def _vercel_client_ip(request: Request) -> str:
+    """Address Vercel's edge recorded, or "" when it recorded no usable one."""
+    for header in VERCEL_IP_HEADERS:
+        raw = request.headers.get(header) or ""
+        for part in raw.split(","):
+            candidate = part.strip()
+            if candidate and _normalise(candidate) is not None:
+                return candidate
+    return ""
+
+
 def _forwarded_chain(request: Request) -> List[str]:
     """Addresses claimed by the request, right-to-left as proxies appended them."""
     raw = request.headers.get("X-Forwarded-For")
@@ -109,9 +128,18 @@ def get_real_client_ip(request: Request) -> str:
     themselves trusted proxies are skipped and the first untrusted address wins.
     Reading the leftmost entry (the previous behaviour) let any caller prepend
     its own address and therefore get an unlimited number of fresh buckets.
+
+    Behind Vercel the chain ends at a Vercel edge address, not the client, so an
+    opted-in deployment (``TRUST_VERCEL_PROXY``) reads the address Vercel itself
+    recorded instead; without the opt-in those headers are treated as
+    client-supplied like any other and ignored.
     """
     peer = request.client.host if request.client else ""
     if peer and is_trusted_proxy(peer):
+        if settings.TRUST_VERCEL_PROXY:
+            vercel_ip = _vercel_client_ip(request)
+            if vercel_ip:
+                return vercel_ip
         for candidate in reversed(_forwarded_chain(request)):
             if not is_trusted_proxy(candidate):
                 return candidate

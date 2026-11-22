@@ -594,7 +594,9 @@ class AuthService:
             user_create, role=role, is_active=is_active, status=status
         )
 
-    async def refresh_access_token(self, refresh_token: str) -> Token:
+    async def refresh_access_token(
+        self, refresh_token: str, client_ip: Optional[str] = None
+    ) -> Token:
         """
         Create new access token from refresh token, rotating the refresh token.
 
@@ -610,6 +612,10 @@ class AuthService:
 
         Args:
             refresh_token: Refresh token
+            client_ip: Address this refresh arrived from. A device that moved
+                from Wi-Fi to mobile data keeps refreshing with the same session,
+                so the row follows the network instead of naming the address it
+                signed in from days ago.
 
         Returns:
             New token pair
@@ -714,6 +720,8 @@ class AuthService:
             session.rotated_at = now
 
         session.last_activity = now
+        if client_ip:
+            session.ip_address = client_ip
         await self.db.commit()
 
         # Preserve session_id across refreshes so revocation keeps working.

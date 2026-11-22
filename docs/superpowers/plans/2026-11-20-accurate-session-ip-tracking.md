@@ -56,4 +56,4 @@
 ---
 
 ## 🎯 สถานะแผนงาน (Status)
-- [ ] ยังไม่เริ่มดำเนินการ (เพิ่มลงในแผนงานเพื่อรอการอนุมัติ)
+- [x] **ทำเสร็จ 2026-11-22** — Task 1 ทำผ่าน `TRUST_VERCEL_PROXY` (default off เพราะ header ปลอมได้ถ้า origin เข้าถึงตรง), Task 2 ส่ง `client_ip` เข้า `refresh_access_token()` และเขียน `session.ip_address`, Task 3 ตรวจแล้วไม่ต้องแก้ UI (label `อุปกรณ์นี้` + IP มีอยู่แล้ว) รายละเอียดใน `docs/internal/changelog.md`

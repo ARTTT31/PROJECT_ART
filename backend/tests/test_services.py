@@ -259,6 +259,34 @@ class TestAuthServiceTokenRefresh:
         assert new_tokens.access_token is not None
         assert new_tokens.refresh_token is not None
 
+    async def test_refresh_token_updates_the_session_ip(
+        self, auth_service, user_service, sample_user_data
+    ):
+        """A device that moves networks must not keep its login-time address."""
+        from sqlalchemy import select as sa_select
+
+        from app.models.session import UserSession
+
+        await user_service.create_user(sample_user_data)
+        result = await auth_service.login(
+            email="test@example.com",
+            password="SecretPass123",
+            ip_address="1.1.1.1",
+        )
+
+        await auth_service.refresh_access_token(
+            result["refresh_token"], client_ip="49.228.1.1"
+        )
+
+        session = (
+            await user_service.db.execute(
+                sa_select(UserSession).where(
+                    UserSession.session_id == result["session_id"]
+                )
+            )
+        ).scalar_one()
+        assert session.ip_address == "49.228.1.1"
+
     async def test_refresh_token_invalid_raises(self, auth_service):
         from fastapi import HTTPException
         with pytest.raises(HTTPException):
