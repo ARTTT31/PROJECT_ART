@@ -18,6 +18,7 @@ const INLINE_PATTERN = /(\*\*[^*]+\*\*|`[^`]+`)/g;
 const BULLET_LINE = /^\s*[-*]\s+(.*)$/;
 const NUMBERED_LINE = /^\s*\d+[.)]\s+(.*)$/;
 const HEADING_LINE = /^(#{1,3})\s+(.*)$/;
+const QUOTE_LINE = /^\s*>\s?(.*)$/;
 const TABLE_ROW = /^\s*\|(.+)\|\s*$/;
 const TABLE_DIVIDER = /^\s*\|?[\s:|-]*-[\s:|-]*\|[\s:|-]*$/;
 
@@ -173,6 +174,27 @@ export default function MarkdownText({
         <p key={`h${key++}`} className={`${HEADING_CLASS[level]} text-[var(--ink)]`}>
           {renderInline(heading[2], `h${key}`)}
         </p>,
+      );
+      continue;
+    }
+
+    if (QUOTE_LINE.test(line)) {
+      flushParagraph();
+      const quoted: string[] = [];
+      while (index < lines.length) {
+        const quote = QUOTE_LINE.exec(lines[index]);
+        if (!quote) break;
+        quoted.push(quote[1]);
+        index += 1;
+      }
+      index -= 1;
+      blocks.push(
+        <blockquote
+          key={`q${key++}`}
+          className="border-l-2 border-[var(--accent)] pl-2.5 text-[var(--ink-secondary)]"
+        >
+          {renderInline(quoted.join(' '), `q${key}`)}
+        </blockquote>,
       );
       continue;
     }

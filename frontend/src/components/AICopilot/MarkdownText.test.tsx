@@ -19,6 +19,13 @@ describe('MarkdownText', () => {
     expect(screen.getByRole('cell', { name: '32.94' })).toBeInTheDocument();
   });
 
+  it('renders a quote as a quote instead of a stray >', () => {
+    render(<MarkdownText text={'> ใช้ baht เป็นหน่วยเงิน'} />);
+
+    const quote = screen.getByText(/ใช้ baht เป็นหน่วยเงิน/);
+    expect(quote.closest('blockquote')).not.toBeNull();
+  });
+
   it('keeps a fenced block literal', () => {
     render(<MarkdownText text={'```\nconst a = 1 < 2;\n```'} />);
 

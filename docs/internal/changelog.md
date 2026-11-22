@@ -1774,8 +1774,8 @@ reload, and a reply that used a list or a table arrived as a wall of asterisks a
   starts clean, and `clearOfflineData()` already sweeps it on logout. A restore is validated field by
   field before it is trusted, and a header button (`ล้างประวัติแชท`) drops it on demand. The first
   persist is skipped until the restore has run, so an empty mount cannot overwrite a saved chat.
-- **Markdown without a parser dependency.** `MarkdownText.tsx` renders headings, bullet and numbered
-  lists, pipe tables, fenced code and `**bold**` / `` `code` `` inline as React elements. No
+- **Markdown without a parser dependency.**   `MarkdownText.tsx` renders headings, bullet and numbered
+  lists, pipe tables, fenced code, quotes and `**bold**` / `` `code` `` inline as React elements. No
   `dangerouslySetInnerHTML`, so a model that emits `<script>` prints it as text — a test pins that.
   The subset is deliberately small: anything it does not know stays literal, which is the safe
   failure for a chat bubble.
