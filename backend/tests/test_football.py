@@ -1,5 +1,7 @@
 """Tests for the Premier League scoreboard proxy (/football/premier-league)."""
 
+import datetime
+
 import pytest
 
 from app.api.v1.endpoints import football
@@ -232,12 +234,29 @@ async def test_fetch_events_falls_back_to_latest_completed_matchday(monkeypatch)
             if not self.is_success:
                 raise RuntimeError("HTTP error")
 
+    # Relative dates, not pinned ones: the fallback only fires while the newest
+    # calendar day is still ahead of the clock, so a fixed date rots — on
+    # 2026-11-22 the old 2026-11-21 fixture became "the latest past matchday"
+    # and the test asserted against a day the mock never served.
+    today = football.utcnow().date()
+    past_day = today - datetime.timedelta(days=7)
+    future_day = today + datetime.timedelta(days=3)
+    past_stamp = f"{past_day.isoformat()}T15:00Z"
+
     scheduled_payload = {
-        "leagues": [{"calendar": ["2026-11-01T07:00Z", "2026-11-08T07:00Z", "2026-11-21T07:00Z"]}],
+        "leagues": [
+            {
+                "calendar": [
+                    f"{(past_day - datetime.timedelta(days=7)).isoformat()}T07:00Z",
+                    f"{past_day.isoformat()}T07:00Z",
+                    f"{future_day.isoformat()}T07:00Z",
+                ]
+            }
+        ],
         "events": [
             {
                 "id": "future1",
-                "date": "2026-11-21T15:00Z",
+                "date": f"{future_day.isoformat()}T15:00Z",
                 "status": {"type": {"state": "pre", "completed": False, "description": "Scheduled"}},
                 "competitions": [
                     {
@@ -255,7 +274,7 @@ async def test_fetch_events_falls_back_to_latest_completed_matchday(monkeypatch)
         "events": [
             {
                 "id": "past1",
-                "date": "2026-11-08T15:00Z",
+                "date": past_stamp,
                 "status": {"type": {"state": "post", "completed": True, "description": "Full Time"}},
                 "competitions": [
                     {
@@ -280,7 +299,7 @@ async def test_fetch_events_falls_back_to_latest_completed_matchday(monkeypatch)
             pass
 
         async def get(self, url, params=None, headers=None):
-            if params and params.get("dates") == "20261108":
+            if params and params.get("dates") == past_day.strftime("%Y%m%d"):
                 return MockResponse(completed_payload)
             return MockResponse(scheduled_payload)
 

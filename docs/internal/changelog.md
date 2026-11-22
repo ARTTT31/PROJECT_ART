@@ -1665,3 +1665,45 @@ light surface or dark-on-dark text: `/dashboard`, `/profile?tab=appearance`,
 dialogs — each reported `{light: [], darkText: []}`. Light mode was re-checked on `/profile`,
 `/admin` and the 404 route so the swap did not flatten the palette. `npm run build` was not re-run
 in this pass, and the signed-in Playwright a11y sweep still needs `E2E_USER_*` credentials.
+
+## The Copilot Answers Off-Topic Questions Again (November 22, 2026)
+
+A saved API key still felt like a dumb assistant. Two independent causes, both in the AI Copilot
+path, and neither was the key's fault.
+
+- **The system prompt gagged the model.** `build_system_prompt()` said "quote numbers only from the
+  workspace context below", which the model read as "answer nothing that is not in this JSON" —
+  asking for a pad thai recipe came back as "no data in the workspace". The prompt now declares two
+  modes: a **general assistant** for anything outside the workspace (knowledge, advice, writing,
+  code), and **workspace grounding** for tasks, notes, weather, oil, finance and market questions,
+  where figures still come from the context JSON and a missing value is still reported as missing
+  rather than invented. Thai-first and the plain-text rule are unchanged, because the drawer still
+  renders `whitespace-pre-line`.
+- **The default model id was checked against Google's list — and stayed.** The plan driving this
+  pass claimed `gemini-3.8-flash` does not exist and proposed `gemini-2.5-flash`. Google's model page
+  and deprecation table (read 2026-11-22) say the opposite: `gemini-2.5-flash` is **deprecated**,
+  served only to projects that already used it, and reroutes to `gemini-3.5-flash-lite` on
+  2026-12-01, while `gemini-3.8-flash` is the current stable Flash id and Google's documented
+  replacement for the 2.5 family. Switching would have broken every *new* key, so the default is
+  unchanged and the comment above it now records the check and the date. A test pins the two owners
+  of that default (`ai.DEFAULT_GEMINI_MODEL` and `Settings.GEMINI_MODEL`) together so they cannot
+  drift apart, `.env.example` matches, and detection still overrides it with the key's real list.
+- **The model list became clickable.** `/ai/settings/detect` already returned the models the pasted
+  key can reach, but the card only printed a count. `AISettingsCard` now renders up to eight of them
+  as chips, marks the suggested one `แนะนำ`, and applies the clicked id to the model field
+  (`aria-pressed` on each chip, `role="group"` on the row).
+
+### Verified
+
+`pytest -q` **724 passed / 84.46%** (+2: the prompt's general mode and the default-model parity
+check); `flake8 app tests` clean; `mypy app` clean (74 files). `npx vitest run` **449 passed / 68
+files** (+1: chips render from the detected list and a click applies the model), `npx tsc --noEmit`
+and `npx eslint .` clean. Not run in this pass: `npm run build` and the Playwright checks.
+
+Sources for the model decision: <https://ai.google.dev/gemini-api/docs/models> and
+<https://ai.google.dev/gemini-api/docs/deprecations>.
+
+Also fixed: `tests/test_football.py::test_fetch_events_falls_back_to_latest_completed_matchday` was
+a date bomb — its fixture pinned 2026-11-21 as a *future* matchday, so once that day passed the
+fallback path never fired and the test failed on its own calendar, unrelated to any code change. The
+fixture dates are now relative to `utcnow()`.

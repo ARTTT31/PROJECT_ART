@@ -400,8 +400,11 @@ class Settings(BaseSettings):
     # free and never counted, so this only caps calls that spend credits.
     AI_DAILY_MESSAGE_LIMIT: int = 50
     # Google Gemini (AI Studio key). Model ids retire on a schedule, so the id
-    # is configurable rather than hard-coded: the 2.5 family is legacy-only for
-    # new keys and the 3.5 generation now routes to its successor.
+    # is configurable rather than hard-coded. The default must be an id a new
+    # key can actually reach: `gemini-3.8-flash` is the current stable Flash id
+    # (checked 2026-11-22), while the 2.5 family is deprecated and served only to
+    # projects that already used it. /ai/settings/detect overrides it with the
+    # real list for the pasted key.
     GEMINI_API_KEY: str = ""
     GEMINI_MODEL: str = "gemini-3.8-flash"
 

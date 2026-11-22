@@ -73,6 +73,47 @@ describe('AISettingsCard', () => {
     expect(JSON.parse(String(secondInit?.body)).api_key).toBeNull();
   });
 
+  it('offers the detected models as chips and applies the clicked one', async () => {
+    const fetchMock = vi
+      .spyOn(fetchWithAuthModule, 'fetchWithAuth')
+      .mockResolvedValueOnce({ ok: true, json: async () => notConfigured } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          result: 'success',
+          data: {
+            provider: 'gemini',
+            base_url: '',
+            label: 'Google Gemini',
+            models: ['gemini-3.8-flash', 'gemini-3.1-pro-preview'],
+            model: 'gemini-3.8-flash',
+          },
+        }),
+      } as Response);
+
+    render(<AISettingsCard />);
+
+    fireEvent.change(await screen.findByLabelText('API Key'), {
+      target: { value: 'AIzaSyD-example-key-1234567890' },
+    });
+
+    const chip = await screen.findByRole(
+      'button',
+      { name: /gemini-3\.1-pro-preview/ },
+      { timeout: 3000 },
+    );
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(screen.getByRole('button', { name: /gemini-3\.8-flash.*แนะนำ/ })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+
+    fireEvent.click(chip);
+
+    expect(screen.getByLabelText('โมเดล (ไม่บังคับ)')).toHaveValue('gemini-3.1-pro-preview');
+    expect(chip).toHaveAttribute('aria-pressed', 'true');
+  });
+
   it('keeps the test button disabled until a key is saved', async () => {
     vi.spyOn(fetchWithAuthModule, 'fetchWithAuth').mockResolvedValueOnce({
       ok: true,

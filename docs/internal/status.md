@@ -1,11 +1,11 @@
 # Workspace — Current Status
 
-**Verified:** November 21, 2026 · `main` · Windows dev
+**Verified:** November 22, 2026 · `main` · Windows dev
 machine, Python 3.14.6 local, Node 26 · dependency refresh (Next 16.4.6, FastAPI 0.165.0)
 
-The 2026-11-21 pass was the theme sweep (`changelog.md`): it re-ran the frontend tests, type-check
-and lint only; the backend numbers, the build, and every Playwright check below are unchanged from
-the 2026-11-19 pass.
+The 2026-11-22 pass was the AI Copilot prompt/model/chip change (`changelog.md`): it re-ran both
+suites, `flake8`, `mypy`, `tsc` and `eslint`. The 2026-11-21 theme sweep re-ran the frontend checks
+only, and the build plus every Playwright check below are unchanged from the 2026-11-19 pass.
 
 > **What this file is.** The single place that states what is true *right now*: verified numbers, what
 > that verification covered, and every known gap with its status. `architecture.md` explains how the
@@ -18,11 +18,11 @@ the 2026-11-19 pass.
 
 | Check | Command | Result |
 |---|---|---|
-| Backend tests | `cd backend && ./venv/Scripts/python.exe -m pytest -q` | **722 passed**; coverage **84.47%** (gate 75%, local Python 3.14.6) |
+| Backend tests | `cd backend && ./venv/Scripts/python.exe -m pytest -q` | **724 passed**; coverage **84.46%** (gate 75%, local Python 3.14.6) |
 | Backend lint | `./venv/Scripts/python.exe -m flake8 app` | clean |
 | Backend types | `./venv/Scripts/python.exe -m mypy app` | clean, 74 source files |
 | Migrations | `alembic upgrade head` + `alembic check` on a throwaway SQLite file | full chain applies, **no drift** |
-| Frontend tests | `cd frontend && npx vitest run` | **448 passed**, 68 files |
+| Frontend tests | `cd frontend && npx vitest run` | **449 passed**, 68 files |
 | Frontend types | `npx tsc --noEmit` | clean |
 | Frontend lint | `npx eslint .` | clean (0 errors, 0 warnings) |
 | Frontend build | `npm run build` | succeeds, 16 routes |
@@ -96,7 +96,7 @@ These are decisions, not defects — recorded so they are not re-litigated as bu
 | Single instance by default | Rate limiting and the WebSocket registry are process-local; Redis paths exist (`SLOWAPI_STORAGE_URI`, `WS_BROADCAST_REDIS_URL`) and startup logs a `[SCALING]` notice. |
 | Third-party market data has no SLA | Yahoo Finance / Frankfurter / Thai Gold / Bangchak / Open-Meteo may throttle; widgets show the last known value or an empty block instead of failing the page. |
 | Partial i18n | A `th`/`en` catalogue exists in `lib/i18n/messages.ts` and drives part of the tree (last counted 34 of 82 components). Finishing it is a per-screen migration, not a switch. |
-| Partial frontend coverage | 448 unit tests, but route-level tests exist only for `login`, `register`, `forgot-password` and `share-target`. `dashboard`, `profile`, `admin`, `audit`, `camera`, `notifications`, `verify-email`, `reset-password` and `login-success` have none. |
+| Partial frontend coverage | 449 unit tests, but route-level tests exist only for `login`, `register`, `forgot-password` and `share-target`. `dashboard`, `profile`, `admin`, `audit`, `camera`, `notifications`, `verify-email`, `reset-password` and `login-success` have none. |
 | Whole-document JSON blobs | Cheapest model that worked for single-user-per-account data; conflict detection is finding P2. |
 | One colour token layer | Components must not use Tailwind palette utilities (`bg-emerald-50`, `text-slate-500`, `dark:`) — those bind to the palette and to `prefers-color-scheme`, not to `data-theme`. Every surface, ink, accent and status colour comes from the semantic tokens in `globals.css` (`--surface*`, `--ink*`, `--danger*`, `--warning*`, `--success*`, `--info*`, `--accent*`), which both themes and the twelve accents override in one place. The ramp re-tone that used to mask this was removed on 2026-11-21. |
 | No password-reset email in CI | Password recovery is shipped, but delivery depends on `EMAIL_BACKEND` being configured on Render — unverified from a local checkout. |

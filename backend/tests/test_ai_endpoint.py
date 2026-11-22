@@ -99,6 +99,29 @@ def test_build_system_prompt_carries_context_and_no_hallucination_rule():
     assert "do not have it" in prompt
 
 
+def test_build_system_prompt_answers_general_questions_too():
+    """A saved key must not turn "ขอสูตรผัดไทย" into "no workspace data".
+
+    The old wording ("quote numbers only from the workspace context") read as
+    "answer nothing else", which is why a working key looked like a dumb one.
+    """
+    prompt = ai.build_system_prompt({})
+    lowered = prompt.lower()
+
+    assert "quote numbers only from the workspace" not in lowered
+    assert "general assistant" in lowered
+    assert "outside this workspace" in lowered
+    # Grounding still applies to workspace figures.
+    assert "do not invent a workspace figure" in lowered
+
+
+def test_gemini_default_model_is_the_same_in_both_places():
+    """Two owners of one default: a fictional id in either 404s every call."""
+    declared = type(settings).model_fields["GEMINI_MODEL"].default
+
+    assert declared == ai.DEFAULT_GEMINI_MODEL
+
+
 def test_build_system_prompt_uses_the_bangkok_date():
     """A UTC host must not tell the model it is still yesterday until 07:00 ICT."""
     from zoneinfo import ZoneInfo

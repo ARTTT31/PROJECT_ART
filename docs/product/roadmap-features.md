@@ -114,7 +114,7 @@
 | Single instance by default | The WebSocket registry can fan out through Redis (`WS_BROADCAST_REDIS_URL`) and the rate limiter can use Redis (`SLOWAPI_STORAGE_URI`), but both default to process-local and startup logs a `[SCALING]` notice. See README -> *Horizontal scaling*. |
 | Third-party market data | Yahoo Finance / Frankfurter / Thai Gold API have no SLA; the widget shows the last known value (or an empty block) rather than failing the whole page. |
 | Partial i18n | A `th`/`en` message catalogue (`lib/i18n`) exists and drives 34 of the 82 components; the rest still hardcode Thai copy. Adding a language means migrating a screen at a time, not flipping a switch. |
-| Partial frontend coverage | 448 Vitest tests across 68 files; 711 backend tests at 84.41% coverage (Python 3.14, verified 2026-11-19). Route-level tests exist only for `login`, `register`, `forgot-password` and `share-target`, so `npm run test:coverage` remains the honest number. Playwright runs axe checks on the auth pages and a live register → login E2E against the backend in CI. |
+| Partial frontend coverage | 449 Vitest tests across 68 files; 724 backend tests at 84.46% coverage (Python 3.14, verified 2026-11-22). Route-level tests exist only for `login`, `register`, `forgot-password` and `share-target`, so `npm run test:coverage` remains the honest number. Playwright runs axe checks on the auth pages and a live register → login E2E against the backend in CI. |
 | CSP `script-src` | The frontend CSP keeps `'unsafe-inline'` for scripts because Next emits its RSC payload as inline scripts and the theme bootstrap is inline; a nonce needs middleware plus a deploy-verified pass over Google GSI and the service worker. Image sources are already an explicit allow-list (`NEXT_PUBLIC_CAMERA_IMG_ORIGINS`). |
 
 ---
@@ -215,13 +215,13 @@ account, data routes have skeletons and widgets have one shared empty/error/retr
 exists with the pill rule in `@layer base`, widgets mount as their card nears the viewport, and the
 save-status/undo pass closed the last two gaps. Per-finding status is in [`status.md`](../internal/status.md).
 
-### Phase 3: Smart AI Copilot & Auto Model Discovery (Planned)
+### Phase 3: Smart AI Copilot & Auto Model Discovery (1–2 shipped 2026-11-22)
 
 Full plan documented in [`docs/superpowers/plans/2026-11-20-smart-ai-copilot-roadmap.md`](../superpowers/plans/2026-11-20-smart-ai-copilot-roadmap.md):
-1. **Unrestricted Q&A & General Prompting:** Refine System Prompt in `ai.py` so the model answers broad knowledge and coding questions rather than restricting answers to workspace JSON metrics.
-2. **Auto Model Detection & Smart Prioritization:** When an API key is pasted, query the provider's `/models` endpoint live, auto-suggest the optimal model (`gemini-2.0-flash` / `gpt-4o-mini`), and display interactive clickable model chips in `AISettingsCard.tsx` instead of manual text inputs.
-3. **Agentic Function Calling:** Replace rigid regex parsing with native LLM function calling for notes, reminders, and finance entries.
-4. **Conversation Memory & Multimodal:** Retain chat session history across browser restarts and add receipt/slip image understanding.
+1. **Unrestricted Q&A & General Prompting — Shipped (2026-11-22).** `build_system_prompt()` now declares two modes (general assistant / workspace grounding), so a recipe or coding question is answered from the model's own knowledge while workspace figures still come only from the context JSON.
+2. **Auto Model Detection & Smart Prioritization — Shipped (2026-11-22).** A pasted key is sent to the provider's live `/models` list, `suggested_model()` picks a stable flash/mini id, `AISettingsCard.tsx` renders the reachable models as clickable chips, and the default stays `gemini-3.8-flash` — verified 2026-11-22 against Google's model list, where the 2.5 family is deprecated and served only to existing projects while 3.8 Flash is the current stable id.
+3. **Agentic Function Calling — Planned.** Replace rigid regex parsing with native LLM function calling for notes, reminders, and finance entries.
+4. **Conversation Memory & Multimodal — Planned.** Retain chat session history across browser restarts and add receipt/slip image understanding.
 
 ### Phase 4: Accurate Session IP Tracking & Proxy Resolution (Planned)
 

@@ -464,6 +464,45 @@ export default function AISettingsCard() {
           </div>
         )}
 
+        {/* Model chips: the models this key can actually reach, from the live
+            provider list, so choosing one is a click instead of typing an id. */}
+        {detection && detection.models.length > 0 && (
+          <div className="space-y-2">
+            <label className="block text-[12px] font-bold text-[var(--ink-secondary)]">
+              โมเดลที่คีย์นี้ใช้ได้
+            </label>
+            <div
+              role="group"
+              aria-label="เลือกโมเดลที่ใช้ได้"
+              className="flex flex-wrap gap-1.5"
+            >
+              {detection.models.slice(0, 8).map((modelId) => {
+                const active = model.trim() === modelId;
+                const recommended = modelId === detection.model;
+                return (
+                  <button
+                    key={modelId}
+                    type="button"
+                    aria-pressed={active}
+                    onClick={() => setModel(modelId)}
+                    className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors duration-150 active:scale-[0.95] ${
+                      active
+                        ? 'border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent-text)]'
+                        : 'border-[var(--hairline)] bg-[var(--surface)] text-[var(--ink-secondary)] hover:bg-[var(--surface-chip)] hover:text-[var(--ink)]'
+                    }`}
+                  >
+                    {active && <Check size={11} aria-hidden="true" />}
+                    <span>{modelId}</span>
+                    {recommended && (
+                      <span className="opacity-70">· แนะนำ</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Base URL (OpenAI only) */}
         {settings.provider === 'openai' && (
           <InsetField

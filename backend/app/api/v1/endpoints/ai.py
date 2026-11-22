@@ -45,8 +45,14 @@ AI_MAX_OUTPUT_TOKENS = 1600
 # the server's (UTC) date, or the model is told the wrong day until 07:00 ICT.
 BANGKOK = ZoneInfo("Asia/Bangkok")
 
-# Model ids retire on a schedule (2.5 Flash is legacy-only now), so the default
-# tracks the current stable Flash generation instead of a pinned old id.
+# Model ids retire on a schedule, so the id is configurable — but the built-in
+# default has to be one a *new* AI Studio key can reach, or the first call
+# answers 404/403 and the drawer silently drops to the regex engine.
+# Checked against Google's model list (2026-11-22): `gemini-3.8-flash` is the
+# current stable Flash id and the documented replacement for 2.5 Flash, which is
+# now deprecated and served only to projects that already used it. Do not move
+# this back to the 2.5 family. A key that lists different models gets its own
+# real list from /settings/detect, which overrides this default.
 DEFAULT_GEMINI_MODEL = "gemini-3.8-flash"
 DEFAULT_OPENAI_MODEL = "gpt-4.1-mini"
 DEFAULT_OPENAI_BASE_URL = "https://api.openai.com/v1"
@@ -455,16 +461,30 @@ def _conversation(
 
 
 def build_system_prompt(context: Optional[Dict[str, Any]]) -> str:
-    """Instructions that keep the reply Thai, grounded and free of invented data."""
+    """Instructions for a general assistant that is grounded on workspace facts.
+
+    The first revision said "quote numbers only from the workspace context",
+    which the model read as "answer nothing else": asking for a pad thai recipe
+    came back as "no data in the workspace", so a working key looked broken.
+    The two modes below keep workspace figures honest without gagging the model.
+    """
     today = datetime.datetime.now(BANGKOK).date().strftime("%Y-%m-%d")
     payload = json.dumps(context or {}, ensure_ascii=False)
     return (
-        "You are the AI Copilot of a Thai personal and team "
-        "productivity workspace. Answer in Thai unless the user writes in "
-        "another language. Be concise, practical and friendly, and use short "
-        "bullet lines when listing values. Quote numbers only from the workspace "
-        "context below; if a value is missing, say you do not have it instead of "
-        "guessing. Reply in plain text without Markdown symbols. "
+        "You are the AI Copilot of a Thai personal and team productivity "
+        "workspace. Answer in Thai unless the user writes in another language. "
+        "Be concise, practical and friendly, and use short bullet lines when "
+        "listing values. You work in two modes and pick one per message: "
+        "(1) General assistant — for anything outside this workspace (knowledge, "
+        "explanations, advice, ideas, writing, code) answer from your own "
+        "knowledge, fully and helpfully; never refuse because the workspace "
+        "context does not mention the topic. "
+        "(2) Workspace grounding — for questions about this workspace (tasks, "
+        "notes, weather, oil price, income and expenses, market) read the JSON "
+        "context below and quote its numbers exactly; do not invent a workspace "
+        "figure, and if a value is missing, say you do not have it and say where "
+        "the user can look instead of guessing. "
+        "Reply in plain text without Markdown symbols. "
         f"Today is {today}. Workspace context (JSON): {payload}"
     )
 
