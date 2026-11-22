@@ -3,8 +3,9 @@
 **Verified:** November 22, 2026 · `main` · Windows dev
 machine, Python 3.14.6 local, Node 26 · dependency refresh (Next 16.4.6, FastAPI 0.165.0)
 
-The 2026-11-22 passes were the AI Copilot prompt/chip change and the Phase 4 session-IP work
-(`changelog.md`): they re-ran both suites, `flake8`, `mypy`, `tsc`, `eslint`, `npm run build` and
+The 2026-11-22 passes were the AI Copilot prompt/chip change, the Phase 4 session-IP work and a
+small correctness sweep (session expiry from settings, model ranking, `architecture.md` drift) — see
+`changelog.md`. They re-ran both suites, `flake8`, `mypy`, `tsc`, `eslint`, `npm run build` and
 Playwright. The 2026-11-21 theme sweep re-ran the frontend checks only.
 
 > **What this file is.** The single place that states what is true *right now*: verified numbers, what
@@ -18,7 +19,7 @@ Playwright. The 2026-11-21 theme sweep re-ran the frontend checks only.
 
 | Check | Command | Result |
 |---|---|---|
-| Backend tests | `cd backend && ./venv/Scripts/python.exe -m pytest -q` | **730 passed**; coverage **84.49%** (gate 75%, local Python 3.14.6) |
+| Backend tests | `cd backend && ./venv/Scripts/python.exe -m pytest -q` | **733 passed**; coverage **84.50%** (gate 75%, local Python 3.14.6) |
 | Backend lint | `./venv/Scripts/python.exe -m flake8 app` | clean |
 | Backend types | `./venv/Scripts/python.exe -m mypy app` | clean, 74 source files |
 | Migrations | `alembic upgrade head` + `alembic check` on a throwaway SQLite file | full chain applies, **no drift** |

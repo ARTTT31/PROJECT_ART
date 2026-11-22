@@ -716,21 +716,33 @@ def _is_non_chat_model(model_id: str) -> bool:
     return any(hint in lowered for hint in NON_CHAT_MODEL_HINTS)
 
 
+def _model_rank(model_id: str) -> tuple:
+    """Sort key for two models that both matched: newer wins, then not-lite.
+
+    Providers do not promise an order, so the version numbers in the id are the
+    only thing that says which generation is newer: without this, a list served
+    oldest-first made the picker suggest the previous generation.
+    """
+    numbers = [int(part) for part in re.findall(r"\d+", model_id)][:2]
+    return (numbers, 0 if "lite" in model_id.lower() else 1)
+
+
 def suggested_model(provider: str, models: List[str]) -> str:
     """Cheapest sensible default: a flash model for Gemini, a mini otherwise.
 
     Stable ids win over ``-preview`` ones: a preview id is what a user is most
     likely to lose access to later, and the suggestion is the model that will
-    answer their chats from now on.
+    answer their chats from now on. Within one family the newest generation
+    wins, and ``-lite`` loses to the full model of the same version.
     """
     if not models:
         return DEFAULT_GEMINI_MODEL if provider == "gemini" else ""
     usable = [model for model in models if not _is_non_chat_model(model)] or models
     stable = [model for model in usable if "preview" not in model.lower()]
     for needle in ("flash", "mini", "instant", "turbo", "chat"):
-        for model in stable or usable:
-            if needle in model.lower():
-                return model
+        matches = [model for model in (stable or usable) if needle in model.lower()]
+        if matches:
+            return max(matches, key=_model_rank)
     return (stable or usable)[0]
 
 

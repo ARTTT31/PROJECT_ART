@@ -115,7 +115,8 @@ async def _create_user_session(
             user_agent=user_agent,
             ip_address=ip_address,
             refresh_jti=refresh_jti,
-            expires_at=utils_utcnow() + timedelta(days=7),
+            expires_at=utils_utcnow()
+            + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS),
         )
     )
     await db.commit()

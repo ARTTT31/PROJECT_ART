@@ -161,15 +161,15 @@ the per-account AI API key; VAPID private keys are sealed the same way.
 
 | Concern | Implementation |
 |---|---|
-| Tokens | PyJWT, HS256. Access 30 min, refresh 7 days, both `HttpOnly` cookies. Cookie `Max-Age` values are still hardcoded, not derived from settings (open finding P7). |
+| Tokens | PyJWT, HS256. Access 30 min, refresh 7 days, both `HttpOnly` cookies. Cookie `Max-Age` values come from `settings.ACCESS_COOKIE_MAX_AGE` / `REFRESH_COOKIE_MAX_AGE`, and the session row's `expires_at` from `REFRESH_TOKEN_EXPIRE_DAYS` (P7 closed). |
 | CSRF | Double-submit: readable `csrf_token` cookie must be echoed in `X-CSRF-TOKEN` for authenticated browser writes. `/login`, `/register`, `/refresh`, `/csrf`, `/forgot-password`, `/reset-password` are exempt so a session can be established or recovered. |
 | Fast hydration | `user` cookie is HMAC-signed with `SECRET_KEY`; the frontend Zod-validates its shape and re-verifies against `/auth/session`. |
 | 2FA | TOTP (RFC 6238 implemented in `core/totp.py`), QR + manual secret, 10 single-use recovery codes, `totp_required` login step that mints no session before the code checks out, admin `reset-2fa` escape hatch. |
 | Step-up | Password change, sign-out-everywhere, data export and forgetting every trusted browser need a code typed within `STEP_UP_TTL_SECONDS` (300). `POST /auth/step-up` verifies TOTP or a recovery code and sets a signed `step_up` cookie bound to the access token's `sid`; `app.api.dependencies.require_step_up` enforces it and passes accounts without 2FA through. |
-| Lockout | 5 failed attempts → 30 minutes, keyed `(email, IP)`. Keyed on `request.client.host`, which behind Render is the proxy address — the open finding P1. |
+| Lockout | 5 failed attempts → 30 minutes, keyed `(email, IP)` with the address from `get_real_client_ip(request)`, so the key is the caller's and not the platform proxy's (P1 closed). |
 | Sessions | `sessions` rows carry IP, user agent, device label, last activity and expiry. Users manage their own devices; admins see every live session and can force one out (`ADMIN_REVOKE_SESSION`). |
 | Recovery | `forgot-password` mails a single-use link (SHA-256 hash stored, 30-minute TTL, 1-minute cooldown, identical answer for unknown addresses); redeeming it clears lockout and revokes every session. |
-| Client IP | `core/rate_limit.get_real_client_ip()` trusts `X-Forwarded-For` only when the direct peer is a trusted proxy; that is the correct helper, but most auth/admin call sites do not use it yet. |
+| Client IP | `core/rate_limit.get_real_client_ip()` is the only resolver: it trusts `X-Forwarded-For` only when the direct peer is a trusted proxy, walks the chain right-to-left, and (when `TRUST_VERCEL_PROXY` is on) reads the address Vercel's edge recorded instead of stopping at the edge itself. Every auth, user, profile, system and planner call site uses it. |
 
 **Authorization** is `role` (`admin`/`user`) plus per-user `accessible_pages`. `NULL` means the default
 set (`dashboard`, `profile`), never "everything". The sidebar and profile page hide what a user cannot

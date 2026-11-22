@@ -256,6 +256,19 @@ def test_model_listing_drops_models_that_cannot_chat():
     assert not ai._is_non_chat_model("gemini-3.8-flash")
 
 
+def test_suggested_model_prefers_the_newest_flash_generation():
+    """Providers do not promise an order, so the id's version decides."""
+    models = ["gemini-3.5-flash-lite", "gemini-3.6-flash", "gemini-3.8-flash"]
+
+    assert ai.suggested_model("gemini", models) == "gemini-3.8-flash"
+
+
+def test_suggested_model_prefers_the_full_model_over_its_lite_twin():
+    models = ["gemini-3.8-flash-lite", "gemini-3.8-flash"]
+
+    assert ai.suggested_model("gemini", models) == "gemini-3.8-flash"
+
+
 def test_suggested_model_skips_preview_ids():
     models = ["gemini-3.1-pro-preview", "gemini-3.8-flash", "gemini-3.5-flash-lite"]
 

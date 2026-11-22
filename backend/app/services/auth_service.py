@@ -486,8 +486,10 @@ class AuthService:
                 device_label=device_label,
                 ip_address=ip_address,
                 refresh_jti=refresh_jti,
+                # Same lifetime as the refresh token it hands out: a fixed 7
+                # days let a longer REFRESH_TOKEN_EXPIRE_DAYS outlive the row.
                 expires_at=datetime.now(timezone.utc).replace(tzinfo=None)
-                + timedelta(days=7),
+                + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS),
             )
             self.db.add(new_session)
 

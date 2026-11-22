@@ -1738,3 +1738,28 @@ resolution chain stopped at the proxy, and the row was written once at sign-in a
 (signed-in axe needs `E2E_USER_*`; the live-backend specs need a running API), `tsc`/`eslint` clean,
 `scripts/check_docs_links.py` OK. Not verified: the deployed Vercel hop — that needs
 `TRUST_VERCEL_PROXY=true` on Render and a real sign-in from a phone (recorded in `status.md` §5).
+
+## Three Things That Were Quietly Wrong (November 22, 2026)
+
+A sweep after Phase 4 found three places where the code and the docs disagreed with the rest of the
+system. None of them threw an error, which is what made them worth fixing.
+
+- **The session row had its own lifetime.** `AuthService.login()` and the Google-callback session
+  helper wrote `expires_at = now + 7 days` while the refresh token and its cookie used
+  `REFRESH_TOKEN_EXPIRE_DAYS`. Raising that setting to 30 would have kept the cookie for a month and
+  expired the database row on day 7 — the user is signed out with a perfectly valid token. Both now
+  read the setting, pinned by a test that sets it to 30 and asserts the row's expiry follows.
+- **The model suggestion depended on the provider's ordering.** `suggested_model()` returned the
+  first id that contained "flash", so a list served oldest-first recommended the previous
+  generation, and a `-lite` twin could beat the full model of the same version. It now ranks matches
+  by the version numbers in the id and prefers the full model over `-lite` at the same version.
+- **`architecture.md` described two findings as open.** It still said cookie lifetimes were
+  hardcoded (P7) and the lockout key was `request.client.host` (P1), and that most call sites had not
+  adopted the helper. All three were closed weeks ago; `status.md` is declared the authority and the
+  two documents contradicted each other. The rows now describe the code as it is, including the
+  Vercel hop.
+
+### Verified
+
+`pytest -q` **733 passed / 84.50%** (+3: the session-expiry test and the two ranking cases);
+`flake8 app tests` clean; `mypy app` clean (74 files); `scripts/check_docs_links.py` OK.

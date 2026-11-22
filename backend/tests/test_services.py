@@ -223,6 +223,29 @@ class TestAuthServiceLogin:
             await auth_service.login(email="nobody@example.com", password="Whatever")
         assert exc_info.value.status_code == 401
 
+    async def test_session_expiry_follows_the_configured_refresh_lifetime(
+        self, auth_service, user_service, sample_user_data, monkeypatch
+    ):
+        """A 30-day refresh cookie must not sit on a 7-day database row."""
+        from app.core.config import settings as app_settings
+        from app.core.utils import utcnow
+
+        monkeypatch.setattr(app_settings, "REFRESH_TOKEN_EXPIRE_DAYS", 30)
+        await user_service.create_user(sample_user_data)
+        result = await auth_service.login(
+            email="test@example.com", password="SecretPass123"
+        )
+
+        session = (
+            await user_service.db.execute(
+                select(UserSession).where(
+                    UserSession.session_id == result["session_id"]
+                )
+            )
+        ).scalar_one()
+
+        assert 29 <= (session.expires_at - utcnow()).days <= 30
+
     async def test_login_inactive_user_raises(self, auth_service, user_service, sample_user_data):
         user = await user_service.create_user(sample_user_data)
         user.is_active = False
