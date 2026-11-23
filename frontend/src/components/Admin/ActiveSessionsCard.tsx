@@ -55,6 +55,7 @@ export default function ActiveSessionsCard() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [busyGroup, setBusyGroup] = useState<string | null>(null);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
@@ -135,6 +136,48 @@ export default function ActiveSessionsCard() {
         showToast(err instanceof Error ? err.message : 'ไม่สามารถยกเลิก session ได้', 'error');
       } finally {
         setBusyId(null);
+      }
+    },
+    [load],
+  );
+
+  // Same endpoint as the per-device button, once per session of this account.
+  // Revoking a session the server already dropped is harmless, so a partial
+  // failure only needs to be counted, not rolled back.
+  const revokeAll = useCallback(
+    async (group: SessionGroup) => {
+      const confirmed = await showDeleteConfirm(
+        'บังคับออกจากทุกอุปกรณ์?',
+        `${group.label} จะต้องเข้าสู่ระบบใหม่บนทุกอุปกรณ์ (${group.sessions.length} อุปกรณ์)`,
+      );
+      if (!confirmed.isConfirmed) return;
+
+      setBusyGroup(group.key);
+      try {
+        const results = await Promise.all(
+          group.sessions.map((session) =>
+            fetchWithAuth(`/api/v1/users/sessions/${encodeURIComponent(session.session_id)}`, {
+              method: 'DELETE',
+            }).then(
+              (res) => res.ok,
+              () => false,
+            ),
+          ),
+        );
+        const failed = results.filter((removed) => !removed).length;
+        if (failed === 0) {
+          showToast('บังคับออกจากทุกอุปกรณ์เรียบร้อยแล้ว', 'success');
+        } else {
+          showToast(
+            `ออกได้ ${results.length - failed} อุปกรณ์ อีก ${failed} อุปกรณ์ล้มเหลว`,
+            'error',
+          );
+        }
+        await load(false);
+      } catch (err) {
+        showToast(err instanceof Error ? err.message : 'ไม่สามารถยกเลิก session ได้', 'error');
+      } finally {
+        setBusyGroup(null);
       }
     },
     [load],
@@ -278,6 +321,20 @@ export default function ActiveSessionsCard() {
                 <span className="ml-auto shrink-0 text-[11px] tabular-nums text-[var(--ink-tertiary)]">
                   {group.sessions.length} อุปกรณ์
                 </span>
+                <button
+                  type="button"
+                  onClick={() => void revokeAll(group)}
+                  disabled={busyGroup === group.key}
+                  aria-label={`บังคับ ${group.label} ออกจากทุกอุปกรณ์`}
+                  className="inline-flex h-7 shrink-0 items-center gap-1 rounded-full border border-[var(--hairline)] px-2.5 text-[11px] font-semibold text-[var(--danger-ink)] transition-all hover:bg-[var(--danger-soft)] active:scale-[0.95] disabled:opacity-50"
+                >
+                  {busyGroup === group.key ? (
+                    <Loader2 size={12} className="animate-spin" aria-hidden="true" />
+                  ) : (
+                    <LogOut size={12} aria-hidden="true" />
+                  )}
+                  ออกจากทุกอุปกรณ์
+                </button>
               </div>
               {group.email && group.email !== group.label && (
                 <p className="mt-0.5 truncate text-[11px] text-[var(--ink-tertiary)]">{group.email}</p>

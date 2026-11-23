@@ -1934,3 +1934,25 @@ touched files and `npm run build` all clean. `ActiveSessionsCard.test.tsx` gaine
 two sessions of one account and asserts the name appears once, both devices render, two revoke
 buttons exist, and no `ip_address` is printed. Not viewed: the card in a browser — this pass had no
 admin session against a running backend.
+
+## One Button Ends Every Device of an Account (November 23, 2026)
+
+Grouping the signed-in list by account left the per-device "ออกจากระบบ" as the only way out, so an
+admin signed in on three devices still needed three confirmations — the repetition the grouping had
+just removed.
+
+- Every account heading now carries **"ออกจากทุกอุปกรณ์"**: one confirmation naming the account and
+  how many devices it covers, then `DELETE /api/v1/users/sessions/{id}` for each of that account's
+  sessions — the same endpoint the per-device button uses, so no new API surface.
+- Only that account's sessions are touched; the other accounts in the list are never part of the
+  batch. A failed delete is counted rather than fatal: the toast reports how many devices were
+  removed and how many were not, and the list reloads.
+- The per-device buttons stay, so dropping a single device is still one click.
+
+### Verified
+
+Frontend suite **464 passed / 70 files** (was 463 / 70); `npx tsc --noEmit`, `npx eslint` on the two
+touched files and `npm run build` all clean. `ActiveSessionsCard.test.tsx` gained a case with two
+accounts: clicking the group button issues DELETEs for exactly the owner's `session_current` and
+`session_phone`, and never for the second account's `session_other`. Not viewed: the card in a
+browser — no admin session against a running backend in this pass.

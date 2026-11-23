@@ -7,8 +7,9 @@ The 2026-11-22 passes were the AI Copilot prompt/chip change, the Phase 4 sessio
 small correctness sweep (session expiry from settings, model ranking, `architecture.md` drift) — see
 `changelog.md`. They re-ran both suites, `flake8`, `mypy`, `tsc`, `eslint`, `npm run build` and
 Playwright. The 2026-11-21 theme sweep re-ran the frontend checks only. The frontend suite was re-run
-four times on 2026-11-23 — the IP-free device lists, the #418 branding fix, the #418 menu fix,
-then the grouped signed-in device list (latest: 463 passed / 70 files); the backend counts and every deployed check are still from the 2026-11-22 pass.
+five times on 2026-11-23 — the IP-free device lists, the #418 branding fix, the #418 menu fix,
+the grouped signed-in device list, then its "ออกจากทุกอุปกรณ์" button (latest: 464 passed / 70
+files); the backend counts and every deployed check are still from the 2026-11-22 pass.
 
 > **What this file is.** The single place that states what is true *right now*: verified numbers, what
 > that verification covered, and every known gap with its status. `architecture.md` explains how the
@@ -25,7 +26,7 @@ then the grouped signed-in device list (latest: 463 passed / 70 files); the back
 | Backend lint | `./venv/Scripts/python.exe -m flake8 app` | clean |
 | Backend types | `./venv/Scripts/python.exe -m mypy app` | clean, 74 source files |
 | Migrations | `alembic upgrade head` + `alembic check` on a throwaway SQLite file | full chain applies, **no drift** |
-| Frontend tests | `cd frontend && npx vitest run` | **463 passed**, 70 files |
+| Frontend tests | `cd frontend && npx vitest run` | **464 passed**, 70 files |
 | Frontend types | `npx tsc --noEmit` | clean |
 | Frontend lint | `npx eslint .` | clean (0 errors, 0 warnings) |
 | Frontend build | `npm run build` | succeeds, 17 routes |
