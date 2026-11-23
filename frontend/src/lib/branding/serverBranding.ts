@@ -1,3 +1,5 @@
+import { cache } from 'react';
+
 /**
  * Branding as the server sees it (layout metadata + web app manifest).
  *
@@ -68,3 +70,10 @@ export async function fetchServerBranding(): Promise<ServerBranding> {
     };
   }
 }
+
+/**
+ * One branding read per request. The root layout seeds `BrandingProvider` with
+ * it and `generateMetadata` names the page with it, so asking the API twice for
+ * the same answer only added a round trip.
+ */
+export const getServerBranding = cache(fetchServerBranding);

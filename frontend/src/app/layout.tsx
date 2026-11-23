@@ -5,7 +5,7 @@ import './globals.css';
 import { Providers } from './providers';
 import { AuthUserSchema } from '@/lib/api/schemas';
 import { parseUserCookieValue } from '@/lib/api/userCookie';
-import { brandingVersion, fetchServerBranding } from '@/lib/branding/serverBranding';
+import { brandingVersion, getServerBranding } from '@/lib/branding/serverBranding';
 
 const anuphan = Anuphan({
   weight: 'variable',
@@ -32,7 +32,7 @@ export const viewport: Viewport = {
  * carries the same name for browsers that use it as the install source.
  */
 export async function generateMetadata(): Promise<Metadata> {
-  const branding = await fetchServerBranding();
+  const branding = await getServerBranding();
   const name = branding.company_name;
   const version = brandingVersion(name, branding.brand_logo_url);
   const icon = (size: number, safe = false) =>
@@ -106,13 +106,19 @@ async function readInitialUser() {
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const initialUser = await readInitialUser();
+  // The branding is read here, not in the browser, so the sidebar's name and
+  // tagline in the HTML are the workspace's own. Seeding the provider from a
+  // localStorage cache instead made the server render the neutral name and the
+  // client its stored one — a hydration mismatch (React #418) on every page.
+  const [initialUser, branding] = await Promise.all([readInitialUser(), getServerBranding()]);
 
   return (
     <html lang="th" suppressHydrationWarning>
       <body className={anuphan.variable}>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
-        <Providers initialUser={initialUser}>{children}</Providers>
+        <Providers initialUser={initialUser} initialBranding={branding}>
+          {children}
+        </Providers>
       </body>
     </html>
   );

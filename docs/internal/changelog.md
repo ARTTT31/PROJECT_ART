@@ -1847,3 +1847,37 @@ was last used.
 src/components/Profile/MyDevicesCard.test.tsx src/components/Profile/TrustedDevicesCard.test.tsx`
 **13 passed / 3 files**. Not verified: the rendered pages themselves (no browser pass), and the deployed
 build.
+
+## The Sidebar's Name Now Matches the HTML (November 23, 2026)
+
+
+`/admin` and `/profile` threw React #418 (hydration) in the browser console on every production load.
+The service worker was the first suspect and it was innocent: with the registration removed and all
+eight caches deleted, the error persisted. Comparing the server's HTML against the live DOM named the
+culprit in the sidebar — `Workspace · จัดการวันทำงานของคุณให้ง่ายขึ้น` in the markup,
+`Graphite · เรียบง่ายแต่ทรงพลัง` in the browser.
+
+- **`BrandingProvider` read `localStorage` while rendering.** Its `useState` initializer seeded the
+  state from the branding cache, which the server cannot see, so the sidebar's name and tagline
+  disagreed with the HTML on every page that draws it. `Sidebar`'s saved menu had the same bug and was
+  fixed the same way; the branding was left behind.
+- **The name now comes from the server.** `RootLayout` awaits `getServerBranding()` — a `cache()`d
+  wrapper, so `generateMetadata` shares the one request — and passes the result through `Providers` to
+  `BrandingProvider` as `initialBranding`, which seeds the state. The browser's first render therefore
+  says what the HTML says, and a renamed workspace no longer flashes the neutral name on the way in.
+- **The cache still covers an unreachable API, but only after mount.** A `useEffect` applies the stored
+  copy when the server could not reach the API and skips it when a fresh answer already landed
+  (`apiApplied`). The per-load refetch is unchanged, so a rename still reaches every account on its
+  next visit.
+- **The clock was not to blame.** The header's date and time differ between the server (UTC) and the
+  browser (+07:00) but live inside `<span suppressHydrationWarning>`, so they are replaced silently.
+  That is a one-frame wrong time, not an error.
+
+### Verified
+
+`npx vitest run` **460 passed / 69 files** — one new case renders the provider with `renderToString`
+and requires the server-provided name and never the cached one; `npx tsc --noEmit`, `npx eslint` on
+the five changed files and `npm run build` clean. Reproduced on a local production build
+(`next build` + `next start`): with `workspace_branding` seeded to `Graphite`, `/profile` and
+`/dashboard` log no `#418` and the sidebar settles on `Graphite`. Not re-run: the deployed site —
+this fix only reaches it with the deploy that carries it.

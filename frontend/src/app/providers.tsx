@@ -3,7 +3,7 @@
 import { AuthProvider } from '@/components/Auth/AuthProvider';
 import type { AuthUser } from '@/types';
 import { ToastProvider } from '@/components/Toast/ToastProvider';
-import { BrandingProvider } from '@/context/BrandingContext';
+import { BrandingProvider, type BrandingInfo } from '@/context/BrandingContext';
 import { ThemeProvider } from '@/context/ThemeContext';
 import { BrandingFavicon } from '@/components/Branding/BrandingFavicon';
 import { I18nProvider } from '@/lib/i18n/I18nProvider';
@@ -13,15 +13,18 @@ import ErrorBoundary from '@/components/ErrorBoundary';
 export function Providers({
   children,
   initialUser,
+  initialBranding,
 }: {
   children: React.ReactNode;
   /** Session seeded from the readable `user` cookie by the server layout. */
   initialUser?: AuthUser | null;
+  /** Workspace branding the server already rendered, so hydration agrees. */
+  initialBranding?: BrandingInfo;
 }) {
   return (
     <ErrorBoundary>
       <ThemeProvider>
-        <BrandingProvider>
+        <BrandingProvider initialBranding={initialBranding}>
           <I18nProvider>
             <BrandingFavicon />
             <OfflineBanner />

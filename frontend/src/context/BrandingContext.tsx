@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
 import { getApiBaseUrl } from '@/lib/api/apiBase';
 
@@ -100,18 +100,24 @@ function toWorkspaceBranding(data: unknown): WorkspaceBrandingInfo {
   };
 }
 
-export function BrandingProvider({ children }: { children: React.ReactNode }) {
-  const [branding, setBranding] = useState<BrandingInfo>(() => {
-    if (typeof window === 'undefined') return DEFAULT_BRANDING;
-    try {
-      LEGACY_STORAGE_KEYS.forEach((key) => localStorage.removeItem(key));
-      const cached = localStorage.getItem(STORAGE_KEY);
-      if (cached) return toBrandingInfo(JSON.parse(cached));
-    } catch {
-      // Fallback
-    }
-    return DEFAULT_BRANDING;
-  });
+export function BrandingProvider({
+  children,
+  initialBranding,
+}: {
+  children: React.ReactNode;
+  /**
+   * What the server already rendered, read from the API by the root layout.
+   * Without it the prerendered name was the neutral default while the browser's
+   * first render used the cached one, and the sidebar's name and tagline
+   * disagreed with the HTML — React error #418 (hydration) on every signed-in
+   * page. The cache is now only a post-mount fallback.
+   */
+  initialBranding?: BrandingInfo;
+}) {
+  const [branding, setBranding] = useState<BrandingInfo>(() =>
+    toBrandingInfo(initialBranding),
+  );
+  const apiApplied = useRef(false);
 
   const [personal, setPersonal] = useState<WorkspaceBrandingInfo>(EMPTY_PERSONAL);
   const [isLoading, setIsLoading] = useState(false);
@@ -120,11 +126,31 @@ export function BrandingProvider({ children }: { children: React.ReactNode }) {
 
   /** Keep state + cache in sync with a branding payload from the API. */
   const applyBranding = useCallback((next: BrandingInfo) => {
+    apiApplied.current = true;
     setBranding(next);
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
     } catch {
       // ignore storage errors
+    }
+  }, []);
+
+  // A stored copy still covers the case where the server could not reach the
+  // API, but it must never be the first render: that is what broke hydration.
+  useEffect(() => {
+    try {
+      LEGACY_STORAGE_KEYS.forEach((key) => localStorage.removeItem(key));
+      const cached = localStorage.getItem(STORAGE_KEY);
+      if (!cached || apiApplied.current) return;
+      const parsed = toBrandingInfo(JSON.parse(cached));
+      setBranding((current) =>
+        current.company_name === DEFAULT_BRANDING.company_name &&
+        current.company_tagline === DEFAULT_BRANDING.company_tagline
+          ? parsed
+          : current,
+      );
+    } catch {
+      // A cache that cannot be read is not worth a failed paint.
     }
   }, []);
 

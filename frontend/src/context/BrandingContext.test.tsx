@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { renderToString } from 'react-dom/server';
 import { BrandingProvider, useBranding } from './BrandingContext';
 
 const { fetchWithAuth } = vi.hoisted(() => ({
@@ -61,6 +62,36 @@ describe('BrandingContext', () => {
     });
   });
 
+  it('renders the server-provided branding and never localStorage during SSR', () => {
+    localStorage.setItem(
+      'workspace_branding',
+      JSON.stringify({ company_name: 'Graphite', company_tagline: 'เรียบง่ายแต่ทรงพลัง' }),
+    );
+
+    // The root layout reads the name from the API and hands it down, so the
+    // first HTML already carries the workspace's own name.
+    const seeded = renderToString(
+      <BrandingProvider
+        initialBranding={{ company_name: 'Graphite', company_tagline: 'เรียบง่ายแต่ทรงพลัง' }}
+      >
+        <TestComponent />
+      </BrandingProvider>,
+    );
+    expect(seeded).toContain('Graphite');
+    expect(seeded).not.toContain('Workspace');
+
+    // Without it the neutral defaults are what the server renders. Reading the
+    // cache here — which is what this provider used to do — made the browser's
+    // first render disagree with the HTML and threw React #418 in the sidebar.
+    const neutral = renderToString(
+      <BrandingProvider>
+        <TestComponent />
+      </BrandingProvider>,
+    );
+    expect(neutral).toContain('Workspace');
+    expect(neutral).not.toContain('Graphite');
+  });
+
   it('drops the cache written under the retired brand key', async () => {
     localStorage.setItem(
       'art_workspace_branding',
@@ -96,7 +127,7 @@ describe('BrandingContext', () => {
       </BrandingProvider>,
     );
 
-    // Cached value paints immediately, then the backend answer replaces it.
+    // The cache still paints after mount, then the backend answer replaces it.
     expect(screen.getByTestId('company-name').textContent).toBe('ชื่อเดิม');
     await waitFor(() => {
       expect(screen.getByTestId('company-name').textContent).toBe('ทีมใหม่');
