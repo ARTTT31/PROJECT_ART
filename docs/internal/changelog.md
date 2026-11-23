@@ -1818,3 +1818,27 @@ no hydration error, and the saved order still applies after mount — the same p
 Not verified: the deployed site's console itself (needs the owner's signed-in session), so whether
 `#418` came from the cached document, from the render-time reads, or from a deploy that was rolling
 out while the page loaded is not settled here.
+
+## Device Lists Show Devices, Not Addresses (November 23, 2026)
+
+The address a session came from is still recorded, but three lists no longer print it: an admin
+scanning "who is signed in" and a user checking their own devices only need the device and when it
+was last used.
+
+- **The rendering went, the storage stayed.** `ActiveSessionsCard` (Admin → อุปกรณ์ที่กำลังเข้าสู่ระบบ),
+  `MyDevicesCard` (Profile → อุปกรณ์ของฉัน) and `TrustedDevicesCard` (อุปกรณ์ที่ถูกจดจำ) render the
+  device and its last activity only; `ip_address` left the three local interfaces with the markup.
+  `UserSession.ip_address` and `TrustedDevice.ip_address` are still written by
+  `get_real_client_ip()` on login, token refresh and trusted-device creation, both APIs still return
+  the field, and the audit page still prints it.
+- **The admin search hint follows the rows.** The session filter said "ค้นหาชื่อ อีเมล อุปกรณ์ หรือ IP"
+  while the matched rows had no address to check it against; it now reads "ค้นหาชื่อ อีเมล หรืออุปกรณ์".
+  The server-side filter is deliberately unchanged — typing an address still finds the account behind
+  it when triaging a report — so only the promise on screen shrank.
+
+### Verified
+
+`npx tsc --noEmit` and `npx eslint` clean on the three cards and their tests;
+`npx vitest run src/components/Profile/MyDevicesCard.test.tsx src/components/Profile/TrustedDevicesCard.test.tsx`
+**6 passed / 2 files**. Not verified: the rendered pages themselves (no browser pass), and the deployed
+build.

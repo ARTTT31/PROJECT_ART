@@ -186,7 +186,7 @@ export default function ActiveSessionsCard() {
             type="search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="ค้นหาชื่อ อีเมล อุปกรณ์ หรือ IP"
+            placeholder="ค้นหาชื่อ อีเมล หรืออุปกรณ์"
             className="h-9 w-full rounded-full border border-[var(--hairline)] bg-[var(--surface-grouped)] pl-9 pr-3 text-[12px] font-medium text-[var(--ink)] outline-hidden transition-all placeholder:text-[var(--ink-tertiary)] focus:border-[var(--accent)] focus:bg-[var(--surface)] focus:ring-2 focus:ring-[var(--accent-ring)]"
           />
         </label>
