@@ -2036,3 +2036,26 @@ Frontend suite **469 passed / 70 files** (was 468 / 70); `npx tsc --noEmit`, `np
 touched files and `npm run build` clean. New test: two devices on the account, the other device's
 DELETE answers `ok: false` — `auth-logout` still fires once and the warning toast carries the
 remaining count. Not viewed in a browser.
+
+## Revoking Your Own Session Writes a Sign-Out Entry (November 23, 2026)
+
+The admin device list let an admin end its own session, and the backend did write
+`ADMIN_REVOKE_SESSION` — but `/audit` has no label or filter for that key, so the row showed up as an
+opaque string, and `LOGOUT` (the action the page already translates) was never written for a session
+that ended exactly like a sign-out.
+
+- `DELETE /api/v1/users/sessions/{id}` now logs **`LOGOUT`** when the session belongs to the caller,
+  with details naming it: *"Admin signed out their own session {id}… from the device list"*. The
+  actor (`user_id`) and `created_at` are the admin and the moment of the click, which is what the
+  page already renders as who and when.
+- Revoking someone else's session keeps `ADMIN_REVOKE_SESSION` unchanged.
+- `/audit` gained the two missing labels, so both actions are readable and selectable in the filter:
+  `ADMIN_REVOKE_SESSION` → "แอดมินบังคับออกจากระบบ", `SESSIONS_REVOKED` → "ออกจากอุปกรณ์อื่นทั้งหมด".
+
+### Verified
+
+Backend suite **734 passed**, coverage **84.50%** (was 733); `flake8` clean on the touched endpoint.
+The new `test_self_revoke_leaves_a_sign_out_entry` deletes the admin's own session, then reads the
+committed audit rows and requires a `LOGOUT` entry for that actor whose details carry the session
+prefix. Frontend: **469 passed / 70 files**, `tsc`, `eslint` and `npm run build` clean — the label
+addition has no test of its own (the audit page has no test file). Not viewed: `/audit` in a browser.

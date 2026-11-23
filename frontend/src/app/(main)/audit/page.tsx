@@ -79,6 +79,8 @@ const ACTION_LABELS: Record<string, { th: string; en: string }> = {
   ADMIN_USER_UPDATE: { th: 'แอดมินแก้ไขผู้ใช้', en: 'Admin updated user' },
   ADMIN_USER_DELETE: { th: 'แอดมินลบผู้ใช้', en: 'Admin deleted user' },
   ADMIN_USER_RESTORE: { th: 'แอดมินกู้คืนผู้ใช้', en: 'Admin restored user' },
+  ADMIN_REVOKE_SESSION: { th: 'แอดมินบังคับออกจากระบบ', en: 'Session revoked by admin' },
+  SESSIONS_REVOKED: { th: 'ออกจากอุปกรณ์อื่นทั้งหมด', en: 'Other devices signed out' },
   ADMIN_USER_APPROVE: { th: 'อนุมัติสมาชิก', en: 'Member approved' },
   ADMIN_USER_REJECT: { th: 'ปฏิเสธสมาชิก', en: 'Member rejected' },
   AUTH_UPDATE_COMPANY_HOLIDAYS: { th: 'บันทึกวันหยุดบริษัท', en: 'Company holidays saved' },

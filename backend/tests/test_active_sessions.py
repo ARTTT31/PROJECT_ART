@@ -51,6 +51,36 @@ async def test_admin_can_force_logout(client, logged_in_admin_user):
     assert me.status_code == 401
 
 
+async def test_self_revoke_leaves_a_sign_out_entry(client, logged_in_admin_user, db_session):
+    """Revoking your own session from /admin must show up on /audit.
+
+    The row is written as `LOGOUT` (the action /audit already labels and
+    filters on) with the session prefix in its details, so an admin reading the
+    log can tell who ended which session and when.
+    """
+    from sqlalchemy import select
+    from app.models.audit_log import AuditLog
+
+    admin = logged_in_admin_user["data"]["user"]
+    session_id = logged_in_admin_user["data"]["session_id"]
+
+    resp = await client.delete(f"/api/v1/users/sessions/{session_id}")
+    assert resp.status_code == 200
+
+    # Only committed rows survive, exactly like a request-session teardown.
+    await db_session.rollback()
+    rows = (
+        await db_session.execute(select(AuditLog).where(AuditLog.action == "LOGOUT"))
+    ).scalars().all()
+    mine = [
+        row
+        for row in rows
+        if row.user_id == admin["id"] and session_id[:8] in (row.details or "")
+    ]
+    assert mine, "self-revoke succeeded but left no LOGOUT entry in the audit trail"
+    assert "own session" in (mine[-1].details or "")
+
+
 async def test_admin_can_filter_sessions_by_role(client, logged_in_admin_user):
     resp = await client.get("/api/v1/users/sessions", params={"role": "admin"})
     assert resp.status_code == 200

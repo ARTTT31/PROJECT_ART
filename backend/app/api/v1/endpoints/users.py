@@ -412,11 +412,17 @@ async def revoke_active_session(
         )
 
     session.is_active = False
+    # Kicking your own session out of this list is a sign-out, not a moderation
+    # action: the `LOGOUT` action is what /audit already translates and filters
+    # on, so the entry reads as one instead of an opaque raw key.
+    own_session = session.user_id == current_user.id
     await AuditService(db).log_action(
-        action="ADMIN_REVOKE_SESSION",
+        action="LOGOUT" if own_session else "ADMIN_REVOKE_SESSION",
         user_id=current_user.id,
         details=(
-            f"Admin revoked session {session_id[:8]}… of user {session.user_id}"
+            f"Admin signed out their own session {session_id[:8]}… from the device list"
+            if own_session
+            else f"Admin revoked session {session_id[:8]}… of user {session.user_id}"
         ),
         ip_address=get_real_client_ip(request),
         user_agent=request.headers.get("user-agent"),
