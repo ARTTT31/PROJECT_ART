@@ -15,7 +15,6 @@ interface TrustedDevice {
   id: number;
   device_label: string | null;
   user_agent: string | null;
-  ip_address: string | null;
   created_at: string | null;
   last_used_at: string | null;
   expires_at: string | null;
@@ -198,7 +197,7 @@ export function TrustedDevicesCard() {
                     {describeDevice(device.user_agent, device.device_label)}
                   </p>
                   <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]">
-                    {device.ip_address || 'ไม่ทราบ IP'} · ใช้ล่าสุด {created.relative}
+                    ใช้ล่าสุด {created.relative}
                   </p>
                   <p className="text-[11px] text-[var(--ink-tertiary)]">
                     ข้ามการยืนยันถึง {expires.absolute}

@@ -16,7 +16,6 @@ interface MySession {
   session_id: string;
   device_label: string | null;
   user_agent: string | null;
-  ip_address: string | null;
   last_activity: string | null;
   created_at: string | null;
   expires_at: string | null;
@@ -211,7 +210,7 @@ export function MyDevicesCard() {
                     )}
                   </p>
                   <p className="mt-0.5 text-[11px] text-[var(--ink-muted)]" title={absolute}>
-                    {session.ip_address || 'ไม่ทราบ IP'} · ใช้งานล่าสุด {relative}
+                    ใช้งานล่าสุด {relative}
                   </p>
                 </div>
 

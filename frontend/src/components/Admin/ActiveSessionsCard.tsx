@@ -18,7 +18,6 @@ export interface AdminSession {
   role: string;
   device_label: string | null;
   user_agent: string | null;
-  ip_address: string | null;
   is_active: boolean;
   is_online?: boolean;
   last_activity: string | null;
@@ -269,7 +268,6 @@ export default function ActiveSessionsCard() {
                   </p>
                   <p className="mt-0.5 truncate text-[12px] text-[var(--ink-secondary)]">
                     {describeDevice(session.user_agent, session.device_label)}
-                    {session.ip_address ? ` · ${session.ip_address}` : ''}
                   </p>
                   <p className="mt-0.5 text-[11px] text-[var(--ink-tertiary)]" title={absolute}>
                     ใช้งานล่าสุด {relative}
