@@ -3,7 +3,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import ActiveSessionsCard from './ActiveSessionsCard';
 import { describeDevice } from '@/utils/userAgent';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
-import { showDeleteConfirm } from '@/utils/sweetalert';
+import { showDeleteConfirm, showToast } from '@/utils/sweetalert';
 
 vi.mock('@/lib/api/fetchWithAuth', () => ({
   fetchWithAuth: vi.fn(),
@@ -235,5 +235,85 @@ describe('ActiveSessionsCard', () => {
     });
     const [, otherDeviceText] = vi.mocked(showDeleteConfirm).mock.calls[0];
     expect(otherDeviceText).not.toContain('อุปกรณ์นี้คือเครื่องที่คุณกำลังใช้อยู่');
+  });
+
+  it('leaves for the login screen after revoking this very device', async () => {
+    localStorage.setItem('session_id', 'session_current');
+    vi.mocked(fetchWithAuth).mockResolvedValue(
+      ok([
+        sessions[0],
+        { ...sessions[0], id: 2, session_id: 'session_tablet', device_label: 'iPad Pro' },
+      ]),
+    );
+
+    const onLogout = vi.fn();
+    window.addEventListener('auth-logout', onLogout);
+    const listRequests = () =>
+      vi
+        .mocked(fetchWithAuth)
+        .mock.calls.filter(([url]) => !String(url).includes('/sessions/')).length;
+
+    try {
+      render(<ActiveSessionsCard />);
+      await waitFor(() => {
+        expect(screen.getByText('2 อุปกรณ์')).toBeDefined();
+      });
+      const before = listRequests();
+      vi.mocked(showToast).mockClear();
+
+      fireEvent.click(
+        screen.getByRole('button', { name: 'บังคับ Owner ออกจาก Chrome 120 · Windows 10/11' }),
+      );
+
+      await waitFor(() => expect(onLogout).toHaveBeenCalledTimes(1));
+      expect(vi.mocked(showToast)).toHaveBeenCalledWith(expect.any(String), 'success');
+      // The list is not refetched — there is no session left to fetch it with.
+      expect(listRequests()).toBe(before);
+    } finally {
+      window.removeEventListener('auth-logout', onLogout);
+    }
+  });
+
+  it('leaves for the login screen after revoking every device of its own account', async () => {
+    localStorage.setItem('session_id', 'session_phone');
+    vi.mocked(fetchWithAuth).mockResolvedValue(
+      ok([
+        sessions[0],
+        { ...sessions[0], id: 2, session_id: 'session_phone', device_label: 'iPad Pro' },
+        {
+          ...sessions[0],
+          id: 3,
+          session_id: 'session_other',
+          user_id: 9,
+          name: 'Someone Else',
+          email: 'other@example.com',
+        },
+      ]),
+    );
+
+    const onLogout = vi.fn();
+    window.addEventListener('auth-logout', onLogout);
+
+    try {
+      render(<ActiveSessionsCard />);
+      await waitFor(() => {
+        expect(screen.getByText('Someone Else')).toBeDefined();
+      });
+
+      // Another account's batch leaves this browser signed in.
+      fireEvent.click(screen.getByRole('button', { name: 'บังคับ Someone Else ออกจากทุกอุปกรณ์' }));
+      await waitFor(() => {
+        const deleted = vi
+          .mocked(fetchWithAuth)
+          .mock.calls.filter(([, init]) => (init as RequestInit | undefined)?.method === 'DELETE');
+        expect(deleted).toHaveLength(1);
+      });
+      expect(onLogout).not.toHaveBeenCalled();
+
+      fireEvent.click(screen.getByRole('button', { name: 'บังคับ Owner ออกจากทุกอุปกรณ์' }));
+      await waitFor(() => expect(onLogout).toHaveBeenCalledTimes(1));
+    } finally {
+      window.removeEventListener('auth-logout', onLogout);
+    }
   });
 });

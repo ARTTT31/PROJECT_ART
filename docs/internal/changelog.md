@@ -1993,3 +1993,25 @@ Frontend suite **466 passed / 70 files** (was 465 / 70); `npx tsc --noEmit`, `np
 touched files and `npm run build` clean. `ActiveSessionsCard.test.tsx` clicks both per-device buttons
 of one account: the current device's dialog carries the warning, the other device's does not. Not
 viewed: the dialog in a browser.
+
+## Revoking Your Own Session Leaves the Page (November 23, 2026)
+
+The two warnings landed, but acting on them still left the admin on `/admin` with a session the
+server had just deleted: the next refresh 401'd and the page sat there looking usable.
+
+- Deleting this browser's own session — the per-device button on the "อุปกรณ์นี้" row, or
+  "ออกจากทุกอุปกรณ์" on your own account when every delete succeeded — now dispatches the app's
+  existing `auth-logout` event instead of reloading the list. AuthProvider responds by clearing the
+  local user, the offline mirrors and redirecting to `/login`, i.e. exactly the path a real 401 takes.
+- The success toast changes to *"ออกจากระบบแล้ว กรุณาเข้าสู่ระบบใหม่"* / *"ออกจากทุกอุปกรณ์แล้ว
+  กรุณาเข้าสู่ระบบใหม่"* so the redirect has an explanation.
+- No list refetch after that: there is no session left to fetch it with. Revoking other accounts, or
+  other devices of your own account, still reloads in place.
+
+### Verified
+
+Frontend suite **468 passed / 70 files** (was 466 / 70); `npx tsc --noEmit`, `npx eslint` on the two
+touched files and `npm run build` clean. `ActiveSessionsCard.test.tsx` listens for `auth-logout`:
+revoking the current device fires it once with no refetch, reverting another account's group does not
+fire it, and your own group does. The redirect itself belongs to AuthProvider and was not re-tested
+here; the dialog/redirect were not viewed in a browser.

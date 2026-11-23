@@ -112,6 +112,17 @@ export default function ActiveSessionsCard() {
     return () => window.clearInterval(timer);
   }, [load]);
 
+  /**
+   * This browser's own session is gone: hand over to the app-wide
+   * `auth-logout` handler (AuthProvider), which clears the local user, the
+   * offline mirrors and redirects to /login. Reloading this list instead would
+   * 401 and leave the admin staring at a page that can no longer act.
+   */
+  const endLocalSession = useCallback((message: string) => {
+    showToast(message, 'success');
+    window.dispatchEvent(new Event('auth-logout'));
+  }, []);
+
   const revoke = useCallback(
     async (session: AdminSession) => {
       // Forcing out this very device ends the admin's own session, so the
@@ -135,6 +146,10 @@ export default function ActiveSessionsCard() {
         if (!res.ok) {
           throw new Error(apiMessage(body, 'ไม่สามารถยกเลิก session ได้'));
         }
+        if (currentSessionId === session.session_id) {
+          endLocalSession('ออกจากระบบแล้ว กรุณาเข้าสู่ระบบใหม่');
+          return;
+        }
         showToast('บังคับออกจากระบบเรียบร้อยแล้ว', 'success');
         await load(false);
       } catch (err) {
@@ -143,7 +158,7 @@ export default function ActiveSessionsCard() {
         setBusyId(null);
       }
     },
-    [currentSessionId, load],
+    [currentSessionId, endLocalSession, load],
   );
 
   // Same endpoint as the per-device button, once per session of this account.
@@ -178,6 +193,10 @@ export default function ActiveSessionsCard() {
           ),
         );
         const failed = results.filter((removed) => !removed).length;
+        if (signOutHere && failed === 0) {
+          endLocalSession('ออกจากทุกอุปกรณ์แล้ว กรุณาเข้าสู่ระบบใหม่');
+          return;
+        }
         if (failed === 0) {
           showToast('บังคับออกจากทุกอุปกรณ์เรียบร้อยแล้ว', 'success');
         } else {
@@ -193,7 +212,7 @@ export default function ActiveSessionsCard() {
         setBusyGroup(null);
       }
     },
-    [currentSessionId, load],
+    [currentSessionId, endLocalSession, load],
   );
 
   const groups = useMemo<SessionGroup[]>(() => {
