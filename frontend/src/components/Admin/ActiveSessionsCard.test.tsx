@@ -201,4 +201,39 @@ describe('ActiveSessionsCard', () => {
     const [, otherText] = vi.mocked(showDeleteConfirm).mock.calls[0];
     expect(otherText).not.toContain('รวมอุปกรณ์นี้ด้วย');
   });
+
+  it('warns before a per-device revoke that ends this very device', async () => {
+    localStorage.setItem('session_id', 'session_current');
+    vi.mocked(fetchWithAuth).mockResolvedValue(
+      ok([
+        sessions[0],
+        { ...sessions[0], id: 2, session_id: 'session_tablet', device_label: 'iPad Pro' },
+      ]),
+    );
+    vi.mocked(showDeleteConfirm).mockClear();
+
+    render(<ActiveSessionsCard />);
+    await waitFor(() => {
+      expect(screen.getByText('2 อุปกรณ์')).toBeDefined();
+    });
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'บังคับ Owner ออกจาก Chrome 120 · Windows 10/11' }),
+    );
+    await waitFor(() => {
+      expect(vi.mocked(showDeleteConfirm)).toHaveBeenCalledTimes(1);
+    });
+    const [, currentText] = vi.mocked(showDeleteConfirm).mock.calls[0];
+    expect(currentText).toContain('อุปกรณ์นี้คือเครื่องที่คุณกำลังใช้อยู่');
+    expect(currentText).toContain('หลุดจากระบบทันที');
+
+    // Another device of the same account keeps the plain sentence.
+    vi.mocked(showDeleteConfirm).mockClear();
+    fireEvent.click(screen.getByRole('button', { name: 'บังคับ Owner ออกจาก iPad Pro' }));
+    await waitFor(() => {
+      expect(vi.mocked(showDeleteConfirm)).toHaveBeenCalledTimes(1);
+    });
+    const [, otherDeviceText] = vi.mocked(showDeleteConfirm).mock.calls[0];
+    expect(otherDeviceText).not.toContain('อุปกรณ์นี้คือเครื่องที่คุณกำลังใช้อยู่');
+  });
 });

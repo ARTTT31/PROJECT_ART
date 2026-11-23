@@ -114,9 +114,14 @@ export default function ActiveSessionsCard() {
 
   const revoke = useCallback(
     async (session: AdminSession) => {
+      // Forcing out this very device ends the admin's own session, so the
+      // prompt has to say that before it happens.
+      const scope = `${accountLabel(session)} · ${describeDevice(session.user_agent, session.device_label)} จะต้องเข้าสู่ระบบใหม่`;
       const confirmed = await showDeleteConfirm(
         'บังคับออกจากระบบ?',
-        `${accountLabel(session)} · ${describeDevice(session.user_agent, session.device_label)} จะต้องเข้าสู่ระบบใหม่`,
+        currentSessionId === session.session_id
+          ? `${scope} — อุปกรณ์นี้คือเครื่องที่คุณกำลังใช้อยู่ จะหลุดจากระบบทันที และต้องเข้าสู่ระบบใหม่`
+          : scope,
       );
       if (!confirmed.isConfirmed) return;
 
@@ -138,7 +143,7 @@ export default function ActiveSessionsCard() {
         setBusyId(null);
       }
     },
-    [load],
+    [currentSessionId, load],
   );
 
   // Same endpoint as the per-device button, once per session of this account.

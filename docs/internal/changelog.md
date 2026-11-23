@@ -1975,3 +1975,21 @@ Frontend suite **465 passed / 70 files** (was 464 / 70); `npx tsc --noEmit`, `np
 touched files and `npm run build` clean. `ActiveSessionsCard.test.tsx` now opens the group dialog for
 both cases: the own-account text contains the warning, another account's text does not. Not viewed:
 the dialog in a browser.
+
+## The Same Warning on the Per-Device Button (November 23, 2026)
+
+The group button warned that your own devices include the browser you are using; the per-device
+"ออกจากระบบ" on that row did not, so the more precise of the two actions was the quieter one.
+
+- Revoking the session whose id matches `localStorage.session_id` now says so: the device line is
+  followed by *"อุปกรณ์นี้คือเครื่องที่คุณกำลังใช้อยู่ จะหลุดจากระบบทันที และต้องเข้าสู่ระบบใหม่"*.
+  Other devices of the same account keep the plain sentence.
+- Same marker and wording family as the group prompt, so the row's "อุปกรณ์นี้" badge, the group
+  warning and this one all agree.
+
+### Verified
+
+Frontend suite **466 passed / 70 files** (was 465 / 70); `npx tsc --noEmit`, `npx eslint` on the two
+touched files and `npm run build` clean. `ActiveSessionsCard.test.tsx` clicks both per-device buttons
+of one account: the current device's dialog carries the warning, the other device's does not. Not
+viewed: the dialog in a browser.
