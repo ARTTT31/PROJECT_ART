@@ -102,4 +102,20 @@ describe('MyDevicesCard', () => {
       body: JSON.stringify({ code: '123456' }),
     });
   });
+
+  it('never prints the stored address, even though the API returns it', async () => {
+    localStorage.setItem('session_id', 'session_current');
+    vi.mocked(fetchWithAuth).mockResolvedValue(ok({ result: 'success', data: sessions }));
+
+    const { container } = render(
+      <ToastProvider>
+        <MyDevicesCard />
+      </ToastProvider>,
+    );
+
+    await screen.findByText('Chrome 120 · Windows 10/11');
+    expect(screen.getAllByText(/ใช้งานล่าสุด/)).toHaveLength(2);
+    expect(container.textContent).not.toContain('203.0.113.10');
+    expect(container.textContent).not.toContain('198.51.100.4');
+  });
 });

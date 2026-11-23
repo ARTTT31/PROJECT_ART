@@ -103,6 +103,20 @@ describe('TrustedDevicesCard', () => {
     });
   });
 
+  it('never prints the stored address, even though the API returns it', async () => {
+    vi.mocked(fetchWithAuth).mockResolvedValue(ok({ result: 'success', data: devices }));
+
+    const { container } = render(
+      <ToastProvider>
+        <TrustedDevicesCard />
+      </ToastProvider>,
+    );
+
+    await screen.findByText('Chrome 120 · Windows 10/11');
+    expect(screen.getByText(/ใช้ล่าสุด/)).toBeDefined();
+    expect(container.textContent).not.toContain('203.0.113.10');
+  });
+
   it('keeps the list when the code prompt is cancelled', async () => {
     let deletes = 0;
     vi.mocked(fetchWithAuth).mockImplementation(async (_url, init) => {

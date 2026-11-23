@@ -1835,10 +1835,15 @@ was last used.
   while the matched rows had no address to check it against; it now reads "ค้นหาชื่อ อีเมล หรืออุปกรณ์".
   The server-side filter is deliberately unchanged — typing an address still finds the account behind
   it when triaging a report — so only the promise on screen shrank.
+- **Each card has a regression test.** The mocked payload still carries `ip_address` and the assertion
+  is on the rendered output, so putting the number back into any of the three rows fails the suite
+  instead of shipping quietly. `ActiveSessionsCard`'s `describeDevice` cases moved from `.test.ts` to
+  `.test.tsx` with the component rendered for the first time.
 
 ### Verified
 
 `npx tsc --noEmit` and `npx eslint` clean on the three cards and their tests;
-`npx vitest run src/components/Profile/MyDevicesCard.test.tsx src/components/Profile/TrustedDevicesCard.test.tsx`
-**6 passed / 2 files**. Not verified: the rendered pages themselves (no browser pass), and the deployed
+`npx vitest run src/components/Admin/ActiveSessionsCard.test.tsx
+src/components/Profile/MyDevicesCard.test.tsx src/components/Profile/TrustedDevicesCard.test.tsx`
+**13 passed / 3 files**. Not verified: the rendered pages themselves (no browser pass), and the deployed
 build.
