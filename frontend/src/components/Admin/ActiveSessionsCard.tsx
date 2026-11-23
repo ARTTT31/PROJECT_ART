@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Loader2, LogOut, Monitor, MonitorSmartphone, RefreshCw, Search, Smartphone } from 'lucide-react';
 import Select from '@/components/ui/Select';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
@@ -29,13 +29,25 @@ function accountLabel(session: AdminSession): string {
   return session.name || session.username || session.email || `ผู้ใช้ #${session.user_id}`;
 }
 
+/** One account and every device it is signed in on. */
+interface SessionGroup {
+  key: string;
+  label: string;
+  role: string;
+  email: string | null;
+  sessions: AdminSession[];
+}
+
 /**
  * Who is signed in right now (admin only).
  *
- * One row per live session, not per account: the same person can be signed in
- * on a phone and a laptop, and the point of this panel is to see those devices
- * and force one out if it is not theirs. Search and the role filter run on the
- * server; the page grows with "โหลดเพิ่ม" rather than silently truncating.
+ * Grouped by account, not one flat row per session: the same person signed in
+ * from a laptop, a phone and a second browser is one entry with its devices
+ * underneath, so a busy workspace reads as "who is here" instead of the same
+ * name repeated with only the user agent changing. Each device keeps its own
+ * "ออกจากระบบ" — forcing one out is still a per-session decision. Search and the
+ * role filter run on the server; the page grows with "โหลดเพิ่ม" rather than
+ * silently truncating.
  */
 export default function ActiveSessionsCard() {
   const [sessions, setSessions] = useState<AdminSession[]>([]);
@@ -127,6 +139,26 @@ export default function ActiveSessionsCard() {
     },
     [load],
   );
+
+  const groups = useMemo<SessionGroup[]>(() => {
+    const byAccount = new Map<string, SessionGroup>();
+    for (const session of sessions) {
+      const key = String(session.user_id ?? session.email ?? session.session_id);
+      const existing = byAccount.get(key);
+      if (existing) {
+        existing.sessions.push(session);
+        continue;
+      }
+      byAccount.set(key, {
+        key,
+        label: accountLabel(session),
+        role: session.role,
+        email: session.email,
+        sessions: [session],
+      });
+    }
+    return Array.from(byAccount.values());
+  }, [sessions]);
 
   const hasMore = total !== null && sessions.length < total;
 
@@ -232,66 +264,86 @@ export default function ActiveSessionsCard() {
         </p>
       ) : (
         <ul className="divide-y divide-[var(--hairline-soft)]">
-          {sessions.map((session) => {
-            const isCurrent = currentSessionId === session.session_id;
-            const { relative, absolute } = formatRelativeTime(session.last_activity);
-            const DeviceIcon = parseUserAgent(session.user_agent).isMobile ? Smartphone : Monitor;
+          {groups.map((group) => (
+            <li key={group.key} className="px-5 py-3.5 sm:px-6">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="min-w-0 truncate text-[13px] font-semibold text-[var(--ink)]">
+                  {group.label}
+                </span>
+                {group.role === 'admin' && (
+                  <span className="rounded-full bg-[var(--accent-soft)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--accent-text)]">
+                    แอดมิน
+                  </span>
+                )}
+                <span className="ml-auto shrink-0 text-[11px] tabular-nums text-[var(--ink-tertiary)]">
+                  {group.sessions.length} อุปกรณ์
+                </span>
+              </div>
+              {group.email && group.email !== group.label && (
+                <p className="mt-0.5 truncate text-[11px] text-[var(--ink-tertiary)]">{group.email}</p>
+              )}
 
-            return (
-              <li
-                key={session.session_id}
-                className="flex flex-wrap items-start gap-3 px-5 py-3.5 sm:px-6"
-              >
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-apple-md bg-[var(--surface-grouped)] text-[var(--ink-secondary)]">
-                  <DeviceIcon size={16} aria-hidden="true" />
-                </div>
+              <ul className="mt-2 overflow-hidden rounded-apple-md border border-[var(--hairline-soft)] bg-[var(--surface-subtle)] divide-y divide-[var(--hairline-soft)]">
+                {group.sessions.map((session) => {
+                  const isCurrent = currentSessionId === session.session_id;
+                  const { relative, absolute } = formatRelativeTime(session.last_activity);
+                  const device = describeDevice(session.user_agent, session.device_label);
+                  const DeviceIcon = parseUserAgent(session.user_agent).isMobile
+                    ? Smartphone
+                    : Monitor;
 
-                <div className="min-w-0 flex-1">
-                  <p className="flex flex-wrap items-center gap-1.5 text-[13px] font-semibold text-[var(--ink)]">
-                    <span className="truncate">{accountLabel(session)}</span>
-                    {session.role === 'admin' && (
-                      <span className="rounded-full bg-[var(--accent-soft)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--accent-text)]">
-                        แอดมิน
-                      </span>
-                    )}
-                    {session.is_online && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-[var(--success-soft)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--success-ink)]">
-                        <span aria-hidden="true" className="h-1 w-1 rounded-full bg-[var(--success)]" />
-                        ออนไลน์
-                      </span>
-                    )}
-                    {isCurrent && (
-                      <span className="rounded-full bg-[var(--accent-soft)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--accent-text)]">
-                        อุปกรณ์นี้
-                      </span>
-                    )}
-                  </p>
-                  <p className="mt-0.5 truncate text-[12px] text-[var(--ink-secondary)]">
-                    {describeDevice(session.user_agent, session.device_label)}
-                  </p>
-                  <p className="mt-0.5 text-[11px] text-[var(--ink-tertiary)]" title={absolute}>
-                    ใช้งานล่าสุด {relative}
-                    {session.email && session.email !== accountLabel(session) ? ` · ${session.email}` : ''}
-                  </p>
-                </div>
+                  return (
+                    <li
+                      key={session.session_id}
+                      className="flex flex-wrap items-center gap-3 px-3 py-2.5"
+                    >
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-apple-md bg-[var(--surface)] text-[var(--ink-secondary)]">
+                        <DeviceIcon size={15} aria-hidden="true" />
+                      </div>
 
-                <button
-                  type="button"
-                  onClick={() => void revoke(session)}
-                  disabled={busyId === session.session_id}
-                  aria-label={`บังคับ ${accountLabel(session)} ออกจากอุปกรณ์นี้`}
-                  className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border border-[var(--hairline)] px-3 text-[11px] font-semibold text-[var(--danger-ink)] transition-all hover:bg-[var(--danger-soft)] active:scale-[0.95] disabled:opacity-50"
-                >
-                  {busyId === session.session_id ? (
-                    <Loader2 size={13} className="animate-spin" aria-hidden="true" />
-                  ) : (
-                    <LogOut size={13} aria-hidden="true" />
-                  )}
-                  ออกจากระบบ
-                </button>
-              </li>
-            );
-          })}
+                      <div className="min-w-0 flex-1">
+                        <p className="flex flex-wrap items-center gap-1.5 text-[12px] font-semibold text-[var(--ink)]">
+                          <span className="truncate">{device}</span>
+                          {session.is_online && (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-[var(--success-soft)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--success-ink)]">
+                              <span
+                                aria-hidden="true"
+                                className="h-1 w-1 rounded-full bg-[var(--success)]"
+                              />
+                              ออนไลน์
+                            </span>
+                          )}
+                          {isCurrent && (
+                            <span className="rounded-full bg-[var(--accent-soft)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--accent-text)]">
+                              อุปกรณ์นี้
+                            </span>
+                          )}
+                        </p>
+                        <p className="mt-0.5 text-[11px] text-[var(--ink-tertiary)]" title={absolute}>
+                          ใช้งานล่าสุด {relative}
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => void revoke(session)}
+                        disabled={busyId === session.session_id}
+                        aria-label={`บังคับ ${group.label} ออกจาก ${device}`}
+                        className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border border-[var(--hairline)] bg-[var(--surface)] px-3 text-[11px] font-semibold text-[var(--danger-ink)] transition-all hover:bg-[var(--danger-soft)] active:scale-[0.95] disabled:opacity-50"
+                      >
+                        {busyId === session.session_id ? (
+                          <Loader2 size={13} className="animate-spin" aria-hidden="true" />
+                        ) : (
+                          <LogOut size={13} aria-hidden="true" />
+                        )}
+                        ออกจากระบบ
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </li>
+          ))}
         </ul>
       )}
 

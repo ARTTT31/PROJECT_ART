@@ -77,4 +77,36 @@ describe('ActiveSessionsCard', () => {
     expect(container.textContent).not.toContain('203.0.113.10');
     expect(screen.getByPlaceholderText('ค้นหาชื่อ อีเมล หรืออุปกรณ์')).toBeDefined();
   });
+
+  it('groups one account\'s devices under a single heading', async () => {
+    localStorage.setItem('session_id', 'session_current');
+    const ANDROID_CHROME =
+      'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Mobile Safari/537.36';
+    vi.mocked(fetchWithAuth).mockResolvedValue(
+      ok([
+        sessions[0],
+        {
+          ...sessions[0],
+          id: 2,
+          session_id: 'session_phone',
+          device_label: 'Mobile',
+          user_agent: ANDROID_CHROME,
+          is_online: false,
+          last_activity: '2026-11-22T18:00:00Z',
+        },
+      ]),
+    );
+
+    const { container } = render(<ActiveSessionsCard />);
+
+    await waitFor(() => {
+      expect(screen.getByText('2 อุปกรณ์')).toBeDefined();
+    });
+    // The account is named once; the devices are what repeat.
+    expect(screen.getAllByText('Owner')).toHaveLength(1);
+    expect(screen.getByText('Chrome 120 · Windows 10/11')).toBeDefined();
+    expect(screen.getByText('Chrome 157 · Android 10')).toBeDefined();
+    expect(screen.getAllByRole('button', { name: /ออกจาก/ })).toHaveLength(2);
+    expect(container.textContent).not.toContain('203.0.113.10');
+  });
 });

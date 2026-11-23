@@ -1911,3 +1911,26 @@ and logged nothing after it, while the sidebar still settled on หน้าห�
 The other console lines in that session were not the app's: `TypeError: Failed to fetch` from a
 browser extension's `background.js`, and `500`s plus websocket refusals because the local backend
 was not running. Not re-run: the deployed site — the fix reaches it with the next deploy.
+
+## One Account, One Entry in the Signed-In Devices List (November 23, 2026)
+
+The admin console's "อุปกรณ์ที่กำลังเข้าสู่ระบบ" printed one row per session, so an admin signed in
+from a laptop, a second browser and a phone appeared as the same name three times with only the user
+agent changing. A workspace with a few people on a few devices reads as a wall of repeated names.
+
+- The list is now **grouped by account**: one heading per person (name, admin badge, email,
+  "N อุปกรณ์"), with each device as a compact row underneath — device icon, browser/OS, the
+  online / this-device chips, and its own last-activity line. Grouping keeps the order the server
+  returned, so the most recently active account still sorts first.
+- Forcing a device out stays per session: every device keeps its own "ออกจากระบบ", now labelled
+  "บังคับ <ชื่อ> ออกจาก <อุปกรณ์>", because the point of the panel is dropping one device without
+  touching the rest.
+- The address is still never rendered.
+
+### Verified
+
+Frontend suite **463 passed / 70 files** (was 462 / 70); `npx tsc --noEmit`, `npx eslint` on the two
+touched files and `npm run build` all clean. `ActiveSessionsCard.test.tsx` gained a case that renders
+two sessions of one account and asserts the name appears once, both devices render, two revoke
+buttons exist, and no `ip_address` is printed. Not viewed: the card in a browser — this pass had no
+admin session against a running backend.
