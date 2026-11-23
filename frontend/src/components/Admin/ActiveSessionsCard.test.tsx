@@ -316,4 +316,46 @@ describe('ActiveSessionsCard', () => {
       window.removeEventListener('auth-logout', onLogout);
     }
   });
+
+  it('still leaves when this device is gone but another one refused', async () => {
+    localStorage.setItem('session_id', 'session_current');
+    const rows = [
+      sessions[0],
+      { ...sessions[0], id: 2, session_id: 'session_phone', device_label: 'iPad Pro' },
+    ];
+    vi.mocked(fetchWithAuth).mockImplementation(async (url, init) => {
+      if (
+        (init as RequestInit | undefined)?.method === 'DELETE' &&
+        String(url).includes('session_phone')
+      ) {
+        return {
+          ok: false,
+          json: async () => ({ detail: 'boom' }),
+          headers: new Headers(),
+        } as unknown as Response;
+      }
+      return ok(rows);
+    });
+
+    const onLogout = vi.fn();
+    window.addEventListener('auth-logout', onLogout);
+    vi.mocked(showToast).mockClear();
+
+    try {
+      render(<ActiveSessionsCard />);
+      await waitFor(() => {
+        expect(screen.getByText('2 อุปกรณ์')).toBeDefined();
+      });
+
+      fireEvent.click(screen.getByRole('button', { name: 'บังคับ Owner ออกจากทุกอุปกรณ์' }));
+
+      await waitFor(() => expect(onLogout).toHaveBeenCalledTimes(1));
+      expect(vi.mocked(showToast)).toHaveBeenCalledWith(
+        'เครื่องนี้หลุดจากระบบแล้ว · อีก 1 อุปกรณ์ออกไม่สำเร็จ',
+        'warning',
+      );
+    } finally {
+      window.removeEventListener('auth-logout', onLogout);
+    }
+  });
 });

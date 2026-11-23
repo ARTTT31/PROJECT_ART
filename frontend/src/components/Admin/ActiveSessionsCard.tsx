@@ -118,10 +118,13 @@ export default function ActiveSessionsCard() {
    * offline mirrors and redirects to /login. Reloading this list instead would
    * 401 and leave the admin staring at a page that can no longer act.
    */
-  const endLocalSession = useCallback((message: string) => {
-    showToast(message, 'success');
-    window.dispatchEvent(new Event('auth-logout'));
-  }, []);
+  const endLocalSession = useCallback(
+    (message: string, icon: 'success' | 'warning' = 'success') => {
+      showToast(message, icon);
+      window.dispatchEvent(new Event('auth-logout'));
+    },
+    [],
+  );
 
   const revoke = useCallback(
     async (session: AdminSession) => {
@@ -183,18 +186,31 @@ export default function ActiveSessionsCard() {
       setBusyGroup(group.key);
       try {
         const results = await Promise.all(
-          group.sessions.map((session) =>
-            fetchWithAuth(`/api/v1/users/sessions/${encodeURIComponent(session.session_id)}`, {
-              method: 'DELETE',
-            }).then(
+          group.sessions.map(async (session) => ({
+            session,
+            removed: await fetchWithAuth(
+              `/api/v1/users/sessions/${encodeURIComponent(session.session_id)}`,
+              { method: 'DELETE' },
+            ).then(
               (res) => res.ok,
               () => false,
             ),
-          ),
+          })),
         );
-        const failed = results.filter((removed) => !removed).length;
-        if (signOutHere && failed === 0) {
-          endLocalSession('ออกจากทุกอุปกรณ์แล้ว กรุณาเข้าสู่ระบบใหม่');
+        const failed = results.filter((result) => !result.removed).length;
+        // This browser's session is dead as soon as its own delete lands, even
+        // when another device of the same account refused: staying here would
+        // only 401 behind a page that still looks usable.
+        const ownGone = results.some(
+          (result) => result.removed && result.session.session_id === currentSessionId,
+        );
+        if (ownGone) {
+          endLocalSession(
+            failed === 0
+              ? 'ออกจากทุกอุปกรณ์แล้ว กรุณาเข้าสู่ระบบใหม่'
+              : `เครื่องนี้หลุดจากระบบแล้ว · อีก ${failed} อุปกรณ์ออกไม่สำเร็จ`,
+            failed === 0 ? 'success' : 'warning',
+          );
           return;
         }
         if (failed === 0) {

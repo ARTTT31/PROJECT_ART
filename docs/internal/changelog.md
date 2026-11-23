@@ -2015,3 +2015,24 @@ touched files and `npm run build` clean. `ActiveSessionsCard.test.tsx` listens f
 revoking the current device fires it once with no refetch, reverting another account's group does not
 fire it, and your own group does. The redirect itself belongs to AuthProvider and was not re-tested
 here; the dialog/redirect were not viewed in a browser.
+
+## A Partial Batch Still Leaves When Your Own Device Is Gone (November 23, 2026)
+
+The redirect out of `/admin` only ran when every delete in "ออกจากทุกอุปกรณ์" succeeded. One device
+refusing left the admin on the page with a session the server had already deleted: the batch was
+half-done and the half that mattered — this browser — was the fatal one.
+
+- Each delete now records which session it covered instead of a bare boolean, so the handler can ask
+  whether *this* browser's session actually went. If it did, the page leaves through `auth-logout`
+  regardless of how many other devices refused.
+- The toast becomes *"เครื่องนี้หลุดจากระบบแล้ว · อีก N อุปกรณ์ออกไม่สำเร็จ"* (warning instead of
+  success) so the leftover session is not silently forgotten; the list is not refetched either way.
+- Unchanged: a batch where your own session survives (or another account's batch) still reports the
+  counts, keeps you signed in and reloads in place.
+
+### Verified
+
+Frontend suite **469 passed / 70 files** (was 468 / 70); `npx tsc --noEmit`, `npx eslint` on the two
+touched files and `npm run build` clean. New test: two devices on the account, the other device's
+DELETE answers `ok: false` — `auth-logout` still fires once and the warning toast carries the
+remaining count. Not viewed in a browser.
