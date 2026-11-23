@@ -1881,3 +1881,33 @@ the five changed files and `npm run build` clean. Reproduced on a local producti
 (`next build` + `next start`): with `workspace_branding` seeded to `Graphite`, `/profile` and
 `/dashboard` log no `#418` and the sidebar settles on `Graphite`. Not re-run: the deployed site —
 this fix only reaches it with the deploy that carries it.
+
+## The Sidebar Menu No Longer Disagrees With the HTML (November 23, 2026)
+
+`#418` came back on `/admin` after the branding fix — same error, different reason: this time
+`args[]=HTML`, a structural mismatch instead of a text one. The culprit was the menu.
+
+- **Root cause.** `useEnabledPages()` read `localStorage` inside its `useState` initializer
+  (`getCachedPageSwitches()`). The server cannot see that storage, so the HTML listed every page —
+  กล้องวงจรปิด included — while the browser's first render listed only the pages the admin had left
+  switched on. One item more or less puts a different element at that position, which is the `HTML`
+  flavour of the error: measured on the deployed page, the server emitted `svg.lucide-cctv` where the
+  client rendered `svg.lucide-shield`.
+- **Fix.** The hook starts from `DEFAULT_PAGE_SWITCHES` — the list the server renders — and applies
+  the cached copy after mount, before the API refresh. `PageAccessGuard`, `Sidebar` and
+  `CommandPalette` now read the switches through the hook instead of calling `isPageEnabled()`
+  during render, which read the browser copy on the client and nothing on the server.
+- **Regression test.** `hooks/useEnabledPages.test.tsx` renders the hook with `renderToString` while
+  `localStorage` says camera is off, and asserts the server output is the default list and that
+  `localStorage` is never read during that render.
+
+### Verified
+
+Frontend suite **462 passed / 70 files** (was 460 / 69); `npx tsc --noEmit` clean; `npx eslint` clean
+on the five touched files; `npm run build` clean. Reproduced and fixed on a local production build
+(`next build` + `next start`): with `artEnabledPagesV1` storing camera off and the signed-in `user`
+cookie copied from the deployment, `/dashboard` threw `#418 args[]=HTML` on the build before the fix
+and logged nothing after it, while the sidebar still settled on หน้าหลัก / จัดการระบบ / โปรไฟล์.
+The other console lines in that session were not the app's: `TypeError: Failed to fetch` from a
+browser extension's `background.js`, and `500`s plus websocket refusals because the local backend
+was not running. Not re-run: the deployed site — the fix reaches it with the next deploy.

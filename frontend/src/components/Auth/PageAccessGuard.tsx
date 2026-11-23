@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { Lock } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { canAccessPage } from '@/utils/accessiblePages';
-import { isPageEnabled } from '@/hooks/useEnabledPages';
+import { useEnabledPages } from '@/hooks/useEnabledPages';
 import { useI18n } from '@/lib/i18n/I18nProvider';
 
 /**
@@ -25,6 +25,12 @@ export default function PageAccessGuard({
 }) {
   const { status, user } = useAuth();
   const { tr } = useI18n();
+  // Through the hook, not `isPageEnabled`: the hook's first render is the
+  // workspace default the server rendered, and the browser's switched-off pages
+  // arrive after mount. Reading localStorage here made the client render the
+  // "no access" card against the server's page markup — React #418.
+  const enabledPages = useEnabledPages();
+  const pageEnabled = enabledPages.find((item) => item.id === page)?.enabled ?? true;
 
   if (status === 'loading') {
     return (
@@ -37,7 +43,7 @@ export default function PageAccessGuard({
     );
   }
 
-  if (!canAccessPage(user, page) || !isPageEnabled(page)) {
+  if (!canAccessPage(user, page) || !pageEnabled) {
     return (
       <section
         role="status"

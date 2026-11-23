@@ -32,7 +32,7 @@ import {
   MainMenuItemConfig,
 } from '@/utils/mainMenu';
 import { canAccessPage } from '@/utils/accessiblePages';
-import { useEnabledPages, isPageEnabled, type PageSwitch } from '@/hooks/useEnabledPages';
+import { useEnabledPages, type PageSwitch } from '@/hooks/useEnabledPages';
 import { AuthUser } from '@/types';
 import { useBranding } from '@/context/BrandingContext';
 import { useI18n } from '@/lib/i18n/I18nProvider';
@@ -198,8 +198,11 @@ export default function Sidebar({
     if (item.adminOnly && user?.role !== 'admin') return false;
     // Two gates: the account's own grant, and whether the workspace has the
     // page open at all (the admin page-switch card).
+    // Unknown ids stay open, the same rule the backend applies. Never read the
+    // browser copy here: this runs on the server too, and a client-only read is
+    // a hydration mismatch.
     const pageSwitch = enabledPages.find((p: PageSwitch) => p.id === item.id);
-    const enabled = pageSwitch ? pageSwitch.enabled : isPageEnabled(item.id);
+    const enabled = pageSwitch ? pageSwitch.enabled : true;
     return canAccessPage(user, item.id) && enabled;
   });
 

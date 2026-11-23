@@ -20,7 +20,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
 import { readCached } from '@/lib/offline/localStore';
 import { DEFAULT_MAIN_MENU_ITEMS, MAIN_MENU_ICON_MAP } from '@/utils/mainMenu';
-import { isPageEnabled } from '@/hooks/useEnabledPages';
+import { useEnabledPages } from '@/hooks/useEnabledPages';
 import { MENU_LABEL_KEYS, type MessageKey } from '@/lib/i18n/messages';
 import { useI18n, type Translate } from '@/lib/i18n/I18nProvider';
 
@@ -172,6 +172,13 @@ export default function CommandPalette() {
   const [localResults, setLocalResults] = useState<CommandResult[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const isAdmin = user?.role === 'admin';
+  // The page switches come from the hook so the first render is the server's
+  // default list; a direct localStorage read here is the #418 mismatch.
+  const enabledPages = useEnabledPages();
+  const pageEnabled = useCallback(
+    (id: string) => enabledPages.find((item) => item.id === id)?.enabled ?? true,
+    [enabledPages],
+  );
 
   const close = useCallback(() => setOpen(false), []);
 
@@ -275,7 +282,7 @@ export default function CommandPalette() {
     // A page the admin switched off must not turn up in search either, otherwise
     // the palette offers a result that can only end on the "no access" screen.
     const menu = DEFAULT_MAIN_MENU_ITEMS.filter(
-      (item) => (!item.adminOnly || isAdmin) && isPageEnabled(item.id),
+      (item) => (!item.adminOnly || isAdmin) && pageEnabled(item.id),
     ).map((item) => {
       const Icon = MAIN_MENU_ICON_MAP[item.icon] ?? FileText;
       const labelKey = MENU_LABEL_KEYS[item.id];
@@ -298,7 +305,7 @@ export default function CommandPalette() {
 
     const extra: CommandResult[] = [
       ...profileActions,
-      ...(isAdmin && isPageEnabled('audit')
+      ...(isAdmin && pageEnabled('audit')
         ? [
             {
               id: 'page-audit',
@@ -344,7 +351,7 @@ export default function CommandPalette() {
     ];
 
     return [...menu, ...extra, ...quickActions];
-  }, [isAdmin, profileActions, t]);
+  }, [isAdmin, pageEnabled, profileActions, t]);
 
   const results = useMemo(() => {
     const term = query.trim().toLowerCase();

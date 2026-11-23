@@ -113,10 +113,17 @@ export async function refreshPageSwitches(): Promise<PageSwitch[]> {
 }
 
 export function useEnabledPages(): PageSwitch[] {
-  const [pages, setPages] = useState<PageSwitch[]>(() => getCachedPageSwitches());
+  // The first render must be the list the server rendered — the workspace
+  // defaults, every page open. Reading the browser's copy inside the state
+  // initializer made the server render the full menu while the client rendered
+  // the switched-off subset, so the sidebar's items disagreed with the HTML and
+  // React aborted the tree with #418 ("server HTML didn't match the client") on
+  // every signed-in page. The stored copy is applied below, after mount.
+  const [pages, setPages] = useState<PageSwitch[]>(DEFAULT_PAGE_SWITCHES);
 
   useEffect(() => {
     let cancelled = false;
+    setPages(getCachedPageSwitches());
     void refreshPageSwitches().then((next) => {
       if (!cancelled) setPages(next);
     });
