@@ -1956,3 +1956,22 @@ touched files and `npm run build` all clean. `ActiveSessionsCard.test.tsx` gaine
 accounts: clicking the group button issues DELETEs for exactly the owner's `session_current` and
 `session_phone`, and never for the second account's `session_other`. Not viewed: the card in a
 browser — no admin session against a running backend in this pass.
+
+## Warning Before an Admin Signs Themselves Out (November 23, 2026)
+
+"ออกจากทุกอุปกรณ์" ends every session of one account, and an admin's own account is usually the
+first group in the list — so the button could quietly log the person clicking it out of the browser
+they were looking at.
+
+- The confirmation for your own account now says the device you are on is part of the batch:
+  *"… รวมอุปกรณ์นี้ด้วย — คุณจะหลุดจากระบบทันที และต้องเข้าสู่ระบบใหม่"*. Other accounts keep the
+  plain scope sentence.
+- "Your own" means the group holds the session id in `localStorage.session_id`, the same marker that
+  draws the "อุปกรณ์นี้" badge on the row, so the warning and the badge can never disagree.
+
+### Verified
+
+Frontend suite **465 passed / 70 files** (was 464 / 70); `npx tsc --noEmit`, `npx eslint` on the two
+touched files and `npm run build` clean. `ActiveSessionsCard.test.tsx` now opens the group dialog for
+both cases: the own-account text contains the warning, another account's text does not. Not viewed:
+the dialog in a browser.

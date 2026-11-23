@@ -3,6 +3,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import ActiveSessionsCard from './ActiveSessionsCard';
 import { describeDevice } from '@/utils/userAgent';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
+import { showDeleteConfirm } from '@/utils/sweetalert';
 
 vi.mock('@/lib/api/fetchWithAuth', () => ({
   fetchWithAuth: vi.fn(),
@@ -156,5 +157,48 @@ describe('ActiveSessionsCard', () => {
         .map(([url]) => String(url).split('/').pop());
       expect(deleted.sort()).toEqual(['session_current', 'session_phone']);
     });
+  });
+
+  it('warns that this device is included when the group is your own account', async () => {
+    localStorage.setItem('session_id', 'session_phone');
+    vi.mocked(fetchWithAuth).mockResolvedValue(
+      ok([
+        sessions[0],
+        { ...sessions[0], id: 2, session_id: 'session_phone', device_label: 'Mobile' },
+        {
+          ...sessions[0],
+          id: 3,
+          session_id: 'session_other',
+          user_id: 9,
+          name: 'Someone Else',
+          email: 'other@example.com',
+        },
+      ]),
+    );
+    vi.mocked(showDeleteConfirm).mockClear();
+
+    render(<ActiveSessionsCard />);
+    await waitFor(() => {
+      expect(screen.getByText('Someone Else')).toBeDefined();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'บังคับ Owner ออกจากทุกอุปกรณ์' }));
+
+    await waitFor(() => {
+      expect(vi.mocked(showDeleteConfirm)).toHaveBeenCalledTimes(1);
+    });
+    const [, ownText] = vi.mocked(showDeleteConfirm).mock.calls[0];
+    expect(ownText).toContain('รวมอุปกรณ์นี้ด้วย');
+    expect(ownText).toContain('หลุดจากระบบทันที');
+
+    // Another account's group carries no such warning.
+    vi.mocked(showDeleteConfirm).mockClear();
+    fireEvent.click(screen.getByRole('button', { name: 'บังคับ Someone Else ออกจากทุกอุปกรณ์' }));
+
+    await waitFor(() => {
+      expect(vi.mocked(showDeleteConfirm)).toHaveBeenCalledTimes(1);
+    });
+    const [, otherText] = vi.mocked(showDeleteConfirm).mock.calls[0];
+    expect(otherText).not.toContain('รวมอุปกรณ์นี้ด้วย');
   });
 });

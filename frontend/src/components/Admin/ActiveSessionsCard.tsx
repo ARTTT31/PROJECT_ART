@@ -146,9 +146,17 @@ export default function ActiveSessionsCard() {
   // failure only needs to be counted, not rolled back.
   const revokeAll = useCallback(
     async (group: SessionGroup) => {
+      // Revoking your own account's devices includes the browser doing the
+      // revoking: the admin is signed out mid-action, so say so up front.
+      const signOutHere = currentSessionId
+        ? group.sessions.some((session) => session.session_id === currentSessionId)
+        : false;
+      const scope = `${group.label} จะต้องเข้าสู่ระบบใหม่บนทุกอุปกรณ์ (${group.sessions.length} อุปกรณ์)`;
       const confirmed = await showDeleteConfirm(
         'บังคับออกจากทุกอุปกรณ์?',
-        `${group.label} จะต้องเข้าสู่ระบบใหม่บนทุกอุปกรณ์ (${group.sessions.length} อุปกรณ์)`,
+        signOutHere
+          ? `${scope} รวมอุปกรณ์นี้ด้วย — คุณจะหลุดจากระบบทันที และต้องเข้าสู่ระบบใหม่`
+          : scope,
       );
       if (!confirmed.isConfirmed) return;
 
@@ -180,7 +188,7 @@ export default function ActiveSessionsCard() {
         setBusyGroup(null);
       }
     },
-    [load],
+    [currentSessionId, load],
   );
 
   const groups = useMemo<SessionGroup[]>(() => {
