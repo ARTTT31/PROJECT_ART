@@ -72,7 +72,15 @@ function response(body: unknown): Response {
   return { ok: true, status: 200, json: async () => body } as Response;
 }
 
+// jsdom has no scrollIntoView; every case gets a spy so neither the anchored
+// tests nor the anchor-carrying tests below touch a real browser API.
+let scrollIntoView: ReturnType<typeof vi.fn>;
+
 beforeEach(() => {
+  scrollIntoView = vi.fn();
+  (
+    Element.prototype as unknown as { scrollIntoView: typeof scrollIntoView }
+  ).scrollIntoView = scrollIntoView;
   replace.mockClear();
   vi.mocked(showConfirm).mockResolvedValue({ isConfirmed: true } as never);
   vi.mocked(fetchWithAuth).mockImplementation(async (url: string) =>
@@ -251,6 +259,23 @@ describe('/audit CSV export', () => {
         { scroll: false },
       ),
     );
+  });
+
+  it('scrolls to the anchored row once the list has loaded', async () => {
+    window.history.replaceState({}, '', '/audit#entry-5');
+
+    await openPage();
+
+    await waitFor(() => expect(scrollIntoView).toHaveBeenCalled());
+    expect((scrollIntoView.mock.instances[0] as unknown as HTMLElement).id).toBe('entry-5');
+  });
+
+  it('leaves the view alone when the anchor is not on this page', async () => {
+    window.history.replaceState({}, '', '/audit#entry-999');
+
+    await openPage();
+
+    expect(scrollIntoView).not.toHaveBeenCalled();
   });
 
   it('does not rewrite the address when it already matches', async () => {

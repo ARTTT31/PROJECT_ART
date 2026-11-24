@@ -11,7 +11,7 @@ nine times on 2026-11-23 — the IP-free device lists, the #418 branding fix, th
 the grouped signed-in device list, its "ออกจากทุกอุปกรณ์" button, the own-device warnings, the
 redirect to /login once your own session is revoked, then that redirect for a partly failed
 batch, the /audit action-label guard, then the filtered CSV export, the revoke entry's victim details, the two-way label guard and the /audit → /admin account link, its page-level test, the five investigation-loop items, then the
-/audit row-anchor sync and the optional revoke reason (latest: 492 passed / 74
+/audit row-anchor sync, the optional revoke reason and the anchored-row scroll (latest: 494 passed / 74
 files). The backend suite was also re-run for the self-revoke audit entry, the filtered CSV
 export and the revoke reason (**745 passed**, coverage 84.65%); its lint, type and migration rows and every deployed check
 are still from the 2026-11-22 pass.
@@ -35,7 +35,7 @@ are still from the 2026-11-22 pass.
 | Backend lint | `./venv/Scripts/python.exe -m flake8 app` | clean |
 | Backend types | `./venv/Scripts/python.exe -m mypy app` | clean, 74 source files |
 | Migrations | `alembic upgrade head` + `alembic check` on a throwaway SQLite file | full chain applies, **no drift** |
-| Frontend tests | `cd frontend && npx vitest run` | **492 passed**, 74 files |
+| Frontend tests | `cd frontend && npx vitest run` | **494 passed**, 74 files |
 | Frontend types | `npx tsc --noEmit` | clean |
 | Frontend lint | `npx eslint .` | clean (0 errors, 0 warnings) |
 | Frontend build | `npm run build` | succeeds, 17 routes |

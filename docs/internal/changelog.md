@@ -2291,3 +2291,17 @@ Frontend **492 passed / 74 files** (was 487); `tsc`, `eslint` and `npm run build
 a row anchor survives a filter sync, one set after mount is adopted, and no `router.replace` happens
 when the address already matches; the revoke reason is trimmed into `?reason=` and left out entirely
 when blank. Not viewed in a browser, and the pages were not deployed.
+
+## The Linked Row Is Brought Into View (November 24, 2026)
+
+`#entry-<id>` survived the URL sync, but a shared link still landed at the top of the list: the
+anchor is in the address before the rows are fetched, so the browser's own jump had nothing to
+scroll to. `/audit` now scrolls the anchored row into view once the list has settled, once per
+anchor, so later refetches do not move the page away from where the admin is reading. An anchor
+that names a row outside the current page is left alone instead of jumping somewhere else.
+
+### Verified
+
+Frontend **494 passed / 74 files** (was 492); `tsc`, `eslint` and `npm run build` clean. New tests:
+`#entry-5` is scrolled into view only after the items arrive, and `#entry-999` (not on the page)
+leaves the view untouched.

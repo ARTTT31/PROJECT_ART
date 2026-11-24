@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -239,6 +239,21 @@ export default function AuditPage() {
     if (!urlRestored || !isClient || user?.role !== 'admin') return;
     void load();
   }, [urlRestored, isClient, user?.role, load]);
+
+  // Bring a linked row into view. On arrival the anchor is already in the URL
+  // but the rows are still being fetched, so scrolling on mount would find
+  // nothing; this waits for the list, then scrolls once per anchor so later
+  // refetches do not yank the page away from wherever the admin is reading.
+  const anchoredOnce = useRef<string | null>(null);
+  useEffect(() => {
+    if (!urlRestored || loading) return;
+    if (!/^#entry-\d+$/.test(hash)) return;
+    if (anchoredOnce.current === hash) return;
+    const row = document.getElementById(hash.slice(1));
+    if (!row) return;
+    anchoredOnce.current = hash;
+    row.scrollIntoView({ block: 'start' });
+  }, [urlRestored, loading, hash, items]);
 
   const rangeLabel = useMemo(() => {
     if (total === 0) return tr('ไม่มีรายการ', 'No items');
