@@ -1,12 +1,15 @@
-from datetime import date
+from datetime import date, timedelta
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel
 
 from app.core.config import settings
 from app.core.database import get_db
-from app.core.rate_limit import limiter
+from app.core.rate_limit import get_real_client_ip, limiter
+from app.core.utils import utcnow
+from app.models.audit_log import AuditLog
 from app.schemas.audit_log import AuditLogResponse
 from app.services.audit_service import AuditService
 from app.api.dependencies import get_current_admin_user
@@ -43,6 +46,77 @@ class AuditLogExportResponse(BaseModel):
 # reported to the client (``truncated``) rather than silently shortening a file
 # an admin would trust.
 EXPORT_LIMIT = 5000
+
+# Reading the log is itself an action worth recording: the file and the table
+# hold names, addresses and devices, and "who looked at this" is a question an
+# investigation asks. But ``/paginated`` fires on every filter keystroke, page
+# click and anchor follow, so a visit is one row per (admin, filter set) inside
+# this window instead of forty.
+VIEW_DEDUPE_MINUTES = 10
+VIEW_PREFIX = "เปิดดูบันทึกกิจกรรม"
+EXPORT_PREFIX = "ส่งออกบันทึกกิจกรรม CSV"
+
+
+def _filter_summary(
+    action: Optional[str],
+    q: Optional[str],
+    date_from: Optional[date],
+    date_to: Optional[date],
+) -> str:
+    """The filters in words, so the recorded row says what was looked at.
+
+    Deterministic for a given filter set: the view dedupe compares this prefix
+    against the last rows, and the row itself is read by a person later.
+    """
+    parts = [f"ประเภท: {action}" if action else "ประเภท: ทั้งหมด"]
+    term = (q or "").strip()
+    if term:
+        parts.append(f'ค้นหา: "{term}"')
+    if date_from and date_to:
+        parts.append(f"วันที่: {date_from.isoformat()} ถึง {date_to.isoformat()}")
+    elif date_from:
+        parts.append(f"วันที่: ตั้งแต่ {date_from.isoformat()}")
+    elif date_to:
+        parts.append(f"วันที่: ถึง {date_to.isoformat()}")
+    return " · ".join(parts)
+
+
+async def _record_view(
+    db: AsyncSession,
+    current_user: User,
+    request: Request,
+    summary: str,
+    total: int,
+) -> None:
+    """Record that this admin opened the log under these filters, once.
+
+    The dedupe looks at this admin's own recent view rows and compares the
+    *filter* prefix only: the matched total moves as rows are written, and a
+    different count must not turn one visit into a stream of rows.
+    """
+    prefix = f"{VIEW_PREFIX} · {summary}"
+    cutoff = utcnow() - timedelta(minutes=VIEW_DEDUPE_MINUTES)
+    recent = await db.execute(
+        select(AuditLog.details)
+        .where(
+            AuditLog.action == "AUDIT_LOG_VIEWED",
+            AuditLog.user_id == current_user.id,
+            AuditLog.created_at >= cutoff,
+        )
+        .order_by(AuditLog.created_at.desc())
+        .limit(20)
+    )
+    if any((details or "").startswith(prefix) for details in recent.scalars()):
+        return
+
+    await AuditService(db).log_action(
+        action="AUDIT_LOG_VIEWED",
+        user_id=current_user.id,
+        details=f"{prefix} · {total} รายการ",
+        ip_address=get_real_client_ip(request),
+        user_agent=request.headers.get("user-agent"),
+    )
+    await db.commit()
 
 
 @router.get("/", response_model=List[AuditLogResponse])
@@ -119,6 +193,16 @@ async def list_audit_logs_paginated(
             date_to=date_to,
         )
 
+    # Last, so the recorded count is the list this admin is about to see (and so
+    # a visit cannot change the page it is measuring).
+    await _record_view(
+        db,
+        current_user,
+        request,
+        _filter_summary(action, q, date_from, date_to),
+        total,
+    )
+
     return PaginatedAuditLogsResponse(
         items=logs,
         page=page,
@@ -170,6 +254,22 @@ async def export_audit_logs(
     total = await audit_service.count_logs(
         action=action, q=q, date_from=date_from, date_to=date_to
     )
+
+    # Every export is its own row: a file left the app, and the same filters
+    # exported twice are two files. It records what the file actually holds,
+    # including a cap that cut the export short.
+    truncated_note = " · ถึงเพดานการส่งออก" if truncated else ""
+    await audit_service.log_action(
+        action="AUDIT_LOG_EXPORTED",
+        user_id=current_user.id,
+        details=(
+            f"{EXPORT_PREFIX} · {_filter_summary(action, q, date_from, date_to)}"
+            f" · ส่งออก {len(logs)} จาก {total} รายการ{truncated_note}"
+        ),
+        ip_address=get_real_client_ip(request),
+        user_agent=request.headers.get("user-agent"),
+    )
+    await db.commit()
 
     return AuditLogExportResponse(
         items=logs,

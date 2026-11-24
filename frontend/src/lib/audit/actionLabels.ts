@@ -52,4 +52,6 @@ export const ACTION_LABELS: Record<string, AuditActionLabel> = {
   UPDATE_COMPANY_HOLIDAYS: { th: 'บันทึกวันหยุดบริษัท', en: 'Company holidays saved' },
   DELETE_COMPANY_HOLIDAYS: { th: 'ลบปฏิทินวันหยุดบริษัท', en: 'Company holidays deleted' },
   UPDATE_PAGE_ACCESS: { th: 'ตั้งค่าหน้าที่เปิดใช้งาน', en: 'Page access updated' },
+  AUDIT_LOG_VIEWED: { th: 'เปิดดูบันทึกกิจกรรม', en: 'Activity log viewed' },
+  AUDIT_LOG_EXPORTED: { th: 'ส่งออกบันทึกกิจกรรม (CSV)', en: 'Activity log exported (CSV)' },
 };

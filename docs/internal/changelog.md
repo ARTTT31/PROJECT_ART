@@ -2354,3 +2354,34 @@ row's position (likely an older build), not that the filters excluded it.
 Frontend **498 passed / 74 files** (was 496); `tsc`, `eslint` and `npm run build` clean. Tests cover
 the button clearing the query and following the row to page 2, and a response without `anchorPage`
 producing the stale-server message with no "not found" text and no jump.
+
+## Reading The Log Leaves A Trace (November 24, 2026)
+
+The activity log held everyone else's actions and recorded nothing about itself: an admin could read
+every name, device and address in it, or export the whole filtered set to a file, and no row said who
+did that. An investigation could reconstruct what happened but not who had looked.
+
+`/audit/paginated` now writes `AUDIT_LOG_VIEWED` and `/audit/export` writes `AUDIT_LOG_EXPORTED`,
+both with the filter set in words (action, search term, day range) and the row count. The export row
+records what the file holds (`ส่งออก 12 จาก 40 รายการ`) and says so when the export cap cut it short.
+Both are ordinary rows, so they appear in the table, the action filter and the CSV like any other
+action, and both have Thai/English labels.
+
+The view is deduped server-side: the same admin, with the same filters, inside ten minutes is one
+row. `/paginated` fires on every debounced keystroke, page click, refresh and anchor follow, and forty
+rows for one visit would have buried the log it was describing. The dedupe compares only the filter
+prefix, not the count, because the count moves as rows (including these) are written. The visit is
+recorded after the count, so a view cannot count itself.
+
+Known trade-off: a view row's details quote the search term, so a later search for that term also
+matches the view row that recorded the search. That is a true match on this data model, not a bug,
+and it is why the count is not part of the dedupe key.
+
+### Verified
+
+Backend **759 passed**, coverage 84.73% (was 750 / 84.69%); frontend **498 passed / 74 files**
+(unchanged — the two new labels are covered by the existing two-way action-label guard). `flake8`,
+`tsc`, `eslint` and `npm run build` clean. New tests cover the recorded filters and count, the
+search-term and date-range text, repeated fetches staying one row, a different filter set being a
+second row, a visit outside the ten-minute window being recorded again, the rows being searchable by
+`action=AUDIT_LOG_VIEWED`, the export row's counts, the cap note and two exports producing two rows.

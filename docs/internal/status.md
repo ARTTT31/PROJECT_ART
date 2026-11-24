@@ -10,10 +10,9 @@ Playwright. The 2026-11-21 theme sweep re-ran the frontend checks only. The fron
 nine times on 2026-11-23 — the IP-free device lists, the #418 branding fix, the #418 menu fix,
 the grouped signed-in device list, its "ออกจากทุกอุปกรณ์" button, the own-device warnings, the
 redirect to /login once your own session is revoked, then that redirect for a partly failed
-batch, the /audit action-label guard, then the filtered CSV export, the revoke entry's victim details, the two-way label guard and the /audit → /admin account link, its page-level test, the five investigation-loop items, then the
-/audit row-anchor sync, the optional revoke reason, the anchored-row scroll, its visible-row guard and the linked-row page lookup and its clear-filters action (latest: 498 passed / 74
-files). The backend suite was also re-run for the self-revoke audit entry, the filtered CSV
-export, the revoke reason and the anchor page lookup (**750 passed**, coverage 84.69%); its lint, type and migration rows and every deployed check
+batch, the /audit action-label guard, then the filtered CSV export, the revoke entry's victim details, the two-way label guard and the /audit → /admin account link, its page-level test, the five investigation-loop items, then the /audit row-anchor sync, the optional revoke reason, the anchored-row scroll, its visible-row guard and the linked-row page lookup and its clear-filters action (latest: 498 passed / 74
+files, unchanged by the /audit view-and-export logging because it added labels only). The backend suite was also re-run for the self-revoke audit entry, the filtered CSV
+export, the revoke reason, the anchor page lookup and the view/export audit rows (**759 passed**, coverage 84.73%); its lint, type and migration rows and every deployed check
 are still from the 2026-11-22 pass.
 
 > **Paused (2026-11-24): CCTV.** The camera/CCTV area is parked on purpose: its existing code
@@ -31,7 +30,7 @@ are still from the 2026-11-22 pass.
 
 | Check | Command | Result |
 |---|---|---|
-| Backend tests | `cd backend && ./venv/Scripts/python.exe -m pytest -q` | **750 passed**; coverage **84.69%** (gate 75%, local Python 3.14.6) |
+| Backend tests | `cd backend && ./venv/Scripts/python.exe -m pytest -q` | **759 passed**; coverage **84.73%** (gate 75%, local Python 3.14.6) |
 | Backend lint | `./venv/Scripts/python.exe -m flake8 app` | clean |
 | Backend types | `./venv/Scripts/python.exe -m mypy app` | clean, 74 source files |
 | Migrations | `alembic upgrade head` + `alembic check` on a throwaway SQLite file | full chain applies, **no drift** |

@@ -67,7 +67,7 @@ function actionTone(action: string) {
   if (action.includes('FAIL') || action.includes('BLOCK') || action.includes('DELETE')) {
     return 'bg-[var(--danger-soft)] text-[var(--danger-ink)]';
   }
-  if (action.includes('ADMIN') || action.includes('BRANDING')) {
+  if (action.includes('ADMIN') || action.includes('BRANDING') || action.startsWith('AUDIT_LOG')) {
     return 'bg-[var(--info-soft)] text-[var(--info-ink)]';
   }
   if (action.startsWith('LOGIN') || action === 'LOGOUT') {
