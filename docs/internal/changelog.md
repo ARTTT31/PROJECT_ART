@@ -2179,3 +2179,23 @@ Frontend suite **481 passed / 73 files** (was 479); `tsc`, `eslint` on the touch
 `/admin?sessions=somchai%40example.com` and that a user-less row gets none; the card test asserts
 its first request carries `q=owner%40example.com` and the search input is prefilled. Not viewed in a
 browser; `/admin`'s own URL read has no test of its own.
+
+
+## The /admin Link Is Tested Where It Is Read (November 24, 2026)
+
+The previous pass tested both ends of the new link — the `/audit` `href` and the card's
+`initialQuery` — but not the middle: `/admin` reading `?sessions=` and handing it to the card. A
+regression there would leave both tests green while the link opened an unfiltered device list.
+
+- New `admin/page.test.tsx` renders the console at `/admin?sessions=somchai%40example.com` and
+  asserts the device card receives the decoded account; a second test renders without the parameter
+  and expects an empty filter, so the card is never left unrendered.
+- The child cards are stubbed, so the assertion is exactly what the page passes down. The two
+  overview counters are stubbed through `fetchWithAuth`, and the URL is set with
+  `history.replaceState` and reset after each test.
+
+### Verified
+
+Frontend suite **483 passed / 74 files** (was 481 / 73); `eslint` clean on the new file. `tsc` and
+`npm run build` are unchanged — the file is a test, which this project's tsconfig excludes. Not
+viewed in a browser.
