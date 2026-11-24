@@ -244,6 +244,10 @@ export default function AuditPage() {
   // but the rows are still being fetched, so scrolling on mount would find
   // nothing; this waits for the list, then scrolls once per anchor so later
   // refetches do not yank the page away from wherever the admin is reading.
+  //
+  // A row that is already fully on screen is left where it is: the first entry
+  // of the page is visible on arrival, and centring it would scroll the filters
+  // the admin needs next off the top of the page.
   const anchoredOnce = useRef<string | null>(null);
   useEffect(() => {
     if (!urlRestored || loading) return;
@@ -252,7 +256,9 @@ export default function AuditPage() {
     const row = document.getElementById(hash.slice(1));
     if (!row) return;
     anchoredOnce.current = hash;
-    row.scrollIntoView({ block: 'start' });
+    const rect = row.getBoundingClientRect();
+    const alreadyVisible = rect.top >= 0 && rect.bottom <= window.innerHeight;
+    if (!alreadyVisible) row.scrollIntoView({ block: 'start' });
   }, [urlRestored, loading, hash, items]);
 
   const rangeLabel = useMemo(() => {

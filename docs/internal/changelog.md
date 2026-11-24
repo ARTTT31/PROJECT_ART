@@ -2305,3 +2305,15 @@ that names a row outside the current page is left alone instead of jumping somew
 Frontend **494 passed / 74 files** (was 492); `tsc`, `eslint` and `npm run build` clean. New tests:
 `#entry-5` is scrolled into view only after the items arrive, and `#entry-999` (not on the page)
 leaves the view untouched.
+
+## Anchors Scroll Only When They Must (November 24, 2026)
+
+Opening `/audit#entry-<first row>` scrolled the page 423px so the row sat flush against the top,
+pushing the filters out of view — the row was already fully on screen. The anchored scroll now
+measures the row first and leaves a fully visible one alone; a row above or below the fold is still
+brought into view, still once per anchor.
+
+### Verified
+
+Frontend **495 passed / 74 files** (was 494); `tsc`, `eslint` and `npm run build` clean. The tests
+stub the row's viewport rect: an off-screen row scrolls, an on-screen one does not.

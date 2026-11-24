@@ -76,6 +76,33 @@ function response(body: unknown): Response {
 // tests nor the anchor-carrying tests below touch a real browser API.
 let scrollIntoView: ReturnType<typeof vi.fn>;
 
+/**
+ * Give the audit rows a viewport-relative position, since jsdom reports every
+ * rect as zero and the page only scrolls to a row that is off screen.
+ */
+function withRowRect(top: number, bottom: number) {
+  const original = Element.prototype.getBoundingClientRect;
+  Element.prototype.getBoundingClientRect = function (this: Element) {
+    if (this.id.startsWith('entry-')) {
+      return {
+        top,
+        bottom,
+        height: bottom - top,
+        left: 0,
+        right: 0,
+        width: 0,
+        x: 0,
+        y: top,
+        toJSON: () => ({}),
+      } as DOMRect;
+    }
+    return original.call(this);
+  };
+  return () => {
+    Element.prototype.getBoundingClientRect = original;
+  };
+}
+
 beforeEach(() => {
   scrollIntoView = vi.fn();
   (
@@ -263,11 +290,31 @@ describe('/audit CSV export', () => {
 
   it('scrolls to the anchored row once the list has loaded', async () => {
     window.history.replaceState({}, '', '/audit#entry-5');
+    // Below the fold in this 768px-tall window.
+    const restore = withRowRect(900, 960);
 
-    await openPage();
+    try {
+      await openPage();
 
-    await waitFor(() => expect(scrollIntoView).toHaveBeenCalled());
-    expect((scrollIntoView.mock.instances[0] as unknown as HTMLElement).id).toBe('entry-5');
+      await waitFor(() => expect(scrollIntoView).toHaveBeenCalled());
+      expect((scrollIntoView.mock.instances[0] as unknown as HTMLElement).id).toBe('entry-5');
+    } finally {
+      restore();
+    }
+  });
+
+  it('does not scroll when the anchored row is already on screen', async () => {
+    window.history.replaceState({}, '', '/audit#entry-33');
+    // The first row of the page: fully visible, so the filters above it stay.
+    const restore = withRowRect(300, 360);
+
+    try {
+      await openPage();
+
+      expect(scrollIntoView).not.toHaveBeenCalled();
+    } finally {
+      restore();
+    }
   });
 
   it('leaves the view alone when the anchor is not on this page', async () => {
