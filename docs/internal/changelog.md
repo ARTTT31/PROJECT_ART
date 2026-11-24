@@ -2059,3 +2059,25 @@ The new `test_self_revoke_leaves_a_sign_out_entry` deletes the admin's own sessi
 committed audit rows and requires a `LOGOUT` entry for that actor whose details carry the session
 prefix. Frontend: **469 passed / 70 files**, `tsc`, `eslint` and `npm run build` clean — the label
 addition has no test of its own (the audit page has no test file). Not viewed: `/audit` in a browser.
+
+
+## The /audit Page Cannot Fall Behind the Backend (November 24, 2026)
+
+`/audit` renders a raw action key when it has no entry in `ACTION_LABELS`, and its filter is built
+from that same object, so a new backend action was unreadable and unselectable until someone
+remembered to translate it. Four actions were already in that state.
+
+- The labels moved out of the page into `frontend/src/lib/audit/actionLabels.ts` so a test can
+  import them; `/audit` imports the same object, so nothing about the page's behaviour changed.
+- Added the four missing labels: `STEP_UP_VERIFIED`, `UPDATE_QUICK_LINKS`, `ADMIN_RESET_2FA` and
+  `ADMIN_USER_PURGE` (permanent delete).
+- New `actionLabels.test.ts` scans every `backend/app/**/*.py` for the string literals passed to
+  `action=` — both branches of `action="LOGOUT" if … else "ADMIN_REVOKE_SESSION"` included — and fails
+  for any action without a label, naming the endpoint that writes it. A second test fails when the
+  scan stops finding the endpoints, so the guard cannot pass by reading nothing.
+
+### Verified
+
+Frontend suite **472 passed / 71 files** (was 469 / 70); `npx tsc --noEmit`, `npx eslint` on the
+touched files and `npm run build` clean. The guard failed on its first run with exactly the four
+missing keys, which is how they were found. Not viewed: `/audit` in a browser.

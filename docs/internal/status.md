@@ -10,7 +10,7 @@ Playwright. The 2026-11-21 theme sweep re-ran the frontend checks only. The fron
 nine times on 2026-11-23 — the IP-free device lists, the #418 branding fix, the #418 menu fix,
 the grouped signed-in device list, its "ออกจากทุกอุปกรณ์" button, the own-device warnings, the
 redirect to /login once your own session is revoked, then that redirect for a partly failed
-batch (latest: 469 passed / 70 files). The backend suite was also re-run for the self-revoke audit
+batch, then the /audit action-label guard (latest: 472 passed / 71 files). The backend suite was also re-run for the self-revoke audit
 entry (**734 passed**, coverage 84.50%); its lint, type and migration rows and every deployed check
 are still from the 2026-11-22 pass.
 
@@ -29,7 +29,7 @@ are still from the 2026-11-22 pass.
 | Backend lint | `./venv/Scripts/python.exe -m flake8 app` | clean |
 | Backend types | `./venv/Scripts/python.exe -m mypy app` | clean, 74 source files |
 | Migrations | `alembic upgrade head` + `alembic check` on a throwaway SQLite file | full chain applies, **no drift** |
-| Frontend tests | `cd frontend && npx vitest run` | **469 passed**, 70 files |
+| Frontend tests | `cd frontend && npx vitest run` | **472 passed**, 71 files |
 | Frontend types | `npx tsc --noEmit` | clean |
 | Frontend lint | `npx eslint .` | clean (0 errors, 0 warnings) |
 | Frontend build | `npm run build` | succeeds, 17 routes |
