@@ -57,6 +57,18 @@ describe('/audit action labels', () => {
     expect(unlabeled, 'Add a label in frontend/src/lib/audit/actionLabels.ts').toEqual([]);
   });
 
+  it('has no label for an action the backend never writes', () => {
+    const written = backendAuditActions();
+    const stale = Object.keys(ACTION_LABELS)
+      .filter((action) => !written.has(action))
+      .sort();
+
+    expect(
+      stale,
+      'A label with no writer adds a filter option that can never match. Remove it from ACTION_LABELS.',
+    ).toEqual([]);
+  });
+
   it('gives every label a Thai and an English text', () => {
     const empty = Object.entries(ACTION_LABELS)
       .filter(([, label]) => !label.th.trim() || !label.en.trim())

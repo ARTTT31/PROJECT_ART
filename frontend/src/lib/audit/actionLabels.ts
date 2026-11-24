@@ -49,7 +49,6 @@ export const ACTION_LABELS: Record<string, AuditActionLabel> = {
   SESSIONS_REVOKED: { th: 'ออกจากอุปกรณ์อื่นทั้งหมด', en: 'Other devices signed out' },
   ADMIN_USER_APPROVE: { th: 'อนุมัติสมาชิก', en: 'Member approved' },
   ADMIN_USER_REJECT: { th: 'ปฏิเสธสมาชิก', en: 'Member rejected' },
-  AUTH_UPDATE_COMPANY_HOLIDAYS: { th: 'บันทึกวันหยุดบริษัท', en: 'Company holidays saved' },
   UPDATE_COMPANY_HOLIDAYS: { th: 'บันทึกวันหยุดบริษัท', en: 'Company holidays saved' },
   DELETE_COMPANY_HOLIDAYS: { th: 'ลบปฏิทินวันหยุดบริษัท', en: 'Company holidays deleted' },
   UPDATE_PAGE_ACCESS: { th: 'ตั้งค่าหน้าที่เปิดใช้งาน', en: 'Page access updated' },

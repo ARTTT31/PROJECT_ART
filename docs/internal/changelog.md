@@ -2133,3 +2133,25 @@ Backend suite **741 passed**, coverage **84.64%** (was 739); `flake8` clean on t
 test file. Two new tests: revoking another account's session stores the victim's name, email and
 `device_label` while `user_id` stays the admin; a session with no label falls back to a user agent
 that names the device in `details`. Not viewed in a browser.
+
+
+## The Label Guard Also Looks the Other Way (November 24, 2026)
+
+The `ACTION_LABELS` test only checked backend → frontend: a new action without a label failed. The
+other direction was silent, so a label with no writer stayed in the filter forever and selecting it
+could only ever return an empty list. `AUTH_UPDATE_COMPANY_HOLIDAYS` was exactly that — the backend
+writes `UPDATE_COMPANY_HOLIDAYS`, and nothing has ever written the `AUTH_` name.
+
+- The test now fails when `ACTION_LABELS` holds an action that no `action=` literal in `backend/app`
+  writes, and names the stale keys.
+- `AUTH_UPDATE_COMPANY_HOLIDAYS` was removed from the labels, and because the same object builds the
+  /audit filter, it is gone from the dropdown too.
+- Existing rows that still carry an old key are unaffected: an unlabeled action still renders as its
+  raw key (search still finds it).
+
+### Verified
+
+Frontend suite **479 passed / 73 files** (was 478 / 73); `tsc`, `eslint` and `npm run build` clean.
+Mutation check: re-inserting `AUTH_UPDATE_COMPANY_HOLIDAYS` makes the new test fail with exactly that
+key (`expected [ 'AUTH_UPDATE_COMPANY_HOLIDAYS' ] to deeply equal []`), and removing it passes.
+Backend unchanged (741 passed, coverage 84.64%). Not viewed in a browser.
