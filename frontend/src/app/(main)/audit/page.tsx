@@ -34,6 +34,8 @@ interface AuditLogEntry {
   user_agent: string | null;
   created_at: string;
   user: { id: number; name: string; email: string } | null;
+  /** Who the action was performed on, when it differs from `user`. */
+  target_user: { id: number; name: string; email: string } | null;
 }
 
 interface PaginatedResponse {
@@ -133,6 +135,7 @@ export default function AuditPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
+  const [urlRestored, setUrlRestored] = useState(false);
 
   // The page is admin-only; a regular account that types the URL is sent back.
   useEffect(() => {
@@ -144,11 +147,41 @@ export default function AuditPage() {
     return () => clearTimeout(timer);
   }, [search]);
 
-  // A new filter always starts from the first page, otherwise the user can land
-  // on an empty page 4 of a 2-page result.
+  // Filters and page live in the URL: the view can be shared, survives a
+  // reload, and comes back intact after the /admin detour. Read once on mount,
+  // before the first fetch, so no unfiltered request goes out.
   useEffect(() => {
-    setPage(1);
-  }, [action, debouncedSearch, dateFrom, dateTo]);
+    const params = new URLSearchParams(window.location.search);
+    const nextAction = params.get('action') ?? '';
+    const nextQuery = params.get('q') ?? '';
+    const nextFrom = params.get('dateFrom') ?? '';
+    const nextTo = params.get('dateTo') ?? '';
+    const nextPage = Math.max(1, Number.parseInt(params.get('page') ?? '1', 10) || 1);
+
+    if (nextAction) setAction(nextAction);
+    if (nextQuery) {
+      setSearch(nextQuery);
+      setDebouncedSearch(nextQuery);
+    }
+    if (nextFrom) setDateFrom(nextFrom);
+    if (nextTo) setDateTo(nextTo);
+    if (nextPage > 1) setPage(nextPage);
+    setUrlRestored(true);
+  }, []);
+
+  // Keep the address bar in step. Only after the mount read, or it would wipe
+  // the incoming query before it is applied.
+  useEffect(() => {
+    if (!urlRestored) return;
+    const params = new URLSearchParams();
+    if (action) params.set('action', action);
+    if (debouncedSearch) params.set('q', debouncedSearch);
+    if (dateFrom) params.set('dateFrom', dateFrom);
+    if (dateTo) params.set('dateTo', dateTo);
+    if (page > 1) params.set('page', String(page));
+    const query = params.toString();
+    router.replace(query ? `/audit?${query}` : '/audit', { scroll: false });
+  }, [urlRestored, action, debouncedSearch, dateFrom, dateTo, page, router]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -184,9 +217,9 @@ export default function AuditPage() {
   }, [page, action, debouncedSearch, dateFrom, dateTo, tr]);
 
   useEffect(() => {
-    if (!isClient || user?.role !== 'admin') return;
+    if (!urlRestored || !isClient || user?.role !== 'admin') return;
     void load();
-  }, [isClient, user?.role, load]);
+  }, [urlRestored, isClient, user?.role, load]);
 
   const rangeLabel = useMemo(() => {
     if (total === 0) return tr('ไม่มีรายการ', 'No items');
@@ -253,10 +286,12 @@ export default function AuditPage() {
                   const data = (await res.json()) as AuditLogExportResponse;
 
                   const rows = data.items.map((entry) => [
+                    entry.id,
                     formatDateTime(entry.created_at),
                     actionLabel(entry.action),
                     entry.user?.name ?? entry.user?.email ?? tr('ระบบ', 'System'),
                     entry.user?.email ?? '',
+                    entry.target_user?.name ?? entry.target_user?.email ?? '',
                     deviceLabel(entry.user_agent),
                     entry.details ?? '',
                   ]);
@@ -264,10 +299,12 @@ export default function AuditPage() {
                     auditExportFilename(dateFrom, dateTo),
                     toCsv(
                       [
+                        'ID',
                         tr('วันเวลา (ไทย)', 'Date and time (Asia/Bangkok)'),
                         tr('กิจกรรม', 'Activity'),
                         tr('ผู้ใช้', 'User'),
                         tr('อีเมล', 'Email'),
+                        tr('เป้าหมาย', 'Target'),
                         tr('อุปกรณ์', 'Device'),
                         tr('รายละเอียด', 'Details'),
                       ],
@@ -325,7 +362,11 @@ export default function AuditPage() {
             <input
               type="search"
               value={search}
-              onChange={(event) => setSearch(event.target.value)}
+              onChange={(event) => {
+                setSearch(event.target.value);
+                // A new term starts a new result set, never page 4 of it.
+                setPage(1);
+              }}
               placeholder={tr('ค้นหารายละเอียด ชื่อ หรืออีเมล', 'Search details, name or email')}
               aria-label={tr('ค้นหาบันทึกกิจกรรม', 'Search the activity log')}
               className="w-full rounded-apple-widget border border-[var(--hairline-strong)] bg-[var(--surface)] py-2 pl-9 pr-3 text-[13px] text-[var(--ink)] placeholder:text-[var(--ink-tertiary)] focus:border-[var(--accent)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
@@ -333,7 +374,10 @@ export default function AuditPage() {
           </div>
           <Select
             value={action}
-            onChange={setAction}
+            onChange={(value) => {
+              setAction(value);
+              setPage(1);
+            }}
             ariaLabel="กรองตามประเภทกิจกรรม"
             size="md"
             options={[
@@ -352,6 +396,7 @@ export default function AuditPage() {
             onChange={(range) => {
               setDateFrom(range.from);
               setDateTo(range.to);
+              setPage(1);
             }}
             ariaLabel="กรองตามช่วงวันที่"
             className="w-full sm:w-64"
@@ -416,7 +461,8 @@ export default function AuditPage() {
             {items.map((entry) => (
               <li
                 key={entry.id}
-                className="rounded-apple-widget bg-[var(--surface-subtle)] p-3.5"
+                id={`entry-${entry.id}`}
+                className="scroll-mt-4 rounded-apple-widget bg-[var(--surface-subtle)] p-3.5"
               >
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
@@ -431,6 +477,12 @@ export default function AuditPage() {
                     {entry.user?.email && entry.user.email !== entry.user.name && (
                       <span className="truncate text-[12px] text-[var(--ink-tertiary)]">
                         {entry.user.email}
+                      </span>
+                    )}
+                    {entry.target_user && (
+                      <span className="rounded-full bg-[var(--surface-chip)] px-2 py-0.5 text-[11px] font-semibold text-[var(--ink-secondary)]">
+                        {tr('เป้าหมาย', 'Target')}:{' '}
+                        {entry.target_user.name || entry.target_user.email}
                       </span>
                     )}
                     {/* Seen something worth acting on? The admin console's

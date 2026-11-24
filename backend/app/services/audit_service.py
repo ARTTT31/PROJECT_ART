@@ -27,9 +27,11 @@ class AuditService:
         details: Optional[str] = None,
         ip_address: Optional[str] = None,
         user_agent: Optional[str] = None,
+        target_user_id: Optional[int] = None,
     ) -> AuditLog:
         db_log = AuditLog(
             user_id=user_id,
+            target_user_id=target_user_id,
             action=action,
             details=details,
             ip_address=ip_address,
@@ -72,6 +74,10 @@ class AuditService:
                     func.lower(AuditLog.details).like(pattern),
                     func.lower(User.name).like(pattern),
                     func.lower(User.email).like(pattern),
+                    # The address is no longer shown, but a known address is
+                    # still a way in: "what happened from here" must not be a
+                    # dead end in the search box.
+                    AuditLog.ip_address.like(pattern),
                 )
             )
         return conditions
@@ -88,7 +94,7 @@ class AuditService:
     ):
         statement = (
             select(AuditLog)
-            .options(joinedload(AuditLog.user))
+            .options(joinedload(AuditLog.user), joinedload(AuditLog.target_user))
             .outerjoin(User, AuditLog.user_id == User.id)
             .order_by(AuditLog.created_at.desc())
             .offset(skip)

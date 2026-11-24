@@ -1,7 +1,17 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Loader2, LogOut, Monitor, MonitorSmartphone, RefreshCw, Search, Smartphone } from 'lucide-react';
+import Link from 'next/link';
+import {
+  FileText,
+  Loader2,
+  LogOut,
+  Monitor,
+  MonitorSmartphone,
+  RefreshCw,
+  Search,
+  Smartphone,
+} from 'lucide-react';
 import Select from '@/components/ui/Select';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
 import { apiMessage } from '@/lib/api/apiMessage';
@@ -362,11 +372,26 @@ export default function ActiveSessionsCard({
           />
         </div>
       ) : sessions.length === 0 ? (
-        <p className="px-5 py-8 text-center text-[12px] text-[var(--ink-muted)] sm:px-6">
-          {debouncedQuery || role
-            ? 'ไม่พบอุปกรณ์ที่ตรงกับตัวกรอง'
-            : 'ยังไม่มีอุปกรณ์ที่เข้าสู่ระบบอยู่'}
-        </p>
+        <div className="px-5 py-8 text-center text-[12px] text-[var(--ink-muted)] sm:px-6">
+          {initialQuery && debouncedQuery === initialQuery.trim() ? (
+            // Arrived from an /audit row: "no devices" means this account is
+            // signed out, not that a search misspelled something. Offer the way
+            // back to the history that sent the admin here.
+            <>
+              <p>บัญชีนี้ไม่ได้เข้าสู่ระบบอยู่บนอุปกรณ์ใดเลย — อาจออกจากระบบไปแล้ว หรือถูกบังคับออก</p>
+              <Link
+                href={`/audit?q=${encodeURIComponent(initialQuery.trim())}`}
+                className="mt-2 inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-[12px] font-semibold text-[var(--accent-text)] ring-1 ring-[var(--hairline)] transition-all hover:bg-[var(--accent-soft)] active:scale-[0.95]"
+              >
+                <FileText size={13} aria-hidden="true" /> ดูบันทึกกิจกรรมของบัญชีนี้
+              </Link>
+            </>
+          ) : debouncedQuery || role ? (
+            'ไม่พบอุปกรณ์ที่ตรงกับตัวกรอง'
+          ) : (
+            'ยังไม่มีอุปกรณ์ที่เข้าสู่ระบบอยู่'
+          )}
+        </div>
       ) : (
         <ul className="divide-y divide-[var(--hairline-soft)]">
           {groups.map((group) => (

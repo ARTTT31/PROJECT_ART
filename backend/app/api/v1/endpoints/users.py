@@ -417,7 +417,9 @@ async def revoke_active_session(
     # on, so the entry reads as one instead of an opaque raw key.
     own_session = session.user_id == current_user.id
     details = f"Admin signed out their own session {session_id[:8]}… from the device list"
+    target_user_id = None
     if not own_session:
+        target_user_id = session.user_id
         # `user_id` on the audit row is the admin who acted, so the target only
         # exists in `details` — and /audit's search reads that text. Copy the
         # name, email and device in here instead of storing just the numeric id:
@@ -443,6 +445,7 @@ async def revoke_active_session(
     await AuditService(db).log_action(
         action="LOGOUT" if own_session else "ADMIN_REVOKE_SESSION",
         user_id=current_user.id,
+        target_user_id=target_user_id,
         details=details,
         ip_address=get_real_client_ip(request),
         user_agent=request.headers.get("user-agent"),

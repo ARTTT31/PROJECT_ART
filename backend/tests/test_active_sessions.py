@@ -124,6 +124,21 @@ async def test_revoking_someone_elses_session_names_who_and_where(
     assert "Somchai Jaidee" in (entry.details or "")
     assert victim.email in (entry.details or "")
     assert "Somchai's iPhone" in (entry.details or "")
+    assert entry.target_user_id == victim.id
+
+    # The target is structured in the response too, not just spelled in text.
+    page = await client.get(
+        "/api/v1/audit/paginated", params={"action": "ADMIN_REVOKE_SESSION"}
+    )
+    assert page.status_code == 200, page.text
+    row = next(
+        item
+        for item in page.json()["items"]
+        if "victim-s" in (item["details"] or "")
+    )
+    assert row["target_user"]["id"] == victim.id
+    assert row["target_user"]["email"] == victim.email
+    assert row["user"]["id"] == admin_id
 
 
 async def test_revoked_session_details_fall_back_to_the_user_agent(

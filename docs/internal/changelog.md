@@ -2235,3 +2235,35 @@ Backend suite **742 passed**, coverage **84.63%** (was 741); `flake8` clean. New
 with an address, reads both endpoints and asserts the key is absent from every item, then reads the
 row back and asserts the address is still stored. Frontend **483 passed / 74 files**, `tsc` and
 `eslint` clean.
+
+
+## Five Ways Into the Same Investigation (November 24, 2026)
+
+1. **`/audit` state lives in the URL.** `action`, `q`, the date range, the page and each row
+   (`#entry-<id>`) are now addressable: reload keeps the view, the link can be shared, and coming
+   back from `/admin` returns to the filtered list instead of an empty page. Filters reset the page
+   in their own handlers rather than an effect, so a restored `page=2` is not immediately undone.
+2. **The search box finds addresses again — without returning them.** `q` now also matches
+   `audit_logs.ip_address` server-side; the value itself is still absent from every response.
+3. **A revoke records its target as data.** New nullable `audit_logs.target_user_id`
+   (`ON DELETE SET NULL`, indexed, migration `20261124_1200`) plus `target_user` in the audit
+   response. The revoke endpoint sets it for another account's session and leaves it null for its
+   own; `/audit` shows a "เป้าหมาย: …" chip, and the CSV gained a Target column.
+4. **`/admin` closes the loop.** Arriving with `?sessions=<account>` and finding no devices no longer
+   says "no match": it says the account is not signed in and links to `/audit?q=<account>`.
+5. **The CSV carries the row id.** `ID` is the first column, so a line in an exported file can be
+   cited back to the exact audit row.
+
+**Paused:** the CCTV/camera area was deliberately left untouched and stays parked — existing code
+is kept as-is, with no further development or follow-ups until it is unpaused explicitly.
+
+### Verified
+
+Backend suite **743 passed**, coverage **84.64%** (was 742); `flake8` clean. `alembic upgrade head`
+applies the new migration on a throwaway SQLite file and `alembic check` reports no drift. New tests:
+search by IP returns the row and no `ip_address`; the revoke row exposes `target_user` and keeps the
+admin as `user`; the existing revoke test still proves the text details.
+Frontend **487 passed / 74 files** (was 483); `tsc`, `eslint` and `npm run build` clean. New tests:
+the page restores `action/q/page` from the URL and writes `page=2` back on pagination; the target
+chip renders; the CSV starts with `ID`; the device card's filtered empty state links to
+`/audit?q=…`. Not viewed in a browser, and the pages were not deployed.

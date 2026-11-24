@@ -21,5 +21,6 @@ class AuditLogResponse(BaseModel):
     user_agent: Optional[str] = None
     created_at: datetime
     user: Optional[UserBrief] = None
+    target_user: Optional[UserBrief] = None
 
     model_config = ConfigDict(from_attributes=True)

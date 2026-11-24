@@ -359,6 +359,18 @@ describe('ActiveSessionsCard', () => {
     }
   });
 
+  it('explains an account with no devices and links back to its history', async () => {
+    vi.mocked(fetchWithAuth).mockResolvedValue(ok([]));
+
+    render(<ActiveSessionsCard initialQuery="owner@example.com" />);
+
+    const link = await screen.findByRole('link', {
+      name: /ดูบันทึกกิจกรรมของบัญชีนี้/,
+    });
+    expect(link.getAttribute('href')).toBe('/audit?q=owner%40example.com');
+    expect(screen.getByText(/บัญชีนี้ไม่ได้เข้าสู่ระบบอยู่/)).toBeDefined();
+  });
+
   it('starts filtered to the account it was opened for', async () => {
     vi.mocked(fetchWithAuth).mockResolvedValue(ok(sessions));
 

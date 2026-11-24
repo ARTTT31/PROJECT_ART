@@ -1,11 +1,12 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import AuditPage from './page';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
 import { downloadCsv } from '@/lib/csv';
 import { showConfirm, showToast } from '@/utils/sweetalert';
 
-vi.mock('next/navigation', () => ({ useRouter: () => ({ replace: vi.fn() }) }));
+const { replace } = vi.hoisted(() => ({ replace: vi.fn() }));
+vi.mock('next/navigation', () => ({ useRouter: () => ({ replace }) }));
 
 vi.mock('@/hooks/useAuth', () => ({
   useAuth: () => ({
@@ -72,10 +73,15 @@ function response(body: unknown): Response {
 }
 
 beforeEach(() => {
+  replace.mockClear();
   vi.mocked(showConfirm).mockResolvedValue({ isConfirmed: true } as never);
   vi.mocked(fetchWithAuth).mockImplementation(async (url: string) =>
     url.includes('/audit/export') ? response(exportPayload) : response(listPayload),
   );
+});
+
+afterEach(() => {
+  window.history.replaceState({}, '', '/');
 });
 
 async function openPage() {
@@ -97,6 +103,9 @@ describe('/audit CSV export', () => {
     expect(csv.split('\r\n')).toHaveLength(26);
     // The address is no longer shown, so it must not leave in the file either.
     expect(csv).not.toContain('10.0.0.1');
+    // The row id is what an incident report cites, so the file carries it.
+    expect(csv.split('\r\n')[0].startsWith('ID,')).toBe(true);
+    expect(csv.split('\r\n')[1].startsWith('1,')).toBe(true);
     expect(csv.split('\r\n')[0]).not.toContain('IP');
     expect(container.textContent).not.toContain('10.0.0.1');
     expect(showToast).toHaveBeenCalledWith(
@@ -161,5 +170,51 @@ describe('/audit CSV export', () => {
     expect(link.getAttribute('href')).toBe('/admin?sessions=somchai%40example.com');
     // The system row has no account to manage, so it gets no link.
     expect(screen.getAllByRole('link')).toHaveLength(1);
+  });
+
+  it('shows who a revoke was aimed at next to the admin who did it', async () => {
+    vi.mocked(fetchWithAuth).mockImplementation(async (url: string) =>
+      url.includes('/audit/export')
+        ? response(exportPayload)
+        : response({
+            ...listPayload,
+            items: [
+              {
+                ...entry(1),
+                action: 'ADMIN_REVOKE_SESSION',
+                target_user: { id: 2, name: 'Somchai', email: 'somchai@example.com' },
+              },
+            ],
+            total: 1,
+          }),
+    );
+
+    render(<AuditPage />);
+
+    expect(await screen.findByText(/เป้าหมาย: Somchai/)).toBeDefined();
+  });
+
+  it('starts from the filters and page in the URL', async () => {
+    window.history.replaceState({}, '', '/audit?action=LOGIN_FAILED&q=som&page=2');
+
+    await openPage();
+
+    const listCall = vi
+      .mocked(fetchWithAuth)
+      .mock.calls.map(([url]) => String(url))
+      .find((url) => url.includes('/audit/paginated'));
+    expect(listCall).toContain('action=LOGIN_FAILED');
+    expect(listCall).toContain('q=som');
+    expect(listCall).toContain('page=2');
+  });
+
+  it('keeps the URL in step when the page changes', async () => {
+    await openPage();
+
+    fireEvent.click(screen.getByRole('button', { name: /ถัดไป/ }));
+
+    await waitFor(() =>
+      expect(replace).toHaveBeenLastCalledWith('/audit?page=2', { scroll: false }),
+    );
   });
 });
