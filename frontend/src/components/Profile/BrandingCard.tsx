@@ -301,7 +301,9 @@ export function BrandingCard({ isAdmin = false }: { isAdmin?: boolean }) {
                     aria-hidden="true"
                     className="h-[26px] w-[26px] shrink-0 rounded-apple-md"
                   />
-                  <span className="min-w-0 flex-1 truncate text-[12px] font-semibold text-[var(--ink)]">
+                  {/* Two lines rather than an ellipsis: at 360px each chip is
+                      ~119px wide, which cut "ART Workspace" to "ART Works...". */}
+                  <span className="line-clamp-2 min-w-0 flex-1 text-[12px] font-semibold leading-tight text-[var(--ink)]">
                     {preset.name}
                   </span>
                   {active && (

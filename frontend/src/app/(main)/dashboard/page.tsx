@@ -484,7 +484,10 @@ export default function DashboardPage() {
         aria-label="การทักทายและสถานะประจำวัน"
         className="relative mb-6 overflow-hidden rounded-apple-lg border border-[var(--hairline)] bg-[var(--surface)] p-6 sm:p-7"
       >
-        <div className="relative z-10 flex items-start justify-between gap-3">
+        {/* Stacked on phones: side by side, the widget button squeezed the
+            greeting into a narrow column and Thai broke mid-phrase
+            ("สวัสดีตอน / เย็น,") on 360-390px screens. */}
+        <div className="relative z-10 flex flex-col items-start gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0 space-y-1.5">
             <h1
               ref={headingRef}
