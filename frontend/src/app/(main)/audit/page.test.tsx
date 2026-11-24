@@ -364,6 +364,64 @@ describe('/audit CSV export', () => {
     // The filters are the reason it is missing, so the page does not move.
     expect(replace).not.toHaveBeenCalled();
     expect(scrollIntoView).not.toHaveBeenCalled();
+    // …and the status bar carries the fix instead of sending the admin away.
+    expect(screen.getByRole('button', { name: /ล้างตัวกรอง/ })).toBeDefined();
+  });
+
+  it('clears the filters from the status bar and follows the row', async () => {
+    window.history.replaceState({}, '', '/audit?q=zzz#entry-999');
+    vi.mocked(fetchWithAuth).mockImplementation(async (url: string) => {
+      const parsed = new URL(String(url), 'http://localhost');
+      if (parsed.pathname.endsWith('/audit/export')) return response(exportPayload);
+      // Filtered: nothing matches. Unfiltered: the row is on page 2.
+      if (parsed.searchParams.get('q')) {
+        return response({ ...listPayload, items: [], total: 0, hasNext: false, anchorPage: null });
+      }
+      return response(
+        parsed.searchParams.get('page') === '2'
+          ? {
+              ...listPayload,
+              page: 2,
+              hasPrev: true,
+              hasNext: false,
+              items: [entry(999), entry(39)],
+              anchorPage: 2,
+            }
+          : { ...listPayload, anchorPage: 2 },
+      );
+    });
+
+    render(<AuditPage />);
+
+    expect(await screen.findByText(/ไม่พบแถว #999/)).toBeDefined();
+    // The empty state has its own clear button; this one is the status bar's.
+    fireEvent.click(screen.getByRole('button', { name: /^ล้างตัวกรอง$/ }));
+
+    expect(await screen.findByText('row 999')).toBeDefined();
+    await waitFor(() =>
+      expect(replace).toHaveBeenLastCalledWith('/audit?page=2#entry-999', { scroll: false }),
+    );
+    // The filters really are gone, not just the notice.
+    expect(screen.getByPlaceholderText('ค้นหารายละเอียด ชื่อ หรืออีเมล')).toHaveValue('');
+  });
+
+  it('does not call an older server a missing row', async () => {
+    // A build without `anchor` omits the field: that is "cannot tell", not
+    // "the filters exclude it", and the two must not share a message.
+    window.history.replaceState({}, '', '/audit#entry-999');
+    vi.mocked(fetchWithAuth).mockImplementation(async (url: string) => {
+      if (String(url).includes('/audit/export')) return response(exportPayload);
+      const legacy: Record<string, unknown> = { ...listPayload };
+      delete legacy.anchorPage;
+      return response(legacy);
+    });
+
+    render(<AuditPage />);
+
+    expect(await screen.findByText(/เซิร์ฟเวอร์นี้ไม่รายงานตำแหน่งของแถว/)).toBeDefined();
+    expect(screen.queryByText(/ไม่พบแถว #999/)).toBeNull();
+    expect(screen.queryByRole('button', { name: /ล้างตัวกรอง/ })).toBeNull();
+    expect(replace).not.toHaveBeenCalled();
   });
 
   it('does not rewrite the address when it already matches', async () => {

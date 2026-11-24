@@ -2337,3 +2337,20 @@ Frontend **496 passed / 74 files** (was 495); backend **750 passed**, coverage 8
 84.65%). `tsc`, `eslint`, `npm run build` and `flake8` clean. New tests cover a row on page 3, one
 already on page 1, one the filters exclude, an unknown id, same-second rows, and the page following
 the link.
+
+## The Status Bar Can Clear The Filters (November 24, 2026)
+
+A row link excluded by the active filters explained itself but left the admin to walk back to the
+filter controls, and the same message appeared when an older server omitted `anchorPage` at all —
+telling the admin their filters hid a row the server had never looked for.
+
+The excluded-row status bar now carries a "ล้างตัวกรอง" button that clears the search, action and
+date range and returns to page 1, after which the linked row is followed normally. The page also
+tells the two answers apart: a response without `anchorPage` says the server did not report the
+row's position (likely an older build), not that the filters excluded it.
+
+### Verified
+
+Frontend **498 passed / 74 files** (was 496); `tsc`, `eslint` and `npm run build` clean. Tests cover
+the button clearing the query and following the row to page 2, and a response without `anchorPage`
+producing the stale-server message with no "not found" text and no jump.

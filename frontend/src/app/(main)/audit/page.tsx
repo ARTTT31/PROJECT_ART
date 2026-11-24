@@ -10,6 +10,7 @@ import {
   Clock,
   Download,
   FileText,
+  FilterX,
   Info,
   Monitor,
   MonitorSmartphone,
@@ -143,9 +144,13 @@ export default function AuditPage() {
   // what points at the one entry being discussed, so the filter sync below
   // carries it along instead of rewriting the URL without it.
   const [hash, setHash] = useState('');
-  // Where the anchored row actually sits, as the backend counts it under the
-  // active filters; null means those filters exclude it.
-  const [anchorPage, setAnchorPage] = useState<number | null>(null);
+  // The backend's answer about the anchored row under the active filters:
+  // `{ page }` (page is null when those filters exclude the row), or null when
+  // the response carried no answer at all — an older server that does not know
+  // `anchor`. "Excluded by these filters" and "this server cannot say" must not
+  // read the same: one is the admin's filters, the other is a stale build.
+  const [anchorAnswer, setAnchorAnswer] = useState<{ page: number | null } | null>(null);
+  const anchorPage = anchorAnswer ? anchorAnswer.page : null;
 
   const anchorId = useMemo(() => {
     const match = /^#entry-(\d+)$/.exec(hash);
@@ -239,7 +244,7 @@ export default function AuditPage() {
       setTotal(data.total ?? 0);
       setHasNext(Boolean(data.hasNext));
       setHasPrev(Boolean(data.hasPrev));
-      setAnchorPage(data.anchorPage ?? null);
+      setAnchorAnswer(data.anchorPage === undefined ? null : { page: data.anchorPage });
     } catch (err) {
       setError(
         err instanceof Error ? err.message : tr('โหลดบันทึกกิจกรรมไม่สำเร็จ', 'Could not load the activity log'),
@@ -276,23 +281,46 @@ export default function AuditPage() {
     setPage(anchorPage);
   }, [loading, anchorId, anchorPage, page, hash]);
 
+  const clearFilters = useCallback(() => {
+    setSearch('');
+    setAction('');
+    setDateFrom('');
+    setDateTo('');
+    setPage(1);
+  }, []);
+
   // Say what happened when the link needed following, or when the row is not
   // in the filtered results at all — silence is what made this a dead end.
   const anchorNotice = useMemo(() => {
     if (anchorId === null || loading) return null;
-    if (anchorPage === null) {
-      return tr(
-        'ไม่พบแถว #{id} ในผลลัพธ์ตามตัวกรองนี้',
-        'Row #{id} is not in the results of these filters',
-        { id: anchorId },
-      );
+    if (anchorAnswer === null) {
+      return {
+        text: tr(
+          'เซิร์ฟเวอร์นี้ไม่รายงานตำแหน่งของแถว — อาจเป็นเวอร์ชันเก่าที่ไม่รองรับลิงก์ระดับแถว',
+          'This server did not report where the row is — it may be an older build without row links',
+        ),
+        offerClear: false,
+      };
     }
-    if (anchorPage !== page || anchorPage === 1) return null;
-    return tr('แถว #{id} อยู่หน้า {page} — พาไปหน้านั้นแล้ว', 'Row #{id} is on page {page} — opened it', {
-      id: anchorId,
-      page: anchorPage,
-    });
-  }, [anchorId, anchorPage, loading, page, tr]);
+    if (anchorAnswer.page === null) {
+      return {
+        text: tr(
+          'ไม่พบแถว #{id} ในผลลัพธ์ตามตัวกรองนี้',
+          'Row #{id} is not in the results of these filters',
+          { id: anchorId },
+        ),
+        offerClear: true,
+      };
+    }
+    if (anchorAnswer.page !== page || anchorAnswer.page === 1) return null;
+    return {
+      text: tr('แถว #{id} อยู่หน้า {page} — พาไปหน้านั้นแล้ว', 'Row #{id} is on page {page} — opened it', {
+        id: anchorId,
+        page: anchorAnswer.page,
+      }),
+      offerClear: false,
+    };
+  }, [anchorId, anchorAnswer, loading, page, tr]);
 
   const anchoredOnce = useRef<string | null>(null);
   useEffect(() => {
@@ -498,7 +526,18 @@ export default function AuditPage() {
             className="mb-3 flex items-start gap-2 rounded-apple-widget bg-[var(--surface-subtle)] px-3.5 py-2.5 text-[13px] text-[var(--ink-muted)]"
           >
             <Info size={15} className="mt-0.5 shrink-0 text-[var(--ink-tertiary)]" aria-hidden="true" />
-            <span>{anchorNotice}</span>
+            <span>{anchorNotice.text}</span>
+            {anchorNotice.offerClear && (
+              // The filters are why the row is hidden, so the fix belongs here
+              // instead of sending the admin back to the filter controls.
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="ml-auto inline-flex shrink-0 items-center gap-1 rounded-full bg-[var(--surface)] px-3 py-1 text-[12px] font-semibold text-[var(--accent-text)] ring-1 ring-[var(--hairline)] transition-all hover:bg-[var(--accent-soft)] active:scale-[0.95]"
+              >
+                <FilterX size={12} aria-hidden="true" /> {tr('ล้างตัวกรอง', 'Clear filters')}
+              </button>
+            )}
           </div>
         )}
         {loading ? (
@@ -540,12 +579,7 @@ export default function AuditPage() {
             {(search || action || dateFrom || dateTo) && (
               <button
                 type="button"
-                onClick={() => {
-                  setSearch('');
-                  setAction('');
-                  setDateFrom('');
-                  setDateTo('');
-                }}
+                onClick={clearFilters}
                 className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-[var(--surface)] px-3.5 py-1.5 text-[12px] font-semibold text-[var(--accent-text)] ring-1 ring-[var(--hairline)] hover:bg-[var(--accent)]/10 transition-colors active:scale-[0.95]"
               >
                 ล้างตัวกรองทั้งหมด
