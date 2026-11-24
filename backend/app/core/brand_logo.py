@@ -19,11 +19,13 @@ from PIL import Image, ImageOps
 
 logger = logging.getLogger(__name__)
 
-# Rendered at 34px in the sidebar, 192–512px as an app icon; 256px covers a 4x
-# display. Slightly higher quality than avatars: logos are flat colour and line
-# art, where compression artefacts are easy to see.
-LOGO_MAX_DIMENSION = 256
-LOGO_WEBP_QUALITY = 88
+# Rendered at 34px in the sidebar and 192–512px as an app launcher icon. The
+# stored copy must reach the largest icon size on its own: a 128px mark serving
+# a 512px launcher slot was upscaled and read as a blurry icon. Slightly higher
+# quality than avatars: logos are flat colour and line art, where compression
+# artefacts are easy to see.
+LOGO_MAX_DIMENSION = 512
+LOGO_WEBP_QUALITY = 90
 
 # Sizes a favicon / apple-touch-icon / PWA manifest may ask for.
 LOGO_ICON_MIN_SIZE = 32

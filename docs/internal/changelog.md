@@ -1849,7 +1849,7 @@ src/components/Profile/MyDevicesCard.test.tsx src/components/Profile/TrustedDevi
 build.
 
 ## The Sidebar's Name Now Matches the HTML (November 23, 2026)
-
+
 
 `/admin` and `/profile` threw React #418 (hydration) in the browser console on every production load.
 The service worker was the first suspect and it was innocent: with the registration removed and all
@@ -2385,3 +2385,44 @@ Backend **759 passed**, coverage 84.73% (was 750 / 84.69%); frontend **498 passe
 search-term and date-range text, repeated fetches staying one row, a different filter set being a
 second row, a visit outside the ten-minute window being recorded again, the rows being searchable by
 `action=AUDIT_LOG_VIEWED`, the export row's counts, the cap note and two exports producing two rows.
+
+---
+
+## Branding name propagation, icon sharpness, pull-to-refresh (November 24, 2026)
+
+**Reported from the installed Android app.** (1) Renaming the workspace/account left the app's page
+name unchanged. (2) Every image looked soft — the launcher icon, the splash screen and the logo
+picker. (3) The pull-to-refresh pill floated over the greeting card instead of sitting above it.
+
+**What changed.**
+
+1. **Names reach the page.** The dashboard greeting now reads `name` (the field the profile card
+   actually edits, and the one the server copies into `display_name`) before `display_name`; the
+   old order kept showing the previous name until a reload. `BrandingContext` also rewrites the
+   document title and the `apple-mobile-web-app-title` meta when the effective workspace name
+   changes, so a rename updates the tab immediately instead of waiting for the next full load.
+2. **Images are sharp.** `scripts/generate-branding-presets.mjs` now renders 512px marks (the
+   largest size the PWA icon route serves) as indexed PNGs — twelve presets instead of eight, with
+   new compass, layers, aperture and bolt marks and a redrawn flower and tile grid. Stored uploads
+   keep up to 512px (`LOGO_MAX_DIMENSION`, WebP quality 90), and
+   `GET /system/branding/logo.png` scales with LANCZOS in both directions: it used to only shrink,
+   so a 128px logo was embedded as a small bitmap in a 512px launcher canvas and the launcher
+   upscaled it. Preset file: 149KB for twelve 512px marks — indexed PNG plus the PNG "Up" filter
+   is what keeps 512px marks from turning the committed data URLs into megabytes.
+3. **Pull-to-refresh no longer covers content.** The indicator is a reserved row that grows with the
+   gesture, so the page is pushed down instead of being overlaid by a `position: fixed` pill. It
+   shows a progress ring, "ปล่อยเพื่อรีเฟรช" past the threshold and a brief "อัปเดตแล้ว" on
+   completion. Listeners are bound once; the previous effect re-registered them on every pixel of
+   movement.
+4. **Quick-link palette.** The dialog's colour list moved to `utils/quickLinkColors.ts` (stored
+   values, not styling), and the live preview tint uses `color-mix` instead of a hex alpha suffix,
+   so the component no longer hardcodes hex colours.
+5. **OAuth default.** `get_google_redirect_uri()` falls back to port 8080, matching the documented
+   local API port; it defaulted to 8000.
+6. **README.** Test counts removed; the file now points at `status.md` for the current numbers
+   instead of repeating figures that had drifted to 620/387.
+
+**Verified.** Backend **759 passed**, coverage **84.71%** (84.73% before this pass; the difference is
+coverage of the new logo-resize branches); frontend **498 passed / 74 files**;
+`tsc --noEmit`, `eslint`, `npm run build` (17 routes), `flake8` and `mypy` clean. The twelve preset
+marks were rendered to a contact sheet and inspected.

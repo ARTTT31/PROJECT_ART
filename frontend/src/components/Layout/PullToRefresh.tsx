@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Loader2 } from 'lucide-react';
+import { ArrowDown, Check, Loader2 } from 'lucide-react';
 import { hapticTap, hapticSuccess } from '@/utils/haptics';
 
 interface PullToRefreshProps {
@@ -11,20 +11,40 @@ interface PullToRefreshProps {
 
 const PULL_THRESHOLD = 60;
 const MAX_PULL = 80;
+/** Height the indicator occupies once it is fully revealed. */
+const INDICATOR_HEIGHT = 44;
+/** How long "อัปเดตแล้ว" stays up after a refresh finishes. */
+const DONE_HOLD_MS = 900;
 
+/**
+ * Pull-to-refresh for the dashboard.
+ *
+ * The indicator is part of the layout, not a fixed overlay: growing its row is
+ * what pushes the page down while pulling. The previous `position: fixed`
+ * pill sat on top of the greeting card (a floating circle over the hero), so
+ * it both hid content and looked detached from the gesture. Growing the row
+ * also means the indicator can never cover a control the user is aiming at.
+ */
 export function PullToRefresh({ onRefresh, children }: PullToRefreshProps) {
   const [pullY, setPullY] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [didRefresh, setDidRefresh] = useState(false);
+
   const startYRef = useRef<number | null>(null);
   const pullYRef = useRef(0);
+  const isRefreshingRef = useRef(false);
   const hasTriggeredHapticRef = useRef(false);
+
+  useEffect(() => {
+    isRefreshingRef.current = isRefreshing;
+  }, [isRefreshing]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
     const handleTouchStart = (e: TouchEvent) => {
       // Only allow pull-down when scrolled to the very top
-      if (window.scrollY <= 0 && !isRefreshing) {
+      if (window.scrollY <= 0 && !isRefreshingRef.current) {
         startYRef.current = e.touches[0].clientY;
         hasTriggeredHapticRef.current = false;
       } else {
@@ -33,7 +53,7 @@ export function PullToRefresh({ onRefresh, children }: PullToRefreshProps) {
     };
 
     const handleTouchMove = (e: TouchEvent) => {
-      if (startYRef.current === null || isRefreshing) return;
+      if (startYRef.current === null || isRefreshingRef.current) return;
 
       const currentY = e.touches[0].clientY;
       const diff = currentY - startYRef.current;
@@ -57,7 +77,7 @@ export function PullToRefresh({ onRefresh, children }: PullToRefreshProps) {
     };
 
     const handleTouchEnd = async () => {
-      if (startYRef.current === null || isRefreshing) return;
+      if (startYRef.current === null || isRefreshingRef.current) return;
 
       const shouldRefresh = pullYRef.current >= PULL_THRESHOLD;
       startYRef.current = null;
@@ -77,8 +97,10 @@ export function PullToRefresh({ onRefresh, children }: PullToRefreshProps) {
             await new Promise((resolve) => setTimeout(resolve, 800));
             window.location.reload();
           }
+          setDidRefresh(true);
+          window.setTimeout(() => setDidRefresh(false), DONE_HOLD_MS);
         } catch {
-          // Graceful catch
+          // A failed refresh is reported by the page itself; the gesture just ends.
         } finally {
           setIsRefreshing(false);
           setPullY(0);
@@ -97,45 +119,88 @@ export function PullToRefresh({ onRefresh, children }: PullToRefreshProps) {
       window.removeEventListener('touchmove', handleTouchMove);
       window.removeEventListener('touchend', handleTouchEnd);
     };
-  }, [isRefreshing, onRefresh, pullY]);
+    // `pullY` is deliberately absent: rebinding the listeners on every pixel of
+    // movement dropped touch events and made the gesture stutter. Refs carry
+    // the live values instead.
+  }, [onRefresh]);
 
-  const rotation = Math.min(360, pullY * 6);
-  const opacity = Math.min(1, pullY / 30);
+  const armed = pullY >= PULL_THRESHOLD;
+  const reveal = isRefreshing || didRefresh
+    ? INDICATOR_HEIGHT
+    : Math.min(INDICATOR_HEIGHT, pullY * 0.62);
+  const progress = Math.min(1, pullY / PULL_THRESHOLD);
+  const showIndicator = reveal > 0;
 
   return (
     <div className="relative w-full">
-      {/* Pull Indicator Pill */}
-      {(pullY > 0 || isRefreshing) && (
-        <div
-          data-testid="pull-to-refresh-indicator"
-          aria-live="polite"
-          className="fixed top-16 left-1/2 -translate-x-1/2 z-40 transition-all duration-apple-2 ease-apple"
-          style={{
-            transform: `translate(-50%, ${pullY > 0 ? pullY * 0.7 : 0}px)`,
-            opacity: isRefreshing ? 1 : opacity,
-          }}
-        >
-          <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[var(--surface)] text-[var(--ink)] border border-[var(--hairline)] shadow-[0_4px_16px_rgba(0,0,0,0.08)] backdrop-blur-md text-xs font-medium">
-            <Loader2
-              className={`w-3.5 h-3.5 text-[var(--accent)] ${isRefreshing ? 'animate-spin' : ''}`}
-              style={{
-                transform: !isRefreshing ? `rotate(${rotation}deg)` : undefined,
-              }}
-            />
-            <span>{isRefreshing ? 'กำลังอัปเดต...' : pullY >= PULL_THRESHOLD ? 'ปล่อยเพื่อรีเฟรช' : 'ดึงลงเพื่อรีเฟรช'}</span>
-          </div>
-        </div>
-      )}
-
-      {/* Main Content */}
+      {/* Reserved row: it grows with the gesture, so nothing is covered. */}
       <div
-        style={{
-          transform: pullY > 0 ? `translateY(${pullY * 0.4}px)` : undefined,
-          transition: isRefreshing ? 'transform 0.3s ease-out' : undefined,
-        }}
+        className="overflow-hidden transition-[height] duration-200 ease-out"
+        style={{ height: reveal }}
+        aria-hidden={!showIndicator}
       >
-        {children}
+        {showIndicator && (
+          <div
+            data-testid="pull-to-refresh-indicator"
+            aria-live="polite"
+            className="flex h-11 items-center justify-center"
+          >
+            <div className="flex items-center gap-2.5 rounded-full border border-[var(--hairline)] bg-[var(--surface)] px-3.5 py-1.5 text-[12px] font-semibold text-[var(--ink-secondary)]">
+              <span className="relative flex h-5 w-5 items-center justify-center">
+                {didRefresh ? (
+                  <Check size={14} className="text-[var(--success)]" aria-hidden="true" />
+                ) : isRefreshing ? (
+                  <Loader2
+                    className="h-4 w-4 animate-spin text-[var(--accent)]"
+                    aria-hidden="true"
+                  />
+                ) : (
+                  <>
+                    <svg viewBox="0 0 20 20" className="h-5 w-5 -rotate-90" aria-hidden="true">
+                      <circle
+                        cx="10"
+                        cy="10"
+                        r="8"
+                        fill="none"
+                        stroke="var(--hairline-strong)"
+                        strokeWidth="2"
+                      />
+                      <circle
+                        cx="10"
+                        cy="10"
+                        r="8"
+                        fill="none"
+                        stroke="var(--accent)"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeDasharray={`${progress * 50.27} 50.27`}
+                      />
+                    </svg>
+                    <ArrowDown
+                      size={11}
+                      aria-hidden="true"
+                      className={`absolute text-[var(--accent)] transition-transform duration-200 ${
+                        armed ? 'rotate-180' : ''
+                      }`}
+                    />
+                  </>
+                )}
+              </span>
+              <span>
+                {didRefresh
+                  ? 'อัปเดตแล้ว'
+                  : isRefreshing
+                    ? 'กำลังอัปเดต…'
+                    : armed
+                      ? 'ปล่อยเพื่อรีเฟรช'
+                      : 'ดึงลงเพื่อรีเฟรช'}
+              </span>
+            </div>
+          </div>
+        )}
       </div>
+
+      {children}
     </div>
   );
 }

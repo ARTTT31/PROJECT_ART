@@ -499,7 +499,11 @@ export default function DashboardPage() {
                 <>
                   ,{' '}
                   <span className="text-[var(--accent-text)]">
-                    {user.display_name || user.name || user.username || user.email}
+                    {/* `name` is what the profile card edits (and what the server
+                        writes into display_name), so it leads the fallback chain:
+                        reading display_name first showed a stale name after a
+                        rename until the page was reloaded. */}
+                    {user.name || user.display_name || user.username || user.email}
                   </span>
                 </>
               )}{' '}

@@ -22,20 +22,10 @@ import {
   type QuickLinkEnvironment,
   type QuickLinkIconKey,
 } from '@/utils/quickLinks';
-
-const QUICK_LINK_COLOR_PRESETS = [
-  '#0066cc',
-  '#5856d6',
-  '#af52de',
-  '#ff2d55',
-  '#ff3b30',
-  '#ff9500',
-  '#ffcc00',
-  '#34c759',
-  '#00c7be',
-  '#30b0c7',
-  '#8e8e93',
-];
+import {
+  DEFAULT_QUICK_LINK_COLOR,
+  QUICK_LINK_COLOR_PRESETS,
+} from '@/utils/quickLinkColors';
 
 export interface QuickLinkFormValues {
   label: string;
@@ -63,7 +53,7 @@ export function QuickLinkDialog({ open, onOpenChange, link, onSubmit }: QuickLin
   const [label, setLabel] = useState('');
   const [url, setUrl] = useState('');
   const [icon, setIcon] = useState<QuickLinkIconKey>('link');
-  const [color, setColor] = useState('#0066cc');
+  const [color, setColor] = useState<string>(DEFAULT_QUICK_LINK_COLOR);
   const [stagingUrl, setStagingUrl] = useState('');
   const [devUrl, setDevUrl] = useState('');
   const [isSaving, setIsSaving] = useState(false);
@@ -78,7 +68,7 @@ export function QuickLinkDialog({ open, onOpenChange, link, onSubmit }: QuickLin
     setLabel(link?.label ?? '');
     setUrl(link?.url ?? '');
     setIcon(link?.icon ?? 'link');
-    setColor(link?.color || '#0066cc');
+    setColor(link?.color || DEFAULT_QUICK_LINK_COLOR);
     setStagingUrl(link?.envs?.staging ?? '');
     setDevUrl(link?.envs?.development ?? '');
     setShowEnvs(Boolean(link?.envs?.staging || link?.envs?.development));
@@ -160,7 +150,9 @@ export function QuickLinkDialog({ open, onOpenChange, link, onSubmit }: QuickLin
             <div className="flex items-center gap-3 rounded-apple-widget border border-[var(--hairline)] bg-[var(--surface-grouped)] p-2.5">
                 <div
                   className="flex h-10 w-10 shrink-0 items-center justify-center rounded-apple-md"
-                  style={{ backgroundColor: `${color}15` }}
+                  style={{
+                    backgroundColor: `color-mix(in srgb, ${color} 9%, transparent)`,
+                  }}
                 >
                   <PreviewIcon size={17} aria-hidden="true" style={{ color }} />
                 </div>
@@ -308,7 +300,10 @@ export function QuickLinkDialog({ open, onOpenChange, link, onSubmit }: QuickLin
                         type="button"
                         onClick={() => {
                           setIcon(option.key);
-                          if (option.brandColor && (!color || color === '#0066cc')) {
+                          if (
+                            option.brandColor &&
+                            (!color || color === DEFAULT_QUICK_LINK_COLOR)
+                          ) {
                             setColor(option.brandColor);
                           }
                         }}

@@ -313,14 +313,28 @@ async def get_branding_logo_icon(
         encoded = stored.split(",", 1)[1]
         with Image.open(io.BytesIO(base64.b64decode(encoded))) as source:
             image = source.convert("RGBA")
-            if safe:
-                inner = max(16, int(target * 0.72))
-                image.thumbnail((inner, inner))
-                canvas = Image.new("RGBA", (target, target), (0, 0, 0, 0))
-                canvas.paste(image, ((target - image.width) // 2, (target - image.height) // 2), image)
-                image = canvas
+            # A maskable icon keeps the mark inside the launcher's safe circle,
+            # a normal icon fills the slot. Either way the artwork is scaled to
+            # the requested size in both directions with LANCZOS: the old code
+            # only ever shrank, so a logo stored at 128px was embedded as a
+            # small bitmap in a 512px canvas and the launcher upscaled it — the
+            # "blurry app icon" report.
+            inner = max(16, int(target * 0.72)) if safe else target
+            scale = min(inner / image.width, inner / image.height)
+            if scale > 1:
+                image = image.resize(
+                    (max(1, round(image.width * scale)), max(1, round(image.height * scale))),
+                    Image.Resampling.LANCZOS,
+                )
             else:
-                image.thumbnail((target, target))
+                image.thumbnail((inner, inner), Image.Resampling.LANCZOS)
+            canvas = Image.new("RGBA", (target, target), (0, 0, 0, 0))
+            canvas.paste(
+                image,
+                ((target - image.width) // 2, (target - image.height) // 2),
+                image,
+            )
+            image = canvas
             buffer = io.BytesIO()
             image.save(buffer, format="PNG", optimize=True)
     except Exception:

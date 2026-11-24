@@ -118,6 +118,8 @@ export function BrandingProvider({
     toBrandingInfo(initialBranding),
   );
   const apiApplied = useRef(false);
+  // Previous effective workspace name, used to rewrite the document title.
+  const previousBrandName = useRef<string | null>(null);
 
   const [personal, setPersonal] = useState<WorkspaceBrandingInfo>(EMPTY_PERSONAL);
   const [isLoading, setIsLoading] = useState(false);
@@ -215,6 +217,23 @@ export function BrandingProvider({
       window.removeEventListener('auth-logout', handleAuthChange);
     };
   }, [refreshWorkspaceBranding]);
+
+  useEffect(() => {
+    // The browser tab and the iOS/Android install label are written by the
+    // server, so a rename changed the sidebar immediately but left the tab
+    // reading the old name until a full reload. Track the previous value and
+    // rewrite only the name inside the existing title, which keeps Next's
+    // `%s | name` template intact.
+    if (typeof document === 'undefined') return;
+    const name = personal.name || branding.company_name;
+    const previous = previousBrandName.current;
+    if (previous && previous !== name && name) {
+      document.title = document.title.split(previous).join(name);
+      const meta = document.querySelector('meta[name="apple-mobile-web-app-title"]');
+      if (meta) meta.setAttribute('content', name);
+    }
+    previousBrandName.current = name;
+  }, [personal.name, branding.company_name]);
 
   const uploadBrandLogo = useCallback(
     async (file: File): Promise<{ success: boolean; error?: string }> => {

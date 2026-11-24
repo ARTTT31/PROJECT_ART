@@ -444,7 +444,7 @@ class Settings(BaseSettings):
         return (
             self.GOOGLE_REDIRECT_URI
             or os.getenv("BACKEND_GOOGLE_REDIRECT")
-            or "http://localhost:8000/api/v1/auth/google/callback"
+            or "http://localhost:8080/api/v1/auth/google/callback"
         )
 
     model_config = SettingsConfigDict(
