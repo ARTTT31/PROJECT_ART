@@ -5,7 +5,16 @@ import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
 import { downloadCsv } from '@/lib/csv';
 import { showConfirm, showToast } from '@/utils/sweetalert';
 
-const { replace } = vi.hoisted(() => ({ replace: vi.fn() }));
+// `tr` is stable across renders on purpose: the real provider's translate
+// function is, and a new identity each render would make the page refetch
+// forever in these tests instead of settling on one response.
+const { replace, tr } = vi.hoisted(() => ({
+  replace: vi.fn(),
+  tr: (th: string, _en: string, vars?: Record<string, unknown>) =>
+    vars
+      ? th.replace(/\{(\w+)\}/g, (match, key) => (key in vars ? String(vars[key]) : match))
+      : th,
+}));
 vi.mock('next/navigation', () => ({ useRouter: () => ({ replace }) }));
 
 vi.mock('@/hooks/useAuth', () => ({
@@ -15,16 +24,7 @@ vi.mock('@/hooks/useAuth', () => ({
   }),
 }));
 
-vi.mock('@/lib/i18n/I18nProvider', () => ({
-  useI18n: () => ({
-    tr: (th: string, _en: string, vars?: Record<string, unknown>) =>
-      vars
-        ? th.replace(/\{(\w+)\}/g, (match, key) =>
-            key in vars ? String(vars[key]) : match,
-          )
-        : th,
-  }),
-}));
+vi.mock('@/lib/i18n/I18nProvider', () => ({ useI18n: () => ({ tr }) }));
 
 vi.mock('@/lib/api/fetchWithAuth', () => ({ fetchWithAuth: vi.fn() }));
 vi.mock('@/utils/sweetalert', () => ({ showConfirm: vi.fn(), showToast: vi.fn() }));
@@ -59,6 +59,8 @@ const listPayload = {
   total: 40,
   hasNext: true,
   hasPrev: false,
+  // The backend's answer for a named anchor; page 1 holds the rows above.
+  anchorPage: 1,
 };
 
 const exportPayload = {
@@ -317,11 +319,50 @@ describe('/audit CSV export', () => {
     }
   });
 
-  it('leaves the view alone when the anchor is not on this page', async () => {
+  it('goes to the page that holds a linked row', async () => {
+    // A row link names an entry on page 2; the page must follow it instead of
+    // showing page 1 with nothing to scroll to.
     window.history.replaceState({}, '', '/audit#entry-999');
+    vi.mocked(fetchWithAuth).mockImplementation(async (url: string) => {
+      const parsed = new URL(String(url), 'http://localhost');
+      if (parsed.pathname.endsWith('/audit/export')) return response(exportPayload);
+      expect(parsed.searchParams.get('anchor')).toBe('999');
+      return response(
+        parsed.searchParams.get('page') === '2'
+          ? {
+              ...listPayload,
+              page: 2,
+              hasPrev: true,
+              hasNext: false,
+              items: [entry(999), entry(39)],
+              anchorPage: 2,
+            }
+          : { ...listPayload, anchorPage: 2 },
+      );
+    });
 
-    await openPage();
+    render(<AuditPage />);
 
+    expect(await screen.findByText('row 999')).toBeDefined();
+    await waitFor(() =>
+      expect(replace).toHaveBeenLastCalledWith('/audit?page=2#entry-999', { scroll: false }),
+    );
+    expect(screen.getByText(/แถว #999 อยู่หน้า 2/)).toBeDefined();
+  });
+
+  it('says when a linked row is not in the filtered results', async () => {
+    window.history.replaceState({}, '', '/audit?q=nothing#entry-999');
+    vi.mocked(fetchWithAuth).mockImplementation(async (url: string) =>
+      String(url).includes('/audit/export')
+        ? response(exportPayload)
+        : response({ ...listPayload, anchorPage: null }),
+    );
+
+    render(<AuditPage />);
+
+    expect(await screen.findByText(/ไม่พบแถว #999 ในผลลัพธ์ตามตัวกรองนี้/)).toBeDefined();
+    // The filters are the reason it is missing, so the page does not move.
+    expect(replace).not.toHaveBeenCalled();
     expect(scrollIntoView).not.toHaveBeenCalled();
   });
 

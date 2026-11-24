@@ -10,6 +10,7 @@ import {
   Clock,
   Download,
   FileText,
+  Info,
   Monitor,
   MonitorSmartphone,
   RotateCw,
@@ -45,6 +46,8 @@ interface PaginatedResponse {
   total: number;
   hasNext: boolean;
   hasPrev: boolean;
+  /** Only sent when the request named an anchor: the page that row is on. */
+  anchorPage?: number | null;
 }
 
 /** Every row matching the filters, not just the page the table is showing. */
@@ -140,6 +143,14 @@ export default function AuditPage() {
   // what points at the one entry being discussed, so the filter sync below
   // carries it along instead of rewriting the URL without it.
   const [hash, setHash] = useState('');
+  // Where the anchored row actually sits, as the backend counts it under the
+  // active filters; null means those filters exclude it.
+  const [anchorPage, setAnchorPage] = useState<number | null>(null);
+
+  const anchorId = useMemo(() => {
+    const match = /^#entry-(\d+)$/.exec(hash);
+    return match ? Number(match[1]) : null;
+  }, [hash]);
 
   // The page is admin-only; a regular account that types the URL is sent back.
   useEffect(() => {
@@ -211,6 +222,9 @@ export default function AuditPage() {
       if (debouncedSearch) params.set('q', debouncedSearch);
       if (dateFrom) params.set('dateFrom', dateFrom);
       if (dateTo) params.set('dateTo', dateTo);
+      // Ask where the linked row is: the row may be on a page this request is
+      // not fetching, and the answer is what lets the page follow it.
+      if (anchorId !== null) params.set('anchor', String(anchorId));
 
       const res = await fetchWithAuth(`/api/v1/audit/paginated?${params.toString()}`);
       if (!res.ok) {
@@ -225,6 +239,7 @@ export default function AuditPage() {
       setTotal(data.total ?? 0);
       setHasNext(Boolean(data.hasNext));
       setHasPrev(Boolean(data.hasPrev));
+      setAnchorPage(data.anchorPage ?? null);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : tr('โหลดบันทึกกิจกรรมไม่สำเร็จ', 'Could not load the activity log'),
@@ -233,7 +248,7 @@ export default function AuditPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, action, debouncedSearch, dateFrom, dateTo, tr]);
+  }, [page, action, debouncedSearch, dateFrom, dateTo, anchorId, tr]);
 
   useEffect(() => {
     if (!urlRestored || !isClient || user?.role !== 'admin') return;
@@ -248,6 +263,37 @@ export default function AuditPage() {
   // A row that is already fully on screen is left where it is: the first entry
   // of the page is visible on arrival, and centring it would scroll the filters
   // the admin needs next off the top of the page.
+  // A row link can name an entry that is not on this page. Follow it once per
+  // answer instead of leaving the admin staring at page 1: the backend already
+  // said which page holds the row.
+  const jumpedFor = useRef<string | null>(null);
+  useEffect(() => {
+    if (loading || anchorId === null) return;
+    if (anchorPage === null || anchorPage === page) return;
+    const key = `${hash}|${anchorPage}`;
+    if (jumpedFor.current === key) return;
+    jumpedFor.current = key;
+    setPage(anchorPage);
+  }, [loading, anchorId, anchorPage, page, hash]);
+
+  // Say what happened when the link needed following, or when the row is not
+  // in the filtered results at all — silence is what made this a dead end.
+  const anchorNotice = useMemo(() => {
+    if (anchorId === null || loading) return null;
+    if (anchorPage === null) {
+      return tr(
+        'ไม่พบแถว #{id} ในผลลัพธ์ตามตัวกรองนี้',
+        'Row #{id} is not in the results of these filters',
+        { id: anchorId },
+      );
+    }
+    if (anchorPage !== page || anchorPage === 1) return null;
+    return tr('แถว #{id} อยู่หน้า {page} — พาไปหน้านั้นแล้ว', 'Row #{id} is on page {page} — opened it', {
+      id: anchorId,
+      page: anchorPage,
+    });
+  }, [anchorId, anchorPage, loading, page, tr]);
+
   const anchoredOnce = useRef<string | null>(null);
   useEffect(() => {
     if (!urlRestored || loading) return;
@@ -445,6 +491,16 @@ export default function AuditPage() {
       </section>
 
       <section className="rounded-apple-lg border border-[var(--hairline)] bg-[var(--surface)] p-4 sm:p-5">
+        {anchorNotice && (
+          <div
+            role="status"
+            aria-live="polite"
+            className="mb-3 flex items-start gap-2 rounded-apple-widget bg-[var(--surface-subtle)] px-3.5 py-2.5 text-[13px] text-[var(--ink-muted)]"
+          >
+            <Info size={15} className="mt-0.5 shrink-0 text-[var(--ink-tertiary)]" aria-hidden="true" />
+            <span>{anchorNotice}</span>
+          </div>
+        )}
         {loading ? (
           <div
             role="status"

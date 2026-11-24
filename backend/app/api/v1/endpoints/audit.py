@@ -26,6 +26,9 @@ class PaginatedAuditLogsResponse(BaseModel):
     total: int
     hasNext: bool
     hasPrev: bool
+    # Set only when the request named an `anchor`: the page that row sits on,
+    # or None when the active filters exclude it.
+    anchorPage: Optional[int] = None
 
 
 class AuditLogExportResponse(BaseModel):
@@ -69,6 +72,7 @@ async def list_audit_logs_paginated(
     q: Optional[str] = Query(None, max_length=100),
     date_from: Optional[date] = Query(None, alias="dateFrom"),
     date_to: Optional[date] = Query(None, alias="dateTo"),
+    anchor: Optional[int] = Query(None, ge=1),
     current_user: User = Depends(get_current_admin_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -77,7 +81,8 @@ async def list_audit_logs_paginated(
 
     ``action`` filters an exact action key, ``q`` searches the details and the
     actor's name/email, and ``dateFrom``/``dateTo`` bound the calendar days
-    (inclusive).
+    (inclusive). ``anchor`` names one log id and adds ``anchorPage``: the page
+    it is on under these filters, so a shared row link can open the right page.
     """
     if date_from and date_to and date_from > date_to:
         raise HTTPException(
@@ -103,6 +108,17 @@ async def list_audit_logs_paginated(
         action=action, q=q, date_from=date_from, date_to=date_to
     )
 
+    anchor_page = None
+    if anchor is not None:
+        anchor_page = await audit_service.find_page(
+            anchor,
+            size,
+            action=action,
+            q=q,
+            date_from=date_from,
+            date_to=date_to,
+        )
+
     return PaginatedAuditLogsResponse(
         items=logs,
         page=page,
@@ -110,6 +126,7 @@ async def list_audit_logs_paginated(
         total=total,
         hasNext=has_next,
         hasPrev=page > 1,
+        anchorPage=anchor_page,
     )
 
 

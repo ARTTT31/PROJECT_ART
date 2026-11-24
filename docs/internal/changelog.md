@@ -2317,3 +2317,23 @@ brought into view, still once per anchor.
 
 Frontend **495 passed / 74 files** (was 494); `tsc`, `eslint` and `npm run build` clean. The tests
 stub the row's viewport rect: an off-screen row scrolls, an on-screen one does not.
+
+## A Row Link Opens Its Own Page (November 24, 2026)
+
+`/audit#entry-12` only worked when row 12 happened to be on the page the link opened. Any other row
+left the admin on page 1 with a URL pointing at nothing and no explanation — a shared link that
+silently showed the wrong rows.
+
+The listing now accepts `anchor=<id>` and answers with `anchorPage`: the page that row sits on under
+the active filters, or `null` when those filters exclude it. The page follows that answer once,
+carrying the anchor into the URL it writes (`/audit?page=2#entry-999`), then scrolls to the row. When
+the filters exclude the row, a status line says so instead of leaving a dead link. Rows written in
+the same second are now ordered by `id` as a tie-break, so the counted page and the rendered page
+cannot disagree about where a row is.
+
+### Verified
+
+Frontend **496 passed / 74 files** (was 495); backend **750 passed**, coverage 84.69% (was 745 /
+84.65%). `tsc`, `eslint`, `npm run build` and `flake8` clean. New tests cover a row on page 3, one
+already on page 1, one the filters exclude, an unknown id, same-second rows, and the page following
+the link.

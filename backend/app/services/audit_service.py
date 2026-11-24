@@ -1,7 +1,7 @@
 from datetime import date, datetime, time
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import func, or_, select
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.orm import joinedload
 from app.models.audit_log import AuditLog
 from app.models.user import User
@@ -96,7 +96,10 @@ class AuditService:
             select(AuditLog)
             .options(joinedload(AuditLog.user), joinedload(AuditLog.target_user))
             .outerjoin(User, AuditLog.user_id == User.id)
-            .order_by(AuditLog.created_at.desc())
+            # `id` breaks ties: rows written in the same second arrive in one
+            # order, and the page an anchor lands on is counted with the same
+            # order, so the two can never disagree about where a row sits.
+            .order_by(AuditLog.created_at.desc(), AuditLog.id.desc())
             .offset(skip)
             .limit(limit)
         )
@@ -122,3 +125,49 @@ class AuditService:
             statement = statement.where(*conditions)
         result = await self.db.execute(statement)
         return result.scalar() or 0
+
+    async def find_page(
+        self,
+        log_id: int,
+        size: int = 20,
+        *,
+        action: Optional[str] = None,
+        q: Optional[str] = None,
+        date_from: Optional[date] = None,
+        date_to: Optional[date] = None,
+    ) -> Optional[int]:
+        """The 1-based page holding ``log_id`` under the same filters, or None.
+
+        A shared link such as ``/audit#entry-42`` names a row, not a page: this
+        is what lets the page go wherever that row ended up instead of showing
+        page 1 and leaving the anchor unresolved. The count follows the
+        listing's own order (newest first, ``id`` breaking ties) and applies the
+        active filters; a row the filters exclude is reported as missing rather
+        than pointed at.
+        """
+        conditions = self._filters(action, q, date_from, date_to)
+        target = await self.db.execute(
+            select(AuditLog.created_at, AuditLog.id)
+            .outerjoin(User, AuditLog.user_id == User.id)
+            .where(AuditLog.id == log_id, *conditions)
+        )
+        row = target.first()
+        if row is None:
+            return None
+        created_at, target_id = row
+
+        earlier = await self.db.execute(
+            select(func.count(AuditLog.id))
+            .outerjoin(User, AuditLog.user_id == User.id)
+            .where(
+                or_(
+                    AuditLog.created_at > created_at,
+                    and_(
+                        AuditLog.created_at == created_at,
+                        AuditLog.id > target_id,
+                    ),
+                ),
+                *conditions,
+            )
+        )
+        return (earlier.scalar() or 0) // max(size, 1) + 1
