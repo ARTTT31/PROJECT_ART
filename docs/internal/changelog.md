@@ -2109,3 +2109,27 @@ Frontend **478 passed / 73 files** (was 472 / 71); `tsc`, `eslint` and `npm run 
 page test proves the export requests `/api/v1/audit/export` without `page=`, writes all 25 returned
 rows into the CSV, warns with "ส่งออก 25 จาก 40", and names the file by the picked 30-day range; a
 dismissed confirmation downloads nothing. Not viewed in a browser.
+
+
+## A Kicked Session Names Its Victim (November 24, 2026)
+
+A revoke row said `Admin revoked session ab12cd34… of user 42`. The actor was on the audit row, but
+the target existed only as a numeric id inside the text, so `/audit` could not answer "who was
+kicked, from which device" without opening the database — and once the account is deleted, even that
+id explains nothing.
+
+- `DELETE /api/v1/users/sessions/{id}` now copies the victim's name, email and device into `details`:
+  *"Admin revoked session ab12cd34… of Somchai Jaidee (somchai@example.com) on Somchai's iPhone"*.
+  The device comes from the session's `device_label`, falls back to the stored user agent (trimmed
+  to 120 characters), and a missing account reads `deleted account #42`.
+- `user_id` still records the admin who acted; the self-revoke branch keeps its `LOGOUT` wording and
+  is unchanged.
+- `/audit` needed no code: its search already reads `details`, so the victim's name, email and device
+  are findable there now.
+
+### Verified
+
+Backend suite **741 passed**, coverage **84.64%** (was 739); `flake8` clean on the endpoint and the
+test file. Two new tests: revoking another account's session stores the victim's name, email and
+`device_label` while `user_id` stays the admin; a session with no label falls back to a user agent
+that names the device in `details`. Not viewed in a browser.

@@ -416,14 +416,34 @@ async def revoke_active_session(
     # action: the `LOGOUT` action is what /audit already translates and filters
     # on, so the entry reads as one instead of an opaque raw key.
     own_session = session.user_id == current_user.id
+    details = f"Admin signed out their own session {session_id[:8]}… from the device list"
+    if not own_session:
+        # `user_id` on the audit row is the admin who acted, so the target only
+        # exists in `details` — and /audit's search reads that text. Copy the
+        # name, email and device in here instead of storing just the numeric id:
+        # the account may be deleted by the time someone investigates, and
+        # "of user 42" answers nothing without opening the database.
+        target = (
+            await db.execute(select(User).where(User.id == session.user_id))
+        ).scalar_one_or_none()
+        if target is None:
+            target_label = f"deleted account #{session.user_id}"
+        else:
+            target_label = target.name or target.email or f"user {session.user_id}"
+            if target.email and target.email != target_label:
+                target_label = f"{target_label} ({target.email})"
+        device = (
+            session.device_label
+            or (session.user_agent or "").strip()[:120]
+            or "unknown device"
+        )
+        details = (
+            f"Admin revoked session {session_id[:8]}… of {target_label} on {device}"
+        )
     await AuditService(db).log_action(
         action="LOGOUT" if own_session else "ADMIN_REVOKE_SESSION",
         user_id=current_user.id,
-        details=(
-            f"Admin signed out their own session {session_id[:8]}… from the device list"
-            if own_session
-            else f"Admin revoked session {session_id[:8]}… of user {session.user_id}"
-        ),
+        details=details,
         ip_address=get_real_client_ip(request),
         user_agent=request.headers.get("user-agent"),
     )

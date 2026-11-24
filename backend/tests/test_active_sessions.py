@@ -81,6 +81,83 @@ async def test_self_revoke_leaves_a_sign_out_entry(client, logged_in_admin_user,
     assert "own session" in (mine[-1].details or "")
 
 
+async def test_revoking_someone_elses_session_names_who_and_where(
+    client, logged_in_admin_user, db_session, make_user
+):
+    """The audit row must identify the victim, not just their numeric id.
+
+    `audit_logs.user_id` is the admin who acted; the target survives only in
+    `details`, which is what /audit's search reads. Name, email and device have
+    to be in that text, because the victim's account may be gone later.
+    """
+    from sqlalchemy import select
+    from app.models.audit_log import AuditLog
+    from app.models.session import UserSession
+
+    admin_id = logged_in_admin_user["data"]["user"]["id"]
+    victim = await make_user("victim.device@example.com", name="Somchai Jaidee")
+    db_session.add(
+        UserSession(
+            session_id="victim-session-1",
+            user_id=victim.id,
+            device_label="Somchai's iPhone",
+            user_agent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)",
+            is_active=True,
+        )
+    )
+    await db_session.commit()
+
+    resp = await client.delete("/api/v1/users/sessions/victim-session-1")
+    assert resp.status_code == 200
+
+    await db_session.rollback()
+    rows = (
+        await db_session.execute(
+            select(AuditLog).where(AuditLog.action == "ADMIN_REVOKE_SESSION")
+        )
+    ).scalars().all()
+    mine = [row for row in rows if "victim-s" in (row.details or "")]
+
+    assert mine, "revoking another account's session left no ADMIN_REVOKE_SESSION row"
+    entry = mine[-1]
+    assert entry.user_id == admin_id  # the actor stays the admin
+    assert "Somchai Jaidee" in (entry.details or "")
+    assert victim.email in (entry.details or "")
+    assert "Somchai's iPhone" in (entry.details or "")
+
+
+async def test_revoked_session_details_fall_back_to_the_user_agent(
+    client, logged_in_admin_user, db_session, make_user
+):
+    from sqlalchemy import select
+    from app.models.audit_log import AuditLog
+    from app.models.session import UserSession
+
+    victim = await make_user("victim.ua@example.com", name="No Label")
+    db_session.add(
+        UserSession(
+            session_id="victim-session-2",
+            user_id=victim.id,
+            user_agent="Mozilla/5.0 (Linux; Android 15) Firefox/141.0",
+            is_active=True,
+        )
+    )
+    await db_session.commit()
+
+    assert (
+        await client.delete("/api/v1/users/sessions/victim-session-2")
+    ).status_code == 200
+
+    await db_session.rollback()
+    rows = (
+        await db_session.execute(
+            select(AuditLog).where(AuditLog.action == "ADMIN_REVOKE_SESSION")
+        )
+    ).scalars().all()
+    entry = next(row for row in rows if "victim-s" in (row.details or ""))
+    assert "Android 15" in (entry.details or "")
+
+
 async def test_admin_can_filter_sessions_by_role(client, logged_in_admin_user):
     resp = await client.get("/api/v1/users/sessions", params={"role": "admin"})
     assert resp.status_code == 200
