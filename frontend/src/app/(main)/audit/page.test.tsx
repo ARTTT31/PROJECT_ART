@@ -79,14 +79,14 @@ beforeEach(() => {
 });
 
 async function openPage() {
-  render(<AuditPage />);
+  const { container } = render(<AuditPage />);
   await screen.findByText('row 1');
-  return screen.getByRole('button', { name: /ส่งออก CSV/ });
+  return { button: screen.getByRole('button', { name: /ส่งออก CSV/ }), container };
 }
 
 describe('/audit CSV export', () => {
   it('downloads every row the backend returns, not the 20 on screen', async () => {
-    const exportButton = await openPage();
+    const { button: exportButton, container } = await openPage();
     fireEvent.click(exportButton);
 
     await waitFor(() => expect(downloadCsv).toHaveBeenCalledTimes(1));
@@ -95,6 +95,10 @@ describe('/audit CSV export', () => {
     expect(filename).toMatch(/^audit-log_all_\d{4}-\d{2}-\d{2}\.csv$/);
     // One header plus all 25 rows; the table only ever held 20.
     expect(csv.split('\r\n')).toHaveLength(26);
+    // The address is no longer shown, so it must not leave in the file either.
+    expect(csv).not.toContain('10.0.0.1');
+    expect(csv.split('\r\n')[0]).not.toContain('IP');
+    expect(container.textContent).not.toContain('10.0.0.1');
     expect(showToast).toHaveBeenCalledWith(
       expect.stringContaining('ส่งออก 25 จาก 40 รายการ'),
       'warning',
@@ -108,7 +112,7 @@ describe('/audit CSV export', () => {
   });
 
   it('puts the selected date range in the filename', async () => {
-    const exportButton = await openPage();
+    const { button: exportButton } = await openPage();
 
     fireEvent.click(screen.getByRole('button', { name: 'กรองตามช่วงวันที่' }));
     fireEvent.click(await screen.findByRole('button', { name: '30 วัน' }));
@@ -128,7 +132,7 @@ describe('/audit CSV export', () => {
 
   it('does not download when the confirmation is dismissed', async () => {
     vi.mocked(showConfirm).mockResolvedValue({ isConfirmed: false } as never);
-    const exportButton = await openPage();
+    const { button: exportButton } = await openPage();
 
     fireEvent.click(exportButton);
 

@@ -2199,3 +2199,21 @@ regression there would leave both tests green while the link opened an unfiltere
 Frontend suite **483 passed / 74 files** (was 481 / 73); `eslint` clean on the new file. `tsc` and
 `npm run build` are unchanged — the file is a test, which this project's tsconfig excludes. Not
 viewed in a browser.
+
+
+## /audit Stops Showing Addresses (November 24, 2026)
+
+The activity log was the last admin surface still printing IP addresses — the device cards had
+already dropped them. It showed the address on every row and wrote an `IP` column into the CSV.
+
+- Rows no longer show the address, the export has no `IP` column, and the confirmation text no longer
+  promises addresses in the file.
+- The API still returns `ip_address` (the audit trail keeps it, and other clients are unaffected);
+  this pass changes only what `/audit` renders and downloads.
+- The export test now fails if the address appears in the page or the file, or if the CSV header
+  still carries an IP column.
+
+### Verified
+
+Frontend suite **483 passed / 74 files**; `tsc`, `eslint` on the touched files and `npm run build`
+clean. Not viewed in a browser.

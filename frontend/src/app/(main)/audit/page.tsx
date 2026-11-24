@@ -10,7 +10,6 @@ import {
   Clock,
   Download,
   FileText,
-  Globe,
   Monitor,
   MonitorSmartphone,
   RotateCw,
@@ -235,8 +234,8 @@ export default function AuditPage() {
                 const confirmed = await showConfirm(
                   tr('ยืนยันการส่งออกไฟล์ CSV?', 'Export this CSV file?'),
                   tr(
-                    'ไฟล์จะมีทุกรายการที่ตรงกับตัวกรอง ({count} รายการ) พร้อมชื่อผู้ใช้ อุปกรณ์ และไอพี เฉพาะผู้ดูแลระบบควรเปิดดู',
-                    'The file will contain every item matching the filters ({count}), including names, devices and IP addresses.',
+                    'ไฟล์จะมีทุกรายการที่ตรงกับตัวกรอง ({count} รายการ) พร้อมชื่อผู้ใช้ อุปกรณ์ และรายละเอียด เฉพาะผู้ดูแลระบบควรเปิดดู',
+                    'The file will contain every item matching the filters ({count}), including names, devices and details.',
                     { count: total },
                   ),
                 );
@@ -260,7 +259,6 @@ export default function AuditPage() {
                     entry.user?.name ?? entry.user?.email ?? tr('ระบบ', 'System'),
                     entry.user?.email ?? '',
                     deviceLabel(entry.user_agent),
-                    entry.ip_address ?? '',
                     entry.details ?? '',
                   ]);
                   downloadCsv(
@@ -272,7 +270,6 @@ export default function AuditPage() {
                         tr('ผู้ใช้', 'User'),
                         tr('อีเมล', 'Email'),
                         tr('อุปกรณ์', 'Device'),
-                        'IP',
                         tr('รายละเอียด', 'Details'),
                       ],
                       rows,
@@ -476,11 +473,6 @@ export default function AuditPage() {
                     >
                       <Monitor size={12} aria-hidden="true" /> {deviceLabel(entry.user_agent)}
                     </span>
-                    {entry.ip_address && (
-                      <span className="inline-flex items-center gap-1 tabular-nums">
-                        <Globe size={12} aria-hidden="true" /> {entry.ip_address}
-                      </span>
-                    )}
                   </div>
                 </div>
               </li>
