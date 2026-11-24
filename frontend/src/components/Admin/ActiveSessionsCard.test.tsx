@@ -358,4 +358,16 @@ describe('ActiveSessionsCard', () => {
       window.removeEventListener('auth-logout', onLogout);
     }
   });
+
+  it('starts filtered to the account it was opened for', async () => {
+    vi.mocked(fetchWithAuth).mockResolvedValue(ok(sessions));
+
+    render(<ActiveSessionsCard initialQuery="owner@example.com" />);
+
+    await waitFor(() => expect(fetchWithAuth).toHaveBeenCalled());
+    expect(String(vi.mocked(fetchWithAuth).mock.calls[0][0])).toContain('q=owner%40example.com');
+    expect(screen.getByPlaceholderText('ค้นหาชื่อ อีเมล หรืออุปกรณ์')).toHaveValue(
+      'owner@example.com',
+    );
+  });
 });

@@ -49,7 +49,12 @@ interface SessionGroup {
  * role filter run on the server; the page grows with "โหลดเพิ่ม" rather than
  * silently truncating.
  */
-export default function ActiveSessionsCard() {
+export default function ActiveSessionsCard({
+  initialQuery = '',
+}: {
+  /** Account to filter on arrival, e.g. from /audit's "manage devices" link. */
+  initialQuery?: string;
+}) {
   const [sessions, setSessions] = useState<AdminSession[]>([]);
   const [total, setTotal] = useState<number | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -57,8 +62,8 @@ export default function ActiveSessionsCard() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [busyGroup, setBusyGroup] = useState<string | null>(null);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
-  const [query, setQuery] = useState('');
-  const [debouncedQuery, setDebouncedQuery] = useState('');
+  const [query, setQuery] = useState(initialQuery);
+  const [debouncedQuery, setDebouncedQuery] = useState(initialQuery.trim());
   const [role, setRole] = useState<'' | 'user' | 'admin'>('');
   const [limit, setLimit] = useState(50);
 
@@ -70,6 +75,15 @@ export default function ActiveSessionsCard() {
     const timer = window.setTimeout(() => setDebouncedQuery(query.trim()), 300);
     return () => window.clearTimeout(timer);
   }, [query]);
+
+  // A second link from /audit (or any new `?sessions=…`) changes the prop
+  // without remounting this card, so adopt it instead of keeping the old
+  // account's filter on screen.
+  useEffect(() => {
+    if (!initialQuery) return;
+    setQuery(initialQuery);
+    setDebouncedQuery(initialQuery.trim());
+  }, [initialQuery]);
 
   // A new filter starts a new page window; keeping skip-based "load more"
   // across a filter change would mix two result sets.

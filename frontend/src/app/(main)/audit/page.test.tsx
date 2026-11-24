@@ -136,4 +136,26 @@ describe('/audit CSV export', () => {
     expect(downloadCsv).not.toHaveBeenCalled();
     expect(fetchWithAuth).not.toHaveBeenCalledWith(expect.stringContaining('/audit/export'));
   });
+
+  it('links each account row to the admin console filtered to it', async () => {
+    vi.mocked(fetchWithAuth).mockImplementation(async (url: string) =>
+      url.includes('/audit/export')
+        ? response(exportPayload)
+        : response({
+            ...listPayload,
+            // One account row and one system row (no user) in the same page.
+            items: [entry(1), { ...entry(2), user: null }],
+            total: 2,
+          }),
+    );
+
+    render(<AuditPage />);
+
+    const link = await screen.findByRole('link', {
+      name: /ดูอุปกรณ์ที่เข้าสู่ระบบของ Somchai/,
+    });
+    expect(link.getAttribute('href')).toBe('/admin?sessions=somchai%40example.com');
+    // The system row has no account to manage, so it gets no link.
+    expect(screen.getAllByRole('link')).toHaveLength(1);
+  });
 });

@@ -2155,3 +2155,27 @@ Frontend suite **479 passed / 73 files** (was 478 / 73); `tsc`, `eslint` and `np
 Mutation check: re-inserting `AUTH_UPDATE_COMPANY_HOLIDAYS` makes the new test fail with exactly that
 key (`expected [ 'AUTH_UPDATE_COMPANY_HOLIDAYS' ] to deeply equal []`), and removing it passes.
 Backend unchanged (741 passed, coverage 84.64%). Not viewed in a browser.
+
+
+## From an Audit Row to the Account's Devices (November 24, 2026)
+
+`/audit` could show that an account signed in from a new device or was kicked, but acting on it
+meant reading the email off the row, switching to `/admin` and retyping it into the device card's
+search.
+
+- Account rows on `/audit` now carry a "จัดการอุปกรณ์" link to `/admin?sessions=<email>`; system
+  rows (no user) get no link, because there is no account to manage.
+- `/admin` reads `?sessions=` on the client and passes it to the device card as `initialQuery`, so
+  the card's first request already carries `q=<email>` and the search box shows the account. Reading
+  the URL in an effect instead of `useSearchParams` keeps this client page free of a Suspense
+  boundary for its static shell.
+- Opening another account's link while already on `/admin` replaces the filter instead of leaving the
+  previous account on screen.
+
+### Verified
+
+Frontend suite **481 passed / 73 files** (was 479); `tsc`, `eslint` on the touched files and
+`npm run build` clean. The audit test asserts the row's `href` is
+`/admin?sessions=somchai%40example.com` and that a user-less row gets none; the card test asserts
+its first request carries `q=owner%40example.com` and the search input is prefilled. Not viewed in a
+browser; `/admin`'s own URL read has no test of its own.

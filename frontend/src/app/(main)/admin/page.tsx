@@ -45,6 +45,15 @@ export default function AdminPage() {
 
   const [pending, setPending] = useState<Stat>(EMPTY_STAT);
   const [events, setEvents] = useState<Stat>(EMPTY_STAT);
+  // /audit links here with `?sessions=<email>` after an entry is inspected. Read
+  // it on the client (rather than useSearchParams) so this client page needs no
+  // Suspense boundary for its static shell. `null` means "not read yet": the
+  // device card waits for the value so its first request already has the filter.
+  const [sessionsQuery, setSessionsQuery] = useState<string | null>(null);
+
+  useEffect(() => {
+    setSessionsQuery(new URLSearchParams(window.location.search).get('sessions')?.trim() ?? '');
+  }, []);
   // Admin endpoints answer 403 while the account has no second factor; the
   // message is the backend's, so the page never invents its own rule.
   const [adminBlocked, setAdminBlocked] = useState('');
@@ -208,7 +217,11 @@ export default function AdminPage() {
       </section>
 
       {/* ── Who is signed in right now ───────────────────────────── */}
-      <ActiveSessionsCard />
+      {sessionsQuery !== null && (
+        <div id="active-sessions" className="scroll-mt-4">
+          <ActiveSessionsCard initialQuery={sessionsQuery} />
+        </div>
+      )}
 
       {/* ── Pages open for the whole workspace ───────────────────── */}
       <PageAccessCard />

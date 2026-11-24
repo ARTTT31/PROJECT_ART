@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   AlertCircle,
@@ -11,6 +12,7 @@ import {
   FileText,
   Globe,
   Monitor,
+  MonitorSmartphone,
   RotateCw,
   Search,
 } from 'lucide-react';
@@ -434,6 +436,27 @@ export default function AuditPage() {
                       <span className="truncate text-[12px] text-[var(--ink-tertiary)]">
                         {entry.user.email}
                       </span>
+                    )}
+                    {/* Seen something worth acting on? The admin console's
+                        device card takes the account through `?sessions=…`, so
+                        this needs no copy/paste and no second search. */}
+                    {entry.user && (
+                      <Link
+                        href={`/admin?sessions=${encodeURIComponent(entry.user.email)}`}
+                        aria-label={tr(
+                          'ดูอุปกรณ์ที่เข้าสู่ระบบของ {name} ในหน้าจัดการระบบ',
+                          'View signed-in devices for {name} in the admin console',
+                          { name: entry.user.name || entry.user.email },
+                        )}
+                        title={tr(
+                          'เปิดหน้าจัดการระบบ กรองเฉพาะบัญชีนี้',
+                          'Open the admin console filtered to this account',
+                        )}
+                        className="ml-auto inline-flex shrink-0 items-center gap-1 rounded-full border border-[var(--hairline)] px-2.5 py-1 text-[11px] font-semibold text-[var(--accent-text)] transition-all hover:bg-[var(--accent-soft)] active:scale-[0.95]"
+                      >
+                        <MonitorSmartphone size={12} aria-hidden="true" />
+                        {tr('จัดการอุปกรณ์', 'Manage devices')}
+                      </Link>
                     )}
                   </div>
                   {entry.details && (
