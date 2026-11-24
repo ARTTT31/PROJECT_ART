@@ -19,10 +19,11 @@ import Select from '@/components/ui/Select';
 import DateRangePicker from '@/components/ui/DateRangePicker';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
 import { ACTION_LABELS } from '@/lib/audit/actionLabels';
-import { datedFilename, downloadCsv, toCsv } from '@/lib/csv';
+import { auditExportFilename } from '@/lib/audit/exportFilename';
+import { downloadCsv, toCsv } from '@/lib/csv';
 import { useI18n } from '@/lib/i18n/I18nProvider';
 import { parseUserAgent } from '@/utils/userAgent';
-import { showConfirm } from '@/utils/sweetalert';
+import { showConfirm, showToast } from '@/utils/sweetalert';
 
 interface AuditLogEntry {
   id: number;
@@ -42,6 +43,14 @@ interface PaginatedResponse {
   total: number;
   hasNext: boolean;
   hasPrev: boolean;
+}
+
+/** Every row matching the filters, not just the page the table is showing. */
+interface AuditLogExportResponse {
+  items: AuditLogEntry[];
+  total: number;
+  exported: number;
+  truncated: boolean;
 }
 
 const PAGE_SIZE = 20;
@@ -123,6 +132,7 @@ export default function AuditPage() {
   const [dateTo, setDateTo] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
 
   // The page is admin-only; a regular account that types the URL is sent back.
   useEffect(() => {
@@ -217,45 +227,83 @@ export default function AuditPage() {
               type="button"
               onClick={async () => {
                 // The file leaves the app with account identifiers in it, so
-                // the download waits for an explicit confirmation.
+                // the download waits for an explicit confirmation. It covers
+                // every row matching the filters: the visible 20 are a page,
+                // and a file that silently stops there is not evidence.
                 const confirmed = await showConfirm(
                   tr('ยืนยันการส่งออกไฟล์ CSV?', 'Export this CSV file?'),
                   tr(
-                    'ไฟล์จะมี {count} รายการจากหน้านี้ พร้อมชื่อผู้ใช้ อุปกรณ์ และไอพี เฉพาะผู้ดูแลระบบควรเปิดดู',
-                    'The file will contain {count} items from this page, including names, devices and IP addresses.',
-                    { count: items.length },
+                    'ไฟล์จะมีทุกรายการที่ตรงกับตัวกรอง ({count} รายการ) พร้อมชื่อผู้ใช้ อุปกรณ์ และไอพี เฉพาะผู้ดูแลระบบควรเปิดดู',
+                    'The file will contain every item matching the filters ({count}), including names, devices and IP addresses.',
+                    { count: total },
                   ),
                 );
                 if (!confirmed.isConfirmed) return;
 
-                const rows = items.map((entry) => [
-                  formatDateTime(entry.created_at),
-                  actionLabel(entry.action),
-                  entry.user?.name ?? entry.user?.email ?? tr('ระบบ', 'System'),
-                  entry.user?.email ?? '',
-                  deviceLabel(entry.user_agent),
-                  entry.ip_address ?? '',
-                  entry.details ?? '',
-                ]);
-                downloadCsv(
-                  datedFilename('audit-log'),
-                  toCsv(
-                    [
-                      tr('วันเวลา (ไทย)', 'Date and time (Asia/Bangkok)'),
-                      tr('กิจกรรม', 'Activity'),
-                      tr('ผู้ใช้', 'User'),
-                      tr('อีเมล', 'Email'),
-                      tr('อุปกรณ์', 'Device'),
-                      'IP',
-                      tr('รายละเอียด', 'Details'),
-                    ],
-                    rows,
-                  ),
-                );
+                setExporting(true);
+                try {
+                  const params = new URLSearchParams();
+                  if (action) params.set('action', action);
+                  if (debouncedSearch) params.set('q', debouncedSearch);
+                  if (dateFrom) params.set('dateFrom', dateFrom);
+                  if (dateTo) params.set('dateTo', dateTo);
+
+                  const res = await fetchWithAuth(`/api/v1/audit/export?${params.toString()}`);
+                  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                  const data = (await res.json()) as AuditLogExportResponse;
+
+                  const rows = data.items.map((entry) => [
+                    formatDateTime(entry.created_at),
+                    actionLabel(entry.action),
+                    entry.user?.name ?? entry.user?.email ?? tr('ระบบ', 'System'),
+                    entry.user?.email ?? '',
+                    deviceLabel(entry.user_agent),
+                    entry.ip_address ?? '',
+                    entry.details ?? '',
+                  ]);
+                  downloadCsv(
+                    auditExportFilename(dateFrom, dateTo),
+                    toCsv(
+                      [
+                        tr('วันเวลา (ไทย)', 'Date and time (Asia/Bangkok)'),
+                        tr('กิจกรรม', 'Activity'),
+                        tr('ผู้ใช้', 'User'),
+                        tr('อีเมล', 'Email'),
+                        tr('อุปกรณ์', 'Device'),
+                        'IP',
+                        tr('รายละเอียด', 'Details'),
+                      ],
+                      rows,
+                    ),
+                  );
+                  // Say what the file actually holds: a server-side ceiling must
+                  // not make a partial export look like the whole history.
+                  showToast(
+                    data.truncated
+                      ? tr(
+                          'ส่งออก {exported} จาก {total} รายการ (ถึงเพดานการส่งออก)',
+                          'Exported {exported} of {total} items (export limit reached)',
+                          { exported: data.exported, total: data.total },
+                        )
+                      : tr(
+                          'ส่งออก {exported} จาก {total} รายการ',
+                          'Exported {exported} of {total} items',
+                          { exported: data.exported, total: data.total },
+                        ),
+                    data.truncated ? 'warning' : 'success',
+                  );
+                } catch (err) {
+                  showToast(
+                    err instanceof Error ? err.message : tr('ส่งออกไม่สำเร็จ', 'Export failed'),
+                    'error',
+                  );
+                } finally {
+                  setExporting(false);
+                }
               }}
-              disabled={items.length === 0}
+              disabled={items.length === 0 || exporting}
               className="inline-flex items-center gap-1.5 rounded-full bg-[var(--surface-grouped)] px-4 py-2 text-[13px] font-semibold text-[var(--ink)] transition-colors hover:bg-[var(--surface-chip)] disabled:opacity-40"
-              title={tr('ส่งออกรายการในหน้านี้', 'Export the items on this page')}
+              title={tr('ส่งออกทุกรายการที่ตรงกับตัวกรอง', 'Export every item matching the filters')}
             >
               <Download size={14} aria-hidden="true" /> {tr('ส่งออก CSV', 'Export CSV')}
             </button>

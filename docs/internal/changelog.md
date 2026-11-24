@@ -2081,3 +2081,31 @@ remembered to translate it. Four actions were already in that state.
 Frontend suite **472 passed / 71 files** (was 469 / 70); `npx tsc --noEmit`, `npx eslint` on the
 touched files and `npm run build` clean. The guard failed on its first run with exactly the four
 missing keys, which is how they were found. Not viewed: `/audit` in a browser.
+
+
+## The Audit CSV Is the Filter, Not the Page (November 24, 2026)
+
+The export button built its file from `items` — the 20 rows the table happened to be showing — while
+the dialog implied it held the result. An admin who filtered three months and exported got a file
+that looked complete and held one page of it.
+
+- New `GET /api/v1/audit/export` reuses the list's `AuditService._filters` (action, `q`, date range)
+  with no page window, returns `items`, `exported`, `total` and `truncated`, and stops at
+  `EXPORT_LIMIT = 5000` rows so one request cannot produce an unbounded file.
+- `/audit` now calls it with the filters currently applied, builds the same Thai rows as before, and
+  names the file after the range: `audit-log_2026-11-01_to_2026-11-24.csv`, `_from_…`, `_until_…`, or
+  `_all_<export date>` when unfiltered.
+- After the download a toast states **"ส่งออก N จาก M รายการ"**, and turns into a warning
+  ("ถึงเพดานการส่งออก") when the server cap cut the file short. The confirmation now says the file
+  holds every item matching the filters, not "this page".
+
+### Verified
+
+Backend suite **739 passed**, coverage **84.63%** (was 734); `flake8` clean on the touched endpoint
+and test. New `test_audit_export.py` (5 tests): 25 matches come back in full where the page shows 20;
+the date range and `q` filter are applied and matched by `total`; a monkeypatched cap of 3 reports
+`exported=3, total=10, truncated=true`; reversed dates are `422`; a non-admin gets `403`.
+Frontend **478 passed / 73 files** (was 472 / 71); `tsc`, `eslint` and `npm run build` clean. The
+page test proves the export requests `/api/v1/audit/export` without `page=`, writes all 25 returned
+rows into the CSV, warns with "ส่งออก 25 จาก 40", and names the file by the picked 30-day range; a
+dismissed confirmation downloads nothing. Not viewed in a browser.
