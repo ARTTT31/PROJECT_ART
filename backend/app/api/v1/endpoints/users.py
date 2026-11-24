@@ -396,10 +396,18 @@ async def list_active_sessions(
 async def revoke_active_session(
     session_id: str,
     request: Request,
+    reason: Optional[str] = Query(
+        None, max_length=200, description="เหตุผลการบังคับออกจากระบบ (ไม่บังคับ)"
+    ),
     current_user: User = Depends(get_current_admin_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Force a signed-in device out (Admin only)."""
+    """Force a signed-in device out (Admin only).
+
+    ``reason`` is optional and goes into the audit row's details, which is the
+    text /audit searches — so "why was this account kicked out" is answerable
+    from the log itself instead of from whoever remembers.
+    """
     session = (
         await db.execute(
             select(UserSession).where(UserSession.session_id == session_id)
@@ -442,6 +450,10 @@ async def revoke_active_session(
         details = (
             f"Admin revoked session {session_id[:8]}… of {target_label} on {device}"
         )
+    note = (reason or "").strip()
+    if note:
+        details = f"{details} — Reason: {note}"
+
     await AuditService(db).log_action(
         action="LOGOUT" if own_session else "ADMIN_REVOKE_SESSION",
         user_id=current_user.id,

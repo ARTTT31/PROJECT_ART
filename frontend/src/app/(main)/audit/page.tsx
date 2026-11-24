@@ -136,6 +136,10 @@ export default function AuditPage() {
   const [error, setError] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
   const [urlRestored, setUrlRestored] = useState(false);
+  // A row anchor (`#entry-42`) is part of the address an admin shares: it is
+  // what points at the one entry being discussed, so the filter sync below
+  // carries it along instead of rewriting the URL without it.
+  const [hash, setHash] = useState('');
 
   // The page is admin-only; a regular account that types the URL is sent back.
   useEffect(() => {
@@ -166,7 +170,17 @@ export default function AuditPage() {
     if (nextFrom) setDateFrom(nextFrom);
     if (nextTo) setDateTo(nextTo);
     if (nextPage > 1) setPage(nextPage);
+    setHash(window.location.hash);
     setUrlRestored(true);
+  }, []);
+
+  // The anchor can also be set after mount — a link inside the page, the
+  // address bar, or the browser's back/forward. Without this the next filter
+  // change would rebuild the URL from the mount-time value and drop it.
+  useEffect(() => {
+    const onHashChange = () => setHash(window.location.hash);
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
   }, []);
 
   // Keep the address bar in step. Only after the mount read, or it would wipe
@@ -180,8 +194,13 @@ export default function AuditPage() {
     if (dateTo) params.set('dateTo', dateTo);
     if (page > 1) params.set('page', String(page));
     const query = params.toString();
-    router.replace(query ? `/audit?${query}` : '/audit', { scroll: false });
-  }, [urlRestored, action, debouncedSearch, dateFrom, dateTo, page, router]);
+    const target = `${query ? `/audit?${query}` : '/audit'}${hash}`;
+    const current = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+    // Already the same address: replacing would only add a history entry the
+    // admin has to press back through.
+    if (target === current) return;
+    router.replace(target, { scroll: false });
+  }, [urlRestored, action, debouncedSearch, dateFrom, dateTo, page, hash, router]);
 
   const load = useCallback(async () => {
     setLoading(true);

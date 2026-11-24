@@ -2267,3 +2267,27 @@ Frontend **487 passed / 74 files** (was 483); `tsc`, `eslint` and `npm run build
 the page restores `action/q/page` from the URL and writes `page=2` back on pagination; the target
 chip renders; the CSV starts with `ID`; the device card's filtered empty state links to
 `/audit?q=…`. Not viewed in a browser, and the pages were not deployed.
+
+## Anchors and Reasons (November 24, 2026)
+
+- **A row anchor survives the URL sync.** `/audit` rebuilt its address from the filters alone, so a
+  shared `/audit?q=...&page=2#entry-42` lost `#entry-42` on the first filter or page change. The
+  hash is now read with the rest of the state, follows changes made after mount (`hashchange`), and
+  is written back after the query. The sync also skips `router.replace` when the address already
+  matches, so arriving at a restored URL no longer adds a duplicate history entry.
+- **A forced sign-out can carry a reason.** The admin console's per-device and per-account revoke
+  dialogs now take an optional reason in the same dialog as the confirmation; the endpoint accepts
+  `?reason=` (trimmed, max 200 characters) and appends `— Reason: ...` to the audit row's details. A
+  blank or whitespace-only reason adds nothing. Because `/audit`'s `q` already searches `details`,
+  a word from the reason finds the revoked session, its account and its device.
+
+### Verified
+
+Backend suite **745 passed**, coverage **84.65%** (was 743); `flake8` clean. New tests revoke another
+account's session with a padded reason, assert it appears trimmed in the audit row, and then find
+that row through `/audit/paginated?q=...`; a second test proves a whitespace-only reason writes no
+`Reason:` note.
+Frontend **492 passed / 74 files** (was 487); `tsc`, `eslint` and `npm run build` clean. New tests:
+a row anchor survives a filter sync, one set after mount is adopted, and no `router.replace` happens
+when the address already matches; the revoke reason is trimmed into `?reason=` and left out entirely
+when blank. Not viewed in a browser, and the pages were not deployed.

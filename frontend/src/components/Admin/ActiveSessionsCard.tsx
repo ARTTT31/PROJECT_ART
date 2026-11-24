@@ -16,7 +16,7 @@ import Select from '@/components/ui/Select';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
 import { apiMessage } from '@/lib/api/apiMessage';
 import { describeDevice, formatRelativeTime, parseUserAgent } from '@/utils/userAgent';
-import { showDeleteConfirm, showToast } from '@/utils/sweetalert';
+import { showRevokeConfirm, showToast } from '@/utils/sweetalert';
 
 export interface AdminSession {
   id: number;
@@ -155,18 +155,23 @@ export default function ActiveSessionsCard({
       // Forcing out this very device ends the admin's own session, so the
       // prompt has to say that before it happens.
       const scope = `${accountLabel(session)} · ${describeDevice(session.user_agent, session.device_label)} จะต้องเข้าสู่ระบบใหม่`;
-      const confirmed = await showDeleteConfirm(
+      const confirmed = await showRevokeConfirm(
         'บังคับออกจากระบบ?',
         currentSessionId === session.session_id
           ? `${scope} — อุปกรณ์นี้คือเครื่องที่คุณกำลังใช้อยู่ จะหลุดจากระบบทันที และต้องเข้าสู่ระบบใหม่`
           : scope,
       );
       if (!confirmed.isConfirmed) return;
+      // Recorded next to the revoke on /audit; blank means "no reason given".
+      const reason = typeof confirmed.value === 'string' ? confirmed.value.trim() : '';
 
       setBusyId(session.session_id);
       try {
+        const query = new URLSearchParams();
+        if (reason) query.set('reason', reason);
+        const queryString = query.toString();
         const res = await fetchWithAuth(
-          `/api/v1/users/sessions/${encodeURIComponent(session.session_id)}`,
+          `/api/v1/users/sessions/${encodeURIComponent(session.session_id)}${queryString ? `?${queryString}` : ''}`,
           { method: 'DELETE' },
         );
         const body = await res.json().catch(() => null);
@@ -199,13 +204,19 @@ export default function ActiveSessionsCard({
         ? group.sessions.some((session) => session.session_id === currentSessionId)
         : false;
       const scope = `${group.label} จะต้องเข้าสู่ระบบใหม่บนทุกอุปกรณ์ (${group.sessions.length} อุปกรณ์)`;
-      const confirmed = await showDeleteConfirm(
+      const confirmed = await showRevokeConfirm(
         'บังคับออกจากทุกอุปกรณ์?',
         signOutHere
           ? `${scope} รวมอุปกรณ์นี้ด้วย — คุณจะหลุดจากระบบทันที และต้องเข้าสู่ระบบใหม่`
           : scope,
       );
       if (!confirmed.isConfirmed) return;
+      // One reason covers the whole batch: the admin made a single decision.
+      const reason = typeof confirmed.value === 'string' ? confirmed.value.trim() : '';
+      const query = new URLSearchParams();
+      if (reason) query.set('reason', reason);
+      const queryString = query.toString();
+      const querySuffix = queryString ? `?${queryString}` : '';
 
       setBusyGroup(group.key);
       try {
@@ -213,7 +224,7 @@ export default function ActiveSessionsCard({
           group.sessions.map(async (session) => ({
             session,
             removed: await fetchWithAuth(
-              `/api/v1/users/sessions/${encodeURIComponent(session.session_id)}`,
+              `/api/v1/users/sessions/${encodeURIComponent(session.session_id)}${querySuffix}`,
               { method: 'DELETE' },
             ).then(
               (res) => res.ok,

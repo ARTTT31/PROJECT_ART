@@ -242,3 +242,79 @@ async def test_session_timestamps_carry_their_utc_offset(client, logged_in_admin
             value = row[field]
             if value:
                 assert value.endswith(("+00:00", "Z")), f"{field} must be UTC: {value}"
+
+
+async def test_revoke_reason_is_recorded_and_searchable(
+    client, logged_in_admin_user, db_session, make_user
+):
+    """An optional reason must be in the audit text, which is what /audit searches."""
+    from sqlalchemy import select
+    from app.models.audit_log import AuditLog
+    from app.models.session import UserSession
+
+    victim = await make_user("victim.reason@example.com", name="Reason Target")
+    db_session.add(
+        UserSession(
+            session_id="victim-session-reason",
+            user_id=victim.id,
+            device_label="Shared laptop",
+            is_active=True,
+        )
+    )
+    await db_session.commit()
+
+    resp = await client.delete(
+        "/api/v1/users/sessions/victim-session-reason",
+        params={"reason": "  shared laptop at the front desk  "},
+    )
+    assert resp.status_code == 200
+
+    await db_session.rollback()
+    rows = (
+        await db_session.execute(
+            select(AuditLog).where(AuditLog.action == "ADMIN_REVOKE_SESSION")
+        )
+    ).scalars().all()
+    entry = next(row for row in rows if "victim-s" in (row.details or ""))
+    # Trimmed, appended to the same sentence that names the victim and device.
+    assert "Reason: shared laptop at the front desk" in (entry.details or "")
+
+    found = await client.get("/api/v1/audit/paginated", params={"q": "front desk"})
+    assert found.status_code == 200
+    assert any(
+        "victim-s" in (item["details"] or "") for item in found.json()["items"]
+    ), "the reason is stored but /audit cannot find it"
+
+
+async def test_revoke_without_a_reason_leaves_no_empty_note(
+    client, logged_in_admin_user, db_session, make_user
+):
+    from sqlalchemy import select
+    from app.models.audit_log import AuditLog
+    from app.models.session import UserSession
+
+    victim = await make_user("victim.noreason@example.com", name="Quiet Target")
+    db_session.add(
+        UserSession(
+            session_id="victim-session-noreason",
+            user_id=victim.id,
+            is_active=True,
+        )
+    )
+    await db_session.commit()
+
+    assert (
+        await client.delete(
+            "/api/v1/users/sessions/victim-session-noreason",
+            params={"reason": "   "},
+        )
+    ).status_code == 200
+
+    await db_session.rollback()
+    rows = (
+        await db_session.execute(
+            select(AuditLog).where(AuditLog.action == "ADMIN_REVOKE_SESSION")
+        )
+    ).scalars().all()
+    entry = next(row for row in rows if "victim-s" in (row.details or ""))
+    assert "Reason:" not in (entry.details or "")

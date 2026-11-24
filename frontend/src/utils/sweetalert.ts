@@ -134,6 +134,34 @@ export const showDeleteConfirm = (title: string = 'คุณแน่ใจห�
   });
 };
 
+// Force-sign-out confirm
+//
+// Asking for the reason in the same dialog keeps it attached to the decision:
+// it is what /audit records next to the revoked session, and a field offered
+// afterwards would mostly be left empty. The reason is optional.
+export const showRevokeConfirm = (
+  title: string,
+  text?: string,
+  inputPlaceholder: string = 'เหตุผล (ไม่บังคับ) เช่น เครื่องนี้ใช้งานร่วมกัน',
+) => {
+  return Swal.fire({
+    ...modalDefaults,
+    customClass: {
+      ...sweetAlertClasses,
+      confirmButton: 'art-swal-confirm art-swal-danger',
+    },
+    icon: 'warning',
+    title,
+    text,
+    input: 'text',
+    inputPlaceholder,
+    showCancelButton: true,
+    confirmButtonText: 'ใช่, บังคับออก',
+    cancelButtonText: 'ยกเลิก',
+    reverseButtons: true,
+  });
+};
+
 // Loading
 export const showLoading = (title: string = 'กำลังโหลด...') => {
   Swal.fire({

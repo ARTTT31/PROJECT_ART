@@ -3,14 +3,14 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import ActiveSessionsCard from './ActiveSessionsCard';
 import { describeDevice } from '@/utils/userAgent';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
-import { showDeleteConfirm, showToast } from '@/utils/sweetalert';
+import { showRevokeConfirm, showToast } from '@/utils/sweetalert';
 
 vi.mock('@/lib/api/fetchWithAuth', () => ({
   fetchWithAuth: vi.fn(),
 }));
 
 vi.mock('@/utils/sweetalert', () => ({
-  showDeleteConfirm: vi.fn().mockResolvedValue({ isConfirmed: true }),
+  showRevokeConfirm: vi.fn().mockResolvedValue({ isConfirmed: true, value: '' }),
   showToast: vi.fn(),
 }));
 
@@ -175,7 +175,7 @@ describe('ActiveSessionsCard', () => {
         },
       ]),
     );
-    vi.mocked(showDeleteConfirm).mockClear();
+    vi.mocked(showRevokeConfirm).mockClear();
 
     render(<ActiveSessionsCard />);
     await waitFor(() => {
@@ -185,20 +185,20 @@ describe('ActiveSessionsCard', () => {
     fireEvent.click(screen.getByRole('button', { name: 'บังคับ Owner ออกจากทุกอุปกรณ์' }));
 
     await waitFor(() => {
-      expect(vi.mocked(showDeleteConfirm)).toHaveBeenCalledTimes(1);
+      expect(vi.mocked(showRevokeConfirm)).toHaveBeenCalledTimes(1);
     });
-    const [, ownText] = vi.mocked(showDeleteConfirm).mock.calls[0];
+    const [, ownText] = vi.mocked(showRevokeConfirm).mock.calls[0];
     expect(ownText).toContain('รวมอุปกรณ์นี้ด้วย');
     expect(ownText).toContain('หลุดจากระบบทันที');
 
     // Another account's group carries no such warning.
-    vi.mocked(showDeleteConfirm).mockClear();
+    vi.mocked(showRevokeConfirm).mockClear();
     fireEvent.click(screen.getByRole('button', { name: 'บังคับ Someone Else ออกจากทุกอุปกรณ์' }));
 
     await waitFor(() => {
-      expect(vi.mocked(showDeleteConfirm)).toHaveBeenCalledTimes(1);
+      expect(vi.mocked(showRevokeConfirm)).toHaveBeenCalledTimes(1);
     });
-    const [, otherText] = vi.mocked(showDeleteConfirm).mock.calls[0];
+    const [, otherText] = vi.mocked(showRevokeConfirm).mock.calls[0];
     expect(otherText).not.toContain('รวมอุปกรณ์นี้ด้วย');
   });
 
@@ -210,7 +210,7 @@ describe('ActiveSessionsCard', () => {
         { ...sessions[0], id: 2, session_id: 'session_tablet', device_label: 'iPad Pro' },
       ]),
     );
-    vi.mocked(showDeleteConfirm).mockClear();
+    vi.mocked(showRevokeConfirm).mockClear();
 
     render(<ActiveSessionsCard />);
     await waitFor(() => {
@@ -221,20 +221,75 @@ describe('ActiveSessionsCard', () => {
       screen.getByRole('button', { name: 'บังคับ Owner ออกจาก Chrome 120 · Windows 10/11' }),
     );
     await waitFor(() => {
-      expect(vi.mocked(showDeleteConfirm)).toHaveBeenCalledTimes(1);
+      expect(vi.mocked(showRevokeConfirm)).toHaveBeenCalledTimes(1);
     });
-    const [, currentText] = vi.mocked(showDeleteConfirm).mock.calls[0];
+    const [, currentText] = vi.mocked(showRevokeConfirm).mock.calls[0];
     expect(currentText).toContain('อุปกรณ์นี้คือเครื่องที่คุณกำลังใช้อยู่');
     expect(currentText).toContain('หลุดจากระบบทันที');
 
     // Another device of the same account keeps the plain sentence.
-    vi.mocked(showDeleteConfirm).mockClear();
+    vi.mocked(showRevokeConfirm).mockClear();
     fireEvent.click(screen.getByRole('button', { name: 'บังคับ Owner ออกจาก iPad Pro' }));
     await waitFor(() => {
-      expect(vi.mocked(showDeleteConfirm)).toHaveBeenCalledTimes(1);
+      expect(vi.mocked(showRevokeConfirm)).toHaveBeenCalledTimes(1);
     });
-    const [, otherDeviceText] = vi.mocked(showDeleteConfirm).mock.calls[0];
+    const [, otherDeviceText] = vi.mocked(showRevokeConfirm).mock.calls[0];
     expect(otherDeviceText).not.toContain('อุปกรณ์นี้คือเครื่องที่คุณกำลังใช้อยู่');
+  });
+
+  it('sends the reason the admin typed with the revoke', async () => {
+    localStorage.setItem('session_id', 'session_current');
+    vi.mocked(fetchWithAuth).mockResolvedValue(
+      ok([
+        sessions[0],
+        { ...sessions[0], id: 2, session_id: 'session_tablet', device_label: 'iPad Pro' },
+      ]),
+    );
+    vi.mocked(showRevokeConfirm).mockResolvedValueOnce({
+      isConfirmed: true,
+      value: '  shared laptop at reception  ',
+    } as never);
+
+    render(<ActiveSessionsCard />);
+    await waitFor(() => {
+      expect(screen.getByText('2 อุปกรณ์')).toBeDefined();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'บังคับ Owner ออกจาก iPad Pro' }));
+
+    await waitFor(() => {
+      const deleted = vi
+        .mocked(fetchWithAuth)
+        .mock.calls.find(([, init]) => (init as RequestInit | undefined)?.method === 'DELETE');
+      // Trimmed and addressed at one session, so /audit records it against it.
+      expect(String(deleted?.[0])).toBe(
+        '/api/v1/users/sessions/session_tablet?reason=shared+laptop+at+reception',
+      );
+    });
+  });
+
+  it('leaves the reason out of the request when none was given', async () => {
+    localStorage.setItem('session_id', 'session_current');
+    vi.mocked(fetchWithAuth).mockResolvedValue(
+      ok([
+        sessions[0],
+        { ...sessions[0], id: 2, session_id: 'session_tablet', device_label: 'iPad Pro' },
+      ]),
+    );
+
+    render(<ActiveSessionsCard />);
+    await waitFor(() => {
+      expect(screen.getByText('2 อุปกรณ์')).toBeDefined();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'บังคับ Owner ออกจาก iPad Pro' }));
+
+    await waitFor(() => {
+      const deleted = vi
+        .mocked(fetchWithAuth)
+        .mock.calls.find(([, init]) => (init as RequestInit | undefined)?.method === 'DELETE');
+      expect(String(deleted?.[0])).toBe('/api/v1/users/sessions/session_tablet');
+    });
   });
 
   it('leaves for the login screen after revoking this very device', async () => {

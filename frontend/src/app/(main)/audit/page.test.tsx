@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import AuditPage from './page';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
@@ -216,5 +216,49 @@ describe('/audit CSV export', () => {
     await waitFor(() =>
       expect(replace).toHaveBeenLastCalledWith('/audit?page=2', { scroll: false }),
     );
+  });
+
+  it('keeps a row anchor in the address when the filters are synced', async () => {
+    // A shared link points at one entry: rewriting the query must not throw
+    // away the part that scrolls to it.
+    window.history.replaceState({}, '', '/audit#entry-5');
+
+    await openPage();
+    fireEvent.click(screen.getByRole('button', { name: /ถัดไป/ }));
+
+    await waitFor(() =>
+      expect(replace).toHaveBeenLastCalledWith('/audit?page=2#entry-5', { scroll: false }),
+    );
+  });
+
+  it('adopts an anchor set after mount instead of dropping it', async () => {
+    await openPage();
+
+    act(() => {
+      window.history.replaceState({}, '', '/audit#entry-9');
+      window.dispatchEvent(new HashChangeEvent('hashchange'));
+    });
+
+    // Any later filter change must carry the anchor that arrived after mount.
+    fireEvent.click(screen.getByRole('button', { name: 'กรองตามช่วงวันที่' }));
+    fireEvent.click(await screen.findByRole('button', { name: '30 วัน' }));
+
+    await waitFor(() =>
+      expect(replace).toHaveBeenLastCalledWith(
+        expect.stringMatching(
+          /^\/audit\?dateFrom=\d{4}-\d{2}-\d{2}&dateTo=\d{4}-\d{2}-\d{2}#entry-9$/,
+        ),
+        { scroll: false },
+      ),
+    );
+  });
+
+  it('does not rewrite the address when it already matches', async () => {
+    window.history.replaceState({}, '', '/audit?action=LOGIN_FAILED&q=som&page=2');
+
+    await openPage();
+
+    // Same filters, same page: no pointless history entry on arrival.
+    expect(replace).not.toHaveBeenCalled();
   });
 });
