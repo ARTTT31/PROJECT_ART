@@ -121,6 +121,39 @@ async def test_export_says_so_when_it_hits_the_cap(
     assert body["truncated"] is True
 
 
+async def test_responses_do_not_ship_the_address_but_the_row_keeps_it(
+    client, logged_in_admin_user, db_session
+):
+    """The log is read by browsers; the address stays server-side."""
+    admin_id = await _admin_id(db_session)
+    db_session.add(
+        AuditLog(
+            user_id=admin_id,
+            action="PROFILE_UPDATE",
+            details="address stays in the database",
+            ip_address="203.0.113.7",
+            created_at=datetime(2026, 11, 20, 12, 0, 0),
+        )
+    )
+    await db_session.commit()
+
+    page = await client.get("/api/v1/audit/paginated", params={"action": "PROFILE_UPDATE"})
+    export = await client.get("/api/v1/audit/export", params={"action": "PROFILE_UPDATE"})
+
+    assert page.status_code == 200, page.text
+    assert export.status_code == 200, export.text
+    assert all("ip_address" not in row for row in page.json()["items"])
+    assert all("ip_address" not in row for row in export.json()["items"])
+
+    await db_session.rollback()
+    stored = (
+        await db_session.execute(
+            select(AuditLog).where(AuditLog.details == "address stays in the database")
+        )
+    ).scalar_one()
+    assert stored.ip_address == "203.0.113.7"
+
+
 async def test_export_rejects_a_reversed_date_range(client, logged_in_admin_user):
     resp = await client.get(
         "/api/v1/audit/export",

@@ -31,7 +31,6 @@ interface AuditLogEntry {
   user_id: number | null;
   action: string;
   details: string | null;
-  ip_address: string | null;
   user_agent: string | null;
   created_at: string;
   user: { id: number; name: string; email: string } | null;

@@ -16,7 +16,8 @@ class AuditLogResponse(BaseModel):
     user_id: Optional[int] = None
     action: str
     details: Optional[str] = None
-    ip_address: Optional[str] = None
+    # `ip_address` is deliberately not exposed: the audit row keeps it in the
+    # database, but no browser needs every user's address to read the log.
     user_agent: Optional[str] = None
     created_at: datetime
     user: Optional[UserBrief] = None

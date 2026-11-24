@@ -2217,3 +2217,21 @@ already dropped them. It showed the address on every row and wrote an `IP` colum
 
 Frontend suite **483 passed / 74 files**; `tsc`, `eslint` on the touched files and `npm run build`
 clean. Not viewed in a browser.
+
+
+## Audit Responses Stop Carrying Addresses (November 24, 2026)
+
+Removing the address from `/audit`'s screen left it in the JSON: `ip_address` still travelled to the
+browser in `AuditLogResponse`, hidden in the DOM but readable in DevTools and in the export payload.
+
+- `/audit/paginated` and `/audit/export` no longer return `ip_address`; `/audit` (the plain list) uses
+  the same schema, so it is covered too. The column and its value stay in `audit_logs`, where the
+  security record actually needs them.
+- The frontend's `AuditLogEntry` mirrors the new response shape.
+
+### Verified
+
+Backend suite **742 passed**, coverage **84.63%** (was 741); `flake8` clean. New test inserts a row
+with an address, reads both endpoints and asserts the key is absent from every item, then reads the
+row back and asserts the address is still stored. Frontend **483 passed / 74 files**, `tsc` and
+`eslint` clean.
