@@ -3,7 +3,7 @@ name: auth-surface-rules
 description: Rules for touching Workspace's identity surface — endpoints that record a client IP, set or clear auth cookies, return a user payload, gate an admin action, or handle CSRF, sessions, 2FA and password reset. Use only for those files; ordinary CRUD endpoints and UI work must not load it.
 when-to-use: Adding or editing anything that records identity/IP, issues or revokes a session, writes an auth cookie, returns user data to a client, or changes CSRF/2FA/password-reset behaviour.
 paths: ["backend/app/api/v1/endpoints/auth.py", "backend/app/api/v1/endpoints/users.py", "backend/app/api/v1/endpoints/profile.py", "backend/app/api/v1/endpoints/system.py", "backend/app/api/v1/endpoints/websockets.py", "backend/app/core/security.py", "backend/app/core/rate_limit.py", "backend/app/core/totp.py", "backend/app/schemas/user.py", "backend/app/services/auth_service.py", "frontend/src/lib/api/**", "frontend/src/components/Auth/**"]
-user-invocable: false
+user-invocable: true
 ---
 
 # Auth Surface Rules

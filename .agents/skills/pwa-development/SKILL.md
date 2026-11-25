@@ -2,8 +2,8 @@
 name: pwa-development
 description: Progressive Web Apps - service workers, caching strategies, offline, Workbox
 when-to-use: When building PWA features - service workers, caching, offline support
-user-invocable: false
-paths: ["**/sw.*", "**/service-worker.*", "**/workbox-config.*", "**/manifest.json"]
+user-invocable: true
+paths: ["**/sw.*", "**/service-worker.*", "**/workbox-config.*", "**/manifest*.json", "**/manifest*.webmanifest", "frontend/public/sw.*"]
 effort: medium
 ---
 

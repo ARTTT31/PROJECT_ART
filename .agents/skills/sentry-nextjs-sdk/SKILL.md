@@ -3,11 +3,9 @@ name: sentry-nextjs-sdk
 description: Full Sentry SDK setup for Next.js. Use when asked to "add Sentry to Next.js", "install @sentry/nextjs", or configure error monitoring, tracing, session replay, logging, profiling, AI monitoring, or crons for Next.js applications. Supports Next.js 13+ with App Router and Pages Router.
 license: Apache-2.0
 category: sdk-setup
-parent: sentry-sdk-setup
-disable-model-invocation: true
 ---
 
-> [All Skills](../../SKILL_TREE.md) > [SDK Setup](../sentry-sdk-setup/SKILL.md) > Next.js SDK
+> Routing: see the Sentry rows of [AGENTS.md](../../../AGENTS.md).
 
 # Sentry Next.js SDK
 
@@ -347,7 +345,7 @@ withSentryConfig(nextConfig, {
 });
 ```
 
-`SENTRY_AUTH_TOKEN` is a build-time secret, distinct from the DSN. For creating the token, wiring it into CI, and troubleshooting minified traces, see [`sentry-source-maps`](../sentry-source-maps/SKILL.md).
+`SENTRY_AUTH_TOKEN` is a build-time secret, distinct from the DSN. For creating the token, wiring it into CI, and troubleshooting minified traces, see the [Sentry source maps docs](https://docs.sentry.io/platforms/javascript/guides/nextjs/sourcemaps/).
 
 Source maps are uploaded automatically on every `next build`.
 
@@ -457,13 +455,13 @@ cat ../Gemfile 2>/dev/null | head -3
 cat ../pom.xml ../build.gradle 2>/dev/null | head -3
 ```
 
-If a backend is found, suggest the matching SDK skill:
+Only `sentry-nextjs-sdk` is installed in this repository, so point the user at the backend's Sentry guide instead of naming a skill that does not exist:
 
 | Backend detected | Suggest skill |
 |-----------------|--------------|
-| Go (`go.mod`) | `sentry-go-sdk` |
-| Python (`requirements.txt`, `pyproject.toml`) | `sentry-python-sdk` |
-| Ruby (`Gemfile`) | `sentry-ruby-sdk` |
+| Go (`go.mod`) | [Sentry Go docs](https://docs.sentry.io/platforms/go/) |
+| Python (`requirements.txt`, `pyproject.toml`) | [Sentry Python docs](https://docs.sentry.io/platforms/python/) |
+| Ruby (`Gemfile`) | [Sentry Ruby docs](https://docs.sentry.io/platforms/ruby/) |
 | Java/Kotlin (`pom.xml`, `build.gradle`) | See [docs.sentry.io/platforms/java/](https://docs.sentry.io/platforms/java/) |
 | Node.js (Express, Fastify, Hapi) | `@sentry/node` — see [docs.sentry.io/platforms/javascript/guides/express/](https://docs.sentry.io/platforms/javascript/guides/express/) |
 

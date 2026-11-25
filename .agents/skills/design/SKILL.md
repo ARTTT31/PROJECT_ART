@@ -1,6 +1,6 @@
 ---
 name: design
-description: "Comprehensive design skill: brand identity, design tokens, UI styling, logo generation (55 styles, Gemini, Atlas Cloud, MuAPI, or UberLLM AI), corporate identity program (50 deliverables, CIP mockups), HTML presentations (Chart.js), banner design (22 styles, social/ads/web/print), icon design (15 styles, SVG, Gemini 3.1 Pro), social photos (HTML→screenshot, multi-platform). Actions: design logo, create CIP, generate mockups, build slides, design banner, generate icon, create social photos, social media images, brand identity, design system. Platforms: Facebook, Twitter, LinkedIn, YouTube, Instagram, Pinterest, TikTok, Threads, Google Ads."
+description: "Brand-identity design for Workspace: brand assets, logo generation (55 styles, AI providers), corporate identity program (50 deliverables, CIP mockups), icon design (15 styles, SVG), and social photos (HTML→screenshot, multi-platform). Actions: design logo, create CIP, generate mockups, generate icon, create social photos, social media images, brand identity. Adjacent work belongs to sibling skills: `slides` for HTML presentations, `banner-design` for banners and share cards, `design-system` for design tokens, `ui-styling`/`shadcn` for UI components."
 argument-hint: "[design-type] [context]"
 license: MIT
 metadata:
@@ -36,6 +36,8 @@ Unified design skill: brand, tokens, UI, logo, CIP, slides, banners, social phot
 | Banners, covers, headers | Banner (built-in) | `references/banner-sizes-and-styles.md` |
 | Social media images/photos | Social Photos (built-in) | `references/social-photos-design.md` |
 | SVG icons, icon sets | Icon (built-in) | `references/icon-design.md` |
+
+**Precedence:** when a dedicated skill exists for the job, load it instead of the built-in section — `../slides/` for HTML presentations, `../banner-design/` for banners and share cards, `../design-system/` for tokens, `../brand/` for brand voice and guidelines, `../ui-styling/` for UI code. Logo, CIP, icon and social-photo work is this skill's own.
 
 ## Script Paths
 
@@ -124,6 +126,8 @@ python3 scripts/cip/render-html.py --brand "TopGroup" --industry "consulting" --
 
 ## Slides (Built-in)
 
+> Prefer the dedicated [`slides`](../slides/SKILL.md) skill; keep this section only as a fallback.
+
 Strategic HTML presentations with Chart.js, design tokens, copywriting formulas.
 
 Load `references/slides-create.md` for the creation workflow.
@@ -139,6 +143,8 @@ Load `references/slides-create.md` for the creation workflow.
 | Strategies | `references/slides-strategies.md` |
 
 ## Banner Design (Built-in)
+
+> Prefer the dedicated [`banner-design`](../banner-design/SKILL.md) skill; keep this section only as a fallback.
 
 22 art direction styles across social, ads, web, print. This workflow needs nothing outside the bundle: `references/banner-sizes-and-styles.md` and the bundled `ui-ux-pro-max` skill for style and palette guidance. Browser research, image generation, and screenshot capture are optional runtime capabilities; when unavailable, use supplied assets, CSS-built visuals, and the runtime's standard preview or capture workflow.
 
