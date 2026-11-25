@@ -38,7 +38,7 @@ are still from the 2026-11-22 pass.
 | Frontend types | `npx tsc --noEmit` | clean |
 | Frontend lint | `npx eslint .` | clean (0 errors, 0 warnings) |
 | Frontend build | `npm run build` | succeeds, 17 routes |
-| Dependency audit | `pip-audit -r backend/requirements.lock` + `npm audit --omit=dev` | no known vulnerabilities on either side |
+| Dependency audit | `pip-audit -r backend/requirements.lock` + `pip-audit -r backend/requirements-dev.lock` + `npm audit --omit=dev` | no known vulnerabilities on either side |
 | Docs links | `python scripts/check_docs_links.py` | 7 files, links and fences OK (also a CI step) |
 
 The CI job runs the suite on 3.11 **and with no `.env`**; the numbers above are this machine's

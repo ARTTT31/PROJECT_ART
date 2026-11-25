@@ -1,0 +1,31 @@
+# Test and lint tooling, kept out of the deployed dependency set.
+#
+# Render builds the service from requirements.lock, which is compiled from
+# requirements.in alone. Nothing in this file belongs in that image: pytest,
+# flake8 and mypy check the code, they do not serve it, and shipping them also
+# dragged in coverage, iniconfig, pluggy, packaging and mypy's ast parser.
+#
+# This file starts with `-r requirements.in`, so requirements-dev.lock is a
+# superset of the production lock rather than a second, independent resolution:
+# both locks come out of one `pip-compile` run per file with the same pip and
+# pip-tools pins, and the runtime versions they record cannot disagree. CI's
+# backend job installs requirements.lock first (byte-for-byte what Render
+# installs) and then this lock for the extra wheels; the live-auth E2E installs
+# this one alone, because its backend runs on SQLite.
+#
+# Regenerate both locks with the Lockfile workflow (see README), never by hand:
+# the hashes are for Linux cp311 wheels and cannot be produced on a Windows box.
+-r requirements.in
+
+# Testing
+pytest==9.2.0
+pytest-asyncio==1.5.0
+pytest-cov==7.1.0
+# The suite and the live-auth E2E run the app on `sqlite+aiosqlite`; production
+# runs `postgresql+asyncpg` (`asyncpg` stays a runtime pin in requirements.in),
+# so this driver has no reason to be installed on Render.
+aiosqlite==0.22.1
+
+# Linting and type checking
+flake8==7.5.0
+mypy==2.4.1

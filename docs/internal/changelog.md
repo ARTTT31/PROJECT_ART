@@ -2537,3 +2537,56 @@ in `backend/requirements.txt` now names its next major (`python-multipart>=0.0.3
 `backend/requirements.lock` is compiled on Linux cp311 by the `Lockfile` workflow with
 `--generate-hashes`, and CI and Render install it with `--require-hashes`; option 2 (a
 hashless constraints file) is moot once this exists.
+
+## The Production Lock Stops Shipping Pytest (November 25, 2026)
+
+`backend/requirements.lock` was compiled from a single `requirements.in` that mixed the
+service's dependencies with the tools that inspect it, so Render's build installed
+**pytest 9.2.0, pytest-asyncio, pytest-cov, aiosqlite, flake8 and mypy** — plus the wheels
+only they need (`coverage`, `iniconfig`, `pluggy`, `packaging`, `ast-serialize`) — into
+every production image, and the live-auth E2E installed the same set. Nothing under
+`backend/app` imports any of them: in production they cost install time and widened the
+advisory surface without changing a single response.
+
+### Two inputs, two locks
+
+| File | Set | Installed by |
+| --- | --- | --- |
+| `backend/requirements.in` | runtime | compiled into `requirements.lock` |
+| `backend/requirements.lock` | runtime only | Render's build command |
+| `backend/requirements-dev.in` | `-r requirements.in` plus the test/lint tools | compiled into `requirements-dev.lock` |
+| `backend/requirements-dev.lock` | runtime + test/lint | the backend CI job and the live-auth E2E |
+| `backend/requirements.txt` | both `.in` files | a local Windows checkout |
+
+- The dev lock is a **superset**, not a second opinion. `requirements-dev.in` begins with
+  `-r requirements.in`, so both locks are one compile each of the same pins and a
+  regeneration cannot leave the dev lock holding runtime versions the production lock does
+  not. The backend job still installs `requirements.lock` first — byte-for-byte what Render
+  installs — and adds the dev lock on top for the extra wheels.
+- `pip install flake8` disappeared from the lint step: flake8 now arrives pinned and hashed
+  from the dev lock instead of resolving fresh on every run, so a flake8 release cannot
+  change the lint result without a commit here.
+- `aiosqlite` moved with the tests, not the service. The suite and the live E2E backend run
+  `sqlite+aiosqlite`; production runs `postgresql+asyncpg`, and `asyncpg` stays a runtime
+  pin. The E2E step therefore installs the dev lock.
+- The `Lockfile` workflow compiles both files in one run, gates both with
+  `git status --porcelain` (a missing lock is untracked, which `git diff` reports as no
+  change at all), and uploads both in the `requirements-lock` artifact.
+- `dependency-audit` audits both locks, and `scripts/check_requirements_caps.py` now runs
+  against both `.in` files, so the ceiling rule that keeps the next major out of CI covers
+  the dev set too.
+
+### Verified on the generated locks
+
+`Lockfile` run **`45568520532`** (run #6, on `deps/split-dev-lock`) compiled both files in one
+job from the same `pip==26.3` / `pip-tools==7.7.0` resolution on Linux cp311, conclusion
+`success`, and uploaded them together as the `requirements-lock` artifact:
+
+| Lock | Pins | `--hash` lines | Test/lint tooling |
+| --- | --- | --- | --- |
+| `backend/requirements.lock` | 68 | 2,415 | none |
+| `backend/requirements-dev.lock` | 85 | 2,792 | `pytest`, `pytest-asyncio`, `pytest-cov`, `coverage`, `aiosqlite`, `flake8`, `mypy` and the 10 wheels only they pull in |
+
+All 68 runtime pins appear in the dev lock at the **same version**, so the two files describe
+one resolution rather than two opinions. The previous single lock was 85 pins and 2,792
+hashes: the dev lock is exactly that set, and the production lock is now the 17 fewer.

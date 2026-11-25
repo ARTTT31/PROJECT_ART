@@ -27,7 +27,9 @@ jobs:
       # push that never touched the SDK. The ceilings in
       # backend/requirements.in only hold while something checks them.
       - name: Require a ceiling on every dependency floor
-        run: python scripts/check_requirements_caps.py
+        run: |
+          python scripts/check_requirements_caps.py
+          python scripts/check_requirements_caps.py backend/requirements-dev.in
 
       # The docs split (architecture / status / changelog / roadmap) only holds
       # while the links between them resolve; a stale link is how the last drift
@@ -43,16 +45,22 @@ jobs:
 
       # The lock, not requirements.in: every wheel is pinned and hashed, so
       # the job installs byte-for-byte what Render installs, and a tampered
-      # or swapped artifact fails the install instead of running.
+      # or swapped artifact fails the install instead of running. That lock is
+      # the runtime set only, which is exactly what Render gets.
       - name: Install backend dependencies
         run: |
           python -m pip install --upgrade pip
           pip install --require-hashes -r backend/requirements.lock
 
+      # flake8, mypy, pytest and the SQLite test driver come from the dev lock
+      # instead of being resolved fresh here or shipped to production. It is
+      # requirements-dev.in compiled together with requirements.in, so it pins
+      # the runtime set too; installing it second only adds the extra wheels.
+      - name: Install test and lint dependencies
+        run: pip install --require-hashes -r backend/requirements-dev.lock
+
       - name: Lint with flake8
-        run: |
-          pip install flake8
-          flake8 backend/app --max-line-length=120 --exclude=__pycache__
+        run: flake8 backend/app --max-line-length=120 --exclude=__pycache__
 
       - name: Type check with mypy
         working-directory: backend
@@ -103,10 +111,14 @@ jobs:
         with:
           python-version: "3.11"
 
+      # Both locks: the runtime one is what ships, the dev one is what the tests
+      # import. An advisory in either fails the build rather than waiting for a
+      # reader, and the weekly schedule covers the tooling as well as the service.
       - name: Audit backend dependencies
         run: |
           python -m pip install --upgrade pip pip-audit
           pip-audit -r backend/requirements.lock
+          pip-audit -r backend/requirements-dev.lock
 
   # ── Agent skills lock ─────────────────────────────────
   # skills-lock.json pins the 32 installed skills by content hash, but nothing
@@ -218,11 +230,13 @@ jobs:
         with:
           python-version: "3.11"
 
+      # The dev lock, not the production one: the live E2E backend runs on
+      # sqlite+aiosqlite, and that driver is a test dependency.
       - name: Install backend dependencies for the live E2E
         working-directory: backend
         run: |
           python -m pip install --upgrade pip
-          pip install --require-hashes -r requirements.lock
+          pip install --require-hashes -r requirements-dev.lock
 
       - name: Start the backend for the live E2E
         working-directory: backend

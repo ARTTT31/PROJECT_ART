@@ -1,11 +1,16 @@
 name: Lockfile
 
-# The hashed lock is generated, never hand-edited. pip-compile asks PyPI for the
-# distributions the Linux/cp311 resolution can actually install and records their
-# SHA-256 hashes; compiling on a developer's Windows box would record Windows
-# wheels instead, and CI and Render would then reject the files they download.
-# So the compiler runs here, and a manual run hands the result back as an
-# artifact instead of pushing to main.
+# The hashed locks are generated, never hand-edited. pip-compile asks PyPI for
+# the distributions the Linux/cp311 resolution can actually install and records
+# their SHA-256 hashes; compiling on a developer's Windows box would record
+# Windows wheels instead, and CI and Render would then reject the files they
+# download. So the compiler runs here, and a manual run hands the result back as
+# an artifact instead of pushing to main.
+#
+# Two locks, one run: requirements.lock is the runtime set Render installs, and
+# requirements-dev.lock is that same set plus the test and lint tools. Compiling
+# both here is what keeps them in step — a regeneration never updates one and
+# forgets the other.
 on:
   workflow_dispatch:
   push:
@@ -13,11 +18,15 @@ on:
     paths:
       - backend/requirements.in
       - backend/requirements.lock
+      - backend/requirements-dev.in
+      - backend/requirements-dev.lock
       - .github/workflows/lockfile.yml
   pull_request:
     paths:
       - backend/requirements.in
       - backend/requirements.lock
+      - backend/requirements-dev.in
+      - backend/requirements-dev.lock
 
 jobs:
   lockfile:
@@ -44,25 +53,36 @@ jobs:
           --output-file=backend/requirements.lock
           backend/requirements.in
 
+      # requirements-dev.in starts with `-r requirements.in`, so this lock pins
+      # the runtime set as well; the two files resolve together and cannot
+      # drift apart on their own.
+      - name: Compile requirements-dev.lock from requirements-dev.in
+        run: >-
+          pip-compile --generate-hashes
+          --output-file=backend/requirements-dev.lock
+          backend/requirements-dev.in
+
       # A hand edit, a dependency added without regenerating, a raised floor, or
       # a lock that was never committed all surface here instead of as an install
       # failure on Render. `git status` and not `git diff`: a missing lock is an
       # untracked file, and `git diff` reports that as no change at all.
-      - name: Fail when the committed lock is stale
+      - name: Fail when a committed lock is stale
         if: github.event_name != 'workflow_dispatch'
         run: |
-          changes=$(git status --porcelain -- backend/requirements.lock)
+          changes=$(git status --porcelain -- backend/requirements.lock backend/requirements-dev.lock)
           if [ -n "$changes" ]; then
             echo "$changes"
-            git --no-pager diff --stat -- backend/requirements.lock
-            echo "::error::backend/requirements.lock does not match requirements.in. Run the Lockfile workflow from the Actions tab and commit the requirements-lock artifact it uploads."
+            git --no-pager diff --stat -- backend/requirements.lock backend/requirements-dev.lock
+            echo "::error::backend/requirements.lock or backend/requirements-dev.lock does not match requirements.in / requirements-dev.in. Run the Lockfile workflow from the Actions tab and commit the requirements-lock artifact it uploads."
             exit 1
           fi
 
-      - name: Upload the regenerated lock
+      - name: Upload the regenerated locks
         if: github.event_name == 'workflow_dispatch'
         uses: actions/upload-artifact@v4
         with:
           name: requirements-lock
-          path: backend/requirements.lock
+          path: |
+            backend/requirements.lock
+            backend/requirements-dev.lock
           if-no-files-found: error

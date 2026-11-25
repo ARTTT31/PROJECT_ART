@@ -117,21 +117,24 @@ The API will be available at:
 
 #### Backend dependency files
 
-The three files under `backend/` are not interchangeable:
+The files under `backend/` are not interchangeable, and the split between the two locks is
+what keeps the test tooling out of production:
 
 | File | Role |
 | --- | --- |
-| `requirements.in` | The file you edit: direct dependencies, each with a floor and a ceiling (`>=x.y,<next-major`) so a new major cannot resolve unannounced. |
-| `requirements.lock` | Generated, never hand-edited: `pip-compile --generate-hashes` output, which CI and Render install with `pip install --require-hashes -r requirements.lock`. |
-| `requirements.txt` | A shim that only does `-r requirements.in`, so `pip install -r requirements.txt` still works on a machine that cannot take the lock. |
+| `requirements.in` | The file you edit for the service: direct runtime dependencies, each with a floor and a ceiling (`>=x.y,<next-major`) so a new major cannot resolve unannounced. |
+| `requirements-dev.in` | Test and lint tooling only (pytest and its plugins, aiosqlite, flake8, mypy). It starts with `-r requirements.in`, so one compile covers both sets. Render never installs it. |
+| `requirements.lock` | Generated, never hand-edited: `pip-compile --generate-hashes` output for the runtime set, which CI and Render install with `pip install --require-hashes -r requirements.lock`. |
+| `requirements-dev.lock` | Generated the same way from `requirements-dev.in`. CI's backend job and the live-auth E2E install it; because it pins the runtime set too, the two locks cannot disagree. |
+| `requirements.txt` | A shim (`-r requirements.in`, `-r requirements-dev.in`) so `pip install -r requirements.txt` still works on a machine that cannot take the locks. |
 
-The lock records the SHA-256 of the Linux cp311 wheels, so it will not install in a
-Windows venv. Regenerate it after any edit to `requirements.in`:
+The locks record the SHA-256 of the Linux cp311 wheels, so they will not install in a
+Windows venv. Regenerate both after any edit to either `.in` file:
 
 1. Push the edit (or open a PR).
 2. Run **Actions → Lockfile → Run workflow** on `main`.
-3. Download the `requirements-lock` artifact, replace `backend/requirements.lock` with
-   it, and commit that file.
+3. Download the `requirements-lock` artifact (it holds both locks), copy it over
+   `backend/requirements.lock` and `backend/requirements-dev.lock`, and commit.
 
 Do not run `pip-compile` on a Windows checkout — it would hash Windows wheels and CI and
 Render would then reject them. The workflow reruns on every push that touches the
@@ -270,8 +273,10 @@ When developing with AI assistants (Antigravity, Gemini CLI, Claude Code), the a
 ### Render Backend
 
 - Root directory: `backend`
-- Build command: `pip install --require-hashes -r requirements.lock` (the lock is compiled
-  on CI from `requirements.in`; `requirements.txt` is only a local-dev shim)
+- Build command: `pip install --require-hashes -r requirements.lock` (the runtime lock,
+  compiled on CI from `requirements.in`; the test and lint tools live in
+  `requirements-dev.lock`, which Render never reads, and `requirements.txt` is only a
+  local-dev shim)
 - Set `PYTHON_VERSION` to a 3.11 release (for example `3.11.9`). The lock records the
   SHA-256 of the cp311 manylinux wheels only, so a 3.12+ runtime rejects every binary
   requirement it downloads and the build dies before the service starts.
