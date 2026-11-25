@@ -2500,7 +2500,7 @@ different tree and interpreter; the backend job runs Python 3.11, where coverage
 lower. A fresh clone was also checked separately: restore reports the 32 skills already
 installed and leaves `git status` empty.
 
-### Proposed, not implemented: keeping the next major out of CI
+### Keeping the next major out of CI
 
 The sentry failure is not a one-off, it is a class. `backend/requirements.txt` still has bare
 floors that can resolve a new major with no commit: `python-multipart>=0.0.34`,
@@ -2529,4 +2529,8 @@ a `requirements.txt` line contains `>=` without a `<` — the caps rot the momen
 them. The frontend needs nothing here: `npm ci` plus the committed `package-lock.json` already
 means CI resolves nothing.
 
-None of these three is implemented yet; the caps in particular are a separate change.
+**Option 1 and the guard shipped the same day**, in the commit after this entry: every floor
+in `backend/requirements.txt` now names its next major (`python-multipart>=0.0.34,<1`,
+`argon2-cffi<26`, `google-auth<3`, `redis<9`, `starlette<2`, `cryptography<51`, `anyio<5`,
+`urllib3<3`), and the backend job runs `scripts/check_requirements_caps.py`, which fails when a
+`>=` has no `<`. Options 2 and 3 remain proposals.

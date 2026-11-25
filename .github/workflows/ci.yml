@@ -22,6 +22,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # A bare `>=` resolves the next major the day it is published, with no
+      # commit here: sentry-sdk 3.0 landed that way and took `mypy` down on a
+      # push that never touched the SDK. The ceilings in
+      # backend/requirements.txt only hold while something checks them.
+      - name: Require a ceiling on every dependency floor
+        run: python scripts/check_requirements_caps.py
+
       # The docs split (architecture / status / changelog / roadmap) only holds
       # while the links between them resolve; a stale link is how the last drift
       # started, so it fails the build instead of waiting for a reviewer.

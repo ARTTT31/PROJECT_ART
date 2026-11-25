@@ -2,10 +2,16 @@
 # set clean. Keep them in step with reality: stale pins are how python-jose 3.3.0
 # stayed in the file long after the venv had moved on.
 #
+# Every floor also carries a ceiling. A bare `>=` lets pip resolve the next major
+# with no commit in this repository, which is how sentry-sdk 3.0 took `mypy` down
+# on a push that never touched the SDK; the caps name the major to migrate to when
+# they are raised. scripts/check_requirements_caps.py fails CI on a floor without
+# a ceiling, because a rule nobody checks rots.
+#
 # FastAPI Framework
 fastapi==0.165.0
 uvicorn[standard]==0.54.0
-python-multipart>=0.0.34
+python-multipart>=0.0.34,<1
 
 # Database
 # SQLAlchemy 2.1 made greenlet optional, where 2.0 pulled it in by itself on
@@ -23,7 +29,7 @@ alembic==1.20.1
 # release, and its ecdsa/pyasn1 chain added advisories of their own. Tokens are
 # HS256 in the same wire format, so sessions issued before the swap keep working.
 pyjwt==2.15.1
-argon2-cffi>=25.1.0
+argon2-cffi>=25.1.0,<26
 pydantic[email]==2.14.3
 pydantic-settings==2.16.3
 
@@ -32,7 +38,7 @@ requests==2.34.2
 httpx==0.28.1
 
 # Google OAuth verification
-google-auth>=2.62.2
+google-auth>=2.62.2,<3
 
 # Image processing (avatar normalisation — bounded WebP re-encode)
 pillow==13.0.0
@@ -70,16 +76,17 @@ psutil==7.2.2
 # Horizontal scaling (optional). Redis backs the SlowAPI rate-limit storage
 # (SLOWAPI_STORAGE_URI) and the WebSocket broadcast fan-out
 # (WS_BROADCAST_REDIS_URL); the process-local defaults need neither.
-redis>=8.1.0
+redis>=8.1.0,<9
 
 # ── Security floors for transitive dependencies ──────────────────────────────
 # These are not imported directly. They are pinned because the resolver would
 # otherwise happily install a version with open advisories, and the CI audit job
 # should fail loudly if a future bump walks them back below these versions.
-starlette>=1.10.0     # every starlette < 1.3.1 advisory is still open (via fastapi)
-cryptography>=50.0.2  # required by google-auth, which allows much older releases
-anyio>=4.16.0         # three advisories fixed in 4.14.2 (via fastapi/httpx)
-urllib3>=2.8.0        # three advisories fixed in 2.8.0 (via requests)
+# Each keeps a major ceiling too, for the reason in the header above.
+starlette>=1.10.0,<2      # every starlette < 1.3.1 advisory is still open (via fastapi)
+cryptography>=50.0.2,<51  # required by google-auth, which allows much older releases
+anyio>=4.16.0,<5          # three advisories fixed in 4.14.2 (via fastapi/httpx)
+urllib3>=2.8.0,<3         # three advisories fixed in 2.8.0 (via requests)
 
 # Development / Linting
 flake8==7.5.0
