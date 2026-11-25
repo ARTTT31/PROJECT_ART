@@ -2656,3 +2656,17 @@ Verified locally: `check_skills_lock.mjs` reports all 32 skills pinned with matc
 added without a matrix row fails both checks; `check_docs_links.py` covers 12 files; both
 workflow files parse as YAML; a frozen restore reports the 32 skills already installed and
 leaves the working tree unchanged.
+
+
+## The Skills Refresh Says What to Enable (November 25, 2026)
+
+- `.github/workflows/skills-update.yml` no longer dies on the API's one-line error. The PR step
+  runs with `continue-on-error`, and a follow-up step fails with the switch to turn on -
+  Settings -> Actions -> General -> Workflow permissions -> "Allow GitHub Actions to create and
+  approve pull requests" - plus the compare URL of the branch the action had already pushed.
+- The Node 20 deprecation warnings are gone: `actions/checkout` v4 to v5, `actions/setup-node`
+  v4 to v7, `actions/setup-python` v5 to v7, `actions/upload-artifact` v4 to v7, and
+  `peter-evans/create-pull-request` v6 to v8.
+
+Verified locally: the three workflow files parse as YAML and both skill gates still pass. A
+dispatch with a seeded stale hash reaches the pull-request step and prints the guidance above.

@@ -18,10 +18,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: "26"
 
@@ -35,8 +35,12 @@ jobs:
           node scripts/check_skills_lock.mjs
           node scripts/check_skills_routing.mjs
 
+      # The action pushes the refreshed branch before it asks GitHub to open
+      # the pull request, so a blocked PR still leaves the work reachable.
       - name: Open a pull request
-        uses: peter-evans/create-pull-request@v6
+        id: pr
+        continue-on-error: true
+        uses: peter-evans/create-pull-request@v8
         with:
           commit-message: "chore(skills): refresh pinned skills from upstream"
           title: "chore(skills): refresh pinned skills from upstream"
@@ -50,3 +54,14 @@ jobs:
           add-paths: |
             .agents/skills
             skills-lock.json
+
+      # Without this the job dies on the API's one-line error and the fix is not
+      # discoverable. Name the switch, then point at the branch already pushed.
+      - name: Explain a blocked pull request
+        if: steps.pr.outcome == 'failure'
+        run: |
+          echo "::error::GitHub refused the pull request with 'GitHub Actions is not permitted to create or approve pull requests'."
+          echo "Enable Settings -> Actions -> General -> Workflow permissions -> 'Allow GitHub Actions to create and approve pull requests',"
+          echo "or give this step a token that may open pull requests. The refreshed branch was pushed either way:"
+          echo "${{ github.server_url }}/${{ github.repository }}/compare/${{ github.ref_name }}...chore/skills-refresh?expand=1"
+          exit 1
