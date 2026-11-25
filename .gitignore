@@ -77,6 +77,9 @@ __pycache__/
 htmlcov/
 .coverage
 .coverage.*
+# A vendored skill ships this file; dropping it made the pinned skill hash
+# unreproducible from a fresh clone, so the skills CLI kept re-downloading it.
+!.agents/skills/**/.coverage
 *.egg-info/
 .eggs/
 dist/
