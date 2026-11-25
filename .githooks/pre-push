@@ -1,0 +1,7 @@
+#!/bin/sh
+# Local half of the skills gate. CI repeats both checks on every push; running
+# them here means an edited SKILL.md fails before it leaves the machine.
+# Enable once per clone: git config core.hooksPath .githooks
+set -e
+node scripts/check_skills_lock.mjs
+node scripts/check_skills_routing.mjs

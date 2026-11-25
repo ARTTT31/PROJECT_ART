@@ -148,6 +148,11 @@ jobs:
 
       # A folder the CLI does not know about is ignored by the restore, so it
       # would otherwise pass with no entry at all.
+      # The matrix, the installed folders and the disk have to agree: a skill
+      # nobody routes to is dead weight, and a matrix path that no longer
+      # exists sends the next agent looking for a file that is gone.
+      - name: Check the routing matrix, the skills and the files agree
+        run: node scripts/check_skills_routing.mjs
       - name: Check every installed skill is pinned in the lock
         run: node scripts/check_skills_lock.mjs
 

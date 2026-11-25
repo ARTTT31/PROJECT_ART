@@ -1,0 +1,52 @@
+name: Skills update
+
+# The lock pins 29 GitHub-sourced skills at exact commits, so an upstream fix
+# stays invisible until someone re-resolves on purpose. This opens a PR instead
+# of pushing: the skill diffs are reviewed like any other change, and the
+# repo-owned (local) skills cannot be touched by it.
+on:
+  schedule:
+    - cron: "0 3 1 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "26"
+
+      # --no-frozen-lockfile is the CLI's own fix for a drifted lock: it
+      # re-resolves every GitHub source and rewrites the recorded hashes.
+      - name: Re-resolve the GitHub-sourced skills
+        run: npx --yes skills@1.9.0 experimental_install --no-frozen-lockfile
+
+      - name: Verify the refreshed tree still passes the gates
+        run: |
+          node scripts/check_skills_lock.mjs
+          node scripts/check_skills_routing.mjs
+
+      - name: Open a pull request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          commit-message: "chore(skills): refresh pinned skills from upstream"
+          title: "chore(skills): refresh pinned skills from upstream"
+          body: |
+            Monthly re-resolution of the GitHub-sourced skills in `skills-lock.json`.
+
+            Review the skill diffs before merging. Skills recorded with
+            `sourceType: "local"` are repo-owned and never change here.
+          branch: chore/skills-refresh
+          delete-branch: true
+          add-paths: |
+            .agents/skills
+            skills-lock.json

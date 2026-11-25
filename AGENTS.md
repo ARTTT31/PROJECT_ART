@@ -12,7 +12,7 @@ Before modifying or creating any code, AI agents MUST identify the relevant area
 
 | Domain / Task | Target Files / Scope | Mandatory Skills to Check & Follow |
 | :--- | :--- | :--- |
-| **Workflow & Discipline** | Any new feature, debugging, planning, reviews | `.agents/skills/using-superpowers/` (`brainstorming`, `writing-plans`, `executing-plans`, `systematic-debugging`, `test-driven-development`, `verification-before-completion`) |
+| **Workflow & Discipline** | Any new feature, debugging, planning, reviews | `.agents/skills/using-superpowers/` (`brainstorming`, `writing-plans`, `executing-plans`, `subagent-driven-development`, `dispatching-parallel-agents`, `using-git-worktrees`, `test-driven-development`, `systematic-debugging`, `requesting-code-review`, `receiving-code-review`, `verification-before-completion`, `finishing-a-development-branch`, `diagnosing-superpowers`, `writing-skills`) |
 | **UI/UX & Design Intelligence** | `frontend/src/**/*`, styles, pages | `.agents/skills/ui-ux-pro-max/` (via `py scripts/search.py`) + [`DESIGN.md`](DESIGN.md) + [`MASTER.md`](design-system/workspace/MASTER.md) |
 | **UI Components & Radix/Tailwind** | `frontend/src/components/**/*` | `.agents/skills/shadcn/` (shadcn/ui composition, CLI, Radix primitives) |
 | **React/Next.js Performance** | `frontend/src/**/*` — data fetching, RSC boundaries, bundle size, re-render/memoization | `.agents/skills/vercel-react-best-practices/` (Vercel engineering rules; review before claiming a perf win) |
@@ -37,7 +37,7 @@ node scripts/check_skills_lock.mjs                              # names the skil
 npx --yes skills@1.9.0 experimental_install --no-frozen-lockfile  # rewrites skills-lock.json
 ```
 
-Commit `.agents/skills/**` and `skills-lock.json` together.
+Commit `.agents/skills/**` and `skills-lock.json` together. `scripts/check_skills_routing.mjs` also fails when a skill is missing from this matrix, a matrix path does not exist, or a skill's `paths:` globs point at nothing. Run both checks on every push with the one-time `git config core.hooksPath .githooks`.
 
 ---
 

@@ -2614,3 +2614,45 @@ Verified locally on the generated lock: the guard reports `runtime lock: 68 pins
 tooling` and exits 0 on `backend/requirements.lock`, and exits 1 naming the line on a lock that
 carries `pytest==9.2.0`; `check_requirements_caps.py` (27 specs) and `check_docs_links.py`
 (7 files) still pass, and `ci.yml` parses as YAML.
+
+
+## The Skills Gate Runs Before the Push (November 25, 2026)
+
+### Repo-owned skills cannot be reverted by a re-pin
+
+- Five skills this repository edited (`design`, `pwa-development`, `sentry-fix-issues`,
+  `sentry-nextjs-sdk`, `shadcn`) moved from `sourceType: "github"` to `sourceType: "local"` in
+  `skills-lock.json`. While they stayed GitHub-sourced, the CLI's documented fix for a drifted
+  lock - `npx skills@1.9.0 experimental_install --no-frozen-lockfile` - would have re-downloaded
+  upstream and silently reverted the metadata fixes: the Sentry skills' model-invocation block,
+  the `design` description that defers slides and banners, the PWA manifest globs.
+- Nothing else changed about them. The lock still records a content hash, so a local edit still
+  has to be re-pinned.
+
+### One routing matrix, and a check that it stays true
+
+- `GEMINI.md` carried its own ten-row matrix while `AGENTS.md` had fifteen, so an agent reading
+  the Gemini file never saw the React-performance, Sentry, docs, auth or deployed-verification
+  rows, and it still said Next.js 15. `GEMINI.md` and `CLAUDE.md` now point at the AGENTS.md
+  matrix, and the workflow row names the whole superpowers suite instead of six of its skills.
+- `scripts/check_skills_routing.mjs` fails when an installed skill is missing from the matrix, a
+  matrix path names a skill that is not installed, a skill's frontmatter `name` disagrees with
+  its folder, or a `paths:` entry points at a directory that no longer exists. It runs in the
+  `skills-lock` job beside the content check.
+- `scripts/check_docs_links.py` now also checks `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`,
+  `DESIGN.md` and `design-system/workspace/MASTER.md` - the files the matrix links to.
+
+### Local gate, and a monthly refresh
+
+- `.githooks/pre-push` runs both scripts; enable it per clone with
+  `git config core.hooksPath .githooks`.
+- `.github/workflows/skills-update.yml` re-resolves the remaining GitHub-sourced skills on the
+  first of every month and opens a pull request, so the pins cannot age silently.
+- Six reference files under `design/references/` duplicated `slides` and `banner-design`
+  byte-for-byte; they are pointers now, leaving one canonical copy of each.
+
+Verified locally: `check_skills_lock.mjs` reports all 32 skills pinned with matching hashes;
+`check_skills_routing.mjs` reports the matrix, 32 skills and the filesystem agree; a probe skill
+added without a matrix row fails both checks; `check_docs_links.py` covers 12 files; both
+workflow files parse as YAML; a frozen restore reports the 32 skills already installed and
+leaves the working tree unchanged.

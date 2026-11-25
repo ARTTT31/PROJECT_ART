@@ -2,13 +2,8 @@
 
 See [AGENTS.md](AGENTS.md) and [GEMINI.md](GEMINI.md) for full project rules and guidelines.
 
-## Quick Summary & Skill Routing Matrix
-Before taking action, identify your task and consult the matching skill:
-- **UI/UX & Design Intelligence**: `.agents/skills/ui-ux-pro-max/` (`py scripts/search.py ...`) + [DESIGN.md](DESIGN.md) + [design-system/workspace/MASTER.md](design-system/workspace/MASTER.md)
-- **UI Components & Composition**: `.agents/skills/shadcn/` (shadcn/ui + Radix primitives)
-- **PWA & Offline Optimization**: `.agents/skills/pwa-development/` (Workbox, caching, offline-first)
-- **Backend API & Endpoints**: `.agents/skills/fastapi/` (Routing, `Annotated` dependencies, streaming)
-- **Database & ORM Models**: `.agents/skills/sqlmodel/` (SQLModel models, session queries, migrations)
+## Skill Routing
+Before taking action, identify your task and consult the matching skill. The matrix is maintained once, in [AGENTS.md](AGENTS.md#-automatic-skill-routing-matrix) — read it there rather than keeping a second copy here; the domains, target files and mandatory skills are all listed in that table.
 
 ## Strict Rules
 - **CSS Custom Properties**: Always use variables from `frontend/src/app/globals.css` (e.g., `bg-[var(--surface)]`, `bg-[var(--accent)]`); do not hardcode hex values.

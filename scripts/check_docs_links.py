@@ -15,6 +15,11 @@ from pathlib import Path
 DOCUMENTS = [
     "README.md",
     "QUICK_START.md",
+    "AGENTS.md",
+    "CLAUDE.md",
+    "GEMINI.md",
+    "DESIGN.md",
+    "design-system/workspace/MASTER.md",
     "docs/internal/architecture.md",
     "docs/internal/status.md",
     "docs/internal/changelog.md",
