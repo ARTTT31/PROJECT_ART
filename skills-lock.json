@@ -6,7 +6,7 @@
       "sourceType": "local",
       "skillPath": ".agents/skills/auth-surface-rules/SKILL.md",
       "installMode": "copy",
-      "computedHash": "d6f230d1ed5e52dabacd1f3f95c124149924a45dcf1a71bda5e32b71d68b187f"
+      "computedHash": "3f8879e25f0247c3545d6784c22893b6c5d6132d87a201d98a610982b314a4c2"
     },
     "banner-design": {
       "source": "nextlevelbuilder/ui-ux-pro-max-skill",
@@ -34,13 +34,13 @@
       "sourceType": "local",
       "skillPath": ".agents/skills/deployed-verification/SKILL.md",
       "installMode": "copy",
-      "computedHash": "76cc30e7177ace6d712b9c520d4c993ca9427c4a6ab37faa74493a624bc6707c"
+      "computedHash": "e497e39bbd000204eb7f47afc0ca575ab3f1e3859cdd4642d01fe1c700e1e98b"
     },
     "design": {
       "source": "nextlevelbuilder/ui-ux-pro-max-skill",
       "sourceType": "github",
       "skillPath": ".claude/skills/design/SKILL.md",
-      "computedHash": "da1c68168b9619307d517ab836215d8a6ef249b0da096078769629eeaebb3f7a",
+      "computedHash": "f25f63e3dc0168fafeaed72c189af56895d2d7f184e6ef24104a3892766a131f",
       "commit": "8db36338810d0942567b97ce439affd1619fcf31"
     },
     "design-system": {
@@ -90,13 +90,13 @@
       "sourceType": "local",
       "skillPath": ".agents/skills/project-docs-discipline/SKILL.md",
       "installMode": "copy",
-      "computedHash": "dcfb680fe22eec9107bb258deaec5f99285be5fce599af9442803cfaa567cb22"
+      "computedHash": "03999c362bec12159b38c11933000e576a77688d9893592fd91a6bab188f60f9"
     },
     "pwa-development": {
       "source": "alinaqi/maggy",
       "sourceType": "github",
       "skillPath": "skills/pwa-development/SKILL.md",
-      "computedHash": "dfff1cfb9ced1ba365ac56c65d52eac9aed14783674e76374da3751d6ac8c251",
+      "computedHash": "2d8b747a0ad973654c0489f4ef6e6b51abdb3e05737dcbed4cc9f5f9350b17a7",
       "commit": "55aabe2493627e1de9cd09459d555181d66f3111"
     },
     "receiving-code-review": {
@@ -119,7 +119,7 @@
       "skillPath": "skills-legacy/sentry-fix-issues/SKILL.md",
       "commit": "149b144b2ba2ad2987ac637a811d82e48c0b2560",
       "installMode": "copy",
-      "computedHash": "627c531b7a55ff939cb68f4b3b96bf74fa115c6a1646cd5ac97a173963c3104a"
+      "computedHash": "fc8f836f6444a877446ab233343871beff021620a61258eb4991883e623dffe8"
     },
     "sentry-nextjs-sdk": {
       "source": "getsentry/sentry-for-ai",
@@ -127,13 +127,13 @@
       "skillPath": "skills-legacy/sentry-nextjs-sdk/SKILL.md",
       "commit": "149b144b2ba2ad2987ac637a811d82e48c0b2560",
       "installMode": "copy",
-      "computedHash": "3a696addb715ed7b4354ccee98be90c54be01b4baee1e492b552086e5e6d49ee"
+      "computedHash": "d88979ad361dcfee2a49fffd64191b5bc052906f758932c698088a85db8a12da"
     },
     "shadcn": {
       "source": "shadcn-ui/ui",
       "sourceType": "github",
       "skillPath": "skills/shadcn/SKILL.md",
-      "computedHash": "388962d16c7a4f13aaeee0d8f128e50a87df8553d42ef7988c39c0e1c74a40e8",
+      "computedHash": "ea2e6a7d755d82d9199558556d356ef4b06dd7348cedf9160fc6c483171622cf",
       "commit": "055aa6b7837b1808456a24beb4c97a677864aa82"
     },
     "slides": {
