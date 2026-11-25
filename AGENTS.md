@@ -28,6 +28,17 @@ Before modifying or creating any code, AI agents MUST identify the relevant area
 | **Auth, Sessions & Identity Surface** | `backend/app/api/v1/endpoints/{auth,users,profile,system,websockets}.py`, `backend/app/core/{security,rate_limit,totp}.py`, `frontend/src/lib/api/**`, `frontend/src/components/Auth/**` | `.agents/skills/auth-surface-rules/` — only for IP/cookie/payload/session changes |
 | **Deployed Environment Checks** | `render.yaml`, `frontend/next.config.js`, `.github/workflows/**`, `docs/setup/production-*.md` | `.agents/skills/deployed-verification/` — only for live-origin checks; local runs stay with `verification-before-completion` |
 
+### Re-pinning a skill
+
+`skills-lock.json` pins every installed skill folder by content hash, and the `skills-lock` CI job fails when a `SKILL.md` changes without it. After editing, adding or deleting anything under `.agents/skills/<name>/`:
+
+```bash
+node scripts/check_skills_lock.mjs                              # names the skills that drifted
+npx --yes skills@1.9.0 experimental_install --no-frozen-lockfile  # rewrites skills-lock.json
+```
+
+Commit `.agents/skills/**` and `skills-lock.json` together.
+
 ---
 
 ## 🎯 Mandatory Pre-Flight Checklist for UI/UX & Frontend
