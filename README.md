@@ -115,6 +115,29 @@ The API will be available at:
 - API root: [http://localhost:8080](http://localhost:8080)
 - Swagger docs: [http://localhost:8080/docs](http://localhost:8080/docs)
 
+#### Backend dependency files
+
+The three files under `backend/` are not interchangeable:
+
+| File | Role |
+| --- | --- |
+| `requirements.in` | The file you edit: direct dependencies, each with a floor and a ceiling (`>=x.y,<next-major`) so a new major cannot resolve unannounced. |
+| `requirements.lock` | Generated, never hand-edited: `pip-compile --generate-hashes` output, which CI and Render install with `pip install --require-hashes -r requirements.lock`. |
+| `requirements.txt` | A shim that only does `-r requirements.in`, so `pip install -r requirements.txt` still works on a machine that cannot take the lock. |
+
+The lock records the SHA-256 of the Linux cp311 wheels, so it will not install in a
+Windows venv. Regenerate it after any edit to `requirements.in`:
+
+1. Push the edit (or open a PR).
+2. Run **Actions → Lockfile → Run workflow** on `main`.
+3. Download the `requirements-lock` artifact, replace `backend/requirements.lock` with
+   it, and commit that file.
+
+Do not run `pip-compile` on a Windows checkout — it would hash Windows wheels and CI and
+Render would then reject them. The workflow reruns on every push that touches the
+requirements files and fails when the committed lock no longer matches the input; that is
+also why a Dependabot PR that raises a ceiling turns red until the lock is regenerated.
+
 ### Frontend
 
 ```bash
@@ -249,6 +272,9 @@ When developing with AI assistants (Antigravity, Gemini CLI, Claude Code), the a
 - Root directory: `backend`
 - Build command: `pip install --require-hashes -r requirements.lock` (the lock is compiled
   on CI from `requirements.in`; `requirements.txt` is only a local-dev shim)
+- Set `PYTHON_VERSION` to a 3.11 release (for example `3.11.9`). The lock records the
+  SHA-256 of the cp311 manylinux wheels only, so a 3.12+ runtime rejects every binary
+  requirement it downloads and the build dies before the service starts.
 - Start command: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
 - Set `DATABASE_URL` (the Aiven service URI), `SSL_CA_CERT_PATH` (the downloaded Aiven CA), a long random `SECRET_KEY`, `FRONTEND_URL`, and the exact `CORS_ORIGINS` frontend URL in Render environment variables.
 - Keep `DEBUG=False` and `AUTO_CREATE_TABLES=False` in production. Alembic is the only owner of the schema: run `alembic upgrade head` for every release.

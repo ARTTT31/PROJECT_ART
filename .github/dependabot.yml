@@ -5,6 +5,10 @@
 # it is safe. Grouping keeps the noise low, scheduled monthly to prevent branch clutter.
 version: 2
 updates:
+  # `requirements.txt` is only a shim (`-r requirements.in`), but Dependabot follows
+  # `-r` includes that end in .txt/.in, so the pins stay visible. It cannot see
+  # requirements.lock (not a .txt), so a PR that raises a ceiling arrives without one
+  # and the Lockfile workflow fails it until the lock is regenerated.
   - package-ecosystem: pip
     directory: /backend
     schedule:
