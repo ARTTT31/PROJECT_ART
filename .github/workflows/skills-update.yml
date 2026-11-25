@@ -63,5 +63,18 @@ jobs:
           echo "::error::GitHub refused the pull request with 'GitHub Actions is not permitted to create or approve pull requests'."
           echo "Enable Settings -> Actions -> General -> Workflow permissions -> 'Allow GitHub Actions to create and approve pull requests',"
           echo "or give this step a token that may open pull requests. The refreshed branch was pushed either way:"
-          echo "${{ github.server_url }}/${{ github.repository }}/compare/${{ github.event.repository.default_branch }}...chore/skills-refresh?expand=1"
+          compare="${{ github.server_url }}/${{ github.repository }}/compare/${{ github.event.repository.default_branch }}...chore/skills-refresh?expand=1"
+          echo "$compare"
+          {
+            echo "## Skills refresh: pull request blocked"
+            echo ""
+            echo "GitHub refused to open the pull request: **GitHub Actions is not permitted to create or approve pull requests**."
+            echo ""
+            echo "Turn on Settings -> Actions -> General -> Workflow permissions -> *Allow GitHub Actions to create and approve pull requests*,"
+            echo "or give the pull-request step a token that may open pull requests."
+            echo ""
+            echo 'The refreshed branch `chore/skills-refresh` was pushed anyway:'
+            echo ""
+            echo "[Open the compare page and create the pull request by hand]($compare)"
+          } >> "$GITHUB_STEP_SUMMARY"
           exit 1
