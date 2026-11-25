@@ -80,7 +80,7 @@ dist/
 build/
 art_workspace.db
 ruff/
-skills-lock.json
+# skills-lock.json is intentionally tracked: it pins the installed agent skills for CI (`--frozen-lockfile`).
 
 # Node
 node_modules/
