@@ -3,6 +3,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import DailyBriefingCard from './DailyBriefingCard';
 import * as fetchWithAuthModule from '@/lib/api/fetchWithAuth';
 
+// The real showToast opens a SweetAlert2 toast, whose internal timers fire after
+// jsdom is torn down ("ReferenceError: window is not defined"), which fails the
+// whole run with an unhandled error on CI. Every sibling card test mocks it.
+vi.mock('@/utils/sweetalert', () => ({ showToast: vi.fn() }));
+
 describe('DailyBriefingCard', () => {
   beforeEach(() => {
     vi.clearAllMocks();
