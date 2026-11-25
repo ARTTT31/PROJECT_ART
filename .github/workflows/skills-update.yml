@@ -63,5 +63,5 @@ jobs:
           echo "::error::GitHub refused the pull request with 'GitHub Actions is not permitted to create or approve pull requests'."
           echo "Enable Settings -> Actions -> General -> Workflow permissions -> 'Allow GitHub Actions to create and approve pull requests',"
           echo "or give this step a token that may open pull requests. The refreshed branch was pushed either way:"
-          echo "${{ github.server_url }}/${{ github.repository }}/compare/${{ github.ref_name }}...chore/skills-refresh?expand=1"
+          echo "${{ github.server_url }}/${{ github.repository }}/compare/${{ github.event.repository.default_branch }}...chore/skills-refresh?expand=1"
           exit 1
