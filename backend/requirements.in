@@ -68,7 +68,7 @@ slowapi==0.1.10
 # Capped below 3: SDK 3.0 renamed profiles_sample_rate -> profile_session_sample_rate,
 # dropped the transaction_style option and the `fastapi` extra, so the init() call in
 # app/main.py stops type-checking. Raise the cap with that migration, not before.
-sentry-sdk[fastapi]>=2.75.0,<3
+sentry-sdk>=2.75.0,<4
 
 # System Monitoring
 psutil==7.2.2
