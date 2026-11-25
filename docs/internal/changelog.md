@@ -2590,3 +2590,27 @@ job from the same `pip==26.3` / `pip-tools==7.7.0` resolution on Linux cp311, co
 All 68 runtime pins appear in the dev lock at the **same version**, so the two files describe
 one resolution rather than two opinions. The previous single lock was 85 pins and 2,792
 hashes: the dev lock is exactly that set, and the production lock is now the 17 fewer.
+
+## The Runtime Lock Cannot Grow a Dev Tool Back (November 25, 2026)
+
+Separating the test tooling from `backend/requirements.lock` fixed the image Render builds, but
+nothing kept it separated. A stray line in `backend/requirements.in`, or a runtime lock committed
+from the dev input, would put pytest, flake8, mypy and `aiosqlite` back into every production
+image and still pass every check: nothing under `backend/app` imports them, so the suite cannot
+notice, and `--require-hashes` only proves the file matches its own hashes.
+
+- `scripts/check_runtime_lock.py` reads the top-level pins of `backend/requirements.lock`
+  (`name==version` and `name[extra]==version`, with PEP 503 name normalisation) and fails when
+  `pytest`, `flake8`, `mypy` or `aiosqlite` appears, naming the line and pointing at
+  `backend/requirements-dev.in`. `backend/requirements-dev.lock` is the superset and is expected
+  to contain them, so only the runtime lock is checked; pass another path to check it.
+- The backend job runs it right after the ceiling guard and before anything is installed, so a
+  leak fails the run instead of shipping.
+- `dependency-audit` installs `pip-audit==2.10.1` instead of the latest release. The advisory
+  data still comes from the live database - that is the point of the audit - but the tool that
+  decides what a finding looks like can no longer change under the job without a commit here.
+
+Verified locally on the generated lock: the guard reports `runtime lock: 68 pins, no test/lint
+tooling` and exits 0 on `backend/requirements.lock`, and exits 1 naming the line on a lock that
+carries `pytest==9.2.0`; `check_requirements_caps.py` (27 specs) and `check_docs_links.py`
+(7 files) still pass, and `ci.yml` parses as YAML.

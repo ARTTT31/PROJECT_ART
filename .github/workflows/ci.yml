@@ -31,6 +31,13 @@ jobs:
           python scripts/check_requirements_caps.py
           python scripts/check_requirements_caps.py backend/requirements-dev.in
 
+      # The split is only as good as the file Render installs: a stray line in
+      # `requirements.in`, or a runtime lock regenerated from the dev input, would
+      # quietly put pytest, flake8, mypy and the SQLite driver back into every
+      # production image without failing a single test.
+      - name: Keep test and lint tools out of the runtime lock
+        run: python scripts/check_runtime_lock.py
+
       # The docs split (architecture / status / changelog / roadmap) only holds
       # while the links between them resolve; a stale link is how the last drift
       # started, so it fails the build instead of waiting for a reviewer.
@@ -114,9 +121,12 @@ jobs:
       # Both locks: the runtime one is what ships, the dev one is what the tests
       # import. An advisory in either fails the build rather than waiting for a
       # reader, and the weekly schedule covers the tooling as well as the service.
+      # Pinned, not latest: an unpinned `pip-audit` let a PyPI release change what
+      # this job reports without a commit here. The advisory data still comes from
+      # the live database — that is the point of the audit — so bump this deliberately.
       - name: Audit backend dependencies
         run: |
-          python -m pip install --upgrade pip pip-audit
+          python -m pip install --upgrade pip pip-audit==2.10.1
           pip-audit -r backend/requirements.lock
           pip-audit -r backend/requirements-dev.lock
 
