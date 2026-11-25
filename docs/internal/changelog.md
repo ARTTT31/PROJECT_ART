@@ -2426,3 +2426,107 @@ picker. (3) The pull-to-refresh pill floated over the greeting card instead of s
 coverage of the new logo-resize branches); frontend **498 passed / 74 files**;
 `tsc --noEmit`, `eslint`, `npm run build` (17 routes), `flake8` and `mypy` clean. The twelve preset
 marks were rendered to a contact sheet and inspected.
+
+## The Skill Lock Covers Everything, and CI Is Green Again (November 25, 2026)
+
+Two jobs had been red on `main`, and `skills-lock.json` covered four of the thirty-two
+installed skills. This pass fixed both failures at their cause, completed the lock, and added
+the gate that keeps it complete.
+
+### The backend went red without a single code change
+
+`sentry-sdk[fastapi]>=2.75.0` had no upper bound, so CI resolved **3.0.0** while `app/main.py`
+was written against 2.x: that release renames `profiles_sample_rate` to
+`profile_session_sample_rate`, stops accepting `send_default_pii`, removes the
+`transaction_style` option of `FastApiIntegration` and no longer ships the `fastapi` extra.
+`mypy` reported exactly those three arguments as unexpected, and the job failed before a test
+ran. The fix is a cap — `sentry-sdk[fastapi]>=2.75.0,<3` — with a comment naming the migration
+that lifts it. Migrating to 3.0 is a separate change and was deliberately not folded into a
+CI repair.
+
+### The frontend run failed while reporting 498 passing tests
+
+Every test passed and the job still exited `1`: `DailyBriefingCard.test.tsx` drove the real
+`showToast`, and SweetAlert2's internal timers fire after jsdom is torn down, surfacing as an
+unhandled `ReferenceError: window is not defined` inside `sweetalert2.all.js`. The test now
+mocks `@/utils/sweetalert`, as every sibling card test already did. An exit code is the
+result; a green test summary above a non-zero exit is still a red build.
+
+### Every installed skill is locked, and every GitHub skill is pinned
+
+- `skills-lock.json` (v2) now holds **32 entries — 29 GitHub-sourced and 3 local** — and all
+  29 carries the `source`, `sourceType`, `skillPath`, `computedHash` tuple plus a **40-hex
+  `commit`**, so a restore of a pinned skill reproduces the bytes that were reviewed instead
+  of whatever `main` happens to hold.
+- Eight skills whose recorded hash no longer matched `HEAD` were refreshed to the `HEAD`
+  content and pinned at that commit. Pinning a hash that does not exist in the upstream
+  history would have made the lock unreproducible; digging the old bytes out of the history
+  was rejected as the more fragile option.
+- The hash has to match the CLI byte for byte: files sorted by path bytes, hashed as
+  `path\0len\0content`, line endings normalised to LF — **except files containing a NUL byte,
+  which are hashed raw**. That exception is what made the shadcn skill report a permanent
+  mismatch.
+- The canonical directory is now `.agents/skills` (the CLI has no override for the old
+  `.agent/skills`), and `.gitignore` was narrowed to `.agents/*` plus `!.agents/skills/` and
+  `!.agents/skills/**/.coverage`. That last negation matters: `ui-styling` ships a
+  `scripts/.coverage` file the repo-level coverage ignore was silently dropping, so a fresh
+  clone was missing a file the lock had hashed and every restore re-downloaded the skill.
+- `scripts/check_skills_lock.mjs` fails when an installed skill has no entry **or** an entry
+  has no folder, which is the direction the CLI's own lock check does not cover.
+- The `skills-lock` CI job runs coverage, then
+  `npx --yes skills@1.9.0 experimental_install --frozen-lockfile`, then
+  `git status --porcelain -- .agents/skills`. The third step exists because
+  `--frozen-lockfile` *restores* drifted content and still exits `0`; without the diff check
+  the job would report success while quietly rewriting the working tree.
+- Two skills were added: `vercel-react-best-practices` (vercel-labs) and
+  `sentry-nextjs-sdk` + `sentry-fix-issues` (getsentry/sentry-for-ai). The second source was
+  chosen over `getsentry/skills`, whose 31 skills are internal (blog, brand, triage) and carry
+  no SDK guidance. `AGENTS.md`'s routing matrix gained the matching rows and is now 15 rows.
+
+### Verified — every number below is read from CI
+
+CI run **`45530447604`** (run #593), a push of `06763d9` to `main`, `02:05:30Z → 02:10:04Z`
+(4m34s), conclusion `success`:
+
+| Job | What the log says |
+| --- | --- |
+| `backend (3.11)` | **758 passed, 1 skipped**; coverage **75.98%** against the 75% gate; `mypy` "Success: no issues found in 74 source files"; `flake8` clean; the Alembic chain applies and `alembic check` is clean; docs link check covers 7 files |
+| `dependency-audit` | "No known vulnerabilities found" |
+| `skills-lock` | "skills-lock.json pins all 32 installed skills"; the restore answers "32 skills already installed"; the drift diff is empty |
+| `frontend (26)` | **498 passed / 74 files** in 28.6s; `npm ci` installs 536 packages with **0 vulnerabilities**; production audit, `eslint` and `tsc` clean; the build emits 16 static pages and `public/sw.js`; Playwright smoke **7 passed**, axe **2 passed**, live auth E2E **3 passed** |
+
+The larger figures elsewhere in this file (759 tests, ~84.7% coverage) were measured on a
+different tree and interpreter; the backend job runs Python 3.11, where coverage measures
+lower. A fresh clone was also checked separately: restore reports the 32 skills already
+installed and leaves `git status` empty.
+
+### Proposed, not implemented: keeping the next major out of CI
+
+The sentry failure is not a one-off, it is a class. `backend/requirements.txt` still has bare
+floors that can resolve a new major with no commit: `python-multipart>=0.0.34`,
+`argon2-cffi>=25.1.0`, `google-auth>=2.62.2`, `redis>=8.1.0`, and the four transitive security
+floors `starlette>=1.10.0`, `cryptography>=50.0.2`, `anyio>=4.16.0`, `urllib3>=2.8.0`.
+`pip-audit` cannot catch this — it looks for CVEs, not API changes — and Dependabot's PRs are
+advisory, so the break lands on an unrelated push. Three ways to close it, cheapest first:
+
+1. **Major caps, one line each.** Write every floor as `>=x.y,<next-major`. Eight edits, no
+   new tooling, and it makes the observed failure impossible. It does not make installs
+   reproducible, and minor/patch drift still reaches CI.
+2. **Hashless constraints lock.** Generate `backend/constraints.txt` from `pip freeze` on the
+   CI 3.11 interpreter and install with `-c backend/constraints.txt` in CI *and* on Render.
+   Reproducible versions with no new toolchain, but it rots silently unless a job
+   regenerates and diffs it.
+3. **A real lock with hashes.** `backend/requirements.in` keeps the human intent,
+   `pip-compile --generate-hashes` writes the lock, and CI installs it with
+   `--require-hashes`. Byte-identical, tamper-evident, and it covers the transitive tree that
+   the four security floors exist to defend. The generator needs Linux/py3.11 — a CI job, not
+   the dev machine, whose interpreter is 3.14 where `psycopg2-binary` has no wheel.
+
+Recommended order: **1 now**, because it is eight lines and removes the failure that just
+happened; then **3**, because a hash lock is the only version that also pins the transitive
+resolutions behind the security floors. Either way, add a three-line CI guard that fails when
+a `requirements.txt` line contains `>=` without a `<` — the caps rot the moment nobody checks
+them. The frontend needs nothing here: `npm ci` plus the committed `package-lock.json` already
+means CI resolves nothing.
+
+None of these three is implemented yet; the caps in particular are a separate change.
