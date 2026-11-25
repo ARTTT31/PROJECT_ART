@@ -114,9 +114,29 @@ jobs:
         with:
           node-version: "26"
 
-      # Pinned to the CLI version that wrote this v2 lock file.
-      - name: Verify installed skills match skills-lock.json
+      # A folder the CLI does not know about is ignored by the restore, so it
+      # would otherwise pass with no entry at all.
+      - name: Check every installed skill is pinned in the lock
+        run: node scripts/check_skills_lock.mjs
+
+      # Pinned to the CLI version that wrote this v2 lock file. It refuses to
+      # rewrite the lock, but it still *restores* a drifted skill and exits 0,
+      # so this step alone is not a gate.
+      - name: Restore skills from skills-lock.json
         run: npx --yes skills@1.9.0 experimental_install --frozen-lockfile
+
+      # The restore above is only proof when it changed nothing: a non-empty
+      # status means a committed skill, or an unrecorded one, disagrees with the
+      # lock. Fail here so the drift is visible in the check, not silently fixed.
+      - name: Fail when a skill and the lock disagree
+        run: |
+          changes=$(git status --porcelain -- .agents/skills)
+          if [ -n "$changes" ]; then
+            echo "$changes"
+            git --no-pager diff --stat -- .agents/skills
+            echo "::error::Skills in .agents/skills do not match skills-lock.json. Run 'npx skills experimental_install --no-frozen-lockfile' locally and commit the result."
+            exit 1
+          fi
 
   # ── Frontend: Lint + Type-Check + Build ───────────────
   frontend:
