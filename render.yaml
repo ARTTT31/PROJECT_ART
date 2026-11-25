@@ -12,12 +12,19 @@ services:
     # Keep this region aligned with the Aiven database. Cross-region database
     # round-trips were measured at ~1.5s per query in production.
     region: singapore
-    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
+    # requirements.lock is compiled on CI from requirements.in and carries the
+    # SHA-256 of every distribution, so the build installs exactly the set the
+    # backend job tested. --require-hashes rejects anything else.
+    buildCommand: pip install --upgrade pip && pip install --require-hashes -r requirements.lock
     preDeployCommand: alembic upgrade head
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health/ready
     autoDeploy: true
     envVars:
+      # The lock hashes cp311 manylinux wheels, so the runtime has to be 3.11:
+      # a newer minor would reject every binary wheel the lock names.
+      - key: PYTHON_VERSION
+        value: "3.11.9"
       - key: DEBUG
         value: "false"
       - key: AUTO_CREATE_TABLES

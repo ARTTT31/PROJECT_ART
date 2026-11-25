@@ -191,7 +191,7 @@ flake8 app --max-line-length=120 --exclude=__pycache__
 python -m mypy app
 python -m pytest -q --tb=short
 alembic upgrade head && alembic check        # schema matches the migration chain
-python -m pip_audit -r requirements.txt      # dependency advisories (pip install pip-audit)
+python -m pip_audit -r requirements.lock     # dependency advisories (pip install pip-audit)
 ```
 
 If Windows has the Python launcher but not `python` on PATH, use:
@@ -247,7 +247,8 @@ When developing with AI assistants (Antigravity, Gemini CLI, Claude Code), the a
 ### Render Backend
 
 - Root directory: `backend`
-- Build command: `pip install -r requirements.txt`
+- Build command: `pip install --require-hashes -r requirements.lock` (the lock is compiled
+  on CI from `requirements.in`; `requirements.txt` is only a local-dev shim)
 - Start command: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
 - Set `DATABASE_URL` (the Aiven service URI), `SSL_CA_CERT_PATH` (the downloaded Aiven CA), a long random `SECRET_KEY`, `FRONTEND_URL`, and the exact `CORS_ORIGINS` frontend URL in Render environment variables.
 - Keep `DEBUG=False` and `AUTO_CREATE_TABLES=False` in production. Alembic is the only owner of the schema: run `alembic upgrade head` for every release.

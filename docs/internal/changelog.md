@@ -2533,4 +2533,7 @@ means CI resolves nothing.
 in `backend/requirements.txt` now names its next major (`python-multipart>=0.0.34,<1`,
 `argon2-cffi<26`, `google-auth<3`, `redis<9`, `starlette<2`, `cryptography<51`, `anyio<5`,
 `urllib3<3`), and the backend job runs `scripts/check_requirements_caps.py`, which fails when a
-`>=` has no `<`. Options 2 and 3 remain proposals.
+`>=` has no `<`. Option 3 followed: `backend/requirements.in` is now the source of truth,
+`backend/requirements.lock` is compiled on Linux cp311 by the `Lockfile` workflow with
+`--generate-hashes`, and CI and Render install it with `--require-hashes`; option 2 (a
+hashless constraints file) is moot once this exists.

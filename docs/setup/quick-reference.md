@@ -94,7 +94,7 @@ The same job runs in-app every `SESSION_CLEANUP_INTERVAL_HOURS` (default 6, `0` 
 
 ```powershell
 cd backend
-.\venv\Scripts\python.exe -m pip_audit -r requirements.txt
+.\venv\Scripts\python.exe -m pip_audit -r requirements.lock
 ```
 
 ### Test oil prices endpoint

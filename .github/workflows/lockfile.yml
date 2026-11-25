@@ -44,12 +44,16 @@ jobs:
           --output-file=backend/requirements.lock
           backend/requirements.in
 
-      # A hand edit, a dependency added without regenerating, or a raised floor
-      # all surface here instead of as an install failure on Render.
+      # A hand edit, a dependency added without regenerating, a raised floor, or
+      # a lock that was never committed all surface here instead of as an install
+      # failure on Render. `git status` and not `git diff`: a missing lock is an
+      # untracked file, and `git diff` reports that as no change at all.
       - name: Fail when the committed lock is stale
         if: github.event_name != 'workflow_dispatch'
         run: |
-          if ! git diff --quiet -- backend/requirements.lock; then
+          changes=$(git status --porcelain -- backend/requirements.lock)
+          if [ -n "$changes" ]; then
+            echo "$changes"
             git --no-pager diff --stat -- backend/requirements.lock
             echo "::error::backend/requirements.lock does not match requirements.in. Run the Lockfile workflow from the Actions tab and commit the requirements-lock artifact it uploads."
             exit 1
