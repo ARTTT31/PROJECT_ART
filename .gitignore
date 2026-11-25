@@ -8,7 +8,10 @@
 .idea/
 .cursor/
 .cursorrules
-.agents/
+# `.agents/` is agent-tooling state, except the skills tree, which is versioned on
+# purpose: skills-lock.json pins it by hash and CI restores and verifies it.
+.agents/*
+!.agents/skills/
 .freebuff/
 load_freebuff_cookies.py
 .gemini/
