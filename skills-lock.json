@@ -37,11 +37,11 @@
       "computedHash": "e497e39bbd000204eb7f47afc0ca575ab3f1e3859cdd4642d01fe1c700e1e98b"
     },
     "design": {
-      "source": "nextlevelbuilder/ui-ux-pro-max-skill",
-      "sourceType": "github",
-      "skillPath": ".claude/skills/design/SKILL.md",
-      "computedHash": "f25f63e3dc0168fafeaed72c189af56895d2d7f184e6ef24104a3892766a131f",
-      "commit": "8db36338810d0942567b97ce439affd1619fcf31"
+      "source": ".",
+      "sourceType": "local",
+      "skillPath": ".agents/skills/design/SKILL.md",
+      "installMode": "copy",
+      "computedHash": "44ed7ba3e902fec1353efcbaa4026d06aac4a6054ecb9ea296d8ee4e429921c3"
     },
     "design-system": {
       "source": "nextlevelbuilder/ui-ux-pro-max-skill",
@@ -93,11 +93,11 @@
       "computedHash": "03999c362bec12159b38c11933000e576a77688d9893592fd91a6bab188f60f9"
     },
     "pwa-development": {
-      "source": "alinaqi/maggy",
-      "sourceType": "github",
-      "skillPath": "skills/pwa-development/SKILL.md",
-      "computedHash": "2d8b747a0ad973654c0489f4ef6e6b51abdb3e05737dcbed4cc9f5f9350b17a7",
-      "commit": "55aabe2493627e1de9cd09459d555181d66f3111"
+      "source": ".",
+      "sourceType": "local",
+      "skillPath": ".agents/skills/pwa-development/SKILL.md",
+      "installMode": "copy",
+      "computedHash": "2d8b747a0ad973654c0489f4ef6e6b51abdb3e05737dcbed4cc9f5f9350b17a7"
     },
     "receiving-code-review": {
       "source": "obra/superpowers",
@@ -114,27 +114,25 @@
       "commit": "22f0b463e7a5e579904dd6211a520321035526f7"
     },
     "sentry-fix-issues": {
-      "source": "getsentry/sentry-for-ai",
-      "sourceType": "github",
-      "skillPath": "skills-legacy/sentry-fix-issues/SKILL.md",
-      "commit": "149b144b2ba2ad2987ac637a811d82e48c0b2560",
+      "source": ".",
+      "sourceType": "local",
+      "skillPath": ".agents/skills/sentry-fix-issues/SKILL.md",
       "installMode": "copy",
       "computedHash": "fc8f836f6444a877446ab233343871beff021620a61258eb4991883e623dffe8"
     },
     "sentry-nextjs-sdk": {
-      "source": "getsentry/sentry-for-ai",
-      "sourceType": "github",
-      "skillPath": "skills-legacy/sentry-nextjs-sdk/SKILL.md",
-      "commit": "149b144b2ba2ad2987ac637a811d82e48c0b2560",
+      "source": ".",
+      "sourceType": "local",
+      "skillPath": ".agents/skills/sentry-nextjs-sdk/SKILL.md",
       "installMode": "copy",
       "computedHash": "d88979ad361dcfee2a49fffd64191b5bc052906f758932c698088a85db8a12da"
     },
     "shadcn": {
-      "source": "shadcn-ui/ui",
-      "sourceType": "github",
-      "skillPath": "skills/shadcn/SKILL.md",
-      "computedHash": "ea2e6a7d755d82d9199558556d356ef4b06dd7348cedf9160fc6c483171622cf",
-      "commit": "055aa6b7837b1808456a24beb4c97a677864aa82"
+      "source": ".",
+      "sourceType": "local",
+      "skillPath": ".agents/skills/shadcn/SKILL.md",
+      "installMode": "copy",
+      "computedHash": "ea2e6a7d755d82d9199558556d356ef4b06dd7348cedf9160fc6c483171622cf"
     },
     "slides": {
       "source": "nextlevelbuilder/ui-ux-pro-max-skill",
