@@ -1,24 +1,24 @@
-@./.agent/skills/using-superpowers/SKILL.md
+@./.agents/skills/using-superpowers/SKILL.md
 
 # Guidelines & Pre-Flight Instructions for AI Assistants
 
 All AI agents working on this codebase MUST follow these instructions before executing any task:
 
 ## 🧭 Automatic Skill Routing Matrix
-Before modifying or creating any code, AI agents MUST invoke and follow the relevant installed skill in `.agent/skills/`:
+Before modifying or creating any code, AI agents MUST invoke and follow the relevant installed skill in `.agents/skills/`:
 
 | Domain / Task | Target Files / Scope | Mandatory Skills to Check & Follow |
 | :--- | :--- | :--- |
-| **Workflow & Discipline** | Any new feature, debugging, planning, reviews | `.agent/skills/using-superpowers/` (`brainstorming`, `writing-plans`, `executing-plans`, `systematic-debugging`, `test-driven-development`, `verification-before-completion`) |
-| **UI/UX & Design Intelligence** | `frontend/src/**/*`, styles, pages | `.agent/skills/ui-ux-pro-max/` (via `py scripts/search.py`) + [DESIGN.md](DESIGN.md) + [design-system/workspace/MASTER.md](design-system/workspace/MASTER.md) |
-| **UI Components & Radix/Tailwind** | `frontend/src/components/**/*` | `.agent/skills/shadcn/` (shadcn/ui composition, CLI, Radix primitives) |
-| **PWA, Service Workers & Caching** | `frontend/public/manifest*`, `sw.*`, offline logic | `.agent/skills/pwa-development/` (Workbox, caching strategies, offline-first) |
-| **Backend API & Endpoints** | `backend/app/api/**/*`, `backend/app/main.py` | `.agent/skills/fastapi/` (Routing, dependencies with `Annotated`, streaming/SSE) |
-| **Database & ORM Models** | `backend/app/models/**/*`, `backend/app/db/**/*` | `.agent/skills/sqlmodel/` (SQLModel field definitions, sessions, query patterns) |
-| **Design Tokens & Specs Architecture** | `frontend/src/app/globals.css`, token configs | `.agent/skills/design-system/` (Three-layer tokens: primitive → semantic → component) |
-| **Brand Identity & Voice** | Branding, tone, copy, logo assets | `.agent/skills/brand/` + `.agent/skills/design/` (Visual identity, CIP mockups) |
-| **Banners, Share Cards & Visuals** | Infographic cards, social banners, canvas export | `.agent/skills/banner-design/` + `.agent/skills/ui-styling/` |
-| **HTML Slides & Presentations** | Presentation decks, reports, Chart.js views | `.agent/skills/slides/` |
+| **Workflow & Discipline** | Any new feature, debugging, planning, reviews | `.agents/skills/using-superpowers/` (`brainstorming`, `writing-plans`, `executing-plans`, `systematic-debugging`, `test-driven-development`, `verification-before-completion`) |
+| **UI/UX & Design Intelligence** | `frontend/src/**/*`, styles, pages | `.agents/skills/ui-ux-pro-max/` (via `py scripts/search.py`) + [DESIGN.md](DESIGN.md) + [design-system/workspace/MASTER.md](design-system/workspace/MASTER.md) |
+| **UI Components & Radix/Tailwind** | `frontend/src/components/**/*` | `.agents/skills/shadcn/` (shadcn/ui composition, CLI, Radix primitives) |
+| **PWA, Service Workers & Caching** | `frontend/public/manifest*`, `sw.*`, offline logic | `.agents/skills/pwa-development/` (Workbox, caching strategies, offline-first) |
+| **Backend API & Endpoints** | `backend/app/api/**/*`, `backend/app/main.py` | `.agents/skills/fastapi/` (Routing, dependencies with `Annotated`, streaming/SSE) |
+| **Database & ORM Models** | `backend/app/models/**/*`, `backend/app/db/**/*` | `.agents/skills/sqlmodel/` (SQLModel field definitions, sessions, query patterns) |
+| **Design Tokens & Specs Architecture** | `frontend/src/app/globals.css`, token configs | `.agents/skills/design-system/` (Three-layer tokens: primitive → semantic → component) |
+| **Brand Identity & Voice** | Branding, tone, copy, logo assets | `.agents/skills/brand/` + `.agents/skills/design/` (Visual identity, CIP mockups) |
+| **Banners, Share Cards & Visuals** | Infographic cards, social banners, canvas export | `.agents/skills/banner-design/` + `.agents/skills/ui-styling/` |
+| **HTML Slides & Presentations** | Presentation decks, reports, Chart.js views | `.agents/skills/slides/` |
 
 ---
 
@@ -28,15 +28,15 @@ Before modifying or creating any frontend code, components, or styles:
    - Check [DESIGN.md](DESIGN.md) and the single source of truth [design-system/workspace/MASTER.md](design-system/workspace/MASTER.md).
    - Strictly follow Apple Human Interface Guidelines (HIG): clean typography, flat surfaces, 1px hairline borders (`border-black/[0.06]`), continuous squircle corner radii (`apple-lg` 18px cards/dialogs, `apple-md` 11px controls, `rounded-full` pills), and springy active states (`active:scale-[0.95]`).
 2. **Consult UI/UX Pro Max**:
-   - Use the installed `ui-ux-pro-max` skill (`.agent/skills/ui-ux-pro-max/`) for design intelligence, UX guidelines, accessibility requirements, and styling reference.
+   - Use the installed `ui-ux-pro-max` skill (`.agents/skills/ui-ux-pro-max/`) for design intelligence, UX guidelines, accessibility requirements, and styling reference.
    - Run search queries via python when needed:
      ```bash
-     py .agent/skills/ui-ux-pro-max/scripts/search.py "<query>" --domain <domain>
+     py .agents/skills/ui-ux-pro-max/scripts/search.py "<query>" --domain <domain>
      # Domains: style, color, chart, landing, product, ux, typography, icons, gsap, react, web, google-fonts
-     # Stack guidance: py .agent/skills/ui-ux-pro-max/scripts/search.py "<query>" --stack nextjs
+     # Stack guidance: py .agents/skills/ui-ux-pro-max/scripts/search.py "<query>" --stack nextjs
      ```
 3. **shadcn/ui Composition**:
-   - Consult `.agent/skills/shadcn/` before creating complex components. Use existing components and compose rather than inventing custom abstractions.
+   - Consult `.agents/skills/shadcn/` before creating complex components. Use existing components and compose rather than inventing custom abstractions.
 4. **Token Usage (Strict)**:
    - Never hardcode color hex codes directly in components.
    - Always consume CSS custom properties from `frontend/src/app/globals.css` via Tailwind arbitrary values (e.g., `bg-[var(--surface)]`, `text-[var(--ink)]`, `bg-[var(--accent)]`).
@@ -58,9 +58,9 @@ Before modifying or creating any frontend code, components, or styles:
 
 ## 2. Backend & Data Layer Rules
 1. **FastAPI Standards**:
-   - Follow `.agent/skills/fastapi/`. Use `Annotated[..., Depends(...)]` for dependencies. Prefer return types over raw dicts.
+   - Follow `.agents/skills/fastapi/`. Use `Annotated[..., Depends(...)]` for dependencies. Prefer return types over raw dicts.
 2. **SQLModel Standards**:
-   - Follow `.agent/skills/sqlmodel/`. Prefer `sqlmodel` imports (`Field`, `Session`, `select`) over raw SQLAlchemy declarative defaults. Keep migrations synced with Alembic.
+   - Follow `.agents/skills/sqlmodel/`. Prefer `sqlmodel` imports (`Field`, `Session`, `select`) over raw SQLAlchemy declarative defaults. Keep migrations synced with Alembic.
 
 ---
 

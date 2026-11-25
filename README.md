@@ -12,6 +12,7 @@ The GitHub Actions pipeline (`ci.yml`) runs on every push and pull request to `m
 - **Frontend:** Node 26 — ESLint + TypeScript type-check + the full Vitest unit suite + Next.js production build + a check that the PWA worker was generated + Playwright smoke tests + axe accessibility checks on the auth pages + a live auth E2E (register → login) that starts the backend on SQLite
 
 > Exact test counts and coverage are not repeated here: they change with every commit and used to go stale in this file. [`docs/internal/status.md`](docs/internal/status.md) is the single place that records the verified numbers for the current `main`.
+- **Agent skills lock (blocking):** `skills-lock.json` pins every installed skill under `.agents/skills/` by content hash, and CI restores it with `npx skills experimental_install --frozen-lockfile`. An edited skill, or a new one with no lock entry, fails the build instead of drifting silently.
 - **Dependency audit (blocking):** `pip-audit` gates every push and pull request and re-runs weekly (`cron: 0 2 * * 1`, Mondays 02:00 UTC). The pinned backend set currently reports no known advisories; Dependabot opens the upgrade pull requests (see `.github/dependabot.yml`).
 
 > The coverage gate in `backend/pytest.ini` is `--cov-fail-under=75`, and it is a ratchet: Python 3.11 (what CI runs) measures lower than 3.14 on this suite, so a gate fixed to the higher interpreter would fail on the difference rather than on untested code. Raise the number as 3.11 coverage climbs (see [Current Status](docs/internal/status.md) for the current pair).
@@ -203,7 +204,7 @@ py -m pytest -q --tb=short
 
 ```
 PROJECT_ART/
-├── .agent/skills/               # Superpowers agent skills (TDD, debugging, planning, reviews)
+├── .agents/skills/               # Superpowers agent skills (TDD, debugging, planning, reviews)
 ├── GEMINI.md                    # Agent bootstrap rules (using-superpowers)
 ├── frontend/                    # Next.js 16 App Router
 │   └── src/
@@ -231,7 +232,7 @@ PROJECT_ART/
 
 ## Agentic Engineering & Skills (Superpowers)
 
-This repository includes the [Superpowers](https://github.com/obra/superpowers) agentic skills suite in `.agent/skills/` with bootstrap instructions in `GEMINI.md`.
+This repository includes the [Superpowers](https://github.com/obra/superpowers) agentic skills suite in `.agents/skills/` with bootstrap instructions in `GEMINI.md`.
 
 When developing with AI assistants (Antigravity, Gemini CLI, Claude Code), the assistant follows structured software engineering workflows:
 - **Brainstorming & Design:** Explores requirements and architectural decisions before writing code (`brainstorming`).

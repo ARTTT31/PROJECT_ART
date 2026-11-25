@@ -101,17 +101,17 @@ Session management is centralized in `components/Auth/AuthProvider.tsx`.
 
 ## UI/UX Pro Max Intelligence (uupm.cc)
 
-The workspace integrates **UI/UX Pro Max** (`.agent/skills/ui-ux-pro-max/`) for automated design intelligence, accessibility audits, and UI reference patterns.
+The workspace integrates **UI/UX Pro Max** (`.agents/skills/ui-ux-pro-max/`) for automated design intelligence, accessibility audits, and UI reference patterns.
 
 Before writing or refactoring any UI component, AI agents should query the local database:
 ```bash
 # General search syntax:
-py .agent/skills/ui-ux-pro-max/scripts/search.py "<query>" --domain <domain>
+py .agents/skills/ui-ux-pro-max/scripts/search.py "<query>" --domain <domain>
 
 # Examples:
-py .agent/skills/ui-ux-pro-max/scripts/search.py "minimalism" --domain style
-py .agent/skills/ui-ux-pro-max/scripts/search.py "accessible button focus ring" --domain icons
-py .agent/skills/ui-ux-pro-max/scripts/search.py "react" --domain stack
+py .agents/skills/ui-ux-pro-max/scripts/search.py "minimalism" --domain style
+py .agents/skills/ui-ux-pro-max/scripts/search.py "accessible button focus ring" --domain icons
+py .agents/skills/ui-ux-pro-max/scripts/search.py "react" --domain stack
 ```
 
 Key rules enforced alongside UI/UX Pro Max:

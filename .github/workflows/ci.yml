@@ -98,6 +98,26 @@ jobs:
           python -m pip install --upgrade pip pip-audit
           pip-audit -r backend/requirements.txt
 
+  # ── Agent skills lock ─────────────────────────────────
+  # skills-lock.json pins the 32 installed skills by content hash, but nothing
+  # read it: a hand-edited skill or an unrecorded new one passed silently.
+  # --frozen-lockfile fails instead of rewriting the lock, and it reaches the
+  # network only when a recorded hash no longer matches the installed folder.
+  skills-lock:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "26"
+
+      # Pinned to the CLI version that wrote this v2 lock file.
+      - name: Verify installed skills match skills-lock.json
+        run: npx --yes skills@1.9.0 experimental_install --frozen-lockfile
+
   # ── Frontend: Lint + Type-Check + Build ───────────────
   frontend:
     runs-on: ubuntu-latest

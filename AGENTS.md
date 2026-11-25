@@ -6,27 +6,27 @@ Welcome to **Workspace**. Whenever you interact with or modify this codebase, yo
 
 ## 🧭 Automatic Skill Routing Matrix
 
-Before modifying or creating any code, AI agents MUST identify the relevant area and consult the installed skill in `.agent/skills/`.
+Before modifying or creating any code, AI agents MUST identify the relevant area and consult the installed skill in `.agents/skills/`.
 
 **Scope discipline:** load only the skill whose `paths` / `when-to-use` matches the file being touched. The three project-specific skills at the end of this table are deliberately narrow — loading them for unrelated work is a mistake, not thoroughness.
 
 | Domain / Task | Target Files / Scope | Mandatory Skills to Check & Follow |
 | :--- | :--- | :--- |
-| **Workflow & Discipline** | Any new feature, debugging, planning, reviews | `.agent/skills/using-superpowers/` (`brainstorming`, `writing-plans`, `executing-plans`, `systematic-debugging`, `test-driven-development`, `verification-before-completion`) |
-| **UI/UX & Design Intelligence** | `frontend/src/**/*`, styles, pages | `.agent/skills/ui-ux-pro-max/` (via `py scripts/search.py`) + [`DESIGN.md`](DESIGN.md) + [`MASTER.md`](design-system/workspace/MASTER.md) |
-| **UI Components & Radix/Tailwind** | `frontend/src/components/**/*` | `.agent/skills/shadcn/` (shadcn/ui composition, CLI, Radix primitives) |
-| **React/Next.js Performance** | `frontend/src/**/*` — data fetching, RSC boundaries, bundle size, re-render/memoization | `.agent/skills/vercel-react-best-practices/` (Vercel engineering rules; review before claiming a perf win) |
-| **Error Tracking (Sentry)** | `frontend/instrumentation*.ts`, `frontend/next.config.js`, error boundaries, `Sentry.*` capture calls | `.agent/skills/sentry-nextjs-sdk/` (SDK setup/instrumentation) + `.agent/skills/sentry-fix-issues/` (reproduce → fix a reported issue) |
-| **PWA, Service Workers & Caching** | `frontend/public/manifest*`, `sw.*`, offline logic | `.agent/skills/pwa-development/` (Workbox, caching strategies, offline-first) |
-| **Backend API & Endpoints** | `backend/app/api/**/*`, `backend/app/main.py` | `.agent/skills/fastapi/` (Routing, dependencies with `Annotated`, streaming/SSE) |
-| **Database & ORM Models** | `backend/app/models/**/*`, `backend/app/db/**/*` | `.agent/skills/sqlmodel/` (SQLModel field definitions, sessions, query patterns) |
-| **Design Tokens & Specs Architecture** | `frontend/src/app/globals.css`, token configs | `.agent/skills/design-system/` (Three-layer tokens: primitive → semantic → component) |
-| **Brand Identity & Voice** | Branding, tone, copy, logo assets | `.agent/skills/brand/` + `.agent/skills/design/` (Visual identity, CIP mockups) |
-| **Banners, Share Cards & Visuals** | Infographic cards, social banners, canvas export | `.agent/skills/banner-design/` + `.agent/skills/ui-styling/` |
-| **HTML Slides & Presentations** | Presentation decks, reports, Chart.js views | `.agent/skills/slides/` |
-| **Project Documentation Discipline** | `docs/internal/**`, `docs/product/roadmap-features.md`, `README.md` | `.agent/skills/project-docs-discipline/` — only when behaviour, routes, numbers or a finding changed |
-| **Auth, Sessions & Identity Surface** | `backend/app/api/v1/endpoints/{auth,users,profile,system,websockets}.py`, `backend/app/core/{security,rate_limit,totp}.py`, `frontend/src/lib/api/**`, `frontend/src/components/Auth/**` | `.agent/skills/auth-surface-rules/` — only for IP/cookie/payload/session changes |
-| **Deployed Environment Checks** | `render.yaml`, `frontend/next.config.js`, `.github/workflows/**`, `docs/setup/production-*.md` | `.agent/skills/deployed-verification/` — only for live-origin checks; local runs stay with `verification-before-completion` |
+| **Workflow & Discipline** | Any new feature, debugging, planning, reviews | `.agents/skills/using-superpowers/` (`brainstorming`, `writing-plans`, `executing-plans`, `systematic-debugging`, `test-driven-development`, `verification-before-completion`) |
+| **UI/UX & Design Intelligence** | `frontend/src/**/*`, styles, pages | `.agents/skills/ui-ux-pro-max/` (via `py scripts/search.py`) + [`DESIGN.md`](DESIGN.md) + [`MASTER.md`](design-system/workspace/MASTER.md) |
+| **UI Components & Radix/Tailwind** | `frontend/src/components/**/*` | `.agents/skills/shadcn/` (shadcn/ui composition, CLI, Radix primitives) |
+| **React/Next.js Performance** | `frontend/src/**/*` — data fetching, RSC boundaries, bundle size, re-render/memoization | `.agents/skills/vercel-react-best-practices/` (Vercel engineering rules; review before claiming a perf win) |
+| **Error Tracking (Sentry)** | `frontend/instrumentation*.ts`, `frontend/next.config.js`, error boundaries, `Sentry.*` capture calls | `.agents/skills/sentry-nextjs-sdk/` (SDK setup/instrumentation) + `.agents/skills/sentry-fix-issues/` (reproduce → fix a reported issue) |
+| **PWA, Service Workers & Caching** | `frontend/public/manifest*`, `sw.*`, offline logic | `.agents/skills/pwa-development/` (Workbox, caching strategies, offline-first) |
+| **Backend API & Endpoints** | `backend/app/api/**/*`, `backend/app/main.py` | `.agents/skills/fastapi/` (Routing, dependencies with `Annotated`, streaming/SSE) |
+| **Database & ORM Models** | `backend/app/models/**/*`, `backend/app/db/**/*` | `.agents/skills/sqlmodel/` (SQLModel field definitions, sessions, query patterns) |
+| **Design Tokens & Specs Architecture** | `frontend/src/app/globals.css`, token configs | `.agents/skills/design-system/` (Three-layer tokens: primitive → semantic → component) |
+| **Brand Identity & Voice** | Branding, tone, copy, logo assets | `.agents/skills/brand/` + `.agents/skills/design/` (Visual identity, CIP mockups) |
+| **Banners, Share Cards & Visuals** | Infographic cards, social banners, canvas export | `.agents/skills/banner-design/` + `.agents/skills/ui-styling/` |
+| **HTML Slides & Presentations** | Presentation decks, reports, Chart.js views | `.agents/skills/slides/` |
+| **Project Documentation Discipline** | `docs/internal/**`, `docs/product/roadmap-features.md`, `README.md` | `.agents/skills/project-docs-discipline/` — only when behaviour, routes, numbers or a finding changed |
+| **Auth, Sessions & Identity Surface** | `backend/app/api/v1/endpoints/{auth,users,profile,system,websockets}.py`, `backend/app/core/{security,rate_limit,totp}.py`, `frontend/src/lib/api/**`, `frontend/src/components/Auth/**` | `.agents/skills/auth-surface-rules/` — only for IP/cookie/payload/session changes |
+| **Deployed Environment Checks** | `render.yaml`, `frontend/next.config.js`, `.github/workflows/**`, `docs/setup/production-*.md` | `.agents/skills/deployed-verification/` — only for live-origin checks; local runs stay with `verification-before-completion` |
 
 ---
 
@@ -43,19 +43,19 @@ Before writing, modifying, or refactoring ANY frontend page, component, or style
      - **Feedback**: Springy active state (`active:scale-[0.95]`) on click/press, subtle hover shifts without lifting.
 
 2. **Query UI/UX Pro Max Intelligence (`uupm.cc`)**:
-   - The project includes the **`ui-ux-pro-max`** design skill at `.agent/skills/ui-ux-pro-max/`.
+   - The project includes the **`ui-ux-pro-max`** design skill at `.agents/skills/ui-ux-pro-max/`.
    - Before implementing new UI components, layouts, or data visualizations, search the local design database:
      ```bash
-     py .agent/skills/ui-ux-pro-max/scripts/search.py "<query>" --domain <domain>
+     py .agents/skills/ui-ux-pro-max/scripts/search.py "<query>" --domain <domain>
      # Domains: style, color, chart, landing, product, ux, typography, icons, gsap, react, web, google-fonts
      ```
    - For React/Next.js stack guidance:
      ```bash
-     py .agent/skills/ui-ux-pro-max/scripts/search.py "<query>" --stack nextjs
+     py .agents/skills/ui-ux-pro-max/scripts/search.py "<query>" --stack nextjs
      ```
 
 3. **Compose with `shadcn`**:
-   - Consult `.agent/skills/shadcn/`.
+   - Consult `.agents/skills/shadcn/`.
    - Use existing components and compose rather than inventing custom abstractions from scratch.
 
 4. **Strict Color & Token Policy**:
@@ -92,14 +92,14 @@ Before writing, modifying, or refactoring ANY frontend page, component, or style
 ## ⚡ Backend, Database & PWA Standards
 
 1. **FastAPI & Async Patterns**:
-   - Consult `.agent/skills/fastapi/`.
+   - Consult `.agents/skills/fastapi/`.
    - Use `Annotated[..., Depends(...)]` for dependencies. Prefer explicit return types.
 2. **SQLModel & Database**:
-   - Consult `.agent/skills/sqlmodel/`.
+   - Consult `.agents/skills/sqlmodel/`.
    - Define models with `SQLModel, table=True` and `Field()`.
    - Keep migrations consistent with Alembic (`alembic check`).
 3. **PWA & Offline-First**:
-   - Consult `.agent/skills/pwa-development/`.
+   - Consult `.agents/skills/pwa-development/`.
    - Follow Workbox caching strategies (CacheFirst for static assets, NetworkFirst/StaleWhileRevalidate for APIs).
 
 ---

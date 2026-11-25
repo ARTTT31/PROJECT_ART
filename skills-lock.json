@@ -4,7 +4,7 @@
     "auth-surface-rules": {
       "source": ".",
       "sourceType": "local",
-      "skillPath": ".agent/skills/auth-surface-rules/SKILL.md",
+      "skillPath": ".agents/skills/auth-surface-rules/SKILL.md",
       "installMode": "copy",
       "computedHash": "d6f230d1ed5e52dabacd1f3f95c124149924a45dcf1a71bda5e32b71d68b187f"
     },
@@ -29,7 +29,7 @@
     "deployed-verification": {
       "source": ".",
       "sourceType": "local",
-      "skillPath": ".agent/skills/deployed-verification/SKILL.md",
+      "skillPath": ".agents/skills/deployed-verification/SKILL.md",
       "installMode": "copy",
       "computedHash": "76cc30e7177ace6d712b9c520d4c993ca9427c4a6ab37faa74493a624bc6707c"
     },
@@ -78,7 +78,7 @@
     "project-docs-discipline": {
       "source": ".",
       "sourceType": "local",
-      "skillPath": ".agent/skills/project-docs-discipline/SKILL.md",
+      "skillPath": ".agents/skills/project-docs-discipline/SKILL.md",
       "installMode": "copy",
       "computedHash": "dcfb680fe22eec9107bb258deaec5f99285be5fce599af9442803cfaa567cb22"
     },
@@ -120,7 +120,7 @@
       "source": "shadcn-ui/ui",
       "sourceType": "github",
       "skillPath": "skills/shadcn/SKILL.md",
-      "computedHash": "c6b2cd25135b83fc58d0c46d525f5c579e6b2be2a06756167b9096f9b53b3215"
+      "computedHash": "388962d16c7a4f13aaeee0d8f128e50a87df8553d42ef7988c39c0e1c74a40e8"
     },
     "slides": {
       "source": "nextlevelbuilder/ui-ux-pro-max-skill",

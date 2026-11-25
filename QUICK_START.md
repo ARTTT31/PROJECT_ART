@@ -407,7 +407,7 @@ curl http://localhost:8080/api/v1/oil-prices/health
 
 ## 🤖 AI Agentic Workflow (Superpowers Skills)
 
-โปรเจกต์นี้ติดตั้งชุดทักษะ **Superpowers** ไว้ที่ `.agent/skills/` พร้อมไฟล์ bootstrap `GEMINI.md` เพื่อให้ AI Coding Assistants (Antigravity, Gemini, Claude Code) ทำงานร่วมกับนักพัฒนาอย่างมีวินัย:
+โปรเจกต์นี้ติดตั้งชุดทักษะ **Superpowers** ไว้ที่ `.agents/skills/` พร้อมไฟล์ bootstrap `GEMINI.md` เพื่อให้ AI Coding Assistants (Antigravity, Gemini, Claude Code) ทำงานร่วมกับนักพัฒนาอย่างมีวินัย:
 
 - **Brainstorming:** ระดมความคิดและออกแบบก่อนเริ่มโค้ดฟีเจอร์ใหม่
 - **Test-Driven Development (TDD):** บังคับเขียน Test ก่อน (Red) เขียนโค้ดให้ผ่าน (Green) แล้วจึงปรับปรุง (Refactor)
