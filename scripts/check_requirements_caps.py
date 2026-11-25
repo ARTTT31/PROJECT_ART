@@ -5,8 +5,9 @@ A bare floor such as `argon2-cffi>=25.1.0` lets pip resolve the *next major* the
 day it is released, with no commit in this repository. sentry-sdk 3.0 did
 exactly that and turned `mypy` red on a push that never touched the SDK.
 `pip-audit` cannot see the class of failure — it looks for CVEs, not API
-changes — so the caps in `backend/requirements.txt` only hold while something
-checks them.
+changes — so the caps in `backend/requirements.in` only hold while something
+checks them. The compiled `backend/requirements.lock` inherits the resolved
+versions, so the input file is the only place the rule has to hold.
 
 An exact pin (`==`) is bounded already, and `~=`, `<`, `<=` and `!=` are
 accepted. Only "`>=` with no upper bound" fails. Pass a path to check another
@@ -19,7 +20,7 @@ import re
 import sys
 from pathlib import Path
 
-DEFAULT_REQUIREMENTS = Path(__file__).resolve().parent.parent / "backend" / "requirements.txt"
+DEFAULT_REQUIREMENTS = Path(__file__).resolve().parent.parent / "backend" / "requirements.in"
 
 # ` # comment` — a `#` preceded by whitespace — is not part of the requirement.
 INLINE_COMMENT = re.compile(r"\s+#.*$")

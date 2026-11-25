@@ -25,7 +25,7 @@ jobs:
       # A bare `>=` resolves the next major the day it is published, with no
       # commit here: sentry-sdk 3.0 landed that way and took `mypy` down on a
       # push that never touched the SDK. The ceilings in
-      # backend/requirements.txt only hold while something checks them.
+      # backend/requirements.in only hold while something checks them.
       - name: Require a ceiling on every dependency floor
         run: python scripts/check_requirements_caps.py
 
@@ -83,7 +83,7 @@ jobs:
 
   # ── Dependency advisories ─────────────────────────────
   # Merge gate: the pinned set audits clean (the old python-jose / starlette
-  # advisories are gone — see the pins in backend/requirements.txt), so a new
+  # advisories are gone — see the pins in backend/requirements.in), so a new
   # advisory now fails the build instead of scrolling past as a warning, and the
   # weekly schedule catches advisories published between pushes. No entries are
   # currently ignored; if one ever has to be, add it as an individual

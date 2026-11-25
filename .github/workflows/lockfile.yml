@@ -1,0 +1,64 @@
+name: Lockfile
+
+# The hashed lock is generated, never hand-edited. pip-compile asks PyPI for the
+# distributions the Linux/cp311 resolution can actually install and records their
+# SHA-256 hashes; compiling on a developer's Windows box would record Windows
+# wheels instead, and CI and Render would then reject the files they download.
+# So the compiler runs here, and a manual run hands the result back as an
+# artifact instead of pushing to main.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - backend/requirements.in
+      - backend/requirements.lock
+      - .github/workflows/lockfile.yml
+  pull_request:
+    paths:
+      - backend/requirements.in
+      - backend/requirements.lock
+
+jobs:
+  lockfile:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # Both versions are pinned because the generated text records them: the
+      # header names the interpreter and the command, and pip-tools' "via"
+      # annotations come from its own resolver. An unpinned upgrade would turn
+      # every regeneration into a diff that says nothing about the dependencies.
+      - name: Install pip and pip-tools
+        run: python -m pip install --upgrade "pip==26.3" "pip-tools==7.7.0"
+
+      - name: Compile requirements.lock from requirements.in
+        run: >-
+          pip-compile --generate-hashes
+          --output-file=backend/requirements.lock
+          backend/requirements.in
+
+      # A hand edit, a dependency added without regenerating, or a raised floor
+      # all surface here instead of as an install failure on Render.
+      - name: Fail when the committed lock is stale
+        if: github.event_name != 'workflow_dispatch'
+        run: |
+          if ! git diff --quiet -- backend/requirements.lock; then
+            git --no-pager diff --stat -- backend/requirements.lock
+            echo "::error::backend/requirements.lock does not match requirements.in. Run the Lockfile workflow from the Actions tab and commit the requirements-lock artifact it uploads."
+            exit 1
+          fi
+
+      - name: Upload the regenerated lock
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: requirements-lock
+          path: backend/requirements.lock
+          if-no-files-found: error
