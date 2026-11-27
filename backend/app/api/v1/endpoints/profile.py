@@ -4,7 +4,6 @@ User Profile Endpoints
 
 import json
 import logging
-from datetime import datetime, timezone
 from typing import Any, Optional
 from pydantic import BaseModel, Field
 
@@ -46,17 +45,8 @@ from app.schemas.user import (
 )
 from app.core.quick_notes import parse_quick_notes, serialize_quick_notes
 from app.core.quick_links import parse_quick_links
-from app.core.personal_lists import (
-    parse_finance_budget,
-    parse_finance_entries,
-    parse_finance_tombstones,
-    prune_finance_tombstones,
-    serialize_finance_budget,
-    serialize_finance_entries,
-    serialize_finance_tombstones,
-    parse_watchlist,
-    serialize_watchlist,
-)
+from app.core.personal_lists import parse_watchlist, serialize_watchlist
+from app.services.finance_service import FinanceService, FinanceState
 from app.core.branding import normalise_personal_workspace_name
 from app.core.brand_logo import (
     LOGO_ALLOWED_EXTENSIONS,
@@ -1110,24 +1100,18 @@ async def update_quick_notes(
 
 
 # ── Finance widget (income / expense) ────────────────────────────────────────
-# Same contract as the notes widget: the list lives in one JSON-as-text column
-# and the widget always saves its whole state, so last write wins per account.
+# Same contract as the notes widget — the widget always saves its whole state, so
+# last write wins per account — but the rows themselves live in real tables now
+# (``FinanceService``). The old ``users.finance_*`` columns are frozen as the
+# rollback target and nothing here reads or writes them.
 
 
-def _finance_response(
-    raw: str | None, budget_raw: str | None = None, deleted_raw: str | None = None
-) -> FinanceResponse:
-    deleted = prune_finance_tombstones(parse_finance_tombstones(deleted_raw), now=_now_seconds())
+def _finance_response(state: FinanceState) -> FinanceResponse:
     return FinanceResponse(
-        entries=[FinanceEntry(**entry) for entry in parse_finance_entries(raw)],
-        budget=parse_finance_budget(budget_raw),
-        deleted_ids=list(deleted) or None,
+        entries=[FinanceEntry(**entry) for entry in state.entries],
+        budget=state.budget,
+        deleted_ids=state.deleted_ids or None,
     )
-
-
-def _now_seconds() -> int:
-    """Unix seconds for the deletion stamps (kept tiny in the JSON column)."""
-    return int(datetime.now(timezone.utc).timestamp())
 
 
 # ``exclude_none`` keeps the payload identical to what it was before categories
@@ -1141,12 +1125,7 @@ async def get_finance_entries(
     db: AsyncSession = Depends(get_db),
 ):
     """The signed-in account's income/expense entries (empty when never used)."""
-    user = await load_profile_columns(
-        db, current_user, "finance_entries", "finance_budget", "finance_deleted"
-    )
-    return _finance_response(
-        user.finance_entries, user.finance_budget, user.finance_deleted
-    )
+    return _finance_response(await FinanceService(db).read(current_user.id))
 
 
 @router.put("/finance", response_model=FinanceResponse, response_model_exclude_none=True)
@@ -1161,31 +1140,17 @@ async def update_finance_entries(
 
     Ids the caller reports as deleted become tombstones, and an id that is
     present in ``entries`` clears its tombstone — re-adding a row on purpose
-    (an undo) must win over the old deletion.
+    (an undo) must win over the old deletion. Rows, budget, tombstones and the
+    ``profile_version`` bump commit together.
     """
     await _claim_profile_version(current_user, payload.base_version, db)
-    saved = serialize_finance_entries(payload.entries)
-    saved_budget = serialize_finance_budget(payload.budget)
-
-    now = _now_seconds()
-    tombstones = parse_finance_tombstones(current_user.finance_deleted)
-    kept_ids = {entry.id for entry in payload.entries}
-    for deleted_id in payload.deleted_ids:
-        if deleted_id not in kept_ids:
-            tombstones[deleted_id] = now
-    for kept_id in kept_ids:
-        tombstones.pop(kept_id, None)
-    saved_deleted = serialize_finance_tombstones(
-        prune_finance_tombstones(tombstones, now=now)
+    state = await FinanceService(db).replace(
+        current_user.id, payload.entries, payload.budget, payload.deleted_ids
     )
-
-    current_user.finance_entries = saved
-    current_user.finance_budget = saved_budget
-    current_user.finance_deleted = saved_deleted
     await db.commit()
-    # Commit expires ORM attributes; answer from the values just persisted so
-    # building the response cannot trigger an async lazy load.
-    return _finance_response(saved, saved_budget, saved_deleted)
+    # ``state`` is plain data built before the commit, so answering cannot
+    # trigger an async lazy load on an expired ORM attribute.
+    return _finance_response(state)
 
 
 # ── Watchlist widget ─────────────────────────────────────────────────────────

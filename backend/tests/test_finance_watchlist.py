@@ -7,6 +7,8 @@ receive pydantic models: finance silently saved ``[]`` and watchlist raised a
 """
 
 import json
+from datetime import date
+from decimal import Decimal
 
 import pytest
 from pydantic import ValidationError
@@ -299,12 +301,34 @@ async def test_finance_category_and_budget_round_trip(client, logged_in_user):
 async def test_old_entries_without_a_category_are_unchanged(
     client, logged_in_user, registered_user, db_session
 ):
-    """Rows written before categories existed keep their exact shape on read."""
-    user = await db_session.get(User, registered_user["data"]["user_id"])
-    user.finance_entries = json.dumps(FINANCE_ENTRIES)
+    """Rows without a category keep the exact shape they had before categories.
+
+    The row is written straight into ``finance_entries``: after the migration the
+    legacy JSON column is frozen and no longer read, and a pre-category JSON row
+    reaches this shape through the backfill (``test_finance_migration``).
+    """
+    from app.models.finance import FinanceEntry as FinanceEntryRow
+
+    user_id = registered_user["data"]["user_id"]
+    db_session.add_all(
+        [
+            FinanceEntryRow(
+                user_id=user_id,
+                client_id=entry["id"],
+                entry_type=entry["type"],
+                label=entry["label"],
+                amount=Decimal(str(entry["amount"])),
+                entry_date=date.fromisoformat(entry["date"]),
+                category=None,
+                position=index,
+            )
+            for index, entry in enumerate(FINANCE_ENTRIES)
+        ]
+    )
     await db_session.commit()
 
     entries = (await client.get("/api/v1/profile/finance")).json()["entries"]
+    # No ``category`` key at all, not a null one.
     assert entries == FINANCE_ENTRIES
 
 
@@ -360,12 +384,15 @@ async def test_bad_payloads_are_rejected_with_422(client, logged_in_user):
 async def test_corrupt_stored_values_read_as_empty(
     client, logged_in_user, registered_user, db_session
 ):
+    """Corrupt JSON must never break a widget.
+
+    The finance half of this moved with the storage: a corrupt legacy column is
+    dropped by the backfill, which ``test_finance_migration`` covers.
+    """
     user = await db_session.get(User, registered_user["data"]["user_id"])
-    user.finance_entries = "{not valid json"
     user.watchlist = "42"
     await db_session.commit()
 
-    assert (await client.get("/api/v1/profile/finance")).json()["entries"] == []
     assert (await client.get("/api/v1/profile/watchlist")).json()["symbols"] == []
 
 

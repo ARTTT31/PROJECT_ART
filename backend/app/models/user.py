@@ -150,6 +150,23 @@ class User(Base, TimestampMixin):
     trusted_devices = relationship(
         "TrustedDevice", back_populates="user", cascade="all, delete-orphan"
     )
+    # Finance rows. The relationships are named differently from the JSON columns
+    # above (``finance_entries`` / ``finance_budget`` / ``finance_deleted``),
+    # which this release keeps as the migration's rollback target. The cascades
+    # are what remove an account's rows on purge: SQLite runs without
+    # ``PRAGMA foreign_keys``, so the ON DELETE rules alone would leave orphans.
+    finance_rows = relationship(
+        "FinanceEntry", back_populates="user", cascade="all, delete-orphan"
+    )
+    finance_settings = relationship(
+        "FinanceSettings",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        uselist=False,
+    )
+    finance_deleted_rows = relationship(
+        "FinanceDeletedEntry", back_populates="user", cascade="all, delete-orphan"
+    )
 
     def __repr__(self):
         return f"<User(id={self.id}, email='{self.email}', name='{self.name}')>"

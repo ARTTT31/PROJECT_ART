@@ -3,7 +3,7 @@
 **Verified:** November 27, 2026 · `main` · Windows dev
 machine, Python 3.14.6 local, Node 26 · dependency refresh (Next 16.4.6, FastAPI 0.165.0)
 
-The 2026-11-27 pass re-ran both suites to check the numbers this file reports (backend **759 passed / 84.77%**, frontend **498 passed / 74 files**) and fixed the drift that check exposed; lint, types, migrations, build and Playwright were not re-run, so their rows below are still from the 2026-11-22 → 11-23 runs.
+The 2026-11-27 pass re-ran both suites to check the numbers this file reports and fixed the drift that check exposed. The finance table migration that followed re-ran the backend suite, `flake8`, `mypy` and the Alembic round trip, so those rows are current: backend **779 passed / 85.00%**, frontend **498 passed / 74 files** (untouched by that change, still from the 11-23 run). Build and Playwright were not re-run and remain from the 2026-11-22 pass.
 
 The 2026-11-22 passes were the AI Copilot prompt/chip change, the Phase 4 session-IP work and a
 small correctness sweep (session expiry from settings, model ranking, `architecture.md` drift) — see
@@ -14,8 +14,8 @@ the grouped signed-in device list, its "ออกจากทุกอุปก�
 redirect to /login once your own session is revoked, then that redirect for a partly failed
 batch, the /audit action-label guard, then the filtered CSV export, the revoke entry's victim details, the two-way label guard and the /audit → /admin account link, its page-level test, the five investigation-loop items, then the /audit row-anchor sync, the optional revoke reason, the anchored-row scroll, its visible-row guard and the linked-row page lookup and its clear-filters action (latest: 498 passed / 74
 files, unchanged by the /audit view-and-export logging because it added labels only). The backend suite was also re-run for the self-revoke audit entry, the filtered CSV
-export, the revoke reason, the anchor page lookup and the view/export audit rows (**759 passed**); its lint, type and migration rows and every deployed check
-are still from the 2026-11-22 pass.
+export, the revoke reason, the anchor page lookup and the view/export audit rows, and again for the finance table migration (**779 passed**, coverage **85.00%**); its lint, type and migration rows are current, every deployed check
+is still from the 2026-11-22 pass.
 
 > **Paused (2026-11-24): CCTV.** The camera/CCTV area is parked on purpose: its existing code
 > stays as it is, with no further development, fixes or follow-ups, until it is explicitly
@@ -32,9 +32,9 @@ are still from the 2026-11-22 pass.
 
 | Check | Command | Result |
 |---|---|---|
-| Backend tests | `cd backend && ./venv/Scripts/python.exe -m pytest -q` | **759 passed**; coverage **84.77%** (gate 75%, local Python 3.14.6) |
+| Backend tests | `cd backend && ./venv/Scripts/python.exe -m pytest -q` | **779 passed**; coverage **85.00%** (gate 75%, local Python 3.14.6) |
 | Backend lint | `./venv/Scripts/python.exe -m flake8 app` | clean |
-| Backend types | `./venv/Scripts/python.exe -m mypy app` | clean, 74 source files |
+| Backend types | `./venv/Scripts/python.exe -m mypy app` | clean, 79 source files |
 | Migrations | `alembic upgrade head` + `alembic check` on a throwaway SQLite file | full chain applies, **no drift** |
 | Frontend tests | `cd frontend && npx vitest run` | **498 passed**, 74 files |
 | Frontend types | `npx tsc --noEmit` | clean |
@@ -70,7 +70,7 @@ no longer exists.
 | ID | Finding | Severity | Status |
 |---|---|---|---|
 | P1 | Auth/admin paths read `request.client.host` (the Render proxy), so the `(email, IP)` login backoff collapses to per-email — anyone can lock a known account out — and audit rows, session rows and "new device" mails record the proxy IP | High | **Closed** — all auth, user, profile, system and planner paths read `get_real_client_ip(request)` behind trusted proxies |
-| P2 | Notes, finance, reminders, watchlist, menu and layout are whole-document JSON columns replaced on every write; concurrent devices silently lose rows. Finance is the only one with tombstones | High | **Closed** — `users.profile_version` bumps on every blob write. Frontend widgets (`QuickNotesWidget`, `FinanceWidget`) send `base_version` and handle 409 + `X-Profile-Version` optimistic concurrency conflicts |
+| P2 | Notes, finance, reminders, watchlist, menu and layout are whole-document JSON columns replaced on every write; concurrent devices silently lose rows. Finance is the only one with tombstones | High | **Closed** — `users.profile_version` bumps on every blob write. Frontend widgets (`QuickNotesWidget`, `FinanceWidget`) send `base_version` and handle 409 + `X-Profile-Version` optimistic concurrency conflicts. Finance left the blob on 2026-11-27 (`finance_entries` / `finance_settings` / `finance_deleted_entries`, `FinanceService`); notes, reminders, watchlist, menu and layout are still whole-document columns |
 | P3 | `/ai/chat` is limited per IP only (30/min); a deployment key has no per-account daily budget | Medium | **Closed** — `ai_usage` table + `AI_DAILY_MESSAGE_LIMIT` (default 50/day/account, 0 = off); only paid calls are counted, the built-in intent engine is free |
 | P4 | Frontend CSP keeps `script-src 'unsafe-inline'` (inline theme bootstrap and Next's RSC payload scripts) and a blanket `img-src http:` | Medium | **Closed (img-src) / accepted (script-src)** — the blanket `http:` fallback is gone, so `img-src` is `https:` plus exactly the `NEXT_PUBLIC_CAMERA_IMG_ORIGINS` allow-list. `script-src 'unsafe-inline'` remains and is recorded as an accepted constraint in §4: Next writes the RSC payload as inline scripts on every server-rendered page, so replacing it needs a middleware nonce plus a deploy-verified pass over Google GSI and the service worker |
 | P5 | `backend/scripts/admin/*` ship default admin credentials (`admin@art.com` / `Admin@123`) | Medium | **Closed** — `check_password.py` deleted; the create scripts prompt (no defaults) or demand `ADMIN_EMAIL`/`ADMIN_PASSWORD`, and never echo the password |

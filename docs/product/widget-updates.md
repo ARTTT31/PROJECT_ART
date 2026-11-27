@@ -51,13 +51,16 @@ opened from the widget header ("ภาพรวม").
 
 **Storage and limits**
 
-- One JSON-as-text column per account (`users.finance_entries`), with the budget
-  in `users.finance_budget`. Both are validated on write and on read: a corrupt
-  row reads as empty instead of breaking the widget.
+- One row per entry in `finance_entries` (amount as `Numeric(14,2)`, the list
+  order kept in `position`), the monthly budget in `finance_settings`, and
+  cross-device deletions in `finance_deleted_entries` — all served by
+  `GET/PUT /profile/finance` with the same request and response body as before.
 - Cap: **2,000 entries** per account (client and server agree). Amounts must be
   above 0 and at most 1,000,000,000.
-- Deletions made on one device are still "last write wins" for another device
-  that never saw them; only added entries are merged.
+- A deletion made on one device is recorded as a tombstone (90-day TTL, at most
+  500 ids) and returned as `deleted_ids`, so a second device holding an older
+  copy drops the row instead of writing it back. Re-adding the same id is an
+  undo and clears its tombstone.
 
 ## 🌤️ Weather resilience (October 2026)
 

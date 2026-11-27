@@ -2713,3 +2713,37 @@ Verified locally: `pytest -q` **759 passed / 84.77%**, `flake8` and `mypy` clean
 (77 files), `tsc --noEmit` and `eslint .` clean, `vitest run` **498 passed / 74 files**.
 The FastAPI 0.165 "Duplicate Operation ID" warnings reproduce on the committed
 `main.py` as well, so they are not from this move.
+
+## Finance Moved Off Its JSON Blob Into Real Tables (November 27, 2026)
+
+- `PUT /profile/finance` used to rewrite three text columns with the widget's whole state
+  (`users.finance_entries`, `finance_budget`, `finance_deleted`). The same API now reads and writes
+  `finance_entries`, `finance_settings` and `finance_deleted_entries`: one row per entry with a
+  `Numeric(14,2)` amount and the stored list order in `position`, so same-day entries keep their order
+  and the rows can be summed and indexed server-side. The endpoint contract did not move — whole-list
+  replace, `base_version` compare-and-set, `409` + `X-Profile-Version`, tombstones with the 90-day TTL
+  and 500-id cap — and `FinanceWidget.tsx`, `WorkspaceBackupCard.tsx` and the offline mirror are
+  untouched.
+- Revision `20261127_finance_tables` (`down_revision = 20261124_1200`) is additive: it creates the
+  three tables and calls `backfill_finance_from_json`, which parses the old JSON with the same
+  `parse_finance_*` functions the API used on read. That is the safety argument: a row a user could
+  see is exactly a row those parsers accept, and a row the API already dropped stays dropped.
+  Duplicate ids inside one list collapse to the first occurrence (the only observable change), and a
+  re-run skips accounts that already have rows.
+- **Rollback drill — move the data before the code.** `alembic downgrade -1` calls
+  `rebuild_finance_json`, which writes the tables back into the three columns (including rows created
+  after the deploy) and only then drops them; deploy the previous image afterwards. Rolling the app
+  back alone would leave it reading stale columns, and Render's `preDeployCommand: alembic upgrade
+  head` re-applies the upgrade on the next deploy.
+- The legacy columns stay in `models/user.py` as the rollback target and nothing reads or writes them.
+  A later revision drops them together with the backfill/rebuild helpers, `AUTH_DEFERRED_COLUMNS`,
+  `PROFILE_COLUMNS` and the finance half of `core/personal_lists.py` — not in the same week as this
+  release.
+- Docs: `architecture.md` §4 moves finance from the JSON list to the relational one, `status.md`'s P2
+  row says what is still a blob, `widget-updates.md` describes the tables instead of the column, and
+  the roadmap's finance row no longer calls the storage JSON.
+
+Verified locally: `pytest -q` **779 passed / 85.00%** (gate 75%), `flake8 app tests` clean, `mypy app`
+clean (79 files), and `alembic upgrade head` → `downgrade -1` → `upgrade head` round tripped on a
+throwaway SQLite file with `alembic check` reporting no new upgrade operations. The frontend was not
+changed, so `vitest`, `tsc` and `eslint` were not re-run.

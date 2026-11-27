@@ -141,14 +141,21 @@ out through CSP and CORS (a browser-readable 403) and already carries a correlat
 Two persistence styles coexist:
 
 1. **Relational tables** — `users`, `sessions`, `audit_logs`, `email_tokens`, `system_settings`,
-   `notification_logs`, `weather_cache`, plus the AI settings columns on `users`.
-2. **Whole-document JSON columns on `users`** — quick notes, finance entries (+ `finance_deleted`
-   tombstones), watchlist, dashboard layout, main menu order, quick links, personal reminders,
-   camera config, accessible pages, notification/channel settings, web-push subscriptions.
+   `notification_logs`, `weather_cache`, `finance_entries`, `finance_settings` and
+   `finance_deleted_entries`, plus the AI settings columns on `users`.
+2. **Whole-document JSON columns on `users`** — quick notes, watchlist, dashboard layout, main menu
+   order, quick links, personal reminders, camera config, accessible pages, notification/channel
+   settings, web-push subscriptions.
 
-The JSON columns are replaced wholesale on write. Finance is the only one with tombstones; the rest
-are last-write-wins, which is why stale-write detection (`profile_version` compare-and-set) is a
-tracked finding, not an implemented feature — see `status.md`.
+The JSON columns are replaced wholesale on write and are last-write-wins between devices; every such
+write bumps `users.profile_version`, so a client that sent `base_version` gets a `409` (with
+`X-Profile-Version`) instead of overwriting rows it never saw. Finance keeps that whole-list `PUT`
+contract but its entries, budget and tombstones are real tables since 2026-11-27
+([plan](../superpowers/plans/2026-11-27-finance-table-migration.md)): one row per entry with a
+`Numeric(14,2)` amount and the stored list order in `position`, read and written by
+`app/services/finance_service.py`. Its old `users.finance_*` columns stay for one release as the
+rollback target and nothing reads or writes them; `alembic downgrade` rebuilds them from the tables
+before dropping the revision.
 
 Every schema change is an Alembic revision; the suite builds its schema from the models, so CI runs
 `alembic upgrade head` **and** `alembic check` to catch drift. Startup never creates columns in

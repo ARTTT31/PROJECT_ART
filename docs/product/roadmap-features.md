@@ -44,7 +44,7 @@
 | โน้ตด่วน / To-do วันนี้ (notes) | S/M/L | Per-account JSON via `/profile/quick-notes` |
 | คิดราคา / กำไร (calc) | S/M/L | Client-side |
 | ค่าเงิน · ทอง · SET (market) | S/M/L | Frankfurter, Thai Gold API, Yahoo Finance, via the backend proxy; candle chart drawn in-app |
-| รายรับ – รายจ่ายวันนี้ (finance) | S/M/L | Per-account JSON via `/profile/finance`; summary dialog with monthly/all-time totals, categories, 6-month trend, CSV export, undo and a monthly budget |
+| รายรับ – รายจ่ายวันนี้ (finance) | S/M/L | Per-account rows (`finance_entries`) via `/profile/finance`; summary dialog with monthly/all-time totals, categories, 6-month trend, CSV export, undo and a monthly budget |
 | รายการติดตาม (watchlist) | S/M/L | Yahoo Finance quotes via `/market/quotes` |
 | แปลงสกุลเงิน (converter) | S/M/L | Frankfurter rates via `/market/summary` |
 | วันหยุดนักขัตฤกษ์ (holidays) | S/M/L | Confirmed Thai calendars bundled in the repo (2026, 2027) |
@@ -114,7 +114,7 @@
 | Single instance by default | The WebSocket registry can fan out through Redis (`WS_BROADCAST_REDIS_URL`) and the rate limiter can use Redis (`SLOWAPI_STORAGE_URI`), but both default to process-local and startup logs a `[SCALING]` notice. See README -> *Horizontal scaling*. |
 | Third-party market data | Yahoo Finance / Frankfurter / Thai Gold API have no SLA; the widget shows the last known value (or an empty block) rather than failing the whole page. |
 | Partial i18n | A `th`/`en` message catalogue (`lib/i18n`) exists and drives 34 of the 82 components; the rest still hardcode Thai copy. Adding a language means migrating a screen at a time, not flipping a switch. |
-| Partial frontend coverage | 498 Vitest tests across 74 files; 759 backend tests at 84.71% coverage (Python 3.14, verified 2026-11-27). Route-level tests exist for `login`, `register`, `forgot-password`, `share-target`, `admin` and `audit`, so `npm run test:coverage` remains the honest number. Playwright runs axe checks on the auth pages and a live register → login E2E against the backend in CI. |
+| Partial frontend coverage | 498 Vitest tests across 74 files; 779 backend tests at 85.00% coverage (Python 3.14, verified 2026-11-27). Route-level tests exist for `login`, `register`, `forgot-password`, `share-target`, `admin` and `audit`, so `npm run test:coverage` remains the honest number. Playwright runs axe checks on the auth pages and a live register → login E2E against the backend in CI. |
 | CSP `script-src` | The frontend CSP keeps `'unsafe-inline'` for scripts because Next emits its RSC payload as inline scripts and the theme bootstrap is inline; a nonce needs middleware plus a deploy-verified pass over Google GSI and the service worker. Image sources are already an explicit allow-list (`NEXT_PUBLIC_CAMERA_IMG_ORIGINS`). |
 
 ---

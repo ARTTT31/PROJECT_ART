@@ -170,16 +170,16 @@ Both helpers get tests, so the round trip is verified rather than assumed.
 - `backfill_finance_from_json(conn) -> dict[str, int]`
 - `rebuild_finance_json(conn) -> dict[str, int]`
 
-- [ ] **Step 1:** write `test_finance_migration.py` first: a legacy user with `finance_entries` JSON (incl. a
+- [x] **Step 1:** write `test_finance_migration.py` first: a legacy user with `finance_entries` JSON (incl. a
       string amount, a row without `category`, and a duplicate id), a user with `{not valid json`, a user with
       a budget, a user with tombstones, and a user who never used the widget.
-- [ ] **Step 2:** assert backfill output equals `parse_finance_entries(...)` / `parse_finance_budget(...)` /
+- [x] **Step 2:** assert backfill output equals `parse_finance_entries(...)` / `parse_finance_budget(...)` /
       `parse_finance_tombstones(...)` for each user, that `position` matches array order, and that a second
       backfill inserts nothing.
-- [ ] **Step 3:** assert `rebuild_finance_json` makes the old columns parse back to the same list (round trip).
-- [ ] **Step 4:** implement models + revision (idempotent guards, counters logged, summary in the revision
+- [x] **Step 3:** assert `rebuild_finance_json` makes the old columns parse back to the same list (round trip).
+- [x] **Step 4:** implement models + revision (idempotent guards, counters logged, summary in the revision
       docstring explaining the safety argument).
-- [ ] **Step 5:** verify: `./venv/Scripts/python.exe -m pytest tests/test_finance_migration.py -q`,
+- [x] **Step 5:** verify: `./venv/Scripts/python.exe -m pytest tests/test_finance_migration.py -q`,
       then `-m alembic upgrade head` + `-m alembic check` against a scratch SQLite file.
 
 ### Task 2: Write through the tables, endpoint contract untouched
@@ -200,16 +200,16 @@ Both helpers get tests, so the round trip is verified rather than assumed.
   `_claim_profile_version` and the single `db.commit()` stay where they are, so the version bump and the rows
   commit together.
 
-- [ ] **Step 1:** implement `FinanceService`; keep the constants in `core/personal_lists.py` until Release B
+- [x] **Step 1:** implement `FinanceService`; keep the constants in `core/personal_lists.py` until Release B
       (they are the documented limits) and import them.
-- [ ] **Step 2:** switch the two endpoints; drop their `load_profile_columns(db, user, "finance_*")` calls.
+- [x] **Step 2:** switch the two endpoints; drop their `load_profile_columns(db, user, "finance_*")` calls.
       Order reads by `position`.
-- [ ] **Step 3:** run the untouched finance endpoint tests — every one must pass without edits. If a test
+- [x] **Step 3:** run the untouched finance endpoint tests — every one must pass without edits. If a test
       needs changing, the contract moved: stop and fix the service instead.
-- [ ] **Step 4:** add service-level tests: diff an update (same id, new amount), delete by omission, 2000-row
+- [x] **Step 4:** add service-level tests: diff an update (same id, new amount), delete by omission, 2000-row
       cap, budget clear (`null` deletes the settings row), tombstone revival, and another account's rows left
       alone.
-- [ ] **Step 5:** verify: `./venv/Scripts/python.exe -m pytest -q --tb=short` (759 + the new ones),
+- [x] **Step 5:** verify: `./venv/Scripts/python.exe -m pytest -q --tb=short` (759 + the new ones),
       `flake8`, `mypy` (77 files), `npx vitest run` (unchanged 498), `tsc --noEmit`, `eslint .`.
 
 ### Task 3: Docs and the honest release note
@@ -221,8 +221,8 @@ Both helpers get tests, so the round trip is verified rather than assumed.
 - Modify: `docs/product/widget-updates.md` (the "one JSON-as-text column per account" paragraph)
 - Modify: `docs/internal/changelog.md` (new entry, with the rollback drill)
 
-- [ ] **Step 1:** update all four; no claim may describe finance as a JSON column once Release A ships.
-- [ ] **Step 2:** re-read the docs links check and the changelog footer convention used by the last entries.
+- [x] **Step 1:** update all four; no claim may describe finance as a JSON column once Release A ships.
+- [x] **Step 2:** re-read the docs links check and the changelog footer convention used by the last entries.
 
 ### Task 4 (Release B, separate PR): drop the legacy columns
 
