@@ -109,7 +109,8 @@ cd backend && alembic upgrade head     # schema มาก่อนเสมอ (
 
 ## 5. Backup / Disaster recovery (Aiven for PostgreSQL)
 
-Production ใช้ **Aiven for PostgreSQL** (project `thanyapong-8a15`, service `pg-8a0b819`)
+Production ใช้ **Aiven for PostgreSQL** — ชื่อ project/service, URI และ CA ดูจาก Aiven Console
+(Project → Service → Overview) ไม่ pin ไว้ในเอกสาร เพราะ service ที่สร้างใหม่จะได้ hostname ใหม่
 
 1. ตรวจ backup retention / PITR (point-in-time restore) ของ service ตาม plan ที่ใช้ — Aiven Console → Service → Backups
 2. **ซ้อม restore 1 ครั้ง** ด้วยการ fork service (หรือ restore ไป service ใหม่) แล้วรัน `alembic current` ตรวจ schema

@@ -47,6 +47,12 @@ services:
         sync: false
       - key: DATABASE_URL
         sync: false
+      # Path to the downloaded Aiven project CA on the backend host. Required:
+      # Aiven forces TLS and its CA is not in certifi, so without this asyncpg
+      # falls back to the public bundle and fails certificate verification.
+      # Download it from the Aiven Console (Service → Overview → CA certificate).
+      - key: SSL_CA_CERT_PATH
+        sync: false
       - key: SECRET_KEY
         sync: false
       - key: FRONTEND_URL

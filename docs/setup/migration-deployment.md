@@ -9,7 +9,7 @@ The system is designed and separated into parts for easy scaling and maintenance
 
 * **Frontend:** Developed with Next.js and deployed on **Vercel** for optimal client-side delivery performance (Edge Network).
 * **Backend:** Developed with FastAPI and deployed as a Web Service on **Render**, which is suitable for processing and handling asynchronous connections.
-* **Database:** Uses PostgreSQL running on **Aiven for PostgreSQL** (project `thanyapong-8a15`, service `pg-8a0b819`), reached over TLS with the service's project CA.
+* **Database:** Uses PostgreSQL running on **Aiven for PostgreSQL**, reached over TLS with the service's project CA. The project name, service name, URI and CA are read from the Aiven Console (Project → Service → Overview) and deliberately not pinned here: a service that is recreated comes back under a new hostname, so an id written into a document goes stale silently.
 
 ---
 
