@@ -5,10 +5,35 @@ Application Configuration
 import logging
 import os
 from typing import List, Literal
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
+
 from pydantic import Field, ValidationInfo, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 logger = logging.getLogger(__name__)
+
+# libpq-only query arguments. Every managed provider hands out a URI ending in
+# ``?sslmode=require`` (Neon and Supabase also add ``channel_binding=require``),
+# but ``asyncpg.connect()`` accepts neither and fails on the very first query
+# with ``TypeError: connect() got an unexpected keyword argument 'sslmode'``.
+# TLS is configured on the engine in ``app/core/database.py``, so these are
+# dropped here; any other query argument is preserved untouched.
+_ASYNC_INCOMPATIBLE_PG_ARGS = ("sslmode", "channel_binding")
+
+
+def _strip_async_incompatible_query(url: str) -> str:
+    """Remove libpq-only query arguments from a PostgreSQL URI."""
+    parts = urlsplit(url)
+    if not parts.query:
+        return url
+    kept = [
+        (key, value)
+        for key, value in parse_qsl(parts.query, keep_blank_values=True)
+        if key not in _ASYNC_INCOMPATIBLE_PG_ARGS
+    ]
+    return urlunsplit(
+        (parts.scheme, parts.netloc, parts.path, urlencode(kept), parts.fragment)
+    )
 
 
 class Settings(BaseSettings):
@@ -30,9 +55,11 @@ class Settings(BaseSettings):
             if v.startswith("sqlite://"):
                 return v.replace("sqlite://", "sqlite+aiosqlite://", 1)
             elif v.startswith("postgres://"):
-                return v.replace("postgres://", "postgresql+asyncpg://", 1)
+                v = v.replace("postgres://", "postgresql+asyncpg://", 1)
             elif v.startswith("postgresql://") and not v.startswith("postgresql+asyncpg://"):
-                return v.replace("postgresql://", "postgresql+asyncpg://", 1)
+                v = v.replace("postgresql://", "postgresql+asyncpg://", 1)
+            if v.startswith("postgresql+asyncpg://"):
+                v = _strip_async_incompatible_query(v)
         return v
 
     # Security
@@ -257,8 +284,6 @@ class Settings(BaseSettings):
         either block the production frontend or (``*``) be rejected by Starlette
         at request time, so failing fast at boot is the safer behaviour.
         """
-        from urllib.parse import urlsplit
-
         if isinstance(self.CORS_ORIGINS, str):
             raw_list = [origin.strip() for origin in self.CORS_ORIGINS.split(",")]
         else:
