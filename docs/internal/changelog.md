@@ -2670,3 +2670,17 @@ leaves the working tree unchanged.
 
 Verified locally: the three workflow files parse as YAML and both skill gates still pass. A
 dispatch with a seeded stale hash reaches the pull-request step and prints the guidance above.
+
+## Documentation Drift Fixed Against a Fresh Test Run (November 27, 2026)
+
+- Both suites were re-run to check the figures `status.md`, the roadmap and `README.md` quote:
+  backend **759 passed / 84.71% coverage** (`pytest -q`, local Python 3.14.6) and frontend
+  **498 passed / 74 files** (`npx vitest run`). The backend coverage was recorded as 84.73%,
+  which the run did not reproduce; `status.md` now carries the measured value.
+- Three claims that had drifted from the code were corrected: `architecture.md` put the `/health`
+  database ping at 2 s while `main.py` uses `HEALTH_DB_TIMEOUT_SECONDS = 5.0`; the roadmap still
+  quoted 455 Vitest tests / 69 files and 733 backend tests at 84.50%; `README.md` described
+  `frontend/src/lib/` as finance helpers plus `api/fetchWithAuth.ts` only, omitting `offline/`,
+  `i18n/`, `audit/`, `branding/` and `notifications/`. The stale 455-test figure in
+  `status.md`'s accepted-constraints table was corrected to 498.
+- No application code changed in this pass.

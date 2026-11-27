@@ -242,8 +242,8 @@ PROJECT_ART/
 │       │   ├── ui/              # Dialog.tsx — Radix UI primitives
 │       │   └── Widgets/         # Dashboard widgets (dnd-kit sortable)
 │       ├── hooks/               # useAuth.ts, useDashboardLayout.ts
-│       ├── lib/                 # finance summary helpers (pure, unit-tested),
-│       │                        # api/fetchWithAuth.ts
+│       ├── lib/                 # offline/ outbox + scoped store, i18n/ th·en catalogue, finance/ summary,
+│       │                        # api/fetchWithAuth.ts + zod schemas, audit/, branding/, notifications/
 │       └── utils/               # quickLinks, mainMenu, sweetalert, userAgent
 ├── backend/                     # FastAPI
 │   └── app/

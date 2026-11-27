@@ -245,7 +245,7 @@ login screen renders them) and therefore rate-limited per client address.
 
 | Surface | Behaviour |
 |---|---|
-| `GET /health` | Liveness plus a real `SELECT 1` behind a 2 s timeout; always `200`, reports `healthy`/`degraded` and DB latency |
+| `GET /health` | Liveness plus a real `SELECT 1` behind a 5 s timeout; always `200`, reports `healthy`/`degraded` and DB latency |
 | `GET /health/ready` | `200` only when the database answers, `503` otherwise — point the platform health check here |
 | `GET /api/v1/system/health` | Admin-only CPU/memory/disk/DB report |
 | Security headers | Per-path CSP (`default-src 'none'` except `/docs`, `/redoc`, `/openapi.json`), HSTS, `nosniff`, `DENY`; the frontend CSP lives in `frontend/next.config.js` |
