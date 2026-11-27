@@ -1,6 +1,7 @@
 from logging.config import fileConfig
-from sqlalchemy import engine_from_config
+from sqlalchemy import engine_from_config, make_url
 from sqlalchemy import pool
+from sqlalchemy.exc import OperationalError
 from alembic import context
 import os
 import sys
@@ -41,14 +42,80 @@ def run_migrations_offline() -> None:
         context.run_migrations()
 
 
+def _explain_connection_failure(url: str, exc: Exception) -> str:
+    """Turn a driver connection error into one operator-facing paragraph.
+
+    ``preDeployCommand: alembic upgrade head`` runs on every Render deploy, so a
+    dead database used to greet the operator with sixty lines of SQLAlchemy
+    internals and no statement of what to change. The host is printed because a
+    recreated managed service comes back under a new hostname, and the common
+    causes are named explicitly so nobody debugs the Python stack instead.
+    """
+    try:
+        parsed = make_url(url)
+        host = parsed.host or "<none>"
+        database = parsed.database or "<none>"
+    except Exception:  # pragma: no cover - unparsable URL is itself the problem
+        host = database = "<unparsable DATABASE_URL>"
+
+    detail = (str(exc).strip().splitlines() or [""])[0]
+    lowered = str(exc).lower()
+    lines = [
+        "",
+        "=" * 72,
+        "alembic upgrade head could not connect to the database.",
+        f"  host     : {host}",
+        f"  database : {database}",
+    ]
+    if (
+        "translate host name" in lowered
+        or "name or service not known" in lowered
+        or "nodename nor servname" in lowered
+        or "temporary failure in name resolution" in lowered
+    ):
+        lines += [
+            "  cause    : DNS lookup failed - that hostname does not exist.",
+            "  fix      : the managed database was deleted or renamed. Restore or",
+            "             create it, then set DATABASE_URL (and SSL_CA_CERT_PATH",
+            "             when the provider uses its own CA) to the new values in",
+            "             the Render dashboard and redeploy. A stale hostname is",
+            "             an environment fix, not a code fix.",
+        ]
+    elif "password authentication failed" in lowered or "invalidpassword" in lowered:
+        lines += [
+            "  cause    : the server rejected the credentials.",
+            "  fix      : copy the connection URI again from the provider console",
+            "             (use the pooled URI when going through a pooler) and",
+            "             update DATABASE_URL in the Render dashboard.",
+        ]
+    elif "timed out" in lowered or "timeout" in lowered:
+        lines += [
+            "  cause    : the TCP/TLS handshake timed out.",
+            "  fix      : check the port, the provider's allowed IPs/firewall and",
+            "             that DATABASE_URL points at the primary (not a pooler)",
+            "             endpoint, then redeploy.",
+        ]
+    elif "certificate" in lowered or "ssl" in lowered:
+        lines += [
+            "  cause    : TLS setup or certificate verification failed.",
+            "  fix      : download the provider CA onto the host, point",
+            "             SSL_CA_CERT_PATH at that file, and keep sslmode=require",
+            "             out of DATABASE_URL (the engine adds TLS itself).",
+        ]
+    else:
+        lines.append(f"  driver   : {detail}")
+    lines += ["=" * 72, ""]
+    return "\n".join(lines)
+
+
 def run_migrations_online() -> None:
     """Run migrations in 'online' mode."""
     # Convert async driver string to sync for Alembic
     sync_url = to_sync_database_url(settings.DATABASE_URL)
-        
+
     configuration = config.get_section(config.config_ini_section, {})
     configuration["sqlalchemy.url"] = sync_url
-    
+
     connectable = engine_from_config(
         configuration,
         prefix="sqlalchemy.",
@@ -56,15 +123,20 @@ def run_migrations_online() -> None:
         connect_args={"sslmode": "require"} if "sqlite" not in sync_url else {}
     )
 
-    with connectable.connect() as connection:
-        context.configure(
-            connection=connection,
-            target_metadata=target_metadata,
-            render_as_batch=True,
-        )
+    try:
+        with connectable.connect() as connection:
+            context.configure(
+                connection=connection,
+                target_metadata=target_metadata,
+                render_as_batch=True,
+            )
 
-        with context.begin_transaction():
-            context.run_migrations()
+            with context.begin_transaction():
+                context.run_migrations()
+    except OperationalError as exc:
+        # Still a failed deploy - just with a cause and a fix instead of a stack.
+        print(_explain_connection_failure(sync_url, exc), file=sys.stderr)
+        sys.exit(1)
 
 
 if context.is_offline_mode():

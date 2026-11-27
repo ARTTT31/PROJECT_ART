@@ -82,6 +82,10 @@ During the cloud migration, the main issues encountered and successfully resolve
   * Added automated failover to **OpenStreetMap Nominatim** when BigDataCloud fails, plus a graceful coordinates-only 200 OK fallback.
   * Persisted both responses into L1 memory and L2 Aiven database (`weather_cache`) to protect future requests.
 
+### 🔴 Issue 6: deploy fails at `preDeployCommand: alembic upgrade head` with `could not translate host name`
+* **Cause:** `DATABASE_URL` still names a managed service that no longer exists. The driver error is `psycopg2.OperationalError: could not translate host name "<host>" to address: Name or service not known` — a DNS failure, so nothing in the code is wrong and no code change can fix it.
+* **Solution:** restore or recreate the database, then put the new URI in Render’s `DATABASE_URL` (and the provider CA path in `SSL_CA_CERT_PATH` when the provider uses its own CA) and redeploy. A recreated service comes back under a new hostname, so re-copy the URI from the console rather than editing the old one. `alembic/env.py` now prints the host, the cause and the fix in one block instead of a SQLAlchemy traceback.
+
 ---
 
 ## 4. Current System Status
