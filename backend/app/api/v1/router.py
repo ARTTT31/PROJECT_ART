@@ -6,6 +6,7 @@ from fastapi import APIRouter
 
 from app.api.v1.endpoints import (
     auth,
+    auth_2fa,
     users,
     profile,
     audit,
@@ -24,6 +25,9 @@ api_router = APIRouter()
 
 # Include endpoint routers
 api_router.include_router(auth.router, prefix="/auth", tags=["Authentication"])
+# 2FA, step-up and trusted browsers share the /auth prefix; they live in their
+# own module so neither file has to hold every session concern.
+api_router.include_router(auth_2fa.router, prefix="/auth", tags=["Authentication"])
 api_router.include_router(users.router, prefix="/users", tags=["Users"])
 api_router.include_router(profile.router, prefix="/profile", tags=["Profile"])
 api_router.include_router(audit.router, prefix="/audit", tags=["Audit Logs"])

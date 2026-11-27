@@ -423,14 +423,13 @@ export default function DashboardPage() {
     const params = new URLSearchParams(window.location.search);
     const action = params.get('action');
     if (action === 'quick-note') {
+      // The widget owns its input ref and focuses it on this event. Matching a
+      // placeholder string here broke as soon as the copy was translated.
       setTimeout(() => {
-        const input = document.querySelector<HTMLInputElement>(
-          'input[placeholder*="โน้ต"], input[placeholder*="พิมพ์โน้ต"], input[aria-label*="โน้ต"]'
-        );
-        if (input) {
-          input.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          input.focus();
-        }
+        document
+          .querySelector('[data-widget-id="notes"]')
+          ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        window.dispatchEvent(new Event('workspace:focus-quick-note'));
       }, 400);
     } else if (action === 'oil-prices') {
       setTimeout(() => {

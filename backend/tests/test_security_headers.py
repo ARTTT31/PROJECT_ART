@@ -12,14 +12,14 @@ from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 
 from app.core.config import settings
-from app.main import (
+from app.core.middleware import (
     CSP_HEADER_VALUE,
     CSP_HEADER_VALUE_DOCS,
     DOCS_PATHS,
     CSPMiddleware,
     _csp_for_path,
-    app,
 )
+from app.main import app
 
 EXPECTED_HSTS = "max-age=31536000; includeSubDomains"
 

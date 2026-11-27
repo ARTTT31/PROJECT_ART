@@ -177,6 +177,15 @@ export default function QuickNotesWidget({
   const draftInputRef = useRef<HTMLInputElement | null>(null);
   const editInputRef = useRef<HTMLInputElement | null>(null);
 
+  // `?action=quick-note` on the dashboard deep-links here. The page cannot know
+  // which input belongs to this widget, so it asks for focus instead of
+  // reaching into the DOM by placeholder text.
+  useEffect(() => {
+    const focusDraft = () => draftInputRef.current?.focus();
+    window.addEventListener('workspace:focus-quick-note', focusDraft);
+    return () => window.removeEventListener('workspace:focus-quick-note', focusDraft);
+  }, []);
+
   const pendingRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // One-click clearing is still a delete, so it leaves a short window to take it

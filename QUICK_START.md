@@ -3,7 +3,7 @@
 ## 🎯 เริ่มต้นใช้งานโปรเจค
 
 ### 📦 สิ่งที่ต้องมี
-- Node.js 18+ (Frontend)
+- Node.js 20.9+ (Frontend — Next.js 16 requires it; CI uses Node 26)
 - Python 3.10+ (Backend)
 - Git
 

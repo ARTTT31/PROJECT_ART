@@ -51,7 +51,8 @@ frontend/src/
 │                          PWA · Profile · Toast · Widgets · ui
 ├── hooks/                 useAuth · useDashboardLayout · useEnabledPages · usePreferences
 │                          usePwaInstall · useWebPush · useQuickLinkEnvironment
-├── lib/                   api/ · finance/ · i18n/ · notifications/ · offline/ + CSV, quickNotes
+├── lib/                   api/ · audit/ · branding/ · finance/ · i18n/ · notifications/ · offline/
+│                          + CSV, quickNotes, widgetSnapshot
 └── utils/                 pure helpers (dates, holidays, quick links, user agent, camera URL, …)
 ```
 
@@ -96,9 +97,10 @@ rest hardcodes Thai copy. See `status.md` for the current split.
 backend/app/
 ├── main.py                 app assembly, middleware order, startup/shutdown, scheduler bootstrap
 ├── api/v1/router.py        mounts every endpoint module under /api/v1
-├── api/v1/endpoints/       auth · users · profile · audit · oil_prices · market · weather
+├── api/v1/endpoints/       auth (+ auth_2fa) · users · profile · audit · oil_prices · market · weather
 │                           system · planner · notifications · websockets · ai
-├── core/                   config · database · security · rate_limit · observability · totp
+├── core/                   config · database · security · rate_limit · observability · middleware
+│                           cookies · totp
 │                           secret_box · url_safety · turnstile · disposable_email · utils
 │                           page_settings · brand_logo · company_holidays
 │                           quick_links · quick_notes · personal_lists · personal_reminders

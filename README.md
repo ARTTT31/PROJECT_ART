@@ -241,15 +241,17 @@ PROJECT_ART/
 │       │   ├── Toast/           # useToast hook + ToastProvider
 │       │   ├── ui/              # Dialog.tsx — Radix UI primitives
 │       │   └── Widgets/         # Dashboard widgets (dnd-kit sortable)
-│       ├── hooks/               # useAuth.ts, useDashboardLayout.ts
+│       ├── hooks/               # useAuth, useDashboardLayout, useEnabledPages, usePreferences,
+│       │                        # usePwaInstall, useWebPush, useQuickLinkEnvironment, useNearViewport
 │       ├── lib/                 # offline/ outbox + scoped store, i18n/ th·en catalogue, finance/ summary,
 │       │                        # api/fetchWithAuth.ts + zod schemas, audit/, branding/, notifications/
 │       └── utils/               # quickLinks, mainMenu, sweetalert, userAgent
 ├── backend/                     # FastAPI
 │   └── app/
-│       ├── api/v1/endpoints/    # auth, profile, users, audit, system, market, weather,
-│       │                        # oil_prices, notifications, planner, websockets, ai
-│       └── core/                # config, database, security, rate_limit, totp, secret_box
+│       ├── api/v1/endpoints/    # auth (+ auth_2fa), profile, users, audit, system, market,
+│       │                        # weather, oil_prices, notifications, planner, websockets, ai
+│       └── core/                # config, database, security, rate_limit, middleware, cookies,
+│                                # totp, secret_box, observability
 ├── design-system/workspace/ # MASTER.md + page overrides
 └── .github/workflows/ci.yml     # CI: docs links + flake8 + mypy + migrations
                                  #     + pytest + pip-audit + ESLint + tsc

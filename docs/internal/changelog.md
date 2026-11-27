@@ -2684,3 +2684,32 @@ dispatch with a seeded stale hash reaches the pull-request step and prints the g
   `i18n/`, `audit/`, `branding/` and `notifications/`. The stale 455-test figure in
   `status.md`'s accepted-constraints table was corrected to 498.
 - No application code changed in this pass.
+
+## Middleware and 2FA Modules Moved Out of Their God Files (November 27, 2026)
+
+- `app/main.py` (659 → 433 lines) no longer carries the CSP and CSRF middleware:
+  `CSPMiddleware`, `CSRFMiddleware`, their constants and `_csp_for_path` live in
+  `app/core/middleware.py`, and `main.py` only decides their order. `COOKIE_OPTIONS`
+  moved to `app/core/cookies.py`, shared by the auth modules instead of being defined
+  inside one of them.
+- `app/api/v1/endpoints/auth.py` lost its 2FA/step-up/trusted-browser half (2,101 →
+  1,706 lines) to `app/api/v1/endpoints/auth_2fa.py` (441 lines, 8 routes). Both are
+  mounted under `/auth`; the OpenAPI surface is unchanged (96 paths, all eight 2FA
+  and step-up paths present). `AUTH_RATE_LIMIT` now lives in `core/rate_limit.py` so
+  neither module rebuilds the same decorator string.
+- `QRCodeWidget`'s print window no longer borrows Tailwind palette hexes for its
+  standalone document (`#e2e8f0`/`#0f172a` → HIG `#e5e5ea`/`#1d1d1f`), with a comment
+  explaining why that document cannot use CSS variables.
+- The dashboard's `?action=quick-note` deep link no longer finds the notes input by
+  matching a Thai placeholder (which broke in English): the page scrolls to the widget
+  and dispatches `workspace:focus-quick-note`, and `QuickNotesWidget` focuses its own
+  ref.
+- Docs: `status.md` and the roadmap claimed route-level tests exist only for four pages
+  while `admin/page.test.tsx` and `audit/page.test.tsx` exist; both now say so.
+  `README.md`'s hooks line lists all eight hooks, and `architecture.md`'s tree names the
+  new `core/middleware.py`, `core/cookies.py` and `auth_2fa.py`.
+
+Verified locally: `pytest -q` **759 passed / 84.77%**, `flake8` and `mypy` clean
+(77 files), `tsc --noEmit` and `eslint .` clean, `vitest run` **498 passed / 74 files**.
+The FastAPI 0.165 "Duplicate Operation ID" warnings reproduce on the committed
+`main.py` as well, so they are not from this move.

@@ -273,6 +273,8 @@ export default function QRCodeWidget({
             <title>พิมพ์ ${format === 'qrcode' ? 'QR Code' : 'Barcode'}</title>
             <meta charset="utf-8" />
             <style>
+              /* A separate document: the app's CSS custom properties do not
+                 exist here, so the HIG tones are written out as literals. */
               @page { size: auto; margin: 15mm; }
               body {
                 margin: 0;
@@ -289,7 +291,7 @@ export default function QRCodeWidget({
                 flex-direction: column;
                 align-items: center;
                 padding: 16px;
-                border: 1px solid #e2e8f0;
+                border: 1px solid #e5e5ea;
                 border-radius: 12px;
                 max-width: 400px;
               }
@@ -301,7 +303,7 @@ export default function QRCodeWidget({
                 margin-top: 10px;
                 font-size: 14px;
                 font-weight: 600;
-                color: #0f172a;
+                color: #1d1d1f;
                 word-break: break-all;
                 text-align: center;
               }

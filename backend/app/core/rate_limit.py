@@ -174,4 +174,15 @@ def _build_limiter() -> Limiter:
 limiter = _build_limiter()
 limiter.key_function = get_real_client_ip  # type: ignore[attr-defined]
 
-__all__ = ["limiter", "get_real_client_ip", "is_trusted_proxy", "trusted_networks", "Limiter"]
+# SlowAPI "limit" strings are static decorator values, so the auth budget is
+# built once here instead of in each endpoint module that decorates a route.
+AUTH_RATE_LIMIT = f"{settings.RATE_LIMIT_AUTH_PER_MINUTE}/minute"
+
+__all__ = [
+    "limiter",
+    "get_real_client_ip",
+    "is_trusted_proxy",
+    "trusted_networks",
+    "Limiter",
+    "AUTH_RATE_LIMIT",
+]
