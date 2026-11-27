@@ -40,5 +40,5 @@ async def get_effective_registration_mode(db: AsyncSession) -> str:
         if setting and setting.value in REGISTRATION_MODES:
             return setting.value
     except Exception as exc:  # pragma: no cover - defensive: DB error fallback
-        logger.debug("Could not read registration_mode from SystemSetting: %s", exc)
+        logger.warning("Could not read registration_mode from SystemSetting: %s", exc)
     return settings.REGISTRATION_MODE
