@@ -20,10 +20,46 @@ logger = logging.getLogger(__name__)
 # dropped here; any other query argument is preserved untouched.
 _ASYNC_INCOMPATIBLE_PG_ARGS = ("sslmode", "channel_binding")
 
+# The provider dashboard hands out a template such as
+# ``postgresql://postgres.<ref>:[YOUR-DATABASE-PASSWORD]@host:5432/postgres``.
+# Pasting it unchanged used to fail with "'YOUR-DATABASE-PASSWORD' does not
+# appear to be an IPv4 or IPv6 address", because Python reads the bracketed
+# placeholder as an IPv6 host literal — an error that points at the wrong thing.
+_PLACEHOLDER_PASSWORD_MARKERS = (
+    "[your-database-password]",
+    "your-database-password",
+    "[your-password]",
+    "[password]",
+    "your_password",
+    "changeme",
+)
+
+
+def _reject_placeholder_password(url: str) -> None:
+    """Fail with an actionable message when the dashboard template was pasted."""
+    lowered = url.lower()
+    for marker in _PLACEHOLDER_PASSWORD_MARKERS:
+        if marker in lowered:
+            raise ValueError(
+                "DATABASE_URL still contains the provider's password placeholder "
+                f"({marker}). Replace it with the real database password, which "
+                "is not shown in the connection-string panel: reset it in the "
+                "provider console (Supabase: Project Settings -> Database -> "
+                "Reset database password) and percent-encode characters such as "
+                "@ : / ? # % when pasting it into the URL."
+            )
+
 
 def _strip_async_incompatible_query(url: str) -> str:
     """Remove libpq-only query arguments from a PostgreSQL URI."""
-    parts = urlsplit(url)
+    try:
+        parts = urlsplit(url)
+    except ValueError as exc:
+        raise ValueError(
+            f"DATABASE_URL is not a valid URL ({exc}). Brackets are only valid "
+            "around an IPv6 address, so a password containing them must be "
+            "percent-encoded (e.g. '[' -> '%5B')."
+        ) from exc
     if not parts.query:
         return url
     kept = [
@@ -52,6 +88,7 @@ class Settings(BaseSettings):
     @classmethod
     def check_db_url(cls, v: str) -> str:
         if v:
+            _reject_placeholder_password(v)
             if v.startswith("sqlite://"):
                 return v.replace("sqlite://", "sqlite+aiosqlite://", 1)
             elif v.startswith("postgres://"):
