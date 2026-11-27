@@ -21,8 +21,14 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# Set sqlalchemy.url from settings
-config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
+# Set sqlalchemy.url from settings.
+#
+# ``set_main_option`` hands the value to configparser, which treats ``%`` as an
+# interpolation marker: a percent-encoded password (``Nantanat%40Art31`` for
+# ``Nantanat@Art31``) aborted every deploy with "invalid interpolation syntax ...
+# at position 59". Doubling the sign is configparser's escape; the online path
+# below overwrites the option through a plain dict, where no escaping is needed.
+config.set_main_option("sqlalchemy.url", settings.DATABASE_URL.replace("%", "%%"))
 
 # add your model's MetaData object here for 'autogenerate' support
 target_metadata = Base.metadata
