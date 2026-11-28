@@ -466,6 +466,13 @@ export default function CameraPage() {
       const probe = body?.data as ProbeResult;
       setProbeState(probe);
       if (probe.resolution) setFormResolution(probe.resolution);
+      if (probe.error) {
+        showToast(probe.error, 'error');
+      } else if (probe.warning) {
+        showToast(probe.warning, 'warning');
+      } else {
+        showToast(tr('เชื่อมต่อกล้องสำเร็จ พร้อมใช้งาน!', 'Camera reachable and ready!'), 'success');
+      }
     } catch {
       setProbeState({
         reachable: false,
@@ -1240,7 +1247,7 @@ export default function CameraPage() {
                               htmlFor="camera-port"
                               className="block text-xs font-semibold text-[var(--ink)]"
                             >
-                              Port
+                              {tr('Port (พอร์ตภายนอก)', 'External Port')}
                             </label>
                             <input
                               id="camera-port"
@@ -1254,6 +1261,12 @@ export default function CameraPage() {
                             />
                           </div>
                         </div>
+                        <p className="text-[11px] leading-relaxed text-[var(--ink-muted)]">
+                          {tr(
+                            'ใช้พอร์ตภายนอกที่เปิด Port Forward / TrueDDNS ไว้ (เช่น 49110, 49111) ไม่ใช่ 554 ภายในวง LAN',
+                            'Use the forwarded external port (e.g. 49110, 49111), not the internal LAN port 554.',
+                          )}
+                        </p>
 
                         <div className="grid grid-cols-2 gap-2">
                           <div>
