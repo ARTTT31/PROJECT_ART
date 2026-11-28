@@ -3,7 +3,9 @@ Database Configuration and Session Management
 """
 
 import logging
+import os
 import ssl
+import tempfile
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit
@@ -16,19 +18,55 @@ from app.core.config import settings
 logger = logging.getLogger(__name__)
 
 
+def _resolve_ca_cert_file(cert_path: str | None = None) -> Path | None:
+    """Return a readable CA certificate file from ``SSL_CA_CERT_PATH`` or ``SSL_CA_CERT``.
+
+    ``SSL_CA_CERT_PATH`` wins when it points to an existing file. When omitted
+    (and ``cert_path`` was not explicitly passed), inline PEM content in
+    ``SSL_CA_CERT`` is materialized to a temp file so both ``asyncpg`` and
+    ``psycopg2``/libpq can verify against it.
+    """
+    resolved = cert_path if cert_path is not None else getattr(settings, "SSL_CA_CERT_PATH", None)
+    if resolved:
+        cert_file = Path(resolved.strip())
+        if cert_file.is_file():
+            return cert_file
+
+    if cert_path is not None:
+        return None
+
+    inline_pem = (getattr(settings, "SSL_CA_CERT", "") or "").strip()
+    if not inline_pem:
+        return None
+
+    normalized_pem = inline_pem.replace("\\n", "\n")
+    if not normalized_pem.endswith("\n"):
+        normalized_pem += "\n"
+
+    target = Path(tempfile.gettempdir()) / f"workspace-db-ca-{os.getpid()}.pem"
+    try:
+        if not target.is_file() or target.read_text(encoding="utf-8") != normalized_pem:
+            target.write_text(normalized_pem, encoding="utf-8")
+            try:
+                os.chmod(target, 0o600)
+            except OSError:
+                pass
+    except OSError as exc:
+        logger.warning("Failed to materialize SSL_CA_CERT to %s: %s", target, exc)
+        return None
+    return target
+
+
 def _build_ssl_context(cert_path: str | None = None) -> ssl.SSLContext | None:
     """Return an SSL context that trusts the configured CA, or None when absent.
 
     Some managed providers (such as Aiven) require their project CA file;
     others (such as Supabase) use a provider root CA outside the container's
-    default trust store. When ``SSL_CA_CERT_PATH`` points to a valid file we
-    enforce ``CERT_REQUIRED`` against that CA.
+    default trust store. When ``SSL_CA_CERT_PATH`` (or ``SSL_CA_CERT``) provides
+    a valid CA we enforce ``CERT_REQUIRED`` against that CA.
     """
-    resolved = cert_path if cert_path is not None else getattr(settings, "SSL_CA_CERT_PATH", None)
-    if not resolved:
-        return None
-    cert_file = Path(resolved)
-    if not cert_file.is_file():
+    cert_file = _resolve_ca_cert_file(cert_path)
+    if cert_file is None:
         return None
     ctx = ssl.create_default_context(
         purpose=ssl.Purpose.SERVER_AUTH,
@@ -99,9 +137,9 @@ def build_async_connect_args(db_url: str, cert_path: str | None = None) -> dict[
                 raise RuntimeError(
                     "Refusing to connect to a remote PostgreSQL without a verified "
                     "TLS certificate. Set SSL_CA_CERT_PATH to the provider's CA "
-                    "file (Aiven: Console -> Service -> Overview -> CA certificate), "
-                    "or set ALLOW_INSECURE_DB_TLS=true only for a throwaway "
-                    "environment."
+                    "file or SSL_CA_CERT to the PEM content (Supabase: Project "
+                    "Settings -> Database -> SSL Configuration), or set "
+                    "ALLOW_INSECURE_DB_TLS=true only for a throwaway environment."
                 )
             logger.warning(
                 "Remote PostgreSQL TLS is encrypted but NOT verified (no usable "
@@ -172,18 +210,17 @@ def build_sync_connect_args(db_url: str) -> dict[str, Any]:
     if "sqlite" in db_url:
         return {}
 
-    cert_path = (settings.SSL_CA_CERT_PATH or "").strip()
-    if cert_path:
-        cert_file = Path(cert_path)
-        if cert_file.is_file():
-            return {"sslmode": "verify-ca", "sslrootcert": str(cert_file)}
+    cert_file = _resolve_ca_cert_file()
+    if cert_file is not None:
+        return {"sslmode": "verify-ca", "sslrootcert": str(cert_file)}
 
     if not settings.DEBUG and not settings.ALLOW_INSECURE_DB_TLS:
         raise RuntimeError(
             "Refusing to run migrations over an unverified PostgreSQL connection. "
-            "Set SSL_CA_CERT_PATH to the provider's CA file (Aiven: Console -> "
-            "Service -> Overview -> CA certificate), or set "
-            "ALLOW_INSECURE_DB_TLS=true only for a throwaway environment."
+            "Set SSL_CA_CERT_PATH to the provider's CA file or SSL_CA_CERT to the "
+            "PEM content (Supabase: Project Settings -> Database -> SSL "
+            "Configuration), or set ALLOW_INSECURE_DB_TLS=true only for a "
+            "throwaway environment."
         )
     logger.warning(
         "Alembic is connecting to a remote PostgreSQL with encrypted but "

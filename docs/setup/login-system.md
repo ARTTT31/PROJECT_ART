@@ -131,7 +131,7 @@ CORS_ORIGINS=http://localhost:3000
 
 ```
 Frontend (Next.js)          Backend (FastAPI)           Database
-Port 3000                   Port 8080                   PostgreSQL (Aiven) in
+Port 3000                   Port 8080                   PostgreSQL (Supabase) in
                                                         production; SQLite for
                                                         local dev and tests
     |                           |                             |

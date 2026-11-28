@@ -26,7 +26,7 @@
 | Redis (ถ้ามีหลาย instance) | `SLOWAPI_STORAGE_URI`, `WS_BROADCAST_REDIS_URL` | ดูข้อ 4 |
 | รูปจากกล้อง LAN (http) | `NEXT_PUBLIC_CAMERA_IMG_ORIGINS` | ต้องระบุ origin ตรง ๆ เช่น `http://192.168.1.50`; CSP ไม่มี `http:` แบบเหมารวมแล้ว |
 | Secret | `SECRET_KEY` (≥32 ตัวอักษร) | ระบบจะปฏิเสธการ start ถ้าใช้ค่า placeholder ตอน `DEBUG=False` |
-| Database (Aiven) | `DATABASE_URL`, `SSL_CA_CERT_PATH` | Aiven บังคับ TLS และ CA ของ Aiven ไม่อยู่ใน certifi — ดาวน์โหลด CA จาก Console (Service → Overview → CA certificate) วางบน host แล้วชี้ path ไปที่ไฟล์นั้น |
+| Database (Supabase) | `DATABASE_URL`, `SSL_CA_CERT_PATH` or `SSL_CA_CERT` | Supabase บังคับ TLS และ CA (`prod-ca-2021.crt`) ไม่อยู่ใน certifi — ดาวน์โหลด CA จาก Supabase Dashboard (Project Settings → Database → SSL Configuration) วางบน host แล้วชี้ `SSL_CA_CERT_PATH` หรือวางเนื้อหา PEM ใน `SSL_CA_CERT` |
 
 **ลำดับ deploy ที่ถูกต้อง (ทุกครั้งที่มี migration ใหม่):**
 
@@ -107,17 +107,17 @@ cd backend && alembic upgrade head     # schema มาก่อนเสมอ (
 
 ---
 
-## 5. Backup / Disaster recovery (Aiven for PostgreSQL)
+## 5. Backup / Disaster recovery (Supabase)
 
-Production ใช้ **Aiven for PostgreSQL** — ชื่อ project/service, URI และ CA ดูจาก Aiven Console
-(Project → Service → Overview) ไม่ pin ไว้ในเอกสาร เพราะ service ที่สร้างใหม่จะได้ hostname ใหม่
+Production ใช้ **Supabase (PostgreSQL)** — URI และ CA ดูจาก Supabase Dashboard
+(Project Settings → Database) ไม่ pin ไว้ในเอกสาร เพราะ project ที่สร้างใหม่จะได้ hostname ใหม่
 
-1. ตรวจ backup retention / PITR (point-in-time restore) ของ service ตาม plan ที่ใช้ — Aiven Console → Service → Backups
-2. **ซ้อม restore 1 ครั้ง** ด้วยการ fork service (หรือ restore ไป service ใหม่) แล้วรัน `alembic current` ตรวจ schema
-3. จด runbook สั้นๆ: ใคร restore, restore จาก service/backup ไหน, แจ้งใคร
+1. ตรวจ backup retention / PITR (point-in-time restore) ของ project ตาม plan ที่ใช้ — Supabase Dashboard → Database → Backups
+2. **ซ้อม restore 1 ครั้ง** ด้วยการ restore ไป branch/project ใหม่ แล้วรัน `alembic current` ตรวจ schema
+3. จด runbook สั้นๆ: ใคร restore, restore จาก project/backup ไหน, แจ้งใคร
 
 ข้อมูลที่ไม่ต้อง backup แยก: รูปโปรไฟล์เก็บเป็น base64 ใน DB และค่าตั้งค่าอื่นๆ อยู่ใน DB/env
-ทั้งหมด → backup ของ Aiven คือ backup ของระบบ
+ทั้งหมด → backup ของ Supabase คือ backup ของระบบ
 
 ---
 

@@ -12,6 +12,8 @@ FROM bluenviron/mediamtx:1.21.4 AS mediamtx
 
 FROM alpine:3.21
 
+RUN apk add --no-cache caddy
+
 COPY --from=mediamtx /mediamtx /usr/local/bin/mediamtx
 COPY start.sh /usr/local/bin/cctv-start.sh
 RUN chmod +x /usr/local/bin/cctv-start.sh /usr/local/bin/mediamtx

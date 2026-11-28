@@ -19,6 +19,7 @@ from app.api.v1.endpoints import (
     planner,
     notifications,
     ai,
+    cameras,
 )
 
 api_router = APIRouter()
@@ -42,3 +43,4 @@ api_router.include_router(
 )
 api_router.include_router(websockets.router, prefix="/ws", tags=["WebSockets"])
 api_router.include_router(ai.router, prefix="/ai", tags=["AI Copilot"])
+api_router.include_router(cameras.router, prefix="/cameras", tags=["Cameras"])

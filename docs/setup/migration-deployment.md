@@ -9,7 +9,7 @@ The system is designed and separated into parts for easy scaling and maintenance
 
 * **Frontend:** Developed with Next.js and deployed on **Vercel** for optimal client-side delivery performance (Edge Network).
 * **Backend:** Developed with FastAPI and deployed as a Web Service on **Render**, which is suitable for processing and handling asynchronous connections.
-* **Database:** Uses PostgreSQL running on **Aiven for PostgreSQL**, reached over TLS with the service's project CA. The project name, service name, URI and CA are read from the Aiven Console (Project → Service → Overview) and deliberately not pinned here: a service that is recreated comes back under a new hostname, so an id written into a document goes stale silently.
+* **Database:** Uses PostgreSQL running on **Supabase**, reached over TLS with the project CA (`prod-ca-2021.crt`). The project URI and CA are read from the Supabase Dashboard (Project Settings → Database) and deliberately not pinned here: a project that is recreated comes back under a new hostname, so an id written into a document goes stale silently.
 
 ---
 
@@ -17,8 +17,8 @@ The system is designed and separated into parts for easy scaling and maintenance
 
 ### 2.1 Environment Variables Configuration
 For the code on Render to communicate with external services correctly, important Environment Variables were configured as follows:
-* `DATABASE_URL`: the Aiven service URI (Console → Overview → Connection information), in the async form `postgresql+asyncpg://…`
-* `SSL_CA_CERT_PATH`: path to the Aiven project CA on the backend host. Without it `asyncpg` falls back to certifi, which does not include that CA, and the connection fails certificate verification.
+* `DATABASE_URL`: the Supabase connection URI (Project Settings → Database → Connection string, using the Transaction/Session pooler URI when needed), in the async form `postgresql+asyncpg://…`
+* `SSL_CA_CERT_PATH` / `SSL_CA_CERT`: path to the Supabase CA file (`prod-ca-2021.crt`) on the backend host, or inline PEM content in `SSL_CA_CERT`. Without it `asyncpg` falls back to certifi, which does not include that CA, and the connection fails certificate verification.
 * `FRONTEND_URL`: URL of the frontend running on Vercel, used to redirect back with data after a successful login
 * `CORS_ORIGINS`: Comma-separated frontend origins; required because cookies cannot be combined with wildcards
 * `TRUSTED_PROXY_IPS`: Optional. Leave empty on Render — the platform load balancer is a private address, which is trusted by default. Set it explicitly only when the proxy is not loopback/RFC1918, otherwise every request looks like it comes from that proxy and one client can exhaust the shared rate-limit budget.
@@ -49,9 +49,9 @@ Every response also carries `X-Request-ID` and the same value appears as `rid=�
 Alembic remains the only schema authority, and CI now applies the chain (`alembic upgrade head`) and checks for model drift (`alembic check`) on every push — a broken revision fails the build instead of the deployment.
 
 ### 2.5 Enabling SSL Security (Database Connection)
-Connecting to a managed database such as Aiven requires data transmission through an encrypted channel:
+Connecting to a managed database such as Supabase requires data transmission through an encrypted channel:
 * Embedded the `connect_args={"ssl": True}` parameter at the SQLAlchemy Engine level to force `asyncpg` to always operate via SSL Mode.
-* `_build_ssl_context()` in `app/core/database.py` loads the file named by `SSL_CA_CERT_PATH` and keeps `verify_mode=CERT_REQUIRED`. `check_hostname` is disabled only because Aiven's shared CA name does not always match the service hostname; the certificate itself is still verified. With `DEBUG=False`, a remote PostgreSQL with no usable CA file — or an explicit `sslmode=disable` — now refuses to start; `ALLOW_INSECURE_DB_TLS=true` is the explicit throwaway-environment escape hatch.
+* `_build_ssl_context()` in `app/core/database.py` loads the file named by `SSL_CA_CERT_PATH` (or materializes `SSL_CA_CERT`) and keeps `verify_mode=CERT_REQUIRED`. `check_hostname` is disabled because managed provider CAs do not always match the pooler/service hostname; the certificate itself is still verified. With `DEBUG=False`, a remote PostgreSQL with no usable CA — or an explicit `sslmode=disable` — now refuses to start; `ALLOW_INSECURE_DB_TLS=true` is the explicit throwaway-environment escape hatch.
 
 ---
 
@@ -60,12 +60,12 @@ Connecting to a managed database such as Aiven requires data transmission throug
 During the cloud migration, the main issues encountered and successfully resolved are as follows:
 
 ### 🔴 Issue 1: `connection is insecure (try using sslmode=require)`
-* **Cause:** Python's `asyncpg` driver does not allow connecting to the Aiven database without encryption.
+* **Cause:** Python's `asyncpg` driver does not allow connecting to the Supabase database without encryption.
 * **Solution:** Removed the `?sslmode=require` query string from the end of the original `DATABASE_URL` and enabled the `{"ssl": True}` option in `connect_args` when creating `create_async_engine` instead.
 
 ### 🔴 Issue 2: `InvalidPasswordError` (Database connection)
 * **Cause:** Incorrect password or connection string, or not using the pooling credentials.
-* **Solution:** Cleaned up the connection string and switched to the service URI copied from the Aiven Console (or the PgBouncer URI when going through the pooler).
+* **Solution:** Cleaned up the connection string and switched to the connection URI copied from the Supabase Dashboard (or the Transaction/Session pooler URI on port `6543`/`5432`).
 
 ### 🔴 Issue 3: `AttributeError: 'AsyncSession' object has no attribute 'query'`
 * **Cause:** Calling the `.query()` method is a Syntax for Synchronous sessions, which is not supported on `AsyncSession`.
@@ -80,7 +80,7 @@ During the cloud migration, the main issues encountered and successfully resolve
 * **Solution:**
   * Added automated failover to **MET Norway (`api.met.no`)** Locationforecast 2.0 when Open-Meteo fails.
   * Added automated failover to **OpenStreetMap Nominatim** when BigDataCloud fails, plus a graceful coordinates-only 200 OK fallback.
-  * Persisted both responses into L1 memory and L2 Aiven database (`weather_cache`) to protect future requests.
+  * Persisted both responses into L1 memory and L2 PostgreSQL database (`weather_cache`) to protect future requests.
 
 ### 🔴 Issue 6: deploy fails at `preDeployCommand: alembic upgrade head` with `could not translate host name`
 * **Cause:** `DATABASE_URL` still names a managed service that no longer exists. The driver error is `psycopg2.OperationalError: could not translate host name "<host>" to address: Name or service not known` — a DNS failure, so nothing in the code is wrong and no code change can fix it.
@@ -103,13 +103,13 @@ During the cloud migration, the main issues encountered and successfully resolve
 
 ### 5.1 Target Architecture
 * **No need to install Docker/Docker Desktop** on the developer's machine.
-* **No local database running** (the backend connects directly to Aiven for PostgreSQL over an encrypted channel).
+* **No local database running** (the backend connects directly to Supabase PostgreSQL over an encrypted channel).
 * **GitHub-Driven Deployment (CI/CD):** 
   * All code edits will be done on the local machine (editing plain files).
   * When executing `git push` to push code to GitHub:
     * **Vercel** will be responsible for pulling frontend code to build and serve on the web automatically (Free).
     * **Render** will be responsible for pulling backend code to run as a Web Service automatically (Free).
-    * Everything connects wirelessly to the **Aiven for PostgreSQL** service over TLS.
+    * Everything connects wirelessly to the **Supabase** PostgreSQL service over TLS.
 
 ### 5.2 Docker-less Local Development Workflow
 Developers can write code and test the system locally right away with native tools:

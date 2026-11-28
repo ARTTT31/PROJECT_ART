@@ -15,7 +15,7 @@
 |---|---|---|
 | Web app | Vercel | Next.js 16 App Router (webpack), React 19, TypeScript 6, Tailwind CSS 4 |
 | API | Render (single uvicorn process) | FastAPI 0.165, Starlette 1.10, SQLAlchemy 2.1 async, Alembic |
-| Database | Aiven for PostgreSQL | PostgreSQL in production, SQLite in tests and CI |
+| Database | Supabase (PostgreSQL) | PostgreSQL in production, SQLite in tests and CI |
 | Object storage | — | none: avatars are re-encoded to WebP and stored as base64 text on the user row |
 
 There is no Docker, no worker queue, no cache server and no cron. Background work is an in-process
@@ -25,7 +25,7 @@ memory; Redis is the supported upgrade path for both.
 ### Request path
 
 ```
-browser ──▶ Next.js (Vercel) ──▶ FastAPI /api/v1/* (Render) ──▶ PostgreSQL (Aiven)
+browser ──▶ Next.js (Vercel) ──▶ FastAPI /api/v1/* (Render) ──▶ PostgreSQL (Supabase)
                  │                        │
                  └── /api rewrite ─────────┘  (server-side API_INTERNAL_URL)
 ```

@@ -43,6 +43,9 @@ export interface CameraStreamConfig {
   status?: 'online' | 'offline';
   fps?: number;
   resolution?: string;
+  managedId?: number;
+  maskedHost?: string;
+  codec?: string | null;
 }
 
 /** Widget configuration stored in localStorage and synced to backend */

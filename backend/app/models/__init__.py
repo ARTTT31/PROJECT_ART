@@ -9,6 +9,7 @@ from app.models.notification_log import NotificationLog
 from app.models.ai_usage import AiUsage
 from app.models.finance import FinanceDeletedEntry, FinanceEntry, FinanceSettings
 from app.models.trusted_device import TrustedDevice
+from app.models.user_camera import UserCamera
 
 __all__ = [
     "User",
@@ -23,4 +24,5 @@ __all__ = [
     "FinanceSettings",
     "FinanceDeletedEntry",
     "TrustedDevice",
+    "UserCamera",
 ]

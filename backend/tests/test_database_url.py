@@ -140,3 +140,20 @@ def test_sslmode_disable_refuses_remote_postgres_in_production(monkeypatch) -> N
         build_async_connect_args(
             "postgresql+asyncpg://u:p@db.example.com:5432/db?sslmode=disable"
         )
+
+
+def test_inline_ssl_ca_cert_enforces_verified_tls_for_async_and_sync(monkeypatch) -> None:
+    pem = Path(certifi.where()).read_text(encoding="utf-8")
+    escaped_pem = pem.replace("\n", "\\n")
+    monkeypatch.setattr(settings, "SSL_CA_CERT_PATH", "")
+    monkeypatch.setattr(settings, "SSL_CA_CERT", escaped_pem)
+    monkeypatch.setattr(settings, "DEBUG", False)
+    monkeypatch.setattr(settings, "ALLOW_INSECURE_DB_TLS", False)
+
+    async_args = build_async_connect_args("postgresql+asyncpg://u:p@db.example.com:5432/app")
+    assert isinstance(async_args["ssl"], ssl.SSLContext)
+    assert async_args["ssl"].verify_mode == ssl.CERT_REQUIRED
+
+    sync_args = build_sync_connect_args("postgresql+psycopg2://u:p@db.example.com:5432/app")
+    assert sync_args["sslmode"] == "verify-ca"
+    assert Path(sync_args["sslrootcert"]).is_file()

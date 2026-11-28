@@ -69,7 +69,7 @@ The migration step matters: the test suite builds its schema from the models, so
 | Framework | FastAPI 0.165, Starlette 1.10, Uvicorn 0.54 |
 | Real-time | WebSocket notifications (authenticated handshake, connection caps, optional Redis fan-out) |
 | ORM / DB | SQLAlchemy 2 async, Alembic migrations |
-| Database | PostgreSQL on Aiven (production), SQLite for CI tests |
+| Database | PostgreSQL on Supabase (production), SQLite for CI tests |
 | Auth | PyJWT access + refresh tokens in HTTP-only cookies + double-submit-cookie CSRF (`X-CSRF-Token`) |
 | Rate Limiting | SlowAPI |
 | Upstream data | httpx (Bangchak oil prices, Open-Meteo & MET Norway weather forecast, Open-Meteo air quality, BigDataCloud & OpenStreetMap Nominatim reverse geocode) |
@@ -81,7 +81,7 @@ The migration step matters: the test suite builds its schema from the models, so
 |---|---|
 | Frontend Hosting | Vercel |
 | Backend Hosting | Render |
-| Database | Aiven for PostgreSQL (managed; TLS with the project CA) |
+| Database | Supabase (PostgreSQL; TLS with the project CA) |
 
 ## Local Development
 
@@ -169,7 +169,7 @@ Notable variables:
 |---|---|---|
 | `DEBUG` | `False` | Opt-in to development behaviour. Required `True` for local dev tooling such as `/docs`. |
 | `SECRET_KEY` | — | JWT signing key. When `DEBUG=False` it must be at least 32 characters and not a placeholder. |
-| `SSL_CA_CERT_PATH` | empty | Path to the Aiven project CA file. Aiven's CA is not in certifi, so setting this lets the async engine verify TLS against it explicitly. With `DEBUG=False`, a remote PostgreSQL without a usable CA now refuses to start instead of silently using encrypted-but-unverified TLS. |
+| `SSL_CA_CERT_PATH` / `SSL_CA_CERT` | empty | Path to the Supabase CA file (`prod-ca-2021.crt`) or inline PEM content. Supabase's CA is not in certifi, so setting one of these lets the async engine verify TLS against it explicitly. With `DEBUG=False`, a remote PostgreSQL without a usable CA refuses to start instead of silently using encrypted-but-unverified TLS. |
 | `ALLOW_INSECURE_DB_TLS` | `False` | Escape hatch for a throwaway remote database: allows unverified TLS or `sslmode=disable` outside `DEBUG`. Never enable it for production data. |
 | `ENABLE_API_DOCS` | `False` | Serves `/docs`, `/redoc` and `/openapi.json`. Always on when `DEBUG=True`. |
 | `CSRF_PROTECTION_ENABLED` | `True` | Double-submit-cookie CSRF check for authenticated browser writes. Only disable for non-browser clients. |
@@ -284,7 +284,7 @@ When developing with AI assistants (Antigravity, Gemini CLI, Claude Code), the a
   SHA-256 of the cp311 manylinux wheels only, so a 3.12+ runtime rejects every binary
   requirement it downloads and the build dies before the service starts.
 - Start command: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
-- Set `DATABASE_URL` (the Aiven service URI), `SSL_CA_CERT_PATH` (the downloaded Aiven CA), a long random `SECRET_KEY`, `FRONTEND_URL`, and the exact `CORS_ORIGINS` frontend URL in Render environment variables.
+- Set `DATABASE_URL` (the Supabase connection URI), `SSL_CA_CERT_PATH` or `SSL_CA_CERT` (the Supabase CA certificate), a long random `SECRET_KEY`, `FRONTEND_URL`, and the exact `CORS_ORIGINS` frontend URL in Render environment variables.
 - Keep `DEBUG=False` and `AUTO_CREATE_TABLES=False` in production. Alembic is the only owner of the schema: run `alembic upgrade head` for every release.
 
 ### Vercel Frontend

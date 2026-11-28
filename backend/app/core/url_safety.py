@@ -43,18 +43,13 @@ def _is_public_address(value: str) -> bool:
     )
 
 
-async def ensure_public_http_url(url: str) -> str:
-    """Return ``url`` unchanged, or raise ``UnsafeURLError``.
-
-    Only ``http``/``https`` is accepted; IP literals are checked directly and
-    hostnames are resolved (IPv4 + IPv6) before the request is made. Every
-    resolved address must be public, so a hostname with a private A record is
-    rejected just like a literal private IP.
-    """
+async def _ensure_public_host(url: str, allowed_schemes: tuple[str, ...], default_port: int) -> str:
+    """Validate scheme and resolve hostname to ensure every target IP is public."""
     candidate = (url or "").strip()
     parts = urlsplit(candidate)
-    if parts.scheme not in ("http", "https"):
-        raise UnsafeURLError("URL ต้องขึ้นต้นด้วย http:// หรือ https://")
+    if parts.scheme.lower() not in allowed_schemes:
+        schemes_label = " หรือ ".join(f"{s}://" for s in allowed_schemes)
+        raise UnsafeURLError(f"URL ต้องขึ้นต้นด้วย {schemes_label}")
 
     host = (parts.hostname or "").strip().lower()
     if not host:
@@ -72,7 +67,7 @@ async def ensure_public_http_url(url: str) -> str:
             raise UnsafeURLError("ไม่อนุญาตให้เรียก IP ภายในหรือ IP ที่สงวนไว้")
         return candidate
 
-    port = parts.port or (443 if parts.scheme == "https" else 80)
+    port = parts.port or default_port
     try:
         infos = await asyncio.get_running_loop().getaddrinfo(
             host, port, type=socket.SOCK_STREAM
@@ -85,3 +80,17 @@ async def ensure_public_http_url(url: str) -> str:
         raise UnsafeURLError("ปลายทางของ URL ชี้ไปยังเครือข่ายภายใน")
 
     return candidate
+
+
+async def ensure_public_http_url(url: str) -> str:
+    """Return ``url`` unchanged, or raise ``UnsafeURLError`` for non-public HTTP(S)."""
+    parts = urlsplit((url or "").strip())
+    default_port = 443 if parts.scheme.lower() == "https" else 80
+    return await _ensure_public_host(url, ("http", "https"), default_port)
+
+
+async def ensure_public_rtsp_url(url: str) -> str:
+    """Return ``url`` unchanged, or raise ``UnsafeURLError`` for non-public RTSP(S)."""
+    parts = urlsplit((url or "").strip())
+    default_port = 322 if parts.scheme.lower() == "rtsps" else 554
+    return await _ensure_public_host(url, ("rtsp", "rtsps"), default_port)

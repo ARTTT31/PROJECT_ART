@@ -15,6 +15,8 @@ import {
   Trash2,
   Pencil,
   Check,
+  Wifi,
+  AlertTriangle,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import Select from '@/components/ui/Select';
@@ -91,6 +93,55 @@ function createDefaultStreams(): CameraStreamConfig[] {
   ];
 }
 
+type DialogStreamMode = CameraStreamType | 'rtsp';
+type RtspPreset = 'tapo' | 'hikvision' | 'dahua' | 'reolink' | 'custom';
+
+interface BackendUserCamera {
+  id: number;
+  stream_key: string;
+  name: string;
+  location: string;
+  preset: string;
+  masked_host: string;
+  hls_url: string;
+  codec?: string | null;
+  resolution?: string | null;
+  fps?: number | null;
+}
+
+interface ProbeResult {
+  reachable: boolean;
+  authenticated: boolean;
+  codec?: string | null;
+  resolution?: string | null;
+  warning?: string | null;
+  error?: string | null;
+}
+
+const RTSP_PRESET_PATHS: Record<RtspPreset, string> = {
+  tapo: '/stream2',
+  hikvision: '/Streaming/Channels/102',
+  dahua: '/cam/realmonitor?channel=1&subtype=1',
+  reolink: '/h264Preview_01_sub',
+  custom: '/stream2',
+};
+
+function mapManagedCamera(cam: BackendUserCamera): CameraStreamConfig {
+  return {
+    id: `rtsp:${cam.id}`,
+    managedId: cam.id,
+    name: cam.name,
+    location: cam.location || cam.masked_host,
+    url: cam.hls_url,
+    streamType: 'hls',
+    status: 'online',
+    fps: cam.fps ?? 25,
+    resolution: cam.resolution ?? '1280x720',
+    maskedHost: cam.masked_host,
+    codec: cam.codec ?? null,
+  };
+}
+
 export default function CameraPage() {
   const { user, updateUser } = useAuth();
   const { tr } = useI18n();
@@ -104,6 +155,7 @@ export default function CameraPage() {
   const [streamRefreshKeys, setStreamRefreshKeys] = useState<Record<string, number>>({});
   const [streamEnabled, setStreamEnabled] = useState<Record<string, boolean>>({});
   const [hlsStates, setHlsStates] = useState<Record<string, HlsPlayerState>>({});
+  const [singleViewMode, setSingleViewMode] = useState(true);
 
   // Modal State
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -111,10 +163,18 @@ export default function CameraPage() {
   const [formName, setFormName] = useState('');
   const [formLocation, setFormLocation] = useState('');
   const [formUrl, setFormUrl] = useState('');
-  const [formStreamType, setFormStreamType] = useState<CameraStreamType>('simulated');
+  const [formStreamType, setFormStreamType] = useState<DialogStreamMode>('rtsp');
+  const [formPreset, setFormPreset] = useState<RtspPreset>('tapo');
+  const [formHost, setFormHost] = useState('');
+  const [formPort, setFormPort] = useState<number>(554);
+  const [formUsername, setFormUsername] = useState('');
+  const [formPassword, setFormPassword] = useState('');
+  const [formRtspPath, setFormRtspPath] = useState('/stream2');
+  const [probeState, setProbeState] = useState<ProbeResult | null>(null);
+  const [isProbing, setIsProbing] = useState(false);
   const [formRefreshInterval, setFormRefreshInterval] = useState<number>(3);
-  const [formFps, setFormFps] = useState<number>(30);
-  const [formResolution, setFormResolution] = useState<string>('1920x1080');
+  const [formFps, setFormFps] = useState<number>(25);
+  const [formResolution, setFormResolution] = useState<string>('1280x720');
   const [isSaving, setIsSaving] = useState(false);
 
   const videoContainerRef = useRef<HTMLDivElement>(null);
@@ -158,19 +218,59 @@ export default function CameraPage() {
       }
     }
 
-    setStreams(loaded);
-    if (loaded.length > 0) {
-      setActiveCameraId(loaded[0].id);
-    }
+    let cancelled = false;
+
+    const loadAll = async () => {
+      let managed: CameraStreamConfig[] = [];
+      try {
+        const res = await fetchWithAuth('/api/v1/cameras');
+        if (res.ok) {
+          const body = await res.json();
+          const list = body?.data?.cameras;
+          if (Array.isArray(list)) {
+            managed = list.map(mapManagedCamera);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch managed cameras:', err);
+      }
+      if (cancelled) return;
+
+      // Keep managed cameras paused on initial load so bandwidth/CPU stays low
+      // until the user clicks Play on the camera they want to watch.
+      if (managed.length > 0) {
+        setStreamEnabled((prev) => {
+          const next = { ...prev };
+          for (const cam of managed) {
+            if (next[cam.id] === undefined) next[cam.id] = false;
+          }
+          return next;
+        });
+      }
+
+      const combined = [...managed, ...loaded];
+      setStreams(combined);
+      if (combined.length > 0) {
+        setActiveCameraId((prev) =>
+          combined.some((c) => c.id === prev) ? prev : combined[0].id,
+        );
+      }
+    };
+
+    void loadAll();
+    return () => {
+      cancelled = true;
+    };
   }, [user?.camera_config]);
 
-  // ── Persist streams helper ──
+  // ── Persist local/legacy streams helper (managed RTSP cameras stay in /api/v1/cameras) ──
   const persistStreams = useCallback(
     async (nextStreams: CameraStreamConfig[]) => {
       setStreams(nextStreams);
+      const localOnly = nextStreams.filter((s) => !s.managedId);
       // T16: credentials typed into a camera URL are stripped before they are
       // ever written to localStorage or the users table.
-      const payload = JSON.stringify(sanitizeCameraStreams(nextStreams));
+      const payload = JSON.stringify(sanitizeCameraStreams(localOnly));
 
       try {
         localStorage.setItem(scopedStorageKey('camera-config'), payload);
@@ -252,13 +352,58 @@ export default function CameraPage() {
     window.setTimeout(() => setRefreshing(false), 800);
   }, []);
 
-  const toggleStream = useCallback((cameraId: string) => {
-    setStreamEnabled((prev) => ({ ...prev, [cameraId]: prev[cameraId] === false }));
-    setHlsStates((prev) => ({
-      ...prev,
-      [cameraId]: prev[cameraId] === 'playing' ? 'paused' : 'idle',
-    }));
-  }, []);
+  const toggleStream = useCallback(
+    async (cameraId: string) => {
+      const target = streams.find((s) => s.id === cameraId);
+      const willEnable = streamEnabled[cameraId] === false;
+
+      if (willEnable && target?.managedId) {
+        try {
+          await fetchWithAuth(`/api/v1/cameras/${target.managedId}/activate`, {
+            method: 'POST',
+          });
+        } catch (err) {
+          console.error('Failed to activate MediaMTX path:', err);
+        }
+      }
+
+      setStreamEnabled((prev) => {
+        const next: Record<string, boolean> = singleViewMode && willEnable ? {} : { ...prev };
+        if (singleViewMode && willEnable) {
+          for (const cam of streams) {
+            if (cam.streamType === 'hls' && cam.id !== cameraId) {
+              next[cam.id] = false;
+            }
+          }
+        }
+        next[cameraId] = willEnable;
+        return next;
+      });
+      setHlsStates((prev) => ({
+        ...prev,
+        [cameraId]: willEnable ? 'idle' : 'paused',
+      }));
+    },
+    [streams, streamEnabled, singleViewMode],
+  );
+
+  const selectCamera = useCallback(
+    (camId: string) => {
+      setActiveCameraId(camId);
+      if (singleViewMode) {
+        setStreamEnabled((prev) => {
+          const next = { ...prev };
+          for (const s of streams) {
+            if (s.streamType === 'hls' && s.id !== camId) {
+              next[s.id] = false;
+            }
+          }
+          return next;
+        });
+      }
+    },
+    [singleViewMode, streams],
+  );
 
   // ── Fullscreen toggle ──
   const toggleFullscreen = () => {
@@ -299,10 +444,17 @@ export default function CameraPage() {
     setFormName('');
     setFormLocation('');
     setFormUrl('');
-    setFormStreamType('simulated');
+    setFormStreamType('rtsp');
+    setFormPreset('tapo');
+    setFormHost('');
+    setFormPort(554);
+    setFormUsername('');
+    setFormPassword('');
+    setFormRtspPath('/stream2');
+    setProbeState(null);
     setFormRefreshInterval(3);
-    setFormFps(30);
-    setFormResolution('1920x1080');
+    setFormFps(25);
+    setFormResolution('1280x720');
     setIsDialogOpen(true);
   };
 
@@ -312,10 +464,57 @@ export default function CameraPage() {
     setFormLocation(cam.location);
     setFormUrl(cam.url || '');
     setFormStreamType(cam.streamType);
+    setProbeState(null);
     setFormRefreshInterval(cam.refreshInterval || 3);
     setFormFps(cam.fps || 30);
     setFormResolution(cam.resolution || '1920x1080');
     setIsDialogOpen(true);
+  };
+
+  const handleProbeRtsp = async () => {
+    if (!formHost.trim() && !formUrl.trim()) {
+      showToast(tr('กรุณากรอก Host / DDNS ก่อนทดสอบ', 'Enter Host / DDNS first'), 'warning');
+      return;
+    }
+    setIsProbing(true);
+    setProbeState(null);
+    try {
+      const payload =
+        formPreset === 'custom' && formUrl.trim().startsWith('rtsp')
+          ? { rtsp_url: formUrl.trim() }
+          : {
+              host: formHost.trim(),
+              port: formPort || 554,
+              username: formUsername,
+              password: formPassword,
+              path: formRtspPath.trim() || '/stream2',
+            };
+      const res = await fetchWithAuth('/api/v1/cameras/probe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const body = await res.json();
+      if (!res.ok) {
+        setProbeState({
+          reachable: false,
+          authenticated: false,
+          error: body?.detail || tr('ทดสอบไม่สำเร็จ', 'Probe failed'),
+        });
+        return;
+      }
+      const probe = body?.data as ProbeResult;
+      setProbeState(probe);
+      if (probe.resolution) setFormResolution(probe.resolution);
+    } catch {
+      setProbeState({
+        reachable: false,
+        authenticated: false,
+        error: tr('ไม่สามารถติดต่อเซิร์ฟเวอร์เพื่อทดสอบได้', 'Could not reach server for probe'),
+      });
+    } finally {
+      setIsProbing(false);
+    }
   };
 
   const handleSaveCamera = async (e: React.FormEvent) => {
@@ -327,6 +526,53 @@ export default function CameraPage() {
 
     setIsSaving(true);
     try {
+      if (!editingCameraId && formStreamType === 'rtsp') {
+        const payload =
+          formPreset === 'custom' && formUrl.trim().startsWith('rtsp')
+            ? {
+                name: formName.trim(),
+                location: formLocation.trim(),
+                preset: formPreset,
+                rtsp_url: formUrl.trim(),
+                fps: formFps,
+              }
+            : {
+                name: formName.trim(),
+                location: formLocation.trim(),
+                preset: formPreset,
+                host: formHost.trim(),
+                port: formPort || 554,
+                username: formUsername,
+                password: formPassword,
+                path: formRtspPath.trim() || '/stream2',
+                fps: formFps,
+              };
+        const res = await fetchWithAuth('/api/v1/cameras', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        const body = await res.json();
+        if (!res.ok) {
+          showToast(body?.detail || tr('เพิ่มกล้องไม่สำเร็จ', 'Failed to add camera'), 'error');
+          return;
+        }
+        const created = mapManagedCamera(body.data.camera as BackendUserCamera);
+        const probe = body.data.probe as ProbeResult | undefined;
+        setStreams((prev) => [created, ...prev]);
+        setStreamEnabled((prev) => ({ ...prev, [created.id]: true }));
+        setActiveCameraId(created.id);
+        setIsDialogOpen(false);
+        if (probe?.warning) {
+          showToast(probe.warning, 'warning');
+        } else {
+          showToast(tr('เพิ่มกล้อง RTSP สำเร็จ', 'RTSP camera added'), 'success');
+        }
+        return;
+      }
+
+      const safeStreamType: CameraStreamType =
+        formStreamType === 'rtsp' ? 'hls' : formStreamType;
       let updated: CameraStreamConfig[];
 
       if (editingCameraId) {
@@ -338,7 +584,7 @@ export default function CameraPage() {
                 name: formName.trim(),
                 location: formLocation.trim() || tr('ไม่ระบุตำแหน่ง', 'Location not specified'),
                 url: formUrl.trim(),
-                streamType: formStreamType,
+                streamType: safeStreamType,
                 refreshInterval: formRefreshInterval,
                 fps: formFps,
                 resolution: formResolution,
@@ -354,7 +600,7 @@ export default function CameraPage() {
           name: formName.trim(),
           location: formLocation.trim() || tr('ไม่ระบุตำแหน่ง', 'Location not specified'),
           url: formUrl.trim(),
-          streamType: formStreamType,
+          streamType: safeStreamType,
           refreshInterval: formRefreshInterval,
           fps: formFps,
           resolution: formResolution,
@@ -388,8 +634,28 @@ export default function CameraPage() {
     );
     if (!confirm.isConfirmed) return;
 
+    const target = streams.find((s) => s.id === camId);
+    if (target?.managedId) {
+      try {
+        const res = await fetchWithAuth(`/api/v1/cameras/${target.managedId}`, {
+          method: 'DELETE',
+        });
+        if (!res.ok) {
+          showToast(tr('ลบกล้องไม่สำเร็จ', 'Could not delete camera'), 'error');
+          return;
+        }
+      } catch {
+        showToast(tr('ลบกล้องไม่สำเร็จ', 'Could not delete camera'), 'error');
+        return;
+      }
+    }
+
     const updated = streams.filter((s) => s.id !== camId);
-    await persistStreams(updated);
+    if (target?.managedId) {
+      setStreams(updated);
+    } else {
+      await persistStreams(updated);
+    }
 
     if (activeCameraId === camId) {
       setActiveCameraId(updated[0]?.id || '');
@@ -602,24 +868,7 @@ export default function CameraPage() {
                           <CameraOff size={11} aria-hidden="true" />
                           {tr('ออฟไลน์', 'Offline')}
                         </span>
-                      ) : (
-                        <span className="flex items-center gap-2 rounded-full bg-[var(--danger)] px-3 py-1 text-[11px] font-bold text-white shadow-xs backdrop-blur-md">
-                          <span
-                            className="h-1.5 w-1.5 animate-ping rounded-full bg-[var(--surface)]"
-                            aria-hidden="true"
-                          />
-                          LIVE
-                        </span>
-                      )}
-                      <div className="flex items-center gap-2">
-                        <span className="rounded-full bg-black/60 px-3 py-1 text-[11px] font-semibold text-white/90 backdrop-blur-md">
-                          {getStreamTypeLabel(activeCamera.streamType)}
-                        </span>
-                        <span className="rounded-full bg-black/60 px-3 py-1 text-[11px] font-semibold text-white/90 backdrop-blur-md">
-                          FPS: {activeCamera.fps || 30} &nbsp;|&nbsp;{' '}
-                          {activeCamera.resolution || '1080p'}
-                        </span>
-                      </div>
+                      ) : null}
                     </div>
 
                     {/* Bottom HUD Bar */}
@@ -716,7 +965,7 @@ export default function CameraPage() {
           {/* Camera List Sidebar */}
           <div className="flex flex-col gap-3">
             <div className="rounded-apple-lg bg-[var(--surface)] p-5 ring-1 ring-[var(--hairline)]">
-              <div className="mb-4 flex items-center justify-between">
+              <div className="mb-4 flex items-center justify-between gap-2">
                 <h2 className="flex items-center gap-2.5 text-[15px] font-bold text-[var(--ink)]">
                   <div className="flex h-8 w-8 items-center justify-center rounded-apple-md bg-[var(--surface-grouped)]">
                     <Shield size={15} className="text-[var(--ink)]" aria-hidden="true" />
@@ -725,6 +974,19 @@ export default function CameraPage() {
                     count: streams.length,
                   })}
                 </h2>
+                <button
+                  type="button"
+                  onClick={() => setSingleViewMode((v) => !v)}
+                  className={[
+                    'rounded-full px-2.5 py-1 text-[11px] font-semibold transition-colors',
+                    singleViewMode
+                      ? 'bg-[var(--accent-soft)] text-[var(--accent-text)] ring-1 ring-[var(--accent-ring)]'
+                      : 'bg-[var(--surface-grouped)] text-[var(--ink-muted)] hover:text-[var(--ink)]',
+                  ].join(' ')}
+                  title={tr('โหลดภาพเฉพาะกล้องที่กำลังดู เพื่อประหยัดสเปคและเน็ต', 'Load one stream at a time to save CPU & bandwidth')}
+                >
+                  {singleViewMode ? tr('ดูทีละกล้อง', 'One at a time') : tr('เปิดหลายกล้อง', 'Multi-stream')}
+                </button>
               </div>
 
               <ul className="flex flex-col gap-2" role="list">
@@ -775,7 +1037,7 @@ export default function CameraPage() {
                         ].join(' ')}
                       >
                         <button
-                          onClick={() => setActiveCameraId(cam.id)}
+                          onClick={() => selectCamera(cam.id)}
                           className="flex min-w-0 flex-1 items-center gap-3 rounded-apple-widget text-left focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
                           aria-label={`${cam.name} — ${camStatusLabel}`}
                         >
@@ -914,17 +1176,213 @@ export default function CameraPage() {
                     className="mt-1.5"
                     fullWidth
                     value={formStreamType}
-                    onChange={setFormStreamType}
+                    onChange={(next) => {
+                      setFormStreamType(next);
+                      setProbeState(null);
+                    }}
                     options={[
-                      { value: 'hls', label: 'HLS Live' },
-                      { value: 'snapshot', label: tr('ภาพนิ่ง', 'Snapshot') },
-                      { value: 'mjpeg', label: 'MJPEG' },
-                      { value: 'simulated', label: tr('จำลอง', 'Simulated') },
+                      ...(!editingCameraId ? [{ value: 'rtsp' as const, label: tr('กล้อง RTSP', 'RTSP') }] : []),
+                      { value: 'hls' as const, label: 'HLS Live' },
+                      { value: 'snapshot' as const, label: tr('ภาพนิ่ง', 'Snapshot') },
+                      { value: 'mjpeg' as const, label: 'MJPEG' },
+                      { value: 'simulated' as const, label: tr('จำลอง', 'Simulated') },
                     ]}
                   />
                 </div>
 
-                {formStreamType !== 'simulated' && (
+                {formStreamType === 'rtsp' && !editingCameraId && (
+                  <div className="space-y-3 rounded-apple-widget border border-[var(--hairline)] bg-[var(--surface-grouped)] p-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-[var(--ink)]">
+                        {tr('ยี่ห้อ / รูปแบบกล้อง', 'Camera brand / preset')}
+                      </label>
+                      <Select
+                        ariaLabel={tr('ยี่ห้อ / รูปแบบกล้อง', 'Camera brand / preset')}
+                        value={formPreset}
+                        onChange={(next) => {
+                          const preset = next as RtspPreset;
+                          setFormPreset(preset);
+                          setFormRtspPath(RTSP_PRESET_PATHS[preset]);
+                          setProbeState(null);
+                        }}
+                        size="md"
+                        options={[
+                          { value: 'tapo', label: 'TP-Link Tapo (/stream2)' },
+                          { value: 'hikvision', label: 'Hikvision (/Streaming/Channels/102)' },
+                          { value: 'dahua', label: 'Dahua (subtype=1)' },
+                          { value: 'reolink', label: 'Reolink (h264Preview_01_sub)' },
+                          { value: 'custom', label: tr('กำหนดเอง (Custom RTSP)', 'Custom RTSP') },
+                        ]}
+                        className="mt-1 w-full"
+                      />
+                    </div>
+
+                    {formPreset === 'custom' && formUrl.trim().startsWith('rtsp') ? (
+                      <div>
+                        <label
+                          htmlFor="camera-rtsp-raw"
+                          className="block text-xs font-semibold text-[var(--ink)]"
+                        >
+                          RTSP URL
+                        </label>
+                        <input
+                          id="camera-rtsp-raw"
+                          type="text"
+                          value={formUrl}
+                          onChange={(e) => setFormUrl(e.target.value)}
+                          placeholder="rtsp://user:pass@ddns-host:49110/stream2"
+                          className="mt-1 block w-full rounded-apple-widget border border-[var(--hairline)] bg-[var(--surface)] px-3 py-2 font-mono text-xs text-[var(--ink)]"
+                        />
+                      </div>
+                    ) : (
+                      <>
+                        <div className="grid grid-cols-3 gap-2">
+                          <div className="col-span-2">
+                            <label
+                              htmlFor="camera-host"
+                              className="block text-xs font-semibold text-[var(--ink)]"
+                            >
+                              Host / DDNS <span className="text-[var(--danger)]">*</span>
+                            </label>
+                            <input
+                              id="camera-host"
+                              type="text"
+                              required
+                              value={formHost}
+                              onChange={(e) => setFormHost(e.target.value)}
+                              placeholder="tthanyapong.trueddns.com"
+                              className="mt-1 block w-full rounded-apple-widget border border-[var(--hairline)] bg-[var(--surface)] px-3 py-2 font-mono text-xs text-[var(--ink)]"
+                            />
+                          </div>
+                          <div>
+                            <label
+                              htmlFor="camera-port"
+                              className="block text-xs font-semibold text-[var(--ink)]"
+                            >
+                              Port
+                            </label>
+                            <input
+                              id="camera-port"
+                              type="number"
+                              min={1}
+                              max={65535}
+                              value={formPort}
+                              onChange={(e) => setFormPort(Number(e.target.value))}
+                              placeholder="49110"
+                              className="mt-1 block w-full rounded-apple-widget border border-[var(--hairline)] bg-[var(--surface)] px-3 py-2 font-mono text-xs text-[var(--ink)]"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label
+                              htmlFor="camera-rtsp-user"
+                              className="block text-xs font-semibold text-[var(--ink)]"
+                            >
+                              Username
+                            </label>
+                            <input
+                              id="camera-rtsp-user"
+                              type="text"
+                              value={formUsername}
+                              onChange={(e) => setFormUsername(e.target.value)}
+                              placeholder="ART@IOT31"
+                              className="mt-1 block w-full rounded-apple-widget border border-[var(--hairline)] bg-[var(--surface)] px-3 py-2 text-xs text-[var(--ink)]"
+                            />
+                          </div>
+                          <div>
+                            <label
+                              htmlFor="camera-rtsp-pass"
+                              className="block text-xs font-semibold text-[var(--ink)]"
+                            >
+                              Password
+                            </label>
+                            <input
+                              id="camera-rtsp-pass"
+                              type="password"
+                              value={formPassword}
+                              onChange={(e) => setFormPassword(e.target.value)}
+                              placeholder="••••••••"
+                              className="mt-1 block w-full rounded-apple-widget border border-[var(--hairline)] bg-[var(--surface)] px-3 py-2 text-xs text-[var(--ink)]"
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label
+                            htmlFor="camera-rtsp-path"
+                            className="block text-xs font-semibold text-[var(--ink)]"
+                          >
+                            Stream Path
+                          </label>
+                          <input
+                            id="camera-rtsp-path"
+                            type="text"
+                            value={formRtspPath}
+                            onChange={(e) => setFormRtspPath(e.target.value)}
+                            placeholder="/stream2"
+                            className="mt-1 block w-full rounded-apple-widget border border-[var(--hairline)] bg-[var(--surface)] px-3 py-2 font-mono text-xs text-[var(--ink)]"
+                          />
+                          <p className="mt-1 text-[11px] leading-relaxed text-[var(--ink-muted)]">
+                            {tr(
+                              'ระบบจะเข้ารหัส @ และอักขระพิเศษให้อัตโนมัติ (แนะนำ H.264: /stream2 หรือ /stream1 ถ้ากล้องตั้งเป็น H.264 จะคมชัดกว่าโดยไม่กินสเปค)',
+                              'Special characters are auto-encoded. H.264 (/stream2 or H.264 /stream1) is recommended.',
+                            )}
+                          </p>
+                        </div>
+                      </>
+                    )}
+
+                    <div className="flex items-center justify-between gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={handleProbeRtsp}
+                        disabled={isProbing}
+                        className="inline-flex items-center gap-1.5 rounded-full bg-[var(--surface)] px-3.5 py-1.5 text-xs font-semibold text-[var(--ink)] ring-1 ring-[var(--hairline)] transition-colors hover:bg-[var(--surface-chip)] disabled:opacity-50"
+                      >
+                        {isProbing ? (
+                          <RefreshCw size={12} className="animate-spin" aria-hidden="true" />
+                        ) : (
+                          <Wifi size={12} aria-hidden="true" />
+                        )}
+                        {tr('ทดสอบการเชื่อมต่อ', 'Test connection')}
+                      </button>
+                      {probeState?.codec && (
+                        <span className="rounded-full bg-[var(--surface)] px-2.5 py-0.5 font-mono text-[11px] font-semibold text-[var(--ink-secondary)] ring-1 ring-[var(--hairline)]">
+                          {probeState.codec}
+                          {probeState.resolution ? ` · ${probeState.resolution}` : ''}
+                        </span>
+                      )}
+                    </div>
+
+                    {probeState && (
+                      <div
+                        className={[
+                          'rounded-apple-md px-3 py-2 text-[11px] leading-relaxed',
+                          probeState.error
+                            ? 'bg-[var(--danger-soft)] text-[var(--danger-ink)]'
+                            : probeState.warning
+                              ? 'bg-[var(--warning-soft)] text-[var(--warning-ink)]'
+                              : 'bg-[var(--success-soft)] text-[var(--success-ink)]',
+                        ].join(' ')}
+                      >
+                        {probeState.error ? (
+                          probeState.error
+                        ) : probeState.warning ? (
+                          <span className="flex items-start gap-1.5">
+                            <AlertTriangle size={13} className="mt-0.5 shrink-0" aria-hidden="true" />
+                            <span>{probeState.warning}</span>
+                          </span>
+                        ) : (
+                          tr('เชื่อมต่อกล้องสำเร็จ พร้อมใช้งาน!', 'Camera reachable and ready!')
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {formStreamType !== 'simulated' && formStreamType !== 'rtsp' && (
                   <div>
                     <label
                       htmlFor="camera-url"

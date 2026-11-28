@@ -223,10 +223,14 @@ class Settings(BaseSettings):
     SENTRY_ENVIRONMENT: str = "development"  # set via ENV to "production" in prod
 
     # Database SSL — path to the CA certificate for TLS-hosted Postgres backends
-    # (Aiven and other managed providers). When set the async engine builds an ssl.SSLContext that
+    # (Supabase and other managed providers). When set the async engine builds an ssl.SSLContext that
     # trusts this CA instead of relying on the platform certifi bundle, which does
     # not include self-signed provider CAs.
     SSL_CA_CERT_PATH: str = ""
+    # Alternative to SSL_CA_CERT_PATH: inline PEM certificate content (useful on
+    # PaaS hosts like Render when pasting into an env var instead of mounting a
+    # Secret File). Ignored when SSL_CA_CERT_PATH points to an existing file.
+    SSL_CA_CERT: str = ""
     # Escape hatch for a throwaway remote database that cannot supply a CA file.
     # With DEBUG=False the engine refuses an unverified TLS connection (or an
     # explicit sslmode=disable) unless this is true: encrypted-but-unauthenticated
@@ -484,6 +488,11 @@ class Settings(BaseSettings):
     # real list for the pasted key.
     GEMINI_API_KEY: str = ""
     GEMINI_MODEL: str = "gemini-3.8-flash"
+
+    # CCTV (MediaMTX edge on Render) — optional; when set, users can add per-account
+    # RTSP cameras that the backend probes and registers on MediaMTX via /_control/*.
+    CCTV_MEDIAMTX_URL: str = ""
+    CCTV_CONTROL_SECRET: str = ""
 
     def require_google_client_id(self) -> str:
         """Return the configured Google client ID or raise a clear 500 error."""

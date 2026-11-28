@@ -9,7 +9,7 @@ services:
     name: art-workspace-api
     runtime: python
     rootDir: backend
-    # Keep this region aligned with the Aiven database. Cross-region database
+    # Keep this region aligned with the Supabase database. Cross-region database
     # round-trips were measured at ~1.5s per query in production.
     region: singapore
     # requirements.lock is compiled on CI from requirements.in and carries the
@@ -47,11 +47,14 @@ services:
         sync: false
       - key: DATABASE_URL
         sync: false
-      # Path to the downloaded Aiven project CA on the backend host. Required:
-      # Aiven forces TLS and its CA is not in certifi, so without this asyncpg
-      # falls back to the public bundle and fails certificate verification.
-      # Download it from the Aiven Console (Service → Overview → CA certificate).
+      # Path to the downloaded Supabase CA on the backend host (or paste the
+      # PEM content into SSL_CA_CERT). Required: Supabase forces TLS and its CA
+      # is not in certifi, so without this asyncpg falls back to the public
+      # bundle and fails certificate verification. Download it from the Supabase
+      # Dashboard (Project Settings → Database → SSL Configuration).
       - key: SSL_CA_CERT_PATH
+        sync: false
+      - key: SSL_CA_CERT
         sync: false
       # Secure default: a remote PostgreSQL without a usable CA refuses to
       # start. Set true only for a throwaway environment.
@@ -91,6 +94,10 @@ services:
         sync: false
       - key: SENTRY_DSN
         sync: false
+      - key: CCTV_MEDIAMTX_URL
+        sync: false
+      - key: CCTV_CONTROL_SECRET
+        sync: false
 
   # ── CCTV ────────────────────────────────────────────────────────────────────
   # MediaMTX republishes the camera's RTSP stream as HLS, because browsers
@@ -122,4 +129,8 @@ services:
       # Origins allowed to read the HLS endpoints; '*' accepts any (then tighten
       # it to the deployed frontend origin).
       - key: CCTV_ALLOWED_ORIGINS
+        sync: false
+      # Shared secret matching backend CCTV_CONTROL_SECRET so only the API can
+      # register/delete dynamic per-user RTSP paths via /_control/*.
+      - key: CCTV_CONTROL_SECRET
         sync: false
