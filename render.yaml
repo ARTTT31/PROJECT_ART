@@ -53,6 +53,10 @@ services:
       # Download it from the Aiven Console (Service → Overview → CA certificate).
       - key: SSL_CA_CERT_PATH
         sync: false
+      # Secure default: a remote PostgreSQL without a usable CA refuses to
+      # start. Set true only for a throwaway environment.
+      - key: ALLOW_INSECURE_DB_TLS
+        value: "false"
       - key: SECRET_KEY
         sync: false
       - key: FRONTEND_URL

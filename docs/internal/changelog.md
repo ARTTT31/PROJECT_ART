@@ -2747,3 +2747,30 @@ Verified locally: `pytest -q` **779 passed / 85.00%** (gate 75%), `flake8 app te
 clean (79 files), and `alembic upgrade head` → `downgrade -1` → `upgrade head` round tripped on a
 throwaway SQLite file with `alembic check` reporting no new upgrade operations. The frontend was not
 changed, so `vitest`, `tsc` and `eslint` were not re-run.
+
+## Production TLS and Email Configuration Fail Closed (November 28, 2026)
+
+- **Database TLS.** `app/core/database.py` used to fall back to `CERT_NONE` whenever
+  `SSL_CA_CERT_PATH` was empty or its file was missing, so a production deployment could connect to
+  an impostor database with encryption but no authentication. With `DEBUG=False` a remote
+  PostgreSQL now raises a startup `RuntimeError` instead; `ALLOW_INSECURE_DB_TLS=true` is the
+  explicit escape hatch for a throwaway environment. An explicit `sslmode=disable` on a remote host
+  gets the same treatment. The async engine still uses `CERT_REQUIRED` against the provider CA when
+  the file exists.
+- **Alembic.** The pre-deploy migration path had its own `sslmode=require` (encrypted, unverified)
+  even when a CA was configured. `build_sync_connect_args()` now passes `verify-ca` plus
+  `sslrootcert` when the CA file exists, and refuses an unverified remote connection otherwise.
+- **Email.** `log_email_delivery_configuration()` now fails startup when
+  `REQUIRE_EMAIL_VERIFICATION=true` while `EMAIL_BACKEND=console` (every new account would be locked
+  out), or when `resend` has no API key / `smtp` has no host (every message would be dropped). Plain
+  console mode without the verification requirement stays a warning.
+- **Docs.** Corrected the FastAPI version in `README.md`/`architecture.md` (0.165, not 0.162), the
+  weather-cache retention (30 days, not 7), the missing `football` endpoint in both endpoint lists,
+  and the ORM guidance in `AGENTS.md`/`GEMINI.md` (SQLAlchemy 2.0 declarative, not SQLModel; `Base`
+  lives in `core/database.py`, not a `backend/app/db/` folder). Component count updated to 83.
+- **Env templates.** Both `.env.example` files document `ALLOW_INSECURE_DB_TLS=False`.
+
+Verified locally: `pytest -q` **796 passed / 85.38%** (gate 75%), `flake8 app tests` clean,
+`mypy app` clean (79 files), `alembic upgrade head` + `alembic check` on a throwaway SQLite file,
+and `check_docs_links.py` (12 files). The frontend was not changed, so `vitest`, `tsc` and `eslint`
+were not re-run.

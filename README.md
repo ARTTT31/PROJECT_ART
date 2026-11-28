@@ -66,7 +66,7 @@ The migration step matters: the test suite builds its schema from the models, so
 
 | Layer | Technology |
 |---|---|
-| Framework | FastAPI 0.162, Starlette 1.10, Uvicorn 0.54 |
+| Framework | FastAPI 0.165, Starlette 1.10, Uvicorn 0.54 |
 | Real-time | WebSocket notifications (authenticated handshake, connection caps, optional Redis fan-out) |
 | ORM / DB | SQLAlchemy 2 async, Alembic migrations |
 | Database | PostgreSQL on Aiven (production), SQLite for CI tests |
@@ -169,7 +169,8 @@ Notable variables:
 |---|---|---|
 | `DEBUG` | `False` | Opt-in to development behaviour. Required `True` for local dev tooling such as `/docs`. |
 | `SECRET_KEY` | — | JWT signing key. When `DEBUG=False` it must be at least 32 characters and not a placeholder. |
-| `SSL_CA_CERT_PATH` | empty | Path to the Aiven project CA file. Aiven's CA is not in certifi, so setting this lets the async engine verify TLS against it explicitly. |
+| `SSL_CA_CERT_PATH` | empty | Path to the Aiven project CA file. Aiven's CA is not in certifi, so setting this lets the async engine verify TLS against it explicitly. With `DEBUG=False`, a remote PostgreSQL without a usable CA now refuses to start instead of silently using encrypted-but-unverified TLS. |
+| `ALLOW_INSECURE_DB_TLS` | `False` | Escape hatch for a throwaway remote database: allows unverified TLS or `sslmode=disable` outside `DEBUG`. Never enable it for production data. |
 | `ENABLE_API_DOCS` | `False` | Serves `/docs`, `/redoc` and `/openapi.json`. Always on when `DEBUG=True`. |
 | `CSRF_PROTECTION_ENABLED` | `True` | Double-submit-cookie CSRF check for authenticated browser writes. Only disable for non-browser clients. |
 | `COOKIE_SECURE` / `COOKIE_SAMESITE` | derived | `True`/`none` on Render; `False`/`lax` for plain local HTTP. |
@@ -249,7 +250,7 @@ PROJECT_ART/
 ├── backend/                     # FastAPI
 │   └── app/
 │       ├── api/v1/endpoints/    # auth (+ auth_2fa), profile, users, audit, system, market,
-│       │                        # weather, oil_prices, notifications, planner, websockets, ai
+│       │                        # weather, oil_prices, football, notifications, planner, websockets, ai
 │       └── core/                # config, database, security, rate_limit, middleware, cookies,
 │                                # totp, secret_box, observability
 ├── design-system/workspace/ # MASTER.md + page overrides
@@ -299,7 +300,7 @@ When developing with AI assistants (Antigravity, Gemini CLI, Claude Code), the a
 ### Release Checklist
 
 1. Run `alembic upgrade head` against the production database before deploying the backend.
-2. Confirm `DEBUG=False`, automatic schema flags are disabled, and `CORS_ORIGINS` contains only the deployed frontend origin.
+2. Confirm `DEBUG=False`, automatic schema flags are disabled, `CORS_ORIGINS` contains only the deployed frontend origin, and `SSL_CA_CERT_PATH` resolves on the backend host — a remote PostgreSQL without verified TLS now refuses to start (both the app and `alembic upgrade head`).
 3. Set the frontend URLs above in the deployment environment; do not rely on a URL embedded in source code.
 4. Run the validation commands in this document and verify login, profile editing, dashboard widgets, and the production `/api` rewrite after deployment.
 5. Point the platform health check at `/health/ready` (it answers `503` when the database is unreachable) and keep an external uptime monitor on `/health`.

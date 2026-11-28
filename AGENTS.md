@@ -19,7 +19,7 @@ Before modifying or creating any code, AI agents MUST identify the relevant area
 | **Error Tracking (Sentry)** | `frontend/instrumentation*.ts`, `frontend/next.config.js`, error boundaries, `Sentry.*` capture calls | `.agents/skills/sentry-nextjs-sdk/` (SDK setup/instrumentation) + `.agents/skills/sentry-fix-issues/` (reproduce → fix a reported issue) |
 | **PWA, Service Workers & Caching** | `frontend/public/manifest*`, `sw.*`, offline logic | `.agents/skills/pwa-development/` (Workbox, caching strategies, offline-first) |
 | **Backend API & Endpoints** | `backend/app/api/**/*`, `backend/app/main.py` | `.agents/skills/fastapi/` (Routing, dependencies with `Annotated`, streaming/SSE) |
-| **Database & ORM Models** | `backend/app/models/**/*`, `backend/app/db/**/*` | `.agents/skills/sqlmodel/` (SQLModel field definitions, sessions, query patterns) |
+| **Database & ORM Models** | `backend/app/models/**/*`, `backend/app/core/database.py` | `.agents/skills/sqlmodel/` (session/query patterns; the project uses SQLAlchemy 2.0 declarative `Mapped`/`mapped_column`, not SQLModel)` |
 | **Design Tokens & Specs Architecture** | `frontend/src/app/globals.css`, token configs | `.agents/skills/design-system/` (Three-layer tokens: primitive → semantic → component) |
 | **Brand Identity & Voice** | Branding, tone, copy, logo assets | `.agents/skills/brand/` + `.agents/skills/design/` (Visual identity, CIP mockups) |
 | **Banners, Share Cards & Visuals** | Infographic cards, social banners, canvas export | `.agents/skills/banner-design/` + `.agents/skills/ui-styling/` |
@@ -105,9 +105,9 @@ Before writing, modifying, or refactoring ANY frontend page, component, or style
 1. **FastAPI & Async Patterns**:
    - Consult `.agents/skills/fastapi/`.
    - Use `Annotated[..., Depends(...)]` for dependencies. Prefer explicit return types.
-2. **SQLModel & Database**:
-   - Consult `.agents/skills/sqlmodel/`.
-   - Define models with `SQLModel, table=True` and `Field()`.
+2. **SQLAlchemy 2.0 & Database**:
+   - Consult `.agents/skills/sqlmodel/` for session and query patterns; the model definitions themselves use SQLAlchemy 2.0 declarative syntax.
+   - Define models with `Base` + `Mapped[...]` + `mapped_column(...)` in `backend/app/models/`; the `Base` lives in `backend/app/core/database.py`.
    - Keep migrations consistent with Alembic (`alembic check`).
 3. **PWA & Offline-First**:
    - Consult `.agents/skills/pwa-development/`.
@@ -118,7 +118,7 @@ Before writing, modifying, or refactoring ANY frontend page, component, or style
 ## 🏗️ Architecture Overview & Verification
 
 - **Frontend**: Next.js 16 (App Router), TypeScript, Tailwind CSS, Radix UI, `@dnd-kit`.
-- **Backend**: Python 3.11 / 3.14, FastAPI, SQLAlchemy / SQLModel, Alembic, Pydantic v2.
+- **Backend**: Python 3.11 / 3.14, FastAPI, SQLAlchemy 2.0 (declarative), Alembic, Pydantic v2.
 - **Verification Commands**:
   - Frontend: `npm run test` (Vitest), `npm run type-check`, `npm run lint`.
   - Backend: `pytest`, `flake8`, `mypy`, `alembic check`.

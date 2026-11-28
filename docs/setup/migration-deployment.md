@@ -51,7 +51,7 @@ Alembic remains the only schema authority, and CI now applies the chain (`alembi
 ### 2.5 Enabling SSL Security (Database Connection)
 Connecting to a managed database such as Aiven requires data transmission through an encrypted channel:
 * Embedded the `connect_args={"ssl": True}` parameter at the SQLAlchemy Engine level to force `asyncpg` to always operate via SSL Mode.
-* `_build_ssl_context()` in `app/core/database.py` loads the file named by `SSL_CA_CERT_PATH` and keeps `verify_mode=CERT_REQUIRED`. `check_hostname` is disabled only because Aiven's shared CA name does not always match the service hostname; the certificate itself is still verified.
+* `_build_ssl_context()` in `app/core/database.py` loads the file named by `SSL_CA_CERT_PATH` and keeps `verify_mode=CERT_REQUIRED`. `check_hostname` is disabled only because Aiven's shared CA name does not always match the service hostname; the certificate itself is still verified. With `DEBUG=False`, a remote PostgreSQL with no usable CA file — or an explicit `sslmode=disable` — now refuses to start; `ALLOW_INSECURE_DB_TLS=true` is the explicit throwaway-environment escape hatch.
 
 ---
 

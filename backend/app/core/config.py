@@ -227,6 +227,12 @@ class Settings(BaseSettings):
     # trusts this CA instead of relying on the platform certifi bundle, which does
     # not include self-signed provider CAs.
     SSL_CA_CERT_PATH: str = ""
+    # Escape hatch for a throwaway remote database that cannot supply a CA file.
+    # With DEBUG=False the engine refuses an unverified TLS connection (or an
+    # explicit sslmode=disable) unless this is true: encrypted-but-unauthenticated
+    # TLS protects against passive sniffing, not an active man-in-the-middle.
+    # Never enable it for production data.
+    ALLOW_INSECURE_DB_TLS: bool = False
 
     # The cookie posture is resolved per call (a RENDER/process override must
     # win immediately). These aliased fields are what pydantic-settings reads

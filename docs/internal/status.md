@@ -1,9 +1,9 @@
 # Workspace — Current Status
 
-**Verified:** November 27, 2026 · `main` · Windows dev
-machine, Python 3.14.6 local, Node 26 · dependency refresh (Next 16.4.6, FastAPI 0.165.0)
+**Verified:** November 28, 2026 · `main` · Windows dev
+machine, Python 3.14.6 local, Node 26 · production TLS/email fail-closed pass
 
-The 2026-11-27 pass re-ran both suites to check the numbers this file reports and fixed the drift that check exposed. The finance table migration that followed re-ran the backend suite, `flake8`, `mypy` and the Alembic round trip, so those rows are current: backend **779 passed / 85.00%**, frontend **498 passed / 74 files** (untouched by that change, still from the 11-23 run). Build and Playwright were not re-run and remain from the 2026-11-22 pass.
+The 2026-11-28 pass added production TLS/email fail-closed checks and re-ran the backend suite, which now measures 796 passed (+17 against the 779 recorded on 11-27). The 2026-11-27 pass re-ran both suites to check the numbers this file reports and fixed the drift that check exposed. The finance table migration that followed re-ran the backend suite, `flake8`, `mypy` and the Alembic round trip, so those rows are current: backend **796 passed / 85.38%**, frontend **498 passed / 74 files** (untouched by the 11-28 change, still from the 11-23 run). Build and Playwright were not re-run and remain from the 2026-11-22 pass.
 
 The 2026-11-22 passes were the AI Copilot prompt/chip change, the Phase 4 session-IP work and a
 small correctness sweep (session expiry from settings, model ranking, `architecture.md` drift) — see
@@ -14,7 +14,7 @@ the grouped signed-in device list, its "ออกจากทุกอุปก�
 redirect to /login once your own session is revoked, then that redirect for a partly failed
 batch, the /audit action-label guard, then the filtered CSV export, the revoke entry's victim details, the two-way label guard and the /audit → /admin account link, its page-level test, the five investigation-loop items, then the /audit row-anchor sync, the optional revoke reason, the anchored-row scroll, its visible-row guard and the linked-row page lookup and its clear-filters action (latest: 498 passed / 74
 files, unchanged by the /audit view-and-export logging because it added labels only). The backend suite was also re-run for the self-revoke audit entry, the filtered CSV
-export, the revoke reason, the anchor page lookup and the view/export audit rows, and again for the finance table migration (**779 passed**, coverage **85.00%**); its lint, type and migration rows are current, every deployed check
+export, the revoke reason, the anchor page lookup and the view/export audit rows, and again for the finance table migration (**779 passed**, coverage **85.00%** at the time; the 11-28 pass measures **796 / 85.38%**); its lint, type and migration rows are current, every deployed check
 is still from the 2026-11-22 pass.
 
 > **Paused (2026-11-24): CCTV.** The camera/CCTV area is parked on purpose: its existing code
@@ -32,7 +32,7 @@ is still from the 2026-11-22 pass.
 
 | Check | Command | Result |
 |---|---|---|
-| Backend tests | `cd backend && ./venv/Scripts/python.exe -m pytest -q` | **779 passed**; coverage **85.00%** (gate 75%, local Python 3.14.6) |
+| Backend tests | `cd backend && ./venv/Scripts/python.exe -m pytest -q` | **796 passed**; coverage **85.38%** (gate 75%, local Python 3.14.6) |
 | Backend lint | `./venv/Scripts/python.exe -m flake8 app` | clean |
 | Backend types | `./venv/Scripts/python.exe -m mypy app` | clean, 79 source files |
 | Migrations | `alembic upgrade head` + `alembic check` on a throwaway SQLite file | full chain applies, **no drift** |
@@ -111,7 +111,7 @@ These are decisions, not defects — recorded so they are not re-litigated as bu
 |---|---|
 | Single instance by default | Rate limiting and the WebSocket registry are process-local; Redis paths exist (`SLOWAPI_STORAGE_URI`, `WS_BROADCAST_REDIS_URL`) and startup logs a `[SCALING]` notice. |
 | Third-party market data has no SLA | Yahoo Finance / Frankfurter / Thai Gold / Bangchak / Open-Meteo may throttle; widgets show the last known value or an empty block instead of failing the page. |
-| Partial i18n | A `th`/`en` catalogue exists in `lib/i18n/messages.ts` and drives part of the tree (last counted 34 of 82 components). Finishing it is a per-screen migration, not a switch. |
+| Partial i18n | A `th`/`en` catalogue exists in `lib/i18n/messages.ts` and drives part of the tree (last counted 34 of 83 component files). Finishing it is a per-screen migration, not a switch. |
 | Partial frontend coverage | 498 unit tests. Route-level tests exist for `login`, `register`, `forgot-password`, `share-target`, `admin` and `audit`; `dashboard`, `profile`, `camera`, `notifications`, `verify-email`, `reset-password` and `login-success` have none. |
 | Whole-document JSON blobs | Cheapest model that worked for single-user-per-account data; conflict detection is finding P2. |
 | One colour token layer | Components must not use Tailwind palette utilities (`bg-emerald-50`, `text-slate-500`, `dark:`) — those bind to the palette and to `prefers-color-scheme`, not to `data-theme`. Every surface, ink, accent and status colour comes from the semantic tokens in `globals.css` (`--surface*`, `--ink*`, `--danger*`, `--warning*`, `--success*`, `--info*`, `--accent*`), which both themes and the twelve accents override in one place. The ramp re-tone that used to mask this was removed on 2026-11-21. |

@@ -47,8 +47,8 @@ Before modifying or creating any frontend code, components, or styles:
 ## 2. Backend & Data Layer Rules
 1. **FastAPI Standards**:
    - Follow `.agents/skills/fastapi/`. Use `Annotated[..., Depends(...)]` for dependencies. Prefer return types over raw dicts.
-2. **SQLModel Standards**:
-   - Follow `.agents/skills/sqlmodel/`. Prefer `sqlmodel` imports (`Field`, `Session`, `select`) over raw SQLAlchemy declarative defaults. Keep migrations synced with Alembic.
+2. **SQLAlchemy 2.0 Standards**:
+   - Consult `.agents/skills/sqlmodel/` for session and query patterns. The models themselves use SQLAlchemy 2.0 declarative syntax (`Base`, `Mapped[...]`, `mapped_column(...)`) in `backend/app/models/`, with `Base` from `backend/app/core/database.py`; do not introduce a second ORM. Keep migrations synced with Alembic.
 
 ---
 

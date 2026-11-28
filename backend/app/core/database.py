@@ -2,6 +2,7 @@
 Database Configuration and Session Management
 """
 
+import logging
 import ssl
 from pathlib import Path
 from typing import Any
@@ -11,6 +12,8 @@ from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, Asyn
 from sqlalchemy.orm import DeclarativeBase
 
 from app.core.config import settings
+
+logger = logging.getLogger(__name__)
 
 
 def _build_ssl_context(cert_path: str | None = None) -> ssl.SSLContext | None:
@@ -31,8 +34,20 @@ def _build_ssl_context(cert_path: str | None = None) -> ssl.SSLContext | None:
         purpose=ssl.Purpose.SERVER_AUTH,
         cafile=str(cert_file),
     )
+    # Aiven's shared project CA does not always carry the service hostname, so
+    # hostname matching stays off; the certificate chain is still verified
+    # against the provider CA (CERT_REQUIRED), which is the part that prevents a
+    # rogue server from impersonating the database.
     ctx.check_hostname = False
     ctx.verify_mode = ssl.CERT_REQUIRED
+    return ctx
+
+
+def _unverified_ssl_context() -> ssl.SSLContext:
+    """Encrypted but unauthenticated TLS (the old ``sslmode=require`` fallback)."""
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
     return ctx
 
 
@@ -56,12 +71,44 @@ def build_async_connect_args(db_url: str, cert_path: str | None = None) -> dict[
     is_local = host in ("localhost", "127.0.0.1", "::1")
     connect_args: dict[str, Any] = {}
 
-    if not is_local and "sslmode=disable" not in db_url:
+    if not is_local and "sslmode=disable" in db_url:
+        # An explicit disable used to pass silently. In production it makes the
+        # database password and every query readable on the network, so it now
+        # needs the same deliberate opt-in as an unverified TLS connection.
+        if not settings.DEBUG and not settings.ALLOW_INSECURE_DB_TLS:
+            raise RuntimeError(
+                "DATABASE_URL requests sslmode=disable for a remote PostgreSQL. "
+                "Remove it and set SSL_CA_CERT_PATH to the provider CA, or set "
+                "ALLOW_INSECURE_DB_TLS=true only for a throwaway environment."
+            )
+        logger.warning(
+            "DATABASE_URL disables PostgreSQL TLS for remote host %s. "
+            "Credentials and queries are readable on the network.",
+            host or "(unknown)",
+        )
+        return connect_args
+
+    if not is_local:
         ssl_ctx = _build_ssl_context(cert_path)
         if ssl_ctx is None:
-            ssl_ctx = ssl.create_default_context()
-            ssl_ctx.check_hostname = False
-            ssl_ctx.verify_mode = ssl.CERT_NONE
+            # TLS without certificate verification is still encryption, but it
+            # cannot tell the real database from a man-in-the-middle. It used to
+            # be the silent default whenever SSL_CA_CERT_PATH was empty or its
+            # file was missing; production now has to opt in explicitly.
+            if not settings.DEBUG and not settings.ALLOW_INSECURE_DB_TLS:
+                raise RuntimeError(
+                    "Refusing to connect to a remote PostgreSQL without a verified "
+                    "TLS certificate. Set SSL_CA_CERT_PATH to the provider's CA "
+                    "file (Aiven: Console -> Service -> Overview -> CA certificate), "
+                    "or set ALLOW_INSECURE_DB_TLS=true only for a throwaway "
+                    "environment."
+                )
+            logger.warning(
+                "Remote PostgreSQL TLS is encrypted but NOT verified (no usable "
+                "SSL_CA_CERT_PATH). Set SSL_CA_CERT_PATH; ALLOW_INSECURE_DB_TLS "
+                "only silences this for a throwaway environment."
+            )
+            ssl_ctx = _unverified_ssl_context()
         connect_args["ssl"] = ssl_ctx
 
     try:
@@ -112,6 +159,37 @@ async def get_db():
     """
     async with SessionLocal() as db:
         yield db
+
+
+def build_sync_connect_args(db_url: str) -> dict[str, Any]:
+    """TLS arguments for the synchronous engine used by Alembic.
+
+    Alembic's ``preDeployCommand`` runs before the app, so it must enforce the
+    same rule as the async engine: a provider CA is verified when present, and a
+    production deployment without one refuses to connect instead of falling back
+    to libpq's ``sslmode=require`` (encrypted, unauthenticated).
+    """
+    if "sqlite" in db_url:
+        return {}
+
+    cert_path = (settings.SSL_CA_CERT_PATH or "").strip()
+    if cert_path:
+        cert_file = Path(cert_path)
+        if cert_file.is_file():
+            return {"sslmode": "verify-ca", "sslrootcert": str(cert_file)}
+
+    if not settings.DEBUG and not settings.ALLOW_INSECURE_DB_TLS:
+        raise RuntimeError(
+            "Refusing to run migrations over an unverified PostgreSQL connection. "
+            "Set SSL_CA_CERT_PATH to the provider's CA file (Aiven: Console -> "
+            "Service -> Overview -> CA certificate), or set "
+            "ALLOW_INSECURE_DB_TLS=true only for a throwaway environment."
+        )
+    logger.warning(
+        "Alembic is connecting to a remote PostgreSQL with encrypted but "
+        "unverified TLS (no usable SSL_CA_CERT_PATH)."
+    )
+    return {"sslmode": "require"}
 
 
 def to_sync_database_url(url: str) -> str:

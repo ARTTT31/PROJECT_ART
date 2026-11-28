@@ -14,7 +14,7 @@
 | Layer | Runs on | Technology |
 |---|---|---|
 | Web app | Vercel | Next.js 16 App Router (webpack), React 19, TypeScript 6, Tailwind CSS 4 |
-| API | Render (single uvicorn process) | FastAPI 0.162, Starlette 1.10, SQLAlchemy 2.1 async, Alembic |
+| API | Render (single uvicorn process) | FastAPI 0.165, Starlette 1.10, SQLAlchemy 2.1 async, Alembic |
 | Database | Aiven for PostgreSQL | PostgreSQL in production, SQLite in tests and CI |
 | Object storage | — | none: avatars are re-encoded to WebP and stored as base64 text on the user row |
 
@@ -97,7 +97,7 @@ rest hardcodes Thai copy. See `status.md` for the current split.
 backend/app/
 ├── main.py                 app assembly, middleware order, startup/shutdown, scheduler bootstrap
 ├── api/v1/router.py        mounts every endpoint module under /api/v1
-├── api/v1/endpoints/       auth (+ auth_2fa) · users · profile · audit · oil_prices · market · weather
+├── api/v1/endpoints/       auth (+ auth_2fa) · users · profile · audit · oil_prices · market · weather · football
 │                           system · planner · notifications · websockets · ai
 ├── core/                   config · database · security · rate_limit · observability · middleware
 │                           cookies · totp
@@ -121,7 +121,7 @@ There is no AI service module: provider resolution, prompt building and the mode
 | `/users` | admin user CRUD, trash/restore/purge, pending approvals, live sessions, 2FA reset |
 | `/profile` | `/me`, quick notes, finance, watchlist, layout, main menu, camera config, external channels, avatar, sessions |
 | `/audit` | admin activity log with search/pagination |
-| `/market`, `/oil-prices`, `/weather` | authenticated-or-anonymous upstream proxies (see §7) |
+| `/market`, `/oil-prices`, `/football`, `/weather` | authenticated-or-anonymous upstream proxies (see §7) |
 | `/planner` | personal reminders |
 | `/notifications` | notification log / history |
 | `/ws` | `/notifications` WebSocket + admin `broadcast` |
@@ -215,7 +215,7 @@ reach and page-scoped APIs enforce it server-side.
 | FX / gold / SET / quotes | Frankfurter, Thai Gold API, Yahoo Finance | last known value |
 
 Every proxy uses the same degradation ladder: **L1** in-process dict (200 entries, eviction of expired
-first) → **L2** `weather_cache` table (7-day prune-on-write, newest row per namespace always kept) →
+first) → **L2** `weather_cache` table (30-day prune-on-write, newest row per namespace always kept) →
 stale payload flagged `_stale: true`. Upstream `429`/5xx get a bounded retry (0.6 s, 1.8 s); 4xx is
 re-raised immediately. The weather, AQI, geocode and oil endpoints are unauthenticated by design (the
 login screen renders them) and therefore rate-limited per client address.
@@ -244,9 +244,7 @@ login screen renders them) and therefore rate-limited per client address.
   cleanup (`SESSION_CLEANUP_INTERVAL_HOURS`, `0` disables it for an external cron).
 - **Opportunistic cleanups.** Expired trash users purge when an admin loads the user list; expired
   weather rows prune on write; expired finance tombstones clear on load.
-- **Startup.** Refuses to boot on a weak `SECRET_KEY` in production, masks key-like values in
-  `SystemSetting.__repr__`, resolves VAPID keys, and logs a `[SCALING]` notice for every process-local
-  mechanism that a multi-instance deploy would silently break.
+- **Startup.** Refuses to boot on a weak `SECRET_KEY` in production, on an unverified remote PostgreSQL connection (or an explicit `sslmode=disable`) unless `ALLOW_INSECURE_DB_TLS=true` is set for a throwaway environment, and on a mail backend that cannot deliver when `REQUIRE_EMAIL_VERIFICATION` is on. Alembic uses the same CA policy (`verify-ca` + `sslrootcert`). It also masks key-like values in `SystemSetting.__repr__`, resolves VAPID keys, and logs a `[SCALING]` notice for every process-local mechanism that a multi-instance deploy would silently break.
 
 ---
 

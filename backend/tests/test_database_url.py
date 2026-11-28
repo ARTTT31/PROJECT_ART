@@ -13,7 +13,12 @@ from pathlib import Path
 import certifi
 import pytest
 
-from app.core.database import build_async_connect_args, to_sync_database_url
+from app.core.config import settings
+from app.core.database import (
+    build_async_connect_args,
+    build_sync_connect_args,
+    to_sync_database_url,
+)
 
 
 @pytest.mark.parametrize(
@@ -37,8 +42,9 @@ def test_to_sync_database_url(given: str, expected: str) -> None:
     assert to_sync_database_url(given) == expected
 
 
-def test_remote_postgres_without_ca_uses_tls_without_verify_full() -> None:
-    """Match Alembic's ``sslmode=require`` so provider CAs (e.g. Supabase) connect."""
+def test_remote_postgres_without_ca_uses_tls_without_verify_full(monkeypatch) -> None:
+    """A deliberate opt-in still allows provider CAs (e.g. Supabase) to connect."""
+    monkeypatch.setattr(settings, "ALLOW_INSECURE_DB_TLS", True)
     args = build_async_connect_args(
         "postgresql+asyncpg://postgres.ref:pw@aws-1-ap-northeast-1.pooler.supabase.com:5432/postgres",
         cert_path="",
@@ -63,7 +69,8 @@ def test_remote_postgres_with_ca_file_enforces_cert_required(tmp_path) -> None:
     assert ctx.verify_mode == ssl.CERT_REQUIRED
 
 
-def test_missing_ca_file_falls_back_to_encrypted_tls() -> None:
+def test_missing_ca_file_falls_back_to_encrypted_tls(monkeypatch) -> None:
+    monkeypatch.setattr(settings, "ALLOW_INSECURE_DB_TLS", True)
     args = build_async_connect_args(
         "postgresql+asyncpg://u:p@db.example.com:5432/app",
         cert_path="/nonexistent/ca.pem",
@@ -84,10 +91,52 @@ def test_transaction_pooler_port_and_pgbouncer_disable_statement_cache() -> None
         assert isinstance(args["ssl"], ssl.SSLContext)
 
 
-def test_local_and_sqlite_and_disabled_ssl_connect_args() -> None:
+def test_local_and_sqlite_and_disabled_ssl_connect_args(monkeypatch) -> None:
+    monkeypatch.setattr(settings, "ALLOW_INSECURE_DB_TLS", True)
     assert build_async_connect_args("sqlite+aiosqlite:///./app.db") == {"check_same_thread": False}
     assert build_async_connect_args("postgresql+asyncpg://u:p@localhost:5432/db") == {}
     assert (
         build_async_connect_args("postgresql+asyncpg://u:p@db.example.com:5432/db?sslmode=disable")
         == {}
     )
+
+
+def test_sync_engine_verifies_the_provider_ca(tmp_path, monkeypatch) -> None:
+    ca_file = tmp_path / "ca.pem"
+    ca_file.write_text(Path(certifi.where()).read_text(encoding="utf-8"), encoding="utf-8")
+    monkeypatch.setattr(settings, "SSL_CA_CERT_PATH", str(ca_file))
+
+    assert build_sync_connect_args("postgresql+psycopg2://u:p@db.example.com/app") == {
+        "sslmode": "verify-ca",
+        "sslrootcert": str(ca_file),
+    }
+
+
+def test_sync_engine_refuses_unverified_tls_in_production(monkeypatch) -> None:
+    monkeypatch.setattr(settings, "SSL_CA_CERT_PATH", "")
+    monkeypatch.setattr(settings, "DEBUG", False)
+    monkeypatch.setattr(settings, "ALLOW_INSECURE_DB_TLS", False)
+
+    with pytest.raises(RuntimeError, match="unverified PostgreSQL"):
+        build_sync_connect_args("postgresql+psycopg2://u:p@db.example.com/app")
+
+
+def test_remote_postgres_without_ca_refuses_unverified_tls(monkeypatch) -> None:
+    """Production must not silently accept encrypted-but-unauthenticated TLS."""
+    monkeypatch.setattr(settings, "DEBUG", False)
+    monkeypatch.setattr(settings, "ALLOW_INSECURE_DB_TLS", False)
+
+    with pytest.raises(RuntimeError, match="SSL_CA_CERT_PATH"):
+        build_async_connect_args(
+            "postgresql+asyncpg://u:p@db.example.com:5432/app", cert_path=""
+        )
+
+
+def test_sslmode_disable_refuses_remote_postgres_in_production(monkeypatch) -> None:
+    monkeypatch.setattr(settings, "DEBUG", False)
+    monkeypatch.setattr(settings, "ALLOW_INSECURE_DB_TLS", False)
+
+    with pytest.raises(RuntimeError, match="sslmode=disable"):
+        build_async_connect_args(
+            "postgresql+asyncpg://u:p@db.example.com:5432/db?sslmode=disable"
+        )

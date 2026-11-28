@@ -81,12 +81,20 @@ SHARED_STATE_NOTICE = (
 
 
 def log_email_delivery_configuration() -> None:
-    """Make a production deployment with no mail transport impossible to miss.
+    """Make a production deployment with no usable mail transport impossible to miss.
 
     Console mode is the right default for tests and local development, but in
     production it means reset/verification links are written to the logs and
-    never reach the user. Log loudly instead of failing startup: an operator
-    may still be completing provider setup, and a boot loop would be worse.
+    never reach the user. Two cases are now fatal instead of a warning:
+
+    * ``REQUIRE_EMAIL_VERIFICATION=true`` with the console backend — every new
+      account would be locked out of the only flow that can verify it.
+    * A backend selected without its required credential (Resend without a key,
+      SMTP without a host) — every message is silently dropped.
+
+    Plain console mode without the verification requirement keeps a warning:
+    an operator may still be completing provider setup, and a boot loop would be
+    worse than an in-app link that never arrives.
     """
     if settings.DEBUG:
         return
@@ -96,10 +104,24 @@ def log_email_delivery_configuration() -> None:
             "EMAIL_BACKEND=console in production: email-verification links will NOT "
             "be delivered. Set EMAIL_BACKEND=resend or smtp."
         )
-    elif backend == "resend" and not (settings.RESEND_API_KEY or "").strip():
-        logger.warning("EMAIL_BACKEND=resend but RESEND_API_KEY is empty; email will not send.")
-    elif backend == "smtp" and not (settings.SMTP_HOST or "").strip():
-        logger.warning("EMAIL_BACKEND=smtp but SMTP_HOST is empty; email will not send.")
+        if settings.REQUIRE_EMAIL_VERIFICATION:
+            raise RuntimeError(
+                "REQUIRE_EMAIL_VERIFICATION=true but EMAIL_BACKEND=console: no new "
+                "account could ever confirm its address. Configure smtp/resend, or "
+                "turn the requirement off until delivery works."
+            )
+    elif backend == "resend":
+        if not (settings.RESEND_API_KEY or "").strip():
+            raise RuntimeError(
+                "EMAIL_BACKEND=resend but RESEND_API_KEY is empty; every message "
+                "would be dropped. Set the key or choose another backend."
+            )
+    elif backend == "smtp":
+        if not (settings.SMTP_HOST or "").strip():
+            raise RuntimeError(
+                "EMAIL_BACKEND=smtp but SMTP_HOST is empty; every message would be "
+                "dropped. Set SMTP_HOST or choose another backend."
+            )
 
     if settings.GOOGLE_SIGNUP_ENABLED and not settings.GOOGLE_ALLOWED_DOMAINS:
         logger.warning(

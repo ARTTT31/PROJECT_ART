@@ -10,7 +10,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from app.core.config import settings
-from app.core.database import to_sync_database_url
+from app.core.database import build_sync_connect_args, to_sync_database_url
 from app.models.base import Base
 from app.models import ai_usage, audit_log, session, user, weather_cache  # Import all models
 
@@ -122,11 +122,19 @@ def run_migrations_online() -> None:
     configuration = config.get_section(config.config_ini_section, {})
     configuration["sqlalchemy.url"] = sync_url
 
+    try:
+        connect_args = build_sync_connect_args(sync_url)
+    except RuntimeError as exc:
+        # The TLS policy is a deliberate refusal, not a driver failure: print the
+        # operator-facing reason without a Python traceback in the deploy log.
+        print(str(exc), file=sys.stderr)
+        sys.exit(1)
+
     connectable = engine_from_config(
         configuration,
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
-        connect_args={"sslmode": "require"} if "sqlite" not in sync_url else {}
+        connect_args=connect_args,
     )
 
     try:
