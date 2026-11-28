@@ -5,9 +5,18 @@ import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
 
 vi.mock('next/navigation', () => ({ useRouter: () => ({ replace: vi.fn() }) }));
 
+const { authUser } = vi.hoisted(() => ({
+  authUser: {
+    role: 'admin',
+    name: 'Admin',
+    email: 'admin@example.com',
+    two_factor_enabled: true as boolean | undefined,
+  },
+}));
+
 vi.mock('@/hooks/useAuth', () => ({
   useAuth: () => ({
-    user: { role: 'admin', name: 'Admin', email: 'admin@example.com' },
+    user: authUser,
     status: 'authenticated',
   }),
 }));
@@ -42,6 +51,8 @@ function ok(body: unknown): Response {
 }
 
 beforeEach(() => {
+  authUser.two_factor_enabled = true;
+  vi.mocked(fetchWithAuth).mockClear();
   vi.mocked(fetchWithAuth).mockResolvedValue(ok([]));
 });
 
@@ -66,5 +77,16 @@ describe('/admin ?sessions=', () => {
 
     const card = await screen.findByTestId('active-sessions-query');
     expect(card.textContent).toBe('');
+  });
+
+  it('shows the 2FA setup path without calling admin APIs', async () => {
+    authUser.two_factor_enabled = false;
+    window.history.replaceState({}, '', '/admin');
+
+    render(<AdminPage />);
+
+    expect(await screen.findByText('ต้องเปิด 2FA ก่อนใช้ส่วนผู้ดูแล')).toBeDefined();
+    expect(screen.queryByTestId('active-sessions-query')).toBeNull();
+    expect(fetchWithAuth).not.toHaveBeenCalled();
   });
 });

@@ -357,7 +357,9 @@ export default function NotificationBell() {
   // Server-side events: an admin opening the app should see sign-up requests
   // waiting for a decision, even before the next WebSocket broadcast.
   useEffect(() => {
-    if (user?.role !== 'admin') return;
+    // Admin endpoints require 2FA; asking before it is enabled would only
+    // produce a 403 in the console.
+    if (user?.role !== 'admin' || user?.two_factor_enabled !== true) return;
 
     let cancelled = false;
     (async () => {
@@ -391,7 +393,7 @@ export default function NotificationBell() {
     return () => {
       cancelled = true;
     };
-  }, [user?.role]);
+  }, [user?.role, user?.two_factor_enabled]);
 
   // Subscribe to store updates & WebSocket
   useEffect(() => {

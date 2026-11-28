@@ -8,7 +8,7 @@ vi.mock('next/navigation', () => ({
 }));
 
 vi.mock('@/hooks/useAuth', () => ({
-  useAuth: () => ({ user: { id: 1, role: 'admin' } }),
+  useAuth: () => ({ user: { id: 1, role: 'admin', two_factor_enabled: true } }),
 }));
 
 vi.mock('@/lib/offline/localStore', () => ({

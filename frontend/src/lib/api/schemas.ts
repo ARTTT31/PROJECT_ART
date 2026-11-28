@@ -27,6 +27,9 @@ export const AuthUserSchema = z.object({
   username: z.string().nullish(),
   display_name: z.string().nullish(),
   role: AuthRoleSchema,
+  // Optional so a cookie written before this field existed still parses;
+  // /profile/me fills it in on the next hydration.
+  two_factor_enabled: z.boolean().optional(),
   avatar: z.string().nullish(),
   quick_links: z.string().nullish(),
   dashboard_layout: z.string().nullish(),

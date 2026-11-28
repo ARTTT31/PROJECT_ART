@@ -32,7 +32,19 @@ async def _login(client, email: str) -> None:
 
 async def test_admin_without_2fa_is_refused_the_admin_api(client, make_user):
     await make_user(email="admin-plain@example.com", password=PASSWORD, role="admin")
-    await _login(client, "admin-plain@example.com")
+
+    login = await client.post(
+        "/api/v1/auth/login",
+        json={"email": "admin-plain@example.com", "password": PASSWORD},
+    )
+    assert login.status_code == 200, login.text
+    # The admin console reads this from the login payload before /profile/me
+    # answers, so the flag has to be part of the response.
+    assert login.json()["data"]["user"]["two_factor_enabled"] is False
+
+    token = client.cookies.get("csrf_token")
+    if token:
+        client.headers["X-CSRF-Token"] = token
 
     response = await client.get("/api/v1/users/pending")
     assert response.status_code == 403

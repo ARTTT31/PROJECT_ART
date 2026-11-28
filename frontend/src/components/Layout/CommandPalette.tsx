@@ -171,7 +171,9 @@ export default function CommandPalette() {
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [localResults, setLocalResults] = useState<CommandResult[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
-  const isAdmin = user?.role === 'admin';
+  // Admin search hits an endpoint that requires 2FA; hide those results until
+  // the account has actually enabled it.
+  const isAdmin = user?.role === 'admin' && user?.two_factor_enabled === true;
   // The page switches come from the hook so the first render is the server's
   // default list; a direct localStorage read here is the #418 mismatch.
   const enabledPages = useEnabledPages();

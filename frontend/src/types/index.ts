@@ -12,6 +12,8 @@ export interface AuthUser {
   email: string;
   name: string;
   role: AuthRole;
+  /** Whether the account has a second factor; undefined until the profile loads. */
+  two_factor_enabled?: boolean;
   avatar?: string | null;
   avatar_url?: string | null;
   display_name?: string | null;

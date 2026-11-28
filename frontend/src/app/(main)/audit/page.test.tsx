@@ -19,7 +19,12 @@ vi.mock('next/navigation', () => ({ useRouter: () => ({ replace }) }));
 
 vi.mock('@/hooks/useAuth', () => ({
   useAuth: () => ({
-    user: { role: 'admin', name: 'Admin', email: 'admin@example.com' },
+    user: {
+      role: 'admin',
+      name: 'Admin',
+      email: 'admin@example.com',
+      two_factor_enabled: true,
+    },
     status: 'authenticated',
   }),
 }));

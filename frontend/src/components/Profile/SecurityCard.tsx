@@ -13,6 +13,7 @@ import {
 import { SectionCard, InsetField } from './SectionCard';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
 import { useToast } from '@/components/Toast/ToastProvider';
+import { useAuth } from '@/hooks/useAuth';
 
 /**
  * Two-factor authentication (TOTP) for the signed-in account.
@@ -51,6 +52,9 @@ async function errorMessage(response: Response, fallback: string): Promise<strin
 
 export function SecurityCard() {
   const toast = useToast();
+  // The admin console reads this flag from the session; reflect a change here
+  // immediately so the admin does not have to reload before it opens.
+  const { updateUser } = useAuth();
 
   const [enabled, setEnabled] = useState(false);
   const [codesLeft, setCodesLeft] = useState(0);
@@ -126,6 +130,7 @@ export function SecurityCard() {
       }
       const body = await response.json();
       setEnabled(true);
+      updateUser({ two_factor_enabled: true });
       setCodesLeft(body.data.recovery_codes?.length ?? 0);
       setRecoveryCodes(body.data.recovery_codes ?? []);
       setPhase('codes');
@@ -154,6 +159,7 @@ export function SecurityCard() {
         return;
       }
       setEnabled(false);
+      updateUser({ two_factor_enabled: false });
       setCodesLeft(0);
       reset();
       toast.success('ปิดการยืนยันสองขั้นตอนแล้ว', 'บัญชีของคุณจะใช้เพียงรหัสผ่าน');

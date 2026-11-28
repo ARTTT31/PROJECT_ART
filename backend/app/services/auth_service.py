@@ -532,6 +532,9 @@ class AuthService:
                 "display_name": user.display_name,
                 "name": user.name,
                 "role": user.role,
+                # The admin console gates its API calls on this flag, so a fresh
+                # login must carry it before /profile/me hydrates the session.
+                "two_factor_enabled": user.two_factor_enabled,
                 "avatar": user.avatar,
                 "quick_links": user.quick_links,
             },

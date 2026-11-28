@@ -57,6 +57,11 @@ export default function AdminPage() {
   // Admin endpoints answer 403 while the account has no second factor; the
   // message is the backend's, so the page never invents its own rule.
   const [adminBlocked, setAdminBlocked] = useState('');
+  const twoFactorEnabled = user?.two_factor_enabled === true;
+  const twoFactorKnown = user?.two_factor_enabled !== undefined;
+  // Every admin endpoint enforces 2FA. Gate the UI on the same flag so an
+  // account that has not enabled it never fires the requests that would 403.
+  const canUseAdmin = isAdmin && twoFactorEnabled && !adminBlocked;
 
   // A member who types the URL is sent back; the API would refuse anyway, but
   // an empty console would look like a broken page.
@@ -105,11 +110,11 @@ export default function AdminPage() {
   }, []);
 
   useEffect(() => {
-    if (!isAdmin) return;
+    if (!canUseAdmin) return;
     void loadStats();
-  }, [isAdmin, loadStats]);
+  }, [canUseAdmin, loadStats]);
 
-  if (!isClient || (user && !isAdmin)) {
+  if (!isClient || (user && !isAdmin) || (isAdmin && !twoFactorKnown)) {
     return (
       <div className="flex min-h-[480px] items-center justify-center" role="status">
         <Loader2 size={22} className="animate-spin text-[var(--ink-tertiary)]" aria-hidden="true" />
@@ -117,9 +122,11 @@ export default function AdminPage() {
     );
   }
 
-  return (
-    <div className="space-y-4">
-      {adminBlocked && (
+  // An admin without a second factor (or whose session the backend still
+  // refuses) sees the setup path only: no cards, and therefore no 403s.
+  if (isAdmin && !canUseAdmin) {
+    return (
+      <div className="space-y-4">
         <section
           role="alert"
           className="flex items-start gap-3 rounded-apple-lg border border-[var(--hairline)] bg-[var(--warning-soft)] px-5 py-4"
@@ -132,7 +139,8 @@ export default function AdminPage() {
           <div className="min-w-0">
             <p className="text-[13px] font-bold text-[var(--ink)]">ต้องเปิด 2FA ก่อนใช้ส่วนผู้ดูแล</p>
             <p className="mt-0.5 text-[12px] leading-relaxed text-[var(--ink-secondary)]">
-              {adminBlocked}
+              {adminBlocked ||
+                'บัญชีผู้ดูแลระบบต้องเปิดการยืนยันสองขั้นตอน (2FA) ก่อนใช้งานส่วนผู้ดูแล — เปิดได้ที่โปรไฟล์ → ตั้งค่าความปลอดภัย'}
             </p>
             <Link
               href="/profile"
@@ -143,8 +151,12 @@ export default function AdminPage() {
             </Link>
           </div>
         </section>
-      )}
+      </div>
+    );
+  }
 
+  return (
+    <div className="space-y-4">
       {/* ── Overview ─────────────────────────────────────────────── */}
       <section className="overflow-hidden rounded-apple-lg border border-[var(--hairline)] bg-[var(--surface)]">
         <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[var(--hairline-soft)] bg-[var(--surface-subtle)] px-5 py-4 sm:px-6">

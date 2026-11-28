@@ -136,6 +136,7 @@ class TestTwoFactorLogin:
 
         assert response.status_code == 200
         assert response.json()["result"] == "success"
+        assert response.json()["data"]["user"]["two_factor_enabled"] is True
         assert response.cookies.get("access_token")
 
     async def test_wrong_code_is_rejected(self, client, db_session):
