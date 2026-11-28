@@ -723,12 +723,12 @@ export default function CameraPage() {
             </button>
           </div>
         ) : (
-        <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+        <div className="flex flex-col gap-5">
           {/* Primary View Screen */}
-          <div className="lg:col-span-2">
+          <div className="mx-auto w-full max-w-5xl">
             <div
               ref={videoContainerRef}
-              className="relative aspect-video overflow-hidden rounded-apple-lg bg-[var(--ink-faint)] ring-1 ring-[var(--hairline)] shadow-[0_8px_32px_rgba(15,23,42,0.12)]"
+              className="relative aspect-video overflow-hidden rounded-apple-lg border border-[var(--hairline)] bg-black"
             >
               {activeCamera?.status === 'online' || activeCamera?.streamType === 'hls' ? (
                 <div className="relative h-full w-full">
@@ -942,14 +942,14 @@ export default function CameraPage() {
           </div>
 
           {/* Camera List Sidebar */}
-          <div className="flex flex-col gap-3">
-            <div className="rounded-apple-lg bg-[var(--surface)] p-5 ring-1 ring-[var(--hairline)]">
-              <div className="mb-4 flex items-center justify-between gap-2">
+          <div className="mx-auto w-full max-w-5xl">
+            <div className="rounded-apple-lg border border-[var(--hairline)] bg-[var(--surface)] p-4 sm:p-5">
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
                 <h2 className="flex items-center gap-2.5 text-[15px] font-bold text-[var(--ink)]">
                   <div className="flex h-8 w-8 items-center justify-center rounded-apple-md bg-[var(--surface-grouped)]">
                     <Shield size={15} className="text-[var(--ink)]" aria-hidden="true" />
                   </div>
-                  {tr('รายการกล้องทั้งหมด ({count})', 'All cameras ({count})', {
+                  {tr('กล้องของคุณ ({count})', 'Your cameras ({count})', {
                     count: streams.length,
                   })}
                 </h2>
@@ -957,18 +957,18 @@ export default function CameraPage() {
                   type="button"
                   onClick={() => setSingleViewMode((v) => !v)}
                   className={[
-                    'rounded-full px-2.5 py-1 text-[11px] font-semibold transition-colors',
+                    'whitespace-nowrap rounded-full px-3 py-1 text-[11px] font-semibold transition-colors',
                     singleViewMode
                       ? 'bg-[var(--accent-soft)] text-[var(--accent-text)] ring-1 ring-[var(--accent-ring)]'
                       : 'bg-[var(--surface-grouped)] text-[var(--ink-muted)] hover:text-[var(--ink)]',
                   ].join(' ')}
                   title={tr('โหลดภาพเฉพาะกล้องที่กำลังดู เพื่อประหยัดสเปคและเน็ต', 'Load one stream at a time to save CPU & bandwidth')}
                 >
-                  {singleViewMode ? tr('ดูทีละกล้อง', 'One at a time') : tr('เปิดหลายกล้อง', 'Multi-stream')}
+                  {singleViewMode ? tr('โหมด: ดูทีละกล้อง', 'Mode: One at a time') : tr('โหมด: เปิดหลายกล้อง', 'Mode: Multi-stream')}
                 </button>
               </div>
 
-              <ul className="flex flex-col gap-2" role="list">
+              <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3" role="list">
                 {streams.map((cam) => {
                   const isSelected = activeCamera?.id === cam.id;
                   const camHlsState =
@@ -1095,7 +1095,7 @@ export default function CameraPage() {
 
         {/* ── Add / Edit Camera Dialog ─────────────────────────────────── */}
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent className="sm:max-w-[500px]">
+          <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[540px]">
             <DialogHeader>
               <DialogTitle>
                 {editingCameraId
@@ -1104,47 +1104,49 @@ export default function CameraPage() {
               </DialogTitle>
               <DialogDescription>
                 {tr(
-                  'กรอกรายละเอียดการเชื่อมต่อกล้องวงจรปิด ข้อมูลจะถูกบันทึกลงระบบคลาวด์อัตโนมัติ',
-                  'Enter the camera connection details. They are saved to your account automatically.',
+                  'ข้อมูลกล้องจะถูกเข้ารหัสและเก็บเฉพาะในบัญชีของคุณ',
+                  'Camera details are encrypted and private to your account.',
                 )}
               </DialogDescription>
             </DialogHeader>
 
-            <form onSubmit={handleSaveCamera}>
-              <DialogBody className="space-y-4">
-                <div>
-                  <label
-                    htmlFor="camera-name"
-                    className="block text-xs font-semibold text-[var(--ink)]"
-                  >
-                    {tr('ชื่อกล้อง', 'Camera name')} <span className="text-[var(--danger)]">*</span>
-                  </label>
-                  <input
-                    id="camera-name"
-                    type="text"
-                    required
-                    value={formName}
-                    onChange={(e) => setFormName(e.target.value)}
-                    placeholder={tr('เช่น หน้าบ้าน (Front Entrance)', 'e.g. Front entrance')}
-                    className="mt-1 block w-full rounded-apple-widget border border-[var(--hairline)] bg-[var(--surface-grouped)] px-3 py-2 text-sm text-[var(--ink)] transition-colors focus:border-[var(--accent)] focus:bg-[var(--surface)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
-                  />
-                </div>
+            <form onSubmit={handleSaveCamera} autoComplete="off">
+              <DialogBody className="space-y-3">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div>
+                    <label
+                      htmlFor="camera-name"
+                      className="block text-xs font-semibold text-[var(--ink)]"
+                    >
+                      {tr('ชื่อกล้อง', 'Camera name')} <span className="text-[var(--danger)]">*</span>
+                    </label>
+                    <input
+                      id="camera-name"
+                      type="text"
+                      required
+                      value={formName}
+                      onChange={(e) => setFormName(e.target.value)}
+                      placeholder={tr('เช่น หน้าร้าน', 'e.g. Front entrance')}
+                      className="mt-1 block w-full rounded-apple-widget border border-[var(--hairline)] bg-[var(--surface-grouped)] px-3 py-2 text-sm text-[var(--ink)] transition-colors focus:border-[var(--accent)] focus:bg-[var(--surface)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
+                    />
+                  </div>
 
-                <div>
-                  <label
-                    htmlFor="camera-location"
-                    className="block text-xs font-semibold text-[var(--ink)]"
-                  >
-                    {tr('ตำแหน่งที่ตั้ง', 'Location')}
-                  </label>
-                  <input
-                    id="camera-location"
-                    type="text"
-                    value={formLocation}
-                    onChange={(e) => setFormLocation(e.target.value)}
-                    placeholder={tr('เช่น ภายนอก — ประตูหลัก', 'e.g. Outside — main door')}
-                    className="mt-1 block w-full rounded-apple-widget border border-[var(--hairline)] bg-[var(--surface-grouped)] px-3 py-2 text-sm text-[var(--ink)] transition-colors focus:border-[var(--accent)] focus:bg-[var(--surface)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
-                  />
+                  <div>
+                    <label
+                      htmlFor="camera-location"
+                      className="block text-xs font-semibold text-[var(--ink)]"
+                    >
+                      {tr('ตำแหน่ง (ไม่บังคับ)', 'Location (optional)')}
+                    </label>
+                    <input
+                      id="camera-location"
+                      type="text"
+                      value={formLocation}
+                      onChange={(e) => setFormLocation(e.target.value)}
+                      placeholder={tr('เช่น ประตูหน้า', 'e.g. Main door')}
+                      className="mt-1 block w-full rounded-apple-widget border border-[var(--hairline)] bg-[var(--surface-grouped)] px-3 py-2 text-sm text-[var(--ink)] transition-colors focus:border-[var(--accent)] focus:bg-[var(--surface)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
+                    />
+                  </div>
                 </div>
 
                 <div>
@@ -1263,7 +1265,9 @@ export default function CameraPage() {
                             </label>
                             <input
                               id="camera-rtsp-user"
+                              name="camera-rtsp-user"
                               type="text"
+                              autoComplete="off"
                               value={formUsername}
                               onChange={(e) => setFormUsername(e.target.value)}
                               placeholder="ART@IOT31"
@@ -1279,7 +1283,9 @@ export default function CameraPage() {
                             </label>
                             <input
                               id="camera-rtsp-pass"
+                              name="camera-rtsp-pass"
                               type="password"
+                              autoComplete="new-password"
                               value={formPassword}
                               onChange={(e) => setFormPassword(e.target.value)}
                               placeholder="••••••••"
