@@ -31,7 +31,7 @@ export interface AuthUser {
 export type DashboardUser = AuthUser;
 
 /** Camera stream configuration */
-export type CameraStreamType = 'snapshot' | 'mjpeg' | 'iframe' | 'simulated';
+export type CameraStreamType = 'snapshot' | 'mjpeg' | 'hls' | 'iframe' | 'simulated';
 
 export interface CameraStreamConfig {
   id: string;

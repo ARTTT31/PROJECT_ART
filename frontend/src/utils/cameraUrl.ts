@@ -26,7 +26,7 @@ export function stripCameraCredentials(url: string): string {
   return url.replace(/^([a-zA-Z][a-zA-Z0-9+.-]*:\/\/)([^/@\s]+)@/, '$1');
 }
 
-export type CameraStreamType = 'snapshot' | 'mjpeg' | 'simulated';
+export type CameraStreamType = 'snapshot' | 'mjpeg' | 'hls' | 'simulated';
 
 /**
  * Migrate a legacy saved config: drop the removed iframe type and strip any

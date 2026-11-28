@@ -91,3 +91,35 @@ services:
         sync: false
       - key: SENTRY_DSN
         sync: false
+
+  # ── CCTV ────────────────────────────────────────────────────────────────────
+  # MediaMTX republishes the camera's RTSP stream as HLS, because browsers
+  # cannot play RTSP. A Render web service routes one HTTP port, so only the HLS
+  # listener is public and every other protocol is disabled.
+  #
+  # MediaMTX *pulls* the camera, which means CCTV_RTSP_URL must resolve from the
+  # public internet: a 192.168.x.x camera is only reachable through a router
+  # port-forward (or a public relay) in front of it.
+  - type: web
+    name: art-workspace-cctv
+    runtime: docker
+    dockerfilePath: ./mediamtx/Dockerfile
+    dockerContext: ./mediamtx
+    region: singapore
+    # A free instance spins down after 15 idle minutes; the first viewer then
+    # waits for a cold start (~1 min) and the camera panel shows its retry
+    # state. Use the starter plan if the stream must be up on first open.
+    plan: free
+    autoDeploy: true
+    envVars:
+      # Manifest URL becomes https://<service>.onrender.com/{CCTV_PATH}/index.m3u8
+      - key: CCTV_PATH
+        value: camera1
+      # rtsp://<user>:<pass>@<public-host>:554/stream2 — the H.264 substream.
+      # /stream1 is H.265, which no browser decodes.
+      - key: CCTV_RTSP_URL
+        sync: false
+      # Origins allowed to read the HLS endpoints; '*' accepts any (then tighten
+      # it to the deployed frontend origin).
+      - key: CCTV_ALLOWED_ORIGINS
+        sync: false

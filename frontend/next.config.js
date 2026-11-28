@@ -41,6 +41,44 @@ const nextConfig = {
       .split(',')
       .map((origin) => origin.trim())
       .filter(Boolean);
+    // HLS manifests and segments are fetched by hls.js (connect-src), then
+    // played from a MediaSource blob URL (media-src); native HLS on Safari
+    // loads the manifest origin directly. Keep both allow-lists in sync with
+    // the configured camera URLs instead of opening all of https:.
+    const cctvOrigins = (() => {
+      const raw = process.env.NEXT_PUBLIC_CCTV_STREAMS;
+      if (!raw) return [];
+      try {
+        const entries = JSON.parse(raw);
+        if (!Array.isArray(entries)) return [];
+        return [
+          ...new Set(
+            entries.flatMap((entry) => {
+              if (!entry || typeof entry.url !== 'string') return [];
+              try {
+                const parsed = new URL(entry.url);
+                return parsed.protocol === 'http:' || parsed.protocol === 'https:'
+                  ? [parsed.origin]
+                  : [];
+              } catch {
+                return [];
+              }
+            }),
+          ),
+        ];
+      } catch {
+        return [];
+      }
+    })();
+    const mediaSources = [
+      "'self'",
+      'blob:',
+      // MediaMTX on Render is the default deployment target; an exact origin
+      // from NEXT_PUBLIC_CCTV_STREAMS is added below for other providers.
+      'https://*.onrender.com',
+      ...(isDev ? ['http://localhost:*', 'http://127.0.0.1:*'] : []),
+      ...cctvOrigins,
+    ].join(' ');
     const imgSources = [
       "'self'",
       'data:',
@@ -52,6 +90,10 @@ const nextConfig = {
       "'self'",
       ...(apiOrigin ? [apiOrigin, apiOrigin.replace('http', 'ws')] : []),
       'wss://*.onrender.com',
+      // HLS manifest and segment requests (hls.js uses fetch/XHR).
+      'https://*.onrender.com',
+      ...(isDev ? ['http://localhost:*', 'http://127.0.0.1:*'] : []),
+      ...cctvOrigins,
       'https://vitals.vercel-insights.com',
       'https://vercel.live',
       'https://*.open-meteo.com',
@@ -70,7 +112,7 @@ const nextConfig = {
         headers: [
           {
             key: 'Content-Security-Policy',
-            value: `default-src 'self'; script-src 'self' 'unsafe-inline' ${isDev ? "'unsafe-eval'" : ''} https://apis.google.com https://accounts.google.com https://va.vercel-scripts.com https://vercel.live https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src ${imgSources}; font-src 'self' https://fonts.gstatic.com https://vercel.live; connect-src ${connectSources}; frame-src 'self' https://accounts.google.com https://vercel.live https://challenges.cloudflare.com; object-src 'none'; base-uri 'self'; form-action 'self'`,
+            value: `default-src 'self'; script-src 'self' 'unsafe-inline' ${isDev ? "'unsafe-eval'" : ''} https://apis.google.com https://accounts.google.com https://va.vercel-scripts.com https://vercel.live https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src ${imgSources}; media-src ${mediaSources}; worker-src 'self' blob:; font-src 'self' https://fonts.gstatic.com https://vercel.live; connect-src ${connectSources}; frame-src 'self' https://accounts.google.com https://vercel.live https://challenges.cloudflare.com; object-src 'none'; base-uri 'self'; form-action 'self'`,
           },
           {
             key: 'X-Content-Type-Options',

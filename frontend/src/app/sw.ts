@@ -23,6 +23,17 @@ const apiNeverCached: RuntimeCaching[] = [
   },
 ];
 
+// Live HLS manifests and segments are not cacheable: a cached manifest points at
+// expired segments, and a cached response would also skip the request that wakes
+// a sleeping MediaMTX/Render service. Register this before defaultCache's
+// cross-origin NetworkFirst rule for the same reason as the API rule above.
+const liveStreamNetworkOnly: RuntimeCaching[] = [
+  {
+    matcher: ({ url }: { url: URL }) => /\.(?:m3u8|ts|m4s|mp4|aac)$/i.test(url.pathname),
+    handler: new NetworkOnly(),
+  },
+];
+
 /**
  * Last-resort answer for a navigation that has neither a network nor a cached
  * copy. Returning a Response — even a tiny one — is the point: rejecting the
@@ -73,7 +84,12 @@ const serwist = new Serwist({
   skipWaiting: true,
   clientsClaim: true,
   navigationPreload: true,
-  runtimeCaching: [...apiNeverCached, navigationRoute, ...defaultCache],
+  runtimeCaching: [
+    ...apiNeverCached,
+    ...liveStreamNetworkOnly,
+    navigationRoute,
+    ...defaultCache,
+  ],
   // A navigation that cannot reach the network (or a cached page) gets the
   // small, self-contained offline shell instead of the browser's error page.
   // `public/offline.html` is included in the precache manifest by the default

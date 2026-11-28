@@ -7,20 +7,21 @@ import {
   CameraOff,
   Maximize2,
   Minimize2,
+  Pause,
+  Play,
   Plus,
   RefreshCw,
   Shield,
   Trash2,
   Pencil,
-  Video,
-  Radio,
-  Image as ImageIcon,
   Check,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import Select from '@/components/ui/Select';
 import { PageHeader } from '@/components/ui/PageHeader';
 import SegmentedControl from '@/components/ui/SegmentedControl';
+import HlsPlayer, { type HlsPlayerState } from '@/components/Camera/HlsPlayer';
+import { configuredCctvStreams } from '@/config/cctvStreams';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
 import { CameraStreamConfig, CameraStreamType } from '@/types';
 import { sanitizeCameraStreams, stripCameraCredentials } from '@/utils/cameraUrl';
@@ -45,6 +46,11 @@ import {
  * their own data and are stored as typed.
  */
 function createDefaultStreams(): CameraStreamConfig[] {
+  // Deployment-managed cameras win on a fresh workspace; a saved per-account
+  // layout still wins once the user edits the list.
+  const configured = configuredCctvStreams();
+  if (configured.length > 0) return configured;
+
   return [
     {
       id: '1',
@@ -94,6 +100,10 @@ export default function CameraPage() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const [snapshotTicks, setSnapshotTicks] = useState<Record<string, number>>({});
+  // HLS has no server-side status endpoint; the player reports what it sees.
+  const [streamRefreshKeys, setStreamRefreshKeys] = useState<Record<string, number>>({});
+  const [streamEnabled, setStreamEnabled] = useState<Record<string, boolean>>({});
+  const [hlsStates, setHlsStates] = useState<Record<string, HlsPlayerState>>({});
 
   // Modal State
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -182,6 +192,14 @@ export default function CameraPage() {
 
   // ── Active camera object ──
   const activeCamera = streams.find((s) => s.id === activeCameraId) || streams[0];
+  const activeStreamEnabled = activeCamera ? streamEnabled[activeCamera.id] !== false : false;
+  const activeRefreshKey = activeCamera ? (streamRefreshKeys[activeCamera.id] ?? 0) : 0;
+  const activeHlsState =
+    activeCamera?.streamType === 'hls' ? hlsStates[activeCamera.id] : undefined;
+
+  const handleHlsState = useCallback((cameraId: string, next: HlsPlayerState) => {
+    setHlsStates((prev) => (prev[cameraId] === next ? prev : { ...prev, [cameraId]: next }));
+  }, []);
 
   // ── Snapshot Interval Timer ──
   useEffect(() => {
@@ -206,19 +224,41 @@ export default function CameraPage() {
       ...prev,
       [activeCamera.id]: (prev[activeCamera.id] || 0) + 1,
     }));
+    setStreamRefreshKeys((prev) => {
+      const next = { ...prev };
+      for (const camera of streams) next[camera.id] = (next[camera.id] ?? 0) + 1;
+      return next;
+    });
+    // HLS status comes from the player, not a synthetic online flag.
+    setStreams((prev) =>
+      prev.map((camera) =>
+        camera.streamType === 'hls'
+          ? camera
+          : { ...camera, status: 'online', fps: camera.fps || 30 },
+      ),
+    );
 
     setTimeout(() => {
       setRefreshing(false);
-      setStreams((prev) =>
-        prev.map((s) => ({
-          ...s,
-          status: 'online',
-          fps: s.fps || 30,
-        })),
-      );
-      showToast(tr('รีเฟรชสถานะกล้องทั้งหมดสำเร็จ', 'All camera statuses refreshed'), 'success');
-    }, 1000);
+      showToast(tr('กำลังเชื่อมต่อกล้องใหม่...', 'Reconnecting the cameras…'), 'success');
+    }, 800);
   };
+
+  const refreshCamera = useCallback((cameraId: string) => {
+    setRefreshing(true);
+    setStreamRefreshKeys((prev) => ({ ...prev, [cameraId]: (prev[cameraId] ?? 0) + 1 }));
+    setStreamEnabled((prev) => ({ ...prev, [cameraId]: true }));
+    setSnapshotTicks((prev) => ({ ...prev, [cameraId]: (prev[cameraId] ?? 0) + 1 }));
+    window.setTimeout(() => setRefreshing(false), 800);
+  }, []);
+
+  const toggleStream = useCallback((cameraId: string) => {
+    setStreamEnabled((prev) => ({ ...prev, [cameraId]: prev[cameraId] === false }));
+    setHlsStates((prev) => ({
+      ...prev,
+      [cameraId]: prev[cameraId] === 'playing' ? 'paused' : 'idle',
+    }));
+  }, []);
 
   // ── Fullscreen toggle ──
   const toggleFullscreen = () => {
@@ -364,6 +404,8 @@ export default function CameraPage() {
         return tr('ภาพนิ่ง Snapshot (Auto-refresh)', 'Snapshot (auto-refresh)');
       case 'mjpeg':
         return 'MJPEG / Web Stream';
+      case 'hls':
+        return tr('HLS Live (MediaMTX)', 'HLS live (MediaMTX)');
       case 'iframe':
         return 'Web Embed / Lovelace NVR';
       case 'simulated':
@@ -386,6 +428,16 @@ export default function CameraPage() {
     activeCamera?.streamType === 'snapshot' && activeCamera.url
       ? `${activeCamera.url}${activeCamera.url.includes('?') ? '&' : '?'}_t=${currentTick}`
       : activeCamera?.url;
+  const hlsPaused =
+    activeCamera?.streamType === 'hls' && (!activeStreamEnabled || activeHlsState === 'paused');
+  const hlsConnecting =
+    activeCamera?.streamType === 'hls' &&
+    activeStreamEnabled &&
+    (!activeHlsState ||
+      activeHlsState === 'idle' ||
+      activeHlsState === 'waking' ||
+      activeHlsState === 'connecting');
+  const hlsError = activeCamera?.streamType === 'hls' && activeHlsState === 'error';
 
   return (
     <PageAccessGuard page="camera">
@@ -433,10 +485,42 @@ export default function CameraPage() {
               ref={videoContainerRef}
               className="relative aspect-video overflow-hidden rounded-apple-lg bg-[var(--ink-faint)] ring-1 ring-[var(--hairline)] shadow-[0_8px_32px_rgba(15,23,42,0.12)]"
             >
-              {activeCamera?.status === 'online' ? (
+              {activeCamera?.status === 'online' || activeCamera?.streamType === 'hls' ? (
                 <div className="relative h-full w-full">
                   {/* Stream Renderer according to streamType */}
-                  {activeCamera.streamType === 'snapshot' && activeCamera.url ? (
+                  {activeCamera.streamType === 'hls' && activeCamera.url ? (
+                    activeStreamEnabled ? (
+                      <HlsPlayer
+                        key={activeCamera.id}
+                        src={activeCamera.url}
+                        enabled
+                        refreshKey={activeRefreshKey}
+                        label={activeCamera.name}
+                        onStateChange={(state) => handleHlsState(activeCamera.id, state)}
+                      />
+                    ) : (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/75 px-6 text-center">
+                        <CameraOff size={40} className="text-white/60" aria-hidden="true" />
+                        <p className="text-[14px] font-semibold text-white">
+                          {tr('สตรีมหยุดอยู่', 'Stream paused')}
+                        </p>
+                        <p className="text-[12px] text-white/60">
+                          {tr(
+                            'กดเล่นเพื่อประหยัดแบนด์วิดท์เมื่อไม่ได้ดู',
+                            'Play only when you are watching to save bandwidth.',
+                          )}
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => toggleStream(activeCamera.id)}
+                          className="mt-1 inline-flex items-center gap-1.5 rounded-full bg-[var(--accent)] px-4 py-2 text-[12px] font-semibold text-white transition-colors hover:bg-[var(--accent-hover)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-white active:scale-[0.95]"
+                        >
+                          <Play size={13} aria-hidden="true" />
+                          {tr('เล่นสตรีม', 'Play stream')}
+                        </button>
+                      </div>
+                    )
+                  ) : activeCamera.streamType === 'snapshot' && activeCamera.url ? (
                     <div className="relative h-full w-full bg-black">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
@@ -457,6 +541,7 @@ export default function CameraPage() {
                     <div className="relative h-full w-full bg-black">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
+                        key={`${activeCamera.id}-${activeRefreshKey}`}
                         src={activeCamera.url}
                         alt={activeCamera.name}
                         className="h-full w-full object-contain"
@@ -502,13 +587,30 @@ export default function CameraPage() {
                   <div className="pointer-events-none absolute inset-0 flex flex-col justify-between p-4">
                     {/* Top HUD Bar */}
                     <div className="pointer-events-auto flex items-center justify-between">
-                      <span className="flex items-center gap-2 rounded-full bg-[var(--danger)] px-3 py-1 text-[11px] font-bold text-white shadow-xs backdrop-blur-md">
-                        <span
-                          className="h-1.5 w-1.5 animate-ping rounded-full bg-[var(--surface)]"
-                          aria-hidden="true"
-                        />
-                        LIVE
-                      </span>
+                      {hlsPaused ? (
+                        <span className="flex items-center gap-1.5 rounded-full bg-black/60 px-3 py-1 text-[11px] font-bold text-white/90 backdrop-blur-md">
+                          <Pause size={11} aria-hidden="true" />
+                          {tr('หยุดชั่วคราว', 'Paused')}
+                        </span>
+                      ) : hlsConnecting ? (
+                        <span className="flex items-center gap-1.5 rounded-full bg-black/60 px-3 py-1 text-[11px] font-bold text-white/90 backdrop-blur-md">
+                          <RefreshCw size={11} className="animate-spin" aria-hidden="true" />
+                          {tr('กำลังเชื่อมต่อ', 'Connecting')}
+                        </span>
+                      ) : hlsError ? (
+                        <span className="flex items-center gap-1.5 rounded-full bg-black/60 px-3 py-1 text-[11px] font-bold text-white/90 backdrop-blur-md">
+                          <CameraOff size={11} aria-hidden="true" />
+                          {tr('ออฟไลน์', 'Offline')}
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-2 rounded-full bg-[var(--danger)] px-3 py-1 text-[11px] font-bold text-white shadow-xs backdrop-blur-md">
+                          <span
+                            className="h-1.5 w-1.5 animate-ping rounded-full bg-[var(--surface)]"
+                            aria-hidden="true"
+                          />
+                          LIVE
+                        </span>
+                      )}
                       <div className="flex items-center gap-2">
                         <span className="rounded-full bg-black/60 px-3 py-1 text-[11px] font-semibold text-white/90 backdrop-blur-md">
                           {getStreamTypeLabel(activeCamera.streamType)}
@@ -537,9 +639,32 @@ export default function CameraPage() {
                       </div>
 
                       <div className="flex items-center gap-2">
+                        {activeCamera.streamType === 'hls' && (
+                          <button
+                            type="button"
+                            onClick={() => toggleStream(activeCamera.id)}
+                            className="rounded-full bg-[var(--glass-20)] p-2 text-white transition-colors hover:bg-[var(--glass-40)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-white/60 active:scale-[0.95]"
+                            aria-label={
+                              activeStreamEnabled
+                                ? tr('หยุดสตรีมเพื่อประหยัดแบนด์วิดท์', 'Pause the stream to save bandwidth')
+                                : tr('เล่นสตรีมอีกครั้ง', 'Resume the stream')
+                            }
+                          >
+                            {activeStreamEnabled ? <Pause size={16} /> : <Play size={16} />}
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => refreshCamera(activeCamera.id)}
+                          disabled={refreshing}
+                          className="rounded-full bg-[var(--glass-20)] p-2 text-white transition-colors hover:bg-[var(--glass-40)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-white/60 disabled:opacity-50 active:scale-[0.95]"
+                          aria-label={tr('รีเฟรชสตรีมเฉพาะกล้องนี้', 'Refresh this camera stream')}
+                        >
+                          <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
+                        </button>
                         <button
                           onClick={toggleFullscreen}
-                          className="rounded-full bg-[var(--glass-20)] p-2 text-white transition-colors hover:bg-[var(--glass-40)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-white/60"
+                          className="rounded-full bg-[var(--glass-20)] p-2 text-white transition-colors hover:bg-[var(--glass-40)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-white/60 active:scale-[0.95]"
                           aria-label={
                             isFullscreen
                               ? tr('ย่อหน้าจอ', 'Exit full screen')
@@ -605,6 +730,40 @@ export default function CameraPage() {
               <ul className="flex flex-col gap-2" role="list">
                 {streams.map((cam) => {
                   const isSelected = activeCamera?.id === cam.id;
+                  const camHlsState =
+                    isSelected && cam.streamType === 'hls' ? hlsStates[cam.id] : undefined;
+                  const camPaused =
+                    isSelected && cam.streamType === 'hls' && streamEnabled[cam.id] === false;
+                  const camConnecting =
+                    isSelected &&
+                    cam.streamType === 'hls' &&
+                    !camPaused &&
+                    (!camHlsState ||
+                      camHlsState === 'idle' ||
+                      camHlsState === 'waking' ||
+                      camHlsState === 'connecting');
+                  const camLive =
+                    cam.streamType === 'hls'
+                      ? isSelected
+                        ? camHlsState === 'playing'
+                        : cam.status === 'online'
+                      : cam.status === 'online';
+                  const camStatusLabel = camPaused
+                    ? tr('หยุดชั่วคราว', 'Paused')
+                    : camConnecting
+                      ? tr('กำลังเชื่อมต่อ', 'Connecting')
+                      : camLive
+                        ? cam.streamType === 'hls'
+                          ? 'LIVE'
+                          : tr('ออนไลน์', 'Online')
+                        : tr('ออฟไลน์', 'Offline');
+                  const camStatusTone = camPaused
+                    ? 'bg-[var(--surface-chip)] text-[var(--ink-muted)]'
+                    : camConnecting
+                      ? 'bg-[var(--warning-soft)] text-[var(--warning-ink)]'
+                      : camLive
+                        ? 'bg-[var(--success-soft)] text-[var(--success-ink)]'
+                        : 'bg-[var(--danger-soft)] text-[var(--danger-ink)]';
                   return (
                     <li key={cam.id} className="group relative">
                       <div
@@ -618,22 +777,16 @@ export default function CameraPage() {
                         <button
                           onClick={() => setActiveCameraId(cam.id)}
                           className="flex min-w-0 flex-1 items-center gap-3 rounded-apple-widget text-left focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
-                          aria-label={`${cam.name} — ${
-                            cam.status === 'online'
-                              ? tr('ออนไลน์', 'Online')
-                              : tr('ออฟไลน์', 'Offline')
-                          }`}
+                          aria-label={`${cam.name} — ${camStatusLabel}`}
                         >
                           {/* Icon badge */}
                           <div
                             className={[
                               'flex h-9 w-9 shrink-0 items-center justify-center rounded-apple-md',
-                              cam.status === 'online'
-                                ? 'bg-[var(--success-soft)] text-[var(--success-ink)]'
-                                : 'bg-[var(--danger-soft)] text-[var(--danger-ink)]',
+                              camStatusTone,
                             ].join(' ')}
                           >
-                            {cam.status === 'online' ? (
+                            {camLive || camConnecting ? (
                               <Camera size={15} aria-hidden="true" />
                             ) : (
                               <CameraOff size={15} aria-hidden="true" />
@@ -677,14 +830,16 @@ export default function CameraPage() {
                           <span
                             className={[
                               'shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold',
-                              cam.status === 'online'
-                                ? 'bg-[var(--success-soft)] text-[var(--success-ink)]'
-                                : 'bg-[var(--danger-soft)] text-[var(--danger-ink)]',
+                              camStatusTone,
                             ].join(' ')}
                           >
-                            {cam.status === 'online'
-                              ? tr('ออนไลน์', 'Online')
-                              : tr('ออฟไลน์', 'Offline')}
+                            {camLive && cam.streamType === 'hls' && (
+                              <span
+                                className="mr-1 inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-current align-middle"
+                                aria-hidden="true"
+                              />
+                            )}
+                            {camStatusLabel}
                           </span>
                         </div>
                       </div>
@@ -761,6 +916,7 @@ export default function CameraPage() {
                     value={formStreamType}
                     onChange={setFormStreamType}
                     options={[
+                      { value: 'hls', label: 'HLS Live' },
                       { value: 'snapshot', label: tr('ภาพนิ่ง', 'Snapshot') },
                       { value: 'mjpeg', label: 'MJPEG' },
                       { value: 'simulated', label: tr('จำลอง', 'Simulated') },
@@ -788,10 +944,18 @@ export default function CameraPage() {
                           ? 'http://192.168.1.50/snapshot.jpg'
                           : formStreamType === 'mjpeg'
                             ? 'http://192.168.1.50:8080/video.mjpg'
-                            : 'https://homeassistant.local/lovelace/cctv'
+                            : 'https://mediamtx.onrender.com/front-door/index.m3u8'
                       }
                       className="mt-1 block w-full rounded-apple-widget border border-[var(--hairline)] bg-[var(--surface-grouped)] px-3 py-2 font-mono text-xs text-[var(--ink)] transition-colors focus:border-[var(--accent)] focus:bg-[var(--surface)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
                     />
+                    {formStreamType === 'hls' && (
+                      <p className="mt-1 text-[11px] leading-relaxed text-[var(--ink-muted)]">
+                        {tr(
+                          'ใช้ URL Manifest .m3u8 ของ MediaMTX และเปิด CORS ให้โดเมนนี้',
+                          'Use the MediaMTX .m3u8 manifest URL and allow this origin in CORS.',
+                        )}
+                      </p>
+                    )}
                   </div>
                 )}
 
