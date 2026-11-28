@@ -29,7 +29,7 @@ import { CameraStreamConfig, CameraStreamType } from '@/types';
 import { sanitizeCameraStreams, stripCameraCredentials } from '@/utils/cameraUrl';
 import { scopedStorageKey } from '@/lib/offline/localStore';
 import { showToast, showDeleteConfirm } from '@/utils/sweetalert';
-import { useI18n, translateText } from '@/lib/i18n/I18nProvider';
+import { useI18n } from '@/lib/i18n/I18nProvider';
 import {
   Dialog,
   DialogBody,
@@ -48,49 +48,9 @@ import {
  * their own data and are stored as typed.
  */
 function createDefaultStreams(): CameraStreamConfig[] {
-  // Deployment-managed cameras win on a fresh workspace; a saved per-account
-  // layout still wins once the user edits the list.
-  const configured = configuredCctvStreams();
-  if (configured.length > 0) return configured;
-
-  return [
-    {
-      id: '1',
-      name: translateText('หน้าบ้าน', 'Front entrance'),
-      location: translateText('ภายนอก — ประตูหลัก', 'Outside — main door'),
-      streamType: 'simulated',
-      status: 'online',
-      fps: 30,
-      resolution: '1920x1080',
-    },
-    {
-      id: '2',
-      name: translateText('โรงจอดรถ', 'Garage'),
-      location: translateText('ภายนอก — ลานจอดรถ', 'Outside — parking area'),
-      streamType: 'simulated',
-      status: 'online',
-      fps: 24,
-      resolution: '1920x1080',
-    },
-    {
-      id: '3',
-      name: translateText('ห้องนั่งเล่น', 'Living room'),
-      location: translateText('ภายใน — ชั้น 1', 'Inside — floor 1'),
-      streamType: 'simulated',
-      status: 'online',
-      fps: 30,
-      resolution: '1280x720',
-    },
-    {
-      id: '4',
-      name: translateText('หลังบ้าน', 'Backyard'),
-      location: translateText('ภายนอก — สวนหลังบ้าน', 'Outside — back garden'),
-      streamType: 'simulated',
-      status: 'offline',
-      fps: 0,
-      resolution: 'N/A',
-    },
-  ];
+  // Return deployment-managed streams if configured; otherwise start empty
+  // instead of seeding simulated demo cameras.
+  return configuredCctvStreams();
 }
 
 type DialogStreamMode = CameraStreamType | 'rtsp';
@@ -621,11 +581,6 @@ export default function CameraPage() {
   };
 
   const handleDeleteCamera = async (camId: string, camName: string) => {
-    if (streams.length <= 1) {
-      showToast(tr('ต้องมีกล้องอย่างน้อย 1 ตัวในระบบ', 'At least one camera must remain'), 'warning');
-      return;
-    }
-
     const confirm = await showDeleteConfirm(
       tr('ต้องการลบกล้องนี้หรือไม่?', 'Delete this camera?'),
       tr('ลบกล้อง "{name}" ออกจากระบบ', 'Remove camera "{name}" from the workspace', {
@@ -744,6 +699,30 @@ export default function CameraPage() {
         />
 
         {/* ── Main layout ─────────────────────────────────────────────── */}
+        {streams.length === 0 ? (
+          <div className="flex flex-col items-center justify-center rounded-apple-lg border border-[var(--hairline)] bg-[var(--surface)] px-6 py-16 text-center">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--surface-grouped)] text-[var(--ink-muted)]">
+              <Camera size={26} aria-hidden="true" />
+            </div>
+            <h2 className="mt-4 text-base font-bold text-[var(--ink)]">
+              {tr('ยังไม่มีกล้องในบัญชีนี้', 'No cameras yet')}
+            </h2>
+            <p className="mt-1.5 max-w-md text-xs leading-relaxed text-[var(--ink-muted)]">
+              {tr(
+                'เพิ่มกล้องวงจรปิดของคุณเองด้วย RTSP หรือลิงก์ HLS (.m3u8) กล้องที่เพิ่มจะเห็นเฉพาะในบัญชีนี้เท่านั้น',
+                'Add your own CCTV camera via RTSP or HLS (.m3u8). Cameras are private to your account.',
+              )}
+            </p>
+            <button
+              type="button"
+              onClick={openAddDialog}
+              className="mt-5 inline-flex items-center gap-2 rounded-full bg-[var(--accent)] px-5 py-2.5 text-[13px] font-semibold text-white transition-all duration-150 hover:bg-[var(--accent-hover)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 active:scale-[0.95]"
+            >
+              <Plus size={15} aria-hidden="true" />
+              {tr('เพิ่มกล้องตัวแรก', 'Add your first camera')}
+            </button>
+          </div>
+        ) : (
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
           {/* Primary View Screen */}
           <div className="lg:col-span-2">
@@ -1112,6 +1091,7 @@ export default function CameraPage() {
             </div>
           </div>
         </div>
+        )}
 
         {/* ── Add / Edit Camera Dialog ─────────────────────────────────── */}
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -1182,10 +1162,9 @@ export default function CameraPage() {
                     }}
                     options={[
                       ...(!editingCameraId ? [{ value: 'rtsp' as const, label: tr('กล้อง RTSP', 'RTSP') }] : []),
-                      { value: 'hls' as const, label: 'HLS Live' },
+                      { value: 'hls' as const, label: 'HLS (.m3u8)' },
                       { value: 'snapshot' as const, label: tr('ภาพนิ่ง', 'Snapshot') },
                       { value: 'mjpeg' as const, label: 'MJPEG' },
-                      { value: 'simulated' as const, label: tr('จำลอง', 'Simulated') },
                     ]}
                   />
                 </div>
@@ -1444,42 +1423,6 @@ export default function CameraPage() {
                     />
                   </div>
                 )}
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label
-                      htmlFor="camera-resolution"
-                      className="block text-xs font-semibold text-[var(--ink)]"
-                    >
-                      {tr('ความละเอียด', 'Resolution')}
-                    </label>
-                    <input
-                      id="camera-resolution"
-                      type="text"
-                      value={formResolution}
-                      onChange={(e) => setFormResolution(e.target.value)}
-                      placeholder="1920x1080"
-                      className="mt-1 block w-full rounded-apple-widget border border-[var(--hairline)] bg-[var(--surface-grouped)] px-3 py-2 text-sm text-[var(--ink)] transition-colors focus:border-[var(--accent)] focus:bg-[var(--surface)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
-                    />
-                  </div>
-                  <div>
-                    <label
-                      htmlFor="camera-fps"
-                      className="block text-xs font-semibold text-[var(--ink)]"
-                    >
-                      {tr('อัตราเฟรมเรต (FPS)', 'Frame rate (FPS)')}
-                    </label>
-                    <input
-                      id="camera-fps"
-                      type="number"
-                      min={1}
-                      max={60}
-                      value={formFps}
-                      onChange={(e) => setFormFps(Number(e.target.value))}
-                      className="mt-1 block w-full rounded-apple-widget border border-[var(--hairline)] bg-[var(--surface-grouped)] px-3 py-2 text-sm text-[var(--ink)] transition-colors focus:border-[var(--accent)] focus:bg-[var(--surface)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent-ring)]"
-                    />
-                  </div>
-                </div>
               </DialogBody>
 
               <DialogFooter>
